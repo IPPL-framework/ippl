@@ -16,6 +16,7 @@
 #include "Utility/ParameterList.h"
 
 struct BenchmarkResult {
+    int num_concurrent;
     double mean_full;
     double min_full;
     double max_full;
@@ -67,14 +68,13 @@ auto compute_stats(const std::vector<double>& times) {
     return std::make_tuple(mean, stddev, min_t, max_t);
 }
 
-BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
+BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num_concurrent) {
     constexpr unsigned int dim = 3;
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
     using Centering_t          = Mesh_t::DefaultCentering;
     //
     // std::array<int, dim> pt_full   = {1024, 1024, 512};
     // std::array<int, dim> pt_pruned = {512, 512, 256};
-
 
     std::array<int, dim> pt_full   = {64, 128, 32};
     std::array<int, dim> pt_pruned = {32, 64, 16};
@@ -116,6 +116,7 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
                   << std::endl;
         std::cout << "Warmup runs: " << warmup_runs << std::endl;
         std::cout << "Benchmark runs: " << benchmark_runs << std::endl;
+        std::cout << "Num concurrent FFTs: " << num_concurrent << std::endl;
     }
 
     Kokkos::fence();
@@ -135,8 +136,8 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
     using exec_space = typename field_type::execution_space;
     using RandPool   = Kokkos::Random_XorShift64_Pool<exec_space>;
 
-    const int nghost    = field_input.getNghost();
-    auto view_input     = field_input.getView();
+    const int nghost = field_input.getNghost();
+    auto view_input  = field_input.getView();
     RandPool rand_pool(42 + ippl::Comm->rank());
 
     Kokkos::parallel_for(
@@ -164,13 +165,14 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
     fftParams.add("use_pencils", true);
     fftParams.add("use_reorder", false);
     fftParams.add("use_gpu_aware", true);
-    fftParams.add("comm", 2);
+    fftParams.add("comm", 3);
+    fftParams.add("num_concurrent_ffts", num_concurrent);
 
     typedef ippl::FFT<ippl::PrunedCCTransform, field_type> PrunedFFT_type;
     typedef ippl::FFT<ippl::CCTransform, field_type> FFT_type;
 
-    size_t memory_full_fft    = 0;
-    size_t memory_pruned_fft  = 0;
+    size_t memory_full_fft   = 0;
+    size_t memory_pruned_fft = 0;
     std::vector<double> times_fwd_full(benchmark_runs);
     std::vector<double> times_fwd_pruned(benchmark_runs);
 
@@ -258,8 +260,8 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
                                 : 0;
 
         if (ippl::Comm->rank() == 0) {
-            std::cout << "[Memory] Pruned FFT plan size: " << (memory_pruned_fft / (1024.0 * 1024.0))
-                      << " MB" << std::endl;
+            std::cout << "[Memory] Pruned FFT plan size: "
+                      << (memory_pruned_fft / (1024.0 * 1024.0)) << " MB" << std::endl;
         }
 
         // Warmup
@@ -355,18 +357,14 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs) {
                   << global_mean_fwd_full / global_mean_fwd_pruned << "x" << std::endl;
     }
 
-    return BenchmarkResult{global_mean_fwd_full,
-                           global_min_fwd_full,
-                           global_max_fwd_full,
-                           global_mean_fwd_pruned,
-                           global_min_fwd_pruned,
-                           global_max_fwd_pruned,
-                           global_mean_fwd_full / global_mean_fwd_pruned,
-                           global_memory_full_fft,
-                           global_memory_pruned_fft};
+    return BenchmarkResult{num_concurrent,         global_mean_fwd_full,
+                           global_min_fwd_full,    global_max_fwd_full,
+                           global_mean_fwd_pruned, global_min_fwd_pruned,
+                           global_max_fwd_pruned,  global_mean_fwd_full / global_mean_fwd_pruned,
+                           global_memory_full_fft, global_memory_pruned_fft};
 }
 
-BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
+BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int num_concurrent) {
     constexpr unsigned int dim = 3;
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
     using Centering_t          = Mesh_t::DefaultCentering;
@@ -414,6 +412,7 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
                   << std::endl;
         std::cout << "Warmup runs: " << warmup_runs << std::endl;
         std::cout << "Benchmark runs: " << benchmark_runs << std::endl;
+        std::cout << "Num concurrent FFTs: " << num_concurrent << std::endl;
     }
 
     Kokkos::fence();
@@ -517,7 +516,8 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
     fftParams.add("use_pencils", true);
     fftParams.add("use_reorder", false);
     fftParams.add("use_gpu_aware", true);
-    fftParams.add("comm", 2);
+    fftParams.add("comm", 3);
+    fftParams.add("num_concurrent_ffts", num_concurrent);
 
     typedef ippl::FFT<ippl::PrunedCCTransform, field_type> PrunedFFT_type;
     typedef ippl::FFT<ippl::CCTransform, field_type> FFT_type;
@@ -609,8 +609,8 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
                                 : 0;
 
         if (ippl::Comm->rank() == 0) {
-            std::cout << "[Memory] Pruned FFT plan size: " << (memory_pruned_fft / (1024.0 * 1024.0))
-                      << " MB" << std::endl;
+            std::cout << "[Memory] Pruned FFT plan size: "
+                      << (memory_pruned_fft / (1024.0 * 1024.0)) << " MB" << std::endl;
         }
 
         // Warmup
@@ -703,15 +703,11 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs) {
                   << global_mean_bwd_full / global_mean_bwd_pruned << "x" << std::endl;
     }
 
-    return BenchmarkResult{global_mean_bwd_full,
-                           global_min_bwd_full,
-                           global_max_bwd_full,
-                           global_mean_bwd_pruned,
-                           global_min_bwd_pruned,
-                           global_max_bwd_pruned,
-                           global_mean_bwd_full / global_mean_bwd_pruned,
-                           global_memory_full_fft,
-                           global_memory_pruned_fft};
+    return BenchmarkResult{num_concurrent,         global_mean_bwd_full,
+                           global_min_bwd_full,    global_max_bwd_full,
+                           global_mean_bwd_pruned, global_min_bwd_pruned,
+                           global_max_bwd_pruned,  global_mean_bwd_full / global_mean_bwd_pruned,
+                           global_memory_full_fft, global_memory_pruned_fft};
 }
 
 int main(int argc, char* argv[]) {
@@ -733,36 +729,14 @@ int main(int argc, char* argv[]) {
         printMemoryUsage("Initial state");
     }
 
-    BenchmarkResult fwd_result = benchmarkForwardFFT(warmup_runs, benchmark_runs);
-    BenchmarkResult bwd_result = benchmarkBackwardFFT(warmup_runs, benchmark_runs);
-
-    if (ippl::Comm->rank() == 0) {
-        std::cout << "\n========================================" << std::endl;
-        std::cout << "=== COMBINED RESULTS ===" << std::endl;
-        std::cout << "========================================" << std::endl;
-        std::cout << std::fixed << std::setprecision(3);
-
-        std::cout << "\n--- ROUND-TRIP (Forward + Backward) ---" << std::endl;
-        double total_full   = fwd_result.mean_full + bwd_result.mean_full;
-        double total_pruned = fwd_result.mean_pruned + bwd_result.mean_pruned;
-        std::cout << "Full (FFT + IFFT):   " << total_full << " ms" << std::endl;
-        std::cout << "Pruned (FFT + IFFT): " << total_pruned << " ms" << std::endl;
-        std::cout << "Round-trip Speedup:  " << std::setprecision(2) << total_full / total_pruned
-                  << "x" << std::endl;
-
-        std::cout << "\n--- MEMORY SUMMARY ---" << std::endl;
-        std::cout << std::fixed << std::setprecision(2);
-        std::cout << "Forward Full FFT:   " << (fwd_result.memory_full_fft_bytes / (1024.0 * 1024.0))
-                  << " MB" << std::endl;
-        std::cout << "Forward Pruned FFT: "
-                  << (fwd_result.memory_pruned_fft_bytes / (1024.0 * 1024.0)) << " MB" << std::endl;
-        std::cout << "Backward Full FFT:  " << (bwd_result.memory_full_fft_bytes / (1024.0 * 1024.0))
-                  << " MB" << std::endl;
-        std::cout << "Backward Pruned FFT: "
-                  << (bwd_result.memory_pruned_fft_bytes / (1024.0 * 1024.0)) << " MB" << std::endl;
-
-        std::cout << "\n=== End Benchmark ===" << std::endl;
-    }
+    BenchmarkResult fwd_result_1 = benchmarkForwardFFT(warmup_runs, benchmark_runs, 1);
+    BenchmarkResult bwd_result_1 = benchmarkBackwardFFT(warmup_runs, benchmark_runs, 1);
+    BenchmarkResult fwd_result_2 = benchmarkForwardFFT(warmup_runs, benchmark_runs, 2);
+    BenchmarkResult bwd_result_2 = benchmarkBackwardFFT(warmup_runs, benchmark_runs, 2);
+    BenchmarkResult fwd_result_4 = benchmarkForwardFFT(warmup_runs, benchmark_runs, 4);
+    BenchmarkResult bwd_result_4 = benchmarkBackwardFFT(warmup_runs, benchmark_runs, 4);
+    BenchmarkResult fwd_result_8 = benchmarkForwardFFT(warmup_runs, benchmark_runs, 8);
+    BenchmarkResult bwd_result_8 = benchmarkBackwardFFT(warmup_runs, benchmark_runs, 8);
 
     ippl::finalize();
     return 0;

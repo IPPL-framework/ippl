@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Read the CSV
-df = pd.read_csv('fft_timings.csv')
+df = pd.read_csv('fft_timings_1_concurrent.csv')
 
 # Create figure with subplots
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
