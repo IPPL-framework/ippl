@@ -165,7 +165,7 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num
     fftParams.add("use_pencils", true);
     fftParams.add("use_reorder", false);
     fftParams.add("use_gpu_aware", true);
-    fftParams.add("comm", 3);
+    fftParams.add("comm", 2);
     fftParams.add("num_concurrent_ffts", num_concurrent);
 
     typedef ippl::FFT<ippl::PrunedCCTransform, field_type> PrunedFFT_type;
@@ -516,7 +516,7 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int nu
     fftParams.add("use_pencils", true);
     fftParams.add("use_reorder", false);
     fftParams.add("use_gpu_aware", true);
-    fftParams.add("comm", 3);
+    fftParams.add("comm", 2);
     fftParams.add("num_concurrent_ffts", num_concurrent);
 
     typedef ippl::FFT<ippl::PrunedCCTransform, field_type> PrunedFFT_type;
@@ -722,6 +722,8 @@ int main(int argc, char* argv[]) {
             warmup_runs = std::atoi(argv[++i]);
         } else if (arg == "--runs" && i + 1 < argc) {
             benchmark_runs = std::atoi(argv[++i]);
+        } else if (arg == "--concurrent" && i+1 < argc) {
+            benchmark_runs = std::atoi(argv[++i]);
         }
     }
 
@@ -731,12 +733,6 @@ int main(int argc, char* argv[]) {
 
     BenchmarkResult fwd_result_1 = benchmarkForwardFFT(warmup_runs, benchmark_runs, 1);
     BenchmarkResult bwd_result_1 = benchmarkBackwardFFT(warmup_runs, benchmark_runs, 1);
-    BenchmarkResult fwd_result_2 = benchmarkForwardFFT(warmup_runs, benchmark_runs, 2);
-    BenchmarkResult bwd_result_2 = benchmarkBackwardFFT(warmup_runs, benchmark_runs, 2);
-    BenchmarkResult fwd_result_4 = benchmarkForwardFFT(warmup_runs, benchmark_runs, 4);
-    BenchmarkResult bwd_result_4 = benchmarkBackwardFFT(warmup_runs, benchmark_runs, 4);
-    BenchmarkResult fwd_result_8 = benchmarkForwardFFT(warmup_runs, benchmark_runs, 8);
-    BenchmarkResult bwd_result_8 = benchmarkBackwardFFT(warmup_runs, benchmark_runs, 8);
 
     ippl::finalize();
     return 0;
