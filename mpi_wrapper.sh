@@ -176,8 +176,9 @@ export CUDA_VISIBLE_DEVICES=$gpu
 export MPICH_GPU_SUPPORT_ENABLED=1
 export MPICH_GPU_IPC_ENABLED=1
 export MPICH_GPU_IPC_CACHE_MAX_SIZE=128
+
+export MPICH_GPU_IPC_THRESHOLD=1
 # debug info
-export MPICH_OFI_CXI_COUNTER_REPORT=1
 
 # ---------------
 # OpenMPI mappings for MCA variables
