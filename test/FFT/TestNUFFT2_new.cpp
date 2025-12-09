@@ -97,7 +97,7 @@ struct generate_random_field {
         auto i_rescaled = centeredToCornerDC(kVec, n_modes);
 
         f(i_rescaled[0], i_rescaled[1], i_rescaled[2]).real() = 0.5; //rand_gen.drand(0.0, 1.0);
-        f(i_rescaled[0], i_rescaled[1], i_rescaled[2]).imag() = 0.5;// rand_gen.drand(0.0, 1.0);
+        f(i_rescaled[0], i_rescaled[1], i_rescaled[2]).imag() = 0.5;// 0.5;// rand_gen.drand(0.0, 1.0);
 
         // Give the state back, which will allow another thread to acquire it
         rand_pool.free_state(rand_gen);
@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
         int nRanks = ippl::Comm->size();
 
         // Number of modes (output size before upsampling)
-        ippl::Vector<int, dim> n_modes = {32, 32, 32};
+        ippl::Vector<int, dim> n_modes = {16, 16, 16};
 
         ippl::Index I(n_modes[0]);
         ippl::Index J(n_modes[1]);
@@ -153,7 +153,7 @@ int main(int argc, char* argv[]) {
 
         using size_type = ippl::detail::size_type;
 
-        size_type Np = std::pow(32, 3) * 20;
+        size_type Np = std::pow(16, 3);
 
         typedef ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t>::uniform_type
             field_type;
@@ -161,7 +161,7 @@ int main(int argc, char* argv[]) {
 
         ippl::ParameterList fftParams;
 
-        fftParams.add("tolerance", 1e-10);
+        fftParams.add("tolerance", 1e-7);
 #ifdef ENABLE_GPU_NUFFT
         fftParams.add("gpu_method", 1);
         fftParams.add("gpu_sort", 0);

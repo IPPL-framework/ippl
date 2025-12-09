@@ -275,7 +275,8 @@ namespace ippl {
     }
 
     template <typename ComplexField>
-    void FFT<PrunedCCTransform, ComplexField>::forward_stride2_pruned_3d(ComplexField& input,
+    void FFT<PrunedCCTransform, ComplexField>::forward_stride2_pruned_3d(int dir,
+                                                                         ComplexField& input,
                                                                          ComplexField& output) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
         static IpplTimings::TimerRef TwiddleAdd = IpplTimings::getTimer("TwiddleAdd");
@@ -315,6 +316,9 @@ namespace ippl {
         for (int d = 0; d < Dim; ++d) {
             scaling_factor *= static_cast<double>(pruning_.n_modes[d])
                               / static_cast<double>(gDomFull[d].length());
+        }
+        if (dir == -1) {
+            scaling_factor = 1.0;
         }
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
@@ -382,9 +386,15 @@ namespace ippl {
                         });
 
                     // FFT on same stream - automatically waits for copy
-                    pruned_heffte_m[slot]->forward(tempFieldInputs[slot].data(),
-                                                   tempFieldInputs[slot].data(),
-                                                   workspaces_m[slot].data(), heffte::scale::full);
+                    if (dir == 1) {
+                        pruned_heffte_m[slot]->forward(
+                            tempFieldInputs[slot].data(), tempFieldInputs[slot].data(),
+                            workspaces_m[slot].data(), heffte::scale::full);
+                    } else {
+                        pruned_heffte_m[slot]->backward(
+                            tempFieldInputs[slot].data(), tempFieldInputs[slot].data(),
+                            workspaces_m[slot].data(), heffte::scale::none);
+                    }
                 });
 
             // Wait for all streams in this batch to complete before accumulation
@@ -419,7 +429,7 @@ namespace ippl {
 
                         Complex_t w = 1.0;
                         for (int d = 0; d < Dim; ++d) {
-                            double ang = -2.0 * M_PI * (static_cast<double>(freq[d]))
+                            double ang = -dir * 2.0 * M_PI * (static_cast<double>(freq[d]))
                                          / static_cast<double>(gDomFull[d].length());
                             w *= (offs[d] == 0) ? Complex_t(1.0, 0.0)
                                                 : Complex_t(std::cos(ang), std::sin(ang));
@@ -438,6 +448,7 @@ namespace ippl {
 
     template <typename ComplexField>
     void FFT<PrunedCCTransform, ComplexField>::backward_stride2_pruned_3d(
+        int dir,
         ComplexField& input,  // pruned frequency domain (K per dim)
         ComplexField& output  // full spatial domain (N = 2K per dim)
     ) {
@@ -551,7 +562,7 @@ namespace ippl {
                             Complex_t w = 1.0;
                             for (int d = 0; d < Dim; ++d) {
                                 if (offs[d] != 0) {
-                                    double ang = +2.0 * M_PI * static_cast<double>(freq[d])
+                                    double ang = 2.0 * M_PI * static_cast<double>(freq[d])
                                                  / static_cast<double>(gDomFull[d].length());
                                     w *= Complex_t(std::cos(ang), std::sin(ang));
                                 }
@@ -602,14 +613,14 @@ namespace ippl {
 
     template <typename ComplexField>
     void FFT<PrunedCCTransform, ComplexField>::transform(TransformDirection direction,
-                                                         ComplexField& input,
-                                                         ComplexField& output) {
+                                                         ComplexField& input, ComplexField& output,
+                                                         int dir) {
         static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
         if (direction == FORWARD && Dim == 3) {
-            forward_stride2_pruned_3d(input, output);
+            forward_stride2_pruned_3d(dir, input, output);
             return;
         } else if (direction == BACKWARD && Dim == 3) {
-            backward_stride2_pruned_3d(input, output);
+            backward_stride2_pruned_3d(dir, input, output);
             return;
         }
 
@@ -1441,7 +1452,7 @@ namespace ippl {
                 cfg.gather_config.method = Interpolation::GatherMethod::AtomicSort;
             }
 
-            auto* nufft_ptr = new NativeNUFFT_t(n_modes_vec, cfg);
+            auto* nufft_ptr = new NativeNUFFT_t(n_modes_vec, use_upsampled_inputs_m, cfg);
             nufft_ptr->initialize(layout, MPI_COMM_WORLD);
             native_nufft_ = static_cast<void*>(nufft_ptr);
         }

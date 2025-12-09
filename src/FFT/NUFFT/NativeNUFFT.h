@@ -56,10 +56,11 @@ namespace ippl {
             using real_view_1d    = Kokkos::View<T*, memory_space>;
 
             // Field types
-            using Mesh_t       = UniformCartesian<T, Dim>;
-            using Centering_t  = Cell;
-            using ComplexField = Field<complex_type, Dim, Mesh_t, Centering_t, ExecSpace>;
-            using Layout_t     = FieldLayout<Dim>;
+            using Mesh_t      = UniformCartesian<T, Dim>;
+            using Centering_t = Cell;
+            using ComplexField =
+                Field<complex_type, Dim, Mesh_t, Centering_t, ExecSpace>::uniform_type;
+            using Layout_t = FieldLayout<Dim>;
 
             struct Config {
                 T tol   = T(1e-6);  // Error tolerance
@@ -92,9 +93,11 @@ namespace ippl {
 
             // heFFTe FFT object
             std::unique_ptr<FFT<CCTransform, ComplexField>> heffte_fft_;
+            std::unique_ptr<FFT<PrunedCCTransform, ComplexField>> pruned_fft_;
 
             TimingInfo timing_;
-            bool initialized_ = false;
+            bool initialized_   = false;
+            bool use_upsampled_ = false;
 
         public:
             /**
@@ -103,10 +106,11 @@ namespace ippl {
              * @param n_modes Number of Fourier modes per dimension
              * @param cfg Configuration parameters
              */
-            NativeNUFFT(const Vector<size_t, Dim>& n_modes, Config cfg = {})
+            NativeNUFFT(const Vector<size_t, Dim>& n_modes, bool use_upsampled, Config cfg = {})
                 : cfg_(cfg)
                 , kernel_(cfg.tol)
-                , n_modes_(n_modes) {
+                , n_modes_(n_modes)
+                , use_upsampled_(use_upsampled) {
                 // Compute upsampled grid sizes
                 for (unsigned d = 0; d < Dim; ++d) {
                     n_grid_[d] = std::bit_ceil<size_t>(
@@ -167,10 +171,32 @@ namespace ippl {
                 grid_field_ = std::make_unique<ComplexField>(*grid_mesh_, *grid_layout_, nghost);
 
                 // Initialize heFFTe FFT
-                ParameterList fftParams;
-                fftParams.add("use_heffte_defaults", true);
-                heffte_fft_ =
-                    std::make_unique<FFT<CCTransform, ComplexField>>(*grid_layout_, fftParams);
+                if (use_upsampled_) {
+                    ParameterList fftParams;
+                    fftParams.add("use_heffte_defaults", false);
+                    fftParams.add("use_pencils", true);
+                    fftParams.add("use_reorder", false);
+                    fftParams.add("use_gpu_aware", true);
+                    fftParams.add("comm", 2);
+                    heffte_fft_ =
+                        std::make_unique<FFT<CCTransform, ComplexField>>(*grid_layout_, fftParams);
+                } else {
+                    ParameterList fftParams;
+                    fftParams.add("use_heffte_defaults", false);
+                    fftParams.add("use_pencils", true);
+                    fftParams.add("use_reorder", false);
+                    fftParams.add("use_gpu_aware", true);
+                    fftParams.add("comm", 2);
+                    fftParams.add("num_concurrent_ffts", 4);
+                    PruningParams<Dim> pruning_params;
+                    // Set pruning params to output the desired n_modes_, not n_grid_/2
+                    for (int d = 0; d < Dim; ++d) {
+                        pruning_params.n_modes[d] = n_modes_[d];
+                    }
+
+                    pruned_fft_ = std::make_unique<FFT<PrunedCCTransform, ComplexField>>(
+                        *grid_layout_, modes_layout, pruning_params, fftParams);
+                }
 
                 // Precompute deconvolution factors
                 auto t0 = std::chrono::high_resolution_clock::now();
@@ -233,7 +259,11 @@ namespace ippl {
                 grid_field_->accumulateHalo();
 
                 // Step 2: Inverse FFT
-                performFFT(-1);
+                if (upsampled_output) {
+                    performFFT(-1);
+                } else {
+                    performPrunedFFT(1, f);
+                }
 
                 // Step 3: Deconvolution and truncation to output modes
                 t0 = std::chrono::high_resolution_clock::now();
@@ -241,9 +271,9 @@ namespace ippl {
                     applyDeconvolutionType1<decltype(*grid_field_), decltype(f), ExecSpace, T>(
                         *grid_field_, factors_, f, n_modes_, n_grid_);
                 } else {
-                    applyDeconvolutionType1<Dim, ExecSpace, T>(
-                        grid_field_->getView(), factors_, f.getView(), n_modes_, n_grid_,
-                        grid_field_->getNghost(), f.getNghost());
+                    applyDeconvolutionType1<Dim, ExecSpace, T>(f.getView(), factors_, f.getView(),
+                                                               n_modes_, n_grid_, f.getNghost(),
+                                                               f.getNghost());
                 }
 
                 timing_.correct =
@@ -267,8 +297,65 @@ namespace ippl {
              * @param R Particle positions in [0, 2*pi)^Dim
              * @param Q Output particle values
              */
+            // template <typename InField, class... Properties>
+            // void type2(InField& f, const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
+            //            ParticleAttrib<T, Properties...>& Q, bool upsampled_output = false) {
+            //     if (!initialized_) {
+            //         throw IpplException("NativeNUFFT::type2",
+            //                             "NUFFT not initialized. Call initialize() first.");
+            //     }
+            //
+            //     resetTimings();
+            //     auto ttot = std::chrono::high_resolution_clock::now();
+            //
+            //     // Step 1: Apply pre-correction
+            //     auto t0 = std::chrono::high_resolution_clock::now();
+            //
+            //     if (upsampled_output) {
+            //         applyPreCorrectionType2<decltype(f), decltype(*grid_field_), ExecSpace, T>(
+            //             f, factors_, *grid_field_, n_modes_, n_grid_);
+            //     } else {
+            //         applyPreCorrectionType2<Dim, ExecSpace, T>(f.getView(), factors_,
+            //         f.getView(),
+            //                                                    n_modes_, n_grid_, f.getNghost(),
+            //                                                    f.getNghost());
+            //     }
+            //
+            //     timing_.correct =
+            //         std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
+            //             .count();
+            //
+            //     // Step 2: Inverse FFT
+            //     t0 = std::chrono::high_resolution_clock::now();
+            //     if (upsampled_output) {
+            //         performFFT(-1);
+            //     } else {
+            //         performPrunedFFT(-1, f);
+            //     }
+            //
+            //     timing_.fft =
+            //         std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
+            //             .count();
+            //
+            //     // Step 2.5: Fill ghost cells for gather
+            //     grid_field_->fillHalo();
+            //
+            //     // Step 3: Gather/interpolate at particle positions
+            //     t0 = std::chrono::high_resolution_clock::now();
+            //     Q.gather(*grid_field_, R, kernel_, false, cfg_.gather_config);
+            //     Kokkos::fence();
+            //     timing_.spread =
+            //         std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
+            //             .count();
+            //
+            //     timing_.total =
+            //         std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - ttot)
+            //             .count()
+            //         + timing_.precompute;
+            // }
+
             template <typename InField, class... Properties>
-            void type2(const InField& f, const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
+            void type2(InField& f, const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
                        ParticleAttrib<T, Properties...>& Q, bool upsampled_output = false) {
                 if (!initialized_) {
                     throw IpplException("NativeNUFFT::type2",
@@ -278,40 +365,114 @@ namespace ippl {
                 resetTimings();
                 auto ttot = std::chrono::high_resolution_clock::now();
 
+                // // DEBUG: before pre_correctio
+                // if (ippl::Comm->rank() == 0) {
+                //     auto f_host = f.getHostMirror();
+                //     Kokkos::deep_copy(f_host, f.getView());
+                //     int ng = f.getNghost();
+                //     std::cout << "[DEBUG type2] Before Pre-correction: "
+                //               << "grid_field_[" << ng << "," << ng << "," << ng
+                //               << "] = " << f_host(ng, ng, ng) << std::endl;
+                // }
+
+                // ============================================================
                 // Step 1: Apply pre-correction
+                // ============================================================
                 auto t0 = std::chrono::high_resolution_clock::now();
 
                 if (upsampled_output) {
                     applyPreCorrectionType2<decltype(f), decltype(*grid_field_), ExecSpace, T>(
                         f, factors_, *grid_field_, n_modes_, n_grid_);
                 } else {
-                    applyPreCorrectionType2<Dim, ExecSpace, T>(
-                        f.getView(), factors_, grid_field_->getView(), n_modes_, n_grid_,
-                        f.getNghost(), grid_field_->getNghost());
+                    applyPreCorrectionType2<Dim, ExecSpace, T>(f.getView(), factors_, f.getView(),
+                                                               n_modes_, n_grid_, f.getNghost(),
+                                                               f.getNghost());
                 }
 
+                Kokkos::fence();
                 timing_.correct =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
 
-                // Step 2: Inverse FFT
-                t0 = std::chrono::high_resolution_clock::now();
-                performFFT(-1);
+                // // DEBUG: after pre-correction
+                // if (ippl::Comm->rank() == 0) {
+                //     if (upsampled_output) {
+                //         auto grid_host = grid_field_->getHostMirror();
+                //         Kokkos::deep_copy(grid_host, grid_field_->getView());
+                //         int ng = grid_field_->getNghost();
+                //         std::cout << "[DEBUG type2] after pre-correction (upsampled): "
+                //                   << "grid_field_[" << ng << "," << ng << "," << ng
+                //                   << "] = " << grid_host(ng, ng, ng) << std::endl;
+                //     } else {
+                //         auto f_host = f.getHostMirror();
+                //         Kokkos::deep_copy(f_host, f.getView());
+                //         int ng = f.getNghost();
+                //         std::cout << "[DEBUG type2] after pre-correction (pruned): "
+                //                   << "f[" << ng << "," << ng << "," << ng
+                //                   << "] = " << f_host(ng, ng, ng) << std::endl;
+                //     }
+                // }
 
+                // ============================================================
+                // Step 2: Inverse FFT
+                // ============================================================
+                t0 = std::chrono::high_resolution_clock::now();
+                if (upsampled_output) {
+                    performFFT(-1);  // operates on grid_field_
+                } else {
+                    performPrunedFFT(-1, f);  // writes into grid_field_
+                }
+
+                Kokkos::fence();
                 timing_.fft =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
 
-                // Step 2.5: Fill ghost cells for gather
-                grid_field_->fillHalo();
+                // // DEBUG: after inverse FFT (always in grid_field_)
+                // if (ippl::Comm->rank() == 0) {
+                //     auto grid_host = grid_field_->getHostMirror();
+                //     Kokkos::deep_copy(grid_host, grid_field_->getView());
+                //     int ng = grid_field_->getNghost();
+                //     std::cout << "[DEBUG type2] after inverse FFT: "
+                //               << "grid_field_[" << ng << "," << ng << "," << ng
+                //               << "] = " << grid_host(ng, ng, ng) << std::endl;
+                // }
 
+                // ============================================================
+                // Step 2.5: Fill ghost cells for gather
+                // ============================================================
+                grid_field_->fillHalo();
+                Kokkos::fence();
+
+                // // DEBUG: after fillHalo
+                // if (ippl::Comm->rank() == 0) {
+                //     auto grid_host = grid_field_->getHostMirror();
+                //     Kokkos::deep_copy(grid_host, grid_field_->getView());
+                //     int ng = grid_field_->getNghost();
+                //     std::cout << "[DEBUG type2] after fillHalo: "
+                //               << "grid_field_[" << ng << "," << ng << "," << ng
+                //               << "] = " << grid_host(ng, ng, ng) << std::endl;
+                // }
+
+                // ============================================================
                 // Step 3: Gather/interpolate at particle positions
+                // ============================================================
                 t0 = std::chrono::high_resolution_clock::now();
                 Q.gather(*grid_field_, R, kernel_, false, cfg_.gather_config);
                 Kokkos::fence();
                 timing_.spread =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
                         .count();
+                //
+                // // DEBUG: after gather, inspect one particle value
+                // if (ippl::Comm->rank() == 0) {
+                //     auto Q_host =
+                //         Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Q.getView());
+                //     size_type nloc = Q_host.extent(0);
+                //     size_type idx  = (nloc > 0 ? nloc / 2 : 0);
+                //     std::cout << "[DEBUG type2] after gather: "
+                //               << "Q[" << idx << "] = " << Q_host(idx) << std::endl;
+                // }
 
                 timing_.total =
                     std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - ttot)
@@ -334,6 +495,15 @@ namespace ippl {
             void performFFT(int sign) {
                 TransformDirection direction = (sign < 0) ? BACKWARD : FORWARD;
                 heffte_fft_->transform(direction, *grid_field_);
+            }
+
+            void performPrunedFFT(int sign, auto& output_field) {
+                TransformDirection direction = (sign < 0) ? BACKWARD : FORWARD;
+                if (sign < 0) {
+                    pruned_fft_->transform(direction, output_field, *grid_field_, 1);
+                } else {
+                    pruned_fft_->transform(direction, *grid_field_, output_field, -1);
+                }
             }
         };
 

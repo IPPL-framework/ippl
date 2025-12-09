@@ -376,7 +376,7 @@ namespace ippl {
          * @param input Input field
          * @param output Output field
          */
-        void transform(TransformDirection direction, ComplexField& input, ComplexField& output);
+        void transform(TransformDirection direction, ComplexField& input, ComplexField& output, int dir = 1);
 
         /**
          * Performs pruned forward FFT for pruning factor 2 by a manual last Cooley-Tukey step in
@@ -384,7 +384,7 @@ namespace ippl {
          * @param input Input field
          * @param output Output field
          */
-        void forward_stride2_pruned_3d(ComplexField& input, ComplexField& output);
+        void forward_stride2_pruned_3d(int dir, ComplexField& input, ComplexField& output);
 
         /**
          * Performs pruned backward FFT for pruning factor 2 by a manual last Cooley-Tukey step in
@@ -392,7 +392,7 @@ namespace ippl {
          * @param input Input field
          * @param output Output field
          */
-        void backward_stride2_pruned_3d(ComplexField& input, ComplexField& output);
+        void backward_stride2_pruned_3d(int dir, ComplexField& input, ComplexField& output);
 
         ~FFT();
     private:

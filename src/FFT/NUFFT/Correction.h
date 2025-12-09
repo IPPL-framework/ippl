@@ -265,6 +265,55 @@ namespace ippl {
          * @brief Apply deconvolution correction for Type 1 NUFFT (post-FFT) - legacy view
          * interface.
          */
+        // template <unsigned Dim, typename ExecSpace, typename T>
+        // void applyDeconvolutionType1(
+        //     typename detail::ViewType<Kokkos::complex<T>, Dim>::view_type input,
+        //     const std::array<Kokkos::View<Kokkos::complex<T>*, typename ExecSpace::memory_space>,
+        //                      Dim>& factors,
+        //     typename detail::ViewType<Kokkos::complex<T>, Dim>::view_type output,
+        //     const Vector<size_t, Dim>& n_modes, const Vector<size_t, Dim>& n_grid,
+        //     int input_nghost = 0, int output_nghost = 0) {
+        //     using complex_type = Kokkos::complex<T>;
+        //
+        //     const int in_ghost  = input_nghost;
+        //     const int out_ghost = output_nghost;
+        //
+        //     if constexpr (Dim == 3) {
+        //         auto f0 = factors[0];
+        //         auto f1 = factors[1];
+        //         auto f2 = factors[2];
+        //
+        //         Kokkos::parallel_for(
+        //             "deconv_type1_3d",
+        //             Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
+        //                 {0, 0, 0},
+        //                 {static_cast<int64_t>(n_modes[0]), static_cast<int64_t>(n_modes[1]),
+        //                  static_cast<int64_t>(n_modes[2])}),
+        //             KOKKOS_LAMBDA(int64_t i, int64_t j, int64_t k) {
+        //                 const int nx = static_cast<int>(n_modes[0]);
+        //                 const int ny = static_cast<int>(n_modes[1]);
+        //                 const int nz = static_cast<int>(n_modes[2]);
+        //
+        //                 const int ii_shift = (i + nx / 2) % nx;
+        //                 const int jj_shift = (j + ny / 2) % ny;
+        //                 const int kk_shift = (k + nz / 2) % nz;
+        //
+        //                 int64_t in_idx0 =
+        //                     (ii_shift < nx / 2) ? ii_shift : n_grid[0] - (nx - ii_shift);
+        //                 int64_t in_idx1 =
+        //                     (jj_shift < ny / 2) ? jj_shift : n_grid[1] - (ny - jj_shift);
+        //                 int64_t in_idx2 =
+        //                     (kk_shift < nz / 2) ? kk_shift : n_grid[2] - (nz - kk_shift);
+        //
+        //                 complex_type factor = f0(ii_shift) * f1(jj_shift) * f2(kk_shift);
+        //                 output(i + out_ghost, j + out_ghost, k + out_ghost) = Kokkos::conj(
+        //                     input(in_idx0 + in_ghost, in_idx1 + in_ghost, in_idx2 + in_ghost)
+        //                     * factor);
+        //             });
+        //     }
+        //
+        //     Kokkos::fence();
+        // }
         template <unsigned Dim, typename ExecSpace, typename T>
         void applyDeconvolutionType1(
             typename detail::ViewType<Kokkos::complex<T>, Dim>::view_type input,
@@ -290,25 +339,12 @@ namespace ippl {
                         {static_cast<int64_t>(n_modes[0]), static_cast<int64_t>(n_modes[1]),
                          static_cast<int64_t>(n_modes[2])}),
                     KOKKOS_LAMBDA(int64_t i, int64_t j, int64_t k) {
-                        const int nx = static_cast<int>(n_modes[0]);
-                        const int ny = static_cast<int>(n_modes[1]);
-                        const int nz = static_cast<int>(n_modes[2]);
-
-                        const int ii_shift = (i + nx / 2) % nx;
-                        const int jj_shift = (j + ny / 2) % ny;
-                        const int kk_shift = (k + nz / 2) % nz;
-
-                        int64_t in_idx0 =
-                            (ii_shift < nx / 2) ? ii_shift : n_grid[0] - (nx - ii_shift);
-                        int64_t in_idx1 =
-                            (jj_shift < ny / 2) ? jj_shift : n_grid[1] - (ny - jj_shift);
-                        int64_t in_idx2 =
-                            (kk_shift < nz / 2) ? kk_shift : n_grid[2] - (nz - kk_shift);
-
-                        complex_type factor = f0(ii_shift) * f1(jj_shift) * f2(kk_shift);
-                        output(i + out_ghost, j + out_ghost, k + out_ghost) = Kokkos::conj(
-                            input(in_idx0 + in_ghost, in_idx1 + in_ghost, in_idx2 + in_ghost)
-                            * factor);
+                        // For pruned FFT: input and factors are both in corner-DC format
+                        // [0, K/2) are positive frequencies, [K/2, K) are negative frequencies
+                        // So we can use indices directly without FFT-shift
+                        complex_type factor = f0(i) * f1(j) * f2(k);
+                        output(i + out_ghost, j + out_ghost, k + out_ghost) =
+                            Kokkos::conj(input(i + in_ghost, j + in_ghost, k + in_ghost) * factor);
                     });
             }
 
@@ -328,8 +364,6 @@ namespace ippl {
             int input_nghost = 0, int output_nghost = 0) {
             using complex_type = Kokkos::complex<T>;
 
-            Kokkos::deep_copy(output, complex_type(0, 0));
-
             const int in_ghost  = input_nghost;
             const int out_ghost = output_nghost;
 
@@ -346,57 +380,51 @@ namespace ippl {
                     "precorr_type2_3d",
                     Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>({0, 0, 0}, {nx, ny, nz}),
                     KOKKOS_LAMBDA(int64_t i, int64_t j, int64_t k) {
-                        const int ii_shift = (i + nx / 2) % nx;
-                        const int jj_shift = (j + ny / 2) % ny;
-                        const int kk_shift = (k + nz / 2) % nz;
+                        auto ii_shift = (i + nx/2) % nx;
+                        auto jj_shift = (j + ny/2) % ny;
+                        auto kk_shift = (k + nz/2) % nz;
 
-                        int64_t out_idx0 =
-                            (ii_shift < nx / 2) ? ii_shift : n_grid[0] - (nx - ii_shift);
-                        int64_t out_idx1 =
-                            (jj_shift < ny / 2) ? jj_shift : n_grid[1] - (ny - jj_shift);
-                        int64_t out_idx2 =
-                            (kk_shift < nz / 2) ? kk_shift : n_grid[2] - (nz - kk_shift);
-
-                        complex_type factor = f0(ii_shift) * f1(jj_shift) * f2(kk_shift);
-                        output(out_idx0 + out_ghost, out_idx1 + out_ghost, out_idx2 + out_ghost) =
+                        complex_type factor = f0(i) * f1(j) * f2(k);
+                        output(i + out_ghost, j + out_ghost, k + out_ghost) =
                             input(i + in_ghost, j + in_ghost, k + in_ghost) * factor;
                     });
 
                 Kokkos::fence();
-            } else if constexpr (Dim == 2) {
-                const int nx = static_cast<int>(n_modes[0]);
-                const int ny = static_cast<int>(n_modes[1]);
-
-                auto f0 = factors[0];
-                auto f1 = factors[1];
-
-                Kokkos::parallel_for(
-                    "precorr_type2_2d",
-                    Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<2>>({0, 0}, {nx, ny}),
-                    KOKKOS_LAMBDA(int64_t k0, int64_t k1) {
-                        int64_t i0 = (k0 < nx / 2) ? k0 : n_grid[0] - (nx - k0);
-                        int64_t i1 = (k1 < ny / 2) ? k1 : n_grid[1] - (ny - k1);
-
-                        int64_t j0 = (k0 + nx / 2) % nx;
-                        int64_t j1 = (k1 + ny / 2) % ny;
-
-                        complex_type factor = f0(k0) * f1(k1);
-                        output(i0 + out_ghost, i1 + out_ghost) =
-                            Kokkos::conj(input(j0 + in_ghost, j1 + in_ghost)) * factor;
-                    });
-            } else {
-                const int nx = static_cast<int>(n_modes[0]);
-
-                auto f0 = factors[0];
-
-                Kokkos::parallel_for(
-                    "precorr_type2_1d", Kokkos::RangePolicy<ExecSpace>(0, nx),
-                    KOKKOS_LAMBDA(int64_t k0) {
-                        int64_t i0             = (k0 < nx / 2) ? k0 : n_grid[0] - (nx - k0);
-                        int64_t j0             = (k0 + nx / 2) % nx;
-                        output(i0 + out_ghost) = Kokkos::conj(input(j0 + in_ghost)) * f0(k0);
-                    });
             }
+            // else if constexpr (Dim == 2) {
+            //     const int nx = static_cast<int>(n_modes[0]);
+            //     const int ny = static_cast<int>(n_modes[1]);
+            //
+            //     auto f0 = factors[0];
+            //     auto f1 = factors[1];
+            //
+            //     Kokkos::parallel_for(
+            //         "precorr_type2_2d",
+            //         Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<2>>({0, 0}, {nx, ny}),
+            //         KOKKOS_LAMBDA(int64_t k0, int64_t k1) {
+            //             int64_t i0 = (k0 < nx / 2) ? k0 : n_grid[0] - (nx - k0);
+            //             int64_t i1 = (k1 < ny / 2) ? k1 : n_grid[1] - (ny - k1);
+            //
+            //             int64_t j0 = (k0 + nx / 2) % nx;
+            //             int64_t j1 = (k1 + ny / 2) % ny;
+            //
+            //             complex_type factor = f0(k0) * f1(k1);
+            //             output(i0 + out_ghost, i1 + out_ghost) =
+            //                 Kokkos::conj(input(j0 + in_ghost, j1 + in_ghost)) * factor;
+            //         });
+            // } else {
+            //     const int nx = static_cast<int>(n_modes[0]);
+            //
+            //     auto f0 = factors[0];
+            //
+            //     Kokkos::parallel_for(
+            //         "precorr_type2_1d", Kokkos::RangePolicy<ExecSpace>(0, nx),
+            //         KOKKOS_LAMBDA(int64_t k0) {
+            //             int64_t i0             = (k0 < nx / 2) ? k0 : n_grid[0] - (nx - k0);
+            //             int64_t j0             = (k0 + nx / 2) % nx;
+            //             output(i0 + out_ghost) = Kokkos::conj(input(j0 + in_ghost)) * f0(k0);
+            //         });
+            // }
 
             Kokkos::fence();
         }

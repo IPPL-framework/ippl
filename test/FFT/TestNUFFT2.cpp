@@ -17,63 +17,64 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
 
     ~Bunch() {}
 
-    typedef ippl::ParticleAttrib<double> charge_container_type;
+    using charge_container_type = ippl::ParticleAttrib<double>;
     charge_container_type Q;
 };
 
+// Random particles in [minU,maxU], random charges in [0,1]
 template <typename T, class GeneratorPool, unsigned Dim>
 struct generate_random_particles {
-    using view_type  = typename ippl::detail::ViewType<T, 1>::view_type;
-    using value_type = typename T::value_type;
-    // Output View for the random numbers
+    using view_type        = typename ippl::detail::ViewType<T, 1>::view_type;
+    using value_type       = typename T::value_type;
+    using view_type_scalar = typename ippl::detail::ViewType<double, 1>::view_type;
+
     view_type x;
+    view_type_scalar Q;
 
-    // The GeneratorPool
     GeneratorPool rand_pool;
-
     T minU, maxU;
 
-    // Initialize all members
-    generate_random_particles(view_type x_, GeneratorPool rand_pool_, T& minU_, T& maxU_)
+    generate_random_particles(view_type x_, view_type_scalar Q_, GeneratorPool rand_pool_,
+                              T& minU_, T& maxU_)
         : x(x_)
+        , Q(Q_)
         , rand_pool(rand_pool_)
         , minU(minU_)
         , maxU(maxU_) {}
 
     KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
-        // Get a random number state from the pool for the active thread
         typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
         for (unsigned d = 0; d < Dim; ++d) {
-            x(i)[d] = 0.5; //rand_gen.drand(minU[d], maxU[d]);
+            x(i)[d] = rand_gen.drand(minU[d], maxU[d]);
         }
+        Q(i) = rand_gen.drand(0.0, 1.0);
 
-        // Give the state back, which will allow another thread to acquire it
         rand_pool.free_state(rand_gen);
     }
 };
 
-template <typename T, class GeneratorPool, unsigned Dim>
+// Random complex Fourier modes on the *interior* of the grid
+template <typename ComplexT, class GeneratorPool, unsigned Dim>
 struct generate_random_field {
-    using view_type = typename ippl::detail::ViewType<T, Dim>::view_type;
+    using view_type = typename ippl::detail::ViewType<ComplexT, Dim>::view_type;
+
     view_type f;
-
-    // The GeneratorPool
     GeneratorPool rand_pool;
+    int nghost;
 
-    // Initialize all members
-    generate_random_field(view_type f_, GeneratorPool rand_pool_)
+    generate_random_field(view_type f_, GeneratorPool rand_pool_, int nghost_)
         : f(f_)
-        , rand_pool(rand_pool_) {}
+        , rand_pool(rand_pool_)
+        , nghost(nghost_) {}
 
-    KOKKOS_INLINE_FUNCTION void operator()(const size_t i, const size_t j, const size_t k) const {
-        // Get a random number state from the pool for the active thread
+    KOKKOS_INLINE_FUNCTION void operator()(const int i, const int j, const int k) const {
         typename GeneratorPool::generator_type rand_gen = rand_pool.get_state();
 
-        f(i, j, k).real() = 0.5;//rand_gen.drand(0.0, 1.0);
-        f(i, j, k).imag() = 0.5;//rand_gen.drand(0.0, 1.0);
+        auto& v = f(i + nghost, j + nghost, k + nghost);
+        v.real() = rand_gen.drand(0.0, 1.0);
+        v.imag() = rand_gen.drand(0.0, 1.0);
 
-        // Give the state back, which will allow another thread to acquire it
         rand_pool.free_state(rand_gen);
     }
 };
@@ -82,32 +83,29 @@ int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
         constexpr unsigned int dim = 3;
-        using Mesh_t               = ippl::UniformCartesian<double, dim>;
-        using Centering_t          = Mesh_t::DefaultCentering;
+        using Mesh_t      = ippl::UniformCartesian<double, dim>;
+        using Centering_t = Mesh_t::DefaultCentering;
 
         const double pi = std::acos(-1.0);
 
-        typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
-        typedef Bunch<playout_type> bunch_type;
+        using playout_type = ippl::ParticleSpatialLayout<double, 3>;
+        using bunch_type   = Bunch<playout_type>;
 
-        ippl::Vector<int, dim> pt = {32, 32, 32};
+        // Mode grid (Fourier mode counts)
+        ippl::Vector<int, dim> pt = {16, 16, 16};
         ippl::Index I(pt[0]);
         ippl::Index J(pt[1]);
         ippl::Index K(pt[2]);
         ippl::NDIndex<dim> owned(I, J, K);
 
-        std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
-        isParallel.fill(true);             // Enable parallel decomposition for multi-node
+        std::array<bool, dim> isParallel;
+        isParallel.fill(true);
 
         ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
-        typedef ippl::Vector<double, 3> Vector_t;
-        // Vector_t minU = {-pi, -pi, -pi};
-        // Vector_t maxU = {pi, pi, pi};
-        Vector_t minU = {0, 0, 0};
-        Vector_t maxU = {2* pi, 2*pi, 2*pi};
-        // Vector_t minU = {0.0, 0.0, 0.0};
-        // Vector_t maxU = {25.0, 25.0, 25.0};
+        using Vector_t = ippl::Vector<double, 3>;
+        Vector_t minU  = {0.0, 0.0, 0.0};
+        Vector_t maxU  = {2 * pi, 2 * pi, 2 * pi};
 
         std::array<double, dim> dx = {
             (maxU[0] - minU[0]) / double(pt[0]),
@@ -121,26 +119,26 @@ int main(int argc, char* argv[]) {
 
         playout_type pl(layout, mesh);
 
-
         bunch_type bunch(pl);
         bunch.setParticleBC(ippl::BC::PERIODIC);
 
         using size_type = ippl::detail::size_type;
 
-        size_type Np = std::pow(32, 3) * 20;
+        // Number of particles
+        size_type Np = std::pow(16, 3);
 
-        typedef ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t>::uniform_type
-            field_type;
-        typedef ippl::Field<double, dim, Mesh_t, Centering_t>::uniform_type real_field_type;
+        using field_type =
+            ippl::Field<Kokkos::complex<double>, dim, Mesh_t, Centering_t, Kokkos::DefaultExecutionSpace>::uniform_type;
+        using real_field_type =
+            ippl::Field<double, dim, Mesh_t, Centering_t>::uniform_type;
 
-        // Use nghost=16 to support kernel widths up to 32 (hw=16)
-        // This is required for native NUFFT which uses field ghosts directly
-        const int nghost = 16;
+        // Just 1 ghost layer around the Fourier mode field
+        const int nghost = 1;
         field_type field(mesh, layout, nghost);
 
         ippl::ParameterList fftParams;
 
-        fftParams.add("tolerance", 1e-10);
+        fftParams.add("tolerance", 1e-7);
 #ifdef ENABLE_GPU_NUFFT
         fftParams.add("gpu_method", 1);
         fftParams.add("gpu_sort", 0);
@@ -152,89 +150,115 @@ int main(int argc, char* argv[]) {
 #endif
 
         fftParams.add("use_finufft_defaults", false);
+        fftParams.add("use_upsampled_inputs", false);
         fftParams.add("use_kokkos_nufft", false);
 
-        // Test tiled interpolation method
-        // fftParams.add("spread_method", "tiled");
+        // Type-2 uses gather, so set gather method
         fftParams.add("spread_method", "tiled");
         fftParams.add("gather_method", "atomic_sort");
         fftParams.add("sort", true);
 
-        typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
+        using FFT_type = ippl::FFT<ippl::NUFFTransform, real_field_type>;
+
+        std::cout << "Width "
+                  << static_cast<int>(std::ceil(
+                         std::log10((1.0) / fftParams.get<double>("tolerance"))))
+                         + 1
+                  << std::endl;
 
         std::unique_ptr<FFT_type> fft;
 
-        int type = 2;
+        int type = 2;  // Type-2 NUFFT
 
         size_type nloc = Np / ippl::Comm->size();
 
         bunch.create(nloc);
         fft = std::make_unique<FFT_type>(layout, nloc, type, fftParams);
 
-        // nghost already defined at field creation (line 136)
+        // RNG
+        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42));
+
+        // Random particles and charges
+        Kokkos::parallel_for(
+            nloc,
+            generate_random_particles<Vector_t, Kokkos::Random_XorShift64_Pool<>, dim>(
+                bunch.R.getView(), bunch.Q.getView(), rand_pool64, minU, maxU));
+
+        // Random Fourier modes on the base grid (interior only)
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
         auto fview         = field.getView();
 
-        Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(42));
         Kokkos::parallel_for(
-            nloc, generate_random_particles<Vector_t, Kokkos::Random_XorShift64_Pool<>, dim>(
-                      bunch.R.getView(), rand_pool64, minU, maxU));
+            "fill_modes",
+            mdrange_type({0, 0, 0}, {pt[0], pt[1], pt[2]}),
+            generate_random_field<Kokkos::complex<double>,
+                                  Kokkos::Random_XorShift64_Pool<>, dim>(
+                field.getView(), rand_pool64, nghost));
 
-        Kokkos::parallel_for(
-            mdrange_type(
-                {nghost, nghost, nghost},
-                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
-            generate_random_field<Kokkos::complex<double>, Kokkos::Random_XorShift64_Pool<>, dim>(
-                field.getView(), rand_pool64));
+        bunch.update();
+        field.fillHalo();
 
-        fft->transform(bunch.R, bunch.Q, field);
+        // Pick one particle to check (e.g. middle local particle)
+        size_type nloc_actual = bunch.getLocalNum();
+        size_type idx         = nloc_actual / 2;
 
-        auto Q_result = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), bunch.Q.getView());
-
-        // Pick some target point to check. We choose it same as cuFINUFFT testcase
-        // cufinufft3d2_test.cu
-        int idx = nloc / 2;
-
-        Kokkos::complex<double> reducedValue(0.0, 0.0);
         auto Rview = bunch.R.getView();
-
         Kokkos::complex<double> imag = {0.0, 1.0};
+
+        // Reference NUDFT type-2:
+        // q(x_j) = sum_k f_k * exp(+i k · x_j)
+        Kokkos::complex<double> dft_value(0.0, 0.0);
 
         Kokkos::parallel_reduce(
             "NUDFT type2",
-            mdrange_type({0, 0, 0}, {fview.extent(0) - 2 * nghost, fview.extent(1) - 2 * nghost,
-                                     fview.extent(2) - 2 * nghost}),
-            KOKKOS_LAMBDA(const int i, const int j, const int k, Kokkos::complex<double>& valL) {
-                ippl::Vector<int, 3> iVec = {i, j, k};
-                double arg                = 0.0;
-                for (size_t d = 0; d < dim; ++d) {
-                    arg += (2 * pi / (hx[d] * pt[d])) * (iVec[d] - (pt[d] / 2)) * Rview(idx)[d];
-                }
+            mdrange_type({0, 0, 0}, {pt[0], pt[1], pt[2]}),
+            KOKKOS_LAMBDA(const int i, const int j, const int k,
+                          Kokkos::complex<double>& valL) {
+                // Corner indexing -> centered integer frequency k_c
+                // Using same convention as type-1:
+                // index in [0, N-1] maps to integer k_c in
+                // [0, N/2] ∪ [-N/2+1, -1]
+                int kc0 = (i < pt[0] / 2 ? i : i - pt[0]);
+                int kc1 = (j < pt[1] / 2 ? j : j - pt[1]);
+                int kc2 = (k < pt[2] / 2 ? k : k - pt[2]);
 
-                valL += (Kokkos::cos(arg) + imag * Kokkos::sin(arg))
-                        * fview(i + nghost, j + nghost, k + nghost);
+                // Domain length is 2*pi, so factor 2*pi/L = 1
+                double arg = 0.0;
+                arg += kc0 * Rview(idx)[0];
+                arg += kc1 * Rview(idx)[1];
+                arg += kc2 * Rview(idx)[2];
+
+                auto fk = fview(i + nghost, j + nghost, k + nghost);
+
+                valL += (Kokkos::cos(arg) + imag * Kokkos::sin(arg)) * fk;
             },
-            Kokkos::Sum<Kokkos::complex<double>>(reducedValue));
+            Kokkos::Sum<Kokkos::complex<double>>(dft_value));
+        double ref_real  = dft_value.real();
 
-        double abs_error_real = std::fabs(reducedValue.real() - Q_result(idx));
-        double rel_error_real =
-            std::fabs(reducedValue.real() - Q_result(idx)) / std::fabs(reducedValue.real());
-        // double abs_error_imag = std::fabs(reducedValue.imag() - Q_result(idx).imag());
-        // double rel_error_imag =
-        //     std::fabs(reducedValue.imag() - Q_result(idx).imag())/ std::fabs(reducedValue.imag());
-        std::cout << "NUFFT value " << Q_result(idx) << std::endl;
-        std::cout << "Reference value " << reducedValue << std::endl;
+        // Type-2 NUFFT: grid (field) -> values at particle positions (bunch.Q)
+        fft->transform(bunch.R, bunch.Q, field);
 
-        std::cout << "Abs Error in real part: " << std::setprecision(16) << abs_error_real
-                  << " Rel. error in real part: " << std::setprecision(16) << rel_error_real
-                  << std::endl;
-        // std::cout << "Abs Error in imag part: " << std::setprecision(16) << abs_error_imag
-        //           << " Rel. error in imag part: " << std::setprecision(16) rel_error_imag
-        //           << std::endl;
+        // Copy NUFFT result (real-valued Q) to host
+        auto Q_result = Kokkos::create_mirror_view_and_copy(
+            Kokkos::HostSpace(), bunch.Q.getView());
 
-        // Kokkos::complex<double> max_error(0.0, 0.0);
-        // MPI_Reduce(&max_error_local, &max_error, 1,
-        //           MPI_C_DOUBLE_COMPLEX, MPI_MAX, 0, Ippl::getComm());
+
+
+        // Compare real parts: NUFFT stores result in real Q
+        double nufft_val = Q_result(idx);
+
+        double abs_error_real = std::fabs(ref_real - nufft_val);
+        double rel_error_real = abs_error_real / std::fabs(ref_real);
+
+        std::cout << "NUFFT (type-2) value at particle " << idx << " : "
+                  << std::setprecision(16) << nufft_val << std::endl;
+        std::cout << "Reference NUDFT value (real part): "
+                  << std::setprecision(16) << ref_real << std::endl;
+
+        std::cout << "Abs Error in real part: " << std::setprecision(16)
+                  << abs_error_real
+                  << "  Rel. error in real part: " << std::setprecision(16)
+                  << rel_error_real << std::endl;
     }
     ippl::finalize();
     return 0;
