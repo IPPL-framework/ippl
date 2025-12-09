@@ -715,6 +715,7 @@ int main(int argc, char* argv[]) {
 
     int warmup_runs    = 5;
     int benchmark_runs = 20;
+    int num_concurrent = 2;
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -723,7 +724,7 @@ int main(int argc, char* argv[]) {
         } else if (arg == "--runs" && i + 1 < argc) {
             benchmark_runs = std::atoi(argv[++i]);
         } else if (arg == "--concurrent" && i+1 < argc) {
-            benchmark_runs = std::atoi(argv[++i]);
+            num_concurrent = std::atoi(argv[++i]);
         }
     }
 
@@ -731,8 +732,8 @@ int main(int argc, char* argv[]) {
         printMemoryUsage("Initial state");
     }
 
-    BenchmarkResult fwd_result_1 = benchmarkForwardFFT(warmup_runs, benchmark_runs, 1);
-    BenchmarkResult bwd_result_1 = benchmarkBackwardFFT(warmup_runs, benchmark_runs, 1);
+    BenchmarkResult fwd_result_1 = benchmarkForwardFFT(warmup_runs, benchmark_runs, num_concurrent);
+    BenchmarkResult bwd_result_1 = benchmarkBackwardFFT(warmup_runs, benchmark_runs, num_concurrent);
 
     ippl::finalize();
     return 0;
