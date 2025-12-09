@@ -191,7 +191,7 @@ int main(int argc, char* argv[]) {
         typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
 
         // Test configurations: grid size and particles per grid point
-        std::vector<int> grid_sizes = {32, 64};
+        std::vector<int> grid_sizes = {256, 512};
         std::vector<int> particles_per_point = {1, 10};
 
         for (int grid_size : grid_sizes) {
@@ -248,7 +248,7 @@ int main(int argc, char* argv[]) {
                     // OutputFocused method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-10);
+                        fftParams.add("tolerance", 1e-4);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -274,7 +274,7 @@ int main(int argc, char* argv[]) {
                     // Tiled method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-10);
+                        fftParams.add("tolerance", 1e-4);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -300,7 +300,7 @@ int main(int argc, char* argv[]) {
                     // Atomic method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-10);
+                        fftParams.add("tolerance", 1e-4);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -323,7 +323,7 @@ int main(int argc, char* argv[]) {
                     // kokkos_nufft reference
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-10);
+                        fftParams.add("tolerance", 1e-4);
                         fftParams.add("use_finufft_defaults", false);
                         fftParams.add("use_kokkos_nufft", true);
 
@@ -383,7 +383,7 @@ int main(int argc, char* argv[]) {
                     // Tiled method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-10);
+                        fftParams.add("tolerance", 1e-4);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -406,7 +406,7 @@ int main(int argc, char* argv[]) {
                     // Atomic method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-10);
+                        fftParams.add("tolerance", 1e-4);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -428,7 +428,7 @@ int main(int argc, char* argv[]) {
                     // Atomic method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-10);
+                        fftParams.add("tolerance", 1e-4);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -451,7 +451,7 @@ int main(int argc, char* argv[]) {
                     // kokkos_nufft reference
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-10);
+                        fftParams.add("tolerance", 1e-4);
                         fftParams.add("use_finufft_defaults", false);
                         fftParams.add("use_kokkos_nufft", true);
 
@@ -465,7 +465,7 @@ int main(int argc, char* argv[]) {
                     // FINUFFT/cuFINUFFT reference
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-10);
+                        fftParams.add("tolerance", 1e-4);
                         fftParams.add("use_finufft_defaults", true);
 
                         auto fft = std::make_unique<FFT_type>(layout, nloc, 2, fftParams);
