@@ -1290,7 +1290,7 @@ namespace ippl {
             nmodes[d] = layout.getDomain()[d].length();
         }
         use_kokkos_nufft = params.get<bool>("use_kokkos_nufft", false);
-        use_finufft      = params.get<bool>("use_finufft_defaults", false);
+        use_finufft      = params.get<bool>("use_finufft", false);
 
         type_m = type;
 

@@ -338,7 +338,18 @@ int main(int argc, char* argv[]) {
                     {
                         ippl::ParameterList fftParams;
                         fftParams.add("tolerance", 1e-10);
-                        fftParams.add("use_finufft_defaults", true);
+                        fftParams.add("use_finufft", true);
+                        fftParams.add("gpu_method", 3);
+                        fftParams.add("gpu_sort", 0);
+                        fftParams.add("gpu_kerevalmeth", 1);
+                        fftParams.add("gpu_binsizex", 8);
+                        fftParams.add("gpu_binsizey", 8);
+                        fftParams.add("gpu_binsizez", 2);
+                        fftParams.add("gpu_maxsubprobsize", 1024);
+                        fftParams.add("spread_kerevalmeth", 1);
+                        fftParams.add("spread_sort", 2);
+                        fftParams.add("nthreads", 0);
+
 
                         auto fft = std::make_unique<FFT_type>(layout, nloc, 1, fftParams);
                         double time_ms = benchmarkType1(*fft, field, bunch, "FINUFFT");
@@ -466,7 +477,21 @@ int main(int argc, char* argv[]) {
                     {
                         ippl::ParameterList fftParams;
                         fftParams.add("tolerance", 1e-4);
-                        fftParams.add("use_finufft_defaults", true);
+                        fftParams.add("use_finufft", true);
+
+                        fftParams.add("tolerance", 1e-10);
+                        fftParams.add("use_finufft", true);
+                        fftParams.add("gpu_method", 3);
+                        fftParams.add("gpu_sort", 0);
+                        fftParams.add("gpu_kerevalmeth", 1);
+                        fftParams.add("gpu_binsizex", 8);
+                        fftParams.add("gpu_binsizey", 8);
+                        fftParams.add("gpu_binsizez", 2);
+                        fftParams.add("gpu_maxsubprobsize", 1024);
+                        fftParams.add("spread_kerevalmeth", 1);
+                        fftParams.add("spread_sort", 2);
+                        fftParams.add("nthreads", 0);
+
 
                         auto fft = std::make_unique<FFT_type>(layout, nloc, 2, fftParams);
                         double time_ms = benchmarkType2(*fft, field, bunch, "FINUFFT");
