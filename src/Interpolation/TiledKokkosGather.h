@@ -55,7 +55,7 @@ namespace ippl {
                 Kokkos::View<ValueType*, memory_space> output;
 
                 // Parameters
-                size_type n_points;
+                size_t n_points;
                 int nghost;
                 Vector<int, 3> n_grid_global;  // GLOBAL grid dimensions
                 Vector<int, 3> n_grid_local;   // LOCAL grid dimensions
