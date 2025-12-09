@@ -1,0 +1,6 @@
+num_gpus,num_nodes,fwd_full_mean_ms,fwd_full_min_ms,fwd_full_max_ms,fwd_pruned_mean_ms,fwd_pruned_min_ms,fwd_pruned_max_ms,fwd_speedup,bwd_full_mean_ms,bwd_full_min_ms,bwd_full_max_ms,bwd_pruned_mean_ms,bwd_pruned_min_ms,bwd_pruned_max_ms,bwd_speedup,roundtrip_full_ms,roundtrip_pruned_ms,roundtrip_speedup
+8,2,604.190,583.073,627.782,633.356,615.624,657.826,Pruned):,,,,,,,,,,
+16,4,494.825,479.736,536.322,585.890,554.308,627.303,Pruned):,523.704,497.139,558.258,620.163,593.222,668.323,Pruned):,IFFT):,IFFT):,0.84
+32,8,358.688,336.451,400.176,498.658,476.672,539.864,Pruned):,397.994,335.887,435.581,453.106,422.736,490.594,Pruned):,IFFT):,IFFT):,0.80
+64,16,254.266,236.856,298.253,431.754,397.041,480.044,Pruned):,257.086,235.499,286.628,405.749,370.349,445.667,Pruned):,IFFT):,IFFT):,0.61
+128,32,160.020,147.384,204.828,501.001,481.560,563.217,Pruned):,161.126,148.578,195.516,489.255,473.364,529.799,Pruned):,IFFT):,IFFT):,0.32
