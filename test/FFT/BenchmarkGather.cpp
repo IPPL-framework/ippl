@@ -126,7 +126,7 @@ private:
 
         for (unsigned d = 0; d < Dim; ++d) {
             origin_[d] = 0.0;
-            hx_[d] = 2.0 * M_PI / static_cast<real_type>(n_grid_[d]);
+            hx_[d] = 2.0 * M_PI / static_cast<realz_type>(n_grid_[d]);
         }
 
         mesh_ = std::make_unique<Mesh_t>(domain, hx_, origin_);

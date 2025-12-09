@@ -4,6 +4,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <random>
@@ -26,6 +27,8 @@ struct BenchmarkResult {
     double speedup;
     size_t memory_full_fft_bytes;
     size_t memory_pruned_fft_bytes;
+    std::vector<double> all_times_full;
+    std::vector<double> all_times_pruned;
 };
 
 struct MemoryInfo {
@@ -68,13 +71,65 @@ auto compute_stats(const std::vector<double>& times) {
     return std::make_tuple(mean, stddev, min_t, max_t);
 }
 
+// Gather max times per run across all ranks to rank 0
+std::vector<double> gatherMaxTimes(const std::vector<double>& local_times) {
+    int num_runs = local_times.size();
+    std::vector<double> global_max_times(num_runs);
+
+    MPI_Reduce(local_times.data(), global_max_times.data(), num_runs, MPI_DOUBLE, MPI_MAX, 0,
+               ippl::Comm->getCommunicator());
+
+    return global_max_times;
+}
+
+void writeTimingsCSV(const std::string& filename, int num_gpus, int num_concurrent,
+                     const BenchmarkResult& fwd_result, const BenchmarkResult& bwd_result,
+                     bool append = false) {
+    if (ippl::Comm->rank() != 0)
+        return;
+
+    std::ofstream file;
+    if (append) {
+        file.open(filename, std::ios::app);
+    } else {
+        file.open(filename);
+        // Write header
+        file << "num_gpus,num_concurrent,direction,method,run_index,time_ms\n";
+    }
+
+    // Write forward full times
+    for (size_t i = 0; i < fwd_result.all_times_full.size(); ++i) {
+        file << num_gpus << "," << num_concurrent << ",forward,full," << i << "," << std::fixed
+             << std::setprecision(6) << fwd_result.all_times_full[i] << "\n";
+    }
+
+    // Write forward pruned times
+    for (size_t i = 0; i < fwd_result.all_times_pruned.size(); ++i) {
+        file << num_gpus << "," << num_concurrent << ",forward,pruned," << i << "," << std::fixed
+             << std::setprecision(6) << fwd_result.all_times_pruned[i] << "\n";
+    }
+
+    // Write backward full times
+    for (size_t i = 0; i < bwd_result.all_times_full.size(); ++i) {
+        file << num_gpus << "," << num_concurrent << ",backward,full," << i << "," << std::fixed
+             << std::setprecision(6) << bwd_result.all_times_full[i] << "\n";
+    }
+
+    // Write backward pruned times
+    for (size_t i = 0; i < bwd_result.all_times_pruned.size(); ++i) {
+        file << num_gpus << "," << num_concurrent << ",backward,pruned," << i << "," << std::fixed
+             << std::setprecision(6) << bwd_result.all_times_pruned[i] << "\n";
+    }
+
+    file.close();
+
+    std::cout << "[CSV] Timings written to " << filename << std::endl;
+}
+
 BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num_concurrent) {
     constexpr unsigned int dim = 3;
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
     using Centering_t          = Mesh_t::DefaultCentering;
-    //
-    // std::array<int, dim> pt_full   = {1024, 1024, 512};
-    // std::array<int, dim> pt_pruned = {512, 512, 256};
 
     std::array<int, dim> pt_full   = {64, 128, 32};
     std::array<int, dim> pt_pruned = {32, 64, 16};
@@ -123,7 +178,6 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num
     MPI_Barrier(ippl::Comm->getCommunicator());
     printMemoryUsage("Before field allocation");
 
-    // Minimal fields: one input field, one output field (reused for both FFT types)
     field_type field_input(mesh_full, layout_full);
     field_type field_output_full(mesh_full, layout_full);
     field_type field_output_pruned(mesh_pruned, layout_pruned);
@@ -132,7 +186,6 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num
     MPI_Barrier(ippl::Comm->getCommunicator());
     printMemoryUsage("After field allocation");
 
-    // Initialize with random data directly on GPU
     using exec_space = typename field_type::execution_space;
     using RandPool   = Kokkos::Random_XorShift64_Pool<exec_space>;
 
@@ -154,7 +207,6 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num
         });
     Kokkos::fence();
 
-    // Setup pruning parameters
     ippl::PruningParams<dim> pruning;
     pruning.n_modes = ippl::Vector<size_t, dim>{static_cast<size_t>(pt_pruned[0]),
                                                 static_cast<size_t>(pt_pruned[1]),
@@ -199,7 +251,6 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num
                       << " MB" << std::endl;
         }
 
-        // Warmup
         if (ippl::Comm->rank() == 0) {
             std::cout << "Running warmup for full FFT..." << std::endl;
         }
@@ -212,7 +263,6 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num
 
         MPI_Barrier(ippl::Comm->getCommunicator());
 
-        // Benchmark
         if (ippl::Comm->rank() == 0) {
             std::cout << "Benchmarking forward full FFT..." << std::endl;
         }
@@ -232,8 +282,6 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num
 
             times_fwd_full[run] = std::chrono::duration<double, std::milli>(end - start).count();
         }
-
-        // FFT destroyed here, memory released
     }
 
     Kokkos::fence();
@@ -264,26 +312,24 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num
                       << (memory_pruned_fft / (1024.0 * 1024.0)) << " MB" << std::endl;
         }
 
-        // Warmup
         if (ippl::Comm->rank() == 0) {
             std::cout << "Running warmup for pruned FFT..." << std::endl;
         }
 
         for (int i = 0; i < warmup_runs; ++i) {
-            field_output_full = field_input;  // Reuse as temp input (will be overwritten)
+            field_output_full = field_input;
             pruned_fft->transform(ippl::FORWARD, field_output_full, field_output_pruned);
             Kokkos::fence();
         }
 
         MPI_Barrier(ippl::Comm->getCommunicator());
 
-        // Benchmark
         if (ippl::Comm->rank() == 0) {
             std::cout << "Benchmarking forward pruned FFT..." << std::endl;
         }
 
         for (int run = 0; run < benchmark_runs; ++run) {
-            field_output_full = field_input;  // Reuse as temp input
+            field_output_full = field_input;
 
             MPI_Barrier(ippl::Comm->getCommunicator());
             Kokkos::fence();
@@ -297,13 +343,15 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num
 
             times_fwd_pruned[run] = std::chrono::duration<double, std::milli>(end - start).count();
         }
-
-        // FFT destroyed here
     }
 
     Kokkos::fence();
     MPI_Barrier(ippl::Comm->getCommunicator());
     printMemoryUsage("After pruned FFT destroyed");
+
+    // ========== Gather max times per run to rank 0 ==========
+    std::vector<double> global_times_full   = gatherMaxTimes(times_fwd_full);
+    std::vector<double> global_times_pruned = gatherMaxTimes(times_fwd_pruned);
 
     // ========== Compute Statistics ==========
     auto [mean_fwd_full, std_fwd_full, min_fwd_full, max_fwd_full] = compute_stats(times_fwd_full);
@@ -327,7 +375,6 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num
     MPI_Allreduce(&max_fwd_pruned, &global_max_fwd_pruned, 1, MPI_DOUBLE, MPI_MAX,
                   ippl::Comm->getCommunicator());
 
-    // Get max memory usage across ranks
     size_t global_memory_full_fft, global_memory_pruned_fft;
     MPI_Allreduce(&memory_full_fft, &global_memory_full_fft, 1, MPI_UNSIGNED_LONG, MPI_MAX,
                   ippl::Comm->getCommunicator());
@@ -361,7 +408,8 @@ BenchmarkResult benchmarkForwardFFT(int warmup_runs, int benchmark_runs, int num
                            global_min_fwd_full,    global_max_fwd_full,
                            global_mean_fwd_pruned, global_min_fwd_pruned,
                            global_max_fwd_pruned,  global_mean_fwd_full / global_mean_fwd_pruned,
-                           global_memory_full_fft, global_memory_pruned_fft};
+                           global_memory_full_fft, global_memory_pruned_fft,
+                           global_times_full,      global_times_pruned};
 }
 
 BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int num_concurrent) {
@@ -369,9 +417,6 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int nu
     using Mesh_t               = ippl::UniformCartesian<double, dim>;
     using Centering_t          = Mesh_t::DefaultCentering;
 
-    // std::array<int, dim> pt_full   = {1024, 1024, 512};
-    // std::array<int, dim> pt_pruned = {512, 512, 256};
-    //
     std::array<int, dim> pt_full   = {64, 128, 32};
     std::array<int, dim> pt_pruned = {32, 64, 16};
 
@@ -419,10 +464,9 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int nu
     MPI_Barrier(ippl::Comm->getCommunicator());
     printMemoryUsage("Before field allocation");
 
-    // Minimal fields for backward: pruned input, full output
     field_type field_freq_pruned(mesh_pruned, layout_pruned);
-    field_type field_freq_full(mesh_full, layout_full);  // For reference full IFFT
-    field_type field_output(mesh_full, layout_full);     // Shared output
+    field_type field_freq_full(mesh_full, layout_full);
+    field_type field_output(mesh_full, layout_full);
 
     Kokkos::fence();
     MPI_Barrier(ippl::Comm->getCommunicator());
@@ -434,7 +478,6 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int nu
     const int nghost        = field_output.getNghost();
     const int nghost_pruned = field_freq_pruned.getNghost();
 
-    // Initialize pruned frequency input with random data
     auto view_freq_pruned = field_freq_pruned.getView();
     RandPool rand_pool(123 + ippl::Comm->rank());
 
@@ -453,7 +496,6 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int nu
         });
     Kokkos::fence();
 
-    // Zero-pad pruned frequency to full frequency for reference backward transform
     const int N0 = pt_full[0], K0 = pt_pruned[0];
     const int N1 = pt_full[1], K1 = pt_pruned[1];
     const int N2 = pt_full[2], K2 = pt_pruned[2];
@@ -500,7 +542,6 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int nu
         });
     Kokkos::fence();
 
-    // Store original data for reuse (since transforms are in-place for full FFT)
     field_type field_freq_full_orig(mesh_full, layout_full);
     field_type field_freq_pruned_orig(mesh_pruned, layout_pruned);
     field_freq_full_orig   = field_freq_full;
@@ -550,7 +591,6 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int nu
                       << " MB" << std::endl;
         }
 
-        // Warmup
         if (ippl::Comm->rank() == 0) {
             std::cout << "Running warmup for full IFFT..." << std::endl;
         }
@@ -563,7 +603,6 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int nu
 
         MPI_Barrier(ippl::Comm->getCommunicator());
 
-        // Benchmark
         if (ippl::Comm->rank() == 0) {
             std::cout << "Benchmarking backward full IFFT..." << std::endl;
         }
@@ -613,7 +652,6 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int nu
                       << (memory_pruned_fft / (1024.0 * 1024.0)) << " MB" << std::endl;
         }
 
-        // Warmup
         if (ippl::Comm->rank() == 0) {
             std::cout << "Running warmup for pruned IFFT..." << std::endl;
         }
@@ -626,7 +664,6 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int nu
 
         MPI_Barrier(ippl::Comm->getCommunicator());
 
-        // Benchmark
         if (ippl::Comm->rank() == 0) {
             std::cout << "Benchmarking backward pruned IFFT..." << std::endl;
         }
@@ -651,6 +688,10 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int nu
     Kokkos::fence();
     MPI_Barrier(ippl::Comm->getCommunicator());
     printMemoryUsage("After pruned FFT destroyed");
+
+    // ========== Gather max times per run to rank 0 ==========
+    std::vector<double> global_times_full   = gatherMaxTimes(times_bwd_full);
+    std::vector<double> global_times_pruned = gatherMaxTimes(times_bwd_pruned);
 
     // ========== Compute Statistics ==========
     auto [mean_bwd_full, std_bwd_full, min_bwd_full, max_bwd_full] = compute_stats(times_bwd_full);
@@ -707,15 +748,17 @@ BenchmarkResult benchmarkBackwardFFT(int warmup_runs, int benchmark_runs, int nu
                            global_min_bwd_full,    global_max_bwd_full,
                            global_mean_bwd_pruned, global_min_bwd_pruned,
                            global_max_bwd_pruned,  global_mean_bwd_full / global_mean_bwd_pruned,
-                           global_memory_full_fft, global_memory_pruned_fft};
+                           global_memory_full_fft, global_memory_pruned_fft,
+                           global_times_full,      global_times_pruned};
 }
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
 
-    int warmup_runs    = 5;
-    int benchmark_runs = 20;
-    int num_concurrent = 2;
+    int warmup_runs          = 5;
+    int benchmark_runs       = 20;
+    int num_concurrent       = 2;
+    std::string csv_filename = "timings.csv";
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -723,17 +766,26 @@ int main(int argc, char* argv[]) {
             warmup_runs = std::atoi(argv[++i]);
         } else if (arg == "--runs" && i + 1 < argc) {
             benchmark_runs = std::atoi(argv[++i]);
-        } else if (arg == "--concurrent" && i+1 < argc) {
+        } else if (arg == "--concurrent" && i + 1 < argc) {
             num_concurrent = std::atoi(argv[++i]);
+        } else if (arg == "--csv" && i + 1 < argc) {
+            csv_filename = argv[++i];
         }
     }
 
+    int num_gpus = ippl::Comm->size();
+
     if (ippl::Comm->rank() == 0) {
         printMemoryUsage("Initial state");
+        std::cout << "Number of GPUs: " << num_gpus << std::endl;
+        std::cout << "CSV output file: " << csv_filename << std::endl;
     }
 
-    BenchmarkResult fwd_result_1 = benchmarkForwardFFT(warmup_runs, benchmark_runs, num_concurrent);
-    BenchmarkResult bwd_result_1 = benchmarkBackwardFFT(warmup_runs, benchmark_runs, num_concurrent);
+    BenchmarkResult fwd_result = benchmarkForwardFFT(warmup_runs, benchmark_runs, num_concurrent);
+    BenchmarkResult bwd_result = benchmarkBackwardFFT(warmup_runs, benchmark_runs, num_concurrent);
+
+    // Write all timings to CSV
+    writeTimingsCSV(csv_filename, num_gpus, num_concurrent, fwd_result, bwd_result);
 
     ippl::finalize();
     return 0;

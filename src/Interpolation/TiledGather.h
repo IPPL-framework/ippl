@@ -109,6 +109,9 @@ namespace ippl {
 #ifdef KOKKOS_ENABLE_CUDA
                 __syncwarp();
 #endif
+#ifdef KOKKOS_ENABLE_HIP
+                __syncthreads();
+#endif
 
                 // Determine grid element type
                 using grid_element_type = std::remove_reference_t<decltype(field_view(0, 0, 0))>;
