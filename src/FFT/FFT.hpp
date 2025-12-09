@@ -227,6 +227,11 @@ namespace ippl {
 
         heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
 
+        heffteOptions.use_pencils = true;
+        heffteOptions.use_reorder = false;
+        heffteOptions.use_gpu_aware = true;
+        heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
+
         if (!params.get<bool>("use_heffte_defaults")) {
             heffteOptions.use_pencils = params.get<bool>("use_pencils");
             heffteOptions.use_reorder = params.get<bool>("use_reorder");
