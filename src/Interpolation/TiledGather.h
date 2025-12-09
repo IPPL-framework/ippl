@@ -1,5 +1,5 @@
-#ifndef IPPL_TILED_GATHER_H
-#define IPPL_TILED_GATHER_H
+#ifndef IPPL_TILED_NATIVE_GATHER_H
+#define IPPL_TILED_NATIVE_GATHER_H
 
 #include <Kokkos_Core.hpp>
 
@@ -222,6 +222,7 @@ namespace ippl {
                                         bool add_to_attribute) {
                     if constexpr (W <= MaxW) {
                         if (w == W) {
+
 #ifdef KOKKOS_ENABLE_CUDA
                             constexpr int WARP_SIZE       = 32;
                             constexpr int warps_per_block = 8;

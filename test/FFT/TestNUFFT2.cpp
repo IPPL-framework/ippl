@@ -157,6 +157,7 @@ int main(int argc, char* argv[]) {
         // Test tiled interpolation method
         // fftParams.add("spread_method", "tiled");
         fftParams.add("spread_method", "tiled");
+        fftParams.add("gather_method", "native");
         fftParams.add("sort", true);
 
         typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;

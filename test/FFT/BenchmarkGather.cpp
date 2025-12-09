@@ -126,7 +126,7 @@ private:
 
         for (unsigned d = 0; d < Dim; ++d) {
             origin_[d] = 0.0;
-            hx_[d] = 2.0 * M_PI / static_cast<realz_type>(n_grid_[d]);
+            hx_[d] = 2.0 * M_PI / static_cast<real_type>(n_grid_[d]);
         }
 
         mesh_ = std::make_unique<Mesh_t>(domain, hx_, origin_);
@@ -194,7 +194,7 @@ private:
         for (size_t i = 0; i < configs.size(); ++i) {
             const auto& cfg = configs[i];
             const auto& stats = results[i];
-            int idx = (cfg.method == ippl::Interpolation::ScatterMethod::Atomic) ? 0 : 1;
+            int idx = (cfg.method == ippl::Interpolation::GatherMethod::Atomic) ? 0 : 1;
             if (stats.mean_ms < methods[idx].best_time) {
                 methods[idx].best_time = stats.mean_ms;
                 methods[idx].best_config = benchmark::config_label(cfg);

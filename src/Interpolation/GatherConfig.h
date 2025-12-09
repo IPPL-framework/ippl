@@ -11,12 +11,18 @@ namespace Interpolation {
      * - Atomic: Simple atomic operations, works everywhere
      * - Tiled: Cache-friendly tiling with team policies and shared memory histograms
      */
+    enum class GatherMethod {
+        Atomic,        // Simple atomic operations
+        Tiled,
+        Native
+    };
+
 
     /**
      * @brief Configuration for scatter/gather operations
      */
     struct GatherConfig {
-        ScatterMethod method = ScatterMethod::Tiled;
+        GatherMethod method = GatherMethod::Tiled;
         bool sort = false;  // Sort particles by spatial location before scattering
 
         // Tile size for tiled methods (per dimension)
@@ -42,7 +48,7 @@ namespace Interpolation {
     template <>
     inline GatherConfig GatherConfig::get_default<Kokkos::Serial>() {
         GatherConfig config;
-        config.method = ScatterMethod::Atomic;
+        config.method = GatherMethod::Atomic;
         config.sort = false;
         return config;
     }
@@ -52,7 +58,7 @@ namespace Interpolation {
     template <>
     inline GatherConfig GatherConfig::get_default<Kokkos::Cuda>() {
         GatherConfig config;
-        config.method = ScatterMethod::Tiled;
+        config.method = GatherMethod::Tiled;
         config.sort = true;
         config.tile_size_3d = 3;
         config.z_tiles = 6;
@@ -66,7 +72,7 @@ namespace Interpolation {
     template <>
     inline GatherConfig GatherConfig::get_default<Kokkos::OpenMP>() {
         GatherConfig config;
-        config.method = ScatterMethod::Atomic;
+        config.method = GatherMethod::Atomic;
         config.sort = false;
         config.tile_size_3d = 9;
         config.team_size = 1;
@@ -79,7 +85,7 @@ namespace Interpolation {
     template <>
     inline GatherConfig GatherConfig::get_default<Kokkos::HIP>() {
         GatherConfig config;
-        config.method = ScatterMethod::Tiled;
+        config.method = GatherMethod::Tiled;
         config.sort = true;
         config.tile_size_3d = 6;
         config.z_tiles = 2;
@@ -92,7 +98,7 @@ namespace Interpolation {
     template <>
     inline GatherConfig GatherConfig::get_default<Kokkos::Threads>() {
         GatherConfig config;
-        config.method = ScatterMethod::Atomic;
+        config.method = GatherMethod::Atomic;
         config.sort = true;
         return config;
     }

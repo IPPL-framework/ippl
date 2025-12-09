@@ -1427,6 +1427,17 @@ namespace ippl {
                 cfg.scatter_config.team_size = params.get<int>("team_size");
             }
 
+            std::string gather_method = params.get<std::string>("gather_method", "none");
+            if (gather_method == "tiled") {
+                cfg.gather_config.method = Interpolation::GatherMethod::Tiled;
+            }
+            if (gather_method == "native") {
+                cfg.gather_config.method = Interpolation::GatherMethod::Native;
+            }
+            if (gather_method == "atomic") {
+                cfg.gather_config.method = Interpolation::GatherMethod::Atomic;
+            }
+
             auto* nufft_ptr = new NativeNUFFT_t(n_modes_vec, cfg);
             nufft_ptr->initialize(layout, MPI_COMM_WORLD);
             native_nufft_ = static_cast<void*>(nufft_ptr);

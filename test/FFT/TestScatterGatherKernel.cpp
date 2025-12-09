@@ -228,12 +228,12 @@ int main(int argc, char* argv[]) {
 
         ippl::Interpolation::GatherConfig cfg_atomic_gather =
             ippl::Interpolation::GatherConfig::get_default<ExecSpace>();
-        cfg_atomic_gather.method = ippl::Interpolation::ScatterMethod::Atomic;
+        cfg_atomic_gather.method = ippl::Interpolation::GatherMethod::Atomic;
         cfg_atomic_gather.sort   = true;
 
         ippl::Interpolation::GatherConfig cfg_tiled_gather =
             ippl::Interpolation::GatherConfig::get_default<ExecSpace>();
-        cfg_tiled_gather.method = ippl::Interpolation::ScatterMethod::Tiled;
+        cfg_tiled_gather.method = ippl::Interpolation::GatherMethod::Tiled;
         cfg_tiled_gather.sort   = true;
 
         // ====================================================================

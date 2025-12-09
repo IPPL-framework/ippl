@@ -26,6 +26,7 @@
 #include "Interpolation/OutputFocusedScatter.h"
 #include "Interpolation/ScatterConfig.h"
 #include "Interpolation/TiledGather.h"
+#include "Interpolation/TiledKokkosGather.h"
 #include "Interpolation/TiledScatter.h"
 #include "Particle/ParticleSort.h"
 
@@ -289,15 +290,14 @@ namespace ippl {
             Kokkos::View<size_type*, typename execution_space::memory_space> bin_offsets;
 
             Interpolation::detail::bin_sort_3d<PositionType, decltype(pp_view), execution_space>(
-                pp_view, n_grid_global_arr, n_grid_local_arr, local_offset_arr,
-                tile_size_arr, w, permute, bin_offsets, nParticles);
+                pp_view, n_grid_global_arr, n_grid_local_arr, local_offset_arr, tile_size_arr, w,
+                permute, bin_offsets, nParticles);
 
             // Calculate number of tiles (based on LOCAL grid)
             Kokkos::Array<size_type, 3> num_tiles;
             for (unsigned d = 0; d < 3; ++d) {
                 num_tiles[d] = (ngrid_local[d] + config.tile_size_3d - 1) / config.tile_size_3d;
             }
-
 
             // Dispatch to templated scatter functor based on kernel width
             constexpr int MaxW = 20;
@@ -392,7 +392,8 @@ namespace ippl {
 
         // Dispatch based on method
         if constexpr (Dim == 3) {
-            if (config.method == Interpolation::ScatterMethod::Tiled) {
+            if (config.method == Interpolation::GatherMethod::Native
+                || config.method == Interpolation::GatherMethod::Tiled) {
                 // Use optimized tiled interpolation with warp-level parallelism
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
                 if constexpr (
@@ -432,11 +433,20 @@ namespace ippl {
                     // Dispatch to specialized kernel
                     constexpr int MaxW = 20;
                     int n0 = ngrid_global[0], n1 = ngrid_global[1], n2 = ngrid_global[2];
-                    Interpolation::detail::CudaGatherDispatcher<1, MaxW>::template dispatch_3d<
-                        PositionType, decltype(x_view), decltype(permute), decltype(full_view),
-                        Kernel, T>(w, nParticles, x_view, permute, full_view, dview_m, nghost,
-                                   ngrid_global, ngrid_local, local_offset, inv_hw, kernel,
-                                   addToAttribute);
+                    if (config.method == Interpolation::GatherMethod::Native) {
+                        Interpolation::detail::CudaGatherDispatcher<1, MaxW>::template dispatch_3d<
+                            PositionType, decltype(x_view), decltype(permute), decltype(full_view),
+                            Kernel, T>(w, nParticles, x_view, permute, full_view, dview_m, nghost,
+                                       ngrid_global, ngrid_local, local_offset, inv_hw, kernel,
+                                       addToAttribute);
+                    } else {
+                        Interpolation::detail::TiledGatherDispatcher<1, MaxW>::template dispatch_3d<
+                            PositionType, execution_space, Kernel, T, decltype(full_view),
+                            decltype(x_view), decltype(permute)>(
+                            w, nParticles, x_view, permute, full_view, dview_m, nghost,
+                            ngrid_global, ngrid_local, local_offset, inv_hw, kernel,
+                            addToAttribute);
+                    }
 
                     Kokkos::fence();
                 } else
