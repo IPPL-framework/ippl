@@ -222,7 +222,11 @@ namespace ippl {
                                         bool add_to_attribute) {
                     if constexpr (W <= MaxW) {
                         if (w == W) {
+#ifdef KOKKOS_ENABLE_CUDA
                             constexpr int WARP_SIZE       = 32;
+#elif defined(KOKKOS_ENABLE_HIP)
+                            constexpr int WARP_SIZE = 64;
+#endif
                             constexpr int warps_per_block = 8;
                             int block_size                = warps_per_block * WARP_SIZE;
                             int num_warps                 = n;

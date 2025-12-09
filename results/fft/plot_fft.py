@@ -1,9 +1,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from pathlib import Path
 
-# Read the CSV
-df = pd.read_csv('fft_timings_all.csv')
+# Load all CSVs from the output directory
+dfs = []
+for csv_file in sorted(Path('.').glob('benchmark_results_*/*.csv')):
+    dfs.append(pd.read_csv(csv_file))
+
+df = pd.concat(dfs, ignore_index=True)
 
 # Set up professional style
 plt.rcParams.update({
@@ -18,159 +23,120 @@ plt.rcParams.update({
     'figure.facecolor': 'white',
 })
 
-# Colors for concurrent FFT options
-colors = {1: '#1f77b4', 2: '#ff7f0e', 4: '#2ca02c', 8: '#d62728'}
-markers = {1: 'o', 2: 's', 4: '^', 8: 'D'}
-
-# Offset multipliers for each concurrent FFT (in log space)
-offsets = {1: 0.92, 2: 0.97, 4: 1.03, 8: 1.08}
+# Colors for methods
+colors = {'full': '#333333', 'pruned': '#2ca02c'}
 
 # Get unique values
-gpu_counts = df['num_gpus'].unique()
-concurrent_ffts = df['num_concurrent_ffts'].unique()
+gpu_counts = sorted(df['num_gpus'].unique())
+concurrent_ffts = sorted(df['num_concurrent'].unique())
 
-# Create figure with 2x2 subplots
-fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+# Create figure with 2x4 subplots (forward and backward for each concurrent value)
+fig, axes = plt.subplots(2, len(concurrent_ffts), figsize=(4 * len(concurrent_ffts), 8))
 
-# --- Plot 1: Forward FFT ---
-ax1 = axes[0, 0]
+for col, n_conc in enumerate(concurrent_ffts):
+    subset = df[df['num_concurrent'] == n_conc]
 
-# Full FFT (average across concurrent_ffts since it's the same)
-full_fwd = df.groupby('num_gpus').agg({
-    'fwd_full_mean_ms': 'mean',
-    'fwd_full_min_ms': 'mean',
-    'fwd_full_max_ms': 'mean'
-}).reset_index()
+    # --- Forward FFT (top row) ---
+    ax_fwd = axes[0, col]
 
-yerr_full = [
-    full_fwd['fwd_full_mean_ms'] - full_fwd['fwd_full_min_ms'],
-    full_fwd['fwd_full_max_ms'] - full_fwd['fwd_full_mean_ms']
+    # Prepare data for violin plot
+    fwd_data = []
+    positions = []
+    violin_colors = []
+
+    for i, num_gpu in enumerate(gpu_counts):
+        gpu_subset = subset[subset['num_gpus'] == num_gpu]
+
+        # Full FFT data
+        full_data = gpu_subset[gpu_subset['method'] == 'full']
+        full_fwd = full_data[full_data['direction'] == 'forward']['time_ms'].values
+        if len(full_fwd) > 0:
+            fwd_data.append(full_fwd)
+            positions.append(i - 0.2)
+            violin_colors.append(colors['full'])
+
+        # Pruned FFT data
+        pruned_data = gpu_subset[gpu_subset['method'] == 'pruned']
+        pruned_fwd = pruned_data[pruned_data['direction'] == 'forward']['time_ms'].values
+        if len(pruned_fwd) > 0:
+            fwd_data.append(pruned_fwd)
+            positions.append(i + 0.2)
+            violin_colors.append(colors['pruned'])
+
+    if fwd_data:
+        vp = ax_fwd.violinplot(fwd_data, positions=positions, widths=0.35, showmeans=True, showmedians=False)
+        for j, body in enumerate(vp['bodies']):
+            body.set_facecolor(violin_colors[j])
+            body.set_alpha(0.7)
+        for partname in ['cmeans', 'cmins', 'cmaxes', 'cbars']:
+            if partname in vp:
+                vp[partname].set_color('black')
+                vp[partname].set_linewidth(1)
+
+    ax_fwd.set_xticks(range(len(gpu_counts)))
+    ax_fwd.set_xticklabels(gpu_counts)
+    ax_fwd.set_xlabel('Number of GPUs')
+    ax_fwd.set_ylabel('Time (ms)')
+    ax_fwd.set_title(f'Forward FFT (n_conc={n_conc})', fontweight='bold')
+    ax_fwd.set_yscale('log')
+    ax_fwd.grid(True, alpha=0.3, linestyle='--', axis='y')
+
+    # --- Backward FFT (bottom row) ---
+    ax_bwd = axes[1, col]
+
+    bwd_data = []
+    positions = []
+    violin_colors = []
+
+    for i, num_gpu in enumerate(gpu_counts):
+        gpu_subset = subset[subset['num_gpus'] == num_gpu]
+
+        # Full FFT data
+        full_data = gpu_subset[gpu_subset['method'] == 'full']
+        full_bwd = full_data[full_data['direction'] == 'backward']['time_ms'].values
+        if len(full_bwd) > 0:
+            bwd_data.append(full_bwd)
+            positions.append(i - 0.2)
+            violin_colors.append(colors['full'])
+
+        # Pruned FFT data
+        pruned_data = gpu_subset[gpu_subset['method'] == 'pruned']
+        pruned_bwd = pruned_data[pruned_data['direction'] == 'backward']['time_ms'].values
+        if len(pruned_bwd) > 0:
+            bwd_data.append(pruned_bwd)
+            positions.append(i + 0.2)
+            violin_colors.append(colors['pruned'])
+
+    if bwd_data:
+        vp = ax_bwd.violinplot(bwd_data, positions=positions, widths=0.35, showmeans=True, showmedians=False)
+        for j, body in enumerate(vp['bodies']):
+            body.set_facecolor(violin_colors[j])
+            body.set_alpha(0.7)
+        for partname in ['cmeans', 'cmins', 'cmaxes', 'cbars']:
+            if partname in vp:
+                vp[partname].set_color('black')
+                vp[partname].set_linewidth(1)
+
+    ax_bwd.set_xticks(range(len(gpu_counts)))
+    ax_bwd.set_xticklabels(gpu_counts)
+    ax_bwd.set_xlabel('Number of GPUs')
+    ax_bwd.set_ylabel('Time (ms)')
+    ax_bwd.set_title(f'Backward FFT (n_conc={n_conc})', fontweight='bold')
+    ax_bwd.set_yscale('log')
+    ax_bwd.grid(True, alpha=0.3, linestyle='--', axis='y')
+
+# Add legend
+from matplotlib.patches import Patch
+legend_elements = [
+    Patch(facecolor=colors['full'], alpha=0.7, label='Full FFT'),
+    Patch(facecolor=colors['pruned'], alpha=0.7, label='Pruned FFT')
 ]
-ax1.errorbar(full_fwd['num_gpus'] * 0.87, full_fwd['fwd_full_mean_ms'], yerr=yerr_full,
-             fmt='k-', linewidth=2, markersize=8, marker='o', capsize=4,
-             label='Full FFT', zorder=10)
-
-# Pruned FFT for each concurrent option
-for n_conc in concurrent_ffts:
-    subset = df[df['num_concurrent_ffts'] == n_conc]
-    yerr = [
-        subset['fwd_pruned_mean_ms'] - subset['fwd_pruned_min_ms'],
-        subset['fwd_pruned_max_ms'] - subset['fwd_pruned_mean_ms']
-    ]
-    x_offset = subset['num_gpus'] * offsets[n_conc]
-    ax1.errorbar(x_offset, subset['fwd_pruned_mean_ms'], yerr=yerr,
-                 fmt='-', color=colors[n_conc], marker=markers[n_conc],
-                 linewidth=1.5, markersize=7, capsize=3,
-                 label=f'Pruned (n={n_conc})')
-
-ax1.set_xlabel('Number of GPUs')
-ax1.set_ylabel('Time (ms)')
-ax1.set_title('Forward FFT', fontweight='bold')
-ax1.set_xscale('log', base=2)
-ax1.set_yscale('log')
-ax1.set_xticks(gpu_counts)
-ax1.set_xticklabels(gpu_counts)
-ax1.legend(loc='upper right')
-ax1.grid(True, alpha=0.3, linestyle='--')
-
-# --- Plot 2: Backward FFT ---
-ax2 = axes[0, 1]
-
-# Full FFT
-full_bwd = df.groupby('num_gpus').agg({
-    'bwd_full_mean_ms': 'mean',
-    'bwd_full_min_ms': 'mean',
-    'bwd_full_max_ms': 'mean'
-}).reset_index()
-
-yerr_full = [
-    full_bwd['bwd_full_mean_ms'] - full_bwd['bwd_full_min_ms'],
-    full_bwd['bwd_full_max_ms'] - full_bwd['bwd_full_mean_ms']
-]
-ax2.errorbar(full_bwd['num_gpus'] * 0.87, full_bwd['bwd_full_mean_ms'], yerr=yerr_full,
-             fmt='k-', linewidth=2, markersize=8, marker='o', capsize=4,
-             label='Full FFT', zorder=10)
-
-# Pruned FFT for each concurrent option
-for n_conc in concurrent_ffts:
-    subset = df[df['num_concurrent_ffts'] == n_conc]
-    yerr = [
-        subset['bwd_pruned_mean_ms'] - subset['bwd_pruned_min_ms'],
-        subset['bwd_pruned_max_ms'] - subset['bwd_pruned_mean_ms']
-    ]
-    x_offset = subset['num_gpus'] * offsets[n_conc]
-    ax2.errorbar(x_offset, subset['bwd_pruned_mean_ms'], yerr=yerr,
-                 fmt='-', color=colors[n_conc], marker=markers[n_conc],
-                 linewidth=1.5, markersize=7, capsize=3,
-                 label=f'Pruned (n={n_conc})')
-
-ax2.set_xlabel('Number of GPUs')
-ax2.set_ylabel('Time (ms)')
-ax2.set_title('Backward FFT', fontweight='bold')
-ax2.set_xscale('log', base=2)
-ax2.set_yscale('log')
-ax2.set_xticks(gpu_counts)
-ax2.set_xticklabels(gpu_counts)
-ax2.legend(loc='upper right')
-ax2.grid(True, alpha=0.3, linestyle='--')
-
-# --- Plot 3: Speedup (Full / Pruned) ---
-ax3 = axes[1, 0]
-
-for n_conc in concurrent_ffts:
-    subset = df[df['num_concurrent_ffts'] == n_conc]
-    # Calculate roundtrip speedup
-    full_time = subset['fwd_full_mean_ms'] + subset['bwd_full_mean_ms']
-    pruned_time = subset['fwd_pruned_mean_ms'] + subset['bwd_pruned_mean_ms']
-    speedup = full_time / pruned_time
-
-    x_offset = subset['num_gpus'] * offsets[n_conc]
-    ax3.plot(x_offset, speedup,
-             color=colors[n_conc], marker=markers[n_conc],
-             linewidth=1.5, markersize=7,
-             label=f'n={n_conc}')
-
-ax3.axhline(y=1.0, color='gray', linestyle='--', alpha=0.7, linewidth=1.5)
-ax3.set_xlabel('Number of GPUs')
-ax3.set_ylabel('Speedup (Full / Pruned)')
-ax3.set_title('Roundtrip Speedup', fontweight='bold')
-ax3.set_xscale('log', base=2)
-ax3.set_xticks(gpu_counts)
-ax3.set_xticklabels(gpu_counts)
-ax3.legend(title='Concurrent FFTs', loc='best')
-ax3.grid(True, alpha=0.3, linestyle='--')
-
-# --- Plot 4: Memory Usage ---
-ax4 = axes[1, 1]
-
-# Full FFT memory (same across concurrent)
-full_mem = df.groupby('num_gpus')['fwd_full_mem_mb'].mean().reset_index()
-ax4.plot(full_mem['num_gpus'] * 0.87, full_mem['fwd_full_mem_mb'],
-         'k-', linewidth=2, markersize=8, marker='o',
-         label='Full FFT', zorder=10)
-
-# Pruned FFT memory for each concurrent option
-for n_conc in concurrent_ffts:
-    subset = df[df['num_concurrent_ffts'] == n_conc]
-    x_offset = subset['num_gpus'] * offsets[n_conc]
-    ax4.plot(x_offset, subset['fwd_pruned_mem_mb'],
-             color=colors[n_conc], marker=markers[n_conc],
-             linewidth=1.5, markersize=7,
-             label=f'Pruned (n={n_conc})')
-
-ax4.set_xlabel('Number of GPUs')
-ax4.set_ylabel('Memory per GPU (MB)')
-ax4.set_title('GPU Memory Usage', fontweight='bold')
-ax4.set_xscale('log', base=2)
-ax4.set_yscale('log')
-ax4.set_xticks(gpu_counts)
-ax4.set_xticklabels(gpu_counts)
-ax4.legend(loc='upper right')
-ax4.grid(True, alpha=0.3, linestyle='--')
+fig.legend(handles=legend_elements, loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.02))
 
 plt.tight_layout()
-plt.savefig('benchmark_scaling.png', dpi=300, bbox_inches='tight', facecolor='white')
-plt.savefig('benchmark_scaling.pdf', bbox_inches='tight', facecolor='white')
+plt.subplots_adjust(top=0.93)
+plt.savefig('benchmark_violin.png', dpi=300, bbox_inches='tight', facecolor='white')
+plt.savefig('benchmark_violin.pdf', bbox_inches='tight', facecolor='white')
 plt.show()
 
-print("Plots saved to benchmark_scaling.png and benchmark_scaling.pdf")
+print("Plots saved to benchmark_violin.png and benchmark_violin.pdf")
