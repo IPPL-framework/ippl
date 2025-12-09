@@ -17,6 +17,7 @@
 
 #include <Kokkos_Complex.hpp>
 #include <array>
+#include <condition_variable>
 #include <heffte_fft3d.h>
 #include <heffte_fft3d_r2c.h>
 #include <memory>
@@ -404,6 +405,9 @@ namespace ippl {
         std::array<typename Base::template temp_view_type<ComplexField>, numSubFFTs> tempFieldInputs;
         std::array<workspace_t, numSubFFTs> workspaces_m;
         std::array<MPI_Comm, numSubFFTs> mpicomms_m;
+
+        int numConcurrentFFTs_;
+        std::array<std::atomic<bool>, 8> fftSlotAvailable_;
 
 #ifdef KOKKOS_ENABLE_CUDA
         std::array<cudaStream_t, numSubFFTs> streams_m;

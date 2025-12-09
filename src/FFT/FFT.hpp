@@ -112,15 +112,15 @@ namespace ippl {
     template <typename ComplexField>
     FFT<PrunedCCTransform, ComplexField>::~FFT() {
 #ifdef Heffte_ENABLE_CUDA
-        for (int k = 0; k < numSubFFTs; ++k) {
+        for (int k = 0; k < numConcurrentFFTs_; ++k) {
             cudaStreamDestroy(streams_m[k]);
         }
 #elif defined(Heffte_ENABLE_ROCM)
-        for (int k = 0; k < numSubFFTs; ++k) {
+        for (int k = 0; k < numConcurrentFFTs_; ++k) {
             hipStreamDestroy(streams_m[k]);
         }
 #endif
-        for (int k = 0; k < numSubFFTs; ++k) {
+        for (int k = 0; k < numConcurrentFFTs_; ++k) {
             MPI_Comm_free(&mpicomms_m[k]);
         }
     }
@@ -200,6 +200,10 @@ namespace ippl {
         : pruning_(pruning) {
         static_assert(Dim == 3, "Parallel pruned FFT currently only supports 3D");
 
+        // Get number of concurrent FFTs (1-8, default to 2)
+        int numConcurrent  = params.get<int>("num_concurrent_ffts", 2);
+        numConcurrentFFTs_ = std::max(1, std::min(numConcurrent, numSubFFTs));
+
         // Setup heFFTe with the full (input) grid domain
         std::array<long long, 3> lowInput, highInput;
         const NDIndex<Dim>& lDomInput = layoutInput.getLocalNDIndex();
@@ -208,8 +212,10 @@ namespace ippl {
         heffte::box3d<long long> inbox  = {lowInput, highInput};
         heffte::box3d<long long> outbox = {lowInput, highInput};
         this->setup(inbox, outbox, params);
+
         auto output_size = layoutOutput.getLocalNDIndex().size();
         auto input_size  = layoutInput.getLocalNDIndex().size();
+
         // Setup pruned domain
         auto& pruned_layout            = output_size < input_size ? layoutOutput : layoutInput;
         const NDIndex<Dim>& lDomOutput = pruned_layout.getLocalNDIndex();
@@ -219,55 +225,52 @@ namespace ippl {
         heffte::box3d<long long> inboxPruned  = {lowInputPruned, highInputPruned};
         heffte::box3d<long long> outboxPruned = {lowInputPruned, highInputPruned};
 
-        // Create streams and heFFTe instances for each sub-FFT
-        for (int k = 0; k < numSubFFTs; ++k) {
-            MPI_Comm_dup(MPI_COMM_WORLD, &mpicomms_m[k]);
+        heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
+
+        if (!params.get<bool>("use_heffte_defaults")) {
+            heffteOptions.use_pencils = params.get<bool>("use_pencils");
+            heffteOptions.use_reorder = params.get<bool>("use_reorder");
+#ifdef Heffte_ENABLE_GPU
+            heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
+#endif
+
+            switch (params.get<int>("comm")) {
+                case a2a:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
+                    break;
+                case a2av:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
+                    break;
+                case p2p:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
+                    break;
+                case p2p_pl:
+                    heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
+                    break;
+                default:
+                    throw IpplException("FFT::setup", "Unrecognized heffte communication type");
+            }
+        }
+
+        // Create streams and heFFTe instances only for the concurrent slots we need
+        for (int slot = 0; slot < numConcurrentFFTs_; ++slot) {
+            MPI_Comm_dup(MPI_COMM_WORLD, &mpicomms_m[slot]);
 
 #ifdef Heffte_ENABLE_CUDA
-            cudaStreamCreate(&streams_m[k]);
+            cudaStreamCreate(&streams_m[slot]);
 #elif defined(Heffte_ENABLE_ROCM)
-            hipStreamCreate(&streams_m[k]);
+            hipStreamCreate(&streams_m[slot]);
 #endif
 
-            heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
-
-            if (!params.get<bool>("use_heffte_defaults")) {
-                heffteOptions.use_pencils = params.get<bool>("use_pencils");
-                heffteOptions.use_reorder = params.get<bool>("use_reorder");
-#ifdef Heffte_ENABLE_GPU
-                heffteOptions.use_gpu_aware = params.get<bool>("use_gpu_aware");
-#endif
-
-                switch (params.get<int>("comm")) {
-                    case a2a:
-                        heffteOptions.algorithm = heffte::reshape_algorithm::alltoall;
-                        break;
-                    case a2av:
-                        heffteOptions.algorithm = heffte::reshape_algorithm::alltoallv;
-                        break;
-                    case p2p:
-                        heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
-                        break;
-                    case p2p_pl:
-                        heffteOptions.algorithm = heffte::reshape_algorithm::p2p_plined;
-                        break;
-                    default:
-                        throw IpplException("FFT::setup", "Unrecognized heffte communication type");
-                }
-            }
-
-            // Create heFFTe instance with specific stream
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-            pruned_heffte_m[k] = std::make_shared<BaseFFTType<heffteBackend, long long>>(
-                streams_m[k], inboxPruned, outboxPruned, mpicomms_m[k], heffteOptions);
+            pruned_heffte_m[slot] = std::make_shared<BaseFFTType<heffteBackend, long long>>(
+                streams_m[slot], inboxPruned, outboxPruned, mpicomms_m[slot], heffteOptions);
 #else
-            // CPU backend
-            pruned_heffte_m[k] = std::make_shared<BaseFFTType<heffteBackend, long long>>(
-                inboxPruned, outboxPruned, mpicomms_m[k], heffteOptions);
+            pruned_heffte_m[slot] = std::make_shared<BaseFFTType<heffteBackend, long long>>(
+                inboxPruned, outboxPruned, mpicomms_m[slot], heffteOptions);
 #endif
 
-            // Allocate workspace for each instance
-            workspaces_m[k] = workspace_t(pruned_heffte_m[k]->size_workspace());
+            workspaces_m[slot] = workspace_t(pruned_heffte_m[slot]->size_workspace());
         }
     }
 
@@ -298,11 +301,11 @@ namespace ippl {
 
         auto& pruned_modes = pruning_.n_modes;
 
-        // Allocate temp buffers for each sub-FFT if needed
-        for (int k = 0; k < numSubFFTs; ++k) {
-            if (tempFieldInputs[k].size() != output.getOwned().size()) {
-                tempFieldInputs[k] = detail::shrinkView("tempFieldPrunedFFT_" + std::to_string(k),
-                                                        output_view, nghost_out);
+        // Allocate temp buffers only for the concurrent slots we have
+        for (int slot = 0; slot < numConcurrentFFTs_; ++slot) {
+            if (tempFieldInputs[slot].size() != output.getOwned().size()) {
+                tempFieldInputs[slot] = detail::shrinkView(
+                    "tempFieldPrunedFFT_" + std::to_string(slot), output_view, nghost_out);
             }
         }
 
@@ -316,7 +319,7 @@ namespace ippl {
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
 
-        // Compute all offsets upfront
+        // Compute all offsets upfront for all 8 sub-FFTs
         std::array<Vector<long, Dim>, numSubFFTs> offsets;
         for (int k = 0; k < numSubFFTs; ++k) {
             for (int d = 0; d < Dim; ++d) {
@@ -332,82 +335,104 @@ namespace ippl {
             hi[d] = owned[d].length();
         }
 
-        // Phase 1: Submit strided copies + FFTs to separate streams
-        IpplTimings::startTimer(SubFFTs);
-
-        Kokkos::parallel_for(
-            "PrunedFFT parallel sub-FFTs",
-            Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, numSubFFTs),
-            [&](const int k) {
-                auto offs                = offsets[k];
-                auto& tempFieldInputView = tempFieldInputs[k];
-                auto exec_instance       = get_exec_instance(k);
-
-                // Strided copy on stream k
-                using mdrange_policy_t =
-                    Kokkos::MDRangePolicy<device_exec_space, Kokkos::Rank<Dim>>;
-                mdrange_policy_t policy(exec_instance, {lo[0], lo[1], lo[2]},
-                                        {hi[0], hi[1], hi[2]});
-
-                Kokkos::parallel_for(
-                    "strided input copy PrunedFFT", policy,
-                    KOKKOS_LAMBDA(const int i0, const int i1, const int i2) {
-                        index_array_type args = {i0, i1, i2};
-                        auto strided_in       = args * 2 + offs + nghost_in;
-
-                        apply(tempFieldInputView, args).real(apply(input_view, strided_in).real());
-                        apply(tempFieldInputView, args).imag(apply(input_view, strided_in).imag());
-                    });
-
-                // FFT on same stream k - will wait for copy to complete automatically
-                pruned_heffte_m[k]->forward(tempFieldInputs[k].data(), tempFieldInputs[k].data(),
-                                            workspaces_m[k].data(), heffte::scale::full);
-            });
-
-        // Wait for all streams to complete
-        Kokkos::fence();
-        IpplTimings::stopTimer(SubFFTs);
-
-        // Phase 2: Accumulate results with twiddle factors (sequential to avoid races)
-        IpplTimings::startTimer(TwiddleAdd);
-
         Vector<int, Dim> localFirst;
         for (unsigned d = 0; d < Dim; ++d) {
             localFirst[d] = lDomPruned[d].first();
         }
 
-        for (int k = 0; k < numSubFFTs; ++k) {
-            auto offs                = offsets[k];
-            auto& tempFieldInputView = tempFieldInputs[k];
+        // Process sub-FFTs in batches based on available concurrent slots
+        const int numBatches = (numSubFFTs + numConcurrentFFTs_ - 1) / numConcurrentFFTs_;
 
-            ippl::parallel_for(
-                "PrunedFFT sub-FFT twiddle factor addition",
-                getRangePolicy(output_view, nghost_out),
-                KOKKOS_LAMBDA(const index_array_type& args) {
-                    auto g = (args - nghost_out) + localFirst;
-                    Vector<int64_t, Dim> freq{};
-                    for (int d = 0; d < Dim; ++d) {
-                        if (g[d] < static_cast<int64_t>(pruned_modes[d]) / 2) {
-                            freq[d] = g[d];
-                        } else {
-                            freq[d] = static_cast<int64_t>(gDomFull[d].length())
-                                      - static_cast<int64_t>(pruned_modes[d]) + g[d];
-                        }
-                    }
+        for (int batch = 0; batch < numBatches; ++batch) {
+            const int batchStart = batch * numConcurrentFFTs_;
+            const int batchEnd   = std::min(batchStart + numConcurrentFFTs_, numSubFFTs);
+            const int batchSize  = batchEnd - batchStart;
 
-                    Complex_t w = 1.0;
-                    for (int d = 0; d < Dim; ++d) {
-                        double ang = -2.0 * M_PI * (static_cast<double>(freq[d]))
-                                     / static_cast<double>(gDomFull[d].length());
-                        w *= (offs[d] == 0) ? Complex_t(1.0, 0.0)
-                                            : Complex_t(std::cos(ang), std::sin(ang));
-                    }
-                    auto fft_input = apply(tempFieldInputView, args - nghost_out);
-                    apply(output_view, args).imag() += (w * fft_input * scaling_factor).imag();
-                    apply(output_view, args).real() += (w * fft_input * scaling_factor).real();
+            // Phase 1: Submit strided copies + FFTs for this batch in parallel
+            IpplTimings::startTimer(SubFFTs);
+
+            // Launch all sub-FFTs in this batch on separate streams
+            Kokkos::parallel_for(
+                "PrunedFFT parallel sub-FFTs batch",
+                Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, batchSize),
+                [&](const int localIdx) {
+                    const int k    = batchStart + localIdx;  // Which sub-FFT (0-7)
+                    const int slot = localIdx;               // Which slot to use (0 to batchSize-1)
+
+                    auto offs                = offsets[k];
+                    auto& tempFieldInputView = tempFieldInputs[slot];
+                    auto exec_instance       = get_exec_instance(slot);
+
+                    // Strided copy on this slot's stream
+                    using mdrange_policy_t =
+                        Kokkos::MDRangePolicy<device_exec_space, Kokkos::Rank<Dim>>;
+                    mdrange_policy_t policy(exec_instance, {lo[0], lo[1], lo[2]},
+                                            {hi[0], hi[1], hi[2]});
+
+                    Kokkos::parallel_for(
+                        "strided input copy PrunedFFT", policy,
+                        KOKKOS_LAMBDA(const int i0, const int i1, const int i2) {
+                            index_array_type args = {i0, i1, i2};
+                            auto strided_in       = args * 2 + offs + nghost_in;
+
+                            apply(tempFieldInputView, args)
+                                .real(apply(input_view, strided_in).real());
+                            apply(tempFieldInputView, args)
+                                .imag(apply(input_view, strided_in).imag());
+                        });
+
+                    // FFT on same stream - automatically waits for copy
+                    pruned_heffte_m[slot]->forward(tempFieldInputs[slot].data(),
+                                                   tempFieldInputs[slot].data(),
+                                                   workspaces_m[slot].data(), heffte::scale::full);
                 });
+
+            // Wait for all streams in this batch to complete before accumulation
+            Kokkos::fence();
+            IpplTimings::stopTimer(SubFFTs);
+
+            // Phase 2: Accumulate results with twiddle factors for this batch
+            // Must be done before next batch overwrites temp buffers
+            IpplTimings::startTimer(TwiddleAdd);
+
+            for (int localIdx = 0; localIdx < batchSize; ++localIdx) {
+                const int k    = batchStart + localIdx;
+                const int slot = localIdx;
+
+                auto offs                = offsets[k];
+                auto& tempFieldInputView = tempFieldInputs[slot];
+
+                ippl::parallel_for(
+                    "PrunedFFT sub-FFT twiddle factor addition",
+                    getRangePolicy(output_view, nghost_out),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        auto g = (args - nghost_out) + localFirst;
+                        Vector<int64_t, Dim> freq{};
+                        for (int d = 0; d < Dim; ++d) {
+                            if (g[d] < static_cast<int64_t>(pruned_modes[d]) / 2) {
+                                freq[d] = g[d];
+                            } else {
+                                freq[d] = static_cast<int64_t>(gDomFull[d].length())
+                                          - static_cast<int64_t>(pruned_modes[d]) + g[d];
+                            }
+                        }
+
+                        Complex_t w = 1.0;
+                        for (int d = 0; d < Dim; ++d) {
+                            double ang = -2.0 * M_PI * (static_cast<double>(freq[d]))
+                                         / static_cast<double>(gDomFull[d].length());
+                            w *= (offs[d] == 0) ? Complex_t(1.0, 0.0)
+                                                : Complex_t(std::cos(ang), std::sin(ang));
+                        }
+                        auto fft_input = apply(tempFieldInputView, args - nghost_out);
+                        apply(output_view, args).imag() += (w * fft_input * scaling_factor).imag();
+                        apply(output_view, args).real() += (w * fft_input * scaling_factor).real();
+                    });
+            }
+
+            IpplTimings::stopTimer(TwiddleAdd);
         }
-        IpplTimings::stopTimer(TwiddleAdd);
+
         IpplTimings::stopTimer(PrunedFFT);
     }
 
@@ -443,19 +468,20 @@ namespace ippl {
 
         auto& pruned_modes = pruning_.n_modes;
 
-        // Allocate temp buffers for each sub-IFFT if needed
-        for (int k = 0; k < numSubFFTs; ++k) {
-            if (tempFieldInputs[k].size() != input.getOwned().size()) {
-                tempFieldInputs[k] = detail::shrinkView("tempFieldPrunedIFFT_" + std::to_string(k),
-                                                        input_view, nghost_in);
+        // Allocate temp buffers only for the concurrent slots we have
+        for (int slot = 0; slot < numConcurrentFFTs_; ++slot) {
+            if (tempFieldInputs[slot].size() != input.getOwned().size()) {
+                tempFieldInputs[slot] = detail::shrinkView(
+                    "tempFieldPrunedIFFT_" + std::to_string(slot), input_view, nghost_in);
             }
         }
 
         // Zero the output
         Kokkos::deep_copy(output_view, Complex_t(0, 0));
+
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
 
-        // Compute all offsets upfront
+        // Compute all offsets upfront for all 8 sub-FFTs
         std::array<Vector<long, Dim>, numSubFFTs> offsets;
         for (int k = 0; k < numSubFFTs; ++k) {
             for (int d = 0; d < Dim; ++d) {
@@ -476,89 +502,101 @@ namespace ippl {
             localFirst[d] = lDomPruned[d].first();
         }
 
-        // Phase 1: Apply twiddle factors and run sub-IFFTs in parallel streams
-        IpplTimings::startTimer(SubIFFTs);
+        // Process sub-IFFTs in batches based on available concurrent slots
+        const int numBatches = (numSubFFTs + numConcurrentFFTs_ - 1) / numConcurrentFFTs_;
 
-        Kokkos::parallel_for(
-            "PrunedIFFT parallel sub-IFFTs",
-            Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, numSubFFTs),
-            [&](const int k) {
-                auto offs                = offsets[k];
-                auto& tempFieldInputView = tempFieldInputs[k];
-                auto exec_instance       = get_exec_instance(k);
+        for (int batch = 0; batch < numBatches; ++batch) {
+            const int batchStart = batch * numConcurrentFFTs_;
+            const int batchEnd   = std::min(batchStart + numConcurrentFFTs_, numSubFFTs);
+            const int batchSize  = batchEnd - batchStart;
 
+            // Phase 1: Apply twiddle factors and run sub-IFFTs for this batch
+            IpplTimings::startTimer(SubIFFTs);
 
-                using mdrange_policy_t =
-                    Kokkos::MDRangePolicy<device_exec_space, Kokkos::Rank<Dim>>;
-                mdrange_policy_t policy(exec_instance, {lo[0], lo[1], lo[2]},
-                                        {hi[0], hi[1], hi[2]});
+            Kokkos::parallel_for(
+                "PrunedIFFT parallel sub-IFFTs batch",
+                Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, batchSize),
+                [&](const int localIdx) {
+                    const int k    = batchStart + localIdx;
+                    const int slot = localIdx;
 
-                // Apply twiddle factors to input and copy to temp buffer
-                // Twiddle: e^{+2πi * freq * offset / N} for inverse transform
-                Kokkos::parallel_for(
-                    "twiddle multiply PrunedIFFT", policy,
-                    KOKKOS_LAMBDA(const int i0, const int i1, const int i2) {
-                        index_array_type args = {i0, i1, i2};
-                        auto g = args + localFirst;  // global frequency index in pruned domain
+                    auto offs                = offsets[k];
+                    auto& tempFieldInputView = tempFieldInputs[slot];
+                    auto exec_instance       = get_exec_instance(slot);
 
-                        // Map pruned frequency index to full frequency index
-                        // First K/2 frequencies map to 0..K/2-1
-                        // Last K/2 frequencies map to N-K/2..N-1
-                        Vector<int64_t, Dim> freq;
-                        for (int d = 0; d < Dim; ++d) {
-                            if (g[d] < static_cast<int64_t>(pruned_modes[d]) / 2) {
-                                freq[d] = g[d];
-                            } else {
-                                freq[d] = static_cast<int64_t>(gDomFull[d].length())
-                                          - static_cast<int64_t>(pruned_modes[d]) + g[d];
+                    using mdrange_policy_t =
+                        Kokkos::MDRangePolicy<device_exec_space, Kokkos::Rank<Dim>>;
+                    mdrange_policy_t policy(exec_instance, {lo[0], lo[1], lo[2]},
+                                            {hi[0], hi[1], hi[2]});
+
+                    // Apply twiddle factors to input and copy to temp buffer
+                    Kokkos::parallel_for(
+                        "twiddle multiply PrunedIFFT", policy,
+                        KOKKOS_LAMBDA(const int i0, const int i1, const int i2) {
+                            index_array_type args = {i0, i1, i2};
+                            auto g                = args + localFirst;
+
+                            // Map pruned frequency index to full frequency index
+                            Vector<int64_t, Dim> freq;
+                            for (int d = 0; d < Dim; ++d) {
+                                if (g[d] < static_cast<int64_t>(pruned_modes[d]) / 2) {
+                                    freq[d] = g[d];
+                                } else {
+                                    freq[d] = static_cast<int64_t>(gDomFull[d].length())
+                                              - static_cast<int64_t>(pruned_modes[d]) + g[d];
+                                }
                             }
-                        }
 
-                        // Compute twiddle factor (positive sign for inverse)
-                        Complex_t w = 1.0;
-                        for (int d = 0; d < Dim; ++d) {
-                            if (offs[d] != 0) {
-                                double ang = +2.0 * M_PI * static_cast<double>(freq[d])
-                                             / static_cast<double>(gDomFull[d].length());
-                                w *= Complex_t(std::cos(ang), std::sin(ang));
+                            // Compute twiddle factor (positive sign for inverse)
+                            Complex_t w = 1.0;
+                            for (int d = 0; d < Dim; ++d) {
+                                if (offs[d] != 0) {
+                                    double ang = +2.0 * M_PI * static_cast<double>(freq[d])
+                                                 / static_cast<double>(gDomFull[d].length());
+                                    w *= Complex_t(std::cos(ang), std::sin(ang));
+                                }
                             }
-                        }
 
-                        auto input_val = apply(input_view, args + nghost_in);
-                        apply(tempFieldInputView, args).real((w * input_val).real());
-                        apply(tempFieldInputView, args).imag((w * input_val).imag());
-                    });
+                            auto input_val = apply(input_view, args + nghost_in);
+                            apply(tempFieldInputView, args).real((w * input_val).real());
+                            apply(tempFieldInputView, args).imag((w * input_val).imag());
+                        });
 
-                // Backward FFT on same stream - will wait for twiddle multiply
-                pruned_heffte_m[k]->backward(tempFieldInputs[k].data(), tempFieldInputs[k].data(),
-                                             workspaces_m[k].data(), heffte::scale::none);
-            });
-
-        // Wait for all streams to complete
-        Kokkos::fence();
-        IpplTimings::stopTimer(SubIFFTs);
-
-        // Phase 2: Strided write to output (no accumulation needed - each position
-        //          is written exactly once)
-        IpplTimings::startTimer(StridedWrite);
-
-        for (int k = 0; k < numSubFFTs; ++k) {
-            auto offs                = offsets[k];
-            auto& tempFieldInputView = tempFieldInputs[k];
-
-            ippl::parallel_for(
-                "PrunedIFFT strided output write", getRangePolicy(tempFieldInputView, 0),
-                KOKKOS_LAMBDA(const index_array_type& args) {
-                    // Map temp buffer index to strided output index
-                    auto strided_out = args * 2 + offs + nghost_out;
-
-                    auto ifft_result = apply(tempFieldInputView, args);
-                    apply(output_view, strided_out).real((ifft_result).real());
-                    apply(output_view, strided_out).imag((ifft_result).imag());
+                    // Backward FFT on same stream
+                    pruned_heffte_m[slot]->backward(tempFieldInputs[slot].data(),
+                                                    tempFieldInputs[slot].data(),
+                                                    workspaces_m[slot].data(), heffte::scale::none);
                 });
+
+            // Wait for all streams in this batch
+            Kokkos::fence();
+            IpplTimings::stopTimer(SubIFFTs);
+
+            // Phase 2: Strided write to output for this batch
+            // Must be done before next batch overwrites temp buffers
+            IpplTimings::startTimer(StridedWrite);
+
+            for (int localIdx = 0; localIdx < batchSize; ++localIdx) {
+                const int k    = batchStart + localIdx;
+                const int slot = localIdx;
+
+                auto offs                = offsets[k];
+                auto& tempFieldInputView = tempFieldInputs[slot];
+
+                ippl::parallel_for(
+                    "PrunedIFFT strided output write", getRangePolicy(tempFieldInputView, 0),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        auto strided_out = args * 2 + offs + nghost_out;
+
+                        auto ifft_result = apply(tempFieldInputView, args);
+                        apply(output_view, strided_out).real(ifft_result.real());
+                        apply(output_view, strided_out).imag(ifft_result.imag());
+                    });
+            }
+
+            IpplTimings::stopTimer(StridedWrite);
         }
 
-        IpplTimings::stopTimer(StridedWrite);
         IpplTimings::stopTimer(PrunedIFFT);
     }
 
