@@ -192,6 +192,7 @@ int main(int argc, char* argv[]) {
 
         // Test configurations: grid size and particles per grid point
         std::vector<int> grid_sizes = {256, 512};
+        // std::vector<int> grid_sizes = {64, 128};
         std::vector<int> particles_per_point = {1, 10};
 
         for (int grid_size : grid_sizes) {
@@ -414,6 +415,8 @@ int main(int argc, char* argv[]) {
                         printResult("IPPL Tiled", time_ms, Np, grid_size, "2");
                     }
 
+
+
                     // Atomic method
                     {
                         ippl::ParameterList fftParams;
@@ -434,6 +437,30 @@ int main(int argc, char* argv[]) {
                         auto fft = std::make_unique<FFT_type>(layout, nloc, 2, fftParams);
                         double time_ms = benchmarkType2(*fft, field, bunch, "Atomic");
                         printResult("IPPL Atomic", time_ms, Np, grid_size, "2");
+                    }
+
+
+
+                    // Atomic method
+                    {
+                        ippl::ParameterList fftParams;
+                        fftParams.add("tolerance", 1e-4);
+#ifdef ENABLE_GPU_NUFFT
+                        fftParams.add("gpu_method", 1);
+                        fftParams.add("gpu_sort", 0);
+                        fftParams.add("gpu_kerevalmeth", 1);
+#else
+                        fftParams.add("spread_kerevalmeth", 1);
+                        fftParams.add("spread_sort", 2);
+                        fftParams.add("nthreads", 0);
+#endif
+                        fftParams.add("use_finufft_defaults", false);
+                        fftParams.add("use_kokkos_nufft", false);
+                        fftParams.add("gather_method", "atomic_sort");
+
+                        auto fft = std::make_unique<FFT_type>(layout, nloc, 2, fftParams);
+                        double time_ms = benchmarkType2(*fft, field, bunch, "Atomic Sort");
+                        printResult("IPPL Atomic Sort", time_ms, Np, grid_size, "2");
                     }
 
                     // Atomic method

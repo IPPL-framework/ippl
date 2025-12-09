@@ -22,6 +22,7 @@
 #include "FFT/FFT.h"
 #include "Interpolation/AtomicGather.h"
 #include "Interpolation/AtomicScatter.h"
+#include "Interpolation/AtomicSortGather.h"
 #include "Interpolation/Binning.h"
 #include "Interpolation/OutputFocusedScatter.h"
 #include "Interpolation/ScatterConfig.h"
@@ -393,7 +394,8 @@ namespace ippl {
         // Dispatch based on method
         if constexpr (Dim == 3) {
             if (config.method == Interpolation::GatherMethod::Native
-                || config.method == Interpolation::GatherMethod::Tiled) {
+                || config.method == Interpolation::GatherMethod::Tiled
+                || config.method == Interpolation::GatherMethod::AtomicSort) {
                 // Use optimized tiled interpolation with warp-level parallelism
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
                 if constexpr (
@@ -439,13 +441,33 @@ namespace ippl {
                             Kernel, T>(w, nParticles, x_view, permute, full_view, dview_m, nghost,
                                        ngrid_global, ngrid_local, local_offset, inv_hw, kernel,
                                        addToAttribute);
-                    } else {
+                    } else if (config.method == Interpolation::GatherMethod::Tiled) {
                         Interpolation::detail::TiledGatherDispatcher<1, MaxW>::template dispatch_3d<
                             PositionType, execution_space, Kernel, T, decltype(full_view),
                             decltype(x_view), decltype(permute)>(
                             w, nParticles, x_view, permute, full_view, dview_m, nghost,
                             ngrid_global, ngrid_local, local_offset, inv_hw, kernel,
                             addToAttribute);
+                    } else if (config.method == Interpolation::GatherMethod::AtomicSort) {
+                        Interpolation::detail::AtomicSortGatherFunctor<
+                            3, PositionType, execution_space, Kernel, T, view_type,
+                            decltype(pp.getView()), decltype(permute)>
+                            gather_functor{
+                                .x            = pp.getView(),
+                                .grid         = full_view,
+                                .permute      = permute,
+                                .values       = dview_m,
+                                .n_grid       = {ngrid_global[0], ngrid_global[1], ngrid_global[2]},
+                                .n_grid_local = {ngrid_local[0], ngrid_local[1], ngrid_local[2]},
+                                .local_offset = {local_offset[0], local_offset[1], local_offset[2]},
+                                .w            = w,
+                                .nghost       = nghost,
+                                .inv_hw       = inv_hw,
+                                .add_to_attribute = addToAttribute,
+                                .kernel           = kernel};
+
+                        Kokkos::parallel_for("atomic_gather", policy_type(0, nParticles),
+                                             gather_functor);
                     }
 
                     Kokkos::fence();

@@ -1437,6 +1437,9 @@ namespace ippl {
             if (gather_method == "atomic") {
                 cfg.gather_config.method = Interpolation::GatherMethod::Atomic;
             }
+            if (gather_method == "atomic_sort") {
+                cfg.gather_config.method = Interpolation::GatherMethod::AtomicSort;
+            }
 
             auto* nufft_ptr = new NativeNUFFT_t(n_modes_vec, cfg);
             nufft_ptr->initialize(layout, MPI_COMM_WORLD);

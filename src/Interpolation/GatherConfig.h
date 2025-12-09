@@ -12,7 +12,8 @@ namespace Interpolation {
      * - Tiled: Cache-friendly tiling with team policies and shared memory histograms
      */
     enum class GatherMethod {
-        Atomic,        // Simple atomic operations
+        Atomic,
+        AtomicSort,
         Tiled,
         Native
     };
