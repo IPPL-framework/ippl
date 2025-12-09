@@ -271,9 +271,7 @@ namespace ippl {
                     applyDeconvolutionType1<decltype(*grid_field_), decltype(f), ExecSpace, T>(
                         *grid_field_, factors_, f, n_modes_, n_grid_);
                 } else {
-                    applyDeconvolutionType1<Dim, ExecSpace, T>(f.getView(), factors_, f.getView(),
-                                                               n_modes_, n_grid_, f.getNghost(),
-                                                               f.getNghost());
+                    applyDeconvolutionPruned<decltype(f), ExecSpace, T>(f, factors_, n_modes_, n_grid_);
                 }
 
                 timing_.correct =
@@ -384,9 +382,7 @@ namespace ippl {
                     applyPreCorrectionType2<decltype(f), decltype(*grid_field_), ExecSpace, T>(
                         f, factors_, *grid_field_, n_modes_, n_grid_);
                 } else {
-                    applyPreCorrectionType2<Dim, ExecSpace, T>(f.getView(), factors_, f.getView(),
-                                                               n_modes_, n_grid_, f.getNghost(),
-                                                               f.getNghost());
+                    applyPrecorrectionPruned<decltype(f), ExecSpace, T>(f, factors_, n_modes_, n_grid_);
                 }
 
                 Kokkos::fence();

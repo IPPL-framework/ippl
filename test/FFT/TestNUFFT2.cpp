@@ -311,7 +311,7 @@ int main(int argc, char* argv[]) {
         // Global reduce of DFT result
         Kokkos::complex<double> dft_global(0.0, 0.0);
         double dft_send[2] = {dft_local.real(), dft_local.imag()};
-        std::cout << "rank " << ippl::Comm->rank() << " ovserves " << dft_global << std::endl;
+        std::cout << "rank " << ippl::Comm->rank() << " ovserves " << dft_local << std::endl;
         double dft_recv[2] = {0.0, 0.0};
         MPI_Allreduce(dft_send, dft_recv, 2, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
         dft_global = Kokkos::complex<double>(dft_recv[0], dft_recv[1]);
