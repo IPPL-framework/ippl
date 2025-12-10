@@ -295,14 +295,14 @@ namespace ippl {
             auto total_tiles = num_tiles[0] * num_tiles[1] * num_tiles[2];
 
             // Sort particles by tile (using local binning)
-            //auto size = computeBufferSize<size_t, size_t>(nParticles, total_tiles + 1);
-            //MultiViewBuffer<memory_space> sortBuf(size);
+            auto size = computeBufferSize<size_t, size_t>(nParticles, total_tiles + 1);
+            MultiViewBuffer<memory_space> sortBuf(size);
 
-            //auto permute = sortBuf.template getView<size_type>(nParticles);
-            //auto bin_offsets = sortBuf.template getView<size_type>(total_tiles + 1);
+            auto permute = sortBuf.template getView<size_type>(nParticles);
+            auto bin_offsets = sortBuf.template getView<size_type>(total_tiles + 1);
 
-            Kokkos::View<size_type*, typename execution_space::memory_space> permute;
-            Kokkos::View<size_type*, typename execution_space::memory_space> bin_offsets;
+            // Kokkos::View<size_type*, typename execution_space::memory_space> permute;
+            // Kokkos::View<size_type*, typename execution_space::memory_space> bin_offsets;
 
             Interpolation::detail::bin_sort_3d<PositionType, decltype(pp_view), execution_space>(
                 pp_view, n_grid_global_arr, n_grid_local_arr, local_offset_arr, tile_size_arr, w,
@@ -430,9 +430,9 @@ namespace ippl {
 
                     // Sort particles by Morton code
                     auto x_view = pp.getView();
-                    Kokkos::View<size_t*, memory_space> permute("permute", nParticles);
-                    //auto permute_buf = BufferView<size_type, typename execution_space::memory_space>(nParticles);
-                    //auto& permute = permute_buf.getView();
+                    // Kokkos::View<size_t*, memory_space> permute("permute", nParticles);
+                    auto permute_buf = BufferView<size_type, typename execution_space::memory_space>(nParticles);
+                    auto& permute = permute_buf.getView();
 
                     Vector<PositionType, 3> origin;
                     Vector<PositionType, 3> invdx;

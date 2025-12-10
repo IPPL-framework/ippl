@@ -157,7 +157,6 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef initializeShapeFunctionPIF =
             IpplTimings::getTimer("initializeShapeFunctionPIF");
 
-        IpplTimings::startTimer(mainTimer);
 
         const size_type totalP = std::atoll(argv[4]);
         const unsigned int nt  = std::atoi(argv[5]);
@@ -314,6 +313,7 @@ int main(int argc, char* argv[]) {
         for (int it = -warmup; it < (int)nt; it++) {
             if (it == 0) {
                 IpplTimings::resetAllTimers();
+                IpplTimings::startTimer(mainTimer);
             }
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
             // Here, we assume a constant charge-to-mass ratio of -1 for
@@ -359,9 +359,10 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
-
-
-        IpplTimings::dumpToCSV("LandauDampingPIFPruned.csv");
+        std::string res_file  = "LandauDampingPIFPruned";
+        res_file += ippl::Comm->size();
+        res_file += ".csv";
+        IpplTimings::dumpToCSV(res_file);
     }
     ippl::finalize();
 
