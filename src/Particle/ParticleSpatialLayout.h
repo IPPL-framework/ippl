@@ -23,15 +23,15 @@
 #ifndef IPPL_PARTICLE_SPATIAL_LAYOUT_H
 #define IPPL_PARTICLE_SPATIAL_LAYOUT_H
 
-#include <vector>
-
 #include "Types/IpplTypes.h"
 
-#include "Communicate/Window.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Particle/ParticleBase.h"
 #include "Particle/ParticleLayout.h"
 #include "Region/RegionLayout.h"
+
+#include "Communicate/Window.h"
+#include <vector>
 
 namespace ippl {
 
@@ -81,13 +81,14 @@ namespace ippl {
 
         //! The FieldLayout containing information on nearest neighbors
         FieldLayout_t& flayout_m;
-
+        
+        
         // Vector keeping track of the recieves from all ranks
         std::vector<size_type> nRecvs_m;
-
+  
         // MPI RMA window for one-sided communication
         mpi::rma::Window<mpi::rma::Active> window_m;
-
+        
         //! Type of the Kokkos view containing the local regions.
         using region_view_type = typename RegionLayout_t::view_type;
         //! Type of a single Region object.
@@ -107,30 +108,6 @@ namespace ippl {
          */
         size_type getNeighborSize(const neighbor_list& neighbors) const;
 
-        /* The indices correspond to the indices of the local particles,
-         * the values correspond to the ranks to which the particles need to be sent
-         */
-        locate_type particleRanks_m;
-
-        /* The indices are the indices of the particles,
-         * the boolean values describe whether the particle has left the current rank
-         * 0 --> particle valid (inside current rank)
-         * 1 --> particle invalid (left rank)
-         */
-        bool_type invalidParticles_m;
-
-        /* The indices are the MPI ranks,
-         * the values are the number of particles are sent to that rank from myrank
-         */
-        locate_type rankSendCount_dview_m;
-
-        /* The indices have no particluar meaning,
-         * the values are the MPI ranks to which we need to send
-         */
-        locate_type destinationRanks_dview_m;
-
-        int buf_num_m = 0;
-
     public:
         /*!
          * For each particle in the bunch, determine the rank on which it should
@@ -143,10 +120,8 @@ namespace ippl {
          * @return The total number of invalidated particles
          */
         template <typename ParticleContainer>
-        std::pair<size_type, size_type> locateParticles(const ParticleContainer& pc,
-                                                        locate_type& ranks, bool_type& invalid,
-                                                        locate_type& nSends_dview,
-                                                        locate_type& sends_dview) const;
+        std::pair<size_type,size_type> locateParticles(const ParticleContainer& pc, locate_type& ranks,
+                                  bool_type& invalid, locate_type& nSends_dview, locate_type& sends_dview) const;
 
         /*!
          * @param rank we sent to
@@ -166,3 +141,4 @@ namespace ippl {
 #include "Particle/ParticleSpatialLayout.hpp"
 
 #endif
+
