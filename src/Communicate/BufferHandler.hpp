@@ -112,6 +112,7 @@ namespace ippl::comms {
         freeSize_m -= buffer->getBufferSize();
         usedSize_m += buffer->getBufferSize();
 
+        buffer->resetReadWritePos();
         free_buffers.erase(buffer);
         used_buffers.insert(buffer);
         return buffer;
@@ -128,6 +129,7 @@ namespace ippl::comms {
 
         free_buffers.erase(buffer);
         buffer->reallocBuffer(requiredSize);
+        buffer->resetReadWritePos();
 
         used_buffers.insert(buffer);
         return buffer;
@@ -140,6 +142,7 @@ namespace ippl::comms {
 
         usedSize_m += newBuffer->getBufferSize();
         used_buffers.insert(newBuffer);
+        newBuffer->resetReadWritePos();
         return newBuffer;
     }
 

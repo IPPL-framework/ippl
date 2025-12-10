@@ -161,20 +161,25 @@ namespace ippl::mpi {
                 this->abort();
             }
             MPI_Status status;
-            MPI_Recv(ar.getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &status);
-
+            MPI_Recv(ar.getData(), msize, MPI_BYTE, src, tag, *comm_m, &status);
+            SPDLOG_DEBUG("Recv buf {}, size {:04}, src {:02}, tag {:04}", (void*)(ar.getData()),
+                         msize, src, tag);
             buffer.deserialize(ar, nrecvs);
         }
 
         template <class Buffer, typename Archive>
         void isend(int dest, int tag, Buffer& buffer, Archive& ar, MPI_Request& request,
-                   size_type nsends) {
+                   size_type nsends)  //
+        {
             if (ar.getSize() > INT_MAX) {
                 std::cerr << "Message size exceeds range of int" << std::endl;
                 this->abort();
             }
             buffer.serialize(ar, nsends);
-            MPI_Isend(ar.getBuffer(), ar.getSize(), MPI_BYTE, dest, tag, *comm_m, &request);
+            MPI_Isend(ar.getData(), ar.getSize(), MPI_BYTE, dest, tag, *comm_m, &request);
+            SPDLOG_DEBUG("Isend buf {}, size {:04}, dst {:02}, tag {:04}, req {}",
+                         (void*)(ar.getData()), ar.getSize(), dest, tag,
+                         static_cast<uintptr_t>(request));
         }
 
         template <typename Archive>
@@ -183,7 +188,10 @@ namespace ippl::mpi {
                 std::cerr << "Message size exceeds range of int" << std::endl;
                 this->abort();
             }
-            MPI_Irecv(ar.getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &request);
+
+            MPI_Irecv(ar.getData(), msize, MPI_BYTE, src, tag, *comm_m, &request);
+            SPDLOG_DEBUG("Irecv buf {}, size {:04}, src {:02}, tag {:04}, req {}",
+                         (void*)(ar.getData()), msize, src, tag, static_cast<uintptr_t>(request));
         }
 
         void printLogs(const std::string& filename);
