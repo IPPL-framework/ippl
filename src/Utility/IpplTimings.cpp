@@ -28,7 +28,9 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
@@ -51,8 +53,10 @@ const int num_colors = sizeof(colors)/sizeof(uint32_t);
 }
 #endif
 
+// Static member initialization
 Timing* IpplTimings::instance = new Timing();
 std::stack<Timing*> IpplTimings::stashedInstance;
+const std::vector<double> Timing::emptyMeasurements;
 
 Timing::Timing()
     : TimerList()
@@ -111,6 +115,118 @@ void Timing::clearTimer(TimerRef t) {
     TimerList[t]->clear();
 }
 
+// Reset all timers - useful for warmup
+void Timing::resetAllTimers() {
+    for (unsigned int i = 0; i < TimerList.size(); ++i) {
+        TimerList[i]->clear();
+    }
+}
+
+// Get measurements for a specific timer by reference
+const std::vector<double>& Timing::getMeasurements(TimerRef t) const {
+    if (t >= TimerList.size())
+        return emptyMeasurements;
+    return TimerList[t]->measurements;
+}
+
+// Get measurements for a specific timer by name
+const std::vector<double>& Timing::getMeasurements(const std::string& name) const {
+    TimerMap_t::const_iterator loc = TimerMap.find(name);
+    if (loc == TimerMap.end())
+        return emptyMeasurements;
+    return loc->second->measurements;
+}
+
+// Get measurement count for a timer
+size_t Timing::getMeasurementCount(TimerRef t) const {
+    if (t >= TimerList.size())
+        return 0;
+    return TimerList[t]->measurement_count;
+}
+
+// Get all timer names
+std::vector<std::string> Timing::getTimerNames() const {
+    std::vector<std::string> names;
+    names.reserve(TimerList.size());
+    for (unsigned int i = 0; i < TimerList.size(); ++i) {
+        names.push_back(TimerList[i]->name);
+    }
+    return names;
+}
+
+// Dump all measurements to CSV (default format)
+void Timing::dumpToCSV(const std::string& filename) {
+    dumpToCSV(filename, ",", true);
+}
+
+// Dump all measurements to CSV with custom options
+void Timing::dumpToCSV(const std::string& filename, const std::string& delimiter, bool includeHeader) {
+    // Get MPI rank
+    int rank = ippl::Comm->rank();
+    int numRanks = ippl::Comm->size();
+
+    // Each rank writes to its own temporary buffer
+    std::ostringstream localData;
+
+    for (unsigned int i = 0; i < TimerList.size(); ++i) {
+        TimerInfo* tptr = TimerList[i].get();
+        const std::string& timerName = tptr->name;
+        const std::vector<double>& measurements = tptr->measurements;
+
+        for (size_t j = 0; j < measurements.size(); ++j) {
+            localData << timerName << delimiter
+                      << rank << delimiter
+                      << j << delimiter
+                      << std::setprecision(12) << measurements[j] << "\n";
+        }
+    }
+
+    std::string localStr = localData.str();
+
+    // Gather all data to rank 0 and write
+    if (rank == 0) {
+        std::ofstream outFile(filename);
+
+        if (includeHeader) {
+            outFile << "timer_name" << delimiter
+                    << "rank" << delimiter
+                    << "measurement_id" << delimiter
+                    << "duration_seconds" << "\n";
+        }
+
+        // Write rank 0's data
+        outFile << localStr;
+
+        // Receive and write data from other ranks
+        for (int r = 1; r < numRanks; ++r) {
+            // Receive size first
+            size_t dataSize = 0;
+            MPI_Status status;
+            MPI_Recv(&dataSize, 1, MPI_UNSIGNED_LONG, r, 0, ippl::Comm->getCommunicator(), &status);
+
+            if (dataSize > 0) {
+                std::vector<char> buffer(dataSize + 1);
+                MPI_Recv(buffer.data(), dataSize, MPI_CHAR, r, 1, ippl::Comm->getCommunicator(), &status);
+                buffer[dataSize] = '\0';
+                outFile << buffer.data();
+            }
+        }
+
+        outFile.close();
+    } else {
+        // Send size and data to rank 0
+        size_t dataSize = localStr.size();
+        MPI_Send(&dataSize, 1, MPI_UNSIGNED_LONG, 0, 0, ippl::Comm->getCommunicator());
+
+        if (dataSize > 0) {
+            MPI_Send(localStr.data(), dataSize, MPI_CHAR, 0, 1, ippl::Comm->getCommunicator());
+        }
+    }
+
+    // Ensure all ranks are synchronized
+    ippl::Comm->barrier();
+}
+
 // print out the timing results
 void Timing::print() {
     if (TimerList.size() < 1)
@@ -151,6 +267,18 @@ void Timing::print() {
             << std::string().assign(20, ' ') << " Wall min = " << std::setw(10) << wallmin << "\n"
             << "\n";
     }
+
+    // New: Print measurement counts
+    msg << "---------------------------------------------\n";
+    msg << "     Measurement counts:\n";
+    msg << "---------------------------------------------\n";
+    for (unsigned int i = 0; i < TimerList.size(); ++i) {
+        TimerInfo* tptr = TimerList[i].get();
+        size_t lengthName = std::min(tptr->name.length(), 19lu);
+        msg << tptr->name.substr(0, lengthName) << std::string().assign(20 - lengthName, '.')
+            << " Count = " << std::setw(10) << tptr->measurement_count << "\n";
+    }
+
     msg << "---------------------------------------------";
     msg << endl;
 }

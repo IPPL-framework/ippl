@@ -320,7 +320,11 @@ int main(int argc, char* argv[]) {
 
         // begin main timestep loop
         msg << "Starting iterations ..." << endl;
-        for (unsigned int it = 0; it < nt; it++) {
+        int warmup = 3;
+        for (unsigned int it = -warmup; it < nt; it++) {
+            if (it == 0) {
+                IpplTimings::resetAllTimers();
+            }
             // LeapFrog time stepping https://en.wikipedia.org/wiki/Leapfrog_integration
             // Here, we assume a constant charge-to-mass ratio of -1 for
             // all the particles hence eliminating the need to store mass as
@@ -365,6 +369,8 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
+
+        IpplTimings::dumpToCSV("LandauDampingPIF.csv");
     }
     ippl::finalize();
 
