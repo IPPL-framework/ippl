@@ -119,7 +119,7 @@ namespace ippl {
         /* Rank-local number of particles */
         size_type localnum          = pc.getLocalNum();
         // constexpr double over_alloc = 1.0;
-        Kokkos::deep_copy(rankSendCount_dview_m, 0);
+
         if (localnum > buf_num_m) {
             /* The indices correspond to the indices of the local particles,
              * the values correspond to the ranks to which the particles need to be sent
