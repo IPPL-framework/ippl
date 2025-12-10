@@ -18,6 +18,7 @@
 #include "Communicate/DataTypes.h"
 
 #include "Utility/IpplTimings.h"
+#include "Utility/BufferView.h"
 
 #include "FFT/FFT.h"
 #include "Interpolation/AtomicGather.h"
@@ -286,19 +287,23 @@ namespace ippl {
 
             auto pp_view = pp.getView();
 
-            // Sort particles by tile (using local binning)
-            Kokkos::View<size_type*, typename execution_space::memory_space> permute;
-            Kokkos::View<size_type*, typename execution_space::memory_space> bin_offsets;
-
-            Interpolation::detail::bin_sort_3d<PositionType, decltype(pp_view), execution_space>(
-                pp_view, n_grid_global_arr, n_grid_local_arr, local_offset_arr, tile_size_arr, w,
-                permute, bin_offsets, nParticles);
-
             // Calculate number of tiles (based on LOCAL grid)
             Kokkos::Array<size_type, 3> num_tiles;
             for (unsigned d = 0; d < 3; ++d) {
                 num_tiles[d] = (ngrid_local[d] + config.tile_size_3d - 1) / config.tile_size_3d;
             }
+            auto total_tiles = num_tiles[0] * num_tiles[1] * num_tiles[2];
+
+            // Sort particles by tile (using local binning)
+            auto permute_buf = BufferView<size_type, typename execution_space::memory_space>(nParticles);
+            auto bin_offsets_buf = BufferView<size_type, typename execution_space::memory_space>(total_tiles + 1);
+            auto& permute = permute_buf.getView();
+            auto& bin_offsets = bin_offsets_buf.getView();
+
+            Interpolation::detail::bin_sort_3d<PositionType, decltype(pp_view), execution_space>(
+                pp_view, n_grid_global_arr, n_grid_local_arr, local_offset_arr, tile_size_arr, w,
+                permute, bin_offsets, nParticles);
+
 
             // Dispatch to templated scatter functor based on kernel width
             constexpr int MaxW = 20;

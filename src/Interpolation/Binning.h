@@ -24,12 +24,14 @@ namespace ippl {
             struct BinOp3D {
                 using size_type = typename ExecSpace::memory_space::size_type;
 
-                Kokkos::Array<size_type, 3> n_grid_global;  // GLOBAL grid dimensions (for coord transform)
-                Kokkos::Array<size_type, 3> n_grid_local;   // LOCAL grid dimensions
-                Kokkos::Array<int, 3> local_offset;         // First global index of local domain
-                Kokkos::Array<int, 3> tile_size;            // Tile size per dimension
-                Kokkos::Array<size_type, 3> num_tiles;      // Number of tiles per dimension (in local domain)
-                int w;                                       // kernel width
+                Kokkos::Array<size_type, 3>
+                    n_grid_global;  // GLOBAL grid dimensions (for coord transform)
+                Kokkos::Array<size_type, 3> n_grid_local;  // LOCAL grid dimensions
+                Kokkos::Array<int, 3> local_offset;        // First global index of local domain
+                Kokkos::Array<int, 3> tile_size;           // Tile size per dimension
+                Kokkos::Array<size_type, 3>
+                    num_tiles;  // Number of tiles per dimension (in local domain)
+                int w;          // kernel width
 
                 KOKKOS_INLINE_FUNCTION int max_bins() const {
                     return (num_tiles[0] + 1) * (num_tiles[1] + 1) * (num_tiles[2] + 1) + 1;
@@ -59,9 +61,9 @@ namespace ippl {
                     int tile_z = compute_bin(get_component(keys, i, 2), 2);
 
                     // Check if particle is outside local domain
-                    if (tile_x < 0 || tile_x >= static_cast<int>(num_tiles[0]) ||
-                        tile_y < 0 || tile_y >= static_cast<int>(num_tiles[1]) ||
-                        tile_z < 0 || tile_z >= static_cast<int>(num_tiles[2])) {
+                    if (tile_x < 0 || tile_x >= static_cast<int>(num_tiles[0]) || tile_y < 0
+                        || tile_y >= static_cast<int>(num_tiles[1]) || tile_z < 0
+                        || tile_z >= static_cast<int>(num_tiles[2])) {
                         // This should not happen - particles should be on correct rank
                         assert(false && "Particle outside local domain during binning");
                         return max_bins() - 1;  // Put out-of-domain particles in last bin
@@ -115,16 +117,17 @@ namespace ippl {
              * @tparam PositionViewType The position view type (View<T*[3]> or View<Vector<T,3>*>)
              * @tparam ExecSpace Kokkos execution space
              */
-            template <typename RealType, typename PositionViewType, typename ExecSpace>
-            void bin_sort_3d(PositionViewType x,  // Positions in PHYSICAL coordinates [-pi, pi]
-                             Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid_global,  // GLOBAL grid dimensions
-                             Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid_local,   // LOCAL grid dimensions
-                             Kokkos::Array<int, 3> local_offset,  // First global index of local domain
-                             Kokkos::Array<int, 3> tile_size, int w,
-                             Kokkos::View<typename ExecSpace::memory_space::size_type*,
-                                          typename ExecSpace::memory_space>& permute,
-                             Kokkos::View<typename ExecSpace::memory_space::size_type*,
-                                          typename ExecSpace::memory_space>& bin_offsets, const size_t n_particles) {
+            template <typename RealType, typename PositionViewType, typename ExecSpace,
+                      typename PermuteViewType, typename OffsetViewType>
+            void bin_sort_3d(
+                PositionViewType x,  // Positions in PHYSICAL coordinates [-pi, pi]
+                Kokkos::Array<typename ExecSpace::memory_space::size_type, 3>
+                    n_grid_global,  // GLOBAL grid dimensions
+                Kokkos::Array<typename ExecSpace::memory_space::size_type, 3>
+                    n_grid_local,                    // LOCAL grid dimensions
+                Kokkos::Array<int, 3> local_offset,  // First global index of local domain
+                Kokkos::Array<int, 3> tile_size, int w, PermuteViewType& permute,
+                OffsetViewType& bin_offsets, const size_t n_particles) {
                 using size_type    = typename ExecSpace::memory_space::size_type;
                 using memory_space = typename ExecSpace::memory_space;
 
@@ -138,12 +141,12 @@ namespace ippl {
                 size_type n_tiles = num_tiles[0] * num_tiles[1] * num_tiles[2];
 
                 // Allocate outputs
-                Kokkos::realloc(permute, n_particles);
-                Kokkos::realloc(bin_offsets, n_tiles + 1);
+                // Kokkos::realloc(permute, n_particles);
+                // Kokkos::realloc(bin_offsets, n_tiles + 1);
 
                 // Create BinOp
                 BinOp3D<RealType, ExecSpace> bin_op{n_grid_global, n_grid_local, local_offset,
-                                                     tile_size, num_tiles, w};
+                                                    tile_size,     num_tiles,    w};
 
                 // Use Kokkos::BinSort
                 Kokkos::BinSort<decltype(x), BinOp3D<RealType, ExecSpace>> sorter(x, 0, n_particles,

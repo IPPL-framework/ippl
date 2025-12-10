@@ -15,6 +15,7 @@
 
 ////////////////////////////////////////////////
 // For message size check; see below
+
 #include <climits>
 #include <cstdlib>
 
@@ -215,6 +216,8 @@ namespace ippl {
             int rank_m;
         };
     }  // namespace mpi
+
+
 }  // namespace ippl
 
 #include "Communicate/Collectives.hpp"
