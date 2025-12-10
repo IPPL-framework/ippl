@@ -6,9 +6,6 @@
 #include <stdexcept>
 #include <string>
 
-#include "Communicate/Archive.h"
-#include "Communicate/BufferHandler.h"
-
 namespace ippl {
 
     /**
@@ -19,61 +16,52 @@ namespace ippl {
     }
 
     /**
-     * @brief Singleton access to compute buffer handler for each memory space.
-     *        Separate from MPI buffer handler to avoid interference.
+     *
+     * @tparam T Element type
+     * @tparam MemorySpace Kokkos memory space
      */
-    template <typename MemorySpace>
-    DefaultBufferHandler<MemorySpace>& getComputeBufferHandler() {
-        static DefaultBufferHandler<MemorySpace> handler;
-        return handler;
-    }
+    template <typename T, typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+    class BufferView {
+    public:
+        using view_type = Kokkos::View<T*, MemorySpace>;
 
-    /**
-     * @brief Clean up compute buffer handlers before Kokkos::finalize().
-     *        Call this for each memory space you used.
-     */
-    template <typename MemorySpace>
-    void finalizeComputeBufferHandler() {
-        getComputeBufferHandler<MemorySpace>().deleteAllBuffers();
-    }
+        explicit BufferView(size_t count)
+            : view_m("BufferView", count) {}
 
-    /**
-     * @brief Clean up all common compute buffer handlers.
-     *        Call this before Kokkos::finalize().
-     */
-    inline void finalizeComputeBufferHandlers() {
-        // Host space
-        finalizeComputeBufferHandler<Kokkos::HostSpace>();
+        ~BufferView() = default;
 
-#ifdef KOKKOS_ENABLE_CUDA
-        finalizeComputeBufferHandler<Kokkos::CudaSpace>();
-#endif
+        // Non-copyable
+        BufferView(const BufferView&)            = delete;
+        BufferView& operator=(const BufferView&) = delete;
 
-#ifdef KOKKOS_ENABLE_HIP
-        finalizeComputeBufferHandler<Kokkos::HIPSpace>();
-#endif
+        // Movable
+        BufferView(BufferView&&) = default;
+        BufferView& operator=(BufferView&&) = default;
 
-#ifdef KOKKOS_ENABLE_SYCL
-        finalizeComputeBufferHandler<Kokkos::Experimental::SYCLDeviceUSMSpace>();
-#endif
+        view_type& getView() { return view_m; }
+        const view_type& getView() const { return view_m; }
 
-        // Default execution space memory (in case it's different)
-        finalizeComputeBufferHandler<Kokkos::DefaultExecutionSpace::memory_space>();
-    }
+        T* data() { return view_m.data(); }
+        const T* data() const { return view_m.data(); }
+        size_t size() const { return view_m.extent(0); }
+
+    private:
+        view_type view_m;
+    };
 
     /**
      * @brief Allocates a single buffer and provides multiple aligned views into it.
      *
-     * Uses a separate buffer handler from MPI to avoid interference with
-     * CUDA IPC / GPUDirect RDMA memory registration.
+     * This class manages its own memory via a Kokkos View, completely independent
+     * from MPI buffer management. Use this for temporary computation buffers
+     * that don't need MPI communication.
      *
      * @tparam MemorySpace The Kokkos memory space for the buffer
      */
     template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
     class MultiViewBuffer {
     public:
-        using handler_type = DefaultBufferHandler<MemorySpace>;
-        using buffer_type  = typename handler_type::buffer_type;
+        using buffer_view_type = Kokkos::View<char*, MemorySpace>;
 
         static constexpr size_t DEFAULT_ALIGNMENT = 256;
 
@@ -81,22 +69,18 @@ namespace ippl {
          * @brief Construct without allocation. Call allocate() before getting views.
          */
         MultiViewBuffer()
-            : buffer_m(nullptr)
-            , currentOffset_m(0) {}
+            : currentOffset_m(0) {}
 
         /**
          * @brief Construct and allocate buffer of specified size.
+         * @param totalBytes Total size in bytes
+         * @param label Optional Kokkos label for debugging
          */
-        explicit MultiViewBuffer(size_t totalBytes, double overallocation = 1.0)
-            : currentOffset_m(0) {
-            allocate(totalBytes, overallocation);
-        }
+        explicit MultiViewBuffer(size_t totalBytes, const std::string& label = "MultiViewBuffer")
+            : buffer_m(label, totalBytes)
+            , currentOffset_m(0) {}
 
-        ~MultiViewBuffer() {
-            if (buffer_m) {
-                getComputeBufferHandler<MemorySpace>().freeBuffer(buffer_m);
-            }
-        }
+        ~MultiViewBuffer() = default;
 
         // Non-copyable
         MultiViewBuffer(const MultiViewBuffer&)            = delete;
@@ -106,36 +90,37 @@ namespace ippl {
         MultiViewBuffer(MultiViewBuffer&& other) noexcept
             : buffer_m(std::move(other.buffer_m))
             , currentOffset_m(other.currentOffset_m) {
-            other.buffer_m        = nullptr;
             other.currentOffset_m = 0;
         }
 
         MultiViewBuffer& operator=(MultiViewBuffer&& other) noexcept {
             if (this != &other) {
-                if (buffer_m) {
-                    getComputeBufferHandler<MemorySpace>().freeBuffer(buffer_m);
-                }
                 buffer_m              = std::move(other.buffer_m);
                 currentOffset_m       = other.currentOffset_m;
-                other.buffer_m        = nullptr;
                 other.currentOffset_m = 0;
             }
             return *this;
         }
 
         /**
-         * @brief Allocate or reallocate the underlying buffer from the pool.
+         * @brief Allocate or reallocate the underlying buffer.
+         * @param totalBytes Total size in bytes
+         * @param label Optional Kokkos label for debugging
          */
-        void allocate(size_t totalBytes, double overallocation = 1.0) {
-            if (buffer_m) {
-                getComputeBufferHandler<MemorySpace>().freeBuffer(buffer_m);
-            }
-            buffer_m        = getComputeBufferHandler<MemorySpace>().getBuffer(totalBytes, overallocation);
+        void allocate(size_t totalBytes, const std::string& label = "MultiViewBuffer") {
+            buffer_m        = buffer_view_type(label, totalBytes);
             currentOffset_m = 0;
         }
 
         /**
          * @brief Get an aligned view of count elements of type T from the buffer.
+         *
+         * Views are allocated sequentially from the buffer. Each view starts at
+         * an address aligned to DEFAULT_ALIGNMENT (256 bytes).
+         *
+         * @tparam T Element type for the view
+         * @param count Number of elements
+         * @return Unmanaged Kokkos::View pointing into the buffer
          */
         template <typename T>
         Kokkos::View<T*, MemorySpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>>
@@ -145,77 +130,55 @@ namespace ippl {
             size_t alignedOffset = alignUp(currentOffset_m, DEFAULT_ALIGNMENT);
             size_t requiredSize  = alignedOffset + count * sizeof(T);
 
-            if (!buffer_m || requiredSize > buffer_m->getBufferSize()) {
+            if (requiredSize > buffer_m.size()) {
                 throw std::runtime_error(
                     "MultiViewBuffer: insufficient space. Required: "
                     + std::to_string(requiredSize)
-                    + ", Available: " + std::to_string(buffer_m ? buffer_m->getBufferSize() : 0));
+                    + ", Available: " + std::to_string(buffer_m.size()));
             }
 
-            T* viewPtr      = reinterpret_cast<T*>(buffer_m->getBuffer() + alignedOffset);
+            T* viewPtr = reinterpret_cast<T*>(buffer_m.data() + alignedOffset);
             currentOffset_m = alignedOffset + count * sizeof(T);
 
             return view_type(viewPtr, count);
         }
 
+        /**
+         * @brief Reset the allocation offset to reuse the buffer for new views.
+         *
+         * Previously obtained views become invalid after this call.
+         */
         void reset() { currentOffset_m = 0; }
 
-        bool isAllocated() const { return buffer_m != nullptr; }
+        /**
+         * @brief Check if buffer has been allocated.
+         */
+        bool isAllocated() const { return buffer_m.size() > 0; }
+
+        /**
+         * @brief Get the current used size in bytes.
+         */
         size_t getUsedSize() const { return currentOffset_m; }
-        size_t getTotalSize() const { return buffer_m ? buffer_m->getBufferSize() : 0; }
+
+        /**
+         * @brief Get the total available size in bytes.
+         */
+        size_t getTotalSize() const { return buffer_m.size(); }
+
+        /**
+         * @brief Get remaining available bytes.
+         */
         size_t getRemainingSize() const { return getTotalSize() - currentOffset_m; }
 
-    private:
-        buffer_type buffer_m;
-        size_t currentOffset_m;
-    };
-
-    /**
-     * @brief RAII wrapper for a single typed view from the compute buffer pool.
-     */
-    template <typename T, typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
-    class BufferView {
-    public:
-        using handler_type = DefaultBufferHandler<MemorySpace>;
-        using buffer_type  = typename handler_type::buffer_type;
-        using view_type    = Kokkos::View<T*, MemorySpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
-
-        explicit BufferView(size_t count, double overallocation = 1.0)
-            : count_m(count) {
-            size_t byteSize = count * sizeof(T);
-            buffer_m        = getComputeBufferHandler<MemorySpace>().getBuffer(byteSize, overallocation);
-            view_m          = view_type(reinterpret_cast<T*>(buffer_m->getBuffer()), count);
-        }
-
-        ~BufferView() {
-            if (buffer_m) {
-                getComputeBufferHandler<MemorySpace>().freeBuffer(buffer_m);
-            }
-        }
-
-        // Non-copyable
-        BufferView(const BufferView&)            = delete;
-        BufferView& operator=(const BufferView&) = delete;
-
-        // Movable
-        BufferView(BufferView&& other) noexcept
-            : buffer_m(std::move(other.buffer_m))
-            , view_m(other.view_m)
-            , count_m(other.count_m) {
-            other.buffer_m = nullptr;
-        }
-
-        view_type& getView() { return view_m; }
-        const view_type& getView() const { return view_m; }
-
-        T* data() { return view_m.data(); }
-        const T* data() const { return view_m.data(); }
-        size_t size() const { return count_m; }
+        /**
+         * @brief Get raw pointer to buffer start.
+         */
+        char* data() { return buffer_m.data(); }
+        const char* data() const { return buffer_m.data(); }
 
     private:
-        buffer_type buffer_m;
-        view_type view_m;
-        size_t count_m;
+        buffer_view_type buffer_m;
+        size_t currentOffset_m = 0;
     };
 
     /**
@@ -224,6 +187,7 @@ namespace ippl {
     template <typename... Ts>
     struct BufferSizeComputer;
 
+    // Base case: single type
     template <typename T>
     struct BufferSizeComputer<T> {
         static constexpr size_t compute(size_t offset, size_t count) {
@@ -231,6 +195,7 @@ namespace ippl {
         }
     };
 
+    // Recursive case: multiple types
     template <typename T, typename... Rest>
     struct BufferSizeComputer<T, Rest...> {
         template <typename... Counts>
@@ -247,6 +212,10 @@ namespace ippl {
      * @brief Compute total buffer size needed for multiple views with alignment.
      *
      * Usage: auto size = computeBufferSize<double, int, float>(100, 200, 50);
+     *
+     * @tparam Ts Element types for each view
+     * @param counts Number of elements for each view
+     * @return Total required buffer size in bytes
      */
     template <typename... Ts, typename... Counts>
     constexpr size_t computeBufferSize(Counts... counts) {

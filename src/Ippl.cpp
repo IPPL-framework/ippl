@@ -93,7 +93,6 @@ namespace ippl {
 
     void finalize() {
         Comm->deleteAllBuffers();
-        finalizeComputeBufferHandlers();
         Kokkos::finalize();
         // we must first delete the communicator and
         // afterwards the MPI environment
