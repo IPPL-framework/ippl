@@ -37,7 +37,7 @@ namespace ippl {
             auto b = buffer_handler.getBuffer(size * sizeof(T),
                                               std::max(overallocation, defaultOveralloc_m));
             SPDLOG_TRACE("{}, getBuffer {}, buf, {}, size {}", (void*)this,
-                         ippl::debug::print_type<memory_space>(), (void*)(b->getBuffer()),
+                         ippl::debug::print_type<memory_space>(), (void*)(b->getData()),
                          size * sizeof(T));
             return b;
         }
@@ -46,7 +46,7 @@ namespace ippl {
         void Communicator::freeBuffer(Communicator::buffer_type<BufferType> buffer) {
             using memory_space   = BufferType::memory_space;
             auto& buffer_handler = buffer_handlers_m->get<memory_space>();
-            SPDLOG_TRACE("freeBuffer buf, {}", (void*)(buffer->getBuffer()));
+            SPDLOG_TRACE("freeBuffer buf, {}", (void*)(buffer->getData()));
             buffer_handler.freeBuffer(buffer);
         }
 

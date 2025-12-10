@@ -73,7 +73,7 @@ namespace ippl {
             /*!
              * @returns a pointer to the data of the buffer
              */
-            pointer_type getBuffer() { return buffer_m.data(); }
+            pointer_type getData() { return buffer_m.data(); }
 
             /*!
              * @returns the size of the buffer
@@ -88,6 +88,10 @@ namespace ippl {
                 Kokkos::realloc(buffer_m, size); /*buffer_m.reallocBuffer(size);*/
             }
 
+            void resetReadWritePos() {
+                readpos_m  = 0;
+                writepos_m = 0;
+            }
             void resetWritePos() { writepos_m = 0; }
             void resetReadPos() { readpos_m = 0; }
 
