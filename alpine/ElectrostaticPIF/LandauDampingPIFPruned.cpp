@@ -360,7 +360,7 @@ int main(int argc, char* argv[]) {
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
         std::string res_file  = "LandauDampingPIFPruned";
-        res_file += ippl::Comm->size();
+        res_file += std::to_string(ippl::Comm->size());
         res_file += ".csv";
         IpplTimings::dumpToCSV(res_file);
     }
