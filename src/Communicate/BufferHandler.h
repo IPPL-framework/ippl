@@ -7,8 +7,8 @@
 #include "Types/IpplTypes.h"
 #include "Types/ViewTypes.h"
 
-#include "Utility/TypeUtils.h"
 #include "Utility/Logging.h"
+#include "Utility/TypeUtils.h"
 
 #include "Communicate/Archive.h"
 
