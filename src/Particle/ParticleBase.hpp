@@ -282,7 +282,10 @@ namespace ippl {
                 return;
             }
 
+            static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("sendtorank_getbuffer");
+            IpplTimings::startTimer(sendTimer);
             auto buf = Comm->getBuffer<MemorySpace>(bufSize);
+            IpplTimings::stopTimer(sendTimer);
 
             Comm->isend(rank, tag++, *this, *buf, requests.back(), nSends);
             buf->resetWritePos();
