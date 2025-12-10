@@ -360,47 +360,50 @@ namespace ippl {
             // Phase 1: Submit strided copies + FFTs for this batch in parallel
             IpplTimings::startTimer(SubFFTs);
 
-            // Launch all sub-FFTs in this batch on separate streams
-            Kokkos::parallel_for(
-                "PrunedFFT parallel sub-FFTs batch",
-                Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, batchSize),
-                [&](const int localIdx) {
-                    const int k    = batchStart + localIdx;  // Which sub-FFT (0-7)
-                    const int slot = localIdx;               // Which slot to use (0 to batchSize-1)
+            // (paul) I cannot use a Kokkos::parallel_for here over the host execution space,
+            // because then the code does not run on CPU due to two nester parallel_fors on the
+            // same execution space. Either I need to do some pragmas below in the device
+            // parallel_for or a raw omp parallel for here. Launch all sub-FFTs in this batch on
+            // separate streams Kokkos::parallel_for(
+            //     "PrunedFFT parallel sub-FFTs batch",
+            //     Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, batchSize),
+            //     [&](const int localIdx) {
+#pragma omp parallel for
+            for (int localIdx = 0; localIdx < batchSize; ++localIdx) {
+                const int k    = batchStart + localIdx;  // Which sub-FFT (0-7)
+                const int slot = localIdx;               // Which slot to use (0 to batchSize-1)
 
-                    auto offs                = offsets[k];
-                    auto& tempFieldInputView = tempFieldInputs[slot];
-                    auto exec_instance       = get_exec_instance(slot);
+                auto offs                = offsets[k];
+                auto& tempFieldInputView = tempFieldInputs[slot];
+                auto exec_instance       = get_exec_instance(slot);
 
-                    // Strided copy on this slot's stream
-                    using mdrange_policy_t =
-                        Kokkos::MDRangePolicy<device_exec_space, Kokkos::Rank<Dim>>;
-                    mdrange_policy_t policy(exec_instance, {lo[0], lo[1], lo[2]},
-                                            {hi[0], hi[1], hi[2]});
+                // Strided copy on this slot's stream
+                using mdrange_policy_t =
+                    Kokkos::MDRangePolicy<device_exec_space, Kokkos::Rank<Dim>>;
+                mdrange_policy_t policy(exec_instance, {lo[0], lo[1], lo[2]},
+                                        {hi[0], hi[1], hi[2]});
 
-                    Kokkos::parallel_for(
-                        "strided input copy PrunedFFT", policy,
-                        KOKKOS_LAMBDA(const int i0, const int i1, const int i2) {
-                            index_array_type args = {i0, i1, i2};
-                            auto strided_in       = args * 2 + offs + nghost_in;
+                Kokkos::parallel_for(
+                    "strided input copy PrunedFFT", policy,
+                    KOKKOS_LAMBDA(const int i0, const int i1, const int i2) {
+                        index_array_type args = {i0, i1, i2};
+                        auto strided_in       = args * 2 + offs + nghost_in;
 
-                            apply(tempFieldInputView, args)
-                                .real(apply(input_view, strided_in).real());
-                            apply(tempFieldInputView, args)
-                                .imag(apply(input_view, strided_in).imag());
-                        });
+                        apply(tempFieldInputView, args).real(apply(input_view, strided_in).real());
+                        apply(tempFieldInputView, args).imag(apply(input_view, strided_in).imag());
+                    });
 
-                    // FFT on same stream - automatically waits for copy
-                    if (dir == 1) {
-                        pruned_heffte_m[slot]->forward(
-                            tempFieldInputs[slot].data(), tempFieldInputs[slot].data(),
-                            workspaces_m[slot].data(), heffte::scale::full);
-                    } else {
-                        pruned_heffte_m[slot]->backward(
-                            tempFieldInputs[slot].data(), tempFieldInputs[slot].data(),
-                            workspaces_m[slot].data(), heffte::scale::none);
-                    }
-                });
+                // FFT on same stream - automatically waits for copy
+                if (dir == 1) {
+                    pruned_heffte_m[slot]->forward(tempFieldInputs[slot].data(),
+                                                   tempFieldInputs[slot].data(),
+                                                   workspaces_m[slot].data(), heffte::scale::full);
+                } else {
+                    pruned_heffte_m[slot]->backward(tempFieldInputs[slot].data(),
+                                                    tempFieldInputs[slot].data(),
+                                                    workspaces_m[slot].data(), heffte::scale::none);
+                }
+            }
 
             // Wait for all streams in this batch to complete before accumulation
             Kokkos::fence();
@@ -529,60 +532,62 @@ namespace ippl {
             // Phase 1: Apply twiddle factors and run sub-IFFTs for this batch
             IpplTimings::startTimer(SubIFFTs);
 
-            Kokkos::parallel_for(
-                "PrunedIFFT parallel sub-IFFTs batch",
-                Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, batchSize),
-                [&](const int localIdx) {
-                    const int k    = batchStart + localIdx;
-                    const int slot = localIdx;
+            // Kokkos::parallel_for(
+            //     "PrunedIFFT parallel sub-IFFTs batch",
+            //     Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, batchSize),
+            //     [&](const int localIdx) {
+#pragma omp parallel for
+            for (int localIdx = 0; localIdx < batchSize; ++localIdx) {
+                const int k    = batchStart + localIdx;
+                const int slot = localIdx;
 
-                    auto offs                = offsets[k];
-                    auto& tempFieldInputView = tempFieldInputs[slot];
-                    auto exec_instance       = get_exec_instance(slot);
+                auto offs                = offsets[k];
+                auto& tempFieldInputView = tempFieldInputs[slot];
+                auto exec_instance       = get_exec_instance(slot);
 
-                    using mdrange_policy_t =
-                        Kokkos::MDRangePolicy<device_exec_space, Kokkos::Rank<Dim>>;
-                    mdrange_policy_t policy(exec_instance, {lo[0], lo[1], lo[2]},
-                                            {hi[0], hi[1], hi[2]});
+                using mdrange_policy_t =
+                    Kokkos::MDRangePolicy<device_exec_space, Kokkos::Rank<Dim>>;
+                mdrange_policy_t policy(exec_instance, {lo[0], lo[1], lo[2]},
+                                        {hi[0], hi[1], hi[2]});
 
-                    // Apply twiddle factors to input and copy to temp buffer
-                    Kokkos::parallel_for(
-                        "twiddle multiply PrunedIFFT", policy,
-                        KOKKOS_LAMBDA(const int i0, const int i1, const int i2) {
-                            index_array_type args = {i0, i1, i2};
-                            auto g                = args + localFirst;
+                // Apply twiddle factors to input and copy to temp buffer
+                Kokkos::parallel_for(
+                    "twiddle multiply PrunedIFFT", policy,
+                    KOKKOS_LAMBDA(const int i0, const int i1, const int i2) {
+                        index_array_type args = {i0, i1, i2};
+                        auto g                = args + localFirst;
 
-                            // Map pruned frequency index to full frequency index
-                            Vector<int64_t, Dim> freq;
-                            for (int d = 0; d < Dim; ++d) {
-                                if (g[d] < static_cast<int64_t>(pruned_modes[d]) / 2) {
-                                    freq[d] = g[d];
-                                } else {
-                                    freq[d] = static_cast<int64_t>(gDomFull[d].length())
-                                              - static_cast<int64_t>(pruned_modes[d]) + g[d];
-                                }
+                        // Map pruned frequency index to full frequency index
+                        Vector<int64_t, Dim> freq;
+                        for (int d = 0; d < Dim; ++d) {
+                            if (g[d] < static_cast<int64_t>(pruned_modes[d]) / 2) {
+                                freq[d] = g[d];
+                            } else {
+                                freq[d] = static_cast<int64_t>(gDomFull[d].length())
+                                          - static_cast<int64_t>(pruned_modes[d]) + g[d];
                             }
+                        }
 
-                            // Compute twiddle factor (positive sign for inverse)
-                            Complex_t w = 1.0;
-                            for (int d = 0; d < Dim; ++d) {
-                                if (offs[d] != 0) {
-                                    double ang = 2.0 * M_PI * static_cast<double>(freq[d])
-                                                 / static_cast<double>(gDomFull[d].length());
-                                    w *= Complex_t(std::cos(ang), std::sin(ang));
-                                }
+                        // Compute twiddle factor (positive sign for inverse)
+                        Complex_t w = 1.0;
+                        for (int d = 0; d < Dim; ++d) {
+                            if (offs[d] != 0) {
+                                double ang = 2.0 * M_PI * static_cast<double>(freq[d])
+                                             / static_cast<double>(gDomFull[d].length());
+                                w *= Complex_t(std::cos(ang), std::sin(ang));
                             }
+                        }
 
-                            auto input_val = apply(input_view, args + nghost_in);
-                            apply(tempFieldInputView, args).real((w * input_val).real());
-                            apply(tempFieldInputView, args).imag((w * input_val).imag());
-                        });
+                        auto input_val = apply(input_view, args + nghost_in);
+                        apply(tempFieldInputView, args).real((w * input_val).real());
+                        apply(tempFieldInputView, args).imag((w * input_val).imag());
+                    });
 
-                    // Backward FFT on same stream
-                    pruned_heffte_m[slot]->backward(tempFieldInputs[slot].data(),
-                                                    tempFieldInputs[slot].data(),
-                                                    workspaces_m[slot].data(), heffte::scale::none);
-                });
+                // Backward FFT on same stream
+                pruned_heffte_m[slot]->backward(tempFieldInputs[slot].data(),
+                                                tempFieldInputs[slot].data(),
+                                                workspaces_m[slot].data(), heffte::scale::none);
+            }
 
             // Wait for all streams in this batch
             Kokkos::fence();
@@ -1755,9 +1760,21 @@ namespace ippl {
                         }
                     });
             } else if (type_m == 2) {
+                Kokkos::parallel_for(
+                    "Scale particles to 2pi", localNp, KOKKOS_LAMBDA(const size_t i) {
+                        for (size_t d = 0; d < Dim; ++d) {
+                            Rview(i)[d] *= (2.0 * pi / Len[d]);
+                        }
+                    });
                 nufft->type2(
                     f, R, Q,
                     use_upsampled_inputs_m);  // Note: argument order is different for type2
+                Kokkos::parallel_for(
+                    "Roll back the scaling", localNp, KOKKOS_LAMBDA(const size_t i) {
+                        for (size_t d = 0; d < Dim; ++d) {
+                            Rview(i)[d] *= (Len[d] / (2.0 * pi));
+                        }
+                    });
             }
         }
     }

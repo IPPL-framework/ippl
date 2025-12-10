@@ -142,6 +142,7 @@ const char* TestName = "LandauDampingPIF";
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
+    sleep(2);
     {
         Inform msg("LandauDampingPIF");
         Inform msg2all("LandauDampingPIF", INFORM_ALL_NODES);
