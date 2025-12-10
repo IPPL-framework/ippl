@@ -22,7 +22,7 @@ namespace ippl {
         using buffer_type = typename mpi::Communicator::buffer_type<MemorySpace>;
         using view_type   = Kokkos::View<T*, MemorySpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
-        BufferView(size_t count, double overallocation = 1.0)
+        BufferView(size_t count, double overallocation = 1.5)
             : count_m(count) {
             size_t byteSize = count * sizeof(T);
             buffer_m        = Comm->getBuffer<MemorySpace, T>(byteSize, overallocation);
@@ -87,7 +87,7 @@ namespace ippl {
             , totalSize_m(0)
             , currentOffset_m(0) {}
 
-        MultiViewBuffer(size_t totalBytes, double overallocation = 1.0)
+        MultiViewBuffer(size_t totalBytes, double overallocation = 1.5)
             : currentOffset_m(0) {
             allocate(totalBytes, overallocation);
         }
