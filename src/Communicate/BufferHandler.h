@@ -126,6 +126,48 @@ namespace ippl::comms {
     using archive_buffer = rma_archive_type<comm_storage_wrapper<Properties...>>;
 #endif
 
+    // shared pointer wrapper around an archive wrapper
+    template <typename BufferType>
+    struct rma_shared_archive {
+        using type = std::shared_ptr<typename rma_archive<BufferType>::type>;
+    };
+
+    // bind the buffer type to the shared archive so we can access with just a memory space
+    template <template <typename> class BufferType>
+    struct rma_shared_archive_binder {
+        template <typename MemorySpace>
+        using apply = typename rma_shared_archive<BufferType<MemorySpace>>::type;
+    };
+
+    // wrap the bound buffer type in a container for all spaces
+    template <template <typename> class BufferType>
+    using rma_shared_archive_for_all_spaces = typename detail::ContainerForAllSpaces<
+        rma_shared_archive_binder<BufferType>::template apply>::type;
+
+    // a container we can access with just the memoryspace
+    using mpi_comm_buffer_for_all_spaces = rma_shared_archive_for_all_spaces<comm_storage_wrapper>;
+
+    // ---------------------------------------------
+    // vector per MemorySpace
+    template <template <typename> class BufferType, typename MemorySpace>
+    struct comm_buff_vector_for_space {
+        using type = std::vector<typename rma_shared_archive<BufferType<MemorySpace>>::type>;
+    };
+
+    // bind the buffer type to the template so we can access using just a memory space template
+    template <template <typename> class BufferType>
+    struct comm_buff_vector_binder {
+        template <typename MemorySpace>
+        using apply = typename comm_buff_vector_for_space<BufferType, MemorySpace>::type;
+    };
+
+    // alias template for all spaces
+    template <template <typename> class BufferType>
+    using mpi_comm_buffer_container_for_all_spaces = typename detail::ContainerForAllSpaces<
+        comm_buff_vector_binder<BufferType>::template apply>::type;
+
+    using mpi_buffer_container = mpi_comm_buffer_container_for_all_spaces<comm_storage_wrapper>;
+
     /**
      * @brief Interface for memory buffer handling.
      *

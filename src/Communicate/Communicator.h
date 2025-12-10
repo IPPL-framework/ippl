@@ -134,6 +134,14 @@ namespace ippl::mpi {
         using buffer_type = buffer_container_type<MemorySpace>::buffer_type;
 
     public:
+        template <typename MemorySpace>
+        struct async_send_data {
+            buffer_type<MemorySpace> async_buffer;
+            int tag;
+            MPI_Request request;
+        };
+
+    public:
         using size_type = detail::size_type;
         double getDefaultOverallocation() const { return defaultOveralloc_m; }
         void setDefaultOverallocation(double factor);

@@ -193,6 +193,8 @@ namespace ippl {
                 auto& del     = deleteIndex_m.get<memory_space>();
                 auto& keep    = keepIndex_m.get<memory_space>();
                 if (del.size() < destroyNum) {
+                    SPDLOG_SCOPE("ParticleBase::internalDestroy realloc: {}, from {}, to {}",
+                                 (void*)del.data(), del.extent(0), destroyNum * overalloc);
                     Kokkos::realloc(del, destroyNum * overalloc);
                     Kokkos::realloc(keep, destroyNum * overalloc);
                 }
@@ -266,26 +268,26 @@ namespace ippl {
 
     template <class PLayout, typename... IP>
     template <typename HashType>
-    void ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag,
-                                                  std::vector<MPI_Request>& requests,
+    void ParticleBase<PLayout, IP...>::sendToRank(comms::mpi_comm_buffer_for_all_spaces& buffs,
+                                                  int rank, int tag, MPI_Request& request,
                                                   const HashType& hash) {
         size_type nSends = hash.size();
-        requests.resize(requests.size() + 1);
 
         auto hashes = hash_container_type(hash, [&]<typename MemorySpace>() {
             return attributes_m.template get<MemorySpace>().size() > 0;
         });
-        pack(hashes);
+        {
+            SPDLOG_SCOPE("hash", Comm->rank(), "pack");
+            pack(hashes);
+        }
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             size_type bufSize = packedSize<MemorySpace>(nSends);
-            if (bufSize == 0) {
+            if (bufSize == 0)
                 return;
-            }
-
             auto buf = Comm->getBuffer<MemorySpace>(bufSize);
-
-            Comm->isend(rank, tag++, *this, *buf, requests.back(), nSends);
+            Comm->isend(rank, tag++, *this, *buf, request, nSends);
             buf->resetWritePos();
+            buffs.template get<MemorySpace>() = buf;
         });
     }
 
@@ -303,6 +305,29 @@ namespace ippl {
             buf->resetReadPos();
         });
         unpack(nRecvs);
+    }
+
+    template <class PLayout, typename... IP>
+    void ParticleBase<PLayout, IP...>::unpackRecv(comms::mpi_comm_buffer_for_all_spaces mbuf,
+                                                  int nRecvs) {
+        detail::runForAllSpaces([&]<typename MemorySpace>() {
+            auto rank = Comm->rank();
+            auto buf  = mbuf.get<MemorySpace>();
+            if (buf) {
+                buf->resetReadPos();
+                {
+                    SPDLOG_SCOPE("recv", rank, "deserialize",
+                                 ippl::debug::print_type<decltype(buf)>());
+                    forAllAttributes<MemorySpace>([&]<typename Attribute>(Attribute& att) {
+                        att->deserialize(*buf, nRecvs);
+                    });
+                }
+                {
+                    SPDLOG_SCOPE("recv", rank, "unpack", ippl::debug::print_type<decltype(buf)>());
+                    unpack(nRecvs);
+                }
+            }
+        });
     }
 
     template <class PLayout, typename... IP>

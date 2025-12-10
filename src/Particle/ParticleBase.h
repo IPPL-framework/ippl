@@ -68,7 +68,7 @@ namespace ippl {
      *
      *  Minimal empty base class for all ParticleBase specializations.
      *  Needed for e.g: c++20 constraints and concepts using std::derived_from
-     * 
+     *
      */
     class ParticleBaseBase {
     public:
@@ -84,7 +84,7 @@ namespace ippl {
      * IDs will be disabled for the bunch)
      */
     template <class PLayout, typename... IDProperties>
-    class ParticleBase: public ParticleBaseBase {
+    class ParticleBase : public ParticleBaseBase {
         constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
 
     public:
@@ -301,17 +301,23 @@ namespace ippl {
          * @param hash a hash view indicating which particles need to be sent to which rank
          */
         template <typename HashType>
-        void sendToRank(int rank, int tag, std::vector<MPI_Request>& requests,
-                        const HashType& hash);
+        void sendToRank(comms::mpi_comm_buffer_for_all_spaces& buffs, int rank, int tag,
+                        MPI_Request& request, const HashType& hash);
 
         /*!
          * Receives particles from another rank
          * @param rank the source rank
          * @param tag the MPI tag
-         * @param recvNum the number of messages already received (to distinguish the buffers)
          * @param nRecvs the number of particles to receive
          */
         void recvFromRank(int rank, int tag, size_type nRecvs);
+
+        /*!
+         * Unpack data received in async irecv
+         * @param N the number of particles to receive
+         * @param comm_buffer A container of buffers in each iRecv request
+         */
+        void unpackRecv(comms::mpi_comm_buffer_for_all_spaces, int N);
 
         /*!
          * Serialize to do MPI calls.
