@@ -321,7 +321,7 @@ int main(int argc, char* argv[]) {
         // begin main timestep loop
         msg << "Starting iterations ..." << endl;
         int warmup = 3;
-        for (unsigned int it = -warmup; it < nt; it++) {
+        for (int it = -warmup; it < (int)nt; it++) {
             if (it == 0) {
                 IpplTimings::resetAllTimers();
             }
