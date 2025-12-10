@@ -414,6 +414,9 @@ namespace ippl {
                             + "). Need nghost >= " + std::to_string(hw));
                     }
 
+                    static IpplTimings::TimerRef gatherSortTimer = IpplTimings::getTimer("gatherKernelSort");
+                    IpplTimings::startTimer(gatherSortTimer);
+
                     using memory_space = typename execution_space::memory_space;
 
                     // Sort particles by Morton code
@@ -431,6 +434,8 @@ namespace ippl {
 
                     detail::sortParticles<3, execution_space, PositionType>(
                         x_view, permute, origin, invdx, ngrid_vec, nParticles);
+
+                    IpplTimings::stopTimer(gatherSortTimer);
 
                     // Dispatch to specialized kernel
                     constexpr int MaxW = 20;

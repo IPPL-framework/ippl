@@ -201,7 +201,7 @@ namespace ippl {
         static_assert(Dim == 3, "Parallel pruned FFT currently only supports 3D");
 
         // Get number of concurrent FFTs (1-8, default to 2)
-        int numConcurrent  = params.get<int>("num_concurrent_ffts", 2);
+        int numConcurrent  = params.get<int>("num_concurrent_ffts", 1);
         numConcurrentFFTs_ = std::max(1, std::min(numConcurrent, numSubFFTs));
 
         // Setup heFFTe with the full (input) grid domain
@@ -227,10 +227,10 @@ namespace ippl {
 
         heffte::plan_options heffteOptions = heffte::default_options<heffteBackend>();
 
-        heffteOptions.use_pencils = true;
-        heffteOptions.use_reorder = false;
+        heffteOptions.use_pencils   = true;
+        heffteOptions.use_reorder   = false;
         heffteOptions.use_gpu_aware = true;
-        heffteOptions.algorithm = heffte::reshape_algorithm::p2p;
+        heffteOptions.algorithm     = heffte::reshape_algorithm::p2p;
 
         if (!params.get<bool>("use_heffte_defaults")) {
             heffteOptions.use_pencils = params.get<bool>("use_pencils");
@@ -1739,26 +1739,26 @@ namespace ippl {
             auto* nufft         = static_cast<NativeNUFFT_t*>(native_nufft_);
             auto Rview          = R.getView();
             auto fview          = f.getView();
-            Kokkos::parallel_for(
-                "Scale particles to 2pi", localNp, KOKKOS_LAMBDA(const size_t i) {
-                    for (size_t d = 0; d < Dim; ++d) {
-                        Rview(i)[d] *= (2.0 * pi / Len[d]);
-                    }
-                });
 
             if (type_m == 1) {
+                Kokkos::parallel_for(
+                    "Scale particles to 2pi", localNp, KOKKOS_LAMBDA(const size_t i) {
+                        for (size_t d = 0; d < Dim; ++d) {
+                            Rview(i)[d] *= (2.0 * pi / Len[d]);
+                        }
+                    });
                 nufft->type1(R, Q, f, use_upsampled_inputs_m);
+                Kokkos::parallel_for(
+                    "Roll back the scaling", localNp, KOKKOS_LAMBDA(const size_t i) {
+                        for (size_t d = 0; d < Dim; ++d) {
+                            Rview(i)[d] *= (Len[d] / (2.0 * pi));
+                        }
+                    });
             } else if (type_m == 2) {
                 nufft->type2(
                     f, R, Q,
                     use_upsampled_inputs_m);  // Note: argument order is different for type2
             }
-            Kokkos::parallel_for(
-                "Roll back the scaling", localNp, KOKKOS_LAMBDA(const size_t i) {
-                    for (size_t d = 0; d < Dim; ++d) {
-                        Rview(i)[d] *= (Len[d] / (2.0 * pi));
-                    }
-                });
         }
     }
 

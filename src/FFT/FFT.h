@@ -700,10 +700,10 @@ namespace ippl {
         bool use_kokkos_nufft;
         bool use_finufft;
         bool use_upsampled_inputs_m;
+        std::array<int64_t, 3> n_modes;
 
 #ifdef KOKKOS_NUFFT_AVAILABLE
         std::unique_ptr<kokkos_nufft_t> kokkos_nufft_plan;
-        std::array<int64_t, 3> n_modes;
 #endif
 
         // Native NUFFT implementation (opaque pointer, actual type defined in FFT.hpp)

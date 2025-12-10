@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
 
         using Vector_t = ippl::Vector<double, 3>;
         Vector_t minU  = {0.0, 0.0, 0.0};
-        Vector_t maxU  = {2 * pi, 2 * pi, 2 * pi};
+        Vector_t maxU  = {4 * pi, 4 * pi, 4 * pi};
 
         std::array<double, dim> dx = {
             (maxU[0] - minU[0]) / double(pt[0]),
