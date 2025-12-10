@@ -201,7 +201,7 @@ namespace ippl {
         static_assert(Dim == 3, "Parallel pruned FFT currently only supports 3D");
 
         // Get number of concurrent FFTs (1-8, default to 2)
-        int numConcurrent  = params.get<int>("num_concurrent_ffts", 1);
+        int numConcurrent  = params.get<int>("num_concurrent_ffts", 4);
         numConcurrentFFTs_ = std::max(1, std::min(numConcurrent, numSubFFTs));
 
         // Setup heFFTe with the full (input) grid domain
@@ -364,12 +364,13 @@ namespace ippl {
             // because then the code does not run on CPU due to two nester parallel_fors on the
             // same execution space. Either I need to do some pragmas below in the device
             // parallel_for or a raw omp parallel for here. Launch all sub-FFTs in this batch on
-            // separate streams Kokkos::parallel_for(
-            //     "PrunedFFT parallel sub-FFTs batch",
-            //     Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, batchSize),
-            //     [&](const int localIdx) {
-#pragma omp parallel for
-            for (int localIdx = 0; localIdx < batchSize; ++localIdx) {
+            // separate streams 
+Kokkos::parallel_for(
+                 "PrunedFFT parallel sub-FFTs batch",
+                 Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, batchSize),
+                 [&](const int localIdx) {
+//#pragma omp parallel for
+//            for (int localIdx = 0; localIdx < batchSize; ++localIdx) {
                 const int k    = batchStart + localIdx;  // Which sub-FFT (0-7)
                 const int slot = localIdx;               // Which slot to use (0 to batchSize-1)
 
@@ -403,7 +404,7 @@ namespace ippl {
                                                     tempFieldInputs[slot].data(),
                                                     workspaces_m[slot].data(), heffte::scale::none);
                 }
-            }
+            });
 
             // Wait for all streams in this batch to complete before accumulation
             Kokkos::fence();
@@ -532,12 +533,12 @@ namespace ippl {
             // Phase 1: Apply twiddle factors and run sub-IFFTs for this batch
             IpplTimings::startTimer(SubIFFTs);
 
-            // Kokkos::parallel_for(
-            //     "PrunedIFFT parallel sub-IFFTs batch",
-            //     Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, batchSize),
-            //     [&](const int localIdx) {
-#pragma omp parallel for
-            for (int localIdx = 0; localIdx < batchSize; ++localIdx) {
+            Kokkos::parallel_for(
+                "PrunedIFFT parallel sub-IFFTs batch",
+                 Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, batchSize),
+                 [&](const int localIdx) {
+//#pragma omp parallel for
+            //for (int localIdx = 0; localIdx < batchSize; ++localIdx) {
                 const int k    = batchStart + localIdx;
                 const int slot = localIdx;
 
@@ -587,7 +588,7 @@ namespace ippl {
                 pruned_heffte_m[slot]->backward(tempFieldInputs[slot].data(),
                                                 tempFieldInputs[slot].data(),
                                                 workspaces_m[slot].data(), heffte::scale::none);
-            }
+            });
 
             // Wait for all streams in this batch
             Kokkos::fence();

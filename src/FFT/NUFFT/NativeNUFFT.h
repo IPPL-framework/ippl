@@ -177,7 +177,7 @@ namespace ippl {
                     fftParams.add("use_pencils", true);
                     fftParams.add("use_reorder", false);
                     fftParams.add("use_gpu_aware", true);
-                    fftParams.add("comm", 2);
+                    fftParams.add("comm", 3);
                     heffte_fft_ =
                         std::make_unique<FFT<CCTransform, ComplexField>>(*grid_layout_, fftParams);
                 } else {

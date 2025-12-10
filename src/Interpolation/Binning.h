@@ -141,10 +141,10 @@ namespace ippl {
                 size_type n_tiles = num_tiles[0] * num_tiles[1] * num_tiles[2];
 
                 // Allocate outputs
-                //Kokkos::realloc(permute, n_particles);
-                //Kokkos::realloc(bin_offsets, n_tiles + 1);
-		Kokkos::deep_copy(permute, 0);
-		Kokkos::deep_copy(bin_offsets, 0);
+                Kokkos::realloc(permute, n_particles);
+                Kokkos::realloc(bin_offsets, n_tiles + 1);
+		//Kokkos::deep_copy(permute, 0);
+		//Kokkos::deep_copy(bin_offsets, 0);
 
                 // Create BinOp
                 BinOp3D<RealType, ExecSpace> bin_op{n_grid_global, n_grid_local, local_offset,
