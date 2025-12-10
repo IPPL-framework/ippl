@@ -13,7 +13,7 @@
 // fun: the function for which to create the wrapper, such as ippl::laplace
 // type: the argument type, which should match the LHS type for the solver
 #define IPPL_SOLVER_OPERATOR_WRAPPER(fun, type) \
-    [](type& arg) {                              \
+    [](type arg) {                              \
         return fun(arg);                        \
     }
 

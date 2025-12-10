@@ -110,7 +110,7 @@ namespace ippl {
             BConds<FieldRHS, Dim>& bcField = (this->rhs_mp)->getFieldBC();
             FieldBC bcType = bcField[0]->getBCType();
 
-            const auto algoOperator = [poissonEquationEval, &bcField, this](rhs_type& field) -> lhs_type {
+            const auto algoOperator = [poissonEquationEval, &bcField, this](rhs_type field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
