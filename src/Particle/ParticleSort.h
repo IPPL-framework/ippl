@@ -63,24 +63,23 @@ namespace detail {
     /**
      * @brief Functor to compute Morton codes for all particles
      */
-    template <unsigned Dim, typename PositionView, typename T>
-    struct ComputeMortonCodesFunctor {
-        using memory_space = typename PositionView::memory_space;
-        using size_type = typename memory_space::size_type;
+template <unsigned Dim, typename PositionView, typename T, typename KeyView>
+struct ComputeMortonCodesFunctor {
+    using memory_space = typename PositionView::memory_space;
+    using size_type = size_t;
 
-        PositionView positions;
-        Kokkos::View<uint64_t*, memory_space> keys;
-        Vector<T, Dim> origin;
-        Vector<T, Dim> invdx;
-        Vector<size_type, Dim> ngrid;
+    PositionView positions;
+    KeyView keys; 
+    Vector<T, Dim> origin;
+    Vector<T, Dim> invdx;
+    Vector<size_type, Dim> ngrid;
 
-        KOKKOS_INLINE_FUNCTION
-        void operator()(size_type i) const {
-            keys(i) = computeMortonCode<Dim, T, size_type>(
-                positions(i), origin, invdx, ngrid);
-        }
-    };
-
+    KOKKOS_INLINE_FUNCTION
+    void operator()(size_type i) const {
+        keys(i) = computeMortonCode<Dim, T, size_type>(
+            positions(i), origin, invdx, ngrid);
+    }
+};
     /**
      * @brief Sort particles on host using std::sort
      */
@@ -147,7 +146,7 @@ namespace detail {
         // Compute Morton codes
         Kokkos::parallel_for("compute_morton_codes",
             Kokkos::RangePolicy<Kokkos::Cuda>(0, n),
-            ComputeMortonCodesFunctor<Dim, decltype(positions), T>{
+            ComputeMortonCodesFunctor<Dim, decltype(positions), T, decltype(keys)>{
                 positions, keys, origin, invdx, ngrid
             });
 

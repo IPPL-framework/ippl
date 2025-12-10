@@ -124,7 +124,7 @@ namespace ippl {
             using view_type =
                 Kokkos::View<T*, MemorySpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
-            constexpr size_t alignment = alignof(T);
+            constexpr size_t alignment = 256;
             size_t alignedOffset       = alignUp(currentOffset_m, alignment);
             size_t requiredSize        = alignedOffset + count * sizeof(T);
 
@@ -184,7 +184,7 @@ namespace ippl {
     template <typename T>
     struct BufferSizeComputer<T> {
         static constexpr size_t compute(size_t offset, size_t count) {
-            return alignUp(offset, alignof(T)) + count * sizeof(T);
+            return alignUp(offset, 256) + count * sizeof(T);
         }
     };
 
@@ -195,7 +195,7 @@ namespace ippl {
         static constexpr size_t compute(size_t offset, size_t count, Counts... counts) {
             static_assert(sizeof...(Rest) == sizeof...(Counts),
                           "Number of remaining types must match remaining counts");
-            size_t alignedOffset = alignUp(offset, alignof(T));
+            size_t alignedOffset = alignUp(offset, 256);
             size_t newOffset     = alignedOffset + count * sizeof(T);
             return BufferSizeComputer<Rest...>::compute(newOffset, counts...);
         }
