@@ -118,14 +118,14 @@ namespace ippl {
 
         /* Rank-local number of particles */
         size_type localnum          = pc.getLocalNum();
-        // constexpr double over_alloc = 1.0;
+        constexpr double over_alloc = 1.5;
 
         if (localnum < buf_num_m) {
             /* The indices correspond to the indices of the local particles,
              * the values correspond to the ranks to which the particles need to be sent
              */
             particleRanks_m =
-                locate_type("particles' MPI ranks", localnum);
+                locate_type("particles' MPI ranks", static_cast<int>(over_alloc * localnum));
 
             /* The indices are the indices of the particles,
              * the boolean values describe whether the particle has left the current rank
@@ -133,9 +133,9 @@ namespace ippl {
              * 1 --> particle invalid (left rank)
              */
             invalidParticles_m =
-                bool_type("validity of particles", localnum);
+                bool_type("validity of particles", static_cast<int>(over_alloc * localnum));
 
-            buf_num_m = localnum;
+            buf_num_m = static_cast<int>(over_alloc * localnum);
         }
 
         /* nInvalid is the number of invalid particles
