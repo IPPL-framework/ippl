@@ -21,12 +21,19 @@ namespace ippl {
          */
         template <typename T, class... ViewArgs>
         struct FieldBufferData {
-            using view_type    = typename detail::ViewType<T, 1, ViewArgs...>::view_type;
-            using archive_type = comms::archive_buffer<typename view_type::memory_space>;
+            // template <typename BufferType = ippl::detail::ViewType<char, 1,
+            // ViewArgs...>::view_type> using archive_type = detail::Archive<BufferType>;
+            using view_type = typename detail::ViewType<T, 1, ViewArgs...>::view_type;
 
-            void serialize(archive_type& ar, size_type nsends) { ar.serialize(buffer, nsends); }
+            template <typename Archive>
+            void serialize(Archive& ar, size_type nsends) {
+                ar.serialize(buffer, nsends);
+            }
 
-            void deserialize(archive_type& ar, size_type nrecvs) { ar.deserialize(buffer, nrecvs); }
+            template <typename Archive>
+            void deserialize(Archive& ar, size_type nrecvs) {
+                ar.deserialize(buffer, nrecvs);
+            }
 
             view_type buffer;
         };
@@ -129,7 +136,7 @@ namespace ippl {
             template <typename Op>
             void applyPeriodicSerialDim(view_type& view, const Layout_t* layout, const int nghost);
 
-        private:
+        public:
             /*!
              * Exchange the data of halo cells.
              * @param view is the original field data

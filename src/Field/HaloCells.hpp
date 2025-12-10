@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Utility/IpplException.h"
+#include "Utility/Logging.h"
 
 #include "Communicate/Communicator.h"
 
@@ -21,7 +22,8 @@ namespace ippl {
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
-        void HaloCells<T, Dim, ViewArgs...>::accumulateHalo_noghost(view_type& view, Layout_t* layout, int nghost) {
+        void HaloCells<T, Dim, ViewArgs...>::accumulateHalo_noghost(view_type& view,
+                                                                    Layout_t* layout, int nghost) {
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL_NOGHOST, nghost);
         }
         template <typename T, unsigned Dim, class... ViewArgs>
@@ -37,6 +39,7 @@ namespace ippl {
             using range_list    = typename Layout_t::neighbor_range_list;
 
             auto& comm = layout->comm;
+            SPDLOG_SCOPE("Start exchangeBoundaries, {}", comm.rank());
 
             const neighbor_list& neighbors = layout->getNeighbors();
             const range_list &sendRanges   = layout->getNeighborsSendRange(),
@@ -54,22 +57,78 @@ namespace ippl {
             // needed for the NOGHOST approach - we want to remove the ghost
             // cells on the boundaries of the global domain from the halo
             // exchange when we set HALO_TO_INTERNAL_NOGHOST
-            const auto domain = layout->getDomain();
+            const auto domain    = layout->getDomain();
             const auto& ldomains = layout->getHostLocalDomains();
 
-            size_t totalRequests = 0;
+            size_t sendRequests = 0;
             for (const auto& componentNeighbors : neighbors) {
-                totalRequests += componentNeighbors.size();
+                sendRequests += componentNeighbors.size();
             }
 
-            int me=Comm->rank();
+            int me = comm.rank();
 
-            using memory_space = typename view_type::memory_space;
-            using buffer_type  = mpi::Communicator::buffer_type<memory_space>;
-            std::vector<MPI_Request> requests(totalRequests);
-            // sending loop
+            // ------------------------------------
+            // async MPI buffers and management
+            // ------------------------------------
+            using execution_space = Kokkos::DefaultExecutionSpace;
+            using policy_type     = Kokkos::RangePolicy<execution_space>;
+            using memory_space    = typename view_type::memory_space;
+            using buffer_type     = mpi::Communicator::buffer_type<memory_space>;
+            //
+            struct async_recv_data {
+                buffer_type async_buffer;
+                bound_type range;
+                int tag;
+                MPI_Request request;
+            };
+
+            std::vector<async_recv_data> recv_requests;
+            std::vector<mpi::Communicator::async_send_data<memory_space>> send_requests;
+            recv_requests.reserve(sendRequests);
+            send_requests.reserve(sendRequests);
+
+            // ------------------------------------
+            // pre-post receives loop
+            // ------------------------------------
             constexpr size_t cubeCount = detail::countHypercubes(Dim) - 1;
-            size_t requestIndex        = 0;
+            for (size_t index = 0; index < cubeCount; index++) {
+                int tag                        = mpi::tag::HALO + Layout_t::getMatchingIndex(index);
+                const auto& componentNeighbors = neighbors[index];
+                for (size_t i = 0; i < componentNeighbors.size(); i++) {
+                    int sourceRank = componentNeighbors[i];
+
+                    bound_type range;
+                    if (order == INTERNAL_TO_HALO) {
+                        range = recvRanges[index][i];
+                    } else if (order == HALO_TO_INTERNAL_NOGHOST) {
+                        range = sendRanges[index][i];
+
+                        for (size_t j = 0; j < Dim; ++j) {
+                            bool isLower = ((range.lo[j] + ldomains[me][j].first() - nghost)
+                                            == domain[j].min());
+                            bool isUpper = ((range.hi[j] - 1 + ldomains[me][j].first() - nghost)
+                                            == domain[j].max());
+                            range.lo[j] += isLower * (nghost);
+                            range.hi[j] -= isUpper * (nghost);
+                        }
+                    } else {
+                        range = sendRanges[index][i];
+                    }
+
+                    size_type nrecvs = range.size();
+
+                    // std::cout << haloData_m.get_buffer();
+                    buffer_type buf = comm.template getBuffer<memory_space, T>(nrecvs);
+                    buf->resetReadPos();
+                    buf->resetWritePos();
+
+                    MPI_Request request = MPI_REQUEST_NULL;
+                    comm.irecv(sourceRank, tag, *buf, request, nrecvs * sizeof(T));
+                    recv_requests.push_back({buf, range, tag, request});
+                }
+            }
+
+            // sending loop
             for (size_t index = 0; index < cubeCount; index++) {
                 int tag                        = mpi::tag::HALO + index;
                 const auto& componentNeighbors = neighbors[index];
@@ -88,10 +147,9 @@ namespace ippl {
                         range = recvRanges[index][i];
 
                         for (size_t j = 0; j < Dim; ++j) {
-                            bool isLower = ((range.lo[j] + ldomains[me][j].first()
-                                            - nghost) == domain[j].min());
-                            bool isUpper = ((range.hi[j] - 1 + 
-                                            ldomains[me][j].first() - nghost)
+                            bool isLower = ((range.lo[j] + ldomains[me][j].first() - nghost)
+                                            == domain[j].min());
+                            bool isUpper = ((range.hi[j] - 1 + ldomains[me][j].first() - nghost)
                                             == domain[j].max());
                             range.lo[j] += isLower * (nghost);
                             range.hi[j] -= isUpper * (nghost);
@@ -104,54 +162,72 @@ namespace ippl {
                     pack(range, view, haloData_m, nsends);
 
                     buffer_type buf = comm.template getBuffer<memory_space, T>(nsends);
-
-                    comm.isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++], nsends);
-                    buf->resetWritePos();
-                }
-            }
-
-            // receiving loop
-            for (size_t index = 0; index < cubeCount; index++) {
-                int tag                        = mpi::tag::HALO + Layout_t::getMatchingIndex(index);
-                const auto& componentNeighbors = neighbors[index];
-                for (size_t i = 0; i < componentNeighbors.size(); i++) {
-                    int sourceRank = componentNeighbors[i];
-
-                    bound_type range;
-                    if (order == INTERNAL_TO_HALO) {
-                        range = recvRanges[index][i];
-                    } else if (order == HALO_TO_INTERNAL_NOGHOST) {
-                        range = sendRanges[index][i];
-
-                        for (size_t j = 0; j < Dim; ++j) {
-                            bool isLower = ((range.lo[j] + ldomains[me][j].first()
-                                            - nghost) == domain[j].min());
-                            bool isUpper = ((range.hi[j] - 1 + 
-                                            ldomains[me][j].first() - nghost)
-                                            == domain[j].max());
-                            range.lo[j] += isLower * (nghost);
-                            range.hi[j] -= isUpper * (nghost);
-                        }
-                    } else {
-                        range = sendRanges[index][i];
-                    }
-
-                    size_type nrecvs = range.size();
-
-                    buffer_type buf = comm.template getBuffer<memory_space, T>(nrecvs);
-
-                    comm.recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
+                    buf->resetWritePos();
+                    MPI_Request request = MPI_REQUEST_NULL;
 
-                    unpack<Op>(range, view, haloData_m);
+                    comm.isend(targetRank, tag, haloData_m, *buf, request, nsends);
+                    SPDLOG_TRACE("halo serialized, {}", static_cast<uintptr_t>(request));
+                    send_requests.push_back({buf, tag, request});
                 }
             }
 
-            if (totalRequests > 0) {
-                MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
+            // ------------------------------------
+            // receive, then deserialize and unpack pre-posted receives
+            // ------------------------------------
+            if ((sendRequests > 0) || (recv_requests.size() > 0)) {
+                bool redo = true;
+                while (redo) {
+                    redo = false;
+                    for (auto it = recv_requests.begin(); it != recv_requests.end(); ++it) {
+                        int flag = 0;
+                        MPI_Status status;
+                        SPDLOG_TRACE("iRecv MPI_Test, {} {}", comm.rank(),
+                                     static_cast<uintptr_t>(it->request));
+                        if (it->request != MPI_REQUEST_NULL) {
+                            SPDLOG_TRACE("MPI_Test recv tag {:04}, req {}", it->tag,
+                                         static_cast<uintptr_t>(it->request));
+                            auto old_request = it->request;
+                            MPI_Test(&it->request, &flag, &status);
+                            if (flag) {
+                                SPDLOG_DEBUG("SUCCESS iRecv MPI_Test, {} {}", comm.rank(),
+                                             static_cast<uintptr_t>(old_request));
+                                it->request = MPI_REQUEST_NULL;
+
+                                auto buf = it->async_buffer;
+                                int N    = it->range.size();
+                                haloData_m.deserialize(*(buf), N);
+                                unpack<Op>(it->range, view, haloData_m);
+                                comm.template freeBuffer(buf);
+                            } else {
+                                SPDLOG_TRACE("FAIL iRecv MPI_Test, {} {}", comm.rank(),
+                                             static_cast<uintptr_t>(it->request));
+                                redo = true;
+                            }
+                        }
+                    }
+                    for (auto it = send_requests.begin(); it != send_requests.end(); ++it) {
+                        int flag = 0;
+                        MPI_Status status;
+                        SPDLOG_TRACE("MPI_Test send tag {:04}, req {}", it->tag,
+                                     static_cast<uintptr_t>(it->request));
+                        if (it->request != MPI_REQUEST_NULL) {
+                            auto old_request = it->request;
+                            MPI_Test(&it->request, &flag, &status);
+                            if (flag) {
+                                SPDLOG_DEBUG("SUCCESS iSend MPI_Test, {} {}", comm.rank(),
+                                             static_cast<uintptr_t>(old_request));
+                                it->request = MPI_REQUEST_NULL;
+                                comm.template freeBuffer(it->async_buffer);
+                            } else {
+                                SPDLOG_TRACE("FAIL iSend MPI_Test, {} {}", comm.rank(),
+                                             static_cast<uintptr_t>(it->request));
+                                redo = true;
+                            }
+                        }
+                    }
+                }
             }
-            
-            comm.freeAllBuffers();
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
