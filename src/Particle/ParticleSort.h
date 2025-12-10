@@ -117,10 +117,10 @@ namespace detail {
     /**
      * @brief Sort particles on CUDA using CUB RadixSort
      */
-    template <unsigned Dim, typename T>
+    template <unsigned Dim, typename T, typename PermuteViewType>
     void sortParticlesCuda(
         Kokkos::View<Vector<T, Dim>*, Kokkos::CudaSpace> positions,
-        Kokkos::View<size_t*, Kokkos::CudaSpace> permute,
+        PermuteViewType permute,
         const Vector<T, Dim>& origin,
         const Vector<T, Dim>& invdx,
         const Vector<size_t, Dim>& ngrid,
@@ -130,10 +130,19 @@ namespace detail {
         using size_type = size_t;
 
         // Allocate temporary arrays
-        Kokkos::View<uint64_t*, memory_space> keys("morton_keys", n);
-        Kokkos::View<uint64_t*, memory_space> keys_sorted("morton_keys_sorted", n);
-        Kokkos::View<size_type*, memory_space> indices("indices", n);
-        Kokkos::View<size_type*, memory_space> indices_sorted("indices_sorted", n);
+        // Kokkos::View<uint64_t*, memory_space> keys("morton_keys", n);
+        // Kokkos::View<uint64_t*, memory_space> keys_sorted("morton_keys_sorted", n);
+        // Kokkos::View<size_type*, memory_space> indices("indices", n);
+        // Kokkos::View<size_type*, memory_space> indices_sorted("indices_sorted", n);
+
+        auto size = computeBufferSize<uint64_t, uint64_t, size_type, size_type>(n, n, n, n);
+        MultiViewBuffer<memory_space> sortBuf(size);
+
+        auto keys = sortBuf.template getView<uint64_t>(n);
+        auto keys_sorted = sortBuf.template getView<uint64_t>(n);
+        auto indices = sortBuf.template getView<size_type>(n);
+        auto indices_sorted = sortBuf.template getView<size_type>(n);
+
 
         // Compute Morton codes
         Kokkos::parallel_for("compute_morton_codes",
@@ -246,10 +255,10 @@ namespace detail {
      * @tparam ExecSpace Kokkos execution space
      * @tparam T Floating point type
      */
-    template <unsigned Dim, typename ExecSpace, typename T>
+    template <unsigned Dim, typename ExecSpace, typename T, typename PermuteViewType>
     void sortParticles(
         Kokkos::View<Vector<T, Dim>*, typename ExecSpace::memory_space> positions,
-        Kokkos::View<size_t*, typename ExecSpace::memory_space> permute,
+        PermuteViewType permute,
         const Vector<T, Dim>& origin,
         const Vector<T, Dim>& invdx,
         const Vector<size_t, Dim>& ngrid,
