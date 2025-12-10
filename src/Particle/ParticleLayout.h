@@ -95,6 +95,7 @@ namespace ippl {
         private:
             //! the list of boundary conditions for this set of particles
             bc_container_type bcs_m;
+
         };
     }  // namespace detail
 }  // namespace ippl
