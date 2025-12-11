@@ -437,9 +437,9 @@ namespace ippl {
                     // Sort particles by Morton code
                     auto x_view = pp.getView();
                     // Kokkos::View<size_t*, memory_space> permute("permute", nParticles);
-                    // detail::SortBufferManager<memory_space>& buf_manager = detail::getDefaultSortBufferManager<memory_space>();
-                    // buf_manager.ensureCapacity(nParticles);
-                    // auto &permute = buf_manager.indicesSorted();
+                    detail::SortBufferManager<memory_space>& buf_manager = detail::getDefaultSortBufferManager<memory_space>();
+                    buf_manager.ensureCapacity(nParticles);
+                    auto &permute = buf_manager.indicesSorted();
 
                     Vector<PositionType, 3> origin;
                     Vector<PositionType, 3> invdx;
@@ -450,9 +450,9 @@ namespace ippl {
                         ngrid_vec[d] = ngrid_global[d];
                     }
 
-                    // detail::sortParticles<3, execution_space, PositionType>(
-                    //     x_view, permute, origin, invdx, ngrid_vec, nParticles);
-                    //
+                    detail::sortParticles<3, execution_space, PositionType>(
+                        x_view, permute, origin, invdx, ngrid_vec, nParticles);
+
                     // Kokkos::fence();
                     Kokkos::Array<size_type, 3> num_tiles;
                     for (unsigned d = 0; d < 3; ++d) {
@@ -460,24 +460,24 @@ namespace ippl {
                     }
                     auto total_tiles = size_t(num_tiles[0]) * size_t(num_tiles[1]) * size_t(num_tiles[2]);
 
-                    auto &buf_handler = detail::getDefaultSortBufferManager<memory_space>();
-                    buf_handler.ensureCapacity(std::max(nParticles, total_tiles + 1));
-                    auto& permute = buf_handler.indices();
-                    auto& bin_offsets = buf_handler.indicesSorted();
-                    Kokkos::Array<int, 3> n_grid_global_arr;
-                    Kokkos::Array<int, 3> n_grid_local_arr;
-                    Kokkos::Array<int, 3> local_offset_arr;
-                    Kokkos::Array<int, 3> tile_size_arr;
-                    for (unsigned d = 0; d < 3; ++d) {
-                        n_grid_global_arr[d] = ngrid_global[d];
-                        n_grid_local_arr[d]  = ngrid_local[d];
-                        local_offset_arr[d]  = local_offset[d];
-                        tile_size_arr[d]     = config.tile_size_3d;
-                    }
-
-                    Interpolation::detail::bin_sort_3d<PositionType, decltype(x_view), execution_space>(
-                        x_view, n_grid_global_arr, n_grid_local_arr, local_offset_arr, tile_size_arr, w,
-                        permute, bin_offsets, nParticles);
+                    // auto &buf_handler = detail::getDefaultSortBufferManager<memory_space>();
+                    // buf_handler.ensureCapacity(std::max(nParticles, total_tiles + 1));
+                    // auto& permute = buf_handler.indices();
+                    // auto& bin_offsets = buf_handler.indicesSorted();
+                    // Kokkos::Array<int, 3> n_grid_global_arr;
+                    // Kokkos::Array<int, 3> n_grid_local_arr;
+                    // Kokkos::Array<int, 3> local_offset_arr;
+                    // Kokkos::Array<int, 3> tile_size_arr;
+                    // for (unsigned d = 0; d < 3; ++d) {
+                    //     n_grid_global_arr[d] = ngrid_global[d];
+                    //     n_grid_local_arr[d]  = ngrid_local[d];
+                    //     local_offset_arr[d]  = local_offset[d];
+                    //     tile_size_arr[d]     = config.tile_size_3d;
+                    // }
+                    //
+                    // Interpolation::detail::bin_sort_3d<PositionType, decltype(x_view), execution_space>(
+                    //     x_view, n_grid_global_arr, n_grid_local_arr, local_offset_arr, tile_size_arr, w,
+                    //     permute, bin_offsets, nParticles);
                     Kokkos::fence();
 
                     IpplTimings::stopTimer(gatherSortTimer);
