@@ -23,6 +23,7 @@
 #include "Interpolation/GatherConfig.h"
 #include "Interpolation/ScatterConfig.h"
 #include "Particle/ParticleAttribBase.h"
+#include "Particle/SortBuffer.h"
 
 namespace ippl {
 

@@ -17,8 +17,8 @@
 
 #include "Communicate/DataTypes.h"
 
-#include "Utility/IpplTimings.h"
 #include "Utility/BufferView.h"
+#include "Utility/IpplTimings.h"
 
 #include "FFT/FFT.h"
 #include "Interpolation/AtomicGather.h"
@@ -295,11 +295,11 @@ namespace ippl {
             auto total_tiles = num_tiles[0] * num_tiles[1] * num_tiles[2];
 
             // Sort particles by tile (using local binning)
-            //auto size = computeBufferSize<size_t, size_t>(nParticles, total_tiles + 1);
-            //MultiViewBuffer<memory_space> sortBuf(size);
+            // auto size = computeBufferSize<size_t, size_t>(nParticles, total_tiles + 1);
+            // MultiViewBuffer<memory_space> sortBuf(size);
 
-            //auto permute = sortBuf.template getView<size_type>(nParticles);
-            //auto bin_offsets = sortBuf.template getView<size_type>(total_tiles + 1);
+            // auto permute = sortBuf.template getView<size_type>(nParticles);
+            // auto bin_offsets = sortBuf.template getView<size_type>(total_tiles + 1);
 
             Kokkos::View<size_type*, typename execution_space::memory_space> permute;
             Kokkos::View<size_type*, typename execution_space::memory_space> bin_offsets;
@@ -307,7 +307,6 @@ namespace ippl {
             Interpolation::detail::bin_sort_3d<PositionType, decltype(pp_view), execution_space>(
                 pp_view, n_grid_global_arr, n_grid_local_arr, local_offset_arr, tile_size_arr, w,
                 permute, bin_offsets, nParticles);
-
 
             // Dispatch to templated scatter functor based on kernel width
             constexpr int MaxW = 20;
@@ -362,9 +361,9 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::gather(
         Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
         const Kernel& kernel, bool addToAttribute, const Interpolation::GatherConfig& config) {
-        constexpr unsigned Dim = Field::dim;
-        using PositionType     = typename Field::Mesh_t::value_type;
-        using complex_type     = typename Field::value_type;
+        constexpr unsigned Dim                   = Field::dim;
+        using PositionType                       = typename Field::Mesh_t::value_type;
+        using complex_type                       = typename Field::value_type;
         static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather");
         IpplTimings::startTimer(gatherTimer);
 
@@ -425,7 +424,8 @@ namespace ippl {
                             + "). Need nghost >= " + std::to_string(hw));
                     }
 
-                    static IpplTimings::TimerRef gatherSortTimer = IpplTimings::getTimer("gatherKernelSort");
+                    static IpplTimings::TimerRef gatherSortTimer =
+                        IpplTimings::getTimer("gatherKernelSort");
                     IpplTimings::startTimer(gatherSortTimer);
 
                     using memory_space = typename execution_space::memory_space;
@@ -433,8 +433,9 @@ namespace ippl {
                     // Sort particles by Morton code
                     auto x_view = pp.getView();
                     Kokkos::View<size_t*, memory_space> permute("permute", nParticles);
-                    //auto permute_buf = BufferView<size_type, typename execution_space::memory_space>(nParticles);
-                    //auto& permute = permute_buf.getView();
+                    // auto permute_buf = BufferView<size_type, typename
+                    // execution_space::memory_space>(nParticles); auto& permute =
+                    // permute_buf.getView();
 
                     Vector<PositionType, 3> origin;
                     Vector<PositionType, 3> invdx;
@@ -548,7 +549,6 @@ namespace ippl {
         Kokkos::fence();
         IpplTimings::stopTimer(gatherKernelTimer);
         IpplTimings::stopTimer(gatherTimer);
-
     }
 
     template <typename T, class... Properties>
