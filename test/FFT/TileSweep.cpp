@@ -67,10 +67,10 @@ private:
 // ============================================================================
 
 struct BenchParams {
-    int n_grid = 256;
-    double rho = 10.0;
+    int n_grid = 128;
+    double rho = 1.0;
     int warmup_runs = 3;
-    int benchmark_runs = 10;
+    int benchmark_runs = 5;
     std::string output_prefix = "tile_sweep";
     std::string distribution = "uniform";
     bool verbose = false;
@@ -80,7 +80,7 @@ struct BenchParams {
     int min_tile_size = 1;
     int max_tile_size = 8;
     int min_kernel_width = 2;
-    int max_kernel_width = 12;
+    int max_kernel_width = 8;
 
     size_t n_particles() const {
         return static_cast<size_t>(rho * n_grid * n_grid * n_grid);
