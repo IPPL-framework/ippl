@@ -54,7 +54,7 @@ namespace ippl {
                 template <class ViewType>
                 KOKKOS_INLINE_FUNCTION int bin(ViewType& keys, int i) const {
                     // Compute tile index for each dimension
-                    // keys contains particle positions in physical coordinates [-pi, pi]
+                    // keys contains particle positions in physical coordinates [0, 2*pi]
                     // Returns -1 if particle is outside local domain
                     int tile_x = compute_bin(get_component(keys, i, 0), 0);
                     int tile_y = compute_bin(get_component(keys, i, 1), 1);
