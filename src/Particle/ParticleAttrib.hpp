@@ -329,7 +329,7 @@ namespace ippl {
                     config.tile_size_3d, config.tile_size_3d, config.z_tiles, nghost, inv_hw,
                     kernel, config.team_size);
             }
-
+            Kokkos::fence();
             IpplTimings::stopTimer(scatterKernelTimer);
             return;
         }
@@ -352,7 +352,7 @@ namespace ippl {
                             .kernel       = kernel};
 
         Kokkos::parallel_for("atomic_scatter", policy_type(0, nParticles), scatter_functor);
-
+        Kokkos::fence();
         IpplTimings::stopTimer(scatterKernelTimer);
     }
 
@@ -448,6 +448,7 @@ namespace ippl {
                     detail::sortParticles<3, execution_space, PositionType>(
                         x_view, permute, origin, invdx, ngrid_vec, nParticles);
 
+                    Kokkos::fence();
                     IpplTimings::stopTimer(gatherSortTimer);
 
                     // Dispatch to specialized kernel
@@ -544,6 +545,7 @@ namespace ippl {
             // Currently not implemented
         }
 
+        Kokkos::fence();
         IpplTimings::stopTimer(gatherKernelTimer);
         IpplTimings::stopTimer(gatherTimer);
 
