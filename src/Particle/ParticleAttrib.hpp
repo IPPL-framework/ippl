@@ -432,9 +432,9 @@ namespace ippl {
 
                     // Sort particles by Morton code
                     auto x_view = pp.getView();
-                    Kokkos::View<size_t*, memory_space> permute("permute", nParticles);
-                    //auto permute_buf = BufferView<size_type, typename execution_space::memory_space>(nParticles);
-                    //auto& permute = permute_buf.getView();
+                    // Kokkos::View<size_t*, memory_space> permute("permute", nParticles);
+                    auto permute_buf = BufferView<size_type, typename execution_space::memory_space>(nParticles);
+                    auto& permute = permute_buf.getView();
 
                     Vector<PositionType, 3> origin;
                     Vector<PositionType, 3> invdx;
