@@ -365,6 +365,8 @@ namespace ippl {
         constexpr unsigned Dim = Field::dim;
         using PositionType     = typename Field::Mesh_t::value_type;
         using complex_type     = typename Field::value_type;
+        static IpplTimings::TimerRef gatherTimer = IpplTimings::getTimer("gather");
+        IpplTimings::startTimer(gatherTimer);
 
         static IpplTimings::TimerRef fillHaloTimer = IpplTimings::getTimer("fillHalo");
         IpplTimings::startTimer(fillHaloTimer);
@@ -543,6 +545,8 @@ namespace ippl {
         }
 
         IpplTimings::stopTimer(gatherKernelTimer);
+        IpplTimings::stopTimer(gatherTimer);
+
     }
 
     template <typename T, class... Properties>

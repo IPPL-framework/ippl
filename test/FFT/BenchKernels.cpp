@@ -2,9 +2,6 @@
  * @file BenchmarkRoofline.cpp
  * @brief Throughput benchmark for scatter/gather kernels
  *
- * Following the cuFINUFFT benchmarking methodology (PDSEC21 best paper),
- * this benchmark reports throughput in particles/second and time per particle.
- *
  * Generates data for:
  *   Plot 1: Kernel variant comparison at fixed parameters
  *   Plot 2: Throughput vs kernel width w (accuracy sensitivity)
@@ -24,12 +21,16 @@
  *   -v, --verbose   Verbose output
  */
 
-#include "BenchmarkUtils.h"
+#include "Ippl.h"
+#include "Utility/IpplTimings.h"
+#include <Kokkos_Random.hpp>
 
 #include <cmath>
 #include <complex>
 #include <fstream>
 #include <iomanip>
+#include <numeric>
+#include <algorithm>
 #include <vector>
 
 using namespace ippl;
@@ -85,7 +86,61 @@ BenchParams parse_bench_args(int argc, char* argv[]) {
 }
 
 // ============================================================================
-// Throughput Metrics (no hand-calculated FLOPs or bytes)
+// Statistics Helper (computed from IpplTimings measurements)
+// ============================================================================
+
+struct TimingStats {
+    double mean_ms;
+    double stddev_ms;
+    double min_ms;
+    double max_ms;
+    double median_ms;
+    size_t count;
+};
+
+TimingStats compute_stats(const std::vector<double>& times_sec) {
+    TimingStats stats{};
+    stats.count = times_sec.size();
+
+    if (stats.count == 0) {
+        return stats;
+    }
+
+    // Convert to milliseconds
+    std::vector<double> times_ms(stats.count);
+    for (size_t i = 0; i < stats.count; ++i) {
+        times_ms[i] = times_sec[i] * 1000.0;
+    }
+
+    // Mean
+    double sum = std::accumulate(times_ms.begin(), times_ms.end(), 0.0);
+    stats.mean_ms = sum / stats.count;
+
+    // Stddev
+    double sq_sum = 0.0;
+    for (double t : times_ms) {
+        sq_sum += (t - stats.mean_ms) * (t - stats.mean_ms);
+    }
+    stats.stddev_ms = (stats.count > 1) ? std::sqrt(sq_sum / (stats.count - 1)) : 0.0;
+
+    // Min/Max
+    stats.min_ms = *std::min_element(times_ms.begin(), times_ms.end());
+    stats.max_ms = *std::max_element(times_ms.begin(), times_ms.end());
+
+    // Median
+    std::vector<double> sorted = times_ms;
+    std::sort(sorted.begin(), sorted.end());
+    if (stats.count % 2 == 0) {
+        stats.median_ms = (sorted[stats.count/2 - 1] + sorted[stats.count/2]) / 2.0;
+    } else {
+        stats.median_ms = sorted[stats.count/2];
+    }
+
+    return stats;
+}
+
+// ============================================================================
+// Throughput Metrics
 // ============================================================================
 
 struct ThroughputMetrics {
@@ -99,19 +154,17 @@ struct ThroughputMetrics {
     double rho;
 
     // Timing results
-    double mean_time_ms;
-    double stddev_time_ms;
-    double min_time_ms;
-    double max_time_ms;
-    double median_time_ms;
+    TimingStats total_stats;        // Total time (including sort if applicable)
+    TimingStats kernel_only_stats;  // Kernel time (excluding sort)
+    TimingStats sort_stats;         // Sort time only (if applicable)
 
-    // Derived throughput metrics
+    // Derived throughput metrics (using total time)
     double throughput_Mpts_per_sec() const {
-        return (n_particles / (mean_time_ms * 1e-3)) / 1e6;
+        return (n_particles / (total_stats.mean_ms * 1e-3)) / 1e6;
     }
 
     double time_per_point_ns() const {
-        return (mean_time_ms * 1e6) / n_particles;
+        return (total_stats.mean_ms * 1e6) / n_particles;
     }
 };
 
@@ -131,7 +184,7 @@ public:
     using Centering_t = typename Mesh_t::DefaultCentering;
     using Field_t = ippl::Field<complex_type, Dim, Mesh_t, Centering_t>;
     using PLayout_t = ippl::ParticleSpatialLayout<real_type, Dim>;
-    using Bunch_t = benchmark::BenchmarkBunch<PLayout_t>;
+    using Bunch_t = ippl::ParticleBase<PLayout_t>;
 
     ThroughputBenchmark(const BenchParams& params)
         : params_(params)
@@ -158,6 +211,14 @@ public:
 
         // Output results
         write_csv(results);
+
+        // Also dump raw measurements for violin plots
+        std::string raw_file = params_.output_prefix + "_raw.csv";
+        IpplTimings::dumpToCSV(raw_file);
+        if (ippl::Comm->rank() == 0) {
+            std::cout << "Wrote raw measurements to: " << raw_file << "\n";
+        }
+
         print_summary(results);
     }
 
@@ -205,9 +266,8 @@ public:
         {
             auto cfg = ippl::Interpolation::ScatterConfig::get_default<ExecSpace>();
             cfg.method = ippl::Interpolation::ScatterMethod::Atomic;
-            cfg.sort = false;
-            auto stats = benchmark_scatter("Atomic", cfg, kernel, nghost);
-            results.push_back(make_metrics("Atomic", "scatter", kernel, n_particles, stats));
+            auto metrics = benchmark_scatter("Atomic", cfg, kernel, nghost, n_particles);
+            results.push_back(metrics);
         }
 
         // Tiled scatter (Sorted Spread with Shared Memory)
@@ -215,9 +275,8 @@ public:
             auto cfg = ippl::Interpolation::ScatterConfig::get_default<ExecSpace>();
             cfg.method = ippl::Interpolation::ScatterMethod::Tiled;
             cfg.tile_size_3d = 3;
-            cfg.sort = true;
-            auto stats = benchmark_scatter("Tiled", cfg, kernel, nghost);
-            results.push_back(make_metrics("Tiled", "scatter", kernel, n_particles, stats));
+            auto metrics = benchmark_scatter("Tiled", cfg, kernel, nghost, n_particles);
+            results.push_back(metrics);
         }
 
         // OutputFocused scatter (Grid-Parallel)
@@ -225,9 +284,8 @@ public:
             auto cfg = ippl::Interpolation::ScatterConfig::get_default<ExecSpace>();
             cfg.method = ippl::Interpolation::ScatterMethod::OutputFocused;
             cfg.tile_size_3d = 3;
-            cfg.sort = true;
-            auto stats = benchmark_scatter("GridParallel", cfg, kernel, nghost);
-            results.push_back(make_metrics("GridParallel", "scatter", kernel, n_particles, stats));
+            auto metrics = benchmark_scatter("GridParallel", cfg, kernel, nghost, n_particles);
+            results.push_back(metrics);
         }
 
         // ===== GATHER BENCHMARKS =====
@@ -236,16 +294,17 @@ public:
         {
             auto cfg = ippl::Interpolation::GatherConfig::get_default<ExecSpace>();
             cfg.method = ippl::Interpolation::GatherMethod::Atomic;
-            auto stats = benchmark_gather("Direct", cfg, kernel, nghost);
-            results.push_back(make_metrics("Direct", "gather", kernel, n_particles, stats));
+            cfg.sort = false;
+            auto metrics = benchmark_gather("Direct", cfg, kernel, nghost, n_particles);
+            results.push_back(metrics);
         }
 
         // Sorted gather
         {
             auto cfg = ippl::Interpolation::GatherConfig::get_default<ExecSpace>();
             cfg.method = ippl::Interpolation::GatherMethod::AtomicSort;
-            auto stats = benchmark_gather("Sorted", cfg, kernel, nghost);
-            results.push_back(make_metrics("Sorted", "gather", kernel, n_particles, stats));
+            auto metrics = benchmark_gather("Sorted", cfg, kernel, nghost, n_particles);
+            results.push_back(metrics);
         }
 
         // Team-Parallel gather (Tiled)
@@ -253,29 +312,93 @@ public:
             auto cfg = ippl::Interpolation::GatherConfig::get_default<ExecSpace>();
             cfg.method = ippl::Interpolation::GatherMethod::Tiled;
             cfg.tile_size_3d = 3;
-            cfg.sort = true;
-            auto stats = benchmark_gather("TeamParallel", cfg, kernel, nghost);
-            results.push_back(make_metrics("TeamParallel", "gather", kernel, n_particles, stats));
+            auto metrics = benchmark_gather("TeamParallel", cfg, kernel, nghost, n_particles);
+            results.push_back(metrics);
         }
 
         // Team-Parallel gather (Native)
         {
             auto cfg = ippl::Interpolation::GatherConfig::get_default<ExecSpace>();
             cfg.method = ippl::Interpolation::GatherMethod::Native;
-            cfg.tile_size_3d = 16;
-            cfg.sort = true;
-            auto stats = benchmark_gather("Native", cfg, kernel, nghost);
-            results.push_back(make_metrics("Native", "native", kernel, n_particles, stats));
+            cfg.tile_size_3d = 3;
+            auto metrics = benchmark_gather("Native", cfg, kernel, nghost, n_particles);
+            results.push_back(metrics);
         }
 
         // Cleanup
         cleanup();
     }
 
-    ThroughputMetrics make_metrics(const std::string& name, const std::string& op,
+    ThroughputMetrics benchmark_scatter(const std::string& name,
+                                         const ippl::Interpolation::ScatterConfig& cfg,
+                                         const ippl::NUFFT::ESKernel<real_type>& kernel,
+                                         int nghost,
+                                         size_t n_particles) {
+        if (ippl::Comm->rank() == 0 && params_.verbose) {
+            std::cout << "  Benchmarking scatter: " << name << "\n";
+        }
+
+        // Warmup runs
+        for (int i = 0; i < params_.warmup_runs; ++i) {
+            *grid_ = complex_type(0.0, 0.0);
+            Q_.scatter_kernel(*grid_, R_, kernel, cfg);
+            grid_->accumulateHalo();
+        }
+
+        // Reset timers after warmup
+        IpplTimings::resetAllTimers();
+
+        // Benchmark runs
+        for (int i = 0; i < params_.benchmark_runs; ++i) {
+            *grid_ = complex_type(0.0, 0.0);
+            Q_.scatter_kernel(*grid_, R_, kernel, cfg);
+            grid_->accumulateHalo();
+        }
+
+        // Timer names used by the scatter implementation
+        // Adjust these to match your actual timer names in the scatter code
+        return make_metrics(name, "scatter", kernel, n_particles,
+                           "scatterKernel",      // total time (includes sort if enabled)
+                           "scatterKernelSort"); // sort time (may not exist if sort=false)
+    }
+
+    ThroughputMetrics benchmark_gather(const std::string& name,
+                                        const ippl::Interpolation::GatherConfig& cfg,
+                                        const ippl::NUFFT::ESKernel<real_type>& kernel,
+                                        int nghost,
+                                        size_t n_particles) {
+        if (ippl::Comm->rank() == 0 && params_.verbose) {
+            std::cout << "  Benchmarking gather: " << name << "\n";
+        }
+
+        // Warmup runs
+        for (int i = 0; i < params_.warmup_runs; ++i) {
+            Q_result_ = complex_type(0.0, 0.0);
+            Q_result_.gather(*grid_, R_, kernel, false, cfg);
+        }
+
+        // Reset timers after warmup
+        IpplTimings::resetAllTimers();
+
+        // Benchmark runs
+        for (int i = 0; i < params_.benchmark_runs; ++i) {
+            Q_result_ = complex_type(0.0, 0.0);
+            Q_result_.gather(*grid_, R_, kernel, false, cfg);
+        }
+
+        // Timer names used by the gather implementation
+        // These match what you mentioned: gatherKernel (total), gatherKernelSort (sort)
+        return make_metrics(name, "gather", kernel, n_particles,
+                           "gatherKernel",      // total time (includes sort if enabled)
+                           "gatherKernelSort"); // sort time (may not exist if sort=false)
+    }
+
+    ThroughputMetrics make_metrics(const std::string& name,
+                                    const std::string& op,
                                     const ippl::NUFFT::ESKernel<real_type>& kernel,
                                     size_t n_particles,
-                                    const benchmark::TimingStats& stats) {
+                                    const std::string& timer_total,
+                                    const std::string& timer_sort) {
         ThroughputMetrics m;
         m.kernel_name = name;
         m.operation = op;
@@ -285,11 +408,29 @@ public:
         m.n_particles = n_particles;
         m.n_grid = params_.n_grid;
         m.rho = params_.rho;
-        m.mean_time_ms = stats.mean_ms;
-        m.stddev_time_ms = stats.stddev_ms;
-        m.min_time_ms = stats.min_ms;
-        m.max_time_ms = stats.max_ms;
-        m.median_time_ms = stats.median_ms;
+
+        // Get measurements from IpplTimings
+        // Times are returned in seconds
+        const auto& total_times = IpplTimings::getMeasurements(timer_total);
+        const auto& sort_times = IpplTimings::getMeasurements(timer_sort);
+
+        m.total_stats = compute_stats(total_times);
+        m.sort_stats = compute_stats(sort_times);
+
+        // Compute kernel-only stats by subtracting sort from total
+        // Only if we have both measurements
+        if (!total_times.empty() && !sort_times.empty() &&
+            total_times.size() == sort_times.size()) {
+            std::vector<double> kernel_only_times(total_times.size());
+            for (size_t i = 0; i < total_times.size(); ++i) {
+                kernel_only_times[i] = total_times[i] - sort_times[i];
+            }
+            m.kernel_only_stats = compute_stats(kernel_only_times);
+        } else {
+            // No sort, so kernel-only = total
+            m.kernel_only_stats = m.total_stats;
+        }
+
         return m;
     }
 
@@ -321,6 +462,12 @@ public:
         grid_ = std::make_unique<Field_t>(*mesh_, *layout_, nghost);
         playout_ = std::make_unique<PLayout_t>(*layout_, *mesh_);
         bunch_ = std::make_unique<Bunch_t>(*playout_);
+
+        // Register particle attributes
+        bunch_->addAttribute(R_);
+        bunch_->addAttribute(Q_);
+        bunch_->addAttribute(Q_result_);
+
         bunch_->setParticleBC(ippl::BC::PERIODIC);
 
         // Create particles
@@ -328,7 +475,7 @@ public:
         bunch_->create(n_local);
 
         // Initialize positions based on distribution
-        auto R = bunch_->R.getView();
+        auto R_view = R_.getView();
         Kokkos::Random_XorShift64_Pool<> rand_pool(42 + ippl::Comm->rank());
 
         if (params_.distribution == "uniform") {
@@ -337,37 +484,33 @@ public:
                 KOKKOS_LAMBDA(const size_t i) {
                     auto gen = rand_pool.get_state();
                     for (unsigned d = 0; d < Dim; ++d) {
-                        R(i)[d] = gen.drand() * 2.0 * M_PI;
+                        R_view(i)[d] = gen.drand() * 2.0 * M_PI;
                     }
                     rand_pool.free_state(gen);
                 });
         } else if (params_.distribution == "clustered") {
             // Clustered distribution: particles concentrated in small region
-            // Following cuFINUFFT's "cluster" distribution
             Kokkos::parallel_for("init_clustered", n_local,
                 KOKKOS_LAMBDA(const size_t i) {
                     auto gen = rand_pool.get_state();
                     for (unsigned d = 0; d < Dim; ++d) {
-                        // Gaussian-like clustering around center
                         double u1 = gen.drand();
                         double u2 = gen.drand();
                         double z = Kokkos::sqrt(-2.0 * Kokkos::log(u1 + 1e-10))
                                    * Kokkos::cos(2.0 * M_PI * u2);
-                        // Scale to cluster in ~10% of domain
-                        R(i)[d] = M_PI + 0.3 * z;
-                        // Wrap to [0, 2*pi]
-                        while (R(i)[d] < 0) R(i)[d] += 2.0 * M_PI;
-                        while (R(i)[d] >= 2.0 * M_PI) R(i)[d] -= 2.0 * M_PI;
+                        R_view(i)[d] = M_PI + 0.3 * z;
+                        while (R_view(i)[d] < 0) R_view(i)[d] += 2.0 * M_PI;
+                        while (R_view(i)[d] >= 2.0 * M_PI) R_view(i)[d] -= 2.0 * M_PI;
                     }
                     rand_pool.free_state(gen);
                 });
         }
 
         // Initialize particle values
-        auto Q = bunch_->Q.getView();
+        auto Q_view = Q_.getView();
         Kokkos::parallel_for("init_values", n_local,
             KOKKOS_LAMBDA(const size_t i) {
-                Q(i) = complex_type(1.0, 0.0);
+                Q_view(i) = complex_type(1.0, 0.0);
             });
 
         // Initialize grid for gather
@@ -384,70 +527,6 @@ public:
         layout_.reset();
     }
 
-    benchmark::TimingStats benchmark_scatter(const std::string& name,
-                                              const ippl::Interpolation::ScatterConfig& cfg,
-                                              const ippl::NUFFT::ESKernel<real_type>& kernel,
-                                              int nghost) {
-        benchmark::Timer timer;
-        std::vector<double> times;
-
-        if (ippl::Comm->rank() == 0 && params_.verbose) {
-            std::cout << "  Benchmarking scatter: " << name << "\n";
-        }
-
-        // Warmup
-        for (int i = 0; i < params_.warmup_runs; ++i) {
-            *grid_ = complex_type(0.0, 0.0);
-            bunch_->Q.scatter_kernel(*grid_, bunch_->R, kernel, cfg);
-            grid_->accumulateHalo();
-        }
-
-        // Benchmark
-        for (int i = 0; i < params_.benchmark_runs; ++i) {
-            *grid_ = complex_type(0.0, 0.0);
-
-            timer.start();
-            bunch_->Q.scatter_kernel(*grid_, bunch_->R, kernel, cfg);
-            grid_->accumulateHalo();
-            double elapsed = timer.stop();
-
-            times.push_back(elapsed);
-        }
-
-        return benchmark::compute_stats(times);
-    }
-
-    benchmark::TimingStats benchmark_gather(const std::string& name,
-                                             const ippl::Interpolation::GatherConfig& cfg,
-                                             const ippl::NUFFT::ESKernel<real_type>& kernel,
-                                             int nghost) {
-        benchmark::Timer timer;
-        std::vector<double> times;
-
-        if (ippl::Comm->rank() == 0 && params_.verbose) {
-            std::cout << "  Benchmarking gather: " << name << "\n";
-        }
-
-        // Warmup
-        for (int i = 0; i < params_.warmup_runs; ++i) {
-            bunch_->Q_result = complex_type(0.0, 0.0);
-            bunch_->Q_result.gather(*grid_, bunch_->R, kernel, false, cfg);
-        }
-
-        // Benchmark
-        for (int i = 0; i < params_.benchmark_runs; ++i) {
-            bunch_->Q_result = complex_type(0.0, 0.0);
-
-            timer.start();
-            bunch_->Q_result.gather(*grid_, bunch_->R, kernel, false, cfg);
-            double elapsed = timer.stop();
-
-            times.push_back(elapsed);
-        }
-
-        return benchmark::compute_stats(times);
-    }
-
     void write_csv(const std::vector<ThroughputMetrics>& results) {
         if (ippl::Comm->rank() != 0) return;
 
@@ -456,7 +535,9 @@ public:
 
         // CSV header
         out << "kernel,operation,distribution,width,tolerance,n_particles,n_grid,rho,"
-            << "mean_ms,stddev_ms,min_ms,max_ms,median_ms,"
+            << "total_mean_ms,total_stddev_ms,total_min_ms,total_max_ms,total_median_ms,"
+            << "kernel_mean_ms,kernel_stddev_ms,"
+            << "sort_mean_ms,sort_stddev_ms,"
             << "throughput_Mpts_per_s,time_per_pt_ns\n";
 
         for (const auto& m : results) {
@@ -468,11 +549,15 @@ public:
                 << m.n_particles << ","
                 << m.n_grid << ","
                 << std::fixed << std::setprecision(1) << m.rho << ","
-                << std::setprecision(4) << m.mean_time_ms << ","
-                << m.stddev_time_ms << ","
-                << m.min_time_ms << ","
-                << m.max_time_ms << ","
-                << m.median_time_ms << ","
+                << std::setprecision(4) << m.total_stats.mean_ms << ","
+                << m.total_stats.stddev_ms << ","
+                << m.total_stats.min_ms << ","
+                << m.total_stats.max_ms << ","
+                << m.total_stats.median_ms << ","
+                << m.kernel_only_stats.mean_ms << ","
+                << m.kernel_only_stats.stddev_ms << ","
+                << m.sort_stats.mean_ms << ","
+                << m.sort_stats.stddev_ms << ","
                 << std::setprecision(2) << m.throughput_Mpts_per_sec() << ","
                 << std::setprecision(2) << m.time_per_point_ns() << "\n";
         }
@@ -495,23 +580,25 @@ public:
         // Print scatter results
         std::cout << "\nSCATTER (type-1 spreading):\n";
         std::cout << std::left << std::setw(16) << "Kernel"
-                  << std::right << std::setw(12) << "Time (ms)"
-                  << std::setw(10) << "Stddev"
+                  << std::right << std::setw(12) << "Total (ms)"
+                  << std::setw(12) << "Kernel"
+                  << std::setw(10) << "Sort"
                   << std::setw(14) << "Mpts/s"
-                  << std::setw(14) << "ns/pt" << "\n";
-        std::cout << std::string(66, '-') << "\n";
+                  << std::setw(12) << "ns/pt" << "\n";
+        std::cout << std::string(76, '-') << "\n";
 
         double scatter_baseline = 0.0;
         for (const auto& m : results) {
             if (m.operation == "scatter" && m.kernel_width == target_w) {
-                if (m.kernel_name == "Atomic") scatter_baseline = m.mean_time_ms;
-                double speedup = (scatter_baseline > 0) ? scatter_baseline / m.mean_time_ms : 1.0;
+                if (m.kernel_name == "Atomic") scatter_baseline = m.total_stats.mean_ms;
+                double speedup = (scatter_baseline > 0) ? scatter_baseline / m.total_stats.mean_ms : 1.0;
                 std::cout << std::left << std::setw(16) << m.kernel_name
                           << std::right << std::fixed
-                          << std::setw(12) << std::setprecision(3) << m.mean_time_ms
-                          << std::setw(10) << std::setprecision(3) << m.stddev_time_ms
+                          << std::setw(12) << std::setprecision(3) << m.total_stats.mean_ms
+                          << std::setw(12) << std::setprecision(3) << m.kernel_only_stats.mean_ms
+                          << std::setw(10) << std::setprecision(3) << m.sort_stats.mean_ms
                           << std::setw(14) << std::setprecision(1) << m.throughput_Mpts_per_sec()
-                          << std::setw(14) << std::setprecision(2) << m.time_per_point_ns()
+                          << std::setw(12) << std::setprecision(2) << m.time_per_point_ns()
                           << " (" << std::setprecision(2) << speedup << "x)\n";
             }
         }
@@ -519,23 +606,25 @@ public:
         // Print gather results
         std::cout << "\nGATHER (type-2 interpolation):\n";
         std::cout << std::left << std::setw(16) << "Kernel"
-                  << std::right << std::setw(12) << "Time (ms)"
-                  << std::setw(10) << "Stddev"
+                  << std::right << std::setw(12) << "Total (ms)"
+                  << std::setw(12) << "Kernel"
+                  << std::setw(10) << "Sort"
                   << std::setw(14) << "Mpts/s"
-                  << std::setw(14) << "ns/pt" << "\n";
-        std::cout << std::string(66, '-') << "\n";
+                  << std::setw(12) << "ns/pt" << "\n";
+        std::cout << std::string(76, '-') << "\n";
 
         double gather_baseline = 0.0;
         for (const auto& m : results) {
             if (m.operation == "gather" && m.kernel_width == target_w) {
-                if (m.kernel_name == "Direct") gather_baseline = m.mean_time_ms;
-                double speedup = (gather_baseline > 0) ? gather_baseline / m.mean_time_ms : 1.0;
+                if (m.kernel_name == "Direct") gather_baseline = m.total_stats.mean_ms;
+                double speedup = (gather_baseline > 0) ? gather_baseline / m.total_stats.mean_ms : 1.0;
                 std::cout << std::left << std::setw(16) << m.kernel_name
                           << std::right << std::fixed
-                          << std::setw(12) << std::setprecision(3) << m.mean_time_ms
-                          << std::setw(10) << std::setprecision(3) << m.stddev_time_ms
+                          << std::setw(12) << std::setprecision(3) << m.total_stats.mean_ms
+                          << std::setw(12) << std::setprecision(3) << m.kernel_only_stats.mean_ms
+                          << std::setw(10) << std::setprecision(3) << m.sort_stats.mean_ms
                           << std::setw(14) << std::setprecision(1) << m.throughput_Mpts_per_sec()
-                          << std::setw(14) << std::setprecision(2) << m.time_per_point_ns()
+                          << std::setw(12) << std::setprecision(2) << m.time_per_point_ns()
                           << " (" << std::setprecision(2) << speedup << "x)\n";
             }
         }
@@ -561,6 +650,11 @@ public:
     std::unique_ptr<Field_t> grid_;
     std::unique_ptr<PLayout_t> playout_;
     std::unique_ptr<Bunch_t> bunch_;
+
+    // Particle attributes (stored separately for direct access)
+    ippl::ParticleAttrib<ippl::Vector<real_type, Dim>> R_;
+    ippl::ParticleAttrib<complex_type> Q_;
+    ippl::ParticleAttrib<complex_type> Q_result_;
 };
 
 // ============================================================================
