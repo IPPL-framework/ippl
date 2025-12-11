@@ -162,6 +162,8 @@ namespace ippl {
                                 kernel((s[d] - static_cast<real_type>(idx[d] + k)) * inv_hw);
                         });
 
+                        team.team_barrier();
+
                         Kokkos::parallel_for(
                             Kokkos::TeamThreadMDRange(team, W, W, W), [&](int wx, int wy, int wz) {
                                 const real_type kernel_val =
