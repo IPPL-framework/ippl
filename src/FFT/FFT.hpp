@@ -1394,9 +1394,9 @@ Kokkos::parallel_for(
             int iflag;
 
             if (type_m == 1) {
-                iflag = -1;
-            } else if (type_m == 2) {
                 iflag = 1;
+            } else if (type_m == 2) {
+                iflag = -1;
             } else {
                 throw std::logic_error("Only type 1 and type 2 NUFFT are allowed now");
             }
@@ -1784,7 +1784,7 @@ Kokkos::parallel_for(
     FFT<NUFFTransform, RealField>::~FFT() {
 #ifdef ENABLE_FINUFFT
         if (use_finufft) {
-            ier_m = nufft_m.destroy(plan_m);
+            // ier_m = nufft_m.destroy(plan_m);
         }
 #endif
         // Clean up native NUFFT (when not using kokkos_nufft or finufft)

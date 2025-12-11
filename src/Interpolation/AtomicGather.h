@@ -2,7 +2,6 @@
 #define IPPL_ATOMIC_GATHER_H
 
 #include <Kokkos_Core.hpp>
-
 #include <Kokkos_Complex.hpp>
 
 #include "InterpolationUtil.h"
@@ -12,149 +11,107 @@ namespace ippl {
         namespace detail {
 
             /**
-             * @brief Generic atomic gather functor for grid-to-particle operations
+             * @brief 3D atomic gather functor with precomputed kernel values
              *
-             * This is a simple implementation that works with any kernel function
-             * and any dimension. It reads from the grid and accumulates values at particle
-             * locations.
+             * This optimized version precomputes kernel values in each cardinal
+             * direction (x, y, z) and stores them in local memory, avoiding
+             * redundant kernel evaluations in the inner loops.
              *
              * Template parameters:
-             * @tparam Dim The dimension (1, 2, or 3)
+             * @tparam W Compile-time kernel width
              * @tparam RealType The floating point type
              * @tparam ExecSpace The Kokkos execution space
              * @tparam KernelType The kernel function type
              * @tparam ValueType The type of values being gathered
              * @tparam GridViewType The grid view type
-             * @tparam PositionViewType The type of the position view (default:
-             * View<Vector<RealType, Dim>*>)
+             * @tparam PositionViewType The type of the position view
              */
-            template <unsigned Dim, typename RealType, typename ExecSpace, typename KernelType,
-                      typename ValueType, typename GridViewType,
-                      typename PositionViewType = Kokkos::View<ippl::Vector<RealType, Dim>*,
-                                                               typename ExecSpace::memory_space>>
-            struct AtomicGatherFunctor {
+            template <int W,
+                      typename RealType,
+                      typename ExecSpace,
+                      typename KernelType,
+                      typename ValueType,
+                      typename GridViewType,
+                      typename PositionViewType =
+                          Kokkos::View<ippl::Vector<RealType, 3>*,
+                                       typename ExecSpace::memory_space>>
+            struct AtomicGatherFunctor3D {
                 using real_type    = RealType;
                 using value_type   = ValueType;
                 using memory_space = typename ExecSpace::memory_space;
                 using size_type    = typename memory_space::size_type;
 
+                static constexpr int Dim = 3;
+
                 // Input data
-                PositionViewType x;  // Particle positions in PHYSICAL coordinates (e.g., [-pi, pi])
-                GridViewType grid;   // Input grid
-                Kokkos::View<value_type*, memory_space> values;  // Output values
+                PositionViewType x;   // particle positions in PHYSICAL coordinates
+                GridViewType     grid; // input grid
+
+                // Output data
+                Kokkos::View<value_type*, memory_space> values;  // per-particle gathered values
 
                 // Parameters
-                int n_grid[Dim];        // GLOBAL grid dimensions (for coordinate transformation)
-                int n_grid_local[Dim];  // LOCAL grid dimensions (owned by this rank)
-                int local_offset[Dim];  // First global index of local domain
-                int w;                  // kernel width
-                int nghost;             // ghost cell offset
-                real_type inv_hw;       // 1 / half_width for kernel scaling
-                bool add_to_attribute;  // If true, add to existing values; otherwise overwrite
+                Vector<int, Dim> n_grid;        // GLOBAL grid dimensions
+                Vector<int, Dim> n_grid_local;  // LOCAL grid dimensions
+                Vector<int, Dim> local_offset;  // first global index of local domain
+                int nghost;                     // ghost cell offset
+                real_type inv_hw;               // 1 / half_width for kernel scaling
+                bool add_to_attribute;          // if true, add to existing values; otherwise overwrite
                 KernelType kernel;
 
                 KOKKOS_INLINE_FUNCTION void operator()(const size_type j) const {
-                    // // Transform from physical coordinates [-pi, pi] to grid coordinates [0,
-                    // n_grid) constexpr real_type inv_two_pi = real_type(0.5) /
-                    // real_type(3.14159265358979323846);
-                    //
-                    // real_type pos[Dim];  // Grid coordinates
-                    // for (unsigned d = 0; d < Dim; ++d) {
-                    //     real_type k = x(j)[d] * inv_two_pi;
-                    //     k = k - Kokkos::floor(k);
-                    //     pos[d] = k * n_grid[d];
-                    // }
-
-                    Kokkos::Array<real_type, Dim> pos;
+                    // Transform from physical coordinates to grid coordinates
+                    real_type pos[Dim];
                     for (int d = 0; d < Dim; ++d) {
                         pos[d] = scale_to_grid_indices(x(j)[d], n_grid[d]);
                     }
-                    Kokkos::Array<int, Dim> idx0;
-                    for (int d = 0; d < Dim; ++d) {
-                        idx0[d] = grid_point_to_grid_idx(pos[d], n_grid[d], w) - (w-1)/2;
-                    }
-                    //
-                    // // Starting index for kernel stencil
-                    // const bool odd = (w & 1);
-                    // const int hw = w / 2;
-                    //
-                    // int idx0[Dim];
-                    // for (unsigned d = 0; d < Dim; ++d) {
-                    //     idx0[d] = odd ? static_cast<int>(Kokkos::round(pos[d])) - hw
-                    //                   : static_cast<int>(pos[d]) + 1 - hw;
-                    // }
 
-                    // Gather from all w^Dim grid points in the stencil
+                    // Compute base grid indices
+                    int idx0[Dim];
+                    for (int d = 0; d < Dim; ++d) {
+                        idx0[d] = grid_point_to_grid_idx(pos[d], n_grid[d], W) - (W - 1) / 2;
+                    }
+
+                    // Precompute kernel values in each cardinal direction
+                    real_type kernel_x[W];
+                    real_type kernel_y[W];
+                    real_type kernel_z[W];
+
+                    for (int i = 0; i < W; ++i) {
+                        kernel_x[i] = kernel((pos[0] - static_cast<real_type>(idx0[0] + i)) * inv_hw);
+                        kernel_y[i] = kernel((pos[1] - static_cast<real_type>(idx0[1] + i)) * inv_hw);
+                        kernel_z[i] = kernel((pos[2] - static_cast<real_type>(idx0[2] + i)) * inv_hw);
+                    }
+
+                    // Convert base indices to local coordinates
+                    const int base_i = idx0[0] - local_offset[0] + nghost;
+                    const int base_j = idx0[1] - local_offset[1] + nghost;
+                    const int base_k = idx0[2] - local_offset[2] + nghost;
+
+#ifndef NDEBUG
+                    // Check bounds in debug mode
+                    assert(base_i >= 0 && base_i + W <= n_grid_local[0] + 2 * nghost);
+                    assert(base_j >= 0 && base_j + W <= n_grid_local[1] + 2 * nghost);
+                    assert(base_k >= 0 && base_k + W <= n_grid_local[2] + 2 * nghost);
+#endif
+
                     // Result type matches what we read from the grid
-                    using grid_element_type = std::remove_reference_t<decltype(grid(0))>;
+                    using grid_element_type = std::remove_reference_t<decltype(grid(0, 0, 0))>;
                     grid_element_type result(0);
 
-                    if constexpr (Dim == 3) {
-                        for (int k = 0; k < w; ++k) {
-                            for (int jj = 0; jj < w; ++jj) {
-                                for (int i = 0; i < w; ++i) {
-                                    int gi_global = idx0[0] + i;
-                                    int gj_global = idx0[1] + jj;
-                                    int gk_global = idx0[2] + k;
+                    // Gather with precomputed kernel values
+                    for (int k = 0; k < W; ++k) {
+                        const real_type kz = kernel_z[k];
+                        const int gk = base_k + k;
 
-                                    // Convert to LOCAL indices
-                                    int gi_local = gi_global - local_offset[0];
-                                    int gj_local = gj_global - local_offset[1];
-                                    int gk_local = gk_global - local_offset[2];
+                        for (int jj = 0; jj < W; ++jj) {
+                            const real_type kyz = kernel_y[jj] * kz;
+                            const int gj = base_j + jj;
 
-                                    // Check if within local domain (including ghosts)
-                                    assert(gi_local >= -nghost
-                                           && gi_local < n_grid_local[0] + nghost);
-                                    assert(gj_local >= -nghost
-                                           && gj_local < n_grid_local[1] + nghost);
-                                    assert(gk_local >= -nghost
-                                           && gk_local < n_grid_local[2] + nghost);
-
-                                    real_type ker_i = kernel(
-                                        (pos[0] - static_cast<real_type>(idx0[0] + i)) * inv_hw);
-                                    real_type ker_j = kernel(
-                                        (pos[1] - static_cast<real_type>(idx0[1] + jj)) * inv_hw);
-                                    real_type ker_k = kernel(
-                                        (pos[2] - static_cast<real_type>(idx0[2] + k)) * inv_hw);
-                                    real_type kernel_val = ker_i * ker_j * ker_k;
-
-                                    result += grid(gi_local + nghost, gj_local + nghost,
-                                                   gk_local + nghost)
-                                              * kernel_val;
-                                }
+                            for (int i = 0; i < W; ++i) {
+                                const real_type kernel_val = kernel_x[i] * kyz;
+                                result += grid(base_i + i, gj, gk) * kernel_val;
                             }
-                        }
-                    } else if constexpr (Dim == 2) {
-                        for (int jj = 0; jj < w; ++jj) {
-                            for (int i = 0; i < w; ++i) {
-                                int gi = idx0[0] + i;
-                                int gj = idx0[1] + jj;
-
-                                // while (gi < 0) gi += n_grid[0];
-                                // while (gi >= n_grid[0]) gi -= n_grid[0];
-                                // while (gj < 0) gj += n_grid[1];
-                                // while (gj >= n_grid[1]) gj -= n_grid[1];
-
-                                real_type ker_i =
-                                    kernel((pos[0] - static_cast<real_type>(idx0[0] + i)) * inv_hw);
-                                real_type ker_j = kernel(
-                                    (pos[1] - static_cast<real_type>(idx0[1] + jj)) * inv_hw);
-                                real_type kernel_val = ker_i * ker_j;
-
-                                result += grid(gi + nghost, gj + nghost) * kernel_val;
-                            }
-                        }
-                    } else if constexpr (Dim == 1) {
-                        for (int i = 0; i < w; ++i) {
-                            int gi = idx0[0] + i;
-
-                            // while (gi < 0) gi += n_grid[0];
-                            // while (gi >= n_grid[0]) gi -= n_grid[0];
-
-                            real_type kernel_val =
-                                kernel((pos[0] - static_cast<real_type>(idx0[0] + i)) * inv_hw);
-
-                            result += grid(gi + nghost) * kernel_val;
                         }
                     }
 
@@ -181,6 +138,61 @@ namespace ippl {
                     }
                 }
             };
+
+            /**
+             * @brief Dispatcher for 3D gather with runtime kernel width (no sorting)
+             */
+            template <typename RealType,
+                      typename ExecSpace,
+                      typename KernelType,
+                      typename ValueType,
+                      typename GridViewType,
+                      typename PositionViewType,
+                      typename OutputViewType>
+            void dispatch_gather_3d_nosort(
+                const PositionViewType& x,
+                const GridViewType& grid,
+                const OutputViewType& values,
+                const Vector<int, 3>& n_grid,
+                const Vector<int, 3>& n_grid_local,
+                const Vector<int, 3>& local_offset,
+                int w,
+                int nghost,
+                RealType inv_hw,
+                bool add_to_attribute,
+                const KernelType& kernel,
+                size_t n_particles) {
+
+                auto create_and_run = [&]<int W>() {
+                    AtomicGatherFunctor3D<W, RealType, ExecSpace, KernelType, ValueType,
+                                          GridViewType, PositionViewType>
+                        functor{x, grid, values, n_grid, n_grid_local, local_offset,
+                                nghost, inv_hw, add_to_attribute, kernel};
+
+                    Kokkos::parallel_for(
+                        "AtomicGather3D",
+                        Kokkos::RangePolicy<ExecSpace>(0, n_particles),
+                        functor);
+                };
+
+                switch (w) {
+                    case 2: create_and_run.template operator()<2>(); break;
+                    case 3: create_and_run.template operator()<3>(); break;
+                    case 4: create_and_run.template operator()<4>(); break;
+                    case 5: create_and_run.template operator()<5>(); break;
+                    case 6: create_and_run.template operator()<6>(); break;
+                    case 7: create_and_run.template operator()<7>(); break;
+                    case 8: create_and_run.template operator()<8>(); break;
+                    case 9: create_and_run.template operator()<9>(); break;
+                    case 10: create_and_run.template operator()<10>(); break;
+                    case 11: create_and_run.template operator()<11>(); break;
+                    case 12: create_and_run.template operator()<12>(); break;
+                    case 13: create_and_run.template operator()<13>(); break;
+                    case 14: create_and_run.template operator()<14>(); break;
+                    default:
+                        Kokkos::abort("AtomicGatherFunctor3D: unsupported kernel width");
+                }
+            }
 
         }  // namespace detail
     }  // namespace Interpolation

@@ -1,5 +1,5 @@
-#ifndef IPPL_ATOMIC_SORT_GATHER_H
-#define IPPL_ATOMIC_SORT_GATHER_H
+#ifndef IPPL_ATOMIC_SORT_GATHER_3D_H
+#define IPPL_ATOMIC_SORT_GATHER_3D_H
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Complex.hpp>
@@ -11,141 +11,110 @@ namespace ippl {
         namespace detail {
 
             /**
-             * @brief Generic atomic gather functor for grid-to-particle operations
-             *
-             * Works with any kernel function and dimension. Reads from the grid and
-             * accumulates values at particle locations.
-             *
-             * This version supports a permutation array so that the functor can
-             * iterate over particles in sorted/bin order while still writing the
-             * gathered value to the original particle index.
+             * @brief  gather functor with precomputed kernel values
              *
              * Template parameters:
-             * @tparam Dim The dimension (1, 2, or 3)
+             * @tparam W Compile-time kernel width
              * @tparam RealType The floating point type
              * @tparam ExecSpace The Kokkos execution space
              * @tparam KernelType The kernel function type
              * @tparam ValueType The type of values being gathered
              * @tparam GridViewType The grid view type
-             * @tparam PositionViewType The type of the position view (default:
-             *         View<Vector<RealType, Dim>*>)
-             * @tparam PermuteViewType The type of the permutation view (indices into x/values)
+             * @tparam PositionViewType The type of the position view
+             * @tparam PermuteViewType The type of the permutation view
              */
-            template <unsigned Dim,
+            template <int W,
                       typename RealType,
                       typename ExecSpace,
                       typename KernelType,
                       typename ValueType,
                       typename GridViewType,
                       typename PositionViewType =
-                          Kokkos::View<ippl::Vector<RealType, Dim>*,
+                          Kokkos::View<ippl::Vector<RealType, 3>*,
                                        typename ExecSpace::memory_space>,
                       typename PermuteViewType =
                           Kokkos::View<std::size_t*, typename ExecSpace::memory_space>>
-            struct AtomicSortGatherFunctor {
+            struct AtomicSortGatherFunctor3D {
                 using real_type    = RealType;
                 using value_type   = ValueType;
                 using memory_space = typename ExecSpace::memory_space;
                 using size_type    = typename memory_space::size_type;
 
+                static constexpr int Dim = 3;
+
                 // Input data
-                PositionViewType x;      // particle positions in PHYSICAL coordinates
-                GridViewType     grid;   // input grid
-                PermuteViewType  permute; // permutation: sorted_index -> particle_index
+                const PositionViewType x;       // particle positions in PHYSICAL coordinates
+                const GridViewType     grid;    // input grid
+                const PermuteViewType  permute; // permutation: sorted_index -> particle_index
 
                 // Output data
-                Kokkos::View<value_type*, memory_space> values;  // per-particle gathered values
+                const Kokkos::View<value_type*, memory_space> values;  // per-particle gathered values
 
                 // Parameters
-                int n_grid[Dim];        // GLOBAL grid dimensions
-                int n_grid_local[Dim];  // LOCAL grid dimensions
-                int local_offset[Dim];  // first global index of local domain
-                int w;                  // kernel width
-                int nghost;             // ghost cell offset
-                real_type inv_hw;       // 1 / half_width for kernel scaling
-                bool add_to_attribute;  // if true, add to existing values; otherwise overwrite
-                KernelType kernel;
+                const Vector<int, Dim> n_grid;        // GLOBAL grid dimensions
+                const Vector<int, Dim> n_grid_local;  // LOCAL grid dimensions
+                const Vector<int, Dim> local_offset;  // first global index of local domain
+                const int nghost;                      // ghost cell offset
+                const real_type inv_hw;                // 1 / half_width for kernel scaling
+                const bool add_to_attribute;           // if true, add to existing values; otherwise overwrite
+                const KernelType kernel;
 
                 KOKKOS_INLINE_FUNCTION void operator()(const size_type j_sorted) const {
                     // Map sorted index -> actual particle index
                     const size_type p = permute(j_sorted);
 
                     // Transform from physical coordinates to grid coordinates
-                    Kokkos::Array<real_type, Dim> pos;
+                    real_type pos[Dim];
                     for (int d = 0; d < Dim; ++d) {
                         pos[d] = scale_to_grid_indices(x(p)[d], n_grid[d]);
                     }
 
-                    Kokkos::Array<int, Dim> idx0;
+                    // Compute base grid indices
+                    int idx0[Dim];
                     for (int d = 0; d < Dim; ++d) {
-                        idx0[d] = grid_point_to_grid_idx(pos[d], n_grid[d], w) - (w - 1) / 2;
+                        idx0[d] = grid_point_to_grid_idx(pos[d], n_grid[d], W) - (W - 1) / 2;
                     }
 
-                    // Result type matches what we read from the grid
-                    using grid_element_type = std::remove_reference_t<decltype(grid(0))>;
-                    grid_element_type result(0);
+                    // Precompute kernel values in each cardinal direction
+                    real_type kernel_x[W];
+                    real_type kernel_y[W];
+                    real_type kernel_z[W];
 
-                    if constexpr (Dim == 3) {
-                        for (int k = 0; k < w; ++k) {
-                            for (int jj = 0; jj < w; ++jj) {
-                                for (int i = 0; i < w; ++i) {
-                                    int gi_global = idx0[0] + i;
-                                    int gj_global = idx0[1] + jj;
-                                    int gk_global = idx0[2] + k;
+                    for (int i = 0; i < W; ++i) {
+                        kernel_x[i] = kernel((pos[0] - static_cast<real_type>(idx0[0] + i)) * inv_hw);
+                        kernel_y[i] = kernel((pos[1] - static_cast<real_type>(idx0[1] + i)) * inv_hw);
+                        kernel_z[i] = kernel((pos[2] - static_cast<real_type>(idx0[2] + i)) * inv_hw);
+                    }
 
-                                    // Convert to LOCAL indices
-                                    int gi_local = gi_global - local_offset[0];
-                                    int gj_local = gj_global - local_offset[1];
-                                    int gk_local = gk_global - local_offset[2];
+                    // Convert base indices to local coordinates
+                    const int base_i = idx0[0] - local_offset[0] + nghost;
+                    const int base_j = idx0[1] - local_offset[1] + nghost;
+                    const int base_k = idx0[2] - local_offset[2] + nghost;
 
 #ifndef NDEBUG
-                                    // Check if within local domain (including ghosts)
-                                    assert(gi_local >= -nghost
-                                           && gi_local < n_grid_local[0] + nghost);
-                                    assert(gj_local >= -nghost
-                                           && gj_local < n_grid_local[1] + nghost);
-                                    assert(gk_local >= -nghost
-                                           && gk_local < n_grid_local[2] + nghost);
+                    // Check bounds in debug mode
+                    assert(base_i >= 0 && base_i + W <= n_grid_local[0] + 2 * nghost);
+                    assert(base_j >= 0 && base_j + W <= n_grid_local[1] + 2 * nghost);
+                    assert(base_k >= 0 && base_k + W <= n_grid_local[2] + 2 * nghost);
 #endif
 
-                                    real_type ker_i = kernel(
-                                        (pos[0] - static_cast<real_type>(idx0[0] + i)) * inv_hw);
-                                    real_type ker_j = kernel(
-                                        (pos[1] - static_cast<real_type>(idx0[1] + jj)) * inv_hw);
-                                    real_type ker_k = kernel(
-                                        (pos[2] - static_cast<real_type>(idx0[2] + k)) * inv_hw);
-                                    real_type kernel_val = ker_i * ker_j * ker_k;
+                    // Result type matches what we read from the grid
+                    using grid_element_type = std::remove_reference_t<decltype(grid(0, 0, 0))>;
+                    grid_element_type result(0);
 
-                                    result += grid(gi_local + nghost,
-                                                   gj_local + nghost,
-                                                   gk_local + nghost)
-                                              * kernel_val;
-                                }
+                    // Gather with precomputed kernel values
+                    for (int k = 0; k < W; ++k) {
+                        const real_type kz = kernel_z[k];
+                        const int gk = base_k + k;
+
+                        for (int j = 0; j < W; ++j) {
+                            const real_type kyz = kernel_y[j] * kz;
+                            const int gj = base_j + j;
+
+                            for (int i = 0; i < W; ++i) {
+                                const real_type kernel_val = kernel_x[i] * kyz;
+                                result += grid(base_i + i, gj, gk) * kernel_val;
                             }
-                        }
-                    } else if constexpr (Dim == 2) {
-                        for (int jj = 0; jj < w; ++jj) {
-                            for (int i = 0; i < w; ++i) {
-                                int gi = idx0[0] + i;
-                                int gj = idx0[1] + jj;
-
-                                real_type ker_i =
-                                    kernel((pos[0] - static_cast<real_type>(idx0[0] + i)) * inv_hw);
-                                real_type ker_j =
-                                    kernel((pos[1] - static_cast<real_type>(idx0[1] + jj)) * inv_hw);
-                                real_type kernel_val = ker_i * ker_j;
-
-                                result += grid(gi + nghost, gj + nghost) * kernel_val;
-                            }
-                        }
-                    } else if constexpr (Dim == 1) {
-                        for (int i = 0; i < w; ++i) {
-                            int gi = idx0[0] + i;
-
-                            real_type kernel_val =
-                                kernel((pos[0] - static_cast<real_type>(idx0[0] + i)) * inv_hw);
-
-                            result += grid(gi + nghost) * kernel_val;
                         }
                     }
 
@@ -173,8 +142,66 @@ namespace ippl {
                 }
             };
 
+            /**
+             * @brief Dispatcher for 3D gather with runtime kernel width
+             */
+            template <typename RealType,
+                      typename ExecSpace,
+                      typename KernelType,
+                      typename ValueType,
+                      typename GridViewType,
+                      typename PositionViewType,
+                      typename PermuteViewType,
+                      typename OutputViewType>
+            void dispatch_gather_3d(
+                const PositionViewType& x,
+                const GridViewType& grid,
+                const PermuteViewType& permute,
+                const OutputViewType& values,
+                const Vector<int, 3>& n_grid,
+                const Vector<int, 3>& n_grid_local,
+                const Vector<int, 3>& local_offset,
+                int w,
+                int nghost,
+                RealType inv_hw,
+                bool add_to_attribute,
+                const KernelType& kernel,
+                size_t n_particles) {
+
+                auto create_and_run = [&]<int W>() {
+                    AtomicSortGatherFunctor3D<W, RealType, ExecSpace, KernelType, ValueType,
+                                              GridViewType, PositionViewType, PermuteViewType>
+                        functor{x, grid, permute, values, n_grid, n_grid_local, local_offset,
+                                nghost, inv_hw, add_to_attribute, kernel};
+
+                    Kokkos::parallel_for(
+                        "AtomicSortGather3D",
+                        Kokkos::RangePolicy<ExecSpace>(0, n_particles),
+                        functor);
+                };
+
+                switch (w) {
+                    case 2: create_and_run.template operator()<2>(); break;
+                    case 3: create_and_run.template operator()<3>(); break;
+                    case 4: create_and_run.template operator()<4>(); break;
+                    case 5: create_and_run.template operator()<5>(); break;
+                    case 6: create_and_run.template operator()<6>(); break;
+                    case 7: create_and_run.template operator()<7>(); break;
+                    case 8: create_and_run.template operator()<8>(); break;
+                    case 9: create_and_run.template operator()<9>(); break;
+                    case 10: create_and_run.template operator()<10>(); break;
+                    case 11: create_and_run.template operator()<11>(); break;
+                    case 12: create_and_run.template operator()<12>(); break;
+                    case 13: create_and_run.template operator()<13>(); break;
+                    case 14: create_and_run.template operator()<14>(); break;
+
+                    default:
+                        Kokkos::abort("AtomicSortGatherFunctor3D: unsupported kernel width");
+                }
+            }
+
         }  // namespace detail
     }  // namespace Interpolation
 }  // namespace ippl
 
-#endif  // IPPL_ATOMIC_SORT_GATHER_H
+#endif  // IPPL_ATOMIC_SORT_GATHER_3D_H
