@@ -194,6 +194,7 @@ int main(int argc, char* argv[]) {
         // std::vector<int> grid_sizes = {256, 512};
         std::vector<int> grid_sizes = {64, 128};
         std::vector<int> particles_per_point = {1, 10};
+        double tol = 1e-8;
 
         for (int grid_size : grid_sizes) {
             for (int ppp : particles_per_point) {
@@ -249,7 +250,7 @@ int main(int argc, char* argv[]) {
                     // OutputFocused method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-4);
+                        fftParams.add("tolerance", tol);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -275,7 +276,7 @@ int main(int argc, char* argv[]) {
                     // Tiled method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-4);
+                        fftParams.add("tolerance", tol);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -301,7 +302,7 @@ int main(int argc, char* argv[]) {
                     // Atomic method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-4);
+                        fftParams.add("tolerance", tol);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -324,7 +325,7 @@ int main(int argc, char* argv[]) {
                     // kokkos_nufft reference
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-4);
+                        fftParams.add("tolerance", tol);
                         fftParams.add("use_finufft_defaults", false);
                         fftParams.add("use_kokkos_nufft", true);
 
@@ -338,7 +339,7 @@ int main(int argc, char* argv[]) {
                     // FINUFFT/cuFINUFFT reference
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-4);
+                        fftParams.add("tolerance", tol);
                         fftParams.add("use_finufft", true);
                         //fftParams.add("gpu_method", 3);
                         //fftParams.add("gpu_sort", 0);
@@ -395,7 +396,7 @@ int main(int argc, char* argv[]) {
                     // Tiled method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-4);
+                        fftParams.add("tolerance", tol);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -420,7 +421,7 @@ int main(int argc, char* argv[]) {
                     // Atomic method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-4);
+                        fftParams.add("tolerance", tol);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -444,7 +445,7 @@ int main(int argc, char* argv[]) {
                     // Atomic method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-4);
+                        fftParams.add("tolerance", tol);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -466,7 +467,7 @@ int main(int argc, char* argv[]) {
                     // Atomic method
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-4);
+                        fftParams.add("tolerance", tol);
 #ifdef ENABLE_GPU_NUFFT
                         fftParams.add("gpu_method", 1);
                         fftParams.add("gpu_sort", 0);
@@ -489,7 +490,7 @@ int main(int argc, char* argv[]) {
                     // kokkos_nufft reference
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-4);
+                        fftParams.add("tolerance", tol);
                         fftParams.add("use_finufft_defaults", false);
                         fftParams.add("use_kokkos_nufft", true);
 
@@ -503,7 +504,7 @@ int main(int argc, char* argv[]) {
                     // FINUFFT/cuFINUFFT reference
                     {
                         ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", 1e-4);
+                        fftParams.add("tolerance", tol);
                         fftParams.add("use_finufft", true);
 
                         //fftParams.add("use_finufft", true);
