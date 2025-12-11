@@ -33,7 +33,7 @@ namespace ippl {
                 using real_type        = RealType;
                 using value_type       = ValueType;
                 using memory_space     = typename ExecSpace::memory_space;
-                using size_type        = typename memory_space::size_type;
+                using size_type        = int;
                 using team_policy      = Kokkos::TeamPolicy<ExecSpace>;
                 using team_member      = typename team_policy::member_type;
                 using scratch_space    = typename ExecSpace::scratch_memory_space;
@@ -48,10 +48,10 @@ namespace ippl {
                 GridViewType grid;                               // Output grid
 
                 // Parameters
-                Kokkos::Array<size_type, 3> n_grid;        // GLOBAL grid dimensions
-                Kokkos::Array<size_type, 3> n_grid_local;  // LOCAL grid dimensions
+                Kokkos::Array<int, 3> n_grid;        // GLOBAL grid dimensions
+                Kokkos::Array<int, 3> n_grid_local;  // LOCAL grid dimensions
                 Kokkos::Array<int, 3> local_offset;        // First global index of local domain
-                Kokkos::Array<size_type, 3> num_tiles;
+                Kokkos::Array<int, 3> num_tiles;
                 int tile_size_x, tile_size_y, tile_size_z;
                 int nghost;        // ghost cell offset for field
                 real_type inv_hw;  // 1 / half_width for kernel scaling
@@ -249,10 +249,10 @@ namespace ippl {
                     PositionViewType x,
                     Kokkos::View<ValueType*, typename ExecSpace::memory_space> values,
                     GridViewType grid,
-                    Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid,
-                    Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid_local,
+                    Kokkos::Array<int, 3> n_grid,
+                    Kokkos::Array<int, 3> n_grid_local,
                     Kokkos::Array<int, 3> local_offset,
-                    Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> num_tiles,
+                    Kokkos::Array<int, 3> num_tiles,
                     int tile_size_x, int tile_size_y, int tile_size_z, int z_tiles, int nghost,
                     RealType inv_hw, const KernelType& kernel, int team_size) {
                     if constexpr (W <= MaxW) {

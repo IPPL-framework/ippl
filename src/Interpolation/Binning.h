@@ -24,12 +24,12 @@ namespace ippl {
             struct BinOp3D {
                 using size_type = typename ExecSpace::memory_space::size_type;
 
-                Kokkos::Array<size_type, 3>
+                Kokkos::Array<int, 3>
                     n_grid_global;  // GLOBAL grid dimensions (for coord transform)
-                Kokkos::Array<size_type, 3> n_grid_local;  // LOCAL grid dimensions
+                Kokkos::Array<int, 3> n_grid_local;  // LOCAL grid dimensions
                 Kokkos::Array<int, 3> local_offset;        // First global index of local domain
                 Kokkos::Array<int, 3> tile_size;           // Tile size per dimension
-                Kokkos::Array<size_type, 3>
+                Kokkos::Array<int, 3>
                     num_tiles;  // Number of tiles per dimension (in local domain)
                 int w;          // kernel width
 
@@ -121,9 +121,9 @@ namespace ippl {
                       typename PermuteViewType, typename OffsetViewType>
             void bin_sort_3d(
                 PositionViewType x,  // Positions in PHYSICAL coordinates [-pi, pi]
-                Kokkos::Array<typename ExecSpace::memory_space::size_type, 3>
+                Kokkos::Array<int, 3>
                     n_grid_global,  // GLOBAL grid dimensions
-                Kokkos::Array<typename ExecSpace::memory_space::size_type, 3>
+                Kokkos::Array<int, 3>
                     n_grid_local,                    // LOCAL grid dimensions
                 Kokkos::Array<int, 3> local_offset,  // First global index of local domain
                 Kokkos::Array<int, 3> tile_size, int w, PermuteViewType& permute,
@@ -134,7 +134,7 @@ namespace ippl {
                 // const size_type n_particles = x.extent(0);
 
                 // Calculate number of tiles based on LOCAL grid
-                Kokkos::Array<size_type, 3> num_tiles;
+                Kokkos::Array<int, 3> num_tiles;
                 num_tiles[0]      = (n_grid_local[0] + tile_size[0] - 1) / tile_size[0] + 1;
                 num_tiles[1]      = (n_grid_local[1] + tile_size[1] - 1) / tile_size[1] + 1;
                 num_tiles[2]      = (n_grid_local[2] + tile_size[2] - 1) / tile_size[2] + 1;

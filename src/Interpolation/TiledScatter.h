@@ -51,10 +51,10 @@ namespace ippl {
                 GridViewType grid;                               // Output grid
 
                 // Parameters
-                Kokkos::Array<size_type, 3> n_grid;        // GLOBAL grid dimensions
-                Kokkos::Array<size_type, 3> n_grid_local;  // LOCAL grid dimensions
+                Kokkos::Array<int, 3> n_grid;        // GLOBAL grid dimensions
+                Kokkos::Array<int, 3> n_grid_local;  // LOCAL grid dimensions
                 Kokkos::Array<int, 3> local_offset;        // First global index of local domain
-                Kokkos::Array<size_type, 3> num_tiles;
+                Kokkos::Array<int, 3> num_tiles;
                 int tile_size_x, tile_size_y, tile_size_z;
                 int z_tiles;       // z-dimension splitting for parallelism
                 int nghost;        // ghost cell offset for field
@@ -70,13 +70,13 @@ namespace ippl {
                 // Helper to access position component - works with both View<T*[3]> and
                 // View<Vector<T,3>*>
                 template <typename PosView>
-                KOKKOS_INLINE_FUNCTION static auto get_component(const PosView& pos, size_type i,
+                KOKKOS_INLINE_FUNCTION static auto get_component(const PosView& pos, int i,
                                                                  int d) -> decltype(pos(i, d)) {
                     return pos(i, d);  // For View<T*[3]>
                 }
 
                 template <typename PosView>
-                KOKKOS_INLINE_FUNCTION static auto get_component(const PosView& pos, size_type i,
+                KOKKOS_INLINE_FUNCTION static auto get_component(const PosView& pos, int i,
                                                                  int d) -> decltype(pos(i)[d]) {
                     return pos(i)[d];  // For View<Vector<T,3>*>
                 }
@@ -292,17 +292,17 @@ namespace ippl {
                     PositionViewType x,
                     Kokkos::View<ValueType*, typename ExecSpace::memory_space> values,
                     GridViewType grid,
-                    Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid,
-                    Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> n_grid_local,
+                    Kokkos::Array<int, 3> n_grid,
+                    Kokkos::Array<int, 3> n_grid_local,
                     Kokkos::Array<int, 3> local_offset,
-                    Kokkos::Array<typename ExecSpace::memory_space::size_type, 3> num_tiles,
+                    Kokkos::Array<int, 3> num_tiles,
                     int tile_size_x, int tile_size_y, int tile_size_z, int z_tiles, int nghost,
                     RealType inv_hw, const KernelType& kernel, int team_size) {
                     if constexpr (W <= MaxW) {
                         if (w == W) {
                             {
                                 // Use generic Kokkos functor for other execution spaces
-                                using size_type = typename ExecSpace::memory_space::size_type;
+                                using size_type = int;
 
                                 // Create functor with templated W
                                 TiledScatterFunctor3D<W, RealType, ExecSpace, KernelType, ValueType,
