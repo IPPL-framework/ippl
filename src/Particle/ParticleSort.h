@@ -218,8 +218,8 @@ namespace ippl {
             auto indices_sorted = buffers.indicesSorted();
 
             // Debug: Print buffer info
-            printf("sortParticlesCuda: n=%zu, keys.extent(0)=%zu, indices.extent(0)=%zu, indices_sorted.extent(0)=%zu\n",
-                   n, keys.extent(0), indices.extent(0), indices_sorted.extent(0));
+            // printf("sortParticlesCuda: n=%zu, keys.extent(0)=%zu, indices.extent(0)=%zu, indices_sorted.extent(0)=%zu\n",
+            //        n, keys.extent(0), indices.extent(0), indices_sorted.extent(0));
 
             // Compute Morton codes
             Kokkos::parallel_for(
@@ -235,7 +235,7 @@ namespace ippl {
             Kokkos::fence();
 
             // Validate initial indices
-            validatePermutation<Kokkos::Cuda>(indices, n, "sortParticlesCuda_pre_sort_indices");
+            // validatePermutation<Kokkos::Cuda>(indices, n, "sortParticlesCuda_pre_sort_indices");
 
             // Determine temporary storage requirements
             size_t temp_storage_bytes = 0;
@@ -258,7 +258,7 @@ namespace ippl {
             indices_sorted = buffers.indicesSorted();
 
             // Validate sorted permutation
-            validatePermutation<Kokkos::Cuda>(indices_sorted, n, "sortParticlesCuda_post_sort");
+            // validatePermutation<Kokkos::Cuda>(indices_sorted, n, "sortParticlesCuda_post_sort");
 
             // Return the sorted indices view
             return indices_sorted;
@@ -294,8 +294,8 @@ namespace ippl {
             auto indices_sorted = buffers.indicesSorted();
 
             // Debug: Print buffer info
-            printf("sortParticlesHip: n=%zu, keys.extent(0)=%zu, indices.extent(0)=%zu, indices_sorted.extent(0)=%zu\n",
-                   n, keys.extent(0), indices.extent(0), indices_sorted.extent(0));
+            // printf("sortParticlesHip: n=%zu, keys.extent(0)=%zu, indices.extent(0)=%zu, indices_sorted.extent(0)=%zu\n",
+            //        n, keys.extent(0), indices.extent(0), indices_sorted.extent(0));
 
             // Compute Morton codes
             Kokkos::parallel_for(
@@ -311,7 +311,7 @@ namespace ippl {
             Kokkos::fence();
 
             // Validate initial indices
-            validatePermutation<Kokkos::HIP>(indices, n, "sortParticlesHip_pre_sort_indices");
+            // validatePermutation<Kokkos::HIP>(indices, n, "sortParticlesHip_pre_sort_indices");
 
             // Determine temporary storage requirements
             size_t temp_storage_bytes = 0;
@@ -334,7 +334,7 @@ namespace ippl {
             indices_sorted = buffers.indicesSorted();
 
             // Validate sorted permutation
-            validatePermutation<Kokkos::HIP>(indices_sorted, n, "sortParticlesHip_post_sort");
+            // validatePermutation<Kokkos::HIP>(indices_sorted, n, "sortParticlesHip_post_sort");
 
             // Return the sorted indices view
             return indices_sorted;
@@ -398,8 +398,8 @@ namespace ippl {
 
                 Kokkos::deep_copy(permute, permute_host);
 
-                // Validate after copy
-                validatePermutation<ExecSpace>(permute, n, "sortParticles_fallback");
+                // // Validate after copy
+                // validatePermutation<ExecSpace>(permute, n, "sortParticles_fallback");
 
                 return permute;
             }
