@@ -490,7 +490,7 @@ namespace ippl {
                             PositionType, decltype(x_view), decltype(permute), decltype(full_view),
                             Kernel, T>(w, nParticles, x_view, permute, full_view, dview_m, nghost,
                                        ngrid_global, ngrid_local, local_offset, inv_hw, kernel,
-                                       addToAttribute, config.team_size);
+                                       addToAttribute);
                     } else if (config.method == Interpolation::GatherMethod::Tiled) {
                         Interpolation::detail::TiledGatherDispatcher<1, MaxW>::template dispatch_3d<
                             PositionType, execution_space, Kernel, T, decltype(full_view),
