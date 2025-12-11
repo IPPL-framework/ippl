@@ -135,16 +135,16 @@ namespace ippl {
 
                 // Calculate number of tiles based on LOCAL grid
                 Kokkos::Array<size_type, 3> num_tiles;
-                num_tiles[0]      = (n_grid_local[0] + tile_size[0] - 1) / tile_size[0];
-                num_tiles[1]      = (n_grid_local[1] + tile_size[1] - 1) / tile_size[1];
-                num_tiles[2]      = (n_grid_local[2] + tile_size[2] - 1) / tile_size[2];
+                num_tiles[0]      = (n_grid_local[0] + tile_size[0] - 1) / tile_size[0] + 1;
+                num_tiles[1]      = (n_grid_local[1] + tile_size[1] - 1) / tile_size[1] + 1;
+                num_tiles[2]      = (n_grid_local[2] + tile_size[2] - 1) / tile_size[2] + 1;
                 size_type n_tiles = num_tiles[0] * num_tiles[1] * num_tiles[2];
 
                 // Allocate outputs
-                Kokkos::realloc(permute, n_particles);
-                Kokkos::realloc(bin_offsets, n_tiles + 1);
-		//Kokkos::deep_copy(permute, 0);
-		//Kokkos::deep_copy(bin_offsets, 0);
+                // Kokkos::realloc(permute, n_particles);
+                // Kokkos::realloc(bin_offsets, n_tiles + 1);
+		Kokkos::deep_copy(permute, 0);
+		Kokkos::deep_copy(bin_offsets, 0);
 
                 // Create BinOp
                 BinOp3D<RealType, ExecSpace> bin_op{n_grid_global, n_grid_local, local_offset,
@@ -156,7 +156,7 @@ namespace ippl {
 
                 sorter.create_permute_vector();
                 auto perm_view = sorter.get_permute_vector();
-                Kokkos::deep_copy(permute, perm_view);
+                Kokkos::deep_copy(Kokkos::subview(permute, Kokkos::make_pair<size_type, size_type>(0, n_particles)), Kokkos::subview(perm_view, Kokkos::make_pair<size_type, size_type>(0, n_particles)));
 
                 // Get bin offsets from sorter
                 auto offsets_view = sorter.get_bin_offsets();

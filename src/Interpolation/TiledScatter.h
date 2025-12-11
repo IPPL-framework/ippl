@@ -44,8 +44,8 @@ namespace ippl {
                                                       Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
                 // Input data
-                Kokkos::View<size_type*, memory_space> bin_offsets;
-                Kokkos::View<size_type*, memory_space> permute;
+                Kokkos::View<uint64_t*, memory_space> bin_offsets;
+                Kokkos::View<uint64_t*, memory_space> permute;
                 PositionViewType x;  // Particle positions in coordinates [-pi, pi]
                 Kokkos::View<value_type*, memory_space> values;  // Values to scatter
                 GridViewType grid;                               // Output grid

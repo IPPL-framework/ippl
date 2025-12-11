@@ -114,6 +114,8 @@ namespace ippl {
         /**
          * @brief Sort particles on CUDA using CUB RadixSort with buffer reuse
          *
+         * Writes sorted indices directly to permute array to avoid extra copy.
+         *
          * @param buffer_manager Optional buffer manager for memory reuse.
          *                       If nullptr, uses the default static buffer manager.
          */
@@ -131,13 +133,12 @@ namespace ippl {
                 buffer_manager ? *buffer_manager : getDefaultSortBufferManager<memory_space>();
 
             // Ensure buffers are large enough
-            buffers.ensureCapacity(n);
+            buffers.ensureCapacity(n, 0);
 
             // Get buffer views
-            auto& keys           = buffers.mortonKeys();
-            auto& keys_sorted    = buffers.mortonKeysSorted();
-            auto& indices        = buffers.indices();
-            auto& indices_sorted = buffers.indicesSorted();
+            auto& keys        = buffers.mortonKeys();
+            auto& keys_sorted = buffers.mortonKeysSorted();
+            auto& indices     = buffers.indices();
 
             // Compute Morton codes
             Kokkos::parallel_for(
@@ -156,34 +157,32 @@ namespace ippl {
             size_t temp_storage_bytes = 0;
             cub::DeviceRadixSort::SortPairs(nullptr, temp_storage_bytes, keys.data(),
                                             keys_sorted.data(), indices.data(),
-                                            indices_sorted.data(), n);
+                                            permute.data(), n);
 
             // Ensure temp storage is large enough
             buffers.ensureTempStorageCapacity(temp_storage_bytes);
             auto& d_temp_storage = buffers.tempStorage();
 
-            // Run sorting operation
+            // Run sorting operation - write directly to permute
             cub::DeviceRadixSort::SortPairs(d_temp_storage.data(), temp_storage_bytes, keys.data(),
                                             keys_sorted.data(), indices.data(),
-                                            indices_sorted.data(), n);
+                                            permute.data(), n);
 
             Kokkos::fence();
-
-            // Copy sorted indices to permute array
-            Kokkos::deep_copy(Kokkos::subview(permute, Kokkos::make_pair(size_t(0), n)),
-                              Kokkos::subview(indices_sorted, Kokkos::make_pair(size_t(0), n)));
         }
 #endif
 
 #ifdef KOKKOS_ENABLE_HIP
         /**
          * @brief Sort particles on HIP using rocPRIM RadixSort with buffer reuse
+         *
+         * Writes sorted indices directly to permute array to avoid extra copy.
          */
-        template <unsigned Dim, typename T>
+        template <unsigned Dim, typename T, typename PermuteViewType>
         void sortParticlesHip(Kokkos::View<Vector<T, Dim>*, Kokkos::HIPSpace> positions,
-                              Kokkos::View<size_t*, Kokkos::HIPSpace> permute,
-                              const Vector<T, Dim>& origin, const Vector<T, Dim>& invdx,
-                              const Vector<size_t, Dim>& ngrid, size_t n,
+                              PermuteViewType permute, const Vector<T, Dim>& origin,
+                              const Vector<T, Dim>& invdx, const Vector<size_t, Dim>& ngrid,
+                              size_t n,
                               SortBufferManager<Kokkos::HIPSpace>* buffer_manager = nullptr) {
             using memory_space = Kokkos::HIPSpace;
             using size_type    = size_t;
@@ -196,10 +195,9 @@ namespace ippl {
             buffers.ensureCapacity(n);
 
             // Get buffer views
-            auto& keys           = buffers.mortonKeys();
-            auto& keys_sorted    = buffers.mortonKeysSorted();
-            auto& indices        = buffers.indices();
-            auto& indices_sorted = buffers.indicesSorted();
+            auto& keys        = buffers.mortonKeys();
+            auto& keys_sorted = buffers.mortonKeysSorted();
+            auto& indices     = buffers.indices();
 
             // Compute Morton codes
             Kokkos::parallel_for(
@@ -217,23 +215,19 @@ namespace ippl {
             // Determine temporary storage requirements
             size_t temp_storage_bytes = 0;
             rocprim::radix_sort_pairs(nullptr, temp_storage_bytes, keys.data(), keys_sorted.data(),
-                                      indices.data(), indices_sorted.data(), n, 0,
+                                      indices.data(), permute.data(), n, 0,
                                       sizeof(uint64_t) * 8, Kokkos::HIP().hip_stream());
 
             // Ensure temp storage is large enough
             buffers.ensureTempStorageCapacity(temp_storage_bytes);
             auto& d_temp_storage = buffers.tempStorage();
 
-            // Run sorting operation
+            // Run sorting operation - write directly to permute
             rocprim::radix_sort_pairs(d_temp_storage.data(), temp_storage_bytes, keys.data(),
-                                      keys_sorted.data(), indices.data(), indices_sorted.data(), n,
+                                      keys_sorted.data(), indices.data(), permute.data(), n,
                                       0, sizeof(uint64_t) * 8, Kokkos::HIP().hip_stream());
 
             Kokkos::fence();
-
-            // Copy sorted indices to permute array
-            Kokkos::deep_copy(Kokkos::subview(permute, Kokkos::make_pair(size_t(0), n)),
-                              Kokkos::subview(indices_sorted, Kokkos::make_pair(size_t(0), n)));
         }
 #endif
 
@@ -250,7 +244,7 @@ namespace ippl {
             Kokkos::View<Vector<T, Dim>*, typename ExecSpace::memory_space> positions,
             PermuteViewType permute, const Vector<T, Dim>& origin, const Vector<T, Dim>& invdx,
             const Vector<size_t, Dim>& ngrid, size_t n,
-            SortBufferManager<typename ExecSpace::memory_space>* buffer_manager = nullptr) {
+            SortBufferManager<typename ExecSpace::memory_space>* buffer_manager) {
             using memory_space = typename ExecSpace::memory_space;
 
 #ifdef KOKKOS_ENABLE_CUDA

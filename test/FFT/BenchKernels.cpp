@@ -40,11 +40,11 @@ using namespace ippl;
 // ============================================================================
 
 struct BenchParams {
-    int n_grid = 256;
+    int n_grid = 16;
     double rho = 10.0;              // particles per grid point
     double kernel_tol = 1e-6;       // determines kernel width
-    int warmup_runs = 5;
-    int benchmark_runs = 20;
+    int warmup_runs = 3;
+    int benchmark_runs = 5;
     std::string output_prefix = "benchmark";
     std::string distribution = "uniform";  // or "clustered"
     bool verbose = false;
@@ -200,7 +200,7 @@ public:
 
         // Additionally sweep over tolerances for throughput-vs-accuracy plot
         if (!params_.ncu_mode) {
-            std::vector<double> tolerances = {1e-2, 1e-4, 1e-6, 1e-8, 1e-10, 1e-12};
+            std::vector<double> tolerances = {1e-2, 1e-4, 1e-6, 1e-8};
             for (double tol : tolerances) {
                 if (std::abs(tol - params_.kernel_tol) > 1e-15) {  // skip duplicate
                     ippl::NUFFT::ESKernel<real_type> sweep_kernel(tol);
@@ -274,7 +274,7 @@ public:
         {
             auto cfg = ippl::Interpolation::ScatterConfig::get_default<ExecSpace>();
             cfg.method = ippl::Interpolation::ScatterMethod::Tiled;
-            cfg.tile_size_3d = 3;
+            cfg.tile_size_3d = 2;
             auto metrics = benchmark_scatter("Tiled", cfg, kernel, nghost, n_particles);
             results.push_back(metrics);
         }
@@ -283,7 +283,7 @@ public:
         {
             auto cfg = ippl::Interpolation::ScatterConfig::get_default<ExecSpace>();
             cfg.method = ippl::Interpolation::ScatterMethod::OutputFocused;
-            cfg.tile_size_3d = 3;
+            cfg.tile_size_3d = 2;
             auto metrics = benchmark_scatter("GridParallel", cfg, kernel, nghost, n_particles);
             results.push_back(metrics);
         }

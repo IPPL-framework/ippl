@@ -26,7 +26,7 @@ namespace ippl {
              * View<Vector<T,3>*>)
              */
             template <int W, typename RealType, typename ExecSpace, typename KernelType,
-                      typename ValueType, typename GridViewType,
+                      typename ValueType, typename GridViewType, typename BinOffsetsType, typename PermuteType,
                       typename PositionViewType =
                           Kokkos::View<RealType* [3], typename ExecSpace::memory_space>>
             struct OutputFocusedScatterFunctor3D {
@@ -41,8 +41,8 @@ namespace ippl {
                                                       Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
                 // Input data
-                Kokkos::View<size_type*, memory_space> bin_offsets;
-                Kokkos::View<size_type*, memory_space> permute;
+                BinOffsetsType bin_offsets;
+                PermuteType permute;
                 PositionViewType x;  // Particle positions in coordinates [-pi, pi]
                 Kokkos::View<value_type*, memory_space> values;  // Values to scatter
                 GridViewType grid;                               // Output grid
@@ -262,7 +262,7 @@ namespace ippl {
 
                             // Create functor with templated W
                             OutputFocusedScatterFunctor3D<W, RealType, ExecSpace, KernelType,
-                                                          ValueType, GridViewType, PositionViewType>
+                                                          ValueType, GridViewType, decltype(bin_offsets), decltype(permute), PositionViewType>
                                 functor{bin_offsets,  permute,      x,
                                         values,       grid,         n_grid,
                                         n_grid_local, local_offset, num_tiles,
