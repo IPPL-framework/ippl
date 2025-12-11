@@ -129,16 +129,10 @@ struct ComputeMortonCodesFunctor {
         using size_type = size_t;
 
         // Allocate temporary arrays
-        // Kokkos::View<uint64_t*, memory_space> keys("morton_keys", n);
-        // Kokkos::View<uint64_t*, memory_space> keys_sorted("morton_keys_sorted", n);
-        // Kokkos::View<size_type*, memory_space> indices("indices", n);
-        // Kokkos::View<size_type*, memory_space> indices_sorted("indices_sorted", n);
-
-        auto keys = BufferView<size_type, memory_space>(n);
-        auto keys_sorted = BufferView<size_type, memory_space>(n);
-        auto indices = BufferView<size_type, memory_space>(n);
-        auto indices_sorted = BufferView<size_type, memory_space>(n);
-
+        Kokkos::View<uint64_t*, memory_space> keys("morton_keys", n);
+        Kokkos::View<uint64_t*, memory_space> keys_sorted("morton_keys_sorted", n);
+        Kokkos::View<size_type*, memory_space> indices("indices", n);
+        Kokkos::View<size_type*, memory_space> indices_sorted("indices_sorted", n);
 
         //auto size = computeBufferSize<uint64_t, uint64_t, size_type, size_type>(n, n, n, n);
         //MultiViewBuffer<memory_space> sortBuf(size);
