@@ -133,6 +133,9 @@ namespace ippl {
 
                 // const size_type n_particles = x.extent(0);
 
+                static IpplTimings::TimerRef binSortTimer =IpplTimings::getTimer("binSort");
+                IpplTimings::startTimer(binSortTimer);
+
                 // Calculate number of tiles based on LOCAL grid
                 Kokkos::Array<int, 3> num_tiles;
                 num_tiles[0]      = (n_grid_local[0] + tile_size[0] - 1) / tile_size[0] + 1;
@@ -165,6 +168,7 @@ namespace ippl {
                     KOKKOS_LAMBDA(size_type i) { bin_offsets(i) = offsets_view(i); });
 
                 Kokkos::fence();
+                IpplTimings::stopTimer(binSortTimer);
             }
 
         }  // namespace detail
