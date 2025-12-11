@@ -401,9 +401,9 @@ int main(int argc, char* argv[]) {
         typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
 
         // Test configurations: grid size and particles per grid point
-        std::vector<int> grid_sizes = {256};
+        std::vector<int> grid_sizes = {128};
         std::vector<int> particles_per_point = {10};
-        double tol = 1e-6;
+        double tol = 1e-5;
 
         for (int grid_size : grid_sizes) {
             for (int ppp : particles_per_point) {
@@ -463,10 +463,10 @@ int main(int argc, char* argv[]) {
                         fftParams.add("use_finufft_defaults", false);
                         fftParams.add("use_kokkos_nufft", false);
                         fftParams.add("spread_method", "output_focused");
-                        fftParams.add("tile_size_3d", 3);
-                        fftParams.add("z_tiles", 1);
-                        fftParams.add("team_size", 32);
-                        fftParams.add("sort", true);
+                        fftParams.add("tile_size_3d", 4);
+                        //fftParams.add("z_tiles", 1);
+                        //fftParams.add("team_size", 32);
+                        //fftParams.add("sort", true);
 
                         auto fft = std::make_unique<FFT_type>(layout, nloc, 1, fftParams);
                         double time_ms = benchmarkType1(*fft, field, bunch, "OutputFocused");

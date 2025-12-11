@@ -81,7 +81,8 @@ int main(int argc, char* argv[]) {
 
         const double pi = std::acos(-1.0);
 
-        std::array<size_t, Dim> pt = {32, 32, 32};
+        //std::array<size_t, Dim> pt = {32, 32, 32};
+        std::array<size_t, Dim> pt = {256, 256, 256};
 
         ippl::Index I(pt[0]);
         ippl::Index J(pt[1]);
@@ -133,7 +134,7 @@ int main(int argc, char* argv[]) {
 
         // Parameter sweep configurations
         std::vector<int> tile_sizes = {1};
-        std::vector<int> team_sizes = {1, 2, 4, 8, 16, 32, 64, 128, 256};
+        std::vector<int> team_sizes = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024};
         std::vector<int> z_tiles    = {1};
 
         // Output file for results
@@ -152,7 +153,7 @@ int main(int argc, char* argv[]) {
 
                     // Create FFT with tiled scatter configuration
                     ippl::ParameterList fftParams;
-                    fftParams.add("tolerance", 1e-10);
+                    fftParams.add("tolerance", 1e-6);
                     fftParams.add("use_finufft_defaults", false);
                     fftParams.add("use_kokkos_nufft", false);
                     fftParams.add("spread_method", "output_focused");
