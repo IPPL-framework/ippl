@@ -60,7 +60,7 @@ namespace Interpolation {
         config.method = ScatterMethod::OutputFocused;
         config.sort = true;
         config.tile_size_3d = 3;
-        config.z_tiles = 6;
+        config.z_tiles = 4;
         config.team_size = 32;
         return config;
     }
