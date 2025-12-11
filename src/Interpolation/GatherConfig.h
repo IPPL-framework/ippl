@@ -61,7 +61,7 @@ namespace Interpolation {
         GatherConfig config;
         config.method = GatherMethod::Tiled;
         config.sort = true;
-        config.tile_size_3d = 3;
+        config.tile_size_3d = 4;
         config.z_tiles = 6;
         config.team_size = 32;
         return config;

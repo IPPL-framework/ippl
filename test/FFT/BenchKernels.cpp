@@ -298,7 +298,7 @@ public:
         {
             auto cfg = ippl::Interpolation::ScatterConfig::get_default<ExecSpace>();
             cfg.method = ippl::Interpolation::ScatterMethod::Tiled;
-            cfg.tile_size_3d = 2;
+            cfg.tile_size_3d = 4;
             auto metrics = benchmark_scatter("Tiled", cfg, kernel, nghost, n_particles);
             results.push_back(metrics);
         }
@@ -307,7 +307,14 @@ public:
         {
             auto cfg = ippl::Interpolation::ScatterConfig::get_default<ExecSpace>();
             cfg.method = ippl::Interpolation::ScatterMethod::OutputFocused;
-            cfg.tile_size_3d = 2;
+            int tile_size = 2;
+            std::array<int, 10> tile_sizes = {
+                1,1,4,3,3,2,4,2,2
+            };
+            if (w < 10) {
+                tile_size = tile_sizes[w];
+            }
+            cfg.tile_size_3d = tile_size;
             auto metrics = benchmark_scatter("GridParallel", cfg, kernel, nghost, n_particles);
             results.push_back(metrics);
         }
