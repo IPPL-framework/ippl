@@ -1,0 +1,15 @@
+method,kernel_width,optimal_tile_size,throughput_Mpts_s,time_ms
+Tiled,2,4,5537.70,3.7870
+Tiled,3,4,2882.34,7.2759
+Tiled,4,4,1144.28,18.3273
+Tiled,5,4,636.38,32.9543
+Tiled,6,4,356.26,58.8665
+Tiled,7,4,155.84,134.5710
+Tiled,8,4,78.70,266.4648
+OutputFocused,2,4,2234.18,9.3867
+OutputFocused,3,3,1681.87,12.4692
+OutputFocused,4,3,1178.86,17.7897
+OutputFocused,5,2,824.60,25.4325
+OutputFocused,6,3,584.16,35.9001
+OutputFocused,7,2,448.45,46.7642
+OutputFocused,8,2,300.51,69.7866
