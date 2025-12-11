@@ -167,7 +167,8 @@ printf "Hostname=%-12s, Rank=%-4d ,Local=%-3d ,RPN=%-3d ,CPUs=%-8s ,GPU=%-1s ,NI
 # ---------------
 # GPU selection env var used by nvidia boilerplate
 # ---------------
-export CUDA_VISIBLE_DEVICES=$gpu
+# (paul) This causes CUDA aware MPI to fail.
+#export CUDA_VISIBLE_DEVICES=$gpu
 
 # ---------------
 #  cray-mpich : see https://cpe.ext.hpe.com/docs/24.03/mpt/mpich/intro_mpi.html#general-mpich-environment-variables
