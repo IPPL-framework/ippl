@@ -1446,6 +1446,7 @@ Kokkos::parallel_for(
             }
             if (params.contains("team_size")) {
                 cfg.scatter_config.team_size = params.get<int>("team_size");
+                cfg.gather_config.team_size =  params.get<int>("team_size");
             }
 
             std::string gather_method = params.get<std::string>("gather_method", "none");
