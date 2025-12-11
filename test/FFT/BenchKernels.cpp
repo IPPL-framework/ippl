@@ -65,7 +65,7 @@ private:
 // ============================================================================
 
 struct BenchParams {
-    int n_grid = 16;
+    int n_grid = 128;
     double rho = 10.0;              // particles per grid point
     double kernel_tol = 1e-6;       // determines kernel width
     int warmup_runs = 3;
@@ -230,9 +230,9 @@ public:
 
         // Additionally sweep over tolerances for throughput-vs-accuracy plot
         if (!params_.ncu_mode) {
-            std::vector<double> tolerances = {1e-2, 1e-4, 1e-6, 1e-8};
+            std::vector<double> tolerances = {1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9};
             for (double tol : tolerances) {
-                if (std::abs(tol - params_.kernel_tol) > 1e-15) {  // skip duplicate
+                if (true || std::abs(tol - params_.kernel_tol) > 1e-15) {  // skip duplicate
                     ippl::NUFFT::ESKernel<real_type> sweep_kernel(tol);
                     run_all_kernels(sweep_kernel, results);
                 }
