@@ -79,7 +79,6 @@ public:
             double elapsed = t.elapsed();
             wallTime += elapsed;
 
-            // NEW: Store individual measurement for CSV export
             measurements.push_back(elapsed);
             measurement_count++;
         }
@@ -91,7 +90,6 @@ public:
         running = false;
     }
 
-    // NEW: Clear all data including measurements (for warmup reset)
     void clearAll() {
         clear();
         wallTime = 0.0;
@@ -114,7 +112,6 @@ public:
     // an index value for this timer
     TimerRef indx;
 
-    // NEW: Store individual measurements for CSV/violin plots
     std::vector<double> measurements;
     size_t measurement_count;
 };
@@ -153,24 +150,18 @@ struct Timing {
     // print the results to a file
     void print(const std::string& fn, const std::map<std::string, unsigned int>& problemSize);
 
-    // NEW: Reset all timers (for warmup purposes)
     void resetAllTimers();
 
-    // NEW: Dump all measurements to CSV for violin plots
     // Format: timer_name,rank,measurement_id,duration
     void dumpToCSV(const std::string& filename);
 
-    // NEW: Dump with custom delimiter and header options
     void dumpToCSV(const std::string& filename, const std::string& delimiter, bool includeHeader);
 
-    // NEW: Get measurements for a specific timer (for programmatic access)
     const std::vector<double>& getMeasurements(TimerRef t) const;
     const std::vector<double>& getMeasurements(const std::string& name) const;
 
-    // NEW: Get number of measurements for a timer
     size_t getMeasurementCount(TimerRef t) const;
 
-    // NEW: Get all timer names
     std::vector<std::string> getTimerNames() const;
 
     // type of storage for list of TimerInfo
@@ -223,25 +214,21 @@ public:
     static void stash();
     static void pop();
 
-    // NEW: Reset all timers (clears accumulated times and measurements)
     // Use this after warmup iterations to get clean timing data
     static void resetAllTimers() { instance->resetAllTimers(); }
 
-    // NEW: Dump all timing measurements to CSV
     // Format: timer_name,rank,measurement_id,duration_seconds
     // Perfect for creating violin plots in Python/R
     static void dumpToCSV(const std::string& filename) {
         instance->dumpToCSV(filename);
     }
 
-    // NEW: Dump with custom options
     static void dumpToCSV(const std::string& filename,
                          const std::string& delimiter,
                          bool includeHeader = true) {
         instance->dumpToCSV(filename, delimiter, includeHeader);
     }
 
-    // NEW: Get measurements for programmatic access
     static const std::vector<double>& getMeasurements(TimerRef t) {
         return instance->getMeasurements(t);
     }
@@ -249,12 +236,10 @@ public:
         return instance->getMeasurements(name);
     }
 
-    // NEW: Get measurement count
     static size_t getMeasurementCount(TimerRef t) {
         return instance->getMeasurementCount(t);
     }
 
-    // NEW: Get all timer names
     static std::vector<std::string> getTimerNames() {
         return instance->getTimerNames();
     }
