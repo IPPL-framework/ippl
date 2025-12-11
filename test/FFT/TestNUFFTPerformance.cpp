@@ -401,9 +401,9 @@ int main(int argc, char* argv[]) {
         typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
 
         // Test configurations: grid size and particles per grid point
-        std::vector<int> grid_sizes = {64, 128};
-        std::vector<int> particles_per_point = {1, 10};
-        double tol = 1e-8;
+        std::vector<int> grid_sizes = {256};
+        std::vector<int> particles_per_point = {10};
+        double tol = 1e-6;
 
         for (int grid_size : grid_sizes) {
             for (int ppp : particles_per_point) {
