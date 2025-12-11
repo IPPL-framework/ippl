@@ -154,12 +154,18 @@ namespace ippl {
                                                     tile_size,     num_tiles,    w};
 
                 // Use Kokkos::BinSort
+                static IpplTimings::TimerRef sorter_timer =IpplTimings::getTimer("sortInit");
+                IpplTimings::startTimer(sorter_timer);
                 Kokkos::BinSort<decltype(x), BinOp3D<RealType, ExecSpace>> sorter(x, 0, n_particles,
                                                                                   bin_op, false);
+                IpplTimings::stopTimer(sorter_timer);
 
                 sorter.create_permute_vector();
                 auto perm_view = sorter.get_permute_vector();
+                static IpplTimings::TimerRef deep_copy_timer =IpplTimings::getTimer("deepCopy");
+                IpplTimings::startTimer(deep_copy_timer);
                 Kokkos::deep_copy(Kokkos::subview(permute, Kokkos::make_pair<size_type, size_type>(0, n_particles)), Kokkos::subview(perm_view, Kokkos::make_pair<size_type, size_type>(0, n_particles)));
+                IpplTimings::stopTimer(deep_copy_timer);
 
                 // Get bin offsets from sorter
                 auto offsets_view = sorter.get_bin_offsets();

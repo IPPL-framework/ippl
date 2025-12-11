@@ -22,9 +22,9 @@
  */
 
 #include "Ippl.h"
-#include "Utility/IpplTimings.h"
 #include <Kokkos_Random.hpp>
 
+#include <chrono>
 #include <cmath>
 #include <complex>
 #include <fstream>
@@ -34,6 +34,31 @@
 #include <vector>
 
 using namespace ippl;
+
+// ============================================================================
+// Manual Timer Class
+// ============================================================================
+
+class ManualTimer {
+public:
+    using clock_type = std::chrono::high_resolution_clock;
+    using time_point = clock_type::time_point;
+
+    void start() {
+        Kokkos::fence();  // Ensure all previous GPU work is complete
+        start_time_ = clock_type::now();
+    }
+
+    double stop() {
+        Kokkos::fence();  // Ensure all GPU work from this section is complete
+        auto end_time = clock_type::now();
+        auto duration = std::chrono::duration<double>(end_time - start_time_);
+        return duration.count();  // Returns seconds
+    }
+
+private:
+    time_point start_time_;
+};
 
 // ============================================================================
 // Benchmark Parameters
@@ -86,7 +111,7 @@ BenchParams parse_bench_args(int argc, char* argv[]) {
 }
 
 // ============================================================================
-// Statistics Helper (computed from IpplTimings measurements)
+// Statistics Helper
 // ============================================================================
 
 struct TimingStats {
@@ -158,6 +183,11 @@ struct ThroughputMetrics {
     TimingStats kernel_only_stats;  // Kernel time (excluding sort)
     TimingStats sort_stats;         // Sort time only (if applicable)
 
+    // Raw measurements for CSV export
+    std::vector<double> total_times_sec;
+    std::vector<double> kernel_times_sec;
+    std::vector<double> sort_times_sec;
+
     // Derived throughput metrics (using total time)
     double throughput_Mpts_per_sec() const {
         return (n_particles / (total_stats.mean_ms * 1e-3)) / 1e6;
@@ -211,13 +241,7 @@ public:
 
         // Output results
         write_csv(results);
-
-        // Also dump raw measurements for violin plots
-        std::string raw_file = params_.output_prefix + "_raw.csv";
-        IpplTimings::dumpToCSV(raw_file);
-        if (ippl::Comm->rank() == 0) {
-            std::cout << "Wrote raw measurements to: " << raw_file << "\n";
-        }
+        write_raw_csv(results);
 
         print_summary(results);
     }
@@ -338,28 +362,49 @@ public:
             std::cout << "  Benchmarking scatter: " << name << "\n";
         }
 
-        // Warmup runs
+        ManualTimer timer;
+
+        // Warmup runs (not timed)
         for (int i = 0; i < params_.warmup_runs; ++i) {
             *grid_ = complex_type(0.0, 0.0);
             Q_.scatter_kernel(*grid_, R_, kernel, cfg);
             grid_->accumulateHalo();
         }
+        Kokkos::fence();  // Ensure warmup is complete
 
-        // Reset timers after warmup
-        IpplTimings::resetAllTimers();
+        // Benchmark runs with manual timing
+        std::vector<double> total_times;
+        total_times.reserve(params_.benchmark_runs);
 
-        // Benchmark runs
         for (int i = 0; i < params_.benchmark_runs; ++i) {
             *grid_ = complex_type(0.0, 0.0);
+            Kokkos::fence();  // Ensure grid reset is complete
+
+            timer.start();
             Q_.scatter_kernel(*grid_, R_, kernel, cfg);
             grid_->accumulateHalo();
+            double elapsed = timer.stop();
+
+            total_times.push_back(elapsed);
         }
 
-        // Timer names used by the scatter implementation
-        // Adjust these to match your actual timer names in the scatter code
-        return make_metrics(name, "scatter", kernel, n_particles,
-                           "scatterKernel",      // total time (includes sort if enabled)
-                           "scatterKernelSort"); // sort time (may not exist if sort=false)
+        // Build metrics
+        ThroughputMetrics m;
+        m.kernel_name = name;
+        m.operation = "scatter";
+        m.distribution = params_.distribution;
+        m.kernel_width = kernel.width();
+        m.tolerance = std::pow(10.0, -(kernel.width() - 1));
+        m.n_particles = n_particles;
+        m.n_grid = params_.n_grid;
+        m.rho = params_.rho;
+
+        m.total_times_sec = total_times;
+        m.total_stats = compute_stats(total_times);
+        m.kernel_only_stats = m.total_stats;  // No separate sort timing for scatter
+        m.sort_stats = TimingStats{};  // Empty
+
+        return m;
     }
 
     ThroughputMetrics benchmark_gather(const std::string& name,
@@ -371,65 +416,45 @@ public:
             std::cout << "  Benchmarking gather: " << name << "\n";
         }
 
-        // Warmup runs
+        ManualTimer timer;
+
+        // Warmup runs (not timed)
         for (int i = 0; i < params_.warmup_runs; ++i) {
             Q_result_ = complex_type(0.0, 0.0);
             Q_result_.gather(*grid_, R_, kernel, false, cfg);
         }
+        Kokkos::fence();  // Ensure warmup is complete
 
-        // Reset timers after warmup
-        IpplTimings::resetAllTimers();
+        // Benchmark runs with manual timing
+        std::vector<double> total_times;
+        total_times.reserve(params_.benchmark_runs);
 
-        // Benchmark runs
         for (int i = 0; i < params_.benchmark_runs; ++i) {
             Q_result_ = complex_type(0.0, 0.0);
+            Kokkos::fence();  // Ensure reset is complete
+
+            timer.start();
             Q_result_.gather(*grid_, R_, kernel, false, cfg);
+            double elapsed = timer.stop();
+
+            total_times.push_back(elapsed);
         }
 
-        // Timer names used by the gather implementation
-        // These match what you mentioned: gatherKernel (total), gatherKernelSort (sort)
-        return make_metrics(name, "gather", kernel, n_particles,
-                           "gatherKernel",      // total time (includes sort if enabled)
-                           "gatherKernelSort"); // sort time (may not exist if sort=false)
-    }
-
-    ThroughputMetrics make_metrics(const std::string& name,
-                                    const std::string& op,
-                                    const ippl::NUFFT::ESKernel<real_type>& kernel,
-                                    size_t n_particles,
-                                    const std::string& timer_total,
-                                    const std::string& timer_sort) {
+        // Build metrics
         ThroughputMetrics m;
         m.kernel_name = name;
-        m.operation = op;
+        m.operation = "gather";
         m.distribution = params_.distribution;
         m.kernel_width = kernel.width();
-        m.tolerance = std::pow(10.0, -(kernel.width() - 1));  // approximate inverse
+        m.tolerance = std::pow(10.0, -(kernel.width() - 1));
         m.n_particles = n_particles;
         m.n_grid = params_.n_grid;
         m.rho = params_.rho;
 
-        // Get measurements from IpplTimings
-        // Times are returned in seconds
-        const auto& total_times = IpplTimings::getMeasurements(timer_total);
-        const auto& sort_times = IpplTimings::getMeasurements(timer_sort);
-
+        m.total_times_sec = total_times;
         m.total_stats = compute_stats(total_times);
-        m.sort_stats = compute_stats(sort_times);
-
-        // Compute kernel-only stats by subtracting sort from total
-        // Only if we have both measurements
-        if (!total_times.empty() && !sort_times.empty() &&
-            total_times.size() == sort_times.size()) {
-            std::vector<double> kernel_only_times(total_times.size());
-            for (size_t i = 0; i < total_times.size(); ++i) {
-                kernel_only_times[i] = total_times[i] - sort_times[i];
-            }
-            m.kernel_only_stats = compute_stats(kernel_only_times);
-        } else {
-            // No sort, so kernel-only = total
-            m.kernel_only_stats = m.total_stats;
-        }
+        m.kernel_only_stats = m.total_stats;  // No separate sort timing available
+        m.sort_stats = TimingStats{};  // Empty
 
         return m;
     }
@@ -566,6 +591,30 @@ public:
         std::cout << "\nWrote results to: " << filename << "\n";
     }
 
+    void write_raw_csv(const std::vector<ThroughputMetrics>& results) {
+        if (ippl::Comm->rank() != 0) return;
+
+        std::string filename = params_.output_prefix + "_raw.csv";
+        std::ofstream out(filename);
+
+        // CSV header for raw measurements
+        out << "kernel,operation,distribution,width,run,time_sec\n";
+
+        for (const auto& m : results) {
+            for (size_t i = 0; i < m.total_times_sec.size(); ++i) {
+                out << m.kernel_name << ","
+                    << m.operation << ","
+                    << m.distribution << ","
+                    << m.kernel_width << ","
+                    << i << ","
+                    << std::scientific << std::setprecision(9) << m.total_times_sec[i] << "\n";
+            }
+        }
+
+        out.close();
+        std::cout << "Wrote raw measurements to: " << filename << "\n";
+    }
+
     void print_summary(const std::vector<ThroughputMetrics>& results) {
         if (ippl::Comm->rank() != 0) return;
 
@@ -581,11 +630,10 @@ public:
         std::cout << "\nSCATTER (type-1 spreading):\n";
         std::cout << std::left << std::setw(16) << "Kernel"
                   << std::right << std::setw(12) << "Total (ms)"
-                  << std::setw(12) << "Kernel"
-                  << std::setw(10) << "Sort"
+                  << std::setw(12) << "Stddev"
                   << std::setw(14) << "Mpts/s"
                   << std::setw(12) << "ns/pt" << "\n";
-        std::cout << std::string(76, '-') << "\n";
+        std::cout << std::string(66, '-') << "\n";
 
         double scatter_baseline = 0.0;
         for (const auto& m : results) {
@@ -595,8 +643,7 @@ public:
                 std::cout << std::left << std::setw(16) << m.kernel_name
                           << std::right << std::fixed
                           << std::setw(12) << std::setprecision(3) << m.total_stats.mean_ms
-                          << std::setw(12) << std::setprecision(3) << m.kernel_only_stats.mean_ms
-                          << std::setw(10) << std::setprecision(3) << m.sort_stats.mean_ms
+                          << std::setw(12) << std::setprecision(3) << m.total_stats.stddev_ms
                           << std::setw(14) << std::setprecision(1) << m.throughput_Mpts_per_sec()
                           << std::setw(12) << std::setprecision(2) << m.time_per_point_ns()
                           << " (" << std::setprecision(2) << speedup << "x)\n";
@@ -607,11 +654,10 @@ public:
         std::cout << "\nGATHER (type-2 interpolation):\n";
         std::cout << std::left << std::setw(16) << "Kernel"
                   << std::right << std::setw(12) << "Total (ms)"
-                  << std::setw(12) << "Kernel"
-                  << std::setw(10) << "Sort"
+                  << std::setw(12) << "Stddev"
                   << std::setw(14) << "Mpts/s"
                   << std::setw(12) << "ns/pt" << "\n";
-        std::cout << std::string(76, '-') << "\n";
+        std::cout << std::string(66, '-') << "\n";
 
         double gather_baseline = 0.0;
         for (const auto& m : results) {
@@ -621,8 +667,7 @@ public:
                 std::cout << std::left << std::setw(16) << m.kernel_name
                           << std::right << std::fixed
                           << std::setw(12) << std::setprecision(3) << m.total_stats.mean_ms
-                          << std::setw(12) << std::setprecision(3) << m.kernel_only_stats.mean_ms
-                          << std::setw(10) << std::setprecision(3) << m.sort_stats.mean_ms
+                          << std::setw(12) << std::setprecision(3) << m.total_stats.stddev_ms
                           << std::setw(14) << std::setprecision(1) << m.throughput_Mpts_per_sec()
                           << std::setw(12) << std::setprecision(2) << m.time_per_point_ns()
                           << " (" << std::setprecision(2) << speedup << "x)\n";
