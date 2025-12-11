@@ -59,6 +59,9 @@ function(add_ippl_integration_test TEST_NAME)
   if(TARGET ippl_build_flags)
     target_link_libraries(${TEST_NAME} PRIVATE ippl_build_flags)
   endif()
+  if(IPPL_ENABLE_FINUFFT)
+    target_link_libraries(${TEST_NAME} PRIVATE finufft cufinufft)
+  endif()
 
   target_include_directories(${TEST_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${TEST_INCLUDE_DIRS})
 

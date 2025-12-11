@@ -1342,7 +1342,6 @@ Kokkos::parallel_for(
         tol_m = params.get<T>("tolerance", 1e-6);
 
         if (use_kokkos_nufft) {
-#ifdef KOKKOS_NUFFT_AVAILABLE
             this->n_modes = nmodes;
 
             // Setup kokkos_nufft
@@ -1350,7 +1349,7 @@ Kokkos::parallel_for(
             for (int d = 0; d < Dim; ++d) {
                 n_modes[d] = nmodes[d];
             }
-
+#ifdef KOKKOS_NUFFT_AVAILABLE
             typename kokkos_nufft_t::Config cfg{tol_m};
             kokkos_nufft_plan = std::make_unique<kokkos_nufft_t>(n_modes, cfg);
 #else

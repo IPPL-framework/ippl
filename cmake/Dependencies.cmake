@@ -170,7 +170,7 @@ endfunction()
 # ------------------------------------------------------------------------------
 # set the default version of kokkos we will ask for if not already set
 if(NOT Kokkos_VERSION_DEFAULT)
-  set(Kokkos_VERSION_DEFAULT 4.7.01)
+  set(Kokkos_VERSION_DEFAULT 5.0.0)
 endif()
 # if the user has not asked for a specific version, we will use a default
 if(NOT Kokkos_VERSION)
@@ -353,7 +353,7 @@ if(IPPL_ENABLE_FFT AND IPPL_ENABLE_KOKKOS_NUFFT)
   message(STATUS "Fetching kokkos_nufft")
   FetchContent_Declare(
           kokkos_nufft
-          GIT_REPOSITORY https://github.com/PaulFisch/kokkos-nufft.git
+          GIT_REPOSITORY git@github.com:PaulFisch/kokkos-nufft.git
           GIT_SHALLOW TRUE
           GIT_TAG main
   )
