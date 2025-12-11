@@ -162,6 +162,8 @@ namespace ippl {
                                 kernel((s[d] - static_cast<real_type>(idx[d] + k)) * inv_hw);
                         });
 
+                        team.team_barrier();
+
                         Kokkos::parallel_for(
                             Kokkos::TeamThreadMDRange(team, W, W, W), [&](int wx, int wy, int wz) {
                                 const real_type kernel_val =
@@ -212,7 +214,7 @@ namespace ippl {
 
                             // Use local indices for grid access
                             if constexpr (grid_is_complex) {
-#ifdef KOKKOS_ENABLE_CUDA
+#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
                                 if constexpr (std::is_same_v<ExecSpace, Kokkos::Cuda>) {
                                     double* addr_as_double = reinterpret_cast<double*>(&grid(
                                         local_x + nghost, local_y + nghost, local_z + nghost));
