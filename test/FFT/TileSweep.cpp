@@ -30,6 +30,7 @@
 #include <complex>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <numeric>
 #include <algorithm>
 #include <vector>
@@ -332,33 +333,7 @@ public:
                                        int nghost,
                                        size_t n_particles,
                                        int tile_size) {
-        ManualTimer timer;
-
-        // Warmup runs
-        for (int i = 0; i < params_.warmup_runs; ++i) {
-            *grid_ = complex_type(0.0, 0.0);
-            Q_.scatter_kernel(*grid_, R_, kernel, cfg);
-            grid_->accumulateHalo();
-        }
-        Kokkos::fence();
-
-        // Benchmark runs
-        std::vector<double> times;
-        times.reserve(params_.benchmark_runs);
-
-        for (int i = 0; i < params_.benchmark_runs; ++i) {
-            *grid_ = complex_type(0.0, 0.0);
-            Kokkos::fence();
-
-            timer.start();
-            Q_.scatter_kernel(*grid_, R_, kernel, cfg);
-            grid_->accumulateHalo();
-            double elapsed = timer.stop();
-
-            times.push_back(elapsed);
-        }
-
-        // Build result
+        // Build result structure (filled with NaN on failure)
         BenchmarkResult r;
         r.method = method;
         r.distribution = params_.distribution;
@@ -367,8 +342,53 @@ public:
         r.n_particles = n_particles;
         r.n_grid = params_.n_grid;
         r.rho = params_.rho;
-        r.times_sec = times;
-        r.stats = compute_stats(times);
+
+        try {
+            ManualTimer timer;
+
+            // Warmup runs
+            for (int i = 0; i < params_.warmup_runs; ++i) {
+                *grid_ = complex_type(0.0, 0.0);
+                Q_.scatter_kernel(*grid_, R_, kernel, cfg);
+                grid_->accumulateHalo();
+            }
+            Kokkos::fence();
+
+            // Benchmark runs
+            std::vector<double> times;
+            times.reserve(params_.benchmark_runs);
+
+            for (int i = 0; i < params_.benchmark_runs; ++i) {
+                *grid_ = complex_type(0.0, 0.0);
+                Kokkos::fence();
+
+                timer.start();
+                Q_.scatter_kernel(*grid_, R_, kernel, cfg);
+                grid_->accumulateHalo();
+                double elapsed = timer.stop();
+
+                times.push_back(elapsed);
+            }
+
+            r.times_sec = times;
+            r.stats = compute_stats(times);
+
+        } catch (const std::runtime_error& e) {
+            // Handle insufficient shared memory or other runtime errors
+            if (ippl::Comm->rank() == 0 && params_.verbose) {
+                std::cout << "\n    [SKIP] " << method << " tile=" << tile_size
+                          << " width=" << kernel.width() << ": " << e.what() << "\n";
+            }
+
+            // Fill with NaN to indicate failure
+            r.times_sec.clear();
+            r.stats.mean_ms = std::numeric_limits<double>::quiet_NaN();
+            r.stats.stddev_ms = std::numeric_limits<double>::quiet_NaN();
+            r.stats.min_ms = std::numeric_limits<double>::quiet_NaN();
+            r.stats.max_ms = std::numeric_limits<double>::quiet_NaN();
+            r.stats.median_ms = std::numeric_limits<double>::quiet_NaN();
+            r.stats.count = 0;
+        }
 
         return r;
     }
@@ -464,7 +484,7 @@ public:
 
         out << "method,distribution,tile_size,kernel_width,n_particles,n_grid,rho,"
             << "mean_ms,stddev_ms,min_ms,max_ms,median_ms,"
-            << "throughput_Mpts_s,time_per_pt_ns\n";
+            << "throughput_Mpts_s,time_per_pt_ns,status\n";
 
         for (const auto& r : results) {
             out << r.method << ","
@@ -473,14 +493,19 @@ public:
                 << r.kernel_width << ","
                 << r.n_particles << ","
                 << r.n_grid << ","
-                << std::fixed << std::setprecision(1) << r.rho << ","
-                << std::setprecision(4) << r.stats.mean_ms << ","
-                << r.stats.stddev_ms << ","
-                << r.stats.min_ms << ","
-                << r.stats.max_ms << ","
-                << r.stats.median_ms << ","
-                << std::setprecision(2) << r.throughput_Mpts_per_sec() << ","
-                << r.time_per_point_ns() << "\n";
+                << std::fixed << std::setprecision(1) << r.rho << ",";
+
+            if (std::isnan(r.stats.mean_ms)) {
+                out << "nan,nan,nan,nan,nan,nan,nan,failed\n";
+            } else {
+                out << std::setprecision(4) << r.stats.mean_ms << ","
+                    << r.stats.stddev_ms << ","
+                    << r.stats.min_ms << ","
+                    << r.stats.max_ms << ","
+                    << r.stats.median_ms << ","
+                    << std::setprecision(2) << r.throughput_Mpts_per_sec() << ","
+                    << r.time_per_point_ns() << ",ok\n";
+            }
         }
 
         out.close();
@@ -520,14 +545,22 @@ public:
         for (int t : tiles) {
             out << t;
             for (int w : widths) {
-                double throughput = 0.0;
+                bool found = false;
                 for (const auto& r : results) {
                     if (r.method == method && r.tile_size == t && r.kernel_width == w) {
-                        throughput = r.throughput_Mpts_per_sec();
+                        if (std::isnan(r.stats.mean_ms)) {
+                            out << ",nan";
+                        } else {
+                            out << "," << std::fixed << std::setprecision(2)
+                                << r.throughput_Mpts_per_sec();
+                        }
+                        found = true;
                         break;
                     }
                 }
-                out << "," << std::fixed << std::setprecision(2) << throughput;
+                if (!found) {
+                    out << ",nan";
+                }
             }
             out << "\n";
         }
@@ -561,6 +594,9 @@ public:
 
                 for (const auto& r : results) {
                     if (r.method == method && r.kernel_width == w) {
+                        // Skip NaN results
+                        if (std::isnan(r.stats.mean_ms)) continue;
+
                         double tp = r.throughput_Mpts_per_sec();
                         if (tp > best_throughput) {
                             best_throughput = tp;
@@ -575,6 +611,11 @@ public:
                         << best->tile_size << ","
                         << std::fixed << std::setprecision(2) << best->throughput_Mpts_per_sec() << ","
                         << std::setprecision(4) << best->stats.mean_ms << "\n";
+                } else {
+                    // All configurations failed for this method/width
+                    out << method << ","
+                        << w << ","
+                        << "nan,nan,nan\n";
                 }
             }
         }
@@ -590,6 +631,18 @@ public:
         std::cout << "================================================================\n";
         std::cout << "                    Results Summary\n";
         std::cout << "================================================================\n";
+
+        // Count failed configurations
+        int failed_count = 0;
+        for (const auto& r : results) {
+            if (std::isnan(r.stats.mean_ms)) {
+                ++failed_count;
+            }
+        }
+        if (failed_count > 0) {
+            std::cout << "\nNote: " << failed_count << " configuration(s) failed "
+                      << "(likely insufficient shared memory)\n";
+        }
 
         // Find best configurations
         std::vector<std::string> methods = {"Tiled", "OutputFocused"};
@@ -619,6 +672,9 @@ public:
 
                 for (const auto& r : results) {
                     if (r.method == method && r.kernel_width == w) {
+                        // Skip NaN results
+                        if (std::isnan(r.stats.mean_ms)) continue;
+
                         double tp = r.throughput_Mpts_per_sec();
                         if (tp > best_throughput) {
                             best_throughput = tp;
@@ -634,6 +690,12 @@ public:
                               << std::setw(14) << best->throughput_Mpts_per_sec()
                               << std::setprecision(3)
                               << std::setw(12) << best->stats.mean_ms << "\n";
+                } else {
+                    std::cout << std::left << std::setw(8) << w
+                              << std::right << std::setw(12) << "N/A"
+                              << std::setw(14) << "N/A"
+                              << std::setw(12) << "N/A"
+                              << "  (all failed)\n";
                 }
             }
         }
@@ -661,7 +723,7 @@ public:
             double tiled_tp = 0.0, output_tp = 0.0;
 
             for (const auto& r : results) {
-                if (r.kernel_width == w) {
+                if (r.kernel_width == w && !std::isnan(r.stats.mean_ms)) {
                     double tp = r.throughput_Mpts_per_sec();
                     if (r.method == "Tiled" && tp > tiled_tp) {
                         tiled_tp = tp;
@@ -671,16 +733,32 @@ public:
                 }
             }
 
-            double ratio = (output_tp > 0) ? tiled_tp / output_tp : 0.0;
-            std::string winner = (tiled_tp > output_tp) ? "T" : "O";
+            std::cout << std::left << std::setw(8) << w;
 
-            std::cout << std::left << std::setw(8) << w
-                      << std::right << std::fixed << std::setprecision(1)
-                      << std::setw(20) << tiled_tp
-                      << std::setw(20) << output_tp
-                      << std::setprecision(2)
-                      << std::setw(10) << ratio
-                      << "  " << winner << "\n";
+            if (tiled_tp > 0) {
+                std::cout << std::right << std::fixed << std::setprecision(1)
+                          << std::setw(20) << tiled_tp;
+            } else {
+                std::cout << std::right << std::setw(20) << "N/A";
+            }
+
+            if (output_tp > 0) {
+                std::cout << std::fixed << std::setprecision(1)
+                          << std::setw(20) << output_tp;
+            } else {
+                std::cout << std::setw(20) << "N/A";
+            }
+
+            if (tiled_tp > 0 && output_tp > 0) {
+                double ratio = tiled_tp / output_tp;
+                std::string winner = (tiled_tp > output_tp) ? "T" : "O";
+                std::cout << std::setprecision(2)
+                          << std::setw(10) << ratio
+                          << "  " << winner;
+            } else {
+                std::cout << std::setw(10) << "N/A" << "  -";
+            }
+            std::cout << "\n";
         }
 
         std::cout << "\n";
