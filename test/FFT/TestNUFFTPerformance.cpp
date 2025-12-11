@@ -8,6 +8,11 @@
 #include <typeinfo>
 #include <chrono>
 
+// Include the direct FINUFFT wrapper
+#ifdef ENABLE_FINUFFT
+#include "finufft_wrapper.h"
+#endif
+
 template <class PLayout>
 struct Bunch : public ippl::ParticleBase<PLayout> {
     Bunch(PLayout& playout)
@@ -173,6 +178,211 @@ double benchmarkType2(FFT_type& fft, Field& field, Bunch& bunch,
     return elapsed_ms / benchmark_runs;
 }
 
+#ifdef ENABLE_FINUFFT
+/**
+ * @brief Benchmark Type 1 NUFFT using direct FINUFFT wrapper
+ *
+ * @param positions Particle positions (IPPL Vector view, already in [-pi, pi])
+ * @param strengths Particle strengths
+ * @param field Output field (with ghost cells)
+ * @param grid_size Grid dimension (assumes cubic grid)
+ * @param n_particles Number of particles
+ * @param tol Tolerance
+ * @param warmup_runs Number of warmup iterations
+ * @param benchmark_runs Number of benchmark iterations
+ * @return Average time per transform in ms
+ */
+template<typename PosView, typename StrengthView, typename FieldView>
+double benchmarkType1Direct(PosView& positions, StrengthView& strengths, FieldView& field,
+                            int64_t grid_size, int64_t n_particles, double tol, int nghost,
+                            int warmup_runs = 2, int benchmark_runs = 5) {
+    using T = double;
+    using complex_type = Kokkos::complex<T>;
+    using execution_space = Kokkos::DefaultExecutionSpace;
+    using memory_space = typename execution_space::memory_space;
+
+#ifdef ENABLE_GPU_NUFFT
+    using finufft_complex = cuDoubleComplex;
+#else
+    using finufft_complex = fftw_complex;
+#endif
+
+    // Allocate coordinate buffers (separate x, y, z for FINUFFT)
+    Kokkos::View<T*, Kokkos::LayoutLeft, memory_space> x("x", n_particles);
+    Kokkos::View<T*, Kokkos::LayoutLeft, memory_space> y("y", n_particles);
+    Kokkos::View<T*, Kokkos::LayoutLeft, memory_space> z("z", n_particles);
+    Kokkos::View<complex_type*, Kokkos::LayoutLeft, memory_space> c("c", n_particles);
+    Kokkos::View<complex_type***, Kokkos::LayoutLeft, memory_space> f("f", grid_size, grid_size, grid_size);
+
+    // Copy positions to separate arrays (positions are already in [-pi, pi])
+    Kokkos::parallel_for("copy_positions", n_particles,
+        KOKKOS_LAMBDA(const int64_t i) {
+            x(i) = positions(i)[0];
+            y(i) = positions(i)[1];
+            z(i) = positions(i)[2];
+            c(i) = complex_type(strengths(i), T(0));
+        });
+    Kokkos::fence();
+
+    // Create FINUFFT plan
+    finufft_wrapper::Config<T> config;
+    config.tolerance = tol;
+    config.type = 1;
+#ifdef ENABLE_GPU_NUFFT
+    config.gpu_method = 1;
+    config.gpu_sort = 1;
+    config.gpu_kerevalmeth = 1;
+#else
+    config.nthreads = 0;
+    config.spread_sort = 2;
+    config.spread_kerevalmeth = 1;
+#endif
+
+    finufft_wrapper::DirectNUFFT3D<T> nufft;
+    int64_t n_modes[3] = {grid_size, grid_size, grid_size};
+    nufft.make_plan(n_modes, config);
+    nufft.set_points(n_particles, x.data(), y.data(), z.data());
+
+    // Lambda to run single transform
+    auto run_transform = [&]() {
+        // Re-copy strengths (in case they changed - for consistency with IPPL benchmark)
+        Kokkos::parallel_for("copy_strengths", n_particles,
+            KOKKOS_LAMBDA(const int64_t i) {
+                c(i) = complex_type(strengths(i), T(0));
+            });
+        Kokkos::fence();
+
+        nufft.execute(reinterpret_cast<finufft_complex*>(c.data()),
+                      reinterpret_cast<finufft_complex*>(f.data()));
+        Kokkos::fence();
+
+        // Copy result to output field with ghost cells
+        const int64_t nx = grid_size;
+        const int64_t ny = grid_size;
+        const int64_t nz = grid_size;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        Kokkos::parallel_for("copy_to_field",
+            mdrange_type({0, 0, 0}, {nx, ny, nz}),
+            KOKKOS_LAMBDA(const int64_t i, const int64_t j, const int64_t k) {
+                field(i + nghost, j + nghost, k + nghost) = f(i, j, k);
+            });
+        Kokkos::fence();
+    };
+
+    // Warmup
+    for (int i = 0; i < warmup_runs; ++i) {
+        run_transform();
+    }
+
+    // Benchmark
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < benchmark_runs; ++i) {
+        run_transform();
+    }
+    Kokkos::fence();
+    auto end = std::chrono::high_resolution_clock::now();
+
+    double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
+    return elapsed_ms / benchmark_runs;
+}
+
+/**
+ * @brief Benchmark Type 2 NUFFT using direct FINUFFT wrapper
+ */
+template<typename PosView, typename OutputView, typename FieldView>
+double benchmarkType2Direct(PosView& positions, OutputView& output, FieldView& field,
+                            int64_t grid_size, int64_t n_particles, double tol, int nghost,
+                            int warmup_runs = 2, int benchmark_runs = 5) {
+    using T = double;
+    using complex_type = Kokkos::complex<T>;
+    using execution_space = Kokkos::DefaultExecutionSpace;
+    using memory_space = typename execution_space::memory_space;
+
+#ifdef ENABLE_GPU_NUFFT
+    using finufft_complex = cuDoubleComplex;
+#else
+    using finufft_complex = fftw_complex;
+#endif
+
+    // Allocate coordinate buffers
+    Kokkos::View<T*, Kokkos::LayoutLeft, memory_space> x("x", n_particles);
+    Kokkos::View<T*, Kokkos::LayoutLeft, memory_space> y("y", n_particles);
+    Kokkos::View<T*, Kokkos::LayoutLeft, memory_space> z("z", n_particles);
+    Kokkos::View<complex_type*, Kokkos::LayoutLeft, memory_space> c("c", n_particles);
+    Kokkos::View<complex_type***, Kokkos::LayoutLeft, memory_space> f("f", grid_size, grid_size, grid_size);
+
+    // Copy positions to separate arrays
+    Kokkos::parallel_for("copy_positions", n_particles,
+        KOKKOS_LAMBDA(const int64_t i) {
+            x(i) = positions(i)[0];
+            y(i) = positions(i)[1];
+            z(i) = positions(i)[2];
+        });
+    Kokkos::fence();
+
+    // Create FINUFFT plan for type 2
+    finufft_wrapper::Config<T> config;
+    config.tolerance = tol;
+    config.type = 2;
+#ifdef ENABLE_GPU_NUFFT
+    config.gpu_method = 1;
+    config.gpu_sort = 1;
+    config.gpu_kerevalmeth = 1;
+#else
+    config.nthreads = 0;
+    config.spread_sort = 2;
+    config.spread_kerevalmeth = 1;
+#endif
+
+    finufft_wrapper::DirectNUFFT3D<T> nufft;
+    int64_t n_modes[3] = {grid_size, grid_size, grid_size};
+    nufft.make_plan(n_modes, config);
+    nufft.set_points(n_particles, x.data(), y.data(), z.data());
+
+    // Lambda to run single transform
+    auto run_transform = [&]() {
+        // Copy input field to internal buffer (handle ghost cells)
+        const int64_t nx = grid_size;
+        const int64_t ny = grid_size;
+        const int64_t nz = grid_size;
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        Kokkos::parallel_for("copy_from_field",
+            mdrange_type({0, 0, 0}, {nx, ny, nz}),
+            KOKKOS_LAMBDA(const int64_t i, const int64_t j, const int64_t k) {
+                f(i, j, k) = field(i + nghost, j + nghost, k + nghost);
+            });
+        Kokkos::fence();
+
+        nufft.execute(reinterpret_cast<finufft_complex*>(c.data()),
+                      reinterpret_cast<finufft_complex*>(f.data()));
+        Kokkos::fence();
+
+        // Copy real part of result to output
+        Kokkos::parallel_for("copy_result", n_particles,
+            KOKKOS_LAMBDA(const int64_t i) {
+                output(i) = c(i).real();
+            });
+        Kokkos::fence();
+    };
+
+    // Warmup
+    for (int i = 0; i < warmup_runs; ++i) {
+        run_transform();
+    }
+
+    // Benchmark
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < benchmark_runs; ++i) {
+        run_transform();
+    }
+    Kokkos::fence();
+    auto end = std::chrono::high_resolution_clock::now();
+
+    double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
+    return elapsed_ms / benchmark_runs;
+}
+#endif  // ENABLE_FINUFFT
+
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
@@ -191,7 +401,6 @@ int main(int argc, char* argv[]) {
         typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
 
         // Test configurations: grid size and particles per grid point
-        // std::vector<int> grid_sizes = {256, 512};
         std::vector<int> grid_sizes = {64, 128};
         std::vector<int> particles_per_point = {1, 10};
         double tol = 1e-8;
@@ -251,15 +460,6 @@ int main(int argc, char* argv[]) {
                     {
                         ippl::ParameterList fftParams;
                         fftParams.add("tolerance", tol);
-#ifdef ENABLE_GPU_NUFFT
-                        fftParams.add("gpu_method", 1);
-                        fftParams.add("gpu_sort", 0);
-                        fftParams.add("gpu_kerevalmeth", 1);
-#else
-                        fftParams.add("spread_kerevalmeth", 1);
-                        fftParams.add("spread_sort", 2);
-                        fftParams.add("nthreads", 0);
-#endif
                         fftParams.add("use_finufft_defaults", false);
                         fftParams.add("use_kokkos_nufft", false);
                         fftParams.add("spread_method", "output_focused");
@@ -277,15 +477,6 @@ int main(int argc, char* argv[]) {
                     {
                         ippl::ParameterList fftParams;
                         fftParams.add("tolerance", tol);
-#ifdef ENABLE_GPU_NUFFT
-                        fftParams.add("gpu_method", 1);
-                        fftParams.add("gpu_sort", 0);
-                        fftParams.add("gpu_kerevalmeth", 1);
-#else
-                        fftParams.add("spread_kerevalmeth", 1);
-                        fftParams.add("spread_sort", 2);
-                        fftParams.add("nthreads", 0);
-#endif
                         fftParams.add("use_finufft_defaults", false);
                         fftParams.add("use_kokkos_nufft", false);
                         fftParams.add("spread_method", "tiled");
@@ -303,15 +494,6 @@ int main(int argc, char* argv[]) {
                     {
                         ippl::ParameterList fftParams;
                         fftParams.add("tolerance", tol);
-#ifdef ENABLE_GPU_NUFFT
-                        fftParams.add("gpu_method", 1);
-                        fftParams.add("gpu_sort", 0);
-                        fftParams.add("gpu_kerevalmeth", 1);
-#else
-                        fftParams.add("spread_kerevalmeth", 1);
-                        fftParams.add("spread_sort", 2);
-                        fftParams.add("nthreads", 0);
-#endif
                         fftParams.add("use_finufft_defaults", false);
                         fftParams.add("use_kokkos_nufft", false);
                         fftParams.add("spread_method", "atomic");
@@ -336,30 +518,23 @@ int main(int argc, char* argv[]) {
 #endif
 
 #ifdef ENABLE_FINUFFT
-                    // FINUFFT/cuFINUFFT reference
                     {
-                        ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", tol);
-                        fftParams.add("use_finufft", true);
-                        //fftParams.add("gpu_method", 3);
-                        //fftParams.add("gpu_sort", 0);
-                        //fftParams.add("gpu_kerevalmeth", 1);
-                        //fftParams.add("gpu_binsizex", 8);
-                        //fftParams.add("gpu_binsizey", 8);
-                        //fftParams.add("gpu_binsizez", 2);
-                        //fftParams.add("gpu_maxsubprobsize", 1024);
-                        //fftParams.add("spread_kerevalmeth", 1);
-                        //fftParams.add("spread_sort", 2);
-                        //fftParams.add("nthreads", 0);
+                        const int nghost = field.getNghost();
+                        auto Rview = bunch.R.getView();
+                        auto Qview = bunch.Q.getView();
+                        auto fview = field.getView();
 
-
-                        auto fft = std::make_unique<FFT_type>(layout, nloc, 1, fftParams);
-                        double time_ms = benchmarkType1(*fft, field, bunch, "FINUFFT");
+                        try {
+                            double time_ms = benchmarkType1Direct(Rview, Qview, fview,
+                                                                  grid_size, nloc, tol, nghost);
 #ifdef ENABLE_GPU_NUFFT
-                        printResult("cuFINUFFT", time_ms, Np, grid_size, "1");
+                            printResult("cuFINUFFT Direct", time_ms, Np, grid_size, "1");
 #else
-                        printResult("FINUFFT", time_ms, Np, grid_size, "1");
+                            printResult("FINUFFT Direct", time_ms, Np, grid_size, "1");
 #endif
+                        } catch (const std::exception& e) {
+                            std::cerr << "FINUFFT Type 1 failed: " << e.what() << std::endl;
+                        }
                     }
 #endif
                 }
@@ -397,15 +572,6 @@ int main(int argc, char* argv[]) {
                     {
                         ippl::ParameterList fftParams;
                         fftParams.add("tolerance", tol);
-#ifdef ENABLE_GPU_NUFFT
-                        fftParams.add("gpu_method", 1);
-                        fftParams.add("gpu_sort", 0);
-                        fftParams.add("gpu_kerevalmeth", 1);
-#else
-                        fftParams.add("spread_kerevalmeth", 1);
-                        fftParams.add("spread_sort", 2);
-                        fftParams.add("nthreads", 0);
-#endif
                         fftParams.add("use_finufft_defaults", false);
                         fftParams.add("use_kokkos_nufft", false);
                         fftParams.add("gather_method", "tiled");
@@ -416,21 +582,10 @@ int main(int argc, char* argv[]) {
                         printResult("IPPL Tiled", time_ms, Np, grid_size, "2");
                     }
 
-
-
                     // Atomic method
                     {
                         ippl::ParameterList fftParams;
                         fftParams.add("tolerance", tol);
-#ifdef ENABLE_GPU_NUFFT
-                        fftParams.add("gpu_method", 1);
-                        fftParams.add("gpu_sort", 0);
-                        fftParams.add("gpu_kerevalmeth", 1);
-#else
-                        fftParams.add("spread_kerevalmeth", 1);
-                        fftParams.add("spread_sort", 2);
-                        fftParams.add("nthreads", 0);
-#endif
                         fftParams.add("use_finufft_defaults", false);
                         fftParams.add("use_kokkos_nufft", false);
                         fftParams.add("gather_method", "atomic");
@@ -440,21 +595,10 @@ int main(int argc, char* argv[]) {
                         printResult("IPPL Atomic", time_ms, Np, grid_size, "2");
                     }
 
-
-
-                    // Atomic method
+                    // Atomic Sort method
                     {
                         ippl::ParameterList fftParams;
                         fftParams.add("tolerance", tol);
-#ifdef ENABLE_GPU_NUFFT
-                        fftParams.add("gpu_method", 1);
-                        fftParams.add("gpu_sort", 0);
-                        fftParams.add("gpu_kerevalmeth", 1);
-#else
-                        fftParams.add("spread_kerevalmeth", 1);
-                        fftParams.add("spread_sort", 2);
-                        fftParams.add("nthreads", 0);
-#endif
                         fftParams.add("use_finufft_defaults", false);
                         fftParams.add("use_kokkos_nufft", false);
                         fftParams.add("gather_method", "atomic_sort");
@@ -464,25 +608,16 @@ int main(int argc, char* argv[]) {
                         printResult("IPPL Atomic Sort", time_ms, Np, grid_size, "2");
                     }
 
-                    // Atomic method
+                    // Native method
                     {
                         ippl::ParameterList fftParams;
                         fftParams.add("tolerance", tol);
-#ifdef ENABLE_GPU_NUFFT
-                        fftParams.add("gpu_method", 1);
-                        fftParams.add("gpu_sort", 0);
-                        fftParams.add("gpu_kerevalmeth", 1);
-#else
-                        fftParams.add("spread_kerevalmeth", 1);
-                        fftParams.add("spread_sort", 2);
-                        fftParams.add("nthreads", 0);
-#endif
                         fftParams.add("use_finufft_defaults", false);
                         fftParams.add("use_kokkos_nufft", false);
                         fftParams.add("gather_method", "native");
 
                         auto fft = std::make_unique<FFT_type>(layout, nloc, 2, fftParams);
-                        double time_ms = benchmarkType2(*fft, field, bunch, "Atomic");
+                        double time_ms = benchmarkType2(*fft, field, bunch, "Native");
                         printResult("IPPL Native", time_ms, Np, grid_size, "2");
                     }
 
@@ -501,32 +636,22 @@ int main(int argc, char* argv[]) {
 #endif
 
 #ifdef ENABLE_FINUFFT
-                    // FINUFFT/cuFINUFFT reference
                     {
-                        ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", tol);
-                        fftParams.add("use_finufft", true);
+                        auto Rview = bunch.R.getView();
+                        auto Qview = bunch.Q.getView();
+                        auto fview_local = field.getView();
 
-                        //fftParams.add("use_finufft", true);
-                        //fftParams.add("gpu_method", 3);
-                        //fftParams.add("gpu_sort", 0);
-                        //fftParams.add("gpu_kerevalmeth", 1);
-                        //fftParams.add("gpu_binsizex", 8);
-                        //fftParams.add("gpu_binsizey", 8);
-                        //fftParams.add("gpu_binsizez", 2);
-                        //fftParams.add("gpu_maxsubprobsize", 1024);
-                        //fftParams.add("spread_kerevalmeth", 1);
-                        //fftParams.add("spread_sort", 2);
-                        //fftParams.add("nthreads", 0);
-
-
-                        auto fft = std::make_unique<FFT_type>(layout, nloc, 2, fftParams);
-                        double time_ms = benchmarkType2(*fft, field, bunch, "FINUFFT");
+                        try {
+                            double time_ms = benchmarkType2Direct(Rview, Qview, fview_local,
+                                                                  grid_size, nloc, tol, nghost);
 #ifdef ENABLE_GPU_NUFFT
-                        printResult("cuFINUFFT", time_ms, Np, grid_size, "2");
+                            printResult("cuFINUFFT Direct", time_ms, Np, grid_size, "2");
 #else
-                        printResult("FINUFFT", time_ms, Np, grid_size, "2");
+                            printResult("FINUFFT Direct", time_ms, Np, grid_size, "2");
 #endif
+                        } catch (const std::exception& e) {
+                            std::cerr << "FINUFFT Type 2 failed: " << e.what() << std::endl;
+                        }
                     }
 #endif
                 }

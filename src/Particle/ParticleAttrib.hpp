@@ -438,10 +438,10 @@ namespace ippl {
                     // Sort particles by Morton code
                     auto x_view = pp.getView();
                     // Kokkos::View<size_t*, memory_space> permute("permute", nParticles);
-                    detail::SortBufferManager<memory_space>& buf_manager =
-                        detail::getDefaultSortBufferManager<memory_space>();
-                    buf_manager.ensureCapacity(nParticles);
-                    auto& permute = buf_manager.indicesSorted();
+                    // detail::SortBufferManager<memory_space>& buf_manager =
+                    //     detail::getDefaultSortBufferManager<memory_space>();
+                    // buf_manager.ensureCapacity(nParticles);
+                    // auto& permute = buf_manager.indicesSorted();
 
                     Vector<PositionType, 3> origin;
                     Vector<PositionType, 3> invdx;
@@ -452,8 +452,8 @@ namespace ippl {
                         ngrid_vec[d] = ngrid_global[d];
                     }
 
-                    detail::sortParticles<3, execution_space, PositionType>(
-                        x_view, permute, origin, invdx, ngrid_vec, nParticles);
+                    auto permute = detail::sortParticles<3, execution_space, PositionType>(
+                        x_view, origin, invdx, ngrid_vec, nParticles);
 
                     // Kokkos::fence();
                     Kokkos::Array<size_type, 3> num_tiles;

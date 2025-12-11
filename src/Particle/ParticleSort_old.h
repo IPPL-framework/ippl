@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <vector>
-#include <stdexcept>
 
 #include "Particle/SortBuffer.h"
 
@@ -27,63 +26,6 @@
 
 namespace ippl {
     namespace detail {
-
-        /**
-         * @brief Validate that all permutation indices are in bounds
-         *
-         * @tparam ExecSpace Kokkos execution space
-         * @tparam IndexView Index view type
-         * @param permute Permutation array to validate
-         * @param n Number of elements (valid range is [0, n))
-         * @param label Label for error messages
-         * @throws std::runtime_error if any index is out of bounds
-         */
-        template <typename ExecSpace, typename IndexView>
-        void validatePermutation(const IndexView& permute, size_t n, const char* label = "sortParticles") {
-            using size_type = size_t;
-
-            size_type num_invalid = 0;
-
-            Kokkos::parallel_reduce(
-                label,
-                Kokkos::RangePolicy<ExecSpace>(0, n),
-                KOKKOS_LAMBDA(size_type i, size_type& count) {
-                    size_type val = permute(i);
-                    if (val >= n) {
-                        count++;
-                    }
-                },
-                num_invalid);
-
-            Kokkos::fence();
-
-            if (num_invalid > 0) {
-                // Find first invalid for error message
-                size_type first_invalid_idx = n;
-                Kokkos::parallel_reduce(
-                    "find_first_invalid",
-                    Kokkos::RangePolicy<ExecSpace>(0, n),
-                    KOKKOS_LAMBDA(size_type i, size_type& first_idx) {
-                        size_type val = permute(i);
-                        if (val >= n && i < first_idx) {
-                            first_idx = i;
-                        }
-                    },
-                    Kokkos::Min<size_type>(first_invalid_idx));
-
-                Kokkos::fence();
-
-                // Get the invalid value
-                auto permute_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, permute);
-                size_type first_invalid_val = permute_host(first_invalid_idx);
-
-                throw std::runtime_error(
-                    std::string(label) + ": Found " + std::to_string(num_invalid) +
-                    " invalid permutation indices. First invalid: permute[" +
-                    std::to_string(first_invalid_idx) + "] = " +
-                    std::to_string(first_invalid_val) + " (n = " + std::to_string(n) + ")");
-            }
-        }
 
         /**
          * @brief Compute Morton code (Z-order curve) for spatial sorting
@@ -179,9 +121,6 @@ namespace ippl {
                 permute(i) = key_index_pairs[i].second;
             }
 
-            // Validate permutation
-            validatePermutation<Kokkos::DefaultHostExecutionSpace>(permute, n, "sortParticlesHost");
-
             return permute;
         }
 
@@ -211,15 +150,11 @@ namespace ippl {
             // Ensure buffers are large enough
             buffers.ensureCapacity(n);
 
-            // Get buffer views AFTER ensureCapacity - use copies, not references!
-            auto keys          = buffers.mortonKeys();
-            auto keys_sorted   = buffers.mortonKeysSorted();
-            auto indices       = buffers.indices();
-            auto indices_sorted = buffers.indicesSorted();
-
-            // Debug: Print buffer info
-            printf("sortParticlesCuda: n=%zu, keys.extent(0)=%zu, indices.extent(0)=%zu, indices_sorted.extent(0)=%zu\n",
-                   n, keys.extent(0), indices.extent(0), indices_sorted.extent(0));
+            // Get buffer views
+            auto& keys          = buffers.mortonKeys();
+            auto& keys_sorted   = buffers.mortonKeysSorted();
+            auto& indices       = buffers.indices();
+            auto& indices_sorted = buffers.indicesSorted();
 
             // Compute Morton codes
             Kokkos::parallel_for(
@@ -234,9 +169,6 @@ namespace ippl {
 
             Kokkos::fence();
 
-            // Validate initial indices
-            validatePermutation<Kokkos::Cuda>(indices, n, "sortParticlesCuda_pre_sort_indices");
-
             // Determine temporary storage requirements
             size_t temp_storage_bytes = 0;
             cub::DeviceRadixSort::SortPairs(nullptr, temp_storage_bytes, keys.data(),
@@ -245,7 +177,7 @@ namespace ippl {
 
             // Ensure temp storage is large enough
             buffers.ensureTempStorageCapacity(temp_storage_bytes);
-            auto d_temp_storage = buffers.tempStorage();
+            auto& d_temp_storage = buffers.tempStorage();
 
             // Run sorting operation - write to indices_sorted
             cub::DeviceRadixSort::SortPairs(d_temp_storage.data(), temp_storage_bytes, keys.data(),
@@ -253,12 +185,6 @@ namespace ippl {
                                             indices_sorted.data(), n);
 
             Kokkos::fence();
-
-            // Re-fetch indices_sorted in case ensureTempStorageCapacity reallocated
-            indices_sorted = buffers.indicesSorted();
-
-            // Validate sorted permutation
-            validatePermutation<Kokkos::Cuda>(indices_sorted, n, "sortParticlesCuda_post_sort");
 
             // Return the sorted indices view
             return indices_sorted;
@@ -287,15 +213,11 @@ namespace ippl {
             // Ensure buffers are large enough
             buffers.ensureCapacity(n);
 
-            // Get buffer views AFTER ensureCapacity - use copies, not references!
-            auto keys          = buffers.mortonKeys();
-            auto keys_sorted   = buffers.mortonKeysSorted();
-            auto indices       = buffers.indices();
-            auto indices_sorted = buffers.indicesSorted();
-
-            // Debug: Print buffer info
-            printf("sortParticlesHip: n=%zu, keys.extent(0)=%zu, indices.extent(0)=%zu, indices_sorted.extent(0)=%zu\n",
-                   n, keys.extent(0), indices.extent(0), indices_sorted.extent(0));
+            // Get buffer views
+            auto& keys          = buffers.mortonKeys();
+            auto& keys_sorted   = buffers.mortonKeysSorted();
+            auto& indices       = buffers.indices();
+            auto& indices_sorted = buffers.indicesSorted();
 
             // Compute Morton codes
             Kokkos::parallel_for(
@@ -310,9 +232,6 @@ namespace ippl {
 
             Kokkos::fence();
 
-            // Validate initial indices
-            validatePermutation<Kokkos::HIP>(indices, n, "sortParticlesHip_pre_sort_indices");
-
             // Determine temporary storage requirements
             size_t temp_storage_bytes = 0;
             rocprim::radix_sort_pairs(nullptr, temp_storage_bytes, keys.data(), keys_sorted.data(),
@@ -321,7 +240,7 @@ namespace ippl {
 
             // Ensure temp storage is large enough
             buffers.ensureTempStorageCapacity(temp_storage_bytes);
-            auto d_temp_storage = buffers.tempStorage();
+            auto& d_temp_storage = buffers.tempStorage();
 
             // Run sorting operation - write to indices_sorted
             rocprim::radix_sort_pairs(d_temp_storage.data(), temp_storage_bytes, keys.data(),
@@ -329,12 +248,6 @@ namespace ippl {
                                       0, sizeof(uint64_t) * 8, Kokkos::HIP().hip_stream());
 
             Kokkos::fence();
-
-            // Re-fetch indices_sorted in case ensureTempStorageCapacity reallocated
-            indices_sorted = buffers.indicesSorted();
-
-            // Validate sorted permutation
-            validatePermutation<Kokkos::HIP>(indices_sorted, n, "sortParticlesHip_post_sort");
 
             // Return the sorted indices view
             return indices_sorted;
@@ -394,13 +307,9 @@ namespace ippl {
                 SortBufferManager<memory_space>& buffers =
                     buffer_manager ? *buffer_manager : getDefaultSortBufferManager<memory_space>();
                 buffers.ensureCapacity(n);
-                auto permute = buffers.indicesSorted();
+                auto& permute = buffers.indicesSorted();
 
                 Kokkos::deep_copy(permute, permute_host);
-
-                // Validate after copy
-                validatePermutation<ExecSpace>(permute, n, "sortParticles_fallback");
-
                 return permute;
             }
         }
