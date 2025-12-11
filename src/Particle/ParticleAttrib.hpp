@@ -303,7 +303,7 @@ namespace ippl {
             // Kokkos::View<size_type*, typename execution_space::memory_space> permute;
             // Kokkos::View<size_type*, typename execution_space::memory_space> bin_offsets;
             auto& buf_handler = detail::getDefaultSortBufferManager<memory_space>();
-            buf_handler.ensureCapacity(std::max(nParticles, total_tiles + 1));
+            buf_handler.ensureCapacity(std::max(nParticles + 1, total_tiles + 1));
             auto& permute     = buf_handler.indices();
             auto& bin_offsets = buf_handler.indicesSorted();
 
