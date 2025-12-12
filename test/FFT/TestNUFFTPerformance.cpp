@@ -401,8 +401,8 @@ int main(int argc, char* argv[]) {
         typedef ippl::FFT<ippl::NUFFTransform, real_field_type> FFT_type;
 
         // Test configurations: grid size and particles per grid point
-        std::vector<int> grid_sizes = {128};
-        std::vector<int> particles_per_point = {10};
+        std::vector<int> grid_sizes = {8};
+        std::vector<int> particles_per_point = {1};
         double tol = 1e-5;
 
         for (int grid_size : grid_sizes) {
@@ -419,8 +419,8 @@ int main(int argc, char* argv[]) {
 
                 ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
-                Vector_t minU = {-pi, -pi, -pi};
-                Vector_t maxU = {pi, pi, pi};
+                Vector_t minU = {0, 0, 0};
+                Vector_t maxU = {2 * pi, 2 * pi, 2 * pi};
 
                 std::array<double, dim> dx = {
                     (maxU[0] - minU[0]) / double(pt[0]),
@@ -568,19 +568,19 @@ int main(int argc, char* argv[]) {
                         generate_random_field<Kokkos::complex<double>, Kokkos::Random_XorShift64_Pool<>, dim>(
                             field.getView(), rand_pool64));
 
-                    // Tiled method
-                    {
-                        ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", tol);
-                        fftParams.add("use_finufft_defaults", false);
-                        fftParams.add("use_kokkos_nufft", false);
-                        fftParams.add("gather_method", "tiled");
-                        fftParams.add("sort", true);
-
-                        auto fft = std::make_unique<FFT_type>(layout, nloc, 2, fftParams);
-                        double time_ms = benchmarkType2(*fft, field, bunch, "Tiled");
-                        printResult("IPPL Tiled", time_ms, Np, grid_size, "2");
-                    }
+                    // // Tiled method
+                    // {
+                    //     ippl::ParameterList fftParams;
+                    //     fftParams.add("tolerance", tol);
+                    //     fftParams.add("use_finufft_defaults", false);
+                    //     fftParams.add("use_kokkos_nufft", false);
+                    //     fftParams.add("gather_method", "tiled");
+                    //     fftParams.add("sort", true);
+                    //
+                    //     auto fft = std::make_unique<FFT_type>(layout, nloc, 2, fftParams);
+                    //     double time_ms = benchmarkType2(*fft, field, bunch, "Tiled");
+                    //     printResult("IPPL Tiled", time_ms, Np, grid_size, "2");
+                    // }
 
                     // Atomic method
                     {
@@ -608,18 +608,18 @@ int main(int argc, char* argv[]) {
                         printResult("IPPL Atomic Sort", time_ms, Np, grid_size, "2");
                     }
 
-                    // Native method
-                    {
-                        ippl::ParameterList fftParams;
-                        fftParams.add("tolerance", tol);
-                        fftParams.add("use_finufft_defaults", false);
-                        fftParams.add("use_kokkos_nufft", false);
-                        fftParams.add("gather_method", "native");
-
-                        auto fft = std::make_unique<FFT_type>(layout, nloc, 2, fftParams);
-                        double time_ms = benchmarkType2(*fft, field, bunch, "Native");
-                        printResult("IPPL Native", time_ms, Np, grid_size, "2");
-                    }
+                    // // Native method
+                    // {
+                    //     ippl::ParameterList fftParams;
+                    //     fftParams.add("tolerance", tol);
+                    //     fftParams.add("use_finufft_defaults", false);
+                    //     fftParams.add("use_kokkos_nufft", false);
+                    //     fftParams.add("gather_method", "native");
+                    //
+                    //     auto fft = std::make_unique<FFT_type>(layout, nloc, 2, fftParams);
+                    //     double time_ms = benchmarkType2(*fft, field, bunch, "Native");
+                    //     printResult("IPPL Native", time_ms, Np, grid_size, "2");
+                    // }
 
 #ifdef KOKKOS_NUFFT_AVAILABLE
                     // kokkos_nufft reference
