@@ -296,7 +296,7 @@ BenchmarkResult benchmarkNUFFTType1(int grid_size, int particles_per_point, doub
     fftParams.add("spread_method", spread_method);
     fftParams.add("tile_size_3d", 3);
     fftParams.add("z_tiles", 1);
-    fftParams.add("team_size", 32);
+    fftParams.add("team_size", 2);
     fftParams.add("sort", true);
 
     auto fft = std::make_unique<FFT_type>(layout, nloc, 1, fftParams);
@@ -387,12 +387,12 @@ BenchmarkResult benchmarkNUFFTType2(int grid_size, int particles_per_point, doub
     ippl::NDIndex<dim> owned(I, J, K);
 
     std::array<bool, dim> isParallel;
-    isParallel.fill(false);
+    isParallel.fill(true);
 
     ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
-    Vector_t minU = {-pi, -pi, -pi};
-    Vector_t maxU = {pi, pi, pi};
+    Vector_t minU = {0, 0, 0};
+    Vector_t maxU = {2 * pi,2 * pi,2 * pi};
 
     std::array<double, dim> dx = {
         (maxU[0] - minU[0]) / double(pt[0]),
@@ -444,6 +444,8 @@ BenchmarkResult benchmarkNUFFTType2(int grid_size, int particles_per_point, doub
             rand_pool64.free_state(rand_gen);
         });
     Kokkos::fence();
+
+    bunch.update();
 
     // Generate random field
     const int nghost = field.getNghost();

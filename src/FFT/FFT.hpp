@@ -364,13 +364,9 @@ namespace ippl {
             // because then the code does not run on CPU due to two nester parallel_fors on the
             // same execution space. Either I need to do some pragmas below in the device
             // parallel_for or a raw omp parallel for here. Launch all sub-FFTs in this batch on
-            // separate streams 
-Kokkos::parallel_for(
-                 "PrunedFFT parallel sub-FFTs batch",
-                 Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, batchSize),
-                 [&](const int localIdx) {
-//#pragma omp parallel for
-//            for (int localIdx = 0; localIdx < batchSize; ++localIdx) {
+            // separate streams
+#pragma omp parallel for
+            for (int localIdx = 0; localIdx < batchSize; ++localIdx) {
                 const int k    = batchStart + localIdx;  // Which sub-FFT (0-7)
                 const int slot = localIdx;               // Which slot to use (0 to batchSize-1)
 
@@ -404,7 +400,7 @@ Kokkos::parallel_for(
                                                     tempFieldInputs[slot].data(),
                                                     workspaces_m[slot].data(), heffte::scale::none);
                 }
-            });
+            }
 
             // Wait for all streams in this batch to complete before accumulation
             Kokkos::fence();
@@ -533,12 +529,8 @@ Kokkos::parallel_for(
             // Phase 1: Apply twiddle factors and run sub-IFFTs for this batch
             IpplTimings::startTimer(SubIFFTs);
 
-            Kokkos::parallel_for(
-                "PrunedIFFT parallel sub-IFFTs batch",
-                 Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, batchSize),
-                 [&](const int localIdx) {
-//#pragma omp parallel for
-            //for (int localIdx = 0; localIdx < batchSize; ++localIdx) {
+#pragma omp parallel for
+            for (int localIdx = 0; localIdx < batchSize; ++localIdx) {
                 const int k    = batchStart + localIdx;
                 const int slot = localIdx;
 
@@ -588,7 +580,7 @@ Kokkos::parallel_for(
                 pruned_heffte_m[slot]->backward(tempFieldInputs[slot].data(),
                                                 tempFieldInputs[slot].data(),
                                                 workspaces_m[slot].data(), heffte::scale::none);
-            });
+            }
 
             // Wait for all streams in this batch
             Kokkos::fence();

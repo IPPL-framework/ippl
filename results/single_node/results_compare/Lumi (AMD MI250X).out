@@ -1,0 +1,6 @@
+================================================================================
+Configuration: Grid=128^3, Particles=20971520 (10 per point)
+================================================================================
+          IPPL Tiled | Type 1 | Grid: 128^3 | Particles:   20971520 | Time:    143.257 ms | Throughput:   146.39 Mpts/s
+         IPPL Atomic | Type 1 | Grid: 128^3 | Particles:   20971520 | Time:   1841.210 ms | Throughput:    11.39 Mpts/s
+          IPPL Warp | Type 2 | Grid: 128^3 | Particles:   20971520 | Time:    118.619 ms | Throughput:   176.80 Mpts/s

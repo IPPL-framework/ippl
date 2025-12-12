@@ -240,117 +240,48 @@ namespace ippl {
                     throw IpplException("NativeNUFFT::type1",
                                         "NUFFT not initialized. Call initialize() first.");
                 }
+                static IpplTimings::TimerRef NativeNUFFT1Timer = IpplTimings::getTimer("NativeNUFFT1");
+                IpplTimings::startTimer(NativeNUFFT1Timer);
 
-                resetTimings();
-                auto ttot = std::chrono::high_resolution_clock::now();
 
-                // Step 1: Spread particles to upsampled grid
-                auto t0      = std::chrono::high_resolution_clock::now();
+                static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatterTimerNUFFT1");
+                IpplTimings::startTimer(scatterTimer);
                 *grid_field_ = complex_type(0, 0);  // Zero the grid
 
                 Q.scatter_kernel(*grid_field_, R, kernel_, cfg_.scatter_config);
                 Kokkos::fence();
+                IpplTimings::stopTimer(scatterTimer);
 
-                timing_.spread =
-                    std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
-                        .count();
-
+                static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("accumulateHaloNUFFT1");
+                IpplTimings::startTimer(accumulateHaloTimer);
                 // Step 1.5: Accumulate ghost cells from scatter
                 grid_field_->accumulateHalo();
+                IpplTimings::stopTimer(accumulateHaloTimer);
 
+                static IpplTimings::TimerRef fftTimer = IpplTimings::getTimer("FFTNUFFT1");
+                IpplTimings::startTimer(fftTimer);
                 // Step 2: Inverse FFT
                 if (upsampled_output) {
                     performFFT(-1);
                 } else {
                     performPrunedFFT(1, f);
                 }
+                IpplTimings::stopTimer(fftTimer);
 
+                static IpplTimings::TimerRef deconvolutionTimer = IpplTimings::getTimer("deconvolutionNUFFT1");
+                IpplTimings::startTimer(deconvolutionTimer);
                 // Step 3: Deconvolution and truncation to output modes
-                t0 = std::chrono::high_resolution_clock::now();
                 if (upsampled_output) {
                     applyDeconvolutionType1<decltype(*grid_field_), decltype(f), ExecSpace, T>(
                         *grid_field_, factors_, f, n_modes_, n_grid_);
                 } else {
                     applyDeconvolutionPruned<decltype(f), ExecSpace, T>(f, factors_, n_modes_, n_grid_);
                 }
+                IpplTimings::stopTimer(deconvolutionTimer);
+                IpplTimings::stopTimer(NativeNUFFT1Timer);
 
-                timing_.correct =
-                    std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
-                        .count();
-
-                timing_.total =
-                    std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - ttot)
-                        .count()
-                    + timing_.precompute;
             }
 
-            /**
-             * @brief Type 2 NUFFT: Interpolate uniform Fourier modes at nonuniform points.
-             *
-             * Computes c_j = sum_k f_k * exp(i * k * x_j) at nonuniform x_j.
-             *
-             * @tparam InField Input field type
-             * @tparam Properties ParticleAttrib properties
-             * @param f Input Fourier modes field
-             * @param R Particle positions in [0, 2*pi)^Dim
-             * @param Q Output particle values
-             */
-            // template <typename InField, class... Properties>
-            // void type2(InField& f, const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
-            //            ParticleAttrib<T, Properties...>& Q, bool upsampled_output = false) {
-            //     if (!initialized_) {
-            //         throw IpplException("NativeNUFFT::type2",
-            //                             "NUFFT not initialized. Call initialize() first.");
-            //     }
-            //
-            //     resetTimings();
-            //     auto ttot = std::chrono::high_resolution_clock::now();
-            //
-            //     // Step 1: Apply pre-correction
-            //     auto t0 = std::chrono::high_resolution_clock::now();
-            //
-            //     if (upsampled_output) {
-            //         applyPreCorrectionType2<decltype(f), decltype(*grid_field_), ExecSpace, T>(
-            //             f, factors_, *grid_field_, n_modes_, n_grid_);
-            //     } else {
-            //         applyPreCorrectionType2<Dim, ExecSpace, T>(f.getView(), factors_,
-            //         f.getView(),
-            //                                                    n_modes_, n_grid_, f.getNghost(),
-            //                                                    f.getNghost());
-            //     }
-            //
-            //     timing_.correct =
-            //         std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
-            //             .count();
-            //
-            //     // Step 2: Inverse FFT
-            //     t0 = std::chrono::high_resolution_clock::now();
-            //     if (upsampled_output) {
-            //         performFFT(-1);
-            //     } else {
-            //         performPrunedFFT(-1, f);
-            //     }
-            //
-            //     timing_.fft =
-            //         std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
-            //             .count();
-            //
-            //     // Step 2.5: Fill ghost cells for gather
-            //     grid_field_->fillHalo();
-            //
-            //     // Step 3: Gather/interpolate at particle positions
-            //     t0 = std::chrono::high_resolution_clock::now();
-            //     Q.gather(*grid_field_, R, kernel_, false, cfg_.gather_config);
-            //     Kokkos::fence();
-            //     timing_.spread =
-            //         std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
-            //             .count();
-            //
-            //     timing_.total =
-            //         std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - ttot)
-            //             .count()
-            //         + timing_.precompute;
-            // }
 
             template <typename InField, class... Properties>
             void type2(InField& f, const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
@@ -359,24 +290,14 @@ namespace ippl {
                     throw IpplException("NativeNUFFT::type2",
                                         "NUFFT not initialized. Call initialize() first.");
                 }
-
-                resetTimings();
-                auto ttot = std::chrono::high_resolution_clock::now();
-
-                // // DEBUG: before pre_correctio
-                // if (ippl::Comm->rank() == 0) {
-                //     auto f_host = f.getHostMirror();
-                //     Kokkos::deep_copy(f_host, f.getView());
-                //     int ng = f.getNghost();
-                //     std::cout << "[DEBUG type2] Before Pre-correction: "
-                //               << "grid_field_[" << ng << "," << ng << "," << ng
-                //               << "] = " << f_host(ng, ng, ng) << std::endl;
-                // }
+                static IpplTimings::TimerRef NativeNUFFT2Timer = IpplTimings::getTimer("NativeNUFFT2");
+                IpplTimings::startTimer(NativeNUFFT2Timer);
 
                 // ============================================================
                 // Step 1: Apply pre-correction
                 // ============================================================
-                auto t0 = std::chrono::high_resolution_clock::now();
+                static IpplTimings::TimerRef PrecorrectionTimer = IpplTimings::getTimer("PrecorrectionNUFFT2");
+                IpplTimings::startTimer(PrecorrectionTimer);
 
                 if (upsampled_output) {
                     applyPreCorrectionType2<decltype(f), decltype(*grid_field_), ExecSpace, T>(
@@ -384,96 +305,41 @@ namespace ippl {
                 } else {
                     applyPrecorrectionPruned<decltype(f), ExecSpace, T>(f, factors_, n_modes_, n_grid_);
                 }
+                IpplTimings::stopTimer(PrecorrectionTimer);
 
                 Kokkos::fence();
-                timing_.correct =
-                    std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
-                        .count();
-
-                // // DEBUG: after pre-correction
-                // if (ippl::Comm->rank() == 0) {
-                //     if (upsampled_output) {
-                //         auto grid_host = grid_field_->getHostMirror();
-                //         Kokkos::deep_copy(grid_host, grid_field_->getView());
-                //         int ng = grid_field_->getNghost();
-                //         std::cout << "[DEBUG type2] after pre-correction (upsampled): "
-                //                   << "grid_field_[" << ng << "," << ng << "," << ng
-                //                   << "] = " << grid_host(ng, ng, ng) << std::endl;
-                //     } else {
-                //         auto f_host = f.getHostMirror();
-                //         Kokkos::deep_copy(f_host, f.getView());
-                //         int ng = f.getNghost();
-                //         std::cout << "[DEBUG type2] after pre-correction (pruned): "
-                //                   << "f[" << ng << "," << ng << "," << ng
-                //                   << "] = " << f_host(ng, ng, ng) << std::endl;
-                //     }
-                // }
 
                 // ============================================================
                 // Step 2: Inverse FFT
                 // ============================================================
-                t0 = std::chrono::high_resolution_clock::now();
+                static IpplTimings::TimerRef FFTTimer = IpplTimings::getTimer("FFTNUFFT2");
+                IpplTimings::startTimer(FFTTimer);
                 if (upsampled_output) {
                     performFFT(-1);  // operates on grid_field_
                 } else {
                     performPrunedFFT(-1, f);  // writes into grid_field_
                 }
-
+                IpplTimings::stopTimer(FFTTimer);
                 Kokkos::fence();
-                timing_.fft =
-                    std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
-                        .count();
-
-                // // DEBUG: after inverse FFT (always in grid_field_)
-                // if (ippl::Comm->rank() == 0) {
-                //     auto grid_host = grid_field_->getHostMirror();
-                //     Kokkos::deep_copy(grid_host, grid_field_->getView());
-                //     int ng = grid_field_->getNghost();
-                //     std::cout << "[DEBUG type2] after inverse FFT: "
-                //               << "grid_field_[" << ng << "," << ng << "," << ng
-                //               << "] = " << grid_host(ng, ng, ng) << std::endl;
-                // }
 
                 // ============================================================
                 // Step 2.5: Fill ghost cells for gather
                 // ============================================================
+                static IpplTimings::TimerRef FillHaloTimer = IpplTimings::getTimer("FillHaloNUFFT2");
+                IpplTimings::startTimer(FillHaloTimer);
                 grid_field_->fillHalo();
                 Kokkos::fence();
-
-                // // DEBUG: after fillHalo
-                // if (ippl::Comm->rank() == 0) {
-                //     auto grid_host = grid_field_->getHostMirror();
-                //     Kokkos::deep_copy(grid_host, grid_field_->getView());
-                //     int ng = grid_field_->getNghost();
-                //     std::cout << "[DEBUG type2] after fillHalo: "
-                //               << "grid_field_[" << ng << "," << ng << "," << ng
-                //               << "] = " << grid_host(ng, ng, ng) << std::endl;
-                // }
+                IpplTimings::stopTimer(FillHaloTimer);
 
                 // ============================================================
                 // Step 3: Gather/interpolate at particle positions
                 // ============================================================
-                t0 = std::chrono::high_resolution_clock::now();
+                static IpplTimings::TimerRef GatherTimer = IpplTimings::getTimer("GatherNUFFT2");
+                IpplTimings::startTimer(GatherTimer);
                 Q.gather(*grid_field_, R, kernel_, false, cfg_.gather_config);
+                IpplTimings::stopTimer(GatherTimer);
                 Kokkos::fence();
-                timing_.spread =
-                    std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - t0)
-                        .count();
-
-                // // DEBUG: after gather, inspect one particle value
-                // if (ippl::Comm->rank() == 0) {
-                //     auto Q_host =
-                //         Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), Q.getView());
-                //     size_type nloc = Q_host.extent(0);
-                //     size_type idx  = (nloc > 0 ? nloc / 2 : 0);
-                //     std::cout << "[DEBUG type2] after gather: "
-                //               << "Q[" << idx << "] = " << Q_host(idx) << std::endl;
-                // }
-
-                timing_.total =
-                    std::chrono::duration<T>(std::chrono::high_resolution_clock::now() - ttot)
-                        .count()
-                    + timing_.precompute;
+                IpplTimings::stopTimer(NativeNUFFT2Timer);
             }
 
             // Accessors

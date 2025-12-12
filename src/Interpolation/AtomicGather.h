@@ -176,6 +176,7 @@ namespace ippl {
                 };
 
                 switch (w) {
+                    case 1: create_and_run.template operator()<1>(); break;
                     case 2: create_and_run.template operator()<2>(); break;
                     case 3: create_and_run.template operator()<3>(); break;
                     case 4: create_and_run.template operator()<4>(); break;
