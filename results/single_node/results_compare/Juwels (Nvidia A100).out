@@ -1,0 +1,10 @@
+================================================================================
+Configuration: Grid=128^3, Particles=20971520 (10 per point)
+================================================================================
+  IPPL OutputFocused | Type 1 | Grid: 128^3 | Particles:   20971520 | Time:     76.340 ms | Throughput:   274.71 Mpts/s
+          IPPL Tiled | Type 1 | Grid: 128^3 | Particles:   20971520 | Time:     99.820 ms | Throughput:   210.09 Mpts/s
+         IPPL Atomic | Type 1 | Grid: 128^3 | Particles:   20971520 | Time:    815.242 ms | Throughput:    25.72 Mpts/s
+    cuFINUFFT | Type 1 | Grid: 128^3 | Particles:   20971520 | Time:    226.596 ms | Throughput:    92.55 Mpts/s
+         IPPL Naive | Type 2 | Grid: 128^3 | Particles:   20971520 | Time:    138.729 ms | Throughput:   151.17 Mpts/s
+    IPPL Atomic Sort | Type 2 | Grid: 128^3 | Particles:   20971520 | Time:     19.711 ms | Throughput:  1063.96 Mpts/s
+    cuFINUFFT | Type 2 | Grid: 128^3 | Particles:   20971520 | Time:     20.075 ms | Throughput:  1044.64 Mpts/s
