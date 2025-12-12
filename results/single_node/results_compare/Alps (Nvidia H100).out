@@ -5,7 +5,6 @@ Configuration: Grid=128^3, Particles=20971520 (10 per point)
           IPPL Tiled | Type 1 | Grid: 128^3 | Particles:   20971520 | Time:     66.968 ms | Throughput:   313.16 Mpts/s
          IPPL Atomic | Type 1 | Grid: 128^3 | Particles:   20971520 | Time:    247.682 ms | Throughput:    84.67 Mpts/s
     cuFINUFFT | Type 1 | Grid: 128^3 | Particles:   20971520 | Time:    119.695 ms | Throughput:   175.21 Mpts/s
-          IPPL Warp | Type 2 | Grid: 128^3 | Particles:   20971520 | Time:     29.770 ms | Throughput:   704.44 Mpts/s
          IPPL Naive | Type 2 | Grid: 128^3 | Particles:   20971520 | Time:     40.643 ms | Throughput:   515.99 Mpts/s
     IPPL Atomic Sort | Type 2 | Grid: 128^3 | Particles:   20971520 | Time:     10.534 ms | Throughput:  1990.80 Mpts/s
          IPPL Native | Type 2 | Grid: 128^3 | Particles:   20971520 | Time:     18.038 ms | Throughput:  1162.66 Mpts/s

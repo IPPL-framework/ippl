@@ -74,7 +74,7 @@ namespace Interpolation {
         config.method = ScatterMethod::Atomic;
         config.sort = false;
         config.tile_size_3d = 9;
-        config.team_size = 1;
+        config.team_size = 4;
         return config;
     }
 #endif

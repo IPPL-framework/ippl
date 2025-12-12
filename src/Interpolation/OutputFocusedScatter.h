@@ -218,20 +218,18 @@ namespace ippl {
 
                             // Use local indices for grid access
                             if constexpr (grid_is_complex) {
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-                                if constexpr (std::is_same_v<ExecSpace, Kokkos::Cuda>) {
+                                // if constexpr (std::is_same_v<ExecSpace, Kokkos::Cuda>) {
                                     double* addr_as_double = reinterpret_cast<double*>(&grid(
                                         local_x + nghost, local_y + nghost, local_z + nghost));
                                     Kokkos::atomic_add(&addr_as_double[0], hist_r(hist_idx));
                                     Kokkos::atomic_add(&addr_as_double[1], hist_c(hist_idx));
-                                } else
-#endif
-                                {
-                                    Kokkos::atomic_add(
-                                        &grid(local_x + nghost, local_y + nghost, local_z + nghost),
-                                        Kokkos::complex<real_type>(hist_r(hist_idx),
-                                                                   hist_c(hist_idx)));
-                                }
+                                // } else
+                                // {
+                                //     Kokkos::atomic_add(
+                                //         &grid(local_x + nghost, local_y + nghost, local_z + nghost),
+                                //         Kokkos::complex<real_type>(hist_r(hist_idx),
+                                //                                    hist_c(hist_idx)));
+                                // }
                             } else {
                                 Kokkos::atomic_add(
                                     &grid(local_x + nghost, local_y + nghost, local_z + nghost),
