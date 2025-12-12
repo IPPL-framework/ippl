@@ -2,44 +2,43 @@
 #
 # run_breakdown_sweep.sh
 # 
-# Runs NUFFT breakdown benchmark across multiple tolerances (widths).
+# Runs NUFFT breakdown benchmark across multiple grid sizes (N).
 # Outputs CSV files for each configuration.
 #
 # Usage:
-#   ./run_breakdown_sweep.sh [grid_size] [rho] [warmup] [runs]
-#   ./run_breakdown_sweep.sh 256 10 5 20
+#   ./run_breakdown_sweep.sh [rho] [tolerance] [warmup] [runs]
+#   ./run_breakdown_sweep.sh 10 1e-4 5 20
 
-GRID=${1:-256}
-RHO=${2:-10}
+RHO=${1:-10}
+TOL=${2:-1e-4}
 WARMUP=${3:-5}
 RUNS=${4:-20}
 
-# Tolerances corresponding to different kernel widths
-# tol=1e-2 -> w=2, tol=1e-3 -> w=3, ..., tol=1e-7 -> w=7
-TOLERANCES="1e-2 1e-3 1e-4 1e-5 1e-6 1e-7"
+# Grid sizes to test
+GRID_SIZES="64 128 192 256 320 384"
 
 OUTPUT_DIR="breakdown_results"
 mkdir -p "$OUTPUT_DIR"
 
 echo "========================================"
-echo "NUFFT Breakdown Sweep"
+echo "NUFFT Breakdown Sweep (vs Grid Size)"
 echo "========================================"
-echo "Grid:      ${GRID}^3"
-echo "Rho:       ${RHO}"
-echo "Warmup:    ${WARMUP}"
-echo "Runs:      ${RUNS}"
-echo "Tolerances: ${TOLERANCES}"
-echo "Output:    ${OUTPUT_DIR}/"
+echo "Rho:        ${RHO}"
+echo "Tolerance:  ${TOL}"
+echo "Warmup:     ${WARMUP}"
+echo "Runs:       ${RUNS}"
+echo "Grid sizes: ${GRID_SIZES}"
+echo "Output:     ${OUTPUT_DIR}/"
 echo "========================================"
 echo ""
 
-for TOL in $TOLERANCES; do
+for GRID in $GRID_SIZES; do
     echo "----------------------------------------"
-    echo "Running tolerance = ${TOL}"
+    echo "Running grid size = ${GRID}^3"
     echo "----------------------------------------"
     
     # Run benchmark
-    ./BenchmarkNUFFTBreakdown ${GRID} ${RHO} ${TOL} ${WARMUP} ${RUNS}
+    ./test/FFT/BreakdownNUFFT ${GRID} ${RHO} ${TOL} ${WARMUP} ${RUNS}
     
     # Move output CSV to results directory with descriptive name
     CSV_FILE="nufft_breakdown_${GRID}_rho${RHO}.csv"
@@ -58,7 +57,7 @@ COMBINED="${OUTPUT_DIR}/breakdown_combined.csv"
 # Write header
 echo "grid,rho,tolerance,timer,run,time_s" > "$COMBINED"
 
-for TOL in $TOLERANCES; do
+for GRID in $GRID_SIZES; do
     CSV="${OUTPUT_DIR}/breakdown_grid${GRID}_rho${RHO}_tol${TOL}.csv"
     if [ -f "$CSV" ]; then
         # Skip header, add grid/rho/tol columns
