@@ -1,4 +1,5 @@
 #include "Ippl.h"
+#include "Utility/IpplTimings.h"
 #include "Utility/ParameterList.h"
 
 #include <Kokkos_Random.hpp>
@@ -188,6 +189,81 @@ void writeTimingsCSV(const std::string& filename, int num_ranks, int grid_size,
     std::cout << "[CSV] Timings written to " << filename << std::endl;
 }
 
+void writeComponentTimingsCSV(const std::string& filename, int num_ranks, int grid_size,
+                              size_t num_particles) {
+    if (ippl::Comm->rank() != 0)
+        return;
+
+    std::ofstream file(filename);
+    file << "num_ranks,grid_size,num_particles,timer,run,time_s\n";
+
+    // List of timers to export
+    std::vector<std::string> timers = {
+        "scatterTimerNUFFT1",
+        "accumulateHaloNUFFT1",
+        "FFTNUFFT1",
+        "deconvolutionNUFFT1",
+        "PrecorrectionNUFFT2",
+        "FFTNUFFT2",
+        "FillHaloNUFFT2",
+        "GatherNUFFT2",
+        "NativeNUFFT1",
+        "NativeNUFFT2"
+    };
+
+    for (const auto& timer_name : timers) {
+        const auto& measurements = IpplTimings::getMeasurements(timer_name);
+        for (size_t i = 0; i < measurements.size(); ++i) {
+            file << num_ranks << "," << grid_size << "," << num_particles << ","
+                 << timer_name << "," << i << ","
+                 << std::fixed << std::setprecision(9) << measurements[i] << "\n";
+        }
+    }
+
+    file.close();
+    std::cout << "[CSV] Component timings written to " << filename << std::endl;
+}
+
+void printComponentTimings() {
+    if (ippl::Comm->rank() != 0)
+        return;
+
+    auto printTimerSummary = [](const std::string& name, const std::string& label) {
+        const auto& measurements = IpplTimings::getMeasurements(name);
+        if (!measurements.empty()) {
+            double sum = 0.0;
+            for (double m : measurements) sum += m;
+            double mean_ms = (sum / measurements.size()) * 1000.0;
+            std::cout << std::setw(25) << std::left << label
+                      << std::right << std::setw(10) << std::fixed
+                      << std::setprecision(2) << mean_ms << " ms\n";
+        }
+    };
+
+    std::cout << "\n" << std::string(50, '=') << "\n";
+    std::cout << "COMPONENT TIMING BREAKDOWN\n";
+    std::cout << std::string(50, '=') << "\n";
+
+    std::cout << "\nType-1 (spreading):\n";
+    std::cout << std::string(40, '-') << "\n";
+    printTimerSummary("scatterTimerNUFFT1", "Scatter (spreading)");
+    printTimerSummary("accumulateHaloNUFFT1", "Halo accumulate");
+    printTimerSummary("FFTNUFFT1", "FFT (forward)");
+    printTimerSummary("deconvolutionNUFFT1", "Deconvolution");
+
+    std::cout << "\nType-2 (interpolation):\n";
+    std::cout << std::string(40, '-') << "\n";
+    printTimerSummary("PrecorrectionNUFFT2", "Precorrection");
+    printTimerSummary("FFTNUFFT2", "FFT (backward)");
+    printTimerSummary("FillHaloNUFFT2", "Halo fill");
+    printTimerSummary("GatherNUFFT2", "Gather (interpolation)");
+
+    std::cout << "\nTotal:\n";
+    std::cout << std::string(40, '-') << "\n";
+    printTimerSummary("NativeNUFFT1", "Complete Type-1");
+    printTimerSummary("NativeNUFFT2", "Complete Type-2");
+}
+
 void printResult(const std::string& label, const BenchmarkResult& result) {
     if (ippl::Comm->rank() != 0)
         return;
@@ -319,6 +395,9 @@ BenchmarkResult benchmarkNUFFTType1(int grid_size, int particles_per_point, doub
     }
 
     MPI_Barrier(ippl::Comm->getCommunicator());
+
+    // Reset timers after warmup
+    IpplTimings::resetAllTimers();
 
     // Benchmark
     if (ippl::Comm->rank() == 0) {
@@ -492,6 +571,10 @@ BenchmarkResult benchmarkNUFFTType2(int grid_size, int particles_per_point, doub
 
     MPI_Barrier(ippl::Comm->getCommunicator());
 
+    // Reset timers after warmup (only if Type 1 wasn't run, otherwise keep accumulated)
+    // Note: If running both types, Type 1 already reset timers, so we don't reset again here
+    // IpplTimings::resetAllTimers();
+
     // Benchmark
     if (ippl::Comm->rank() == 0) {
         std::cout << "Running benchmark..." << std::endl;
@@ -552,8 +635,10 @@ int main(int argc, char* argv[]) {
         std::string spread_method = "output_focused";
         std::string gather_method = "atomic_sort";
         std::string csv_filename  = "nufft_scaling.csv";
+        std::string component_csv = "nufft_components.csv";
         bool run_type1            = true;
         bool run_type2            = true;
+        bool dump_components      = true;
 
         // Parse command line arguments
         for (int i = 1; i < argc; ++i) {
@@ -574,28 +659,34 @@ int main(int argc, char* argv[]) {
                 gather_method = argv[++i];
             } else if (arg == "--csv" && i + 1 < argc) {
                 csv_filename = argv[++i];
+            } else if (arg == "--component-csv" && i + 1 < argc) {
+                component_csv = argv[++i];
             } else if (arg == "--type1-only") {
                 run_type1 = true;
                 run_type2 = false;
             } else if (arg == "--type2-only") {
                 run_type1 = false;
                 run_type2 = true;
+            } else if (arg == "--no-components") {
+                dump_components = false;
             } else if (arg == "--help") {
                 if (ippl::Comm->rank() == 0) {
                     std::cout << "NUFFT Scaling Benchmark\n"
                               << "Usage: " << argv[0] << " [options]\n\n"
                               << "Options:\n"
-                              << "  --grid N        Grid size (default: 256)\n"
-                              << "  --ppp N         Particles per grid point (default: 10)\n"
-                              << "  --tol T         Tolerance (default: 1e-6)\n"
-                              << "  --warmup N      Warmup runs (default: 3)\n"
-                              << "  --runs N        Benchmark runs (default: 10)\n"
-                              << "  --spread S      Spread method: output_focused, tiled, atomic (default: output_focused)\n"
-                              << "  --gather S      Gather method: tiled, atomic, atomic_sort, native (default: tiled)\n"
-                              << "  --csv FILE      Output CSV filename (default: nufft_scaling.csv)\n"
-                              << "  --type1-only    Run only Type 1 benchmark\n"
-                              << "  --type2-only    Run only Type 2 benchmark\n"
-                              << "  --help          Show this help message\n";
+                              << "  --grid N          Grid size (default: 256)\n"
+                              << "  --ppp N           Particles per grid point (default: 10)\n"
+                              << "  --tol T           Tolerance (default: 1e-4)\n"
+                              << "  --warmup N        Warmup runs (default: 3)\n"
+                              << "  --runs N          Benchmark runs (default: 10)\n"
+                              << "  --spread S        Spread method: output_focused, tiled, atomic (default: output_focused)\n"
+                              << "  --gather S        Gather method: tiled, atomic, atomic_sort, native (default: atomic_sort)\n"
+                              << "  --csv FILE        Output CSV filename (default: nufft_scaling.csv)\n"
+                              << "  --component-csv F Component timings CSV (default: nufft_components.csv)\n"
+                              << "  --type1-only      Run only Type 1 benchmark\n"
+                              << "  --type2-only      Run only Type 2 benchmark\n"
+                              << "  --no-components   Don't dump component timings\n"
+                              << "  --help            Show this help message\n";
                 }
                 ippl::finalize();
                 return 0;
@@ -614,6 +705,7 @@ int main(int argc, char* argv[]) {
             std::cout << "Particles:       " << num_particles << " (" << particles_per_point << " per point)" << std::endl;
             std::cout << "Tolerance:       " << tolerance << std::endl;
             std::cout << "CSV output:      " << csv_filename << std::endl;
+            std::cout << "Component CSV:   " << component_csv << std::endl;
             printMemoryUsage("Initial state");
         }
 
@@ -637,6 +729,12 @@ int main(int argc, char* argv[]) {
         if (run_type1 && run_type2) {
             writeTimingsCSV(csv_filename, num_ranks, grid_size, num_particles,
                             type1_result, type2_result);
+        }
+
+        // Print and dump component timings
+        if (dump_components) {
+            printComponentTimings();
+            writeComponentTimingsCSV(component_csv, num_ranks, grid_size, num_particles);
         }
 
         // Print summary
