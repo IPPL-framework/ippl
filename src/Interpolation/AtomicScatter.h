@@ -95,7 +95,7 @@ namespace ippl {
                         // Handle different combinations of value and grid types
                         constexpr bool val_is_complex =
                             std::is_same_v<value_type, Kokkos::complex<real_type>>;
-                        using grid_element_type = std::remove_reference_t<decltype(grid(0))>;
+                        using grid_element_type = std::remove_reference_t<decltype(grid(0, 0, 0))>;
                         constexpr bool grid_is_complex =
                             std::is_same_v<grid_element_type, Kokkos::complex<real_type>>;
 
