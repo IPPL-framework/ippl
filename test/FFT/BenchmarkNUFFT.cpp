@@ -634,8 +634,12 @@ int main(int argc, char* argv[]) {
         int benchmark_runs      = 10;
         std::string spread_method = "output_focused";
         std::string gather_method = "atomic_sort";
-        std::string csv_filename  = "nufft_scaling.csv";
-        std::string component_csv = "nufft_components.csv";
+        std::string csv_filename  = "nufft_scaling_";
+        csv_filename += std::to_string(ippl::Comm->size());
+        csv_filename += ".csv";
+        std::string component_csv = "nufft_components_";
+        component_csv += std::to_string(ippl::Comm->size());
+        component_csv += ".csv";
         bool run_type1            = true;
         bool run_type2            = true;
         bool dump_components      = true;
