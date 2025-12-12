@@ -233,7 +233,7 @@ BenchmarkResult benchmarkNUFFTType1(int grid_size, int particles_per_point, doub
     ippl::NDIndex<dim> owned(I, J, K);
 
     std::array<bool, dim> isParallel;
-    isParallel.fill(false);
+    isParallel.fill(true);
 
     ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
