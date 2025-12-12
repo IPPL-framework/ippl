@@ -173,6 +173,10 @@ namespace ippl {
                                 const int point_tile_y = idx[1] + half_left - tile_y0;
                                 const int point_tile_z = idx[2] + half_left - tile_z0;
 
+                                assert(point_tile_x >= 0);
+                                assert(point_tile_y >= 0);
+                                assert(point_tile_z >= 0);
+
                                 const int hist_idx =
                                     (((point_tile_z + wz) * hy + (point_tile_y + wy)) * hx
                                      + (point_tile_x + wx));
