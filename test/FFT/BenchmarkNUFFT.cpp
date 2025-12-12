@@ -549,7 +549,7 @@ int main(int argc, char* argv[]) {
         int warmup_runs         = 3;
         int benchmark_runs      = 10;
         std::string spread_method = "output_focused";
-        std::string gather_method = "tiled";
+        std::string gather_method = "atomic_sort";
         std::string csv_filename  = "nufft_scaling.csv";
         bool run_type1            = true;
         bool run_type2            = true;
