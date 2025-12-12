@@ -21,9 +21,9 @@ namespace ippl::comms {
                                Kokkos::MemoryTraits<Kokkos::Aligned>>::view_type;
 #else
     template <typename... Properties>
-    using communicator_storage = ippl::detail::ViewType<
-        char, 1, Properties...,
-        Kokkos::MemoryTraits<Kokkos::Unmanaged>>::view_type;
+    using communicator_storage =
+        ippl::detail::ViewType<char, 1, Properties...,
+                               Kokkos::MemoryTraits<Kokkos::Unmanaged>>::view_type;
 #endif
 
 #define ALIGMNEMT 1024
@@ -34,19 +34,29 @@ namespace ippl::comms {
     }
 
     struct AlignedCudaBuffer {
-        void* ptrOriginal;
-        void* ptrAligned;
-        detail::size_type space;
+        void* ptrOriginal{nullptr};
+        void* ptrAligned{nullptr};
+        detail::size_type space{0};
         //
-        AlignedCudaBuffer()
-            : ptrOriginal{nullptr}
-            , ptrAligned{nullptr}
-            , space{0} {}
+        AlignedCudaBuffer() {}
+        //
+        AlignedCudaBuffer& operator=(AlignedCudaBuffer&& other) {
+            ptrOriginal       = other.ptrOriginal;
+            ptrAligned        = other.ptrAligned;
+            space             = other.space;
+            other.ptrOriginal = nullptr;
+            other.ptrAligned  = nullptr;
+            other.space       = 0;
+            return *this;
+        }
         //
         AlignedCudaBuffer(std::size_t size) {
             void* original;
             space = to_multiple(size);
             cudaMalloc(&original, space);
+            if (!original) {
+                throw std::runtime_error("Error allocating cuda memory in AlignedCudaBuffer");
+            }
             ptrOriginal = original;
             ptrAligned  = std::align(ALIGMNEMT, size, original, space);
             SPDLOG_TRACE("AlignedCudaBuffer: original {}, aligned {}, size {}, space {}",
@@ -54,18 +64,11 @@ namespace ippl::comms {
             // sanity check should always be true when std::align used
             assert(space >= size);
         }
-        // don't delete internal memory until explicitly told to
+        //
         ~AlignedCudaBuffer() {
             if (ptrOriginal) {
-                ptrOriginal = 0;
-            }
-        }
-        // the function that really releases memory
-        void destroy_buffer() {
-            if (ptrOriginal) {
+                SPDLOG_DEBUG("Destroying cuda buffer {}", ptrOriginal);
                 cudaFree(ptrOriginal);
-            } else {
-                throw std::runtime_error("Destroying cuda buffer after reset");
             }
         }
     };
@@ -78,30 +81,28 @@ namespace ippl::comms {
         using size_type    = detail::size_type;
         //
         comm_storage_wrapper(const std::string& /*name*/, size_type size)
-            : view()    // we will construct the view manually
-            , buffer()  //
+            : view()        // we will construct the view manually
+            , buffer(size)  //
         {
-            reallocBuffer(size);
             SPDLOG_TRACE("Construct: view  origin {}, aligned {}", (void*)(view.data()),
                          (void*)(buffer.ptrAligned));
-            auto aligned_ptr_check = std::align(ALIGMNEMT, size, buffer.ptrAligned, buffer.space);
-            SPDLOG_TRACE("Construct: view    data {}, align_check {}", (void*)(view.data()),
-                         (void*)(aligned_ptr_check));
+            view = buffer_type((pointer_type)buffer.ptrAligned, size);
             assert(view.data() == buffer.ptrAligned);
         }
         //
         size_type size() const { return buffer.space; }
         //
         pointer_type data() { return view.data(); }
-        //
+
+        // Note that this makes no effort to preserve any existing data
         void reallocBuffer(size_type newsize) {
-            auto old_pointer = buffer.ptrOriginal;
-            buffer           = AlignedCudaBuffer(newsize);
-            view             = buffer_type((pointer_type)buffer.ptrAligned, newsize);
+            // wipe the old memory, before allocating new, (help prevent out-of-space errors)
+            buffer = AlignedCudaBuffer();
+            // allocate new
+            buffer = AlignedCudaBuffer(newsize);
+            view   = buffer_type((pointer_type)buffer.ptrAligned, newsize);
             SPDLOG_DEBUG("Realloc  : view {}, aligned {}, size {}, space {}", (void*)(view.data()),
                          (void*)(buffer.ptrAligned), newsize, buffer.space);
-            if (old_pointer)
-                cudaFree(old_pointer);
         }
         //
         AlignedCudaBuffer buffer;
@@ -146,27 +147,6 @@ namespace ippl::comms {
 
     // a container we can access with just the memoryspace
     using mpi_comm_buffer_for_all_spaces = rma_shared_archive_for_all_spaces<comm_storage_wrapper>;
-
-    // ---------------------------------------------
-    // vector per MemorySpace
-    template <template <typename> class BufferType, typename MemorySpace>
-    struct comm_buff_vector_for_space {
-        using type = std::vector<typename rma_shared_archive<BufferType<MemorySpace>>::type>;
-    };
-
-    // bind the buffer type to the template so we can access using just a memory space template
-    template <template <typename> class BufferType>
-    struct comm_buff_vector_binder {
-        template <typename MemorySpace>
-        using apply = typename comm_buff_vector_for_space<BufferType, MemorySpace>::type;
-    };
-
-    // alias template for all spaces
-    template <template <typename> class BufferType>
-    using mpi_comm_buffer_container_for_all_spaces = typename detail::ContainerForAllSpaces<
-        comm_buff_vector_binder<BufferType>::template apply>::type;
-
-    using mpi_buffer_container = mpi_comm_buffer_container_for_all_spaces<comm_storage_wrapper>;
 
     /**
      * @brief Interface for memory buffer handling.

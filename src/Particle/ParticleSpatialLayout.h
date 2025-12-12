@@ -496,8 +496,7 @@ namespace ippl {
             // ----------------------------------
             // 4.1 SendWait
             // ----------------------------------
-            static IpplTimings::TimerRef sendRecvWaitTimer =
-                IpplTimings::getTimer("particleSendWait");
+            static IpplTimings::TimerRef sendRecvWaitTimer = IpplTimings::getTimer("sendRecvWait");
             IpplTimings::startTimer(sendRecvWaitTimer);
             if ((send_requests.size() > 0) || (recv_requests.size() > 0)) {
                 bool redo = true;
