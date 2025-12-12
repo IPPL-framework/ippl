@@ -182,11 +182,11 @@ namespace detail {
             }*/
         }
 
-        Kokkos::View<size_type*, memory_space>& permute() { return permute_; }
-        Kokkos::View<size_type*, memory_space>& binOffsets() { return bin_offsets_; }
-
-        const Kokkos::View<size_type*, memory_space>& permute() const { return permute_; }
-        const Kokkos::View<size_type*, memory_space>& binOffsets() const { return bin_offsets_; }
+        // Kokkos::View<size_type*, memory_space>& permute() { return permute_; }
+        // Kokkos::View<size_type*, memory_space>& binOffsets() { return bin_offsets_; }
+        //
+        // const Kokkos::View<size_type*, memory_space>& permute() const { return permute_; }
+        // const Kokkos::View<size_type*, memory_space>& binOffsets() const { return bin_offsets_; }
 
         size_type permuteCapacity() const { return permute_capacity_; }
         size_type binOffsetsCapacity() const { return bin_offsets_capacity_; }

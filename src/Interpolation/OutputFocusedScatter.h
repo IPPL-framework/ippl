@@ -41,11 +41,11 @@ namespace ippl {
                                                       Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
                 // Input data
-                BinOffsetsType bin_offsets;
-                PermuteType permute;
-                PositionViewType x;  // Particle positions in coordinates [-pi, pi]
+                std::decay_t<BinOffsetsType> bin_offsets;
+                std::decay_t<PermuteType> permute;
+                std::decay_t<PositionViewType> x;  // Particle positions in coordinates [-pi, pi]
                 Kokkos::View<value_type*, memory_space> values;  // Values to scatter
-                GridViewType grid;                               // Output grid
+                std::decay_t<GridViewType> grid;                               // Output grid
 
                 // Parameters
                 Kokkos::Array<int, 3> n_grid;        // GLOBAL grid dimensions
@@ -55,7 +55,7 @@ namespace ippl {
                 int tile_size_x, tile_size_y, tile_size_z;
                 int nghost;        // ghost cell offset for field
                 real_type inv_hw;  // 1 / half_width for kernel scaling
-                KernelType kernel;
+                std::decay_t<KernelType> kernel;
 
                 // Compile-time constants
                 static constexpr int w         = W;
@@ -294,7 +294,11 @@ namespace ippl {
                             team_policy policy(n_teams, team_size);
                             policy = policy.set_scratch_size(0, Kokkos::PerTeam(scratch_bytes));
 
+                            // (paul) Remove the fences here with caution. HIP gives invalid memory
+                            //         access errors with the current rocm (old) 6.0.2
+                            Kokkos::fence();
                             Kokkos::parallel_for("output_focused_spread", policy, functor);
+                            Kokkos::fence();
                         } else {
                             OutputFocusedScatterDispatcher<W + 1, MaxW>::template dispatch_3d<
                                 RealType, ExecSpace, KernelType, ValueType, GridViewType,

@@ -36,9 +36,9 @@ namespace ippl {
                 using size_type    = typename memory_space::size_type;
 
                 // Input data
-                PositionViewType x;  // Particle positions in PHYSICAL coordinates (e.g., [-pi, pi])
+                std::decay_t<PositionViewType> x;  // Particle positions in PHYSICAL coordinates (e.g., [-pi, pi])
                 Kokkos::View<value_type*, memory_space> values;  // Values to scatter
-                GridViewType grid;                               // Output grid
+                std::decay_t<GridViewType> grid;                               // Output grid
 
                 // Parameters
                 int n_grid[Dim];        // GLOBAL grid dimensions (for coordinate transformation)
@@ -47,7 +47,7 @@ namespace ippl {
                 int w;                  // kernel width
                 int nghost;             // ghost cell offset
                 real_type inv_hw;       // 1 / half_width for kernel scaling
-                KernelType kernel;
+                std::decay_t<KernelType> kernel;
 
                 KOKKOS_INLINE_FUNCTION void operator()(const size_type j) const {
                     const value_type& val = values(j);

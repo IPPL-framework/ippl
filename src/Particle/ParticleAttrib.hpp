@@ -296,7 +296,7 @@ namespace ippl {
             for (unsigned d = 0; d < 3; ++d) {
                 num_tiles[d] = (ngrid_local[d] + config.tile_size_3d - 1) / config.tile_size_3d + 1;
             }
-            auto total_tiles = size_t(num_tiles[0]) * size_t(num_tiles[1]) * size_t(num_tiles[2]);
+            auto total_tiles = static_cast<size_t>(num_tiles[0]) * static_cast<size_t>(num_tiles[1]) * static_cast<size_t>(num_tiles[2]);
 
             // Sort particles by tile (using local binning)
 
@@ -304,6 +304,7 @@ namespace ippl {
             // Kokkos::View<size_type*, typename execution_space::memory_space> bin_offsets;
             auto& buf_handler = detail::getDefaultSortBufferManager<memory_space>();
             buf_handler.ensureCapacity(std::max(nParticles + 1, total_tiles + 1));
+            Kokkos::fence();
             auto& permute     = buf_handler.indices();
             auto& bin_offsets = buf_handler.indicesSorted();
 

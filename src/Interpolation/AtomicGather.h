@@ -44,8 +44,8 @@ namespace ippl {
                 static constexpr int Dim = 3;
 
                 // Input data
-                PositionViewType x;   // particle positions in PHYSICAL coordinates
-                GridViewType     grid; // input grid
+                std::decay_t<PositionViewType> x;   // particle positions in PHYSICAL coordinates
+                std::decay_t<GridViewType>     grid; // input grid
 
                 // Output data
                 Kokkos::View<value_type*, memory_space> values;  // per-particle gathered values
@@ -57,7 +57,7 @@ namespace ippl {
                 int nghost;                     // ghost cell offset
                 real_type inv_hw;               // 1 / half_width for kernel scaling
                 bool add_to_attribute;          // if true, add to existing values; otherwise overwrite
-                KernelType kernel;
+                std::decay_t<KernelType> kernel;
 
                 KOKKOS_INLINE_FUNCTION void operator()(const size_type j) const {
                     // Transform from physical coordinates to grid coordinates
@@ -169,10 +169,14 @@ namespace ippl {
                         functor{x, grid, values, n_grid, n_grid_local, local_offset,
                                 nghost, inv_hw, add_to_attribute, kernel};
 
+                    // (paul) Remove the fences here with caution. HIP gives invalid memory
+                    //         access errors with the current rocm (old) 6.0.2
+                    Kokkos::fence();
                     Kokkos::parallel_for(
                         "AtomicGather3D",
                         Kokkos::RangePolicy<ExecSpace>(0, n_particles),
                         functor);
+                    Kokkos::fence();
                 };
 
                 switch (w) {

@@ -43,9 +43,9 @@ namespace ippl {
                 static constexpr int Dim = 3;
 
                 // Input data
-                const PositionViewType x;       // particle positions in PHYSICAL coordinates
-                const GridViewType     grid;    // input grid
-                const PermuteViewType  permute; // permutation: sorted_index -> particle_index
+                const std::decay_t<PositionViewType> x;       // particle positions in PHYSICAL coordinates
+                const std::decay_t<GridViewType>     grid;    // input grid
+                const std::decay_t<PermuteViewType>  permute; // permutation: sorted_index -> particle_index
 
                 // Output data
                 const Kokkos::View<value_type*, memory_space> values;  // per-particle gathered values
@@ -57,7 +57,7 @@ namespace ippl {
                 const int nghost;                      // ghost cell offset
                 const real_type inv_hw;                // 1 / half_width for kernel scaling
                 const bool add_to_attribute;           // if true, add to existing values; otherwise overwrite
-                const KernelType kernel;
+                const std::decay_t<KernelType> kernel;
 
                 KOKKOS_INLINE_FUNCTION void operator()(const size_type j_sorted) const {
                     // Map sorted index -> actual particle index
@@ -174,10 +174,14 @@ namespace ippl {
                         functor{x, grid, permute, values, n_grid, n_grid_local, local_offset,
                                 nghost, inv_hw, add_to_attribute, kernel};
 
+                    // (paul) Remove the fences here with caution. HIP gives invalid memory
+                    //         access errors with the current rocm (old) 6.0.2
+                    Kokkos::fence();
                     Kokkos::parallel_for(
                         "AtomicSortGather3D",
                         Kokkos::RangePolicy<ExecSpace>(0, n_particles),
                         functor);
+                    Kokkos::fence();
                 };
 
                 switch (w) {
