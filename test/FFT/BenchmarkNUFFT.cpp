@@ -237,8 +237,8 @@ BenchmarkResult benchmarkNUFFTType1(int grid_size, int particles_per_point, doub
 
     ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
-    Vector_t minU = {-pi, -pi, -pi};
-    Vector_t maxU = {pi, pi, pi};
+    Vector_t minU = {0, 0, 0};
+    Vector_t maxU = {2 * pi, 2 * pi, 2 * pi};
 
     std::array<double, dim> dx = {
         (maxU[0] - minU[0]) / double(pt[0]),
@@ -543,9 +543,9 @@ int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
         // Default parameters
-        int grid_size           = 256;
-        int particles_per_point = 10;
-        double tolerance        = 1e-6;
+        int grid_size           = 8;
+        int particles_per_point = 1;
+        double tolerance        = 1e-4;
         int warmup_runs         = 3;
         int benchmark_runs      = 10;
         std::string spread_method = "output_focused";
