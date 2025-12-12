@@ -300,6 +300,7 @@ BenchmarkResult benchmarkNUFFTType1(int grid_size, int particles_per_point, doub
     fftParams.add("sort", true);
 
     auto fft = std::make_unique<FFT_type>(layout, nloc, 1, fftParams);
+    bunch.update();
 
     Kokkos::fence();
     MPI_Barrier(ippl::Comm->getCommunicator());
