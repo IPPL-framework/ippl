@@ -17,6 +17,8 @@ pages:
     - mkdir -p public
     - cd pages-branch/public
     - mv $(ls -1 | tail -n 15) ../../public
+    - cd ../..
+    - python3 pages-branch/generate_report.py
 
 
   artifacts:
