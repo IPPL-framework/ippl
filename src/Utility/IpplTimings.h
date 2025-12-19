@@ -31,6 +31,7 @@
 #include <string>
 #include <vector>
 
+#include "Utility/Logging.h"
 #include "Utility/PAssert.h"
 #include "Utility/Timer.h"
 #include "Utility/my_auto_ptr.h"
