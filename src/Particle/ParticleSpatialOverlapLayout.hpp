@@ -706,7 +706,7 @@ namespace ippl {
                     const size_type offset = rankOffsets(pId) + counts(pId);
                     for (size_t local_count = 0, j = 0; j < nonNeighborsView.extent(0); ++j) {
                         const auto rank = nonNeighborsView(j);
-                        if (positionInRegion(is, positions(i), regions(rank), overlap)) {
+                        if (positionInRegion(is, positions(pId), regions(rank), overlap)) {
                             ranks(offset + local_count) = rank;
                             local_count++;
                         }
