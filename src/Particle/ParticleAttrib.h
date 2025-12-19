@@ -43,6 +43,7 @@ namespace ippl {
 
         using memory_space    = typename view_type::memory_space;
         using execution_space = typename view_type::execution_space;
+        using archive_type    = comms::archive_buffer<memory_space>;
 
         using size_type = detail::size_type;
 
@@ -64,24 +65,22 @@ namespace ippl {
 
         void unpack(size_type) override;
 
-        void serialize(detail::Archive<memory_space>& ar, size_type nsends) override {
-            ar.serialize(buf_m, nsends);
-        }
+        void serialize(archive_type& ar, size_type nsends) override { ar.serialize(buf_m, nsends); }
 
-        void deserialize(detail::Archive<memory_space>& ar, size_type nrecvs) override {
+        void deserialize(archive_type& ar, size_type nrecvs) override {
             ar.deserialize(buf_m, nrecvs);
         }
 
         virtual ~ParticleAttrib() = default;
-        
+
         size_type size() const override { return dview_m.extent(0); }
-        
+
         size_type packedSize(const size_type count) const override {
             return count * sizeof(value_type);
         }
-        
+
         void resize(size_type n) { Kokkos::resize(dview_m, n); }
-        
+
         void realloc(size_type n) { Kokkos::realloc(dview_m, n); }
 
         void print() {
@@ -99,8 +98,8 @@ namespace ippl {
         const view_type& getView() const { return dview_m; }
 
         HostMirror getHostMirror() const { return Kokkos::create_mirror(dview_m); }
-        
-        void  set_name(const std::string & name_) override { this->name_m = name_; }
+
+        void set_name(const std::string& name_) override { this->name_m = name_; }
 
         std::string get_name() const override { return this->name_m; }
 
