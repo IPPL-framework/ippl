@@ -1,43 +1,31 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg)](https://doi.org/10.5281/zenodo.8389192)
+<p align="center"><img src="./assets/ippl-logo.png" alt="IPPL" width="30%" height="30%"></p>
+<div align="center">
+[![CI/CD](https://img.shields.io/badge/CI/CD-red.svg)](https://ippl-bc4558.pages.jsc.fz-juelich.de/)|
+[![c++ standard](https://img.shields.io/badge/c%2B%2B-20-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B20)|
+<!-- [![Documentation](https://img.shields.io/badge/Documentation-latest-blue.svg)](https:///)| -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg)](https://doi.org/10.5281/zenodo.8389192)|
 [![License](https://img.shields.io/github/license/IPPL-framework/ippl)](https://github.com/IPPL-framework/ippl/blob/master/LICENSE)
 
-# Independent Parallel Particle Layer (IPPL)
+|:-:|:-:|:-:|:-:|
 
-## Table of Contents
-- [Independent Parallel Particle Layer (IPPL)](#independent-parallel-particle-layer-ippl)
-  - [Table of Contents](#table-of-contents)
-- [CI/CD](#cicd)
-- [Installing IPPL and its dependencies](#installing-ippl-and-its-dependencies)
-  - [Requirements](#requirements)
-    - [Optional requirements](#optional-requirements)
-  - [Compilation](#compilation)
-      - [None of the options have to be set explicitly, all have a default.](#none-of-the-options-have-to-be-set-explicitly-all-have-a-default)
-    - [Examples](#examples)
-      - [CMakeUserPresets](#cmakeuserpresets)
-      - [Serial debug build with tests and newest Kokkos](#serial-debug-build-with-tests-and-newest-kokkos)
-      - [OpenMP release build with alpine and FFTW](#openmp-release-build-with-alpine-and-fftw)
-      - [Cuda alpine release build](#cuda-alpine-release-build)
-      - [HIP release build (LUMI)](#hip-release-build-lumi)
-      - [Enable Scripts](#enable-scripts)
-- [Contributions](#contributions)
-  - [Citing IPPL](#citing-ippl)
-- [Job scripts for running on Merlin and Gwendolen (at PSI)](#job-scripts-for-running-on-merlin-and-gwendolen-at-psi)
-  - [Merlin CPU (MPI + OpenMP)](#merlin-cpu-mpi--openmp)
-  - [Gwendolen GPU](#gwendolen-gpu)
-  - [LUMI GPU partition](#lumi-gpu-partition)
-- [Profiling IPPL MPI calls](#profiling-ippl-mpi-calls)
-- [Build Instructions](#build-instructions)
-  - [MERLIN 7 (PSI)](#merlin-7-psi)
-  - [ALPS (CSCS)](#alps-cscs)
+</div>
 
-Independent Parallel Particle Layer (IPPL) is a performance portable C++ library for Particle-Mesh methods. IPPL makes use of Kokkos (https://github.com/kokkos/kokkos), HeFFTe (https://github.com/icl-utk-edu/heffte), and MPI (Message Passing Interface) to deliver a portable, massively parallel toolkit for particle-mesh methods. IPPL supports simulations in one to six dimensions, mixed precision, and asynchronous execution in different execution spaces (e.g. CPUs and GPUs).
+The IPPL (Independent Parallel Particle Layer) library
+provides performance portable and dimension independent
+building blocks for scientific simulations requiring particle-mesh
+methods, with Eulerian (mesh-based) and Lagrangian (particle-based) approaches.
+IPPL makes use of [Kokkos](https://github.com/kokkos/kokkos), [HeFFTe](https://github.com/icl-utk-edu/heffte), and MPI (Message Passing Interface) to deliver a portable,
+massively parallel toolkit for particle-mesh methods. IPPL supports simulations in one to six dimensions, mixed precision, and asynchronous execution in different execution spaces (e.g. CPUs and GPUs).
 
-All IPPL releases (< 3.2.0) are available under the BSD 3-clause license. Since version 3.2.0, this repository includes a modified version of the `variant` header by GNU, created to support compilation under CUDA 12.2 with GCC 12.3.0. This header file is available under the same terms as the [GNU Standard Library](https://github.com/gcc-mirror/gcc); note the GNU runtime library exception. As long as this file is not removed, IPPL is available under GNU GPL version 3.
+--
 
-# CI/CD
-Check out the latest [results](https://ippl-bc4558.pages.jsc.fz-juelich.de/)
+**[Installation](#installation)** | 
+**[Contributions](#contributions)** |
+**[Citing IPPL](#citing-ippl)** |
+**[SLURM Job scripts](#slurm-job-scripts)** | 
+**[Profiling](#profiling)**
 
-# Installing IPPL and its dependencies
+# Installation
 
 All the new developments of IPPL are merged into the `master` branch which can make it potentially unstable from time to time. So if you want a stable and more tested version
 please checkout the tagged branch corresponding to the latest release (e.g. `git checkout tags/IPPL-x.x.x`). Otherwise if you want the latest developments go with the master with the above caveat in mind.
@@ -179,7 +167,6 @@ cmake .. \
 m-6.0.3/lib/llvm/lib"
 ```
 
-
 `[architecture]` should be the target architecture, e.g.
 - `PASCAL60`
 - `PASCAL61`
@@ -210,6 +197,75 @@ Submitted batch job 396349
 Generating job for node count 256 in /capstor/scratch/cscs/biddisco/build-santis/ippl/strongscaling_landau/nodes_256
 Submitted batch job 396355
 ```
+
+## Build Instructions for specific sytems
+Here we compile links to recipies for easy build on various HPC systems. 
+
+### MERLIN 7 (PSI)
+[IPPL build for A100 and HG](https://hpce.pages.psi.ch/merlin7/ippl.html)
+
+### ALPS (CSCS)
+Start by loading a `uenv` that contains most of the tools we want. Note that in future an `official` uenv will be provided in the CSCS uenv repository, but until testing is complete, use the following ...
+
+```bash
+uenv start --view=develop \
+/capstor/store/cscs/cscs/csstaff/biddisco/uenvs/opal-x-gh200-mpich-gcc-2025-09-28.squashfs
+```
+or, look for a newer one and pick the one with the latest date in the name using
+```bash
+ls -al /capstor/store/cscs/cscs/csstaff/biddisco/uenvs/opal-x-gh200-*.squashfs
+``` 
+At the time of writing, the uenv provides (as well as many other packages)
+```yaml
+cmake@4.1.1         ~doc+ncurses+ownlibs~qtgui 
+cray-mpich@9.0.0    +cuda+cxi~rocm 
+cuda@12.8.1         ~allow-unsupported-compilers~dev 
+eigen@3.4.0         ~ipo~nightly~rocm 
+fftw@3.3.10         +mpi~openmp~pfft_patches+shared 
+gcc@13.4.0          ~binutils+bootstrap~graphite~mold~nvptx~piclibs+profiled+strip 
+googletest@1.17.0   ~absl+gmock~ipo+pthreads+shared 
+gsl@2.8             ~external-cblas+pic+shared 
+h5hut@master        ~fortran+mpi 
+hdf5@1.14.6         +cxx~fortran+hl~ipo~java~map+mpi+shared~subfiling+szip~threadsafe+tools api=default 
+heffte@2.4.1        +cuda+fftw~fortran~ipo~magma~mkl~python~rocm+shared 
+hpctoolkit@2025.0.1 +cuda~docs~level_zero~mpi~opencl+papi~python~rocm~strip+viewer 
+hwloc@2.11.1        ~cairo~cuda~gl~level_zero~libudev~libxml2~nvml~opencl+pci~rocm 
+kokkos@4.7.00       ~aggressive_vectorization~alloc_async~cmake_lang~compiler_warnings+complex_align+cuda~cuda_constexpr~cuda_lambda~cuda_ldg_intrinsic~cuda_relocatable_device_code~cuda_uvm~debug~debug_bounds_check~debug_dualview_modify_check~deprecated_code~examples~hip_relocatable_device_code~hpx~hpx_async_dispatch~hwloc~ipo~memkind~numactl+openmp~openmptarget~pic~rocm+serial+shared~sycl~tests~threads~tuning+wrapper build_system=cmake build_type=Release cuda_arch=90 cxxstd=20 generator=make intel_gpu_arch=none 
+ninja@1.13.0        +re2c 
+```
+You can check what is inside the uenv by executing the command
+```bash
+# This will show all packages installed by spack (including any ones you might have installed yourself outside of a uenv)
+spack find -flv
+
+# use this to only show packages inside the uenv (ie. not any you have installed elsewhere)
+spack -C /user-environment/config find -flv
+```
+It is important to use the `--view=develop` when loading the uenv as this sets-up the paths to packages in the spack environment ready for you to use them (without needing to manually `spack load xxx` packages individually) (In fact it will also add `/user-environment/env/develop/` to your `CMAKE_PREFIX_PATH`) which makes cmake-built packages 'just work'. 
+
+To build, try the following which uses default CMake settings (`release-testing`) taken from `CMakeUserPresets.json` (in the root ippl source of the cmake-alps branch - it is not required to use this branch, but cmake support has been cleaned up)
+```bash
+ssh daint
+uenv start --view=develop /capstor/scratch/cscs/biddisco/uenvs/gh200-opalxgccmpich-2025-07-23.squashfs
+
+# clone IPPL
+mkdir -p $HOME/src/ippl
+cd $HOME/src
+git clone https://github.com/IPPL-framework/ippl
+
+# (optionally) checkout the cmake-alps branch since it is not yet merged to master
+cd $HOME/src/ippl
+git remote add biddisco https://github.com/biddisco/ippl.git
+git fetch biddisco cmake-alps
+git checkout cmake-alps
+
+# create a build dir
+mkdir -p $HOME/build/ippl
+cd $HOME/build/ippl
+
+# run cmake (note that ninja is available in the uenv and "cmake -G Ninja" can be used)
+cmake --preset=release-testing -DCMAKE_INSTALL_PREFIX=$HOME/apps/ippl -DCMAKE_CUDA_ARCHITECTURES=90 $HOME/src/ippl/
+```
 # Contributions
 We are open and welcome contributions from others. Please open an issue and a corresponding pull request in the main repository if it is a bug fix or a minor change.
 
@@ -226,7 +282,7 @@ $ git pull upstream master
 All the contributions (except for bug fixes) need to be accompanied with a unit test. For more information on unit tests in IPPL please
 take a look at this [page](https://github.com/IPPL-framework/ippl/blob/master/UNIT_TESTS.md).
 
-## Citing IPPL
+# Citing IPPL
 
 ```
 @inproceedings{muralikrishnan2024scaling,
@@ -241,7 +297,8 @@ take a look at this [page](https://github.com/IPPL-framework/ippl/blob/master/UN
 }
 ```
 
-# Job scripts for running on Merlin and Gwendolen (at PSI)
+# SLURM Job scripts
+
 You can use the following example job scripts to run on the local PSI computing cluster, which uses slurm.
 More documentation on the local cluster can be found [here](https://lsm-hpce.gitpages.psi.ch/merlin6/introduction.html) (need to be in the PSI network to access).
 
@@ -317,9 +374,34 @@ srun ./select_gpu ${EXE_DIR}/TestGaussian 1024 1024 1024 pencils a2av no-reorder
 rm -rf ./select_gpu
 ```
 
-# Profiling on LUMI
 
-## rocprof
+# Profiling
+
+## MPI Calls 
+You can use the mpiP tool (https://github.com/LLNL/mpiP) to get statistics about the MPI calls in IPPL. 
+
+To use it, download it from [Github](https://github.com/LLNL/mpiP) and follow the instructions to install it. You may run into some issues while installing, here is a list of common issues and the solution:
+- On Cray systems "MPI_Init not defined": This I fixed by passing the correct Cray wrappers for the compilers to the configure: `./configure CC=cc FC=ftn F77=ftn`
+- If you have an issue with it not recognizing a function symbol in Fortran 77, you need to substitute the line `echo "main(){ FF(); return 0; }" > flink.c` (line 706) in the file `configure.ac` by the following line `echo "extern void FF(); int main() { FF(); return 0; }" > flink.c`
+- During the `make all`, if you run into an issue of some Testing file not recognizing mpi.h, then you need to add the following line `CXX = CC` in the file `Testing/Makefile`.
+
+If the installation was successful, you should have the library `libmpip.so` in the mpiP directory. 
+
+To instument your application with the mpiP library, add the following line to your jobscript (or run it in your command line if you are running locally/on an interactive node):
+`export LD_PRELOAD=$[path to mpip directory]/libmpiP.so`
+To pass any options to mpiP, you can export the variable MPIP with the options you want. For example, if you would like to get a histogram of the data sent by MPI calls (option `-y`), you would need to add the following line to your jobscript:
+`export MPIP="-y"`
+
+If you application has been correctly instrumented, you will see that mpiP has been found and its version is printed at the top of the standard output. At the end of the standard output, you will get the name of the file containing the MPI statistics:
+`Storing mpiP output in ...`
+
+To get a total amount of bytes moved around by your application, you can use the python script mpiP.py (found in the top level IPPL directory) in the following form:
+`python3 mpiP.py [path/to/directory]`
+where path/to/directory refers to the place where the .mpiP output can be found. This python script will then print out the total amount of Bytes moved by MPI in your application.
+
+## Profiling on LUMI
+
+### rocprof
 
 Analysis with: https://ui.perfetto.dev/
 
@@ -360,7 +442,7 @@ rm -rf ./select_gpu
 ```
 
 
-## omniperf (do not use omnitrace)
+### omniperf (do not use omnitrace)
 
 doc url: https://rocm.docs.amd.com/projects/rocprofiler-compute/en/docs-6.2.4/how-to/profile/mode.html
 
@@ -401,96 +483,11 @@ rm -rf ./select_gpu
 ```
 
 
-# Profiling IPPL MPI calls
 
-You can use the mpiP tool (https://github.com/LLNL/mpiP) to get statistics about the MPI calls in IPPL. 
 
-To use it, download it from [Github](https://github.com/LLNL/mpiP) and follow the instructions to install it. You may run into some issues while installing, here is a list of common issues and the solution:
-- On Cray systems "MPI_Init not defined": This I fixed by passing the correct Cray wrappers for the compilers to the configure: `./configure CC=cc FC=ftn F77=ftn`
-- If you have an issue with it not recognizing a function symbol in Fortran 77, you need to substitute the line `echo "main(){ FF(); return 0; }" > flink.c` (line 706) in the file `configure.ac` by the following line `echo "extern void FF(); int main() { FF(); return 0; }" > flink.c`
-- During the `make all`, if you run into an issue of some Testing file not recognizing mpi.h, then you need to add the following line `CXX = CC` in the file `Testing/Makefile`.
 
-If the installation was successful, you should have the library `libmpip.so` in the mpiP directory. 
 
-To instument your application with the mpiP library, add the following line to your jobscript (or run it in your command line if you are running locally/on an interactive node):
-`export LD_PRELOAD=$[path to mpip directory]/libmpiP.so`
-To pass any options to mpiP, you can export the variable MPIP with the options you want. For example, if you would like to get a histogram of the data sent by MPI calls (option `-y`), you would need to add the following line to your jobscript:
-`export MPIP="-y"`
 
-If you application has been correctly instrumented, you will see that mpiP has been found and its version is printed at the top of the standard output. At the end of the standard output, you will get the name of the file containing the MPI statistics:
-`Storing mpiP output in ...`
 
-To get a total amount of bytes moved around by your application, you can use the python script mpiP.py (found in the top level IPPL directory) in the following form:
-`python3 mpiP.py [path/to/directory]`
-where path/to/directory refers to the place where the .mpiP output can be found. This python script will then print out the total amount of Bytes moved by MPI in your application.
 
 Happy profiling!
-
-# Build Instructions
-Here we compile links to recipies for easy build on various HPC systems. 
-
-## MERLIN 7 (PSI)
-[IPPL build for A100 and HG](https://hpce.pages.psi.ch/merlin7/ippl.html)
-
-## ALPS (CSCS)
-Start by loading a `uenv` that contains most of the tools we want. Note that in future an `official` uenv will be provided in the CSCS uenv repository, but until testing is complete, use the following ...
-
-```bash
-uenv start --view=develop \
-/capstor/store/cscs/cscs/csstaff/biddisco/uenvs/opal-x-gh200-mpich-gcc-2025-09-28.squashfs
-```
-or, look for a newer one and pick the one with the latest date in the name using
-```bash
-ls -al /capstor/store/cscs/cscs/csstaff/biddisco/uenvs/opal-x-gh200-*.squashfs
-``` 
-At the time of writing, the uenv provides (as well as many other packages)
-```yaml
-cmake@4.1.1         ~doc+ncurses+ownlibs~qtgui 
-cray-mpich@9.0.0    +cuda+cxi~rocm 
-cuda@12.8.1         ~allow-unsupported-compilers~dev 
-eigen@3.4.0         ~ipo~nightly~rocm 
-fftw@3.3.10         +mpi~openmp~pfft_patches+shared 
-gcc@13.4.0          ~binutils+bootstrap~graphite~mold~nvptx~piclibs+profiled+strip 
-googletest@1.17.0   ~absl+gmock~ipo+pthreads+shared 
-gsl@2.8             ~external-cblas+pic+shared 
-h5hut@master        ~fortran+mpi 
-hdf5@1.14.6         +cxx~fortran+hl~ipo~java~map+mpi+shared~subfiling+szip~threadsafe+tools api=default 
-heffte@2.4.1        +cuda+fftw~fortran~ipo~magma~mkl~python~rocm+shared 
-hpctoolkit@2025.0.1 +cuda~docs~level_zero~mpi~opencl+papi~python~rocm~strip+viewer 
-hwloc@2.11.1        ~cairo~cuda~gl~level_zero~libudev~libxml2~nvml~opencl+pci~rocm 
-kokkos@4.7.00       ~aggressive_vectorization~alloc_async~cmake_lang~compiler_warnings+complex_align+cuda~cuda_constexpr~cuda_lambda~cuda_ldg_intrinsic~cuda_relocatable_device_code~cuda_uvm~debug~debug_bounds_check~debug_dualview_modify_check~deprecated_code~examples~hip_relocatable_device_code~hpx~hpx_async_dispatch~hwloc~ipo~memkind~numactl+openmp~openmptarget~pic~rocm+serial+shared~sycl~tests~threads~tuning+wrapper build_system=cmake build_type=Release cuda_arch=90 cxxstd=20 generator=make intel_gpu_arch=none 
-ninja@1.13.0        +re2c 
-```
-You can check what is inside the uenv by executing the command
-```bash
-# This will show all packages installed by spack (including any ones you might have installed yourself outside of a uenv)
-spack find -flv
-
-# use this to only show packages inside the uenv (ie. not any you have installed elsewhere)
-spack -C /user-environment/config find -flv
-```
-It is important to use the `--view=develop` when loading the uenv as this sets-up the paths to packages in the spack environment ready for you to use them (without needing to manually `spack load xxx` packages individually) (In fact it will also add `/user-environment/env/develop/` to your `CMAKE_PREFIX_PATH`) which makes cmake-built packages 'just work'. 
-
-To build, try the following which uses default CMake settings (`release-testing`) taken from `CMakeUserPresets.json` (in the root ippl source of the cmake-alps branch - it is not required to use this branch, but cmake support has been cleaned up)
-```bash
-ssh daint
-uenv start --view=develop /capstor/scratch/cscs/biddisco/uenvs/gh200-opalxgccmpich-2025-07-23.squashfs
-
-# clone IPPL
-mkdir -p $HOME/src/ippl
-cd $HOME/src
-git clone https://github.com/IPPL-framework/ippl
-
-# (optionally) checkout the cmake-alps branch since it is not yet merged to master
-cd $HOME/src/ippl
-git remote add biddisco https://github.com/biddisco/ippl.git
-git fetch biddisco cmake-alps
-git checkout cmake-alps
-
-# create a build dir
-mkdir -p $HOME/build/ippl
-cd $HOME/build/ippl
-
-# run cmake (note that ninja is available in the uenv and "cmake -G Ninja" can be used)
-cmake --preset=release-testing -DCMAKE_INSTALL_PREFIX=$HOME/apps/ippl -DCMAKE_CUDA_ARCHITECTURES=90 $HOME/src/ippl/
-```
