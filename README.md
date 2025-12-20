@@ -1,11 +1,11 @@
 <p align="center"><img src="./assets/ippl-logo.png" alt="IPPL" width="30%" height="30%"></p>
-<div align="center">
+<p>
 [![CI/CD](https://img.shields.io/badge/CI/CD-red.svg)](https://ippl-bc4558.pages.jsc.fz-juelich.de/)|
 [![c++ standard](https://img.shields.io/badge/c%2B%2B-20-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B20)|
 <!-- [![Documentation](https://img.shields.io/badge/Documentation-latest-blue.svg)](https:///)| -->
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg)](https://doi.org/10.5281/zenodo.8389192)|
 [![License](https://img.shields.io/github/license/IPPL-framework/ippl)](https://github.com/IPPL-framework/ippl/blob/master/LICENSE)
-</div>
+</p>
 
 The IPPL (Independent Parallel Particle Layer) library
 provides performance portable and dimension independent
