@@ -1,10 +1,17 @@
 <p align="center"><img src="./assets/ippl-logo.png" alt="IPPL" width="30%" height="30%"></p>
-<p>
-[![CI/CD](https://img.shields.io/badge/CI/CD-red.svg)](https://ippl-bc4558.pages.jsc.fz-juelich.de/)|
-[![c++ standard](https://img.shields.io/badge/c%2B%2B-20-blue.svg)](https://en.wikipedia.org/wiki/C%2B%2B20)|
-<!-- [![Documentation](https://img.shields.io/badge/Documentation-latest-blue.svg)](https:///)| -->
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg)](https://doi.org/10.5281/zenodo.8389192)|
-[![License](https://img.shields.io/github/license/IPPL-framework/ippl)](https://github.com/IPPL-framework/ippl/blob/master/LICENSE)
+<p align="center">
+  <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/">
+    <img alt="CI/CD" src="https://img.shields.io/badge/CI/CD-red.svg">
+  </a>
+  <a href="https://en.wikipedia.org/wiki/C%2B%2B20">
+    <img alt="C++ standard" src="https://img.shields.io/badge/c%2B%2B-20-blue.svg">
+  </a>
+  <a href="https://doi.org/10.5281/zenodo.8389192">
+    <img alt="DOI" src="https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg">
+  </a>
+  <a href="https://github.com/IPPL-framework/ippl/blob/master/LICENSE">
+    <img alt="License" src="https://img.shields.io/github/license/IPPL-framework/ippl">
+  </a>
 </p>
 
 The IPPL (Independent Parallel Particle Layer) library
