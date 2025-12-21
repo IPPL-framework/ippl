@@ -1,4 +1,9 @@
-<p align="center"><img src="./assets/ippl-logo.png" alt="IPPL" width="30%" height="30%"></p>
+<p align="center">
+  <img src="./assets/ippl-logo.png" alt="IPPL" width="30%" height="30%"><br>
+</p>
+<p align="right">
+  <span style="font-size: 6px; opacity: 0.4;">IPPL-logo; design by S.A.T. Klapproth</span>
+</p>
 <p align="center">
   <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/">
     <img alt="CI/CD" src="https://img.shields.io/badge/CI/CD-red.svg">
