@@ -703,7 +703,7 @@ namespace ippl {
                 KOKKOS_LAMBDA(const size_t& i) {
                     /// pID: (local) ID of the particle that is currently being searched.
                     const size_type pId    = outsideIds(i);
-                    const size_type offset = rankOffsets(pId) + counts(pId);
+                    const size_type offset = rankOffsets(pId) + counts(pId) - outsideCounts(pId);
                     for (size_t local_count = 0, j = 0; j < nonNeighborsView.extent(0); ++j) {
                         const auto rank = nonNeighborsView(j);
                         if (positionInRegion(is, positions(pId), regions(rank), overlap)) {
