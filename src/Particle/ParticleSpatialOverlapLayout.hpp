@@ -131,7 +131,7 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION constexpr bool
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::isCloseToBoundary(
         const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& globalRegion,
-        Vector<bool, Dim> periodic, T overlap) {
+        std::array<bool, Dim> periodic, T overlap) {
         return ((periodic[Idx]
                  && (pos[Idx] < globalRegion[Idx].min() + overlap
                      || pos[Idx] > globalRegion[Idx].max() - overlap))

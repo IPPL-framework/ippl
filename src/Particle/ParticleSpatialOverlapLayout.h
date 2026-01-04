@@ -302,7 +302,7 @@ namespace ippl {
         template <std::size_t... Idx>
         KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(
             const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region,
-            Vector<bool, Dim> periodic, T overlap);
+            std::array<bool, Dim> periodic, T overlap);
 
         /*!
          * @brief convert a nd-cell-index to flat cell index
