@@ -178,7 +178,7 @@ namespace ippl {
         /* periodic boundary conditions come in pairs. Thus collect whether each dimension is
          * subject to periodic boundary conditions
          */
-        Vector<bool, Dim> periodic;
+        std::array<bool, Dim> periodic;
         for (unsigned d = 0; d < Dim; ++d) {
             periodic[d] = this->getParticleBC()[2 * d] == BC::PERIODIC;
         }
