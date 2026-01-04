@@ -267,6 +267,30 @@ namespace ippl {
          */
         T computeAvg(const FieldLHS& u_h) const;
 
+        ///////////////////////////////////////////////////////////////////////
+        /// Device struct for copies //////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
+        struct DeviceStruct {
+            // members we need to copy for the following functions:
+            // works since numElementDOFs in LagrangeSpace is static constexpr
+            static constexpr unsigned numElementDOFs = LagrangeSpace::numElementDOFs;
+            Vector<size_t, Dim> nr_m;
+            ElementType ref_element_m;
+
+            // these are the functions needed for interpolation to the space
+            KOKKOS_FUNCTION indices_t getMeshVertexNDIndex(const size_t& vertex_index) const;
+
+            KOKKOS_FUNCTION size_t getLocalDOFIndex(const indices_t& elementNDIndex,
+                const size_t& globalDOFIndex) const;
+            KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getGlobalDOFIndices(
+                const indices_t& elementNDIndex) const;
+
+            KOKKOS_FUNCTION T evaluateRefElementShapeFunction(const size_t& localDOF,
+                const point_t& localPoint) const;
+        };
+
+        DeviceStruct getDeviceMirror() const; 
+
     private:
         /**
          * @brief Check if a DOF is on the boundary of the mesh
@@ -285,6 +309,10 @@ namespace ippl {
             return false;
         }
 
+        ///////////////////////////////////////////////////////////////////////
+        /// Private member containing the element indices owned by ////////////
+        /// my MPI rank. //////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
         Kokkos::View<size_t*> elementIndices;
     };
 

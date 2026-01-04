@@ -346,7 +346,8 @@ namespace ippl {
                 // we do not need to send to ourselves
                 continue;
             }
-            this->window_m.template put<size_type>(rankSendCount_hview(rank), rank, Comm->rank());
+            const int* src_ptr = &rankSendCount_hview(rank);
+            this->window_m.template put<int>(src_ptr, rank, Comm->rank());
         }
         this->window_m.fence(0);
 
