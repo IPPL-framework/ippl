@@ -509,7 +509,7 @@ namespace ippl {
         }
 
         // Step 1. Mark all non-neighbor ranks, by removing all neighbors and self
-        const auto total_ranks = Comm->rank();
+        const auto total_ranks = Comm->size();
         bool_type is_remaining("is_remaining", total_ranks);
         Kokkos::deep_copy(is_remaining, true);
         Kokkos::fence();
