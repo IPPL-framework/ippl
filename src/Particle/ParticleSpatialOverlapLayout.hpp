@@ -131,7 +131,7 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION constexpr bool
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::isCloseToBoundary(
         const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& globalRegion,
-        std::array<bool, Dim> periodic, T overlap) {
+        Kokkos::Array<bool, Dim> periodic, T overlap) {
         return ((periodic[Idx]
                  && (pos[Idx] < globalRegion[Idx].min() + overlap
                      || pos[Idx] > globalRegion[Idx].max() - overlap))
@@ -178,14 +178,16 @@ namespace ippl {
         /* periodic boundary conditions come in pairs. Thus collect whether each dimension is
          * subject to periodic boundary conditions
          */
-        std::array<bool, Dim> periodic;
+        Kokkos::Array<bool, Dim> periodic;
         for (unsigned d = 0; d < Dim; ++d) {
             periodic[d] = this->getParticleBC()[2 * d] == BC::PERIODIC;
         }
         // no need to create periodic ghost particles if no dimension is periodic
-        if (!std::any_of(periodic.begin(), periodic.end())) {
-            return;
+        bool anyPeriodic = false;
+        for (unsigned d = 0; d < Dim; ++d) {
+            anyPeriodic = anyPeriodic || periodic[d];
         }
+        if (!anyPeriodic) return;
 
         const auto& globalRegion = this->rlayout_m.getDomain();
         const auto overlap       = rcutoff_m;
