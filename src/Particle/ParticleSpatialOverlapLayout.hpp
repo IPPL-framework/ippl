@@ -525,6 +525,8 @@ namespace ippl {
 
         // Step 2. Fill remaining ranks
         Kokkos::View<size_type> counter("counter");
+        Kokkos::deep_copy(counter, 0);
+        Kokkos::fence();
         Kokkos::parallel_for(
             "fill_remaining", total_ranks, KOKKOS_LAMBDA(const size_t& i) {
                 if (is_remaining(i)) {
