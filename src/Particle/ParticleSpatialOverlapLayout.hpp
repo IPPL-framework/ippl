@@ -180,12 +180,10 @@ namespace ippl {
          */
         Vector<bool, Dim> periodic;
         for (unsigned d = 0; d < Dim; ++d) {
-            periodic[d] = this->getParticleBC()[2 * d];
+            periodic[d] = this->getParticleBC()[2 * d] == BC::PERIODIC;
         }
         // no need to create periodic ghost particles if no dimension is periodic
-        if (!std::any_of(periodic.begin(), periodic.end(), [](auto bc) {
-                return bc == BC::PERIODIC;
-            })) {
+        if (!std::any_of(periodic.begin(), periodic.end())) {
             return;
         }
 
