@@ -9,6 +9,20 @@ message(STATUS "IPPL_MACHINENAME for script generation is: ${IPPL_MACHINENAME}")
 # ------------------------------------------------------------------------------
 set(IPPL_JOB_SUBMISSION_ACCOUNT "c41" CACHE STRING "Account to use for job submission templates")
 
+# populate IPPL_SCRIPTS_UENV from environment variable UENV_MOUNT_LIST (if present)
+if(DEFINED ENV{UENV_MOUNT_LIST})
+  set(IPPL_SCRIPTS_UENV "$ENV{UENV_MOUNT_LIST}"
+      CACHE STRING "UENV to use on alps when running scripts mount")
+  set(IPPL_SCRIPTS_UENV_VIEW "default" CACHE STRING "View to set in uenv")
+  colour_message(STATUS ${LightBlue}
+                 "IPPL_SCRIPTS_UENV set from UENV_MOUNT_LIST: ${IPPL_SCRIPTS_UENV}")
+else()
+  # Remove any cached and normal definitions so the variable is completely unset
+  unset(IPPL_SCRIPTS_UENV CACHE)
+  unset(IPPL_SCRIPTS_UENV_VIEW CACHE)
+  colour_message(STATUS ${LightBlue} "No UENV detected")
+endif()
+
 # ------------------------------------------------------------------------------
 # utility function to get target path/name since we can't use generator expressions to set variables
 # directly

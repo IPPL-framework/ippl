@@ -12,14 +12,14 @@ class TypedLoggingBufferHandlerTest : public ::testing::Test {
 protected:
     void SetUp() override {
         rank                = 0;
-        this->bufferHandler = std::make_shared<ippl::DefaultBufferHandler<MemorySpace>>();
+        this->bufferHandler = std::make_shared<ippl::comms::DefaultBufferHandler<MemorySpace>>();
         this->loggingHandler =
-            std::make_shared<ippl::LoggingBufferHandler<MemorySpace>>(bufferHandler, rank);
+            std::make_shared<ippl::comms::LoggingBufferHandler<MemorySpace>>(bufferHandler, rank);
     }
 
     int rank;
-    std::shared_ptr<ippl::DefaultBufferHandler<MemorySpace>> bufferHandler;
-    std::shared_ptr<ippl::LoggingBufferHandler<MemorySpace>> loggingHandler;
+    std::shared_ptr<ippl::comms::DefaultBufferHandler<MemorySpace>> bufferHandler;
+    std::shared_ptr<ippl::comms::LoggingBufferHandler<MemorySpace>> loggingHandler;
 };
 
 TYPED_TEST_SUITE(TypedLoggingBufferHandlerTest, MemorySpaces);

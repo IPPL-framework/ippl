@@ -31,6 +31,7 @@
 #include <string>
 #include <vector>
 
+#include "Utility/Logging.h"
 #include "Utility/PAssert.h"
 #include "Utility/Timer.h"
 #include "Utility/my_auto_ptr.h"
@@ -117,6 +118,9 @@ struct Timing {
     // clear a timer, by turning it off and throwing away its time
     void clearTimer(TimerRef);
 
+    // access the timer's name
+    const std::string& timerName(TimerRef);
+
     // return a TimerInfo struct by asking for the name
     TimerInfo* infoTimer(const char* nm) { return TimerMap[std::string(nm)]; }
 
@@ -136,6 +140,8 @@ private:
 
     // a map of timers, keyed by string
     TimerMap_t TimerMap;
+
+    std::string EmptyName;
 };
 
 class IpplTimings {
@@ -150,10 +156,16 @@ public:
     static TimerRef getTimer(const char* nm) { return instance->getTimer(nm); }
 
     // start a timer
-    static void startTimer(TimerRef t) { instance->startTimer(t); }
+    static void startTimer(TimerRef t) {
+        SPDLOG_TRACE("Starting timer [{}]", instance->timerName(t));
+        instance->startTimer(t);
+    }
 
     // stop a timer, and accumulate it's values
-    static void stopTimer(TimerRef t) { instance->stopTimer(t); }
+    static void stopTimer(TimerRef t) {
+        SPDLOG_TRACE("Stopping timer [{}]", instance->timerName(t));
+        instance->stopTimer(t);
+    }
 
     // clear a timer, by turning it off and throwing away its time
     static void clearTimer(TimerRef t) { instance->clearTimer(t); }

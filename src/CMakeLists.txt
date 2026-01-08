@@ -35,6 +35,14 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/IpplVersions.h.in
 
 add_library(ippl)
 
+if(NOT "${IPPL_LOG_LEVEL_UPPERCASE}" MATCHES "OFF")
+  target_compile_definitions(ippl PUBLIC IPPL_LOGGING_ENABLED=1)
+  target_compile_definitions(ippl
+                             PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${IPPL_LOG_LEVEL_UPPERCASE})
+  target_link_libraries(ippl PUBLIC spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_32>)
+  target_link_libraries(ippl PUBLIC fmt::fmt)
+endif()
+
 target_compile_features(ippl PUBLIC cxx_std_20)
 
 target_compile_options(

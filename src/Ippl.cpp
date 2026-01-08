@@ -71,6 +71,14 @@ namespace ippl {
                     }
                     auto factor = detail::getNumericalOption<double>(argv[nargs]);
                     Comm->setDefaultOverallocation(factor);
+                } else if (detail::checkOption(argv[nargs], "--debug", "-g")) {
+                    ++nargs;
+                    if (Comm->rank() == 0) {
+                        std::cout << "Please attach debugger and hit return" << std::endl;
+                        char c;
+                        std::cin >> c;
+                    }
+                    Comm->barrier();
                 } else if (nargs > 0 && std::strstr(argv[nargs], "--kokkos") == nullptr) {
                     notparsed.push_back(argv[nargs]);
                 }
