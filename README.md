@@ -102,7 +102,7 @@ cd build
 #### CMakeUserPresets
 In the root IPPL source folder, there is a cmake user presets file which can be used to set some default cmake settings, they may be used in the following way
 ```
-cmake --prefix=release-testing ...
+cmake --preset=release-testing ...
 ```
 This will set the following variables automatically (exact values may change over time)
 ```
@@ -174,7 +174,6 @@ cmake .. \
       -DIPPL_ENABLE_SOLVERS=ON \
       -DIPPL_ENABLE_ALPINE=ON \
       -DHeffte_ENABLE_ROCM=ON \
-      -DHeffte_ENABLE_GPU_AWARE_MPI=OFF \
       -DCMAKE_EXE_LINKER_FLAGS="-L/opt/cray/pe/mpich/8.1.28/ofi/amd/5.0/lib -L/opt/cray/pe/mpich/8.1.28/gtl/lib -L/opt/cray/pe/libsci/24.03.0/AMD/5.0/x86_64/lib -L/opt/cray/pe/dsmml/0.3.0/dsmml
 /lib -L/opt/cray/xpmem/2.8.2-1.0_5.1__g84a27a5.shasta/lib64 -lsci_amd_mpi -lsci_amd -ldl -lmpi_amd -lmpi_gtl_hsa -ldsmml -lxpmem -L/opt/rocm-6.0.3/lib/lib -L/opt/rocm-6.0.3/lib/lib64 -L/opt/roc
 m-6.0.3/lib/llvm/lib"
@@ -317,6 +316,90 @@ chmod +x ./select_gpu
 srun ./select_gpu ${EXE_DIR}/TestGaussian 1024 1024 1024 pencils a2av no-reorder HOCKNEY --info 5
 rm -rf ./select_gpu
 ```
+
+# Profiling on LUMI
+
+## rocprof
+
+Analysis with: https://ui.perfetto.dev/
+
+```
+#!/bin/bash -l
+#
+#SBATCH --job-name=opalx1
+#SBATCH --error=opalx-%j.error
+#SBATCH --output=opalx-2-%j.out
+#SBATCH --time=00:05:00
+#SBATCH --partition=standard-g
+#SBATCH --nodes 1
+#SBATCH --ntasks-per-core=1
+#SBATCH -c 56 --threads-per-core=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gpus-per-node=8
+#SBATCH --account=project_465001705 
+#SBATCH --hint=nomultithread
+#SBATCH --hint=exclusive
+CPU_BIND="map_cpu:49,57,17,25,1,9,33,41"
+export MPICH_GPU_SUPPORT_ENABLED=1
+ 
+ulimit -s unlimited
+export EXE_DIR=/users/adelmann/sandbox/opalx/build/src/
+module load cray-python/3.11.7 
+module use /appl/local/containers/test-modules
+module load LUMI/24.03 partition/G cpeAMD rocm/6.1.3 buildtools/24.03
+
+cat << EOF > select_gpu
+#!/bin/bash
+export HIP_VISIBLE_DEVICES=\$SLURM_LOCALID
+exec \$*
+EOF
+chmod +x ./select_gpu
+srun ./select_gpu rocprof --hip-trace ${EXE_DIR}/opalx input.in --info 5
+rm -rf ./select_gpu
+
+```
+
+
+## omniperf (do not use omnitrace)
+
+doc url: https://rocm.docs.amd.com/projects/rocprofiler-compute/en/docs-6.2.4/how-to/profile/mode.html
+
+```
+#!/bin/bash -l
+#
+#SBATCH --job-name=opalx1
+#SBATCH --error=opalx-%j.error
+#SBATCH --output=opalx-2-%j.out
+#SBATCH --time=00:05:00
+#SBATCH --partition=standard-g
+#SBATCH --nodes 1
+#SBATCH --ntasks-per-core=1
+#SBATCH -c 56 --threads-per-core=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --gpus-per-node=8
+#SBATCH --account=project_465001705 
+#SBATCH --hint=nomultithread
+#SBATCH --hint=exclusive
+CPU_BIND="map_cpu:49,57,17,25,1,9,33,41"
+export MPICH_GPU_SUPPORT_ENABLED=1
+ 
+ulimit -s unlimited
+export EXE_DIR=/users/adelmann/sandbox/opalx/build/src/
+module load cray-python/3.11.7 
+module use /appl/local/containers/test-modules
+module load LUMI/24.03 partition/G cpeAMD rocm/6.1.3 buildtools/24.03
+module load omniperf
+cat << EOF > select_gpu
+#!/bin/bash
+#export ROCR_VISIBLE_DEVICES=\$SLURM_LOCALID
+export HIP_VISIBLE_DEVICES=\$SLURM_LOCALID
+exec \$*
+EOF
+chmod +x ./select_gpu
+srun ./select_gpu omniperf profile --name opalx  --roof-only --kernel-names -- ${EXE_DIR}/opalx input.in --info 5
+rm -rf ./select_gpu
+```
+
 
 # Profiling IPPL MPI calls
 
