@@ -359,8 +359,8 @@ namespace ippl {
             g_old_m = 0;
 
             for (unsigned int j = 0; j < innerloops_m; ++j) {
-                Ag_m = op_m(g_m);
-                g_m     = r - Ag_m;
+                Ag_m = op_m(g_m).deepCopy();
+                g_m  = r - Ag_m;
 
                 // The inverse diagonal is applied to the
                 // vector itself to return the result usually.
@@ -425,10 +425,10 @@ namespace ippl {
             x = 0;  // Initial guess
 
             for (unsigned int k = 0; k < outerloops_m; ++k) {
-                UL_m = upper_m(x);
+                UL_m = upper_m(x).deepCopy();
                 r_m  = b - UL_m;
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    UL_m = lower_m(x);
+                    UL_m = lower_m(x).deepCopy();
                     x    = r_m - UL_m;
                     // The inverse diagonal is applied to the
                     // vector itself to return the result usually.
@@ -440,13 +440,13 @@ namespace ippl {
                     if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
                         x = inverse_diagonal_m(x) * x;
                     } else {
-                        x = inverse_diagonal_m(x);
+                        x = inverse_diagonal_m(x).deepCopy();
                     }
                 }
-                UL_m = lower_m(x);
+                UL_m = lower_m(x).deepCopy();
                 r_m  = b - UL_m;
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    UL_m = upper_m(x);
+                    UL_m = upper_m(x).deepCopy();
                     x    = r_m - UL_m;
                     // The inverse diagonal is applied to the
                     // vector itself to return the result usually.
@@ -458,7 +458,7 @@ namespace ippl {
                     if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
                         x = inverse_diagonal_m(x) * x;
                     } else {
-                        x = inverse_diagonal_m(x);
+                        x = inverse_diagonal_m(x).deepCopy();
                     }
                 }
             }
