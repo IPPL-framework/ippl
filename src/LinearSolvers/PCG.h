@@ -469,7 +469,8 @@ namespace ippl {
             const T tolerance = params.get<T>("tolerance") * this->residueNorm;
 
             while (this->iterations_m < maxIterations && this->residueNorm > tolerance) {
-                q       = this->op_m(d).deepCopy();
+                q       = this->op_m(d);
+                q       = q.deepCopy();
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
 

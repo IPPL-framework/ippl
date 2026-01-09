@@ -298,7 +298,8 @@ namespace ippl {
         Field operator()(Field& r) override {
             g_m = 0;
             for (unsigned int j = 0; j < innerloops_m; ++j) {
-                ULg_m = upper_and_lower_m(g_m).deepCopy();
+                ULg_m = upper_and_lower_m(g_m);
+                ULg_m = ULg_m.deepCopy();
                 g_m   = r - ULg_m;
          
                 // The inverse diagonal is applied to the
@@ -359,7 +360,8 @@ namespace ippl {
             g_old_m = 0;
 
             for (unsigned int j = 0; j < innerloops_m; ++j) {
-                Ag_m = op_m(g_m).deepCopy();
+                Ag_m = op_m(g_m);
+                Ag_m = Ag_m.deepCopy();
                 g_m  = r - Ag_m;
 
                 // The inverse diagonal is applied to the
@@ -425,10 +427,12 @@ namespace ippl {
             x = 0;  // Initial guess
 
             for (unsigned int k = 0; k < outerloops_m; ++k) {
-                UL_m = upper_m(x).deepCopy();
+                UL_m = upper_m(x);
+                UL_m = UL_m.deepCopy();
                 r_m  = b - UL_m;
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    UL_m = lower_m(x).deepCopy();
+                    UL_m = lower_m(x);
+                    UL_m = UL_m.deepCopy();
                     x    = r_m - UL_m;
                     // The inverse diagonal is applied to the
                     // vector itself to return the result usually.
@@ -443,10 +447,12 @@ namespace ippl {
                         x = inverse_diagonal_m(x).deepCopy();
                     }
                 }
-                UL_m = lower_m(x).deepCopy();
+                UL_m = lower_m(x);
+                UL_m = UL_m.deepCopy();
                 r_m  = b - UL_m;
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    UL_m = upper_m(x).deepCopy();
+                    UL_m = upper_m(x);
+                    UL_m = UL_m.deepCopy();
                     x    = r_m - UL_m;
                     // The inverse diagonal is applied to the
                     // vector itself to return the result usually.
