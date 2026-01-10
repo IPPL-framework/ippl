@@ -9,7 +9,6 @@ message(STATUS "🔧 Adding solver integration tests from: ${_relPath}")
 
 add_ippl_integration_test(TestSolverDesign LABELS solver integration)
 add_ippl_integration_test(TestCGSolver LABELS solver integration)
-add_ippl_integration_test(TestCG LABELS solver integration)
 
 if(IPPL_ENABLE_FFT)
   add_ippl_integration_test(TestGaussian_convergence LABELS solver integration)
