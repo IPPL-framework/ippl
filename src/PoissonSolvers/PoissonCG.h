@@ -128,7 +128,7 @@ namespace ippl {
         }
 
         void solve() override {
-            // TODO add a check for mesh changes for alpha and beta for preconditioners
+            // \todo TODO add a check for mesh changes for alpha and beta for preconditioners
 
             algo_m->setOperator(IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type));
             algo_m->operator()(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
