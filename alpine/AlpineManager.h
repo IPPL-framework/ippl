@@ -134,6 +134,8 @@ public:
         size_type localParticles = this->pcontainer_m->getLocalNum();
         policy_type iteration_policy(0, localParticles);
 
+        // get the Finite Element space from the solver, 
+        // since the interpolation depends on the space
         auto* solver = dynamic_cast<FieldSolver_t*>(this->fsolver_m.get());
         auto& space = solver->getSpace();
 
@@ -184,6 +186,8 @@ public:
         using policy_type = Kokkos::RangePolicy<exec_space>;
         policy_type iteration_policy(0, localParticles);
 
+        // get the Finite Element space from the solver, 
+        // since the interpolation depends on the space
         auto* solver = dynamic_cast<FieldSolver_t*>(this->fsolver_m.get());
         auto& space = solver->getSpace();
 
