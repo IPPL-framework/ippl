@@ -419,6 +419,7 @@ public:
         fieldEnergy = fieldEnergy / this->totalP_m;
 
         if (ippl::Comm->rank() == 0) {
+            std::filesystem::create_directory("data");
             std::stringstream fname;
             fname << "data/FieldLandau_";
             fname << ippl::Comm->size();
