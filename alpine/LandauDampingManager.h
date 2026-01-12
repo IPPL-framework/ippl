@@ -2,6 +2,7 @@
 #define IPPL_LANDAU_DAMPING_MANAGER_H
 
 #include <memory>
+#include <filesystem>
 
 #include "AlpineManager.h"
 #include "FieldContainer.hpp"
@@ -367,6 +368,7 @@ public:
         ippl::Comm->reduce(localExNorm, ExAmp, 1, std::greater<double>());
 
         if (ippl::Comm->rank() == 0) {
+            std::filesystem::create_directory("data");
             std::stringstream fname;
             fname << "data/FieldLandau_";
             fname << ippl::Comm->size();
@@ -388,7 +390,6 @@ public:
     // each particle, we treat the particles as Monte-Carlo samples to compute
     // the energy integral.
     void dumpLandau() {
-
         auto Eview = this->pcontainer_m->E.getView();
         size_type localParticles = this->pcontainer_m->getLocalNum();
 

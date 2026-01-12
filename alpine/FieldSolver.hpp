@@ -2,6 +2,7 @@
 #define IPPL_FIELD_SOLVER_H
 
 #include <memory>
+#include <filesystem>
 
 #include "Manager/BaseManager.h"
 #include "Manager/FieldSolverBase.h"
@@ -102,14 +103,13 @@ public:
             }
 
             if (ippl::Comm->rank() == 0) {
+                std::filesystem::create_directory("data_CG");
                 std::stringstream fname;
                 if ((this->getStype() == "CG") || (this->getStype() == "FEM") ||
                     (this->getStype() == "FEM_PRECON")) {
                     fname << "data_CG/CG_";
                 } else {
-                    fname << "data_";
-                    fname << preconditioner_params_m[0];
-                    fname << "/";
+                    fname << "data_CG/";
                     fname << preconditioner_params_m[0];
                     fname << "_";
                 }
