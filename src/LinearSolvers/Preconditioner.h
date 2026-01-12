@@ -296,6 +296,15 @@ namespace ippl {
         }
 
         Field operator()(Field& r) override {
+
+            // In the FEM solver, which uses the preconditioner, 
+            // we re-use a resultField to avoid allocating new
+            // memory at every iteration.
+            // In order for the operator calls to not rewrite
+            // on this same field over and over when calling 
+            // the operators (upper, diag, inverse, lower, etc)
+            // we need deep copies to the preconditioner fields.
+
             g_m = 0;
             for (unsigned int j = 0; j < innerloops_m; ++j) {
                 ULg_m = upper_and_lower_m(g_m);
@@ -356,6 +365,14 @@ namespace ippl {
         }
 
         Field operator()(Field& r) override {
+            // In the FEM solver, which uses the preconditioner, 
+            // we re-use a resultField to avoid allocating new
+            // memory at every iteration.
+            // In order for the operator calls to not rewrite
+            // on this same field over and over when calling 
+            // the operators (upper, diag, inverse, lower, etc)
+            // we need deep copies to the preconditioner fields.
+
             g_m = 0;
             g_old_m = 0;
 
@@ -425,6 +442,14 @@ namespace ippl {
             Field x(mesh, layout);
 
             x = 0;  // Initial guess
+
+            // In the FEM solver, which uses the preconditioner, 
+            // we re-use a resultField to avoid allocating new
+            // memory at every iteration.
+            // In order for the operator calls to not rewrite
+            // on this same field over and over when calling 
+            // the operators (upper, diag, inverse, lower, etc)
+            // we need deep copies to the preconditioner fields.
 
             for (unsigned int k = 0; k < outerloops_m; ++k) {
                 UL_m = upper_m(x);
@@ -528,6 +553,14 @@ namespace ippl {
 
             static IpplTimings::TimerRef loopTimer = IpplTimings::getTimer("SSOR loop");
             IpplTimings::startTimer(loopTimer);
+
+            // In the FEM solver, which uses the preconditioner, 
+            // we re-use a resultField to avoid allocating new
+            // memory at every iteration.
+            // In order for the operator calls to not rewrite
+            // on this same field over and over when calling 
+            // the operators (upper, diag, inverse, lower, etc)
+            // we need deep copies to the preconditioner fields.
 
             // The inverse diagonal is applied to the
             // vector itself to return the result usually.
