@@ -7,7 +7,7 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::LagrangeSpace(
         UniformCartesian<T, Dim>& mesh, ElementType& ref_element, const QuadratureType& quadrature,
-        const Layout_t& layout)
+        Layout_t& layout)
         : FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
                              QuadratureType, FieldLHS, FieldRHS>(mesh, ref_element, quadrature) {
         // Assert that the dimension is either 1, 2 or 3.
@@ -16,6 +16,9 @@ namespace ippl {
 
         // Initialize the elementIndices view
         initializeElementIndices(layout);
+
+        // Initialize the resultField
+        resultField.initialize(mesh, layout);
     }
 
     // LagrangeSpace constructor, which calls the FiniteElementSpace constructor.
@@ -36,20 +39,23 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::initialize(
-        UniformCartesian<T, Dim>& mesh, const Layout_t& layout)
+        UniformCartesian<T, Dim>& mesh, Layout_t& layout)
     {
         FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
                            QuadratureType, FieldLHS, FieldRHS>::setMesh(mesh);
 
         // Initialize the elementIndices view
         initializeElementIndices(layout);
+
+        // Initialize the resultField
+        resultField.initialize(mesh, layout);
     }
 
     // Initialize element indices Kokkos View by distributing elements among MPI ranks.
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-                       FieldRHS>::initializeElementIndices(const Layout_t& layout) {
+                       FieldRHS>::initializeElementIndices(Layout_t& layout) {
         const auto& ldom = layout.getLocalNDIndex();
         int npoints      = ldom.size();
         auto first       = ldom.first();
@@ -347,19 +353,22 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-                           FieldRHS>::evaluateAx(FieldLHS& field, F& evalFunction) const {
+                           FieldRHS>::evaluateAx(FieldLHS& field, F& evalFunction) {
         Inform m("");
 
-        // start a timer
+        // declare timers
         static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
+        static IpplTimings::TimerRef evalAx_outer = IpplTimings::getTimer("evaluateAx: outer loop");
+        static IpplTimings::TimerRef evalAx_bc = IpplTimings::getTimer("evaluateAx: BCs");
+        static IpplTimings::TimerRef evalAx_setup = IpplTimings::getTimer("evaluateAx: setup");
+        static IpplTimings::TimerRef accumHalo = IpplTimings::getTimer("evaluateAx: accumHalo");
+
+        // start a timer
         IpplTimings::startTimer(evalAx);
+        IpplTimings::startTimer(evalAx_setup);
 
-        // get number of ghost cells in field
-        const int nghost = field.getNghost();
-
-        // create a new field for result with view initialized to zero (views are initialized to
-        // zero by default)
-        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
+        // set result field to 0
+        resultField = 0;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -401,21 +410,24 @@ namespace ippl {
         BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
         FieldBC bcType = bcField[0]->getBCType();
 
-        // Get domain information
+        // Get domain and ghost cell information
         auto ldom = (field.getLayout()).getLocalNDIndex();
+        // Get number of ghost cells in field
+        const int nghost = field.getNghost();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        IpplTimings::stopTimer(evalAx_setup);
+
         // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
-        IpplTimings::startTimer(outer_loop);
+        IpplTimings::startTimer(evalAx_outer);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+                const size_t elementIndex                        = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -471,16 +483,22 @@ namespace ippl {
                     }
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
+        IpplTimings::stopTimer(evalAx_outer);
+
+        // start a timer
+        IpplTimings::startTimer(evalAx_bc);
 
         if (bcType == PERIODIC_FACE) {
+            IpplTimings::startTimer(accumHalo);
             resultField.accumulateHalo();
+            IpplTimings::stopTimer(accumHalo);
             bcField.apply(resultField);
             bcField.assignGhostToPhysical(resultField);
         } else {
             resultField.accumulateHalo_noghost();
         }
 
+        IpplTimings::stopTimer(evalAx_bc);
         IpplTimings::stopTimer(evalAx);
 
         return resultField;
@@ -490,19 +508,17 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-                           FieldRHS>::evaluateAx_lower(FieldLHS& field, F& evalFunction) const {
+                           FieldRHS>::evaluateAx_lower(FieldLHS& field, F& evalFunction) {
         Inform m("");
 
+        // declare timer
+        static IpplTimings::TimerRef evalAx_lower = IpplTimings::getTimer("evaluateAxLower");
+
         // start a timer
-        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
-        IpplTimings::startTimer(evalAx);
+        IpplTimings::startTimer(evalAx_lower);
 
-        // get number of ghost cells in field
-        const int nghost = field.getNghost();
-
-        // create a new field for result with view initialized to zero (views are initialized to
-        // zero by default)
-        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
+        // set result field to 0
+        resultField = 0;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -546,19 +562,17 @@ namespace ippl {
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
+        // Get number of ghost cells in field
+        const int nghost = field.getNghost();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
-        IpplTimings::startTimer(outer_loop);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+                const size_t elementIndex                        = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -618,7 +632,6 @@ namespace ippl {
                     }
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
 
         if (bcType == PERIODIC_FACE) {
             resultField.accumulateHalo();
@@ -628,7 +641,7 @@ namespace ippl {
             resultField.accumulateHalo_noghost();
         }
 
-        IpplTimings::stopTimer(evalAx);
+        IpplTimings::stopTimer(evalAx_lower);
 
         return resultField;
     }
@@ -637,19 +650,17 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-                           FieldRHS>::evaluateAx_upper(FieldLHS& field, F& evalFunction) const {
+                           FieldRHS>::evaluateAx_upper(FieldLHS& field, F& evalFunction) {
         Inform m("");
 
+        // declare timer
+        static IpplTimings::TimerRef evalAx_upper = IpplTimings::getTimer("evaluateAxUpper");
+
         // start a timer
-        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
-        IpplTimings::startTimer(evalAx);
+        IpplTimings::startTimer(evalAx_upper);
 
-        // get number of ghost cells in field
-        const int nghost = field.getNghost();
-
-        // create a new field for result with view initialized to zero (views are initialized to
-        // zero by default)
-        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
+        // set result field to 0
+        resultField = 0;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -693,13 +704,11 @@ namespace ippl {
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
+        // Get number of ghost cells in field
+        const int nghost = field.getNghost();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
-        IpplTimings::startTimer(outer_loop);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
@@ -765,7 +774,6 @@ namespace ippl {
                     }
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
 
         if (bcType == PERIODIC_FACE) {
             resultField.accumulateHalo();
@@ -775,7 +783,7 @@ namespace ippl {
             resultField.accumulateHalo_noghost();
         }
 
-        IpplTimings::stopTimer(evalAx);
+        IpplTimings::stopTimer(evalAx_upper);
 
         return resultField;
     }
@@ -784,19 +792,17 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-                           FieldRHS>::evaluateAx_upperlower(FieldLHS& field, F& evalFunction) const {
+                           FieldRHS>::evaluateAx_upperlower(FieldLHS& field, F& evalFunction) {
         Inform m("");
 
+        // declare timer
+        static IpplTimings::TimerRef evalAx_upperlower = IpplTimings::getTimer("evaluateAxUpperLower");
+
         // start a timer
-        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
-        IpplTimings::startTimer(evalAx);
+        IpplTimings::startTimer(evalAx_upperlower);
 
-        // get number of ghost cells in field
-        const int nghost = field.getNghost();
-
-        // create a new field for result with view initialized to zero (views are initialized to
-        // zero by default)
-        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
+        // set result field to 0
+        resultField = 0;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -840,19 +846,17 @@ namespace ippl {
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
+        // Get number of ghost cells in field
+        const int nghost = field.getNghost();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
-        IpplTimings::startTimer(outer_loop);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+                const size_t elementIndex                        = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -909,7 +913,6 @@ namespace ippl {
                     }
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
 
         if (bcType == PERIODIC_FACE) {
             resultField.accumulateHalo();
@@ -919,7 +922,7 @@ namespace ippl {
             resultField.accumulateHalo_noghost();
         }
 
-        IpplTimings::stopTimer(evalAx);
+        IpplTimings::stopTimer(evalAx_upperlower);
 
         return resultField;
     }
@@ -928,19 +931,17 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-                           FieldRHS>::evaluateAx_inversediag(FieldLHS& field, F& evalFunction) const {
+                           FieldRHS>::evaluateAx_inversediag(FieldLHS& field, F& evalFunction) {
         Inform m("");
 
+        // declare timer
+        static IpplTimings::TimerRef evalAx_invdiag = IpplTimings::getTimer("evaluateAxInvDiag");
+
         // start a timer
-        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
-        IpplTimings::startTimer(evalAx);
+        IpplTimings::startTimer(evalAx_invdiag);
 
-        // get number of ghost cells in field
-        const int nghost = field.getNghost();
-
-        // create a new field for result with view initialized to zero (views are initialized to
-        // zero by default)
-        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
+        // set result field to 0
+        resultField = 0;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -982,19 +983,17 @@ namespace ippl {
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
+        // Get number of ghost cells in field
+        const int nghost = field.getNghost();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
-        IpplTimings::startTimer(outer_loop);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+                const size_t elementIndex                        = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -1052,9 +1051,7 @@ namespace ippl {
                     apply(resultView, args) = (1.0 / apply(resultView, args)) * apply(view, args);
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
-
-        IpplTimings::stopTimer(evalAx);
+        IpplTimings::stopTimer(evalAx_invdiag);
 
         return resultField;
     }
@@ -1063,19 +1060,17 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-                           FieldRHS>::evaluateAx_diag(FieldLHS& field, F& evalFunction) const {
+                           FieldRHS>::evaluateAx_diag(FieldLHS& field, F& evalFunction) {
         Inform m("");
+        
+        // declare timer
+        static IpplTimings::TimerRef evalAx_diag = IpplTimings::getTimer("evaluateAxDiag");
 
         // start a timer
-        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
-        IpplTimings::startTimer(evalAx);
+        IpplTimings::startTimer(evalAx_diag);
 
-        // get number of ghost cells in field
-        const int nghost = field.getNghost();
-
-        // create a new field for result with view initialized to zero (views are initialized to
-        // zero by default)
-        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
+        // set result field to 0
+        resultField = 0;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -1117,19 +1112,17 @@ namespace ippl {
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
+        // Get number of ghost cells in field
+        const int nghost = field.getNghost();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
-
-        // start a timer
-        static IpplTimings::TimerRef outer_loop = IpplTimings::getTimer("evaluateAx: outer loop");
-        IpplTimings::startTimer(outer_loop);
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+                const size_t elementIndex                        = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -1169,7 +1162,6 @@ namespace ippl {
                     apply(resultView, I_nd) += A_K_diag[i] * apply(view, I_nd);
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
 
         if (bcType == PERIODIC_FACE) {
             resultField.accumulateHalo();
@@ -1179,7 +1171,7 @@ namespace ippl {
             resultField.accumulateHalo_noghost();
         }
 
-        IpplTimings::stopTimer(evalAx);
+        IpplTimings::stopTimer(evalAx_diag);
 
         return resultField;
     }
@@ -1188,15 +1180,17 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     template <typename F>
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-                           FieldRHS>::evaluateAx_lift(FieldLHS& field, F& evalFunction) const {
+                           FieldRHS>::evaluateAx_lift(FieldLHS& field, F& evalFunction) {
         Inform m("");
 
-        // get number of ghost cells in field
-        const int nghost = field.getNghost();
+        // declare timer
+        static IpplTimings::TimerRef evalLifting = IpplTimings::getTimer("evaluateLifting");
 
-        // create a new field for result with view initialized to zero (views are initialized to
-        // zero by default)
-        FieldLHS resultField(field.get_mesh(), field.getLayout(), nghost);
+        // start a timer
+        IpplTimings::startTimer(evalLifting);
+
+        // set result field to 0
+        resultField = 0.0;
 
         // List of quadrature weights
         const Vector<T, QuadratureType::numElementNodes> w =
@@ -1236,6 +1230,8 @@ namespace ippl {
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
+        // Get number of ghost cells in field
+        const int nghost = field.getNghost();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
@@ -1292,6 +1288,8 @@ namespace ippl {
             });
         resultField.accumulateHalo();
 
+        IpplTimings::stopTimer(evalLifting);
+
         return resultField;
     }
 
@@ -1301,8 +1299,10 @@ namespace ippl {
                        FieldRHS>::evaluateLoadVector(FieldRHS& field) const {
         Inform m("");
 
-        // start a timer
+        // declare timer
         static IpplTimings::TimerRef evalLoadV = IpplTimings::getTimer("evaluateLoadVector");
+
+        // start a timer
         IpplTimings::startTimer(evalLoadV);
 
         // List of quadrature weights
@@ -1347,16 +1347,11 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
-        // start a timer
-        static IpplTimings::TimerRef outer_loop =
-            IpplTimings::getTimer("evaluateLoadVec: outer loop");
-        IpplTimings::startTimer(outer_loop);
-
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
-                const size_t elementIndex                              = elementIndices(index);
+                const size_t elementIndex                        = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
 
@@ -1404,8 +1399,6 @@ namespace ippl {
 
                 }
             });
-        IpplTimings::stopTimer(outer_loop);
-
         temp_field.accumulateHalo();
 
         if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
@@ -1421,6 +1414,79 @@ namespace ippl {
     ///////////////////////////////////////////////////////////////////////
     /// Functions for error computations, etc. ////////////////////////////
     ///////////////////////////////////////////////////////////////////////
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                       FieldRHS>::evaluateLumpedMass(FieldRHS& field) const {
+        // List of quadrature weights
+        const Vector<T, QuadratureType::numElementNodes> w =
+            this->quadrature_m.getWeightsForRefElement();
+
+        // List of quadrature nodes
+        const Vector<point_t, QuadratureType::numElementNodes> q =
+            this->quadrature_m.getIntegrationNodesForRefElement();
+
+        const indices_t zeroNdIndex = Vector<size_t, Dim>(0);
+
+        // Evaluate the basis functions for the DOF at the quadrature nodes
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> basis_q;
+        for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+            for (size_t i = 0; i < numElementDOFs; ++i) {
+                basis_q[k][i] = this->evaluateRefElementShapeFunction(i, q[k]);
+            }
+        }
+
+        // Absolute value of det Phi_K
+        const T absDetDPhi = Kokkos::abs(this->ref_element_m.getDeterminantOfTransformationJacobian(
+            this->getElementMeshVertexPoints(zeroNdIndex)));
+
+        // Get field data and make it atomic,
+        // since it will be added to during the kokkos loop
+        AtomicViewType atomic_view = field.getView();
+
+        // Get domain information and ghost cells
+        auto ldom        = (field.getLayout()).getLocalNDIndex();
+        const int nghost = field.getNghost();
+
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+
+        // Loop over elements to compute contributions
+        Kokkos::parallel_for(
+            "Loop over elements", policy_type(0, elementIndices.extent(0)),
+            KOKKOS_CLASS_LAMBDA(size_t index) {
+                const size_t elementIndex                        = elementIndices(index);
+                const Vector<size_t, numElementDOFs> global_dofs =
+                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
+
+                size_t i, I;
+
+                // 1. Compute b_K
+                for (i = 0; i < numElementDOFs; ++i) {
+                    I = global_dofs[i];
+
+                    // TODO fix for higher order
+                    auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+
+                    // calculate the contribution of this element
+                    T contrib = 0;
+                    for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
+                        contrib += w[k] * basis_q[k][i] * absDetDPhi;
+                    }
+
+                    // get the appropriate index for the Kokkos view of the field
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
+                    }
+
+                    // add the contribution of the element to the field
+                    apply(atomic_view, dof_ndindex_I) += contrib;
+                }
+            });
+        field.accumulateHalo();
+        field.fillHalo();
+    }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
@@ -1745,6 +1811,60 @@ namespace ippl {
         }
 
         return product;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                                           FieldRHS>::point_t
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
+    DeviceStruct::evaluateRefElementShapeFunctionGradient(const size_t& localDOF,
+            const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                                FieldRHS>::point_t& localPoint) const {
+        // TODO fix not order independent, only works for order 1
+        static_assert(Order == 1 && "Only order 1 is supported at the moment");
+
+        // Assert that the local vertex index is valid.
+        assert(localDOF < numElementDOFs && "The local vertex index is invalid");
+
+        assert(this->ref_element_m.isPointInRefElement(localPoint)
+               && "Point is not in reference element");
+
+        // Get the local dof nd_index
+        const vertex_points_t local_vertex_points = this->ref_element_m.getLocalVertices();
+
+        const point_t& local_vertex_point = local_vertex_points[localDOF];
+
+        point_t gradient(1);
+
+        // To construct the gradient we need to loop over the dimensions and multiply the
+        // shape functions in each dimension except the current one. The one of the current
+        // dimension is replaced by the derivative of the shape function in that dimension,
+        // which is either 1 or -1.
+        for (size_t d = 0; d < Dim; d++) {
+            // The variable that accumulates the product of the shape functions.
+            T product = 1;
+
+            for (size_t d2 = 0; d2 < Dim; d2++) {
+                if (d2 == d) {
+                    if (localPoint[d] < local_vertex_point[d]) {
+                        product *= 1;
+                    } else {
+                        product *= -1;
+                    }
+                } else {
+                    if (localPoint[d2] < local_vertex_point[d2]) {
+                        product *= localPoint[d2];
+                    } else {
+                        product *= 1.0 - localPoint[d2];
+                    }
+                }
+            }
+
+            gradient[d] = product;
+        }
+
+        return gradient;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,

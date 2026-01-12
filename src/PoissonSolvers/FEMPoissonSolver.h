@@ -7,24 +7,9 @@
 
 #include "LinearSolvers/PCG.h"
 #include "Poisson.h"
+#include "EvalFunctor.h"
 
 namespace ippl {
-
-    template <typename Tlhs, unsigned Dim, unsigned numElemDOFs>
-    struct EvalFunctor {
-        const Vector<Tlhs, Dim> DPhiInvT;
-        const Tlhs absDetDPhi;
-
-        EvalFunctor(Vector<Tlhs, Dim> DPhiInvT, Tlhs absDetDPhi)
-            : DPhiInvT(DPhiInvT)
-            , absDetDPhi(absDetDPhi) {}
-
-        KOKKOS_FUNCTION auto operator()(
-            const size_t& i, const size_t& j,
-            const Vector<Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k) const {
-            return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
-        }
-    };
 
     /**
      * @brief A solver for the poisson equation using finite element methods and
@@ -64,39 +49,33 @@ namespace ippl {
             , quadrature_m(refElement_m, 0.0, 0.0)
             , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)), Vector<Tlhs, Dim>(0),
                                 Vector<Tlhs, Dim>(0))), refElement_m, quadrature_m)
-        {}
+        {
+            setDefaultParameters();
+        }
 
         FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
-            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout()) {
+            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout())
+        {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
-
-            // start a timer
-            static IpplTimings::TimerRef init = IpplTimings::getTimer("initFEM");
-            IpplTimings::startTimer(init);
-            
-            rhs.fillHalo();
-
-            lagrangeSpace_m.evaluateLoadVector(rhs);
-
-            rhs.fillHalo();
-            
-            IpplTimings::stopTimer(init);
+            pcg_algo_m.initializeFields(rhs.get_mesh(), rhs.getLayout());
         }
 
         void setRhs(rhs_type& rhs) override {
             Base::setRhs(rhs);
 
             lagrangeSpace_m.initialize(rhs.get_mesh(), rhs.getLayout());
+            pcg_algo_m.initializeFields(rhs.get_mesh(), rhs.getLayout());
+        }
 
-            rhs.fillHalo();
-
-            lagrangeSpace_m.evaluateLoadVector(rhs);
-
-            rhs.fillHalo();
+        /**
+         * @brief Return the LagrangeSpace object.
+         */
+        LagrangeType& getSpace() {
+            return lagrangeSpace_m;
         }
 
         /**
@@ -104,9 +83,9 @@ namespace ippl {
          * The problem is described by -laplace(lhs) = rhs
          */
         void solve() override {
-            // start a timer
-            static IpplTimings::TimerRef solve = IpplTimings::getTimer("solve");
-            IpplTimings::startTimer(solve);
+            // create load vector for the problem
+            this->rhs_mp->fillHalo();
+            lagrangeSpace_m.evaluateLoadVector(*(this->rhs_mp));
 
             const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
 
@@ -159,13 +138,6 @@ namespace ippl {
             (this->lhs_mp)->fillHalo();
 
             IpplTimings::stopTimer(pcgTimer);
-
-            int output = this->params_m.template get<int>("output_type");
-            if (output & Base::GRAD) {
-                *(this->grad_mp) = -grad(*(this->lhs_mp));
-            }
-
-            IpplTimings::stopTimer(solve);
         }
 
         /**
@@ -183,6 +155,8 @@ namespace ippl {
 
         /**
          * Query the L2-norm error compared to a given (analytical) sol
+         *
+         * @param analytic the analytical function to compare to, struct with operator()
          * @return L2 error after last solve
          */
         template <typename F>

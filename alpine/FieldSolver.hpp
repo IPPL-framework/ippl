@@ -2,6 +2,7 @@
 #define IPPL_FIELD_SOLVER_H
 
 #include <memory>
+#include <filesystem>
 
 #include "Manager/BaseManager.h"
 #include "Manager/FieldSolverBase.h"
@@ -49,6 +50,10 @@ public:
             initPCGSolver();
         } else if (this->getStype() == "OPEN") {
             initOpenSolver();
+        } else if (this->getStype() == "FEM") {
+            initFEMSolver();
+        } else if (this->getStype() == "FEM_PRECON") {
+            initFEMPreconSolver();
         } else {
             m << "No solver matches the argument" << endl;
         }
@@ -58,28 +63,53 @@ public:
         // CG requires explicit periodic boundary conditions while the periodic Poisson solver
         // simply assumes them
         typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
-        if (this->getStype() == "CG" || this->getStype() == "PCG") {
+        if ((this->getStype() == "CG") || (this->getStype() == "PCG") || (this->getStype() == "FEM") ||
+            (this->getStype() == "FEM_PRECON")) {
             bc_type allPeriodic;
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
+                allPeriodic[i]  = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
             }
             phi_m->setFieldBC(allPeriodic);
+            if ((this->getStype() == "FEM") || (this->getStype() == "FEM_PRECON")) {
+                rho_m->setFieldBC(allPeriodic);
+            }
         }
     }
 
     void runSolver() override {
-        if ((this->getStype() == "CG") || (this->getStype() == "PCG")) {
-            CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(this->getSolver());
-            solver.solve();
+        if ((this->getStype() == "CG") || (this->getStype() == "PCG") || (this->getStype() == "FEM") ||
+            (this->getStype() == "FEM_PRECON")) {
+            int iterations = 0;
+            int residue = 0;
+
+            if (this->getStype() == "FEM") {
+                FEMSolver_t<T, Dim>& solver = std::get<FEMSolver_t<T, Dim>>(this->getSolver());
+                solver.solve();
+
+                iterations = solver.getIterationCount();
+                residue    = solver.getResidue();
+            } else if (this->getStype() == "FEM_PRECON") {
+                FEMPreconSolver_t<T, Dim>& solver = std::get<FEMPreconSolver_t<T, Dim>>(this->getSolver());
+                solver.solve();
+
+                iterations = solver.getIterationCount();
+                residue    = solver.getResidue();
+            } else {
+                CGSolver_t<T, Dim>& solver = std::get<CGSolver_t<T, Dim>>(this->getSolver());
+                solver.solve();
+
+                iterations = solver.getIterationCount();
+                residue    = solver.getResidue();
+            }
 
             if (ippl::Comm->rank() == 0) {
+                std::filesystem::create_directory("data_CG");
                 std::stringstream fname;
-                if (this->getStype() == "CG") {
+                if ((this->getStype() == "CG") || (this->getStype() == "FEM") ||
+                    (this->getStype() == "FEM_PRECON")) {
                     fname << "data_CG/CG_";
                 } else {
-                    fname << "data_";
-                    fname << preconditioner_params_m[0];
-                    fname << "/";
+                    fname << "data_CG/";
                     fname << preconditioner_params_m[0];
                     fname << "_";
                 }
@@ -87,14 +117,13 @@ public:
                 fname << ".csv";
 
                 Inform log(NULL, fname.str().c_str(), Inform::APPEND);
-                int iterations = solver.getIterationCount();
                 // Assume the dummy solve is the first call
                 if (iterations == 0) {
                     log << "residue,iterations" << endl;
                 }
                 // Don't print the dummy solve
                 if (iterations > 0) {
-                    log << solver.getResidue() << "," << iterations << endl;
+                    log << residue << "," << iterations << endl;
                 }
             }
             ippl::Comm->barrier();
@@ -124,9 +153,11 @@ public:
 
         solver.setRhs(*rho_m);
 
-        if constexpr (std::is_same_v<Solver, CGSolver_t<T, Dim>>) {
-            // The CG solver computes the potential directly and
-            // uses this to get the electric field
+        if constexpr ((std::is_same_v<Solver, CGSolver_t<T, Dim>>) || 
+                     (std::is_same_v<Solver, FEMSolver_t<T, Dim>>) || 
+                     (std::is_same_v<Solver, FEMPreconSolver_t<T, Dim>>)) {
+            // The CG solver and FEMPoissonSolver compute the potential 
+            // directly and use this to get the electric field
             solver.setLhs(*phi_m);
             solver.setGradient(*E_m);
         } else {
@@ -157,7 +188,7 @@ public:
         ippl::ParameterList sp;
         sp.add("output_type", CGSolver_t<T, Dim>::GRAD);
         // Increase tolerance in the 1D case
-        sp.add("tolerance", 1e-10);
+        sp.add("tolerance", 1e-4);
 
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
@@ -167,7 +198,7 @@ public:
         sp.add("solver", "preconditioned");
         sp.add("output_type", CGSolver_t<T, Dim>::GRAD);
         // Increase tolerance in the 1D case
-        sp.add("tolerance", 1e-10);
+        sp.add("tolerance", 1e-4);
 
         int arg = 0;
 
@@ -210,6 +241,61 @@ public:
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
 
+    void initFEMSolver() {
+        ippl::ParameterList sp;
+        sp.add("output_type", FEMSolver_t<T, Dim>::SOL);
+        sp.add("tolerance", 1e-4);
+
+        initSolverWithParams<FEMSolver_t<T, Dim>>(sp);
+    }
+
+    void initFEMPreconSolver() {
+        ippl::ParameterList sp;
+        sp.add("solver", "preconditioned");
+        sp.add("output_type", FEMPreconSolver_t<T, Dim>::SOL);
+        sp.add("tolerance", 1e-4);
+
+        int arg = 0;
+
+        int gauss_seidel_inner_iterations;
+        int gauss_seidel_outer_iterations;
+        int newton_level;
+        int chebyshev_degree;
+        int richardson_iterations;
+        int communication = 0;
+        double ssor_omega;
+        std::string preconditioner_type = "";
+
+        preconditioner_type = preconditioner_params_m[arg++];
+        if (preconditioner_type == "newton") {
+            newton_level = std::stoi(preconditioner_params_m[arg++]);
+        } else if (preconditioner_type == "chebyshev") {
+            chebyshev_degree = std::stoi(preconditioner_params_m[arg++]);
+        } else if (preconditioner_type == "richardson") {
+            richardson_iterations = std::stoi(preconditioner_params_m[arg++]);
+            communication         = std::stoi(preconditioner_params_m[arg++]);
+        } else if (preconditioner_type == "gauss-seidel") {
+            gauss_seidel_inner_iterations = std::stoi(preconditioner_params_m[arg++]);
+            gauss_seidel_outer_iterations = std::stoi(preconditioner_params_m[arg++]);
+            communication                 = std::stoi(preconditioner_params_m[arg++]);
+        } else if (preconditioner_type == "ssor") {
+            gauss_seidel_inner_iterations = std::stoi(preconditioner_params_m[arg++]);
+            gauss_seidel_outer_iterations = std::stoi(preconditioner_params_m[arg++]);
+            ssor_omega                    = std::stod(preconditioner_params_m[arg++]);
+        }
+
+        sp.add("preconditioner_type", preconditioner_type);
+        sp.add("gauss_seidel_inner_iterations", gauss_seidel_inner_iterations);
+        sp.add("gauss_seidel_outer_iterations", gauss_seidel_outer_iterations);
+        sp.add("newton_level", newton_level);
+        sp.add("chebyshev_degree", chebyshev_degree);
+        sp.add("richardson_iterations", richardson_iterations);
+        sp.add("communication", communication);
+        sp.add("ssor_omega", ssor_omega);
+        
+        initSolverWithParams<FEMPreconSolver_t<T, Dim>>(sp);
+    }
+
     void initTGSolver() {
         if constexpr (Dim == 3) {
             ippl::ParameterList sp;
@@ -242,6 +328,16 @@ public:
             initSolverWithParams<OpenSolver_t<T, Dim>>(sp);
         } else {
             throw std::runtime_error("Unsupported dimensionality for OPEN solver");
+        }
+    }
+
+    auto& getSpace() {
+        if (this->getStype() == "FEM") {
+            return std::get<FEMSolver_t<T, Dim>>(this->getSolver()).getSpace();
+        } else if (this->getStype() == "FEM_PRECON") {
+            return std::get<FEMPreconSolver_t<T, Dim>>(this->getSolver()).getSpace();
+        } else {
+            throw std::runtime_error("getSpace() called on non-FEM solver");
         }
     }
 };

@@ -15,20 +15,37 @@ namespace ippl {
         using T                = typename BareField::value_type;
         constexpr unsigned Dim = BareField::dim;
 
+        static IpplTimings::TimerRef setup = IpplTimings::getTimer("inner_setup");
+        static IpplTimings::TimerRef ippl_red = IpplTimings::getTimer("ippl_reduce");
+        static IpplTimings::TimerRef mpi_red = IpplTimings::getTimer("mpi_reduce");
+
+        IpplTimings::startTimer(setup);
+
         T sum                  = 0;
-        auto layout            = f1.getLayout();
-        auto view1             = f1.getView();
-        auto view2             = f2.getView();
+        auto& layout            = f1.getLayout();
+        auto& view1             = f1.getView();
+        auto& view2             = f2.getView();
         using exec_space       = typename BareField::execution_space;
         using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
+
+        IpplTimings::stopTimer(setup);
+        IpplTimings::startTimer(ippl_red);
+
         ippl::parallel_reduce(
             "Field::innerProduct(Field&, Field&)", f1.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const index_array_type& args, T& val) {
                 val += apply(view1, args) * apply(view2, args);
             },
             Kokkos::Sum<T>(sum));
+
+        IpplTimings::stopTimer(ippl_red);
+        IpplTimings::startTimer(mpi_red);
+
         T globalSum = 0;
         layout.comm.allreduce(sum, globalSum, 1, std::plus<T>());
+
+        IpplTimings::stopTimer(mpi_red);
+
         return globalSum;
     }
 
@@ -44,8 +61,8 @@ namespace ippl {
         constexpr unsigned Dim = BareField::dim;
 
         T local                = 0;
-        auto layout            = field.getLayout();
-        auto view              = field.getView();
+        auto& layout            = field.getLayout();
+        auto& view              = field.getView();
         using exec_space       = typename BareField::execution_space;
         using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
         switch (p) {

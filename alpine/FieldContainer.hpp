@@ -63,7 +63,7 @@ public:
     void initializeFields(std::string stype_m = "") {
         E_m.initialize(mesh_m, fl_m);
         rho_m.initialize(mesh_m, fl_m);
-        if (stype_m == "CG" || stype_m == "PCG") {
+        if ((stype_m == "CG") || (stype_m == "PCG") || (stype_m == "FEM") || (stype_m == "FEM_PRECON")) {
             phi_m.initialize(mesh_m, fl_m);
         }
     }

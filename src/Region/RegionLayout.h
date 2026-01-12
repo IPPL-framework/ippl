@@ -52,7 +52,7 @@ namespace ippl {
             // Constructor which takes a FieldLayout and a MeshType
             // This one compares the domain of the FieldLayout and the domain of
             // the MeshType to determine the centering of the index space.
-            RegionLayout(const FieldLayout<Dim>&, const Mesh&);
+            RegionLayout(const FieldLayout<Dim>&, const Mesh&, bool node = false);
 
             ~RegionLayout() = default;
 
@@ -85,6 +85,8 @@ namespace ippl {
             host_mirror_type hLocalRegions_m;
 
             view_type subdomains_m;
+
+            bool node_m;
         };
 
         template <typename T, unsigned Dim, class Mesh>

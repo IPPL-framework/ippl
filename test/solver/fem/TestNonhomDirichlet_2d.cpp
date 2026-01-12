@@ -111,6 +111,9 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     params.add("tolerance", 1e-13);
     params.add("max_iterations", 2000);
 
+    // turn on computation of grad
+    params.add("output_type", ippl::FEMPoissonSolver<Field_t, Field_t>::SOL);
+
     solver.mergeParameters(params);
 
     // solve the problem

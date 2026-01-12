@@ -18,8 +18,8 @@ private:
     PLayout_t<T, Dim> pl_m;
 
 public:
-    ParticleContainer(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& FL)
-        : pl_m(FL, mesh) {
+    ParticleContainer(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& FL, bool fem = false)
+        : pl_m(FL, mesh, fem) {
         this->initialize(pl_m);
         registerAttributes();
         setupBCs();

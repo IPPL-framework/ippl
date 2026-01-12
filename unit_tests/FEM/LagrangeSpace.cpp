@@ -45,6 +45,8 @@ public:
     using BetterQuadratureType = ippl::GaussLegendreQuadrature<T, 5, ElementType>;
     using FieldType            = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
     using BCType               = ippl::BConds<FieldType, Dim>;
+    
+    using FieldLayoutType      = ippl::FieldLayout<Dim>;
 
     using LagrangeType = ippl::LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldType, FieldType>;
     using LagrangeTypeBetter = ippl::LagrangeSpace<T, Dim, Order, ElementType, BetterQuadratureType, FieldType, FieldType>;
@@ -59,22 +61,17 @@ public:
                         ippl::Vector<T, Dim>(0.5), ippl::Vector<T, Dim>(-1.0))
         , quadrature(ref_element)
         , betterQuadrature(ref_element)
-        , lagrangeSpace(mesh, ref_element, quadrature,
-                        ippl::FieldLayout<Dim>(MPI_COMM_WORLD,
-                                               ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(3)),
-                                               std::array<bool, Dim>{true}))
+        , layout(MPI_COMM_WORLD, ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(3)),
+                 std::array<bool, Dim>{true})
+        , layout_bigger(MPI_COMM_WORLD, ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)),
+                        std::array<bool, Dim>{true})
+        , lagrangeSpace(mesh, ref_element, quadrature, layout)
         , lagrangeSpaceBigger(
-              biggerMesh, ref_element, quadrature,
-              ippl::FieldLayout<Dim>(MPI_COMM_WORLD,
-                                     ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)),
-                                     std::array<bool, Dim>{true}))
+              biggerMesh, ref_element, quadrature, layout_bigger)
         , symmetricLagrangeSpace(
-              symmetricMesh, ref_element, betterQuadrature,
-              ippl::FieldLayout<Dim>(MPI_COMM_WORLD,
-                                     ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)),
-                                     std::array<bool, Dim>{true})) {
+              symmetricMesh, ref_element, betterQuadrature, layout_bigger)
+        {}
         // fill the global reference DOFs
-    }
 
     ElementType ref_element;
     MeshType mesh;
@@ -82,9 +79,11 @@ public:
     MeshType symmetricMesh;
     const QuadratureType quadrature;
     const BetterQuadratureType betterQuadrature;
-    const LagrangeType lagrangeSpace;
-    const LagrangeType lagrangeSpaceBigger;
-    const LagrangeTypeBetter symmetricLagrangeSpace;
+    FieldLayoutType layout;
+    FieldLayoutType layout_bigger;
+    LagrangeType lagrangeSpace;
+    LagrangeType lagrangeSpaceBigger;
+    LagrangeTypeBetter symmetricLagrangeSpace;
 };
 
 using Precisions = TestParams::Precisions;
@@ -569,7 +568,7 @@ TYPED_TEST(LagrangeSpaceTest, evaluateAx) {
     using LagrangeType = typename TestFixture::LagrangeType;
 
     const auto& refElement           = this->ref_element;
-    const auto& lagrangeSpace        = this->lagrangeSpaceBigger;
+    auto& lagrangeSpace        = this->lagrangeSpaceBigger;
     auto mesh                        = this->biggerMesh;
     static constexpr std::size_t dim = TestFixture::dim;
     const std::size_t& order         = lagrangeSpace.order;

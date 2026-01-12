@@ -13,6 +13,7 @@
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
+#include "FEM/FEMInterpolate.hpp"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
@@ -108,38 +109,100 @@ public:
         // Update time
         this->time_m += this->dt_m;
         this->it_m++;
-        // wrtie solution to output file
+        // write solution to output file
         this->dump();
 
         Inform m("Post-step:");
         m << "Finished time step: " << this->it_m << " time: " << this->time_m << endl;
     }
 
-    void grid2par() override { gatherCIC(); }
+    void grid2par() override { 
+        if ((getSolver() == "FEM") || (getSolver() == "FEM_PRECON")) {
+            gatherFEM();
+        } else {
+            gatherCIC();
+        }
+    }
 
     void gatherCIC() {
         gather(this->pcontainer_m->E, this->fcontainer_m->getE(), this->pcontainer_m->R);
     }
 
-    void par2grid() override { scatterCIC(); }
+    void gatherFEM() {
+        using exec_space = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+        size_type localParticles = this->pcontainer_m->getLocalNum();
+        policy_type iteration_policy(0, localParticles);
+
+        // get the Finite Element space from the solver, 
+        // since the interpolation depends on the space
+        auto* solver = dynamic_cast<FieldSolver_t*>(this->fsolver_m.get());
+        auto& space = solver->getSpace();
+
+        interpolate_grad_to_diracs(this->pcontainer_m->E, this->fcontainer_m->getPhi(),
+                                   this->pcontainer_m->R, space, iteration_policy);
+    }
+
+    void par2grid() override {
+        if ((getSolver() == "FEM") || (getSolver() == "FEM_PRECON")) {
+            scatterFEM();
+        } else {
+            scatterCIC();
+        }
+    }
 
     void scatterCIC() {
         Inform m("scatter ");
+
         this->fcontainer_m->getRho() = 0.0;
 
         ippl::ParticleAttrib<double>* q          = &this->pcontainer_m->q;
         typename Base::particle_position_type* R = &this->pcontainer_m->R;
         Field_t<Dim>* rho                        = &this->fcontainer_m->getRho();
         double Q                                 = Q_m;
-        Vector_t<double, Dim> rmin               = rmin_m;
-        Vector_t<double, Dim> rmax               = rmax_m;
-        Vector_t<double, Dim> hr                 = hr_m;
 
         scatter(*q, *rho, *R);
-        double relError = std::fabs((Q - (*rho).sum()) / Q);
 
+        double relError = std::fabs((Q - (*rho).sum()) / Q);
         m << relError << endl;
 
+        checkChargeConservation(relError, m);
+
+        getDensity(rho);
+    }
+
+    void scatterFEM() {
+        Inform m("scatter ");
+
+        this->fcontainer_m->getRho() = 0.0;
+
+        ippl::ParticleAttrib<double>* q          = &this->pcontainer_m->q;
+        typename Base::particle_position_type* R = &this->pcontainer_m->R;
+        Field_t<Dim>* rho                        = &this->fcontainer_m->getRho();
+        double Q                                 = Q_m;
+        size_type localParticles                 = this->pcontainer_m->getLocalNum();
+
+        using exec_space = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+        policy_type iteration_policy(0, localParticles);
+
+        // get the Finite Element space from the solver, 
+        // since the interpolation depends on the space
+        auto* solver = dynamic_cast<FieldSolver_t*>(this->fsolver_m.get());
+        auto& space = solver->getSpace();
+
+        assemble_rhs_from_particles(*q, *rho, *R, space, iteration_policy);
+
+        double relError = std::fabs((Q - (*rho).sum()) / Q);
+        m << relError << endl;
+
+        double num = 1e-14;
+        checkChargeConservation(num, m);
+
+        getDensity(rho);
+    }
+
+    void checkChargeConservation(double& relError, Inform& m) {
         size_type TotalParticles = 0;
         size_type localParticles = this->pcontainer_m->getLocalNum();
 
@@ -154,11 +217,18 @@ public:
                 ippl::Comm->abort();
             }
         }
+    }
 
-        double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
-        (*rho)            = (*rho) / cellVolume;
+    void getDensity(Field_t<Dim>* rho) {
+        Vector_t<double, Dim> rmin               = rmin_m;
+        Vector_t<double, Dim> rmax               = rmax_m;
+        Vector_t<double, Dim> hr                 = this->hr_m;
+        double Q                                 = Q_m;
 
-        rhoNorm_m = norm(*rho);
+        if ((this->fsolver_m->getStype() != "FEM") && (this->fsolver_m->getStype() != "FEM_PRECON")) {
+            double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
+            (*rho)            = (*rho) / cellVolume;
+        }
 
         // rho = rho_e - rho_i (only if periodic BCs)
         if (this->fsolver_m->getStype() != "OPEN") {

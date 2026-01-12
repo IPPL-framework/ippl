@@ -105,7 +105,7 @@ public:
     return f;
   }
 
-  static Space make_space(Mesh_t& mesh, const ippl::FieldLayout<dim>& layout) {
+  static Space make_space(Mesh_t& mesh, ippl::FieldLayout<dim>& layout) {
     auto elem = ElemSel::make_elem();
     auto quad = ElemSel::make_quad(elem);
     return Space(mesh, elem, quad, layout);

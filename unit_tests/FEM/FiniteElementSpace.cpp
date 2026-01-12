@@ -28,19 +28,21 @@ public:
 
     using QuadratureType = ippl::MidpointQuadrature<T, 1, ElementType>;
     using FieldType      = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
+    using FieldLayoutType= ippl::FieldLayout<Dim>;
 
     // Initialize a 4x4 mesh with 1.0 spacing and 0.0 offset.
     // 4 nodes in each dimension, or 3 elements in each dimension
-
+    
     FiniteElementSpaceTest()
         : rng(42)
         , meshSizes(4)
         , ref_element()
         , mesh(ippl::NDIndex<Dim>(meshSizes), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(-1.0))
         , quadrature(ref_element)
-        , fem_space(mesh, ref_element, quadrature,
-                    ippl::FieldLayout<Dim>(MPI_COMM_WORLD, ippl::NDIndex<Dim>(meshSizes),
-                                           std::array<bool, Dim>{true})) {}
+        , layout(MPI_COMM_WORLD, ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(4)), 
+                 std::array<bool, Dim>{true})
+        , fem_space(mesh, ref_element, quadrature, layout)
+        {}
 
     std::mt19937 rng;
 
@@ -48,7 +50,8 @@ public:
     ElementType ref_element;
     MeshType mesh;
     const QuadratureType quadrature;
-    const ippl::LagrangeSpace<T, Dim, 1, ElementType, QuadratureType, FieldType, FieldType> fem_space;
+    FieldLayoutType layout;
+    ippl::LagrangeSpace<T, Dim, 1, ElementType, QuadratureType, FieldType, FieldType> fem_space;
 };
 
 using Tests = TestParams::tests<2, 3>;

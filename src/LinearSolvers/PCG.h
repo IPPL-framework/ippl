@@ -26,8 +26,22 @@ namespace ippl {
         using UpperLowerF  = std::function<UpperLowerRet(lhs_type)>;
         using InverseDiagF = std::function<InverseDiagRet(lhs_type)>;
         using DiagF        = std::function<DiagRet(lhs_type)>;
+        using mesh_type    = typename lhs_type::Mesh_t;
+        using layout_type  = typename lhs_type::Layout_t;
 
         virtual ~CG() = default;
+
+        /*
+         * Initializes the fields needed for CG operations
+         * and avoids allocating them at each solve step.
+         * @param mesh The mesh to initialize the field with
+         * @param layout The layout to initialize the field with
+         */
+        virtual void initializeFields(mesh_type& mesh, layout_type& layout) {
+            r.initialize(mesh, layout);
+            d.initialize(mesh, layout);
+            q.initialize(mesh, layout);
+        }
 
         /*!
          * Sets the differential operator for the conjugate gradient algorithm
@@ -74,17 +88,25 @@ namespace ippl {
 
         virtual void operator()(lhs_type& lhs, rhs_type& rhs,
                                 const ParameterList& params) override {
-            constexpr unsigned Dim             = lhs_type::dim;
-            typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
-            typename lhs_type::Layout_t layout = lhs.getLayout();
+            constexpr unsigned Dim = lhs_type::dim;
+
+            static IpplTimings::TimerRef cg_ops = IpplTimings::getTimer("CG");
+            static IpplTimings::TimerRef up_layout = IpplTimings::getTimer("updateLayout");
+            static IpplTimings::TimerRef apply = IpplTimings::getTimer("applyOp");
+            static IpplTimings::TimerRef inner = IpplTimings::getTimer("innerProduct");
+
+            IpplTimings::startTimer(cg_ops);
 
             iterations_m            = 0;
             const int maxIterations = params.get<int>("max_iterations");
 
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
-            lhs_type r(mesh, layout);
-            lhs_type d(mesh, layout);
+            IpplTimings::startTimer(up_layout);
+            r.updateLayout(lhs.getLayout());
+            d.updateLayout(lhs.getLayout());
+            q.updateLayout(lhs.getLayout());
+            IpplTimings::stopTimer(up_layout);
 
             using bc_type  = BConds<lhs_type, Dim>;
             bc_type lhsBCs = lhs.getFieldBC();
@@ -108,21 +130,29 @@ namespace ippl {
                 }
             }
 
+            IpplTimings::startTimer(apply);
             r = rhs - op_m(lhs);
+            IpplTimings::stopTimer(apply);
+
             d = r.deepCopy();
             d.setFieldBC(bc);
 
+            IpplTimings::startTimer(inner);
             T delta1          = innerProduct(r, d);
+            IpplTimings::stopTimer(inner);
             T delta0          = delta1;
-            residueNorm       = std::sqrt(delta1);
+            residueNorm       = Kokkos::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
-            lhs_type q(mesh, layout);
-
             while (iterations_m < maxIterations && residueNorm > tolerance) {
-                q = op_m(d);
 
+                IpplTimings::startTimer(apply);
+                q = op_m(d);
+                IpplTimings::stopTimer(apply);
+
+                IpplTimings::startTimer(inner);
                 T alpha = delta1 / innerProduct(d, q);
+                IpplTimings::stopTimer(inner);
                 lhs     = lhs + alpha * d;
 
                 // The exact residue is given by
@@ -134,10 +164,12 @@ namespace ippl {
                 // iterations to offset accumulated floating point errors
                 r      = r - alpha * q;
                 delta0 = delta1;
+                IpplTimings::startTimer(inner);
                 delta1 = innerProduct(r, r);
+                IpplTimings::stopTimer(inner);
                 T beta = delta1 / delta0;
 
-                residueNorm = std::sqrt(delta1);
+                residueNorm = Kokkos::sqrt(delta1);
                 d           = r + beta * d;
                 ++iterations_m;
             }
@@ -146,6 +178,7 @@ namespace ippl {
                 T avg = lhs.getVolumeAverage();
                 lhs   = lhs - avg;
             }
+            IpplTimings::stopTimer(cg_ops);
         }
 
         virtual T getResidue() const { return residueNorm; }
@@ -154,6 +187,11 @@ namespace ippl {
         OperatorF op_m;
         T residueNorm    = 0;
         int iterations_m = 0;
+
+    private:
+        lhs_type r;
+        lhs_type d;
+        lhs_type q;
     };
 
 
@@ -216,8 +254,8 @@ namespace ippl {
                                 const ParameterList& params) override {
             
             //constexpr unsigned Dim             = lhs_type::dim;
-            //typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
-            //typename lhs_type::Layout_t layout = lhs.getLayout();
+            //typename lhs_type::Mesh_t& mesh     = lhs.get_mesh();
+            //typename lhs_type::Layout_t& layout = lhs.getLayout();
 
             iterations_m            = 0;
             const int maxIterations = params.get<int>("max_iterations");
@@ -236,7 +274,7 @@ namespace ippl {
             //d.setFieldBC(bc);
             T delta1          = innerProduct(r, d);
             T delta0          = delta1;
-            residueNorm       = std::sqrt(delta1);
+            residueNorm       = Kokkos::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
             lhs_type q = lhs.deepCopy();
@@ -262,7 +300,7 @@ namespace ippl {
                 delta1 = innerProduct(r, r);
                 T beta = delta1 / delta0;
 
-                residueNorm = std::sqrt(delta1);
+                residueNorm = Kokkos::sqrt(delta1);
                 d           = r + beta * d;
                 ++iterations_m;
 
@@ -384,8 +422,8 @@ namespace ippl {
                                     "Preconditioner has not been set for PCG solver");
             }
 
-            typename lhs_type::Mesh_t mesh     = lhs.get_mesh();
-            typename lhs_type::Layout_t layout = lhs.getLayout();
+            typename lhs_type::Mesh_t& mesh     = lhs.get_mesh();
+            typename lhs_type::Layout_t& layout = lhs.getLayout();
 
             this->iterations_m      = 0;
             const int maxIterations = params.get<int>("max_iterations");
@@ -422,7 +460,7 @@ namespace ippl {
             }
 
             r = rhs - this->op_m(lhs);
-            d = preconditioner_m->operator()(r);
+            d = preconditioner_m->operator()(r).deepCopy();
             d.setFieldBC(bc);
 
             T delta1          = innerProduct(r, d);
@@ -432,6 +470,7 @@ namespace ippl {
 
             while (this->iterations_m < maxIterations && this->residueNorm > tolerance) {
                 q       = this->op_m(d);
+                q       = q.deepCopy();
                 T alpha = delta1 / innerProduct(d, q);
                 lhs     = lhs + alpha * d;
 
@@ -443,7 +482,7 @@ namespace ippl {
                 // in some implementations, the correction may be applied every few
                 // iterations to offset accumulated floating point errors
                 r = r - alpha * q;
-                s = preconditioner_m->operator()(r);
+                s = preconditioner_m->operator()(r).deepCopy();
 
                 delta0 = delta1;
                 delta1 = innerProduct(r, s);

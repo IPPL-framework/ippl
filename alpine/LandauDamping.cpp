@@ -68,13 +68,13 @@ int main(int argc, char* argv[]) {
 
         std::vector<std::string> preconditioner_params;
 
-        // Create an instance of a manger for the considered application
-        if (solver == "PCG") {
+        if (solver == "PCG" || solver == "FEM_PRECON") {
             for (int i = 0; i < 5; i++) {
                 preconditioner_params.push_back(argv[arg++]);
             }
         }
 
+        // Create an instance of a manager for the considered application
         LandauDampingManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method,
                                              preconditioner_params);
 
