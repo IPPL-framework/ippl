@@ -1,0 +1,16 @@
+<map id="EvalFunctor.h" name="EvalFunctor.h">
+<area shape="rect" id="node1" title=" " alt="" coords="717,5,819,31"/>
+<area shape="rect" id="node2" href="$FEMPoissonSolver_8h.html" title=" " alt="" coords="603,86,746,111"/>
+<area shape="rect" id="node14" href="$PreconditionedFEMPoissonSolver_8h.html" title=" " alt="" coords="770,79,953,119"/>
+<area shape="rect" id="node3" href="$datatypes_8h.html" title=" " alt="" coords="724,167,812,192"/>
+<area shape="rect" id="node4" href="$BumponTailInstability_8cpp.html" title=" " alt="" coords="61,533,232,559"/>
+<area shape="rect" id="node5" href="$FieldSolverBase_8h.html" title=" " alt="" coords="629,240,755,265"/>
+<area shape="rect" id="node10" href="$LandauDamping_8cpp.html" title=" " alt="" coords="595,533,735,559"/>
+<area shape="rect" id="node12" href="$PenningTrap_8cpp.html" title=" " alt="" coords="759,533,878,559"/>
+<area shape="rect" id="node6" href="$FieldSolver_8hpp.html" title=" " alt="" coords="402,313,513,339"/>
+<area shape="rect" id="node13" href="$PicManager_8h.html" title=" " alt="" coords="641,313,743,339"/>
+<area shape="rect" id="node7" href="$AlpineManager_8h.html" title=" " alt="" coords="398,387,517,412"/>
+<area shape="rect" id="node8" href="$BumponTailInstabilityManager_8h.html" title=" " alt="" coords="43,460,250,485"/>
+<area shape="rect" id="node9" href="$LandauDampingManager_8h.html" title=" " alt="" coords="275,460,451,485"/>
+<area shape="rect" id="node11" href="$PenningTrapManager_8h.html" title=" " alt="" coords="475,460,629,485"/>
+</map>

@@ -99,7 +99,7 @@ Collaboration diagram for ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, Qu
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1LagrangeSpace_1_1DeviceStruct__coll__graph.png" border="0" usemap="#aippl_1_1LagrangeSpace_3_01T_00_01Dim_00_01Order_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_1_1DeviceStruct_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1LagrangeSpace_3_01T_00_01Dim_00_01Order_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_1_1DeviceStruct_coll__map" id="aippl_1_1LagrangeSpace_3_01T_00_01Dim_00_01Order_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_1_1DeviceStruct_coll__map">
-<area shape="rect" title="Device struct for copies //////////////////////////////////////////." alt="" coords="5,447,249,619"/>
+<area shape="rect" title="Device struct for copies //////////////////////////////////////////." alt="" coords="5,447,249,648"/>
 <area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="65,139,189,384"/>
 <area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="51,5,203,89"/>
 </map>
@@ -115,6 +115,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6fa0c56851a6e1b6c9a7d1f21c34ddde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa618089d25440cac0c4082115cddd6ac"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#aa618089d25440cac0c4082115cddd6ac">evaluateRefElementShapeFunction</a> (const size_t &amp;localDOF, const <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a> &amp;localPoint) const</td></tr>
 <tr class="separator:aa618089d25440cac0c4082115cddd6ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04f24bb76b2219879577297142e5644b"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a04f24bb76b2219879577297142e5644b">evaluateRefElementShapeFunctionGradient</a> (const size_t &amp;localDOF, const <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a> &amp;localPoint) const</td></tr>
+<tr class="separator:a04f24bb76b2219879577297142e5644b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -142,6 +144,36 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
       <table class="memname">
         <tr>
           <td class="memname">KOKKOS_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::evaluateRefElementShapeFunction </td>
+          <td>(</td>
+          <td class="paramtype">const size_t &amp;&#160;</td>
+          <td class="paramname"><em>localDOF</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>localPoint</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a04f24bb76b2219879577297142e5644b" name="a04f24bb76b2219879577297142e5644b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04f24bb76b2219879577297142e5644b">&#9670;&#160;</a></span>evaluateRefElementShapeFunctionGradient()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1LagrangeSpace.html">LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;<a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">::point_t</a> <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::evaluateRefElementShapeFunctionGradient </td>
           <td>(</td>
           <td class="paramtype">const size_t &amp;&#160;</td>
           <td class="paramname"><em>localDOF</em>, </td>

@@ -9,7 +9,7 @@ var searchData=
   ['a_5fn_6',['A_n',['../classippl_1_1FDTDSolverBase.html#a20178068e9944a6ae51ab492a1df3245',1,'ippl::FDTDSolverBase']]],
   ['a_5fnm1_7',['A_nm1',['../classippl_1_1FDTDSolverBase.html#a0bb9f8418d973f65661a5943d3e83d7f',1,'ippl::FDTDSolverBase']]],
   ['a_5fnp1_8',['A_np1',['../classippl_1_1FDTDSolverBase.html#a270bd16c7cae661caeb1d6359b8041c4',1,'ippl::FDTDSolverBase']]],
-  ['absdetdphi_9',['absDetDPhi',['../structippl_1_1EvalFunctor.html#a4e52b64827e061fca9d617441b612f4e',1,'ippl::EvalFunctor::absDetDPhi()'],['../structippl_1_1EvalFunctor.html#a4e52b64827e061fca9d617441b612f4e',1,'ippl::EvalFunctor::absDetDPhi()']]],
+  ['absdetdphi_9',['absDetDPhi',['../structippl_1_1EvalFunctor.html#a3e8975615e7c433204500c404d36c886',1,'ippl::EvalFunctor::absDetDPhi()'],['../structippl_1_1EvalFunctor.html#a4e52b64827e061fca9d617441b612f4e',1,'ippl::EvalFunctor::absDetDPhi()']]],
   ['ag_5fm_10',['Ag_m',['../structippl_1_1richardson__preconditioner__alt.html#a435b6c807e4a348325e5fb39a8511610',1,'ippl::richardson_preconditioner_alt']]],
   ['alg_5fm_11',['alg_m',['../classippl_1_1FFTOpenPoissonSolver.html#ac1bafe9d868891bb137dfba434d88ad8',1,'ippl::FFTOpenPoissonSolver']]],
   ['algo_5fm_12',['algo_m',['../classippl_1_1PoissonCG.html#a8ecf34bb0139a111deee4ddf75e76d69',1,'ippl::PoissonCG']]],

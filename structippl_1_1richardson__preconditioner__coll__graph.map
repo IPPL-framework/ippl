@@ -1,5 +1,5 @@
 <map id="ippl::richardson_preconditioner&lt; Field, UpperAndLowerF, InvDiagF &gt;" name="ippl::richardson_preconditioner&lt; Field, UpperAndLowerF, InvDiagF &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="285,1736,525,1893"/>
+<area shape="rect" id="node1" title=" " alt="" coords="285,1751,525,1908"/>
 <area shape="rect" id="node2" href="$structippl_1_1preconditioner.html" title=" " alt="" coords="317,1465,450,1637"/>
 <area shape="rect" id="node3" href="$classippl_1_1Field.html" title=" " alt="" coords="475,1428,649,1673"/>
 <area shape="rect" id="node4" href="$classippl_1_1BareField.html" title=" " alt="" coords="335,1091,466,1365"/>

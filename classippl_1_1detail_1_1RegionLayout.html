@@ -98,7 +98,7 @@ Collaboration diagram for ippl::detail::RegionLayout&lt; T, Dim, Mesh, Propertie
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1detail_1_1RegionLayout__coll__graph.png" border="0" usemap="#aippl_1_1detail_1_1RegionLayout_3_01T_00_01Dim_00_01Mesh_00_01Properties_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1detail_1_1RegionLayout_3_01T_00_01Dim_00_01Mesh_00_01Properties_01_4_coll__map" id="aippl_1_1detail_1_1RegionLayout_3_01T_00_01Dim_00_01Mesh_00_01Properties_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="75,343,262,588"/>
+<area shape="rect" title=" " alt="" coords="75,343,262,603"/>
 <area shape="rect" href="classippl_1_1NDRegion.html" title=" " alt="" coords="5,5,140,265"/>
 <area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="165,108,367,163"/>
 </map>
@@ -119,8 +119,8 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ae802e0709e5e124a12a334583a9937d4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1RegionLayout.html#ae802e0709e5e124a12a334583a9937d4">RegionLayout</a> ()</td></tr>
 <tr class="separator:ae802e0709e5e124a12a334583a9937d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c87e8784ac193284b1215fdd88b451c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1RegionLayout.html#a0c87e8784ac193284b1215fdd88b451c">RegionLayout</a> (const <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;, const <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;)</td></tr>
-<tr class="separator:a0c87e8784ac193284b1215fdd88b451c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae967a5aa67af7902e92066ad9560592f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1RegionLayout.html#ae967a5aa67af7902e92066ad9560592f">RegionLayout</a> (const <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;, const <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;, bool node=false)</td></tr>
+<tr class="separator:ae967a5aa67af7902e92066ad9560592f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2be0bbdb23464e0bd0c6917b7e2c1d23"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1RegionLayout.html#a2be0bbdb23464e0bd0c6917b7e2c1d23">~RegionLayout</a> ()=default</td></tr>
 <tr class="separator:a2be0bbdb23464e0bd0c6917b7e2c1d23"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a98946bbfb629d7607beabe3af290608d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classippl_1_1detail_1_1RegionLayout.html#adfe1c0b9e8d63213cd9667e282621e85">NDRegion_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1RegionLayout.html#a98946bbfb629d7607beabe3af290608d">getDomain</a> () const</td></tr>
@@ -165,6 +165,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a3d4e66fa6864623e9f88f06425f1c2ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ee3947d6c945ae53e54c55890812494"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1detail_1_1RegionLayout.html#ad6ec32b55423972b988789ffdcdf0849">view_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1RegionLayout.html#a7ee3947d6c945ae53e54c55890812494">subdomains_m</a></td></tr>
 <tr class="separator:a7ee3947d6c945ae53e54c55890812494"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03943f88735a444f85fe944e6930444f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1RegionLayout.html#a03943f88735a444f85fe944e6930444f">node_m</a></td></tr>
+<tr class="separator:a03943f88735a444f85fe944e6930444f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="aab03ce50913492afee15e1a4970bfd6b" name="aab03ce50913492afee15e1a4970bfd6b"></a>
@@ -274,8 +276,8 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 
 </div>
 </div>
-<a id="a0c87e8784ac193284b1215fdd88b451c" name="a0c87e8784ac193284b1215fdd88b451c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c87e8784ac193284b1215fdd88b451c">&#9670;&#160;</a></span>RegionLayout() <span class="overload">[2/2]</span></h2>
+<a id="ae967a5aa67af7902e92066ad9560592f" name="ae967a5aa67af7902e92066ad9560592f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae967a5aa67af7902e92066ad9560592f">&#9670;&#160;</a></span>RegionLayout() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -292,7 +294,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;&#160;</td>
-          <td class="paramname"><em>mesh</em>&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>node</em> = <code>false</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -619,6 +627,30 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </div><div class="memdoc">
 
 <p>Offset from 'normal' <a class="el" href="classippl_1_1Index.html">Index</a> space to '<a class="el" href="classippl_1_1Mesh.html">Mesh</a>' <a class="el" href="classippl_1_1Index.html">Index</a> space. </p>
+
+</div>
+</div>
+<a id="a03943f88735a444f85fe944e6930444f" name="a03943f88735a444f85fe944e6930444f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03943f88735a444f85fe944e6930444f">&#9670;&#160;</a></span>node_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , class... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classippl_1_1detail_1_1RegionLayout.html">ippl::detail::RegionLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::node_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

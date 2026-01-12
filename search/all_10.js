@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['q_0',['q',['../classChargedParticles.html#afa60710c52fa77415a9044c2f67c15d1',1,'ChargedParticles::q()'],['../classParticleContainer.html#ac8b47c017390f9d6a367a01c87401f5d',1,'ParticleContainer::q()']]],
+  ['q_0',['q',['../classippl_1_1CG.html#a615387ae4f1700754120473e7bc64db5',1,'ippl::CG::q()'],['../classChargedParticles.html#afa60710c52fa77415a9044c2f67c15d1',1,'ChargedParticles::q()'],['../classParticleContainer.html#ac8b47c017390f9d6a367a01c87401f5d',1,'ParticleContainer::q()']]],
   ['q_5fm_1',['Q_m',['../classChargedParticles.html#aa6cd2811bc673b4013db7f07db165a3d',1,'ChargedParticles::Q_m()'],['../classAlpineManager.html#af090db286af3b8693cae2ea70525e8f1',1,'AlpineManager::Q_m()']]],
   ['qm_5fm_2',['QM_m',['../classippl_1_1TruncatedGreenParticleInteraction.html#a2f80fec983e84e47944f9c379982d1bd',1,'ippl::TruncatedGreenParticleInteraction']]],
   ['quadrature_3',['Quadrature',['../classippl_1_1Quadrature.html',1,'ippl::Quadrature&lt; T, NumNodes1D, ElementType &gt;'],['../classippl_1_1Quadrature.html#ad0cdd78559face6a747400440d2c6fac',1,'ippl::Quadrature::Quadrature()']]],

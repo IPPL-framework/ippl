@@ -100,13 +100,13 @@ Inheritance diagram for ippl::Poisson&lt; FieldLHS, FieldRHS &gt;:</div>
 <div class="center"><img src="classippl_1_1Poisson__inherit__graph.png" border="0" usemap="#aippl_1_1Poisson_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1Poisson_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map" id="aippl_1_1Poisson_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map">
 <area shape="rect" title=" " alt="" coords="677,5,847,309"/>
-<area shape="rect" href="classippl_1_1FEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="5,453,177,727"/>
+<area shape="rect" href="classippl_1_1FEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="5,445,177,735"/>
 <area shape="rect" href="classippl_1_1FFTOpenPoissonSolver.html" title=" " alt="" coords="201,379,392,801"/>
 <area shape="rect" href="classippl_1_1FFTPeriodicPoissonSolver.html" title=" " alt="" coords="416,475,615,705"/>
 <area shape="rect" href="classippl_1_1FFTTruncatedGreenPeriodicPoissonSolver.html" title=" " alt="" coords="639,357,885,823"/>
 <area shape="rect" href="classippl_1_1NullSolver.html" title=" " alt="" coords="909,533,1092,647"/>
-<area shape="rect" href="classippl_1_1PoissonCG.html" title=" " alt="" coords="1116,497,1304,683"/>
-<area shape="rect" href="classippl_1_1PreconditionedFEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="1328,445,1540,735"/>
+<area shape="rect" href="classippl_1_1PoissonCG.html" title=" " alt="" coords="1116,489,1304,691"/>
+<area shape="rect" href="classippl_1_1PreconditionedFEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="1328,438,1540,742"/>
 </map>
 </div>
 <div class="dynheader">
@@ -164,8 +164,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac81577029a8345555afccd846ab6924f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6de0e8a8b756175b7e3e2f24b3fcc8b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a6de0e8a8b756175b7e3e2f24b3fcc8b4">mergeParameters</a> (const <a class="el" href="classippl_1_1ParameterList.html">ParameterList</a> &amp;params)</td></tr>
 <tr class="separator:a6de0e8a8b756175b7e3e2f24b3fcc8b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81e7f53b2358fab7696fc56634ee1a3d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a81e7f53b2358fab7696fc56634ee1a3d">setLhs</a> (<a class="el" href="classippl_1_1Poisson.html#afb9803ccc30ca00408107714a1f7ab41">lhs_type</a> &amp;lhs)</td></tr>
-<tr class="separator:a81e7f53b2358fab7696fc56634ee1a3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2577a77b5c2018fb71814cbb893fdee1"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a2577a77b5c2018fb71814cbb893fdee1">setLhs</a> (<a class="el" href="classippl_1_1Poisson.html#afb9803ccc30ca00408107714a1f7ab41">lhs_type</a> &amp;lhs)</td></tr>
+<tr class="separator:a2577a77b5c2018fb71814cbb893fdee1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac3901f32fee80b64b0a1fd25c9965de3"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#ac3901f32fee80b64b0a1fd25c9965de3">setRhs</a> (<a class="el" href="classippl_1_1Poisson.html#a96a91a7da45bb0d881ec749ddfef38e3">rhs_type</a> &amp;rhs)</td></tr>
 <tr class="separator:ac3901f32fee80b64b0a1fd25c9965de3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e16267dee288ee4af66728c704b1189"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classippl_1_1Poisson.html#a85844e27c27e54cf11b85ed1e206f43a">MField_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Poisson.html#a2e16267dee288ee4af66728c704b1189">getHessian</a> ()</td></tr>
@@ -632,8 +632,8 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 
 </div>
 </div>
-<a id="a81e7f53b2358fab7696fc56634ee1a3d" name="a81e7f53b2358fab7696fc56634ee1a3d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a81e7f53b2358fab7696fc56634ee1a3d">&#9670;&#160;</a></span>setLhs()</h2>
+<a id="a2577a77b5c2018fb71814cbb893fdee1" name="a2577a77b5c2018fb71814cbb893fdee1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2577a77b5c2018fb71814cbb893fdee1">&#9670;&#160;</a></span>setLhs()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -644,7 +644,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson</a>&lt; FieldLHS, FieldRHS &gt;::setLhs </td>
+          <td class="memname">virtual void <a class="el" href="classippl_1_1Poisson.html">ippl::Poisson</a>&lt; FieldLHS, FieldRHS &gt;::setLhs </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1Poisson.html#afb9803ccc30ca00408107714a1f7ab41">lhs_type</a> &amp;&#160;</td>
           <td class="paramname"><em>lhs</em></td><td>)</td>
@@ -653,7 +653,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">virtual</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -663,6 +663,8 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
   </table>
   </dd>
 </dl>
+
+<p>Reimplemented in <a class="el" href="classippl_1_1PoissonCG.html#a595c4c8d3eff46f6d2ecda7f4af27a94">ippl::PoissonCG&lt; FieldLHS, FieldRHS &gt;</a>.</p>
 
 </div>
 </div>

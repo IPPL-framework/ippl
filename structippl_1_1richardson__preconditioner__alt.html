@@ -97,7 +97,7 @@ Inheritance diagram for ippl::richardson_preconditioner_alt&lt; Field, OperatorF
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1richardson__preconditioner__alt__inherit__graph.png" border="0" usemap="#aippl_1_1richardson__preconditioner__alt_3_01Field_00_01OperatorF_00_01InvDiagF_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1richardson__preconditioner__alt_3_01Field_00_01OperatorF_00_01InvDiagF_01_4_inherit__map" id="aippl_1_1richardson__preconditioner__alt_3_01Field_00_01OperatorF_00_01InvDiagF_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="5,225,223,412"/>
+<area shape="rect" title=" " alt="" coords="5,225,223,441"/>
 <area shape="rect" href="structippl_1_1preconditioner.html" title=" " alt="" coords="47,5,181,177"/>
 </map>
 </div>
@@ -106,7 +106,7 @@ Collaboration diagram for ippl::richardson_preconditioner_alt&lt; Field, Operato
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1richardson__preconditioner__alt__coll__graph.png" border="0" usemap="#aippl_1_1richardson__preconditioner__alt_3_01Field_00_01OperatorF_00_01InvDiagF_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1richardson__preconditioner__alt_3_01Field_00_01OperatorF_00_01InvDiagF_01_4_coll__map" id="aippl_1_1richardson__preconditioner__alt_3_01Field_00_01OperatorF_00_01InvDiagF_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="296,1736,513,1908"/>
+<area shape="rect" title=" " alt="" coords="296,1765,513,1937"/>
 <area shape="rect" href="structippl_1_1preconditioner.html" title=" " alt="" coords="317,1465,450,1637"/>
 <area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="475,1428,649,1673"/>
 <area shape="rect" href="classippl_1_1BareField.html" title=" " alt="" coords="335,1091,466,1365"/>
@@ -177,6 +177,10 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a55868fe120b9a9c0b65844ae7658cd50"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a435b6c807e4a348325e5fb39a8511610"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Field.html">Field</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1richardson__preconditioner__alt.html#a435b6c807e4a348325e5fb39a8511610">Ag_m</a></td></tr>
 <tr class="separator:a435b6c807e4a348325e5fb39a8511610"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35056aafa02c36486ff630085cdf2c95"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Field.html">Field</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1richardson__preconditioner__alt.html#a35056aafa02c36486ff630085cdf2c95">g_m</a></td></tr>
+<tr class="separator:a35056aafa02c36486ff630085cdf2c95"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:addd1d94e6a8e9485ac8908288307c6cd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Field.html">Field</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1richardson__preconditioner__alt.html#addd1d94e6a8e9485ac8908288307c6cd">g_old_m</a></td></tr>
+<tr class="separator:addd1d94e6a8e9485ac8908288307c6cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_structippl_1_1preconditioner"><td colspan="2" onclick="javascript:toggleInherit('pro_attribs_structippl_1_1preconditioner')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="structippl_1_1preconditioner.html">ippl::preconditioner&lt; Field &gt;</a></td></tr>
 <tr class="memitem:a5539cc2d97e30473afcbc9e55e175503 inherit pro_attribs_structippl_1_1preconditioner"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1preconditioner.html#a5539cc2d97e30473afcbc9e55e175503">type_m</a></td></tr>
 <tr class="separator:a5539cc2d97e30473afcbc9e55e175503 inherit pro_attribs_structippl_1_1preconditioner"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -366,6 +370,54 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , ty
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a35056aafa02c36486ff630085cdf2c95" name="a35056aafa02c36486ff630085cdf2c95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a35056aafa02c36486ff630085cdf2c95">&#9670;&#160;</a></span>g_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename OperatorF , typename InvDiagF &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1Field.html">Field</a> <a class="el" href="structippl_1_1richardson__preconditioner__alt.html">ippl::richardson_preconditioner_alt</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, OperatorF, InvDiagF &gt;::g_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="addd1d94e6a8e9485ac8908288307c6cd" name="addd1d94e6a8e9485ac8908288307c6cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#addd1d94e6a8e9485ac8908288307c6cd">&#9670;&#160;</a></span>g_old_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename OperatorF , typename InvDiagF &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1Field.html">Field</a> <a class="el" href="structippl_1_1richardson__preconditioner__alt.html">ippl::richardson_preconditioner_alt</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, OperatorF, InvDiagF &gt;::g_old_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

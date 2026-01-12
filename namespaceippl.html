@@ -422,6 +422,10 @@ Functions</h2></td></tr>
 <tr class="memitem:a7f873168b3c170ebb0ad4ea570246996"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a7f873168b3c170ebb0ad4ea570246996">interpolate_to_diracs</a> (AttribOut &amp;attrib_out, const <a class="el" href="classippl_1_1Field.html">Field</a> &amp;coeffs, const PosAttrib &amp;pp, const Space &amp;space, policy_type iteration_policy)</td></tr>
 <tr class="memdesc:a7f873168b3c170ebb0ad4ea570246996"><td class="mdescLeft">&#160;</td><td class="mdescRight">Interpolate a P1 FEM field to particle positions.  <a href="namespaceippl.html#a7f873168b3c170ebb0ad4ea570246996">More...</a><br /></td></tr>
 <tr class="separator:a7f873168b3c170ebb0ad4ea570246996"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74048f5d289776e929b5ca6815f00961"><td class="memTemplParams" colspan="2">template&lt;typename AttribOut , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename PosAttrib , typename Space , typename policy_type  = Kokkos::RangePolicy&lt;typename Field::execution_space&gt;&gt; </td></tr>
+<tr class="memitem:a74048f5d289776e929b5ca6815f00961"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a74048f5d289776e929b5ca6815f00961">interpolate_grad_to_diracs</a> (AttribOut &amp;attrib_out, const <a class="el" href="classippl_1_1Field.html">Field</a> &amp;coeffs, const PosAttrib &amp;pp, const Space &amp;space, policy_type iteration_policy)</td></tr>
+<tr class="memdesc:a74048f5d289776e929b5ca6815f00961"><td class="mdescLeft">&#160;</td><td class="mdescRight">Interpolate a P1 FEM field gradient to particle positions.  <a href="namespaceippl.html#a74048f5d289776e929b5ca6815f00961">More...</a><br /></td></tr>
+<tr class="separator:a74048f5d289776e929b5ca6815f00961"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93a46d1a7c0d2cb82b9c214cd37c4f38"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </td></tr>
 <tr class="memitem:a93a46d1a7c0d2cb82b9c214cd37c4f38"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a93a46d1a7c0d2cb82b9c214cd37c4f38">innerProduct</a> (const <a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &amp;a, const <a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &amp;b)</td></tr>
 <tr class="memdesc:a93a46d1a7c0d2cb82b9c214cd37c4f38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the inner product between two <code><a class="el" href="classippl_1_1FEMVector.html" title="1D vector used in the context of FEM.">ippl::FEMVector(s)</a></code>.  <a href="namespaceippl.html#a93a46d1a7c0d2cb82b9c214cd37c4f38">More...</a><br /></td></tr>
@@ -1933,6 +1937,75 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The value \(a^Tb\). </dd></dl>
+
+</div>
+</div>
+<a id="a74048f5d289776e929b5ca6815f00961" name="a74048f5d289776e929b5ca6815f00961"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a74048f5d289776e929b5ca6815f00961">&#9670;&#160;</a></span>interpolate_grad_to_diracs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename AttribOut , typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename PosAttrib , typename Space , typename policy_type  = Kokkos::RangePolicy&lt;typename Field::execution_space&gt;&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ippl::interpolate_grad_to_diracs </td>
+          <td>(</td>
+          <td class="paramtype">AttribOut &amp;&#160;</td>
+          <td class="paramname"><em>attrib_out</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Field.html">Field</a> &amp;&#160;</td>
+          <td class="paramname"><em>coeffs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const PosAttrib &amp;&#160;</td>
+          <td class="paramname"><em>pp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const Space &amp;&#160;</td>
+          <td class="paramname"><em>space</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">policy_type&#160;</td>
+          <td class="paramname"><em>iteration_policy</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Interpolate a P1 FEM field gradient to particle positions. </p>
+<p >For each particle position x, locate the owning element (ND index e_nd) and reference coordinate xi. Evaluate gradient of P1 Lagrange shape functions at xi to combine nodal coefficients and write u(x) to the particle attribute.</p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">AttribOut</td><td>Particle attribute type with getView()(p) -&gt; scalar </td></tr>
+    <tr><td class="paramname"><a class="el" href="classippl_1_1Field.html">Field</a></td><td><a class="el" href="classippl_1_1Field.html">ippl::Field</a> with rank=Dim nodal coefficients </td></tr>
+    <tr><td class="paramname">PosAttrib</td><td>Particle position attribute with getView()(p) -&gt; Vector&lt;T,Dim&gt; </td></tr>
+    <tr><td class="paramname">Space</td><td>Lagrange space providing element/DOF/topology queries </td></tr>
+    <tr><td class="paramname">policy_type</td><td><a class="el" href="namespaceKokkos.html">Kokkos</a> execution policy (defaults to <a class="el" href="classippl_1_1BareField.html#ae3b8e4d26e218d9ec999a29871d61700">Field::execution_space</a>) </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

@@ -90,61 +90,81 @@ $(function() {
 <div class="textblock"><code>#include &quot;<a class="el" href="LaplaceHelpers_8h_source.html">LaplaceHelpers.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="PCG_8h_source.html">LinearSolvers/PCG.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Poisson_8h_source.html">Poisson.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="EvalFunctor_8h_source.html">EvalFunctor.h</a>&quot;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for PreconditionedFEMPoissonSolver.h:</div>
 <div class="dyncontent">
 <div class="center"><img src="PreconditionedFEMPoissonSolver_8h__incl.png" border="0" usemap="#aPreconditionedFEMPoissonSolver_8h" alt=""/></div>
 <map name="aPreconditionedFEMPoissonSolver_8h" id="aPreconditionedFEMPoissonSolver_8h">
-<area shape="rect" title=" " alt="" coords="398,5,581,45"/>
-<area shape="rect" href="LaplaceHelpers_8h.html" title=" " alt="" coords="329,93,452,119"/>
-<area shape="rect" href="PCG_8h.html" title=" " alt="" coords="413,460,557,485"/>
-<area shape="rect" href="Poisson_8h.html" title=" " alt="" coords="1815,93,1894,119"/>
-<area shape="rect" href="Preconditioner_8h.html" title=" " alt="" coords="184,533,299,559"/>
-<area shape="rect" href="SolverAlgorithm_8h.html" title=" " alt="" coords="1505,607,1629,632"/>
-<area shape="rect" href="FEMVector_8h.html" title=" " alt="" coords="425,533,553,559"/>
-<area shape="rect" href="IpplOperations_8h.html" title=" " alt="" coords="113,680,295,705"/>
-<area shape="rect" title=" " alt="" coords="5,753,237,779"/>
-<area shape="rect" title=" " alt="" coords="261,753,312,779"/>
-<area shape="rect" title=" " alt="" coords="1550,680,1629,705"/>
-<area shape="rect" href="ParameterList_8h.html" title=" " alt="" coords="2153,680,2303,705"/>
-<area shape="rect" title=" " alt="" coords="1981,753,2048,779"/>
-<area shape="rect" title=" " alt="" coords="2293,753,2365,779"/>
-<area shape="rect" title=" " alt="" coords="1834,753,1881,779"/>
-<area shape="rect" title=" " alt="" coords="2302,827,2357,852"/>
-<area shape="rect" title=" " alt="" coords="1905,753,1957,779"/>
-<area shape="rect" href="Variant_8h.html" title=" " alt="" coords="2440,753,2552,779"/>
-<area shape="rect" href="IpplException_8h.html" title=" " alt="" coords="2072,753,2219,779"/>
-<area shape="rect" title=" " alt="" coords="2465,827,2527,852"/>
-<area shape="rect" href="ViewTypes_8h.html" title=" " alt="" coords="578,753,713,779"/>
-<area shape="rect" href="HaloCells_8h.html" title=" " alt="" coords="1056,607,1176,632"/>
-<area shape="rect" href="FEMVector_8hpp.html" title=" " alt="" coords="181,607,291,632"/>
-<area shape="rect" title=" " alt="" coords="853,827,977,852"/>
-<area shape="rect" title=" " alt="" coords="1361,753,1412,779"/>
-<area shape="rect" href="IpplTypes_8h.html" title=" " alt="" coords="867,753,994,779"/>
-<area shape="rect" href="Archive_8h.html" title=" " alt="" coords="683,680,843,705"/>
-<area shape="rect" href="FieldLayout_8h.html" title=" " alt="" coords="1271,680,1441,705"/>
-<area shape="rect" href="NDIndex_8h.html" title=" " alt="" coords="1220,753,1337,779"/>
-<area shape="rect" href="HaloCells_8hpp.html" title=" " alt="" coords="1755,680,1890,705"/>
-<area shape="rect" title=" " alt="" coords="1713,753,1781,779"/>
-<area shape="rect" href="Field_8h.html" title=" " alt="" coords="1809,167,1901,192"/>
-<area shape="rect" href="TypeUtils_8h.html" title=" " alt="" coords="2481,680,2605,705"/>
-<area shape="rect" href="BareField_8h.html" title=" " alt="" coords="1259,533,1378,559"/>
-<area shape="rect" href="BConds_8h.html" title=" " alt="" coords="1799,240,1910,265"/>
-<area shape="rect" href="UniformCartesian_8h.html" title=" " alt="" coords="1851,387,2034,412"/>
-<area shape="rect" href="Field_8hpp.html" title=" " alt="" coords="1475,240,1581,265"/>
-<area shape="rect" href="FieldOperations_8hpp.html" title=" " alt="" coords="1606,240,1775,265"/>
-<area shape="rect" title=" " alt="" coords="1466,680,1526,705"/>
-<area shape="rect" href="IpplInfo_8h.html" title=" " alt="" coords="2016,680,2128,705"/>
-<area shape="rect" href="PAssert_8h.html" title=" " alt="" coords="2238,607,2354,632"/>
-<area shape="rect" href="ViewUtils_8h.html" title=" " alt="" coords="381,680,507,705"/>
-<area shape="rect" href="IpplExpressions_8h.html" title=" " alt="" coords="315,607,506,632"/>
-<area shape="rect" href="BareField_8hpp.html" title=" " alt="" coords="1861,607,1995,632"/>
-<area shape="rect" href="BareFieldOperations_8hpp.html" title=" " alt="" coords="785,607,981,632"/>
-<area shape="rect" href="BcTypes_8h.html" title=" " alt="" coords="1164,313,1279,339"/>
-<area shape="rect" href="BConds_8hpp.html" title=" " alt="" coords="1793,313,1917,339"/>
-<area shape="rect" href="CartesianCentering_8h.html" title=" " alt="" coords="2629,680,2821,705"/>
-<area shape="rect" href="Mesh_8h.html" title=" " alt="" coords="1835,460,1949,485"/>
-<area shape="rect" href="UniformCartesian_8hpp.html" title=" " alt="" coords="1973,460,2171,485"/>
+<area shape="rect" title=" " alt="" coords="405,5,587,45"/>
+<area shape="rect" href="LaplaceHelpers_8h.html" title=" " alt="" coords="297,93,420,119"/>
+<area shape="rect" href="PCG_8h.html" title=" " alt="" coords="385,167,529,192"/>
+<area shape="rect" href="Poisson_8h.html" title=" " alt="" coords="495,93,574,119"/>
+<area shape="rect" href="EvalFunctor_8h.html" title=" " alt="" coords="599,93,700,119"/>
+<area shape="rect" href="Preconditioner_8h.html" title=" " alt="" coords="400,240,515,265"/>
+<area shape="rect" href="SolverAlgorithm_8h.html" title=" " alt="" coords="301,313,425,339"/>
+<area shape="rect" href="FEMVector_8h.html" title=" " alt="" coords="787,240,915,265"/>
+<area shape="rect" href="IpplOperations_8h.html" title=" " alt="" coords="630,387,813,412"/>
+<area shape="rect" title=" " alt="" coords="707,460,939,485"/>
+<area shape="rect" title=" " alt="" coords="632,460,683,485"/>
+<area shape="rect" title=" " alt="" coords="327,387,406,412"/>
+<area shape="rect" href="ParameterList_8h.html" title=" " alt="" coords="153,387,303,412"/>
+<area shape="rect" title=" " alt="" coords="5,460,72,485"/>
+<area shape="rect" title=" " alt="" coords="2369,533,2441,559"/>
+<area shape="rect" title=" " alt="" coords="1014,460,1061,485"/>
+<area shape="rect" title=" " alt="" coords="677,533,731,559"/>
+<area shape="rect" title=" " alt="" coords="147,460,199,485"/>
+<area shape="rect" href="Variant_8h.html" title=" " alt="" coords="224,460,336,485"/>
+<area shape="rect" href="IpplException_8h.html" title=" " alt="" coords="360,460,507,485"/>
+<area shape="rect" title=" " alt="" coords="249,533,311,559"/>
+<area shape="rect" href="ViewTypes_8h.html" title=" " alt="" coords="1517,460,1651,485"/>
+<area shape="rect" href="HaloCells_8h.html" title=" " alt="" coords="1763,313,1883,339"/>
+<area shape="rect" href="FEMVector_8hpp.html" title=" " alt="" coords="641,313,751,339"/>
+<area shape="rect" title=" " alt="" coords="1402,533,1526,559"/>
+<area shape="rect" title=" " alt="" coords="2235,460,2285,485"/>
+<area shape="rect" href="IpplTypes_8h.html" title=" " alt="" coords="1823,460,1950,485"/>
+<area shape="rect" href="Archive_8h.html" title=" " alt="" coords="1672,387,1832,412"/>
+<area shape="rect" href="FieldLayout_8h.html" title=" " alt="" coords="2059,387,2229,412"/>
+<area shape="rect" href="NDIndex_8h.html" title=" " alt="" coords="2043,460,2160,485"/>
+<area shape="rect" href="HaloCells_8hpp.html" title=" " alt="" coords="990,387,1125,412"/>
+<area shape="rect" title=" " alt="" coords="1085,460,1153,485"/>
+<area shape="rect" href="Field_8h.html" title=" " alt="" coords="2373,167,2465,192"/>
+<area shape="rect" href="TypeUtils_8h.html" title=" " alt="" coords="482,387,606,412"/>
+<area shape="rect" href="BareField_8h.html" title=" " alt="" coords="1666,240,1785,265"/>
+<area shape="rect" href="BConds_8h.html" title=" " alt="" coords="2363,240,2474,265"/>
+<area shape="rect" href="UniformCartesian_8h.html" title=" " alt="" coords="2457,387,2639,412"/>
+<area shape="rect" href="Field_8hpp.html" title=" " alt="" coords="2707,240,2813,265"/>
+<area shape="rect" href="FieldOperations_8hpp.html" title=" " alt="" coords="2838,240,3007,265"/>
+<area shape="rect" title=" " alt="" coords="1486,387,1546,412"/>
+<area shape="rect" href="IpplInfo_8h.html" title=" " alt="" coords="1349,387,1461,412"/>
+<area shape="rect" href="PAssert_8h.html" title=" " alt="" coords="1042,313,1158,339"/>
+<area shape="rect" href="ViewUtils_8h.html" title=" " alt="" coords="1149,387,1275,412"/>
+<area shape="rect" href="IpplExpressions_8h.html" title=" " alt="" coords="775,313,966,339"/>
+<area shape="rect" href="BareField_8hpp.html" title=" " alt="" coords="1403,313,1536,339"/>
+<area shape="rect" href="BareFieldOperations_8hpp.html" title=" " alt="" coords="1182,313,1378,339"/>
+<area shape="rect" href="BcTypes_8h.html" title=" " alt="" coords="2209,313,2324,339"/>
+<area shape="rect" href="BConds_8hpp.html" title=" " alt="" coords="2507,313,2631,339"/>
+<area shape="rect" href="CartesianCentering_8h.html" title=" " alt="" coords="2309,460,2501,485"/>
+<area shape="rect" href="Mesh_8h.html" title=" " alt="" coords="2525,460,2640,485"/>
+</map>
+</div>
+</div><div class="textblock"><div class="dynheader">
+This graph shows which files directly or indirectly include this file:</div>
+<div class="dyncontent">
+<div class="center"><img src="PreconditionedFEMPoissonSolver_8h__dep__incl.png" border="0" usemap="#aPreconditionedFEMPoissonSolver_8hdep" alt=""/></div>
+<map name="aPreconditionedFEMPoissonSolver_8hdep" id="aPreconditionedFEMPoissonSolver_8hdep">
+<area shape="rect" title=" " alt="" coords="677,5,859,45"/>
+<area shape="rect" href="datatypes_8h.html" title=" " alt="" coords="724,93,812,119"/>
+<area shape="rect" href="BumponTailInstability_8cpp.html" title=" " alt="" coords="61,460,232,485"/>
+<area shape="rect" href="FieldSolverBase_8h.html" title=" " alt="" coords="629,167,755,192"/>
+<area shape="rect" href="LandauDamping_8cpp.html" title=" " alt="" coords="595,460,735,485"/>
+<area shape="rect" href="PenningTrap_8cpp.html" title=" " alt="" coords="759,460,878,485"/>
+<area shape="rect" href="FieldSolver_8hpp.html" title=" " alt="" coords="402,240,513,265"/>
+<area shape="rect" href="PicManager_8h.html" title=" " alt="" coords="641,240,743,265"/>
+<area shape="rect" href="AlpineManager_8h.html" title=" " alt="" coords="398,313,517,339"/>
+<area shape="rect" href="BumponTailInstabilityManager_8h.html" title=" " alt="" coords="43,387,250,412"/>
+<area shape="rect" href="LandauDampingManager_8h.html" title=" " alt="" coords="275,387,451,412"/>
+<area shape="rect" href="PenningTrapManager_8h.html" title=" " alt="" coords="475,387,629,412"/>
 </map>
 </div>
 </div>
@@ -152,9 +172,6 @@ Include dependency graph for PreconditionedFEMPoissonSolver.h:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1EvalFunctor.html">ippl::EvalFunctor&lt; T, Dim, numElementDOFs &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Representation of the lhs of the problem we are trying to solve.  <a href="structippl_1_1EvalFunctor.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PreconditionedFEMPoissonSolver.html">ippl::PreconditionedFEMPoissonSolver&lt; FieldLHS, FieldRHS &gt;</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A solver for the poisson equation using finite element methods and Conjugate Gradient (<a class="el" href="classippl_1_1CG.html">CG</a>)  <a href="classippl_1_1PreconditionedFEMPoissonSolver.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>

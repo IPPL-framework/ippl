@@ -12,7 +12,7 @@ var searchData=
   ['a_5fnm1_9',['A_nm1',['../classippl_1_1FDTDSolverBase.html#a0bb9f8418d973f65661a5943d3e83d7f',1,'ippl::FDTDSolverBase']]],
   ['a_5fnp1_10',['A_np1',['../classippl_1_1FDTDSolverBase.html#a270bd16c7cae661caeb1d6359b8041c4',1,'ippl::FDTDSolverBase']]],
   ['abort_11',['abort',['../namespaceippl.html#afcaedfc74d177a46298c59f98298b001',1,'ippl::abort()'],['../classippl_1_1mpi_1_1Environment.html#ad5c2f90508e056eb720ab80f4066af49',1,'ippl::mpi::Environment::abort()'],['../classippl_1_1mpi_1_1Communicator.html#a42c1d81258b7f61bcd4839d60d0d9f20',1,'ippl::mpi::Communicator::abort()']]],
-  ['absdetdphi_12',['absDetDPhi',['../structippl_1_1EvalFunctor.html#a4e52b64827e061fca9d617441b612f4e',1,'ippl::EvalFunctor::absDetDPhi()'],['../structippl_1_1EvalFunctor.html#a4e52b64827e061fca9d617441b612f4e',1,'ippl::EvalFunctor::absDetDPhi()']]],
+  ['absdetdphi_12',['absDetDPhi',['../structippl_1_1EvalFunctor.html#a4e52b64827e061fca9d617441b612f4e',1,'ippl::EvalFunctor::absDetDPhi()'],['../structippl_1_1EvalFunctor.html#a3e8975615e7c433204500c404d36c886',1,'ippl::EvalFunctor::absDetDPhi()']]],
   ['absorbing_13',['absorbing',['../namespaceippl.html#abe010a5f57ba45c47c5ac149e5e6487cad7f8c568d6670cf44b2047809d42163e',1,'ippl']]],
   ['absorbingbc_2eh_14',['AbsorbingBC.h',['../AbsorbingBC_8h.html',1,'']]],
   ['accumulatehalo_15',['accumulateHalo',['../classippl_1_1FEMVector.html#aac63bbecccfa5b737b20dd1fa532ef95',1,'ippl::FEMVector::accumulateHalo()'],['../classippl_1_1BareField.html#a4500b35d4a051a1c2ad86ac7c4d5031a',1,'ippl::BareField::accumulateHalo()'],['../classippl_1_1detail_1_1HaloCells.html#adf2a6e1f36ee1c70c9311b6dc4ce9142',1,'ippl::detail::HaloCells::accumulateHalo()']]],

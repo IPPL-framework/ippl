@@ -1,6 +1,6 @@
 <map id="ippl::FEMPoissonSolver&lt; FieldLHS, FieldRHS, Order, QuadNumNodes &gt;" name="ippl::FEMPoissonSolver&lt; FieldLHS, FieldRHS, Order, QuadNumNodes &gt;">
-<area shape="rect" id="node1" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="797,2279,969,2509"/>
-<area shape="rect" id="node2" href="$classippl_1_1Poisson.html" title=" " alt="" coords="492,1912,661,2187"/>
+<area shape="rect" id="node1" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="797,2293,969,2539"/>
+<area shape="rect" id="node2" href="$classippl_1_1Poisson.html" title=" " alt="" coords="492,1919,661,2194"/>
 <area shape="rect" id="node3" href="$classippl_1_1ParameterList.html" title=" " alt="" coords="321,1531,456,1717"/>
 <area shape="rect" id="node4" href="$classippl_1_1Field.html" title=" " alt="" coords="480,1509,673,1739"/>
 <area shape="rect" id="node5" href="$classippl_1_1BareField.html" title=" " alt="" coords="350,1091,481,1365"/>
@@ -16,14 +16,14 @@
 <area shape="rect" id="node15" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="839,379,986,434"/>
 <area shape="rect" id="node16" href="$classippl_1_1Mesh.html" title=" " alt="" coords="505,1113,649,1343"/>
 <area shape="rect" id="node17" href="$classippl_1_1BConds.html" title=" " alt="" coords="673,1120,851,1336"/>
-<area shape="rect" id="node18" href="$classippl_1_1CG.html" title=" " alt="" coords="705,1941,859,2157"/>
+<area shape="rect" id="node18" href="$classippl_1_1CG.html" title=" " alt="" coords="705,1919,859,2194"/>
 <area shape="rect" id="node19" href="$classippl_1_1SolverAlgorithm.html" title=" " alt="" coords="698,1589,861,1659"/>
-<area shape="rect" id="node20" href="$classippl_1_1GaussJacobiQuadrature.html" title=" " alt="" coords="885,1978,1084,2121"/>
+<area shape="rect" id="node20" href="$classippl_1_1GaussJacobiQuadrature.html" title=" " alt="" coords="885,1985,1084,2128"/>
 <area shape="rect" id="node21" href="$classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules." alt="" coords="885,1479,1085,1769"/>
 <area shape="rect" id="node22" href="$classippl_1_1Vector.html" title=" " alt="" coords="880,1113,1089,1343"/>
 <area shape="rect" id="node23" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="899,783,1071,881"/>
 <area shape="rect" id="node24" title=" " alt="" coords="1109,1604,1169,1644"/>
-<area shape="rect" id="node25" href="$classippl_1_1LagrangeSpace.html" title=" " alt="" coords="1148,1883,1392,2216"/>
+<area shape="rect" id="node25" href="$classippl_1_1LagrangeSpace.html" title=" " alt="" coords="1148,1883,1392,2231"/>
 <area shape="rect" id="node26" href="$classippl_1_1FiniteElementSpace.html" title="The FiniteElementSpace class handles the mesh index mapping to vertices and elements and is the base ..." alt="" coords="1193,1457,1429,1791"/>
 <area shape="rect" id="node27" href="$classippl_1_1Vector.html" title=" " alt="" coords="1127,1105,1251,1351"/>
 <area shape="rect" id="node28" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="1107,790,1259,874"/>
