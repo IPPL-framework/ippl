@@ -322,9 +322,10 @@ public:
         static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
         IpplTimings::startTimer(dumpDataTimer);
 
-        // When using FEM, we only have E-field on particles (currently)
-        // so we use the MC integration dump function
         if ((this->getSolver() == "FEM") || (this->getSolver() == "FEM_PRECON")) {
+            // When using FEM, we only have E on particles
+            // so we use the dump function which computes the 
+            // energy using the particles instead of the field.
             dumpLandau();
         } else {
             dumpLandau(this->fcontainer_m->getE().getView());
@@ -382,8 +383,10 @@ public:
         ippl::Comm->barrier();
     }
 
-    // Monte Carlo computation of the integral, computing it from particles
-    // instead of using the E-field on the grid.
+    // Overloaded dumpLandau which computes the E-field energy using the particles 
+    // instead of using the E-field on the grid (as above). Since we have E for 
+    // each particle, we treat the particles as Monte-Carlo samples to compute
+    // the energy integral.
     void dumpLandau() {
 
         auto Eview = this->pcontainer_m->E.getView();
@@ -406,7 +409,7 @@ public:
         double globaltemp = 0.0;
         ippl::Comm->reduce(localEx2, globaltemp, 1, std::plus<double>());
 
-        // MC integration: divide by no. of particles N  and multiply by volume
+        // MC integration: divide by no. of particles N and multiply by volume
         ippl::Vector<T, Dim> domain_size = this->rmax_m - this->rmin_m;
         double fieldEnergy =
             std::reduce(domain_size.begin(), domain_size.end(),
