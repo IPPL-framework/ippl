@@ -28,8 +28,6 @@ methods, with Eulerian (mesh-based) and Lagrangian (particle-based) approaches.
 IPPL makes use of [Kokkos](https://github.com/kokkos/kokkos), [HeFFTe](https://github.com/icl-utk-edu/heffte), and MPI (Message Passing Interface) to deliver a portable,
 massively parallel toolkit for particle-mesh methods. IPPL supports simulations in one to six dimensions, mixed precision, and asynchronous execution in different execution spaces (e.g. CPUs and GPUs).
 
---
-
 **[Installation](#installation)** | 
 **[Contributions](#contributions)** |
 **[Citing IPPL](#citing-ippl)** |
@@ -37,7 +35,7 @@ massively parallel toolkit for particle-mesh methods. IPPL supports simulations 
 **[Profiling](#profiling)**
 
 # Installation
-We compiled installation [instructions](./INSTALLATION.md) for many HPC system. 
+We compiled installation [instructions](./INSTALLATION.md) for many HPC systems. 
 
 # Contributions
 We are open and welcome contributions from others. Please open an issue and a corresponding pull request in the main repository if it is a bug fix or a minor change.
