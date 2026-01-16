@@ -1,8 +1,8 @@
 #ifndef IPPL_FIELD_SOLVER_H
 #define IPPL_FIELD_SOLVER_H
 
-#include <memory>
 #include <filesystem>
+#include <memory>
 
 #include "Manager/BaseManager.h"
 #include "Manager/FieldSolverBase.h"
@@ -63,11 +63,11 @@ public:
         // CG requires explicit periodic boundary conditions while the periodic Poisson solver
         // simply assumes them
         typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
-        if ((this->getStype() == "CG") || (this->getStype() == "PCG") || (this->getStype() == "FEM") ||
-            (this->getStype() == "FEM_PRECON")) {
+        if ((this->getStype() == "CG") || (this->getStype() == "PCG") || (this->getStype() == "FEM")
+            || (this->getStype() == "FEM_PRECON")) {
             bc_type allPeriodic;
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                allPeriodic[i]  = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
+                allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
             }
             phi_m->setFieldBC(allPeriodic);
             if ((this->getStype() == "FEM") || (this->getStype() == "FEM_PRECON")) {
@@ -77,10 +77,10 @@ public:
     }
 
     void runSolver() override {
-        if ((this->getStype() == "CG") || (this->getStype() == "PCG") || (this->getStype() == "FEM") ||
-            (this->getStype() == "FEM_PRECON")) {
+        if ((this->getStype() == "CG") || (this->getStype() == "PCG") || (this->getStype() == "FEM")
+            || (this->getStype() == "FEM_PRECON")) {
             int iterations = 0;
-            int residue = 0;
+            int residue    = 0;
 
             if (this->getStype() == "FEM") {
                 FEMSolver_t<T, Dim>& solver = std::get<FEMSolver_t<T, Dim>>(this->getSolver());
@@ -89,7 +89,8 @@ public:
                 iterations = solver.getIterationCount();
                 residue    = solver.getResidue();
             } else if (this->getStype() == "FEM_PRECON") {
-                FEMPreconSolver_t<T, Dim>& solver = std::get<FEMPreconSolver_t<T, Dim>>(this->getSolver());
+                FEMPreconSolver_t<T, Dim>& solver =
+                    std::get<FEMPreconSolver_t<T, Dim>>(this->getSolver());
                 solver.solve();
 
                 iterations = solver.getIterationCount();
@@ -105,8 +106,8 @@ public:
             if (ippl::Comm->rank() == 0) {
                 std::filesystem::create_directory("data_CG");
                 std::stringstream fname;
-                if ((this->getStype() == "CG") || (this->getStype() == "FEM") ||
-                    (this->getStype() == "FEM_PRECON")) {
+                if ((this->getStype() == "CG") || (this->getStype() == "FEM")
+                    || (this->getStype() == "FEM_PRECON")) {
                     fname << "data_CG/CG_";
                 } else {
                     fname << "data_CG/";
@@ -153,10 +154,10 @@ public:
 
         solver.setRhs(*rho_m);
 
-        if constexpr ((std::is_same_v<Solver, CGSolver_t<T, Dim>>) || 
-                     (std::is_same_v<Solver, FEMSolver_t<T, Dim>>) || 
-                     (std::is_same_v<Solver, FEMPreconSolver_t<T, Dim>>)) {
-            // The CG solver and FEMPoissonSolver compute the potential 
+        if constexpr ((std::is_same_v<Solver, CGSolver_t<T, Dim>>)
+                      || (std::is_same_v<Solver, FEMSolver_t<T, Dim>>)
+                      || (std::is_same_v<Solver, FEMPreconSolver_t<T, Dim>>)) {
+            // The CG solver and FEMPoissonSolver compute the potential
             // directly and use this to get the electric field
             solver.setLhs(*phi_m);
             solver.setGradient(*E_m);
@@ -292,7 +293,7 @@ public:
         sp.add("richardson_iterations", richardson_iterations);
         sp.add("communication", communication);
         sp.add("ssor_omega", ssor_omega);
-        
+
         initSolverWithParams<FEMPreconSolver_t<T, Dim>>(sp);
     }
 

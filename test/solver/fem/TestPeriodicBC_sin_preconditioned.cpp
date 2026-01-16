@@ -6,14 +6,14 @@
 // Exact solution is u(x) = sin(pi * x).
 //
 // The test prints out the relative error as we refine
-// the mesh spacing i.e. it is a convergence study. 
-// The order of convergence should be 2. 
+// the mesh spacing i.e. it is a convergence study.
+// The order of convergence should be 2.
 //
 // The test is available in 1D (problem above),
 // as well as 2D and 3D with analogous test cases.
 //
 // Here we use periodic BCs, so this should work
-// for other domains too as long as the domain 
+// for other domains too as long as the domain
 // length is the size of the period i.e. 2.
 //
 // Usage:
@@ -108,7 +108,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
             const ippl::Vector<T, Dim> x = (iVec)*cellSpacing + origin;
 
-            apply(view_rhs, args) = sinusoidalRHSFunction<T, Dim>(x);
+            apply(view_rhs, args)        = sinusoidalRHSFunction<T, Dim>(x);
             apply(view_analytical, args) = analytic(x);
         });
 
@@ -118,13 +118,13 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     ippl::PreconditionedFEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
 
     // parameters for the preconditioner
-    std::string preconditioner_type = "richardson";
+    std::string preconditioner_type   = "richardson";
     int gauss_seidel_inner_iterations = 4;
     int gauss_seidel_outer_iterations = 2;
-    int newton_level = 1; // unused
-    int chebyshev_degree = 1; // unused
-    int richardson_iterations = 4;
-    double ssor_omega = 1.57079632679;
+    int newton_level                  = 1;  // unused
+    int chebyshev_degree              = 1;  // unused
+    int richardson_iterations         = 4;
+    double ssor_omega                 = 1.57079632679;
 
     // set the parameters
     ippl::ParameterList params;
@@ -153,7 +153,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // Compute the error
     const T relError = solver.getL2Error(analytic);
 
-    lhs = lhs - analytical;
+    lhs         = lhs - analytical;
     T normError = norm(lhs) / norm(analytical);
 
     m << std::setw(10) << numNodesPerDim;

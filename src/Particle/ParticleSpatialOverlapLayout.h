@@ -14,6 +14,9 @@
 //   frequency of load balancing (N), or may supply a function to
 //   determine if load balancing should be done or not.
 //
+
+// clang-format off
+
 #ifndef IPPL_PARTICLE_SPATIAL_OVERLAP_LAYOUT_H
 #define IPPL_PARTICLE_SPATIAL_OVERLAP_LAYOUT_H
 
@@ -23,6 +26,7 @@
 #include "Particle/ParticleBase.h"
 #include "Particle/ParticleLayout.h"
 #include "Region/RegionLayout.h"
+
 
 namespace ippl {
     // This additional namespace is needed to allow for Mesh to have default argument
@@ -370,3 +374,6 @@ namespace ippl {
 #include "Particle/ParticleSpatialOverlapLayout.hpp"
 
 #endif  // IPPL_PARTICLE_SPATIAL_OVERLAP_LAYOUT_H
+
+// clang-format on
+

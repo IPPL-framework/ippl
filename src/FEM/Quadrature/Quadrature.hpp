@@ -47,7 +47,9 @@ namespace ippl {
     Quadrature<T, NumNodes1D, ElementType>::getIntegrationNodesForRefElement() const {
         Vector<T, NumNodes1D> q = this->getIntegrationNodes1D(0.0, 1.0);
 
-        Vector<Vector<T, ElementType::dim>, std::remove_reference_t<decltype(*this)>::numElementNodes> tensor_prod_q;
+        Vector<Vector<T, ElementType::dim>,
+               std::remove_reference_t<decltype(*this)>::numElementNodes>
+            tensor_prod_q;
 
         Vector<unsigned, ElementType::dim> nd_index(0);
         for (unsigned i = 0; i < std::remove_reference_t<decltype(*this)>::numElementNodes; ++i) {

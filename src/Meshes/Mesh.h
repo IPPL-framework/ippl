@@ -22,7 +22,7 @@ namespace ippl {
         typedef Vector<T, Dim> vector_type;
         typedef Vector<vector_type, Dim> matrix_type;
 
-        KOKKOS_INLINE_FUNCTION Mesh(){};
+        KOKKOS_INLINE_FUNCTION Mesh() {};
 
         KOKKOS_INLINE_FUNCTION virtual ~Mesh(){};
 

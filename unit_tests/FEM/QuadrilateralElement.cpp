@@ -17,10 +17,9 @@ protected:
     void SetUp() override {}
 
 public:
-    using value_t = T;
-    using point_t = typename ippl::QuadrilateralElement<T>::point_t;
-    using vertex_points_t = 
-        typename ippl::QuadrilateralElement<T>::vertex_points_t;
+    using value_t         = T;
+    using point_t         = typename ippl::QuadrilateralElement<T>::point_t;
+    using vertex_points_t = typename ippl::QuadrilateralElement<T>::vertex_points_t;
 
     static constexpr unsigned NumQuads = 3;
 
@@ -56,9 +55,8 @@ public:
 
     ippl::QuadrilateralElement<T> quad_element;
 
-    const vertex_points_t local_points = {
-        {0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}};
-    const point_t local_mid_point = {0.5, 0.5};
+    const vertex_points_t local_points = {{0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}};
+    const point_t local_mid_point      = {0.5, 0.5};
 
     ippl::Vector<vertex_points_t, NumQuads> quads;
 };

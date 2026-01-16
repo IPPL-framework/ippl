@@ -15,7 +15,8 @@ namespace ippl {
     // constructor and destructor
 
     template <typename FieldLHS, typename FieldRHS>
-    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver()
+    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS,
+                                           FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver()
         : Base()
         , mesh_mp(nullptr)
         , layout_mp(nullptr)
@@ -25,7 +26,9 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(rhs_type& rhs, ParameterList& params)
+    FFTTruncatedGreenPeriodicPoissonSolver<
+        FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(rhs_type& rhs,
+                                                                    ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
@@ -39,7 +42,9 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params)
+    FFTTruncatedGreenPeriodicPoissonSolver<
+        FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs,
+                                                                    ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
@@ -63,7 +68,9 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
-        static_assert(Dim == 3, "Dimension other than 3 not supported in FFTTruncatedGreenPeriodicPoissonSolver!");
+        static_assert(
+            Dim == 3,
+            "Dimension other than 3 not supported in FFTTruncatedGreenPeriodicPoissonSolver!");
 
         // get layout and mesh
         layout_mp              = &(this->rhs_mp->getLayout());
@@ -312,8 +319,8 @@ namespace ippl {
         // for the collision modelling method, it indicates
         // the splitting between Particle-Particle interactions
         // and the Particle-Mesh computations).
-        const Trhs alpha = this->params_m. template get<Trhs>("alpha");
-        const Trhs forceConstant = this->params_m. template get<Trhs>("force_constant");
+        const Trhs alpha         = this->params_m.template get<Trhs>("alpha");
+        const Trhs forceConstant = this->params_m.template get<Trhs>("force_constant");
 
         // calculate square of the mesh spacing for each dimension
         Vector_t hrsq(hr_m * hr_m);

@@ -25,6 +25,6 @@ namespace ippl {
             return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
         }
     };
-}
+}  // namespace ippl
 
 #endif

@@ -3,18 +3,18 @@
 // -Laplacian(u) = f(x), x in [-1,1]
 // u(-1) = u(1) = 0
 //
-// where f(x) is such that the exact solution is 
+// where f(x) is such that the exact solution is
 // u(x) = sin(sin(pi * x)).
 //
 // The test prints out the relative error as we refine
-// the mesh spacing i.e. it is a convergence study. 
-// The order of convergence should be 2. 
+// the mesh spacing i.e. it is a convergence study.
+// The order of convergence should be 2.
 //
 // The test is available in 1D (problem above),
 // as well as 2D and 3D with analogous test cases.
 //
 // Here we use periodic BCs, so this should work
-// for other domains too as long as the domain 
+// for other domains too as long as the domain
 // length is the size of the period i.e. 2.
 //
 // Usage:
@@ -42,32 +42,38 @@ KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
     if (Dim == 1) {
         T x = x_vec[0];
 
-        val = Kokkos::pow(pi, 2) * ((Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x))
-                + (Kokkos::pow(Kokkos::cos(pi * x), 2) * Kokkos::sin(Kokkos::sin(pi * x))));
+        val = Kokkos::pow(pi, 2)
+              * ((Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x))
+                 + (Kokkos::pow(Kokkos::cos(pi * x), 2) * Kokkos::sin(Kokkos::sin(pi * x))));
 
     } else if (Dim == 2) {
         T x = x_vec[0];
         T y = x_vec[1];
 
         val = Kokkos::pow(pi, 2)
-                * (Kokkos::cos(Kokkos::sin(pi * y)) * Kokkos::sin(pi * y) * Kokkos::sin(Kokkos::sin(pi * x))
-                + (Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x)
-                + (Kokkos::pow(Kokkos::cos(pi * x), 2) + Kokkos::pow(Kokkos::cos(pi * y), 2)) * Kokkos::sin(Kokkos::sin(pi * x)))
-                * Kokkos::sin(Kokkos::sin(pi * y)));
-                
+              * (Kokkos::cos(Kokkos::sin(pi * y)) * Kokkos::sin(pi * y)
+                     * Kokkos::sin(Kokkos::sin(pi * x))
+                 + (Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x)
+                    + (Kokkos::pow(Kokkos::cos(pi * x), 2) + Kokkos::pow(Kokkos::cos(pi * y), 2))
+                          * Kokkos::sin(Kokkos::sin(pi * x)))
+                       * Kokkos::sin(Kokkos::sin(pi * y)));
+
     } else if (Dim == 3) {
         T x = x_vec[0];
         T y = x_vec[1];
         T z = x_vec[2];
 
         val = Kokkos::pow(pi, 2)
-                * (Kokkos::cos(Kokkos::sin(pi * z)) * Kokkos::sin(pi * z) * Kokkos::sin(Kokkos::sin(pi * x)) * Kokkos::sin(Kokkos::sin(pi * y))
-                + (Kokkos::cos(Kokkos::sin(pi * y)) * Kokkos::sin(pi * y) * Kokkos::sin(Kokkos::sin(pi * x))
-                + (Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x)
-                + (Kokkos::pow(Kokkos::cos(pi * x), 2) + Kokkos::pow(Kokkos::cos(pi * y), 2) + Kokkos::pow(Kokkos::cos(pi * z), 2))
-                * Kokkos::sin(Kokkos::sin(pi * x)))
-                * Kokkos::sin(Kokkos::sin(pi * y)))
-                * Kokkos::sin(Kokkos::sin(pi * z)));
+              * (Kokkos::cos(Kokkos::sin(pi * z)) * Kokkos::sin(pi * z)
+                     * Kokkos::sin(Kokkos::sin(pi * x)) * Kokkos::sin(Kokkos::sin(pi * y))
+                 + (Kokkos::cos(Kokkos::sin(pi * y)) * Kokkos::sin(pi * y)
+                        * Kokkos::sin(Kokkos::sin(pi * x))
+                    + (Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x)
+                       + (Kokkos::pow(Kokkos::cos(pi * x), 2) + Kokkos::pow(Kokkos::cos(pi * y), 2)
+                          + Kokkos::pow(Kokkos::cos(pi * z), 2))
+                             * Kokkos::sin(Kokkos::sin(pi * x)))
+                          * Kokkos::sin(Kokkos::sin(pi * y)))
+                       * Kokkos::sin(Kokkos::sin(pi * z)));
     }
 
     return val;
@@ -145,7 +151,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
             const ippl::Vector<T, Dim> x = (iVec)*cellSpacing + origin;
 
-            apply(view_rhs, args) = sinusoidalRHSFunction<T, Dim>(x);
+            apply(view_rhs, args)        = sinusoidalRHSFunction<T, Dim>(x);
             apply(view_analytical, args) = analytic(x);
         });
 
@@ -170,7 +176,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // Compute the error
     const T relError = solver.getL2Error(analytic);
 
-    lhs = lhs - analytical;
+    lhs         = lhs - analytical;
     T normError = norm(lhs) / norm(analytical);
 
     m << std::setw(10) << numNodesPerDim;

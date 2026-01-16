@@ -357,12 +357,11 @@ namespace ippl {
             throw IpplException("PeriodicFace::apply", "face number wrong");
         }
 
-        bool upperFace = (face & 1);
+        bool upperFace  = (face & 1);
         bool isBoundary = ((ldom[d].max() == domain[d].max()) && upperFace)
-                           || ((ldom[d].min() == domain[d].min()) && !(upperFace));
+                          || ((ldom[d].min() == domain[d].min()) && !(upperFace));
 
         if (isBoundary) {
-
             auto N = view.extent(d) - 1;
 
             using exec_space = typename Field::execution_space;
@@ -376,8 +375,8 @@ namespace ippl {
             for (size_t i = 0; i < Dim; ++i) {
                 bool upperFace_i = (ldom[i].max() == domain[i].max());
                 bool lowerFace_i = (ldom[i].min() == domain[i].min());
-                end[i]   = view.extent(i) - nghost - (upperFace_i)*(isCorner);
-                begin[i] = nghost + (lowerFace_i)*(isCorner);
+                end[i]           = view.extent(i) - nghost - (upperFace_i) * (isCorner);
+                begin[i]         = nghost + (lowerFace_i) * (isCorner);
             }
             begin[d] = ((0 + nghost - 1) * (1 - upperFace)) + (N * upperFace);
             end[d]   = begin[d] + 1;
@@ -400,7 +399,7 @@ namespace ippl {
                     coords[d] += shift;
 
                     apply(view, coords) += right;
-            });
+                });
         }
     }
 
@@ -418,9 +417,9 @@ namespace ippl {
             throw IpplException("ExtrapolateFace::apply", "face number wrong");
         }
 
-        bool upperFace = (face & 1);
+        bool upperFace  = (face & 1);
         bool isBoundary = ((ldom[d].max() == domain[d].max()) && upperFace)
-                           || ((ldom[d].min() == domain[d].min()) && !(upperFace));
+                          || ((ldom[d].min() == domain[d].min()) && !(upperFace));
 
         if (isBoundary) {
             auto N = view.extent(d) - 1;
@@ -458,7 +457,7 @@ namespace ippl {
                     coords[d] += shift;
 
                     apply(view, coords) = right;
-            });
+                });
         }
     }
 }  // namespace ippl

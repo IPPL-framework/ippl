@@ -64,10 +64,10 @@ public:
             origin[d] = 0;
         }
 
-        layout  = flayout_type(MPI_COMM_WORLD, owned, isParallel);
-        mesh    = mesh_type(owned, hx, origin);
+        layout      = flayout_type(MPI_COMM_WORLD, owned, isParallel);
+        mesh        = mesh_type(owned, hx, origin);
         playout_ptr = std::make_shared<playout_type>(layout, mesh);
-        bunch = std::make_shared<bunch_type>(*playout_ptr);
+        bunch       = std::make_shared<bunch_type>(*playout_ptr);
 
         using BC = ippl::BC;
 

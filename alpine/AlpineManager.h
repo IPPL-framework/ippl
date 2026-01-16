@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "FEM/FEMInterpolate.hpp"
 #include "FieldContainer.hpp"
 #include "FieldSolver.hpp"
 #include "LoadBalancer.hpp"
@@ -13,7 +14,6 @@
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
-#include "FEM/FEMInterpolate.hpp"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
@@ -35,6 +35,7 @@ protected:
     std::string solver_m;
     std::string stepMethod_m;
     std::vector<std::string> preconditioner_params_m;
+
 public:
     AlpineManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                   std::string& solver_, std::string& stepMethod_,
@@ -98,7 +99,7 @@ public:
 
     std::vector<std::string> getPreconditionerParams() const { return preconditioner_params_m; };
 
-    virtual void dump(){/* default does nothing */};
+    virtual void dump() { /* default does nothing */ };
 
     void pre_step() override {
         Inform m("Pre-step");
@@ -116,7 +117,7 @@ public:
         m << "Finished time step: " << this->it_m << " time: " << this->time_m << endl;
     }
 
-    void grid2par() override { 
+    void grid2par() override {
         if ((getSolver() == "FEM") || (getSolver() == "FEM_PRECON")) {
             gatherFEM();
         } else {
@@ -129,15 +130,15 @@ public:
     }
 
     void gatherFEM() {
-        using exec_space = typename Kokkos::View<const size_t*>::execution_space;
-        using policy_type = Kokkos::RangePolicy<exec_space>;
+        using exec_space         = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type        = Kokkos::RangePolicy<exec_space>;
         size_type localParticles = this->pcontainer_m->getLocalNum();
         policy_type iteration_policy(0, localParticles);
 
-        // get the Finite Element space from the solver, 
+        // get the Finite Element space from the solver,
         // since the interpolation depends on the space
         auto* solver = dynamic_cast<FieldSolver_t*>(this->fsolver_m.get());
-        auto& space = solver->getSpace();
+        auto& space  = solver->getSpace();
 
         interpolate_grad_to_diracs(this->pcontainer_m->E, this->fcontainer_m->getPhi(),
                                    this->pcontainer_m->R, space, iteration_policy);
@@ -182,14 +183,14 @@ public:
         double Q                                 = Q_m;
         size_type localParticles                 = this->pcontainer_m->getLocalNum();
 
-        using exec_space = typename Kokkos::View<const size_t*>::execution_space;
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
         policy_type iteration_policy(0, localParticles);
 
-        // get the Finite Element space from the solver, 
+        // get the Finite Element space from the solver,
         // since the interpolation depends on the space
         auto* solver = dynamic_cast<FieldSolver_t*>(this->fsolver_m.get());
-        auto& space = solver->getSpace();
+        auto& space  = solver->getSpace();
 
         assemble_rhs_from_particles(*q, *rho, *R, space, iteration_policy);
 
@@ -220,12 +221,13 @@ public:
     }
 
     void getDensity(Field_t<Dim>* rho) {
-        Vector_t<double, Dim> rmin               = rmin_m;
-        Vector_t<double, Dim> rmax               = rmax_m;
-        Vector_t<double, Dim> hr                 = this->hr_m;
-        double Q                                 = Q_m;
+        Vector_t<double, Dim> rmin = rmin_m;
+        Vector_t<double, Dim> rmax = rmax_m;
+        Vector_t<double, Dim> hr   = this->hr_m;
+        double Q                   = Q_m;
 
-        if ((this->fsolver_m->getStype() != "FEM") && (this->fsolver_m->getStype() != "FEM_PRECON")) {
+        if ((this->fsolver_m->getStype() != "FEM")
+            && (this->fsolver_m->getStype() != "FEM_PRECON")) {
             double cellVolume = std::reduce(hr.begin(), hr.end(), 1., std::multiplies<double>());
             (*rho)            = (*rho) / cellVolume;
         }
