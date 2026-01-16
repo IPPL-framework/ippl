@@ -24,9 +24,9 @@ namespace ippl {
 
         virtual ~FieldSolverBase() = default;
 
-        const std::string& getStype() const { return stype_m; }
+        std::string getStype() const { return stype_m; }
 
-        void setStype(const std::string& solver) { stype_m = solver; }
+        void setStype(const std::string solver) { stype_m = solver; }
 
         Solver_t<T, Dim>& getSolver() { return solver_m; }
 
