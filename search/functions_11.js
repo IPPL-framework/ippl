@@ -65,7 +65,7 @@ var searchData=
   ['setsolver_62',['setSolver',['../classippl_1_1PoissonCG.html#ab96f03abd903f480cc8c21ed29812b88',1,'ippl::PoissonCG::setSolver()'],['../classippl_1_1FieldSolverBase.html#a0c40d34b36de7ce9137a186a6ce6659f',1,'ippl::FieldSolverBase::setSolver()'],['../classAlpineManager.html#a964e8b24e0592eaf61682930897ab06b',1,'AlpineManager::setSolver()']]],
   ['setsources_63',['setSources',['../classippl_1_1Maxwell.html#ae270751d7d32dad570040c5b2ba780a0',1,'ippl::Maxwell']]],
   ['setstepmethod_64',['setStepMethod',['../classAlpineManager.html#a00b448951fdbd27720d4067659b8619c',1,'AlpineManager']]],
-  ['setstype_65',['setStype',['../classippl_1_1FieldSolverBase.html#ad6660d434cd79e72271d2bae2523cad2',1,'ippl::FieldSolverBase']]],
+  ['setstype_65',['setStype',['../classippl_1_1FieldSolverBase.html#a250d5a340661a30acd3c2954f92681cc',1,'ippl::FieldSolverBase']]],
   ['settime_66',['setTime',['../classAlpineManager.html#a6e928c739f2938144a0ca0aaaa9e5e5f',1,'AlpineManager']]],
   ['settotalp_67',['setTotalP',['../classAlpineManager.html#ac81b353f87d5b691744db2887575e392',1,'AlpineManager']]],
   ['setup_68',['setup',['../classInform.html#af446b4ae4c1ac87f38fe23343f4165a7',1,'Inform::setup()'],['../classippl_1_1BareField.html#adc1e243d8d844594755b153a9a9f4eab',1,'ippl::BareField::setup()'],['../classippl_1_1FFTBase.html#abef661c4da7eaa36a7fd50e890a94f06',1,'ippl::FFTBase::setup()']]],

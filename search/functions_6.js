@@ -150,7 +150,7 @@ var searchData=
   ['getspace_147',['getSpace',['../classippl_1_1PreconditionedFEMPoissonSolver.html#a9fdebf360a7445be16803a9692bdace5',1,'ippl::PreconditionedFEMPoissonSolver::getSpace()'],['../classippl_1_1FEMPoissonSolver.html#a9b289c021632aadabcf5be3671aaf2c6',1,'ippl::FEMPoissonSolver::getSpace()'],['../classFieldSolver.html#ac391ae9b00370d7243df0dd86a61a2be',1,'FieldSolver::getSpace()']]],
   ['getstepmethod_148',['getStepMethod',['../classAlpineManager.html#a3b0e03bead0192809c38523412b62daf',1,'AlpineManager']]],
   ['getstream_149',['getStream',['../classInform.html#afa92d905b249afca8d77acbc9c84ac64',1,'Inform']]],
-  ['getstype_150',['getStype',['../classippl_1_1FieldSolverBase.html#a76af985fb070e0bd354bea712e04f5cd',1,'ippl::FieldSolverBase']]],
+  ['getstype_150',['getStype',['../classippl_1_1FieldSolverBase.html#aa24068572b2f7eb808c051f7073a6557',1,'ippl::FieldSolverBase']]],
   ['gettime_151',['getTime',['../classAlpineManager.html#a8687c281268744a248c67456fee16e66',1,'AlpineManager']]],
   ['gettimer_152',['getTimer',['../classIpplTimings.html#a59ffa7a04c160376d3a6593bff568fb4',1,'IpplTimings::getTimer()'],['../structTiming.html#ad8cc1e1e72cef6a72e059d33913d8af7',1,'Timing::getTimer()']]],
   ['gettotalnum_153',['getTotalNum',['../classippl_1_1ParticleBase.html#a347cf4dec801c4a3f41c796f8a5ab637',1,'ippl::ParticleBase']]],
