@@ -219,7 +219,8 @@ struct second_order_abc_edge {
         using ippl::apply;
 
         // Get the opposite direction of the normal vectors for the two normal axes (direction to
-        // the interior of the domain), 1 or -1 in the direction of the normal axis and 0 in the others
+        // the interior of the domain), 1 or -1 in the direction of the normal axis and 0 in the
+        // others
         ippl::Vector<int32_t, 3> normal_axis1_onehot =
             ippl::Vector<int32_t, 3>{normal_axis1 == 0, normal_axis1 == 1, normal_axis1 == 2}
             * int32_t(na1_zero ? 1 : -1);

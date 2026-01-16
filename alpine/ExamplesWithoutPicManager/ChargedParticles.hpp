@@ -63,15 +63,18 @@ using FFTSolver_t = ConditionalType<Dim == 2 || Dim == 3,
                                     ippl::FFTPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
-using FFTTruncatedGreenSolver_t = ConditionalType<Dim == 3, ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
+using FFTTruncatedGreenSolver_t =
+    ConditionalType<Dim == 3,
+                    ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
 using OpenSolver_t =
     ConditionalType<Dim == 3, ippl::FFTOpenPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
-using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
-                                             FFTTruncatedGreenSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
+using Solver_t =
+    VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
+                                FFTTruncatedGreenSolver_t<T, Dim>, OpenSolver_t<T, Dim>>;
 
 const double pi = Kokkos::numbers::pi_v<double>;
 

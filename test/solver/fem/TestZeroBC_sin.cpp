@@ -8,8 +8,8 @@
 // BCs: Homogeneous Dirichlet BCs (Zero).
 //
 // The test prints out the relative error as we refine
-// the mesh spacing i.e. it is a convergence study. 
-// The order of convergence should be 2. 
+// the mesh spacing i.e. it is a convergence study.
+// The order of convergence should be 2.
 //
 // The test is available in 1D (problem above),
 // as well as 2D and 3D with analogous test cases.

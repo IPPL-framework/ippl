@@ -93,16 +93,16 @@ public:
         });
     }
 
-      /*!
+    /*!
      * Fill a real-valued field with zero values
      * @param nghost number of ghost cells
      * @param mirror the field view's host mirror
      */
-  
-    void zeroRealField(int nghost, typename field_type_real::HostMirror& mirror) {
 
+    void zeroRealField(int nghost, typename field_type_real::HostMirror& mirror) {
         nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
-            mirror(args...) = 0.0;;
+            mirror(args...) = 0.0;
+            ;
         });
     }
 
@@ -130,15 +130,12 @@ public:
      * @param mirror the field view's host mirror
      */
     void zeroComplexField(int nghost, typename field_type_complex::HostMirror& mirror) {
-
         nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
             mirror(args...).real() = 0.0;
             mirror(args...).imag() = 0.0;
         });
     }
 
-
-  
     /*!
      * Verify the contents of a computation
      * @tparam MirrorA the type of the computed view
@@ -206,11 +203,11 @@ using Tests = TestParams::tests<2, 3>;
 TYPED_TEST_SUITE(FFTTest, Tests);
 
 TYPED_TEST(FFTTest, Cos) {
-    //this->template testTrig<ippl::CosTransform>(this->realField, this->layout);
+    // this->template testTrig<ippl::CosTransform>(this->realField, this->layout);
 }
 
 TYPED_TEST(FFTTest, Sin) {
-    //this->template testTrig<ippl::SineTransform>(this->realField, this->layout);
+    // this->template testTrig<ippl::SineTransform>(this->realField, this->layout);
 }
 
 TYPED_TEST(FFTTest, RC) {

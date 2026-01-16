@@ -18,16 +18,14 @@ int main(int argc, char* argv[]) {
         using mdrange_t = Kokkos::MDRangePolicy<Kokkos::Rank<2>>;
 
         Kokkos::parallel_for(
-            "assign", mdrange_t({0, 0}, {length, length}), KOKKOS_LAMBDA(const int i, const int j) {
-                vfield(i, j) = {1.0, 2.0, 3.0};
-            });
+            "assign", mdrange_t({0, 0}, {length, length}),
+            KOKKOS_LAMBDA(const int i, const int j) { vfield(i, j) = {1.0, 2.0, 3.0}; });
 
         vector_field_type wfield("wfield", length, length);
 
         Kokkos::parallel_for(
-            "assign", mdrange_t({0, 0}, {length, length}), KOKKOS_LAMBDA(const int i, const int j) {
-                wfield(i, j) = {4.0, -5.0, 6.0};
-            });
+            "assign", mdrange_t({0, 0}, {length, length}),
+            KOKKOS_LAMBDA(const int i, const int j) { wfield(i, j) = {4.0, -5.0, 6.0}; });
 
         vector_field_type vvfield("vvfield", length, length);
         Kokkos::parallel_for(

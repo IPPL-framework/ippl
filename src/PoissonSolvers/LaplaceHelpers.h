@@ -329,9 +329,9 @@ namespace ippl {
     double negative_inverse_diagonal_laplace(Field& u) {
         constexpr unsigned Dim = Field::dim;
         using mesh_type        = typename Field::Mesh_t;
-        mesh_type& mesh = u.get_mesh();
-        double sum    = 0.0;
-        double factor = 1.0;
+        mesh_type& mesh        = u.get_mesh();
+        double sum             = 0.0;
+        double factor          = 1.0;
         typename mesh_type::vector_type hvector(0);
         for (unsigned d = 0; d < Dim; ++d) {
             hvector[d] = Kokkos::pow(mesh.getMeshSpacing(d), 2);

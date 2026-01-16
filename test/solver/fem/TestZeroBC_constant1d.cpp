@@ -9,8 +9,8 @@
 // This is only 1D!
 //
 // The test prints out the relative error as we refine
-// the mesh spacing i.e. it is a convergence study. 
-// The order of convergence should be 2. 
+// the mesh spacing i.e. it is a convergence study.
+// The order of convergence should be 2.
 //
 // Usage:
 //    ./TestZeroBC_constant1d --info 5
@@ -23,7 +23,7 @@
 template <typename T, unsigned Dim>
 struct AnalyticSol {
     KOKKOS_FUNCTION const T operator()(ippl::Vector<T, Dim> x_vec) const {
-        T val = 1.0 - (x_vec[0]*x_vec[0]);
+        T val = 1.0 - (x_vec[0] * x_vec[0]);
         return val;
     }
 };
@@ -31,7 +31,6 @@ struct AnalyticSol {
 template <typename T, unsigned Dim>
 void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
-    
     // start the timer
     static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
     IpplTimings::startTimer(initTimer);

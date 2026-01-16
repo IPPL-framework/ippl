@@ -189,9 +189,8 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION T Vector<T, Dim>::Pnorm(const int p) const {
-
         T val = 0.0;
-        for(unsigned i = 0; i < Dim; ++i) {
+        for (unsigned i = 0; i < Dim; ++i) {
             val += Kokkos::pow(Kokkos::abs(data_m[i]), p);
         }
 

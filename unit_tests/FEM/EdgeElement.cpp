@@ -40,7 +40,7 @@ public:
     ippl::EdgeElement<T> edge_element;
 
     const vertex_points_t local_points = {{0.0}, {1.0}};
-    const point_t local_mid_point                      = {0.5};
+    const point_t local_mid_point      = {0.5};
 
     ippl::Vector<vertex_points_t, NumEdges> edges;
 };
@@ -58,8 +58,8 @@ TYPED_TEST(EdgeElementTest, LocalVertices) {
 }
 
 TYPED_TEST(EdgeElementTest, LocalToGlobal) {
-    using T                               = typename TestFixture::value_t;
-    using point_t                         = typename TestFixture::point_t;
+    using T               = typename TestFixture::value_t;
+    using point_t         = typename TestFixture::point_t;
     using vertex_points_t = typename TestFixture::vertex_points_t;
 
     auto& edge_element = this->edge_element;
@@ -84,8 +84,8 @@ TYPED_TEST(EdgeElementTest, LocalToGlobal) {
 }
 
 TYPED_TEST(EdgeElementTest, GlobalToLocal) {
-    using T                               = typename TestFixture::value_t;
-    using point_t                         = typename TestFixture::point_t;
+    using T               = typename TestFixture::value_t;
+    using point_t         = typename TestFixture::point_t;
     using vertex_points_t = typename TestFixture::vertex_points_t;
 
     auto& edge_element = this->edge_element;

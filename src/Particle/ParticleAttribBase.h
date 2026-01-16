@@ -37,10 +37,10 @@ namespace ippl {
             template <typename... Properties>
             using with_properties = typename WithMemSpace<Properties...>::type;
 
-            ParticleAttribBase(){this->name_m = "UNNAMED_attribute";}
+            ParticleAttribBase() { this->name_m = "UNNAMED_attribute"; }
 
-            virtual void set_name(const std::string & name_) = 0;
-            
+            virtual void set_name(const std::string& name_) = 0;
+
             virtual std::string get_name() const = 0;
 
             virtual void create(size_type) = 0;
@@ -64,7 +64,7 @@ namespace ippl {
             size_type getParticleCount() const { return *localNum_mp; }
 
             virtual void applyPermutation(const hash_type&) = 0;
-            virtual void internalCopy(const hash_type&) = 0;
+            virtual void internalCopy(const hash_type&)     = 0;
 
         protected:
             const size_type* localNum_mp;

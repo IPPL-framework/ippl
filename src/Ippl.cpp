@@ -80,7 +80,7 @@ namespace ippl {
             Info->setOutputLevel(infoLevel);
             Error->setOutputLevel(infoLevel);
             Warn->setOutputLevel(infoLevel);
-            
+
         } catch (const std::exception& e) {
             if (Comm->rank() == 0) {
                 std::cerr << e.what() << std::endl;

@@ -34,32 +34,38 @@ KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
     if (Dim == 1) {
         T x = x_vec[0];
 
-        val = Kokkos::pow(pi, 2) * ((Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x))
-                + (Kokkos::pow(Kokkos::cos(pi * x), 2) * Kokkos::sin(Kokkos::sin(pi * x))));
+        val = Kokkos::pow(pi, 2)
+              * ((Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x))
+                 + (Kokkos::pow(Kokkos::cos(pi * x), 2) * Kokkos::sin(Kokkos::sin(pi * x))));
 
     } else if (Dim == 2) {
         T x = x_vec[0];
         T y = x_vec[1];
 
         val = Kokkos::pow(pi, 2)
-                * (Kokkos::cos(Kokkos::sin(pi * y)) * Kokkos::sin(pi * y) * Kokkos::sin(Kokkos::sin(pi * x))
-                + (Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x)
-                + (Kokkos::pow(Kokkos::cos(pi * x), 2) + Kokkos::pow(Kokkos::cos(pi * y), 2)) * Kokkos::sin(Kokkos::sin(pi * x)))
-                * Kokkos::sin(Kokkos::sin(pi * y)));
-                
+              * (Kokkos::cos(Kokkos::sin(pi * y)) * Kokkos::sin(pi * y)
+                     * Kokkos::sin(Kokkos::sin(pi * x))
+                 + (Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x)
+                    + (Kokkos::pow(Kokkos::cos(pi * x), 2) + Kokkos::pow(Kokkos::cos(pi * y), 2))
+                          * Kokkos::sin(Kokkos::sin(pi * x)))
+                       * Kokkos::sin(Kokkos::sin(pi * y)));
+
     } else if (Dim == 3) {
         T x = x_vec[0];
         T y = x_vec[1];
         T z = x_vec[2];
 
         val = Kokkos::pow(pi, 2)
-                * (Kokkos::cos(Kokkos::sin(pi * z)) * Kokkos::sin(pi * z) * Kokkos::sin(Kokkos::sin(pi * x)) * Kokkos::sin(Kokkos::sin(pi * y))
-                + (Kokkos::cos(Kokkos::sin(pi * y)) * Kokkos::sin(pi * y) * Kokkos::sin(Kokkos::sin(pi * x))
-                + (Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x)
-                + (Kokkos::pow(Kokkos::cos(pi * x), 2) + Kokkos::pow(Kokkos::cos(pi * y), 2) + Kokkos::pow(Kokkos::cos(pi * z), 2))
-                * Kokkos::sin(Kokkos::sin(pi * x)))
-                * Kokkos::sin(Kokkos::sin(pi * y)))
-                * Kokkos::sin(Kokkos::sin(pi * z)));
+              * (Kokkos::cos(Kokkos::sin(pi * z)) * Kokkos::sin(pi * z)
+                     * Kokkos::sin(Kokkos::sin(pi * x)) * Kokkos::sin(Kokkos::sin(pi * y))
+                 + (Kokkos::cos(Kokkos::sin(pi * y)) * Kokkos::sin(pi * y)
+                        * Kokkos::sin(Kokkos::sin(pi * x))
+                    + (Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x)
+                       + (Kokkos::pow(Kokkos::cos(pi * x), 2) + Kokkos::pow(Kokkos::cos(pi * y), 2)
+                          + Kokkos::pow(Kokkos::cos(pi * z), 2))
+                             * Kokkos::sin(Kokkos::sin(pi * x)))
+                          * Kokkos::sin(Kokkos::sin(pi * y)))
+                       * Kokkos::sin(Kokkos::sin(pi * z)));
     }
 
     return val;
@@ -137,7 +143,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
 
             const ippl::Vector<T, Dim> x = (iVec)*cellSpacing + origin;
 
-            apply(view_rhs, args) = sinusoidalRHSFunction<T, Dim>(x);
+            apply(view_rhs, args)        = sinusoidalRHSFunction<T, Dim>(x);
             apply(view_analytical, args) = analytic(x);
         });
 
@@ -147,13 +153,13 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     ippl::PreconditionedFEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
 
     // parameters for the preconditioner
-    std::string preconditioner_type = "richardson";
+    std::string preconditioner_type   = "richardson";
     int gauss_seidel_inner_iterations = 4;
     int gauss_seidel_outer_iterations = 2;
-    int newton_level = 1; // unused
-    int chebyshev_degree = 1; // unused
-    int richardson_iterations = 4;
-    double ssor_omega = 1.57079632679;
+    int newton_level                  = 1;  // unused
+    int chebyshev_degree              = 1;  // unused
+    int richardson_iterations         = 4;
+    double ssor_omega                 = 1.57079632679;
 
     // set the parameters
     ippl::ParameterList params;
@@ -179,7 +185,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // Compute the error
     const T relError = solver.getL2Error(analytic);
 
-    lhs = lhs - analytical;
+    lhs         = lhs - analytical;
     T normError = norm(lhs) / norm(analytical);
 
     m << std::setw(10) << numNodesPerDim;

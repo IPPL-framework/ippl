@@ -66,7 +66,7 @@ public:
 
         field = std::make_unique<field_type>(mesh, layout);
 
-        playout_ptr = std::make_shared<playout_type>(layout,mesh);
+        playout_ptr = std::make_shared<playout_type>(layout, mesh);
 
         bunch = std::make_shared<bunch_type>(*playout_ptr);
 

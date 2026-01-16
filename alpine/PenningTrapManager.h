@@ -1,8 +1,8 @@
 #ifndef IPPL_PENNING_TRAP_MANAGER_H
 #define IPPL_PENNING_TRAP_MANAGER_H
 
-#include <memory>
 #include <filesystem>
+#include <memory>
 
 #include "AlpineManager.h"
 #include "FieldContainer.hpp"

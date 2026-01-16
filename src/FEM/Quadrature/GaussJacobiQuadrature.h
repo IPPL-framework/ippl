@@ -100,7 +100,7 @@ namespace ippl {
                                 const size_t& max_newton_itersations = 10,
                                 const size_t& min_newton_iterations  = 1)
             : GaussJacobiQuadrature<T, NumNodes1D, ElementType>(
-                ref_element, 0.0, 0.0, max_newton_itersations, min_newton_iterations) {}
+                  ref_element, 0.0, 0.0, max_newton_itersations, min_newton_iterations) {}
     };
 
     /**
@@ -125,7 +125,7 @@ namespace ippl {
                                  const size_t& max_newton_itersations = 10,
                                  const size_t& min_newton_iterations  = 1)
             : GaussJacobiQuadrature<T, NumNodes1D, ElementType>(
-                ref_element, -0.5, -0.5, max_newton_itersations, min_newton_iterations) {}
+                  ref_element, -0.5, -0.5, max_newton_itersations, min_newton_iterations) {}
     };
 
 }  // namespace ippl

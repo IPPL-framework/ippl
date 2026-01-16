@@ -15,7 +15,7 @@ namespace ippl {
         public:
             Status()
                 : status_m()
-                , count_m(-1){};
+                , count_m(-1) {};
 
             Status(const Status&) = default;
 

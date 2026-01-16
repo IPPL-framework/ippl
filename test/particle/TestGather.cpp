@@ -72,11 +72,11 @@ int main(int argc, char* argv[]) {
 
         msg << "Testing addToAttribute=false. Expected output: 1" << endl;
         gather(bunch.Q, field, bunch.R);
-        
+
         // Should printout 1.0 for each particle
         bunch.Q.print();
 
-        ippl::Comm->barrier(); // so output of 1 and 2 is separated
+        ippl::Comm->barrier();  // so output of 1 and 2 is separated
 
         msg << "Testing addToAttribute=true. Expected output: 2" << endl;
         gather(bunch.Q, field, bunch.R, true);

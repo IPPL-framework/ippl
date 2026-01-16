@@ -2,17 +2,17 @@
 // by solving the problem:
 //
 // -Laplacian(u) = 1.0,
-// where x in [0,1] and u(0) = u(1) = 1.0. 
+// where x in [0,1] and u(0) = u(1) = 1.0.
 //
-// The exact solution is 
+// The exact solution is
 // u(x) = 1 + x/2 - (x^2)/2.
 //
 // BCs: Dirichlet BCs (Constant Face = 1).
 // This is only 1D!
 //
 // The test prints out the relative error as we refine
-// the mesh spacing i.e. it is a convergence study. 
-// The order of convergence should be 2. 
+// the mesh spacing i.e. it is a convergence study.
+// The order of convergence should be 2.
 //
 // Usage:
 //     ./TestNonHomDirichlet_1d_preconditioned --info 5
@@ -25,7 +25,7 @@
 template <typename T>
 struct AnalyticSol {
     KOKKOS_FUNCTION const T operator()(ippl::Vector<T, 1> x_vec) const {
-        return (1.0 + 0.5*x_vec[0] - 0.5*(x_vec[0]*x_vec[0]));
+        return (1.0 + 0.5 * x_vec[0] - 0.5 * (x_vec[0] * x_vec[0]));
     }
 };
 
@@ -99,13 +99,13 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     ippl::PreconditionedFEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
 
     // parameters for the preconditioner
-    std::string preconditioner_type = "richardson";
+    std::string preconditioner_type   = "richardson";
     int gauss_seidel_inner_iterations = 4;
     int gauss_seidel_outer_iterations = 2;
-    int newton_level = 1; // unused
-    int chebyshev_degree = 1; // unused
-    int richardson_iterations = 4;
-    double ssor_omega = 1.57079632679;
+    int newton_level                  = 1;  // unused
+    int chebyshev_degree              = 1;  // unused
+    int richardson_iterations         = 4;
+    double ssor_omega                 = 1.57079632679;
 
     // set the parameters
     ippl::ParameterList params;
@@ -131,7 +131,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // Compute the error
     const T relError = solver.getL2Error(analytic);
 
-    lhs = lhs - sol;
+    lhs               = lhs - sol;
     const T normError = norm(lhs) / norm(sol);
 
     m << std::setw(10) << numNodesPerDim;

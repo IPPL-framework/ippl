@@ -23,8 +23,7 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned NumElementDOFs, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     void FiniteElementSpace<T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS,
-                       FieldRHS>::setMesh(UniformCartesian<T, Dim>& mesh)
-    {
+                            FieldRHS>::setMesh(UniformCartesian<T, Dim>& mesh) {
         assert(mesh.Dimension == Dim && "Mesh dimension does not match the dimension of the space");
 
         mesh_m = mesh;

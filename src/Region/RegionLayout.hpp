@@ -53,11 +53,10 @@ namespace ippl {
             if (node_m) {
                 for (unsigned int d = 0; d < Dim; d++) {
                     T firstCoord = region_m[d].min();
-                    T lastCoord = region_m[d].max() - mesh.getMeshSpacing()[d];
-                    region_m[d] = PRegion<T>(firstCoord, lastCoord); 
+                    T lastCoord  = region_m[d].max() - mesh.getMeshSpacing()[d];
+                    region_m[d]  = PRegion<T>(firstCoord, lastCoord);
                 }
             }
-
         }
 
         // convert a given NDIndex into an NDRegion ... if this object was

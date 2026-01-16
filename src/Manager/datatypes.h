@@ -1,12 +1,12 @@
 #ifndef IPPL_DATATYPES_H
 #define IPPL_DATATYPES_H
 
+#include "PoissonSolvers/FEMPoissonSolver.h"
 #include "PoissonSolvers/FFTOpenPoissonSolver.h"
 #include "PoissonSolvers/FFTPeriodicPoissonSolver.h"
 #include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.h"
 #include "PoissonSolvers/NullSolver.h"
 #include "PoissonSolvers/PoissonCG.h"
-#include "PoissonSolvers/FEMPoissonSolver.h"
 #include "PoissonSolvers/PreconditionedFEMPoissonSolver.h"
 
 // some typedefs
@@ -67,16 +67,15 @@ using OpenSolver_t =
     ConditionalType<Dim == 3, ippl::FFTOpenPoissonSolver<VField_t<T, Dim>, Field_t<Dim>>>;
 
 template <typename T = double, unsigned Dim = 3>
-using FEMSolver_t = ippl::FEMPoissonSolver<Field<T, Dim>, Field<T, Dim>>; 
+using FEMSolver_t = ippl::FEMPoissonSolver<Field<T, Dim>, Field<T, Dim>>;
 
 template <typename T = double, unsigned Dim = 3>
-using FEMPreconSolver_t = ippl::PreconditionedFEMPoissonSolver<Field<T, Dim>, Field<T, Dim>>; 
+using FEMPreconSolver_t = ippl::PreconditionedFEMPoissonSolver<Field<T, Dim>, Field<T, Dim>>;
 
 template <typename T = double, unsigned Dim = 3>
-using Solver_t = VariantFromConditionalTypes<CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>,
-                                             FFTTruncatedGreenSolver_t<T, Dim>,
-                                             OpenSolver_t<T, Dim>, NullSolver_t<T, Dim>,
-                                             FEMSolver_t<T, Dim>, FEMPreconSolver_t<T, Dim>>;
+using Solver_t = VariantFromConditionalTypes<
+    CGSolver_t<T, Dim>, FFTSolver_t<T, Dim>, FFTTruncatedGreenSolver_t<T, Dim>,
+    OpenSolver_t<T, Dim>, NullSolver_t<T, Dim>, FEMSolver_t<T, Dim>, FEMPreconSolver_t<T, Dim>>;
 
 extern const char* TestName;
 

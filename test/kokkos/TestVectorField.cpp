@@ -197,16 +197,12 @@ int main(int argc, char* argv[]) {
         vector_field_type vfield("vfield", length);
 
         Kokkos::parallel_for(
-            "assign", length, KOKKOS_LAMBDA(const int i) {
-                vfield(i) = {1.0, 2.0, 3.0};
-            });
+            "assign", length, KOKKOS_LAMBDA(const int i) { vfield(i) = {1.0, 2.0, 3.0}; });
 
         vector_field_type wfield("wfield", length);
 
         Kokkos::parallel_for(
-            "assign", length, KOKKOS_LAMBDA(const int i) {
-                wfield(i) = {4.0, -5.0, 6.0};
-            });
+            "assign", length, KOKKOS_LAMBDA(const int i) { wfield(i) = {4.0, -5.0, 6.0}; });
 
         vector_field_type vvfield("vvfield", length);
         Kokkos::parallel_for(

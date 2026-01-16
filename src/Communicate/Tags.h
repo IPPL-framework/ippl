@@ -44,7 +44,7 @@ namespace ippl {
                 FEMVECTOR = 40000
             };
         }  // namespace tag
-    }      // namespace mpi
+    }  // namespace mpi
 }  // namespace ippl
 
 #endif
