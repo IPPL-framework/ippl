@@ -16,7 +16,8 @@
 #SBATCH --output=landau__n_.out
 #SBATCH --error=landau__n_.error
 
-module load  LUMI/24.03 partition/G cpeAMD rocm buildtools/24.03
+module swap PrgEnv-cray PrgEnv-gnu
+module load CrayEnv buildtools craype-accel-amd-gfx90a rocm cray-hdf5-parallel
 
 cat << EOF > select_gpu
 #!/bin/bash
