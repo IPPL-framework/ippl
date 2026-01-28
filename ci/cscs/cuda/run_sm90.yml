@@ -1,0 +1,90 @@
+include:
+  - local: "ci/cscs/common.yml"
+
+variables:
+  CUDA12_9_UENV: "/capstor/store/cscs/cscs/public/uenvs/opal-x-gh200-mpich-gcc-2025-12-19-cuda-12.9.1.squashfs"
+  WITH_UENV_VIEW: "default"
+  WRAPPER: "/user-environment/wrapper-mpi.sh"
+  SCRATCH: "/capstor/scratch/cscs/biddisco"
+  SRUN_ARGS: "--uenv=${CUDA12_9_UENV} --view=${WITH_UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-daint $WRAPPER"
+
+ippl-test-cuda12-sm90-debug-1-rank:
+  stage: ippl_test
+  needs: ["ippl-build-cuda12-sm90-debug"]
+  extends: [.baremetal-runner-daint-gh200]
+  variables:
+    BUILD_DIR: "ippl-build-debug"
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
+    SLURM_CPUS_PER_TASK: 64
+    SLURM_TIMELIMIT: "0:15:00"
+  before_script:
+    - pwd
+    - date
+    - ls -alh $BUILD_DIR/bin
+    - ls -alh $BUILD_DIR/lib
+  script:
+    - cd $BUILD_DIR/
+    - export LD_LIBRARY_PATH=$BUILD_DIR/lib:$LD_LIBRARY_PATH
+    - ctest --output-on-failure --timeout 60 -E "known_fail"
+
+ippl-test-cuda12-sm90-release-1-rank:
+  stage: ippl_test
+  needs: ["ippl-build-cuda12-sm90-release"]
+  extends: [.baremetal-runner-daint-gh200]
+  variables:
+    BUILD_DIR: "ippl-build-release"
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
+    SLURM_CPUS_PER_TASK: 64
+    SLURM_TIMELIMIT: "0:15:00"
+  before_script:
+    - pwd
+    - date
+    - ls -alh $BUILD_DIR/bin
+    - ls -alh $BUILD_DIR/lib
+  script:
+    - cd $BUILD_DIR/
+    - export LD_LIBRARY_PATH=$BUILD_DIR/lib:$LD_LIBRARY_PATH
+    - ctest --output-on-failure --timeout 60 -E "known_fail"
+
+ippl-test-cuda12-sm90-release-4-ranks:
+  stage: ippl_test
+  needs: ["ippl-build-cuda12-sm90-release"]
+  extends: [.baremetal-runner-daint-gh200]
+  variables:
+    BUILD_DIR: "ippl-build-release"
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 4
+    SLURM_CPUS_PER_TASK: 64
+    SLURM_TIMELIMIT: "0:30:00"
+  before_script:
+    - pwd
+    - date
+    - ls -alh $BUILD_DIR/bin
+    - ls -alh $BUILD_DIR/lib
+  script:
+    - cd $BUILD_DIR/
+    - export LD_LIBRARY_PATH=$BUILD_DIR/lib:$LD_LIBRARY_PATH
+    - ctest --output-on-failure --timeout 60 -E "known_fail"
+
+ippl-test-cuda12-sm90-release-failing-4-ranks:
+  stage: ippl_test
+  needs: ["ippl-build-cuda12-sm90-release"]
+  extends: [.baremetal-runner-daint-gh200]
+  variables:
+    BUILD_DIR: "ippl-build-release"
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 4
+    SLURM_CPUS_PER_TASK: 64
+    SLURM_TIMELIMIT: "0:30:00"
+  before_script:
+    - pwd
+    - date
+    - ls -alh $BUILD_DIR/bin
+    - ls -alh $BUILD_DIR/lib
+  script:
+    - cd $BUILD_DIR/
+    - export LD_LIBRARY_PATH=$BUILD_DIR/lib:$LD_LIBRARY_PATH
+    - ctest --output-on-failure --timeout 60 -R "known_fail"
+  allow_failure: true

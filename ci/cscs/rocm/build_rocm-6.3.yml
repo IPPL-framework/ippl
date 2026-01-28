@@ -1,0 +1,98 @@
+include:
+  - local: "ci/cscs/common.yml"
+
+variables:
+  ROCM6_3_UENV: "prgenv-gnu/25.07-6.3.3:v12"
+  WITH_UENV_VIEW: "default"
+  F7T_CLIENT_ID: $F7T_TDS_CONSUMER_KEY
+  F7T_CLIENT_SECRET: $F7T_TDS_CONSUMER_SECRET
+  SCRATCH: "/capstor/scratch/cscs/biddisco"
+  SRUN_FLAGS: "--uenv=${ROCM6_3_UENV};--view=${WITH_UENV_VIEW};--repo=$SCRATCH/.uenv-images-ci-beverin;$WRAPPER"
+
+ippl-build-rocm6_3-debug:
+  stage: ippl_build
+  image: "${ROCM6_3_UENV}"
+  extends: [.uenv-runner-beverin-mi300]
+  variables:
+    BUILD_DIR: "ippl-build-debug"
+    SLURM_JOB_NUM_NODES: 1
+
+  before_script:
+    # NOTE: error 'script config should be a string or a nested array of
+    # strings up to 10 levels deep' -> add '' around the command to execute
+    - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
+    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
+    - "uenv_dir=`echo $UENV_VIEW |cut -d: -f1`"
+    - "uenv_view=`echo $UENV_VIEW |cut -d: -f3`"
+    - echo "UENV_VIEW=$UENV_VIEW uenv_dir=$uenv_dir uenv_view=$uenv_view"
+    - HSA_PATH=$( find /user-environment/ -name hsa-rocr-dev\* )
+  script:
+    - mkdir $BUILD_DIR
+    - cd $BUILD_DIR
+    - >-
+      CC=amdclang CXX=amdclang++ cmake -S .. -B . -G Ninja 
+      --preset alps-mi300
+      -DCMAKE_PREFIX_PATH=$HSA_PATH 
+      -DCMAKE_BUILD_TYPE=Debug
+      -DHeffte_ENABLE_GPU_AWARE_MPI=OFF 
+      -DKokkos_VERSION=git.4.7.02
+      -DKokkos_ARCH_AMD_GFX942_APU=ON
+      -DIPPL_ENABLE_SOLVERS=ON
+      -DIPPL_MARK_FAILING_TESTS=ON
+      -DMPIEXEC_EXECUTABLE=/usr/bin/srun
+      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"
+      -DMPIEXEC_MAX_NUMPROCS=4
+    - ninja all
+    - echo "Build directory size:"
+    - du -sh .
+    - find . -name \*.o -delete
+    - echo "Cleanup directory size:"
+    - du -sh .
+  artifacts:
+    paths:
+      - $BUILD_DIR
+    expire_in: 1 day
+
+ippl-build-rocm6_3-release:
+  stage: ippl_build
+  image: "${ROCM6_3_UENV}"
+  extends: [.uenv-runner-beverin-mi300]
+  variables:
+    BUILD_DIR: "ippl-build-release"
+    SLURM_JOB_NUM_NODES: 1
+
+  before_script:
+    # NOTE: error 'script config should be a string or a nested array of
+    # strings up to 10 levels deep' -> add '' around the command to execute
+    - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
+    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
+    - "uenv_dir=`echo $UENV_VIEW |cut -d: -f1`"
+    - "uenv_view=`echo $UENV_VIEW |cut -d: -f3`"
+    - echo "UENV_VIEW=$UENV_VIEW uenv_dir=$uenv_dir uenv_view=$uenv_view"
+    - HSA_PATH=$( find /user-environment/ -name hsa-rocr-dev\* )
+  script:
+    - mkdir $BUILD_DIR
+    - cd $BUILD_DIR
+    - >-
+      CC=amdclang CXX=amdclang++ cmake -S .. -B . -G Ninja 
+      --preset alps-mi300 
+      -DCMAKE_PREFIX_PATH=$HSA_PATH 
+      -DCMAKE_BUILD_TYPE=Release
+      -DHeffte_ENABLE_GPU_AWARE_MPI=OFF 
+      -DKokkos_VERSION=git.4.7.02
+      -DKokkos_ARCH_AMD_GFX942_APU=ON
+      -DIPPL_ENABLE_SOLVERS=ON
+      -DIPPL_MARK_FAILING_TESTS=ON
+      -DMPIEXEC_EXECUTABLE=/usr/bin/srun
+      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"
+      -DMPIEXEC_MAX_NUMPROCS=4
+    - ninja all
+    - echo "Build directory size:"
+    - du -sh .
+    - find . -name \*.o -delete
+    - echo "Cleanup directory size:"
+    - du -sh .
+  artifacts:
+    paths:
+      - $BUILD_DIR
+    expire_in: 1 day
