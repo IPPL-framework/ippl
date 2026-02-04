@@ -280,11 +280,12 @@ Functions</h2></td></tr>
 <b>Value:</b><div class="fragment"><div class="line">    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> <a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <span class="keyword">class</span>... Properties&gt;                    \</div>
 <div class="line">    <a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="code hl_class" href="classippl_1_1ParticleAttrib.html">ParticleAttrib&lt;T, Properties...&gt;::name</a>() {                  \</div>
 <div class="line">        <a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> temp            = 0.0;                                  \</div>
+<div class="line">        <span class="keyword">auto</span> dview = dview_m;                                     \</div>
 <div class="line">        <span class="keyword">using </span>policy_type = Kokkos::RangePolicy&lt;execution_space&gt;; \</div>
 <div class="line">        Kokkos::parallel_reduce(                                  \</div>
 <div class="line">            <span class="stringliteral">&quot;fun&quot;</span>, policy_type(0, *(this-&gt;localNum_mp)),          \</div>
-<div class="line">            KOKKOS_CLASS_LAMBDA(<span class="keyword">const</span> <span class="keywordtype">size_t</span> i, <a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&amp; valL) {        \</div>
-<div class="line">                <a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> myVal = dview_m(i);                             \</div>
+<div class="line">            KOKKOS_LAMBDA(<span class="keyword">const</span> <span class="keywordtype">size_t</span> i, <a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&amp; valL) {              \</div>
+<div class="line">                <a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> myVal = dview(i);                               \</div>
 <div class="line">                op;                                               \</div>
 <div class="line">            },                                                    \</div>
 <div class="line">            Kokkos::fun&lt;T&gt;(temp));                                \</div>
@@ -293,7 +294,7 @@ Functions</h2></td></tr>
 <div class="line">        <span class="keywordflow">return</span> globaltemp;                                        \</div>
 <div class="line">    }</div>
 <div class="ttc" id="aBumponTailInstability_8cpp_html_a6b2d038ea9c8d2651eecffe0e28b7ebb"><div class="ttname"><a href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a></div><div class="ttdeci">double T</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:23</div></div>
-<div class="ttc" id="aclassippl_1_1ParticleAttrib_html"><div class="ttname"><a href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a></div><div class="ttdef"><b>Definition:</b> ParticleAttrib.h:31</div></div>
+<div class="ttc" id="aclassippl_1_1ParticleAttrib_html"><div class="ttname"><a href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a></div><div class="ttdef"><b>Definition:</b> ParticleAttrib.h:33</div></div>
 </div><!-- fragment -->
 </div>
 </div>

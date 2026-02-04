@@ -2,7 +2,7 @@ var searchData=
 [
   ['name_0',['Name',['../classInform.html#ac51a65202140728946392db3ad3ff184',1,'Inform']]],
   ['name_1',['name',['../classIpplTimerInfo.html#a701f790d76e60744d6527f8bdfabf68f',1,'IpplTimerInfo']]],
-  ['name_5fm_2',['name_m',['../classippl_1_1detail_1_1ParticleAttribBase.html#aafc3e2de1d940f905e8694d48577f593',1,'ippl::detail::ParticleAttribBase']]],
+  ['name_5fm_2',['name_m',['../classippl_1_1detail_1_1ParticleAttribBase.html#a878b80f9d5e3ba7e47490ef9ca84384e',1,'ippl::detail::ParticleAttribBase']]],
   ['nedelecspace_5fm_3',['nedelecSpace_m',['../classippl_1_1FEMMaxwellDiffusionSolver.html#acc8c0d2cd7be80a191b800b0c1bbfa15',1,'ippl::FEMMaxwellDiffusionSolver']]],
   ['needclose_4',['NeedClose',['../classInform.html#a7507c459df8456e03663a1f2beecc53f',1,'Inform']]],
   ['neighbors_5fm_5',['neighbors_m',['../structippl_1_1FEMVector_1_1BoundaryInfo.html#a95e243a3f924561c67fcf9b2976d3724',1,'ippl::FEMVector::BoundaryInfo::neighbors_m()'],['../classippl_1_1FieldLayout.html#a3224a54502941123db760eb5a81ea7fb',1,'ippl::FieldLayout::neighbors_m()']]],

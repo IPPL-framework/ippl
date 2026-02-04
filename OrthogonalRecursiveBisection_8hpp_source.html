@@ -364,25 +364,29 @@ $(function() {
 <div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
 <div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>        <span class="keyword">using </span>policy_type = Kokkos::RangePolicy&lt;size_t, typename Field::execution_space&gt;;</div>
 <div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span> </div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>        Kokkos::parallel_for(</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>            <span class="stringliteral">&quot;ParticleAttrib::scatterR&quot;</span>, policy_type(0, r.getParticleCount()),</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>            KOKKOS_LAMBDA(<span class="keyword">const</span> <span class="keywordtype">size_t</span> idx) {</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>                <span class="comment">// Find nearest grid point</span></div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>                <a class="code hl_class" href="classippl_1_1Vector.html">Vector&lt;Tp, Dim&gt;</a> l      = (r(idx) - origin) * invdx + 0.5;</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>                <a class="code hl_class" href="classippl_1_1Vector.html">Vector&lt;int, Dim&gt;</a> index = l;</div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>                <a class="code hl_class" href="classippl_1_1Vector.html">Vector&lt;Tf, Dim&gt;</a> whi    = l - index;</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>                <a class="code hl_class" href="classippl_1_1Vector.html">Vector&lt;Tf, Dim&gt;</a> wlo    = 1.0 - whi;</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span> </div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>                <a class="code hl_class" href="classippl_1_1Vector.html">Vector&lt;size_t, Dim&gt;</a> args = index - lDom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a867c03b8f54e8241f83860b4d058c7a5">first</a>() + nghost;</div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span> </div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>                <span class="comment">// Scatter</span></div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>                scatterToField(std::make_index_sequence&lt;1 &lt;&lt; <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;{}, view, wlo, whi, args);</div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>            });</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>        <span class="comment">// Extract the view to avoid capturing the entire ParticleAttrib in the lambda</span></div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>        <span class="comment">// (ParticleAttrib&#39;s destructor is host-only)</span></div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>        <span class="keyword">auto</span> rview = r.getView();</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span> </div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>        Kokkos::parallel_for(</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>            <span class="stringliteral">&quot;ParticleAttrib::scatterR&quot;</span>, policy_type(0, r.getParticleCount()),</div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>            KOKKOS_LAMBDA(<span class="keyword">const</span> <span class="keywordtype">size_t</span> idx) {</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>                <span class="comment">// Find nearest grid point</span></div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>                <a class="code hl_class" href="classippl_1_1Vector.html">Vector&lt;Tp, Dim&gt;</a> l      = (rview(idx) - origin) * invdx + 0.5;</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>                <a class="code hl_class" href="classippl_1_1Vector.html">Vector&lt;int, Dim&gt;</a> index = l;</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>                <a class="code hl_class" href="classippl_1_1Vector.html">Vector&lt;Tf, Dim&gt;</a> whi    = l - index;</div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>                <a class="code hl_class" href="classippl_1_1Vector.html">Vector&lt;Tf, Dim&gt;</a> wlo    = 1.0 - whi;</div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span> </div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>                <a class="code hl_class" href="classippl_1_1Vector.html">Vector&lt;size_t, Dim&gt;</a> args = index - lDom.<a class="code hl_function" href="classippl_1_1NDIndex.html#a867c03b8f54e8241f83860b4d058c7a5">first</a>() + nghost;</div>
 <div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span> </div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>        bf_m.accumulateHalo();</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>    }</div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span> </div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>}  <span class="comment">// namespace ippl</span></div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>                <span class="comment">// Scatter</span></div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>                scatterToField(std::make_index_sequence&lt;1 &lt;&lt; <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;{}, view, wlo, whi, args);</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>            });</div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span> </div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>        bf_m.accumulateHalo();</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>    }</div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span> </div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>}  <span class="comment">// namespace ippl</span></div>
 <div class="ttc" id="aAbsorbingBC_8h_html_a58ce4b72dde36d8333e494948da516ba"><div class="ttname"><a href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a></div><div class="ttdeci">constexpr KOKKOS_INLINE_FUNCTION auto first()</div><div class="ttdef"><b>Definition:</b> AbsorbingBC.h:10</div></div>
 <div class="ttc" id="aBumponTailInstability_8cpp_html_afef54e0ebfe65da0a396b342dcbe30f5"><div class="ttname"><a href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a></div><div class="ttdeci">constexpr unsigned Dim</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:22</div></div>
 <div class="ttc" id="aIpplTimings_8h_html"><div class="ttname"><a href="IpplTimings_8h.html">IpplTimings.h</a></div></div>
