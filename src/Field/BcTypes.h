@@ -52,7 +52,8 @@ namespace ippl {
             // The components default to setting all components.
             BCondBase(unsigned int face);
 
-            virtual ~BCondBase() = default;
+            KOKKOS_FUNCTION
+            virtual ~BCondBase() {}
 
             virtual FieldBC getBCType() const { return NO_FACE; }
 
@@ -98,7 +99,8 @@ namespace ippl {
             , offset_m(offset)
             , slope_m(slope) {}
 
-        virtual ~ExtrapolateFace() = default;
+        KOKKOS_FUNCTION
+        virtual ~ExtrapolateFace() {}
 
         virtual FieldBC getBCType() const { return EXTRAPOLATE_FACE; }
 
