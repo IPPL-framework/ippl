@@ -245,9 +245,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa638f052693821d6a14e2853558c6b96"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#aa638f052693821d6a14e2853558c6b96">createPeriodicGhostParticles</a> (<a class="el" href="classParticleContainer.html">ParticleContainer</a> &amp;pc)</td></tr>
 <tr class="memdesc:aa638f052693821d6a14e2853558c6b96"><td class="mdescLeft">&#160;</td><td class="mdescRight">copies particles close to the boundary and offsets them to their closest periodic image  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#aa638f052693821d6a14e2853558c6b96">More...</a><br /></td></tr>
 <tr class="separator:aa638f052693821d6a14e2853558c6b96"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3042ce9efaf1dba331ee45456b68a6b0"><td class="memTemplParams" colspan="2">template&lt;std::size_t... Idx&gt; </td></tr>
-<tr class="memitem:a3042ce9efaf1dba331ee45456b68a6b0"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a3042ce9efaf1dba331ee45456b68a6b0">isCloseToBoundary</a> (const std::index_sequence&lt; Idx... &gt; &amp;, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#af50426a8abc8622f3b0d2dd25990caf2">vector_type</a> &amp;pos, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7a3e0428b2ea35fce5cf9b0135103aa7">region_type</a> &amp;globalRegion, <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; bool, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="namespaceippl.html#abe010a5f57ba45c47c5ac149e5e6487ca597c8bfe12bab9d6488f7d3d1d45fa83">periodic</a>, <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> overlap)</td></tr>
-<tr class="separator:a3042ce9efaf1dba331ee45456b68a6b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9527da92a6d9a6082e36ceccdb5b4a17"><td class="memTemplParams" colspan="2">template&lt;std::size_t... Idx&gt; </td></tr>
+<tr class="memitem:a9527da92a6d9a6082e36ceccdb5b4a17"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a9527da92a6d9a6082e36ceccdb5b4a17">isCloseToBoundary</a> (const std::index_sequence&lt; Idx... &gt; &amp;, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#af50426a8abc8622f3b0d2dd25990caf2">vector_type</a> &amp;pos, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7a3e0428b2ea35fce5cf9b0135103aa7">region_type</a> &amp;globalRegion, Kokkos::Array&lt; bool, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="namespaceippl.html#abe010a5f57ba45c47c5ac149e5e6487ca597c8bfe12bab9d6488f7d3d1d45fa83">periodic</a>, <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> overlap)</td></tr>
+<tr class="separator:a9527da92a6d9a6082e36ceccdb5b4a17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d7be1bdd89101948514db013fba57ea"><td class="memTemplParams" colspan="2">template&lt;std::size_t... Idx&gt; </td></tr>
 <tr class="memitem:a0d7be1bdd89101948514db013fba57ea"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a0d7be1bdd89101948514db013fba57ea">positionInRegion</a> (const std::index_sequence&lt; Idx... &gt; &amp;, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#af50426a8abc8622f3b0d2dd25990caf2">vector_type</a> &amp;pos, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7a3e0428b2ea35fce5cf9b0135103aa7">region_type</a> &amp;region, <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> overlap)</td></tr>
 <tr class="separator:a0d7be1bdd89101948514db013fba57ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -328,10 +328,10 @@ Protected Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-static-methods" name="pro-static-methods"></a>
 Static Protected Member Functions</h2></td></tr>
-<tr class="memitem:aacfbd472204ecc815e325b093dc249a7"><td class="memTemplParams" colspan="2">template&lt;std::size_t... Idx&gt; </td></tr>
-<tr class="memitem:aacfbd472204ecc815e325b093dc249a7"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION static constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#aacfbd472204ecc815e325b093dc249a7">isCloseToBoundary</a> (const std::index_sequence&lt; Idx... &gt; &amp;, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#af50426a8abc8622f3b0d2dd25990caf2">vector_type</a> &amp;pos, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7a3e0428b2ea35fce5cf9b0135103aa7">region_type</a> &amp;region, <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; bool, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="namespaceippl.html#abe010a5f57ba45c47c5ac149e5e6487ca597c8bfe12bab9d6488f7d3d1d45fa83">periodic</a>, <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> overlap)</td></tr>
-<tr class="memdesc:aacfbd472204ecc815e325b093dc249a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">determines whether a position is within overlap to the boundary of a region  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#aacfbd472204ecc815e325b093dc249a7">More...</a><br /></td></tr>
-<tr class="separator:aacfbd472204ecc815e325b093dc249a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2f2cb6261efb3ee9c29110406c23727"><td class="memTemplParams" colspan="2">template&lt;std::size_t... Idx&gt; </td></tr>
+<tr class="memitem:ad2f2cb6261efb3ee9c29110406c23727"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION static constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#ad2f2cb6261efb3ee9c29110406c23727">isCloseToBoundary</a> (const std::index_sequence&lt; Idx... &gt; &amp;, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#af50426a8abc8622f3b0d2dd25990caf2">vector_type</a> &amp;pos, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7a3e0428b2ea35fce5cf9b0135103aa7">region_type</a> &amp;region, Kokkos::Array&lt; bool, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="namespaceippl.html#abe010a5f57ba45c47c5ac149e5e6487ca597c8bfe12bab9d6488f7d3d1d45fa83">periodic</a>, <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> overlap)</td></tr>
+<tr class="memdesc:ad2f2cb6261efb3ee9c29110406c23727"><td class="mdescLeft">&#160;</td><td class="mdescRight">determines whether a position is within overlap to the boundary of a region  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#ad2f2cb6261efb3ee9c29110406c23727">More...</a><br /></td></tr>
+<tr class="separator:ad2f2cb6261efb3ee9c29110406c23727"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a591482ea68b87ebcd39cb4a1d971a25a"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION static constexpr <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#abea3536dd57d34a05f3eba77dfb0acf6">FlatCellIndex_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a591482ea68b87ebcd39cb4a1d971a25a">toFlatCellIndex</a> (const <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a93b7a26cf719e2798cabde914d8970d0">CellIndex_t</a> &amp;cellIndex, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;cellStrides, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#abb5f0eb581ecb03492e482a69c6a03f9">hash_type</a> cellPermutationForward)</td></tr>
 <tr class="memdesc:a591482ea68b87ebcd39cb4a1d971a25a"><td class="mdescLeft">&#160;</td><td class="mdescRight">convert a nd-cell-index to flat cell index  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a591482ea68b87ebcd39cb4a1d971a25a">More...</a><br /></td></tr>
 <tr class="separator:a591482ea68b87ebcd39cb4a1d971a25a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1282,8 +1282,8 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 
 </div>
 </div>
-<a id="a3042ce9efaf1dba331ee45456b68a6b0" name="a3042ce9efaf1dba331ee45456b68a6b0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3042ce9efaf1dba331ee45456b68a6b0">&#9670;&#160;</a></span>isCloseToBoundary() <span class="overload">[1/2]</span></h2>
+<a id="a9527da92a6d9a6082e36ceccdb5b4a17" name="a9527da92a6d9a6082e36ceccdb5b4a17"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9527da92a6d9a6082e36ceccdb5b4a17">&#9670;&#160;</a></span>isCloseToBoundary() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1316,7 +1316,7 @@ template&lt;std::size_t... Idx&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; bool, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td>
+          <td class="paramtype">Kokkos::Array&lt; bool, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td>
           <td class="paramname"><em>periodic</em>, </td>
         </tr>
         <tr>
@@ -1340,8 +1340,8 @@ template&lt;std::size_t... Idx&gt; </div>
 
 </div>
 </div>
-<a id="aacfbd472204ecc815e325b093dc249a7" name="aacfbd472204ecc815e325b093dc249a7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aacfbd472204ecc815e325b093dc249a7">&#9670;&#160;</a></span>isCloseToBoundary() <span class="overload">[2/2]</span></h2>
+<a id="ad2f2cb6261efb3ee9c29110406c23727" name="ad2f2cb6261efb3ee9c29110406c23727"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad2f2cb6261efb3ee9c29110406c23727">&#9670;&#160;</a></span>isCloseToBoundary() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1374,7 +1374,7 @@ template&lt;std::size_t... Idx&gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; bool, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td>
+          <td class="paramtype">Kokkos::Array&lt; bool, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td>
           <td class="paramname"><em>periodic</em>, </td>
         </tr>
         <tr>
