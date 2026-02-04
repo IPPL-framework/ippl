@@ -36,11 +36,12 @@ namespace ippl {
                                                    size_type invalidCount) {
         // Replace all invalid particles in the valid region with valid
         // particles in the invalid region
+        auto dview = dview_m;
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
             "ParticleAttrib::destroy()", policy_type(0, invalidCount),
-            KOKKOS_CLASS_LAMBDA(const size_t i) {
-                dview_m(deleteIndex(i)) = dview_m(keepIndex(i));
+            KOKKOS_LAMBDA(const size_t i) {
+                dview(deleteIndex(i)) = dview(keepIndex(i));
             });
     }
 
@@ -52,10 +53,12 @@ namespace ippl {
             Kokkos::realloc(buf_m, size * overalloc);
         }
 
+        auto buf = buf_m;
+        auto dview = dview_m;
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
             "ParticleAttrib::pack()", policy_type(0, size),
-            KOKKOS_CLASS_LAMBDA(const size_t i) { buf_m(i) = dview_m(hash(i)); });
+            KOKKOS_LAMBDA(const size_t i) { buf(i) = dview(hash(i)); });
         Kokkos::fence();
     }
 
@@ -69,20 +72,23 @@ namespace ippl {
         }
 
         size_type count   = *(this->localNum_mp);
+        auto buf = buf_m;
+        auto dview = dview_m;
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
             "ParticleAttrib::unpack()", policy_type(0, nrecvs),
-            KOKKOS_CLASS_LAMBDA(const size_t i) { dview_m(count + i) = buf_m(i); });
+            KOKKOS_LAMBDA(const size_t i) { dview(count + i) = buf(i); });
         Kokkos::fence();
     }
 
     template <typename T, class... Properties>
     // KOKKOS_INLINE_FUNCTION
     ParticleAttrib<T, Properties...>& ParticleAttrib<T, Properties...>::operator=(T x) {
+        auto dview = dview_m;
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
             "ParticleAttrib::operator=()", policy_type(0, *(this->localNum_mp)),
-            KOKKOS_CLASS_LAMBDA(const size_t i) { dview_m(i) = x; });
+            KOKKOS_LAMBDA(const size_t i) { dview(i) = x; });
         return *this;
     }
 
@@ -94,10 +100,11 @@ namespace ippl {
         using capture_type = detail::CapturedExpression<E, N>;
         capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
 
+        auto dview = dview_m;
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
             "ParticleAttrib::operator=()", policy_type(0, *(this->localNum_mp)),
-            KOKKOS_CLASS_LAMBDA(const size_t i) { dview_m(i) = expr_(i); });
+            KOKKOS_LAMBDA(const size_t i) { dview(i) = expr_(i); });
         return *this;
     }
 
@@ -135,14 +142,16 @@ namespace ippl {
             m << "Hash array was passed to scatter, but size does not match iteration policy." << endl;
             ippl::Comm->abort();
         }
+        auto dview = dview_m;
+        auto ppview = pp.getView();
         Kokkos::parallel_for(
             "ParticleAttrib::scatter", iteration_policy,
-            KOKKOS_CLASS_LAMBDA(const size_t idx) {
+            KOKKOS_LAMBDA(const size_t idx) {
                 // map index to possible hash_map
                 size_t mapped_idx = useHashView ? hash_array(idx) : idx;
 
                 // find nearest grid point
-                vector_type l                        = (pp(mapped_idx) - origin) * invdx + 0.5;
+                vector_type l                        = (ppview(mapped_idx) - origin) * invdx + 0.5;
                 Vector<int, Field::dim> index        = l;
                 Vector<PositionType, Field::dim> whi = l - index;
                 Vector<PositionType, Field::dim> wlo = 1.0 - whi;
@@ -150,7 +159,7 @@ namespace ippl {
                 Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
 
                 // scatter
-                const value_type& val = dview_m(mapped_idx);
+                const value_type& val = dview(mapped_idx);
                 detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi,
                                        args, val);
             });
@@ -192,12 +201,14 @@ namespace ippl {
         const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
         const int nghost               = f.getNghost();
 
+        auto dview = dview_m;
+        auto ppview = pp.getView();
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
             "ParticleAttrib::gather", policy_type(0, *(this->localNum_mp)),
-            KOKKOS_CLASS_LAMBDA(const size_t idx) {
+            KOKKOS_LAMBDA(const size_t idx) {
                 // find nearest grid point
-                vector_type l                        = (pp(idx) - origin) * invdx + 0.5;
+                vector_type l                        = (ppview(idx) - origin) * invdx + 0.5;
                 Vector<int, Field::dim> index        = l;
                 Vector<PositionType, Field::dim> whi = l - index;
                 Vector<PositionType, Field::dim> wlo = 1.0 - whi;
@@ -208,9 +219,9 @@ namespace ippl {
                 value_type gathered = detail::gatherFromField(std::make_index_sequence<1 << Field::dim>{},
                                                               view, wlo, whi, args);
                 if (addToAttribute) {
-                    dview_m(idx) += gathered;
+                    dview(idx) += gathered;
                 } else {
-                    dview_m(idx)  = gathered;
+                    dview(idx)  = gathered;
                 }
             });
         IpplTimings::stopTimer(gatherTimer);
@@ -333,11 +344,12 @@ namespace ippl {
     template <typename T, class... Properties>                    \
     T ParticleAttrib<T, Properties...>::name() {                  \
         T temp            = 0.0;                                  \
+        auto dview = dview_m;                                     \
         using policy_type = Kokkos::RangePolicy<execution_space>; \
         Kokkos::parallel_reduce(                                  \
             "fun", policy_type(0, *(this->localNum_mp)),          \
-            KOKKOS_CLASS_LAMBDA(const size_t i, T& valL) {        \
-                T myVal = dview_m(i);                             \
+            KOKKOS_LAMBDA(const size_t i, T& valL) {              \
+                T myVal = dview(i);                               \
                 op;                                               \
             },                                                    \
             Kokkos::fun<T>(temp));                                \

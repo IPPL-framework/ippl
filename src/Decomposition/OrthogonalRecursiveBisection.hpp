@@ -278,11 +278,15 @@ namespace ippl {
 
         using policy_type = Kokkos::RangePolicy<size_t, typename Field::execution_space>;
 
+        // Extract the view to avoid capturing the entire ParticleAttrib in the lambda
+        // (ParticleAttrib's destructor is host-only)
+        auto rview = r.getView();
+
         Kokkos::parallel_for(
             "ParticleAttrib::scatterR", policy_type(0, r.getParticleCount()),
             KOKKOS_LAMBDA(const size_t idx) {
                 // Find nearest grid point
-                Vector<Tp, Dim> l      = (r(idx) - origin) * invdx + 0.5;
+                Vector<Tp, Dim> l      = (rview(idx) - origin) * invdx + 0.5;
                 Vector<int, Dim> index = l;
                 Vector<Tf, Dim> whi    = l - index;
                 Vector<Tf, Dim> wlo    = 1.0 - whi;

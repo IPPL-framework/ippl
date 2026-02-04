@@ -14,6 +14,8 @@
 #ifndef IPPL_PARTICLE_ATTRIB_BASE_H
 #define IPPL_PARTICLE_ATTRIB_BASE_H
 
+#include <cstring>
+
 #include "Types/IpplTypes.h"
 #include "Types/ViewTypes.h"
 
@@ -21,6 +23,9 @@
 
 namespace ippl {
     namespace detail {
+        // Maximum length for attribute names (including null terminator)
+        constexpr size_t ATTRIB_NAME_MAX_LEN = 64;
+
         template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
         class ParticleAttribBase {
             template <class... Properties>
@@ -37,10 +42,19 @@ namespace ippl {
             template <typename... Properties>
             using with_properties = typename WithMemSpace<Properties...>::type;
 
-            ParticleAttribBase(){this->name_m = "UNNAMED_attribute";}
+            KOKKOS_FUNCTION
+            ParticleAttribBase() {
+                const char* default_name = "UNNAMED_attribute";
+                for (size_t i = 0; i < ATTRIB_NAME_MAX_LEN && default_name[i] != '\0'; ++i) {
+                    name_m[i] = default_name[i];
+                    if (i + 1 < ATTRIB_NAME_MAX_LEN) {
+                        name_m[i + 1] = '\0';
+                    }
+                }
+            }
 
-            virtual void set_name(const std::string & name_) = 0;
-            
+            virtual void set_name(const std::string& name_) = 0;
+
             virtual std::string get_name() const = 0;
 
             virtual void create(size_type) = 0;
@@ -68,7 +82,7 @@ namespace ippl {
 
         protected:
             const size_type* localNum_mp;
-            std::string name_m;
+            char name_m[ATTRIB_NAME_MAX_LEN];
         };
     }  // namespace detail
 }  // namespace ippl
