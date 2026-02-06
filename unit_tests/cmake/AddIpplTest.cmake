@@ -9,6 +9,7 @@
 # ~~~
 # add_ippl_test(<name>
 #   [SOURCES <src1> <src2> ...]        # default: <name>.cpp
+#   [COMPILE_ONLY]                     # compile and link but do not register/run test
 #   [ARGS <arg1> <arg2> ...]           # args passed to the test binary
 #   [MPI_ARGS <arg1> <arg2> ...]       # extra args for mpiexec
 #   [NUM_PROCS <N>]                    # default: IPPL_DEFAULT_TEST_PROCS (2)
@@ -32,7 +33,7 @@ set(IPPL_DEFAULT_TEST_PROCS "2" CACHE STRING "Default MPI ranks per unit test")
 set(IPPL_DEFAULT_TEST_TIMEOUT "60" CACHE STRING "Default timeout (seconds) per unit test")
 
 function(add_ippl_test TEST_NAME)
-  set(options NO_MPI REQUIRE_MPI RUN_SERIAL USE_GTEST_MAIN INTEGRATION)
+  set(options NO_MPI REQUIRE_MPI RUN_SERIAL USE_GTEST_MAIN INTEGRATION COMPILE_ONLY)
   set(oneValueArgs NUM_PROCS TIMEOUT WORKING_DIRECTORY)
   set(multiValueArgs
       LABELS
@@ -58,6 +59,7 @@ function(add_ippl_test TEST_NAME)
     set(_sources ${TEST_NAME}.cpp)
   endif()
 
+  # ensure the test itself is compiled and linked
   add_executable(${TEST_NAME} ${_sources})
 
   # Link libraries (ippl exports includes/flags/deps; pick your GTest flavor)
@@ -152,7 +154,7 @@ function(add_ippl_test TEST_NAME)
   set(_ctest_name "${CTEST_TEST_NAME}")
 
   # Register the test
-  if(BUILD_TESTING)
+  if(BUILD_TESTING AND NOT TEST_COMPILE_ONLY)
     add_test(NAME ${_ctest_name} COMMAND ${_final_cmd})
 
     # Base properties

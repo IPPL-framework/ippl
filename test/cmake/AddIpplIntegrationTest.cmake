@@ -10,6 +10,7 @@
 # ~~~
 # add_ippl_integration_test(<name>
 #   [SOURCES <src1> <src2> ...]        # default: <name>.cpp
+#   [COMPILE_ONLY]                     # compile and link but do not register/run test
 #   [ARGS <arg1> <arg2> ...]           # args passed to the test binary
 #   [MPI_ARGS <arg1> <arg2> ...]       # extra args for mpiexec
 #   [NUM_PROCS <N>]                    # default: IPPL_DEFAULT_TEST_PROCS (2)

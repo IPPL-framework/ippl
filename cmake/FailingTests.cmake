@@ -20,16 +20,10 @@ if(BUILD_TESTING AND IPPL_MARK_FAILING_TESTS)
       Budiardja_plot
       TestGaussian
       TestGaussian_hessian
+      TestGaussian_biharmonic
       TestFFTTruncatedGreenPeriodicPoissonSolver
-      TestScaling_ZeroBC_sin
-      TestScaling_PeriodicBC_sinsin
-      TestMaxwellDiffusionZeroBC
-      TestMaxwellDiffusionPolyZeroBC
-      TestMaxwellDiffusionPolyZeroBCTimed
-      TestScaling_ZeroBC_sin_precon
-      TestScaling_PeriodicBC_sinsin_precon
       TestNonStandardFDTDSolver_convergence)
 
   set(IPPL_DISABLED_TEST_LIST_RELEASE ${IPPL_DISABLED_TEST_LIST})
-  set(IPPL_DISABLED_TEST_LIST_DEBUG ${IPPL_DISABLED_TEST_LIST} TestZeroBC_sin_preconditioned)
+  set(IPPL_DISABLED_TEST_LIST_DEBUG ${IPPL_DISABLED_TEST_LIST})
 endif()
