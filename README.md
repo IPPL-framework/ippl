@@ -10,7 +10,7 @@
   <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/">
     <img alt="CI/CD" src="https://img.shields.io/badge/CI/CD-red.svg">
   </a>
-  <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/">
+  <a href="https://github.com/IPPL-framework/ippl/blob/master/ci/cscs/cscs-ci-cd.md">
     <img alt="CI/CD CSCS" src="ci/cscs/CSCS_logo_short.jpg" width=50>
   </a>
   <a href="https://en.wikipedia.org/wiki/C%2B%2B20">

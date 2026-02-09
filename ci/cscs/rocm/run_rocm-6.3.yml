@@ -27,7 +27,13 @@ ippl-test-rocm6_3-debug-1-rank:
     - ls -alh $BUILD_DIR/lib
   script:
     - cd $BUILD_DIR/
-    - export LD_LIBRARY_PATH=$BUILD_DIR/lib:$LD_LIBRARY_PATH
+    # fix ctest paths to point to the current build directory instead of the cache directory used during the configure step
+    - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" CMakeCache.txt | cut -d'=' -f2)
+    - CTEST_BUILD_DIR=$(pwd)
+    - export LD_LIBRARY_PATH=$CTEST_BUILD_DIR/lib:$LD_LIBRARY_PATH
+    - find . -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    - find . -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    # ctest should now have valid file paths
     - ctest --output-on-failure --timeout 60 -E "known_fail"
 
 ippl-test-rocm6_3-release-1-rank:
@@ -47,7 +53,13 @@ ippl-test-rocm6_3-release-1-rank:
     - ls -alh $BUILD_DIR/lib
   script:
     - cd $BUILD_DIR/
-    - export LD_LIBRARY_PATH=$BUILD_DIR/lib:$LD_LIBRARY_PATH
+    # fix ctest paths to point to the current build directory instead of the cache directory used during the configure step
+    - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" CMakeCache.txt | cut -d'=' -f2)
+    - CTEST_BUILD_DIR=$(pwd)
+    - export LD_LIBRARY_PATH=$CTEST_BUILD_DIR/lib:$LD_LIBRARY_PATH
+    - find . -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    - find . -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    # ctest should now have valid file paths
     - ctest --output-on-failure --timeout 60 -E "known_fail"
 
 ippl-test-rocm6_3-release-4-ranks:
@@ -67,7 +79,13 @@ ippl-test-rocm6_3-release-4-ranks:
     - ls -alh $BUILD_DIR/lib
   script:
     - cd $BUILD_DIR/
-    - export LD_LIBRARY_PATH=$BUILD_DIR/lib:$LD_LIBRARY_PATH
+    # fix ctest paths to point to the current build directory instead of the cache directory used during the configure step
+    - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" CMakeCache.txt | cut -d'=' -f2)
+    - CTEST_BUILD_DIR=$(pwd)
+    - export LD_LIBRARY_PATH=$CTEST_BUILD_DIR/lib:$LD_LIBRARY_PATH
+    - find . -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    - find . -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    # ctest should now have valid file paths
     - ctest --output-on-failure --timeout 60 -E "known_fail"
 
 ippl-test-rocm6_3-release-failing-4-ranks:
@@ -87,6 +105,12 @@ ippl-test-rocm6_3-release-failing-4-ranks:
     - ls -alh $BUILD_DIR/lib
   script:
     - cd $BUILD_DIR/
-    - export LD_LIBRARY_PATH=$BUILD_DIR/lib:$LD_LIBRARY_PATH
+    # fix ctest paths to point to the current build directory instead of the cache directory used during the configure step
+    - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" CMakeCache.txt | cut -d'=' -f2)
+    - CTEST_BUILD_DIR=$(pwd)
+    - export LD_LIBRARY_PATH=$CTEST_BUILD_DIR/lib:$LD_LIBRARY_PATH
+    - find . -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    - find . -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    # ctest should now have valid file paths
     - ctest --output-on-failure --timeout 60 -R "known_fail"
   allow_failure: true
