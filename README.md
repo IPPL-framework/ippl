@@ -10,6 +10,9 @@
   <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/">
     <img alt="CI/CD" src="https://img.shields.io/badge/CI/CD-red.svg">
   </a>
+  <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/">
+    <img alt="CI/CD CSCS" src="ci/cscs/CSCS_logo_short.jpg" width=50>
+  </a>
   <a href="https://en.wikipedia.org/wiki/C%2B%2B20">
     <img alt="C++ standard" src="https://img.shields.io/badge/c%2B%2B-20-blue.svg">
   </a>
@@ -28,10 +31,11 @@ methods, with Eulerian (mesh-based) and Lagrangian (particle-based) approaches.
 IPPL makes use of [Kokkos](https://github.com/kokkos/kokkos), [HeFFTe](https://github.com/icl-utk-edu/heffte), and MPI (Message Passing Interface) to deliver a portable,
 massively parallel toolkit for particle-mesh methods. IPPL supports simulations in one to six dimensions, mixed precision, and asynchronous execution in different execution spaces (e.g. CPUs and GPUs).
 
-**[Installation](#installation)** | 
+**[Installation](#installation)** |
 **[Contributions](#contributions)** |
+**[CI/CD](#cicd-and-pr-testing)** |
 **[Citing IPPL](#citing-ippl)** |
-**[SLURM Job scripts](#slurm-job-scripts)** | 
+**[SLURM Job scripts](#slurm-job-scripts)** |
 **[Profiling](#profiling)**
 
 # Installation
@@ -52,6 +56,9 @@ $ git pull upstream master
 ```
 All the contributions (except for bug fixes) need to be accompanied with a unit test. For more information on unit tests in IPPL please
 take a look at this [page](https://github.com/IPPL-framework/ippl/blob/master/UNIT_TESTS.md).
+
+# CI/CD and PR testing
+Please see [Julich CI results](https://ippl-bc4558.pages.jsc.fz-juelich.de/) and [CSCS PR testing](ci/cscs/cscs-ci-cd.md) for further information.
 
 # Citing IPPL
 
