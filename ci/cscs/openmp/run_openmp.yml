@@ -1,0 +1,114 @@
+include:
+  - local: "ci/cscs/common.yml"
+
+variables:
+  EIGER_UENV: "prgenv-gnu/25.6:v2"
+  WITH_UENV_VIEW: "default"
+  WRAPPER: ""
+  SCRATCH: "/capstor/scratch/cscs/biddisco"
+  SRUN_ARGS: "--uenv=${EIGER_UENV} --view=${WITH_UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-beverin $WRAPPER"
+
+ippl-test-openmp-debug-1-rank:
+  stage: ippl_test
+  needs: ["ippl-build-openmp-debug"]
+  extends: [.baremetal-runner-eiger-zen2]
+  variables:
+    BUILD_DIR: "ippl-build-debug"
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
+    SLURM_CPUS_PER_TASK: 64
+    SLURM_TIMELIMIT: "0:15:00"
+  before_script:
+    - pwd
+    - date
+    - ls -alh $BUILD_DIR/bin
+    - ls -alh $BUILD_DIR/lib
+  script:
+    - cd $BUILD_DIR/
+    # fix ctest paths to point to the current build directory instead of the cache directory used during the configure step
+    - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" CMakeCache.txt | cut -d'=' -f2)
+    - CTEST_BUILD_DIR=$(pwd)
+    - export LD_LIBRARY_PATH=$CTEST_BUILD_DIR/lib:$LD_LIBRARY_PATH
+    - find . -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    - find . -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    # ctest should now have valid file paths
+    - ctest --output-on-failure --timeout 60 -E "known_fail"
+
+ippl-test-openmp-release-1-rank:
+  stage: ippl_test
+  needs: ["ippl-build-openmp-release"]
+  extends: [.baremetal-runner-eiger-zen2]
+  variables:
+    BUILD_DIR: "ippl-build-release"
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
+    SLURM_CPUS_PER_TASK: 64
+    SLURM_TIMELIMIT: "0:15:00"
+  before_script:
+    - pwd
+    - date
+    - ls -alh $BUILD_DIR/bin
+    - ls -alh $BUILD_DIR/lib
+  script:
+    - cd $BUILD_DIR/
+    # fix ctest paths to point to the current build directory instead of the cache directory used during the configure step
+    - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" CMakeCache.txt | cut -d'=' -f2)
+    - CTEST_BUILD_DIR=$(pwd)
+    - export LD_LIBRARY_PATH=$CTEST_BUILD_DIR/lib:$LD_LIBRARY_PATH
+    - find . -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    - find . -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    # ctest should now have valid file paths
+    - ctest --output-on-failure --timeout 60 -E "known_fail"
+
+ippl-test-openmp-release-4-ranks:
+  stage: ippl_test
+  needs: ["ippl-build-openmp-release"]
+  extends: [.baremetal-runner-eiger-zen2]
+  variables:
+    BUILD_DIR: "ippl-build-release"
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 4
+    SLURM_CPUS_PER_TASK: 32
+    SLURM_TIMELIMIT: "0:30:00"
+  before_script:
+    - pwd
+    - date
+    - ls -alh $BUILD_DIR/bin
+    - ls -alh $BUILD_DIR/lib
+  script:
+    - cd $BUILD_DIR/
+    # fix ctest paths to point to the current build directory instead of the cache directory used during the configure step
+    - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" CMakeCache.txt | cut -d'=' -f2)
+    - CTEST_BUILD_DIR=$(pwd)
+    - export LD_LIBRARY_PATH=$CTEST_BUILD_DIR/lib:$LD_LIBRARY_PATH
+    - find . -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    - find . -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    # ctest should now have valid file paths
+    - ctest --output-on-failure --timeout 60 -E "known_fail"
+
+ippl-test-openmp-release-failing-4-ranks:
+  stage: ippl_test
+  needs: ["ippl-build-openmp-release"]
+  extends: [.baremetal-runner-eiger-zen2]
+  variables:
+    BUILD_DIR: "ippl-build-release"
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 4
+    SLURM_CPUS_PER_TASK: 32
+    SLURM_TIMELIMIT: "0:30:00"
+  before_script:
+    - pwd
+    - date
+    - ls -alh $BUILD_DIR/bin
+    - ls -alh $BUILD_DIR/lib
+  script:
+    - cd $BUILD_DIR/
+    # fix ctest paths to point to the current build directory instead of the cache directory used during the configure step
+    - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" CMakeCache.txt | cut -d'=' -f2)
+    - CTEST_BUILD_DIR=$(pwd)
+    - export LD_LIBRARY_PATH=$CTEST_BUILD_DIR/lib:$LD_LIBRARY_PATH
+    - find . -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    - find . -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$CTEST_BUILD_DIR|g" {} \;
+    # ctest should now have valid file paths
+    - ctest --output-on-failure --timeout 60 -R "known_fail"
+  allow_failure: true

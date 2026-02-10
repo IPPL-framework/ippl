@@ -1,0 +1,89 @@
+include:
+  - local: "ci/cscs/common.yml"
+
+variables:
+  EIGER_UENV: "prgenv-gnu/25.6:v2"
+  WITH_UENV_VIEW: "default"
+  SCRATCH: "/capstor/scratch/cscs/biddisco"
+  SRUN_FLAGS: "--uenv=${EIGER_UENV};--view=${WITH_UENV_VIEW};--repo=$SCRATCH/.uenv-images-ci-eiger;$WRAPPER"
+
+ippl-build-openmp-debug:
+  stage: ippl_build
+  image: "${EIGER_UENV}"
+  extends: [.uenv-runner-eiger-zen2]
+  variables:
+    BUILD_DIR: "ippl-build-debug"
+    SLURM_JOB_NUM_NODES: 1
+
+  before_script:
+    # NOTE: error 'script config should be a string or a nested array of
+    # strings up to 10 levels deep' -> add '' around the command to execute
+    - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
+    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
+    - "uenv_dir=`echo $UENV_VIEW |cut -d: -f1`"
+    - "uenv_view=`echo $UENV_VIEW |cut -d: -f3`"
+    - echo "UENV_VIEW=$UENV_VIEW uenv_dir=$uenv_dir uenv_view=$uenv_view"
+  script:
+    - mkdir $BUILD_DIR
+    - cd $BUILD_DIR
+    - >-
+      CC=gcc CXX=g++ cmake -S .. -B . -G Ninja 
+      --preset debug-testing
+      -DKokkos_VERSION=git.4.7.02
+      -DIPPL_PLATFORMS=OPENMP
+      -DIPPL_ENABLE_SANITIZER=OFF
+      -DIPPL_ENABLE_SOLVERS=ON
+      -DIPPL_MARK_FAILING_TESTS=ON
+      -DMPIEXEC_EXECUTABLE=/usr/bin/srun
+      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"
+      -DMPIEXEC_MAX_NUMPROCS=4
+    - ninja all
+    - echo "Build directory size:"
+    - du -sh .
+    - find . -name \*.o -delete
+    - echo "Cleanup directory size:"
+    - du -sh .
+  artifacts:
+    paths:
+      - $BUILD_DIR
+    expire_in: 1 day
+
+ippl-build-openmp-release:
+  stage: ippl_build
+  image: "${EIGER_UENV}"
+  extends: [.uenv-runner-eiger-zen2]
+  variables:
+    BUILD_DIR: "ippl-build-release"
+    SLURM_JOB_NUM_NODES: 1
+
+  before_script:
+    # NOTE: error 'script config should be a string or a nested array of
+    # strings up to 10 levels deep' -> add '' around the command to execute
+    - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
+    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
+    - "uenv_dir=`echo $UENV_VIEW |cut -d: -f1`"
+    - "uenv_view=`echo $UENV_VIEW |cut -d: -f3`"
+    - echo "UENV_VIEW=$UENV_VIEW uenv_dir=$uenv_dir uenv_view=$uenv_view"
+  script:
+    - mkdir $BUILD_DIR
+    - cd $BUILD_DIR
+    - >-
+      CC=gcc CXX=g++ cmake -S .. -B . -G Ninja 
+      --preset release-testing 
+      -DKokkos_VERSION=git.4.7.02
+      -DIPPL_PLATFORMS=OPENMP
+      -DIPPL_ENABLE_SOLVERS=ON
+      -DIPPL_MARK_FAILING_TESTS=ON
+      -DMPIEXEC_EXECUTABLE=/usr/bin/srun
+      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"
+      -DMPIEXEC_MAX_NUMPROCS=4
+    - ninja all
+    - echo "Build directory size:"
+    - du -sh .
+    - find . -name \*.o -delete
+    - echo "Cleanup directory size:"
+    - du -sh .
+  artifacts:
+    paths:
+      - $BUILD_DIR
+    expire_in: 1 day
