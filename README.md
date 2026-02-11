@@ -10,8 +10,8 @@
   <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/">
     <img alt="CI/CD" src="https://img.shields.io/badge/CI/CD-red.svg">
   </a>
-  <a href="https://github.com/IPPL-framework/ippl/blob/master/ci/cscs/cscs-ci-cd.md">
-    <img alt="CI/CD CSCS" src="ci/cscs/CSCS_logo_short.jpg" width=50>
+  <a href="https://my.cdash.org/index.php?project=IPPL">
+    <img alt="CI/CD CSCS" height="20" src="https://my.cdash.org/img/cdash.svg">
   </a>
   <a href="https://en.wikipedia.org/wiki/C%2B%2B20">
     <img alt="C++ standard" src="https://img.shields.io/badge/c%2B%2B-20-blue.svg">

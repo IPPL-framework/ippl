@@ -7,6 +7,8 @@ variables:
   WRAPPER: "/user-environment/wrapper-mpi.sh"
   SCRATCH: "/capstor/scratch/cscs/biddisco"
   SRUN_FLAGS: "--uenv=${CUDA12_9_UENV};--view=${WITH_UENV_VIEW};--repo=$SCRATCH/.uenv-images-ci-daint;$WRAPPER"
+  BUILD_ARCH: "gh200"
+  CTEST_SITE: "Daint gh200 CUDA 12.9.1"
 
 # ---------------------------------------------------------
 # Common settings for cuda builds
@@ -21,58 +23,50 @@ variables:
   before_script:
     - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
     - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
-  script:
+    - |
+      if [[ "$CI_COMMIT_REF_NAME" =~ pr([0-9]+)$ ]]; then
+        export PR_NUMBER="${BASH_REMATCH[1]}"
+        echo "PR_NUMBER=$PR_NUMBER"
+      fi
     - pwd
-    - env | sort
+    - env | sort | grep CI
+    - export BUILD_PATH=$(pwd)/$BUILD_DIR
+  script:
     - >-
-      if [ -n "$CI_MERGE_REQUEST_IID" ]; then
-        echo "Running for MR !${CI_MERGE_REQUEST_IID}"
-      else
-        echo "Not a merge request pipeline"
-      fi
-      if [[ "$CI_COMMIT_REF_NAME" =~ pr([0-9]+) ]]; then
-        PR_NUMBER="${BASH_REMATCH[1]}"
-        echo "GitHub PR number: $PR_NUMBER"
-      fi
-    - mkdir "$BUILD_DIR"
-    - cd "$BUILD_DIR"
-    - >-
-      cmake -S .. -B . -G Ninja
-      --preset alps-gh200
-      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-      -DKokkos_VERSION=git.4.7.02
-      -DKokkos_ARCH_HOPPER90=ON
-      -DIPPL_ENABLE_SOLVERS=ON
-      -DIPPL_MARK_FAILING_TESTS=ON
-      -DCTEST_SITE="Daint GH200 CUDA 12.9.1"
-      -DMPIEXEC_EXECUTABLE=/usr/bin/srun
-      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"
+      ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-configure-build.cmake 
+      -DCTEST_SITE="$CTEST_SITE"
+      -DPRESET=alps-gh200                   
+      -DPR_NUMBER=$PR_NUMBER                
+      -DBUILD_TYPE=$BUILD_TYPE
+      -DBUILD_DIR=$BUILD_PATH
+      -DBUILD_ARCH=$BUILD_ARCH                
+      -DKokkos_VERSION=git.4.7.02           
+      -DKokkos_ARCH_FLAG=Kokkos_ARCH_HOPPER90 
+      -DMPIEXEC_EXECUTABLE=/usr/bin/srun    
+      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"      
       -DMPIEXEC_MAX_NUMPROCS=4
-    - ninja all
-    - echo "Build directory size (before cleanup):"
-    - du -sh .
-    - find . -name \*.o -delete
-    - echo "Build directory size (cleaned for artefacts):"
-    - du -sh .
+    - echo "Build directory size (before cleanup):" $(du -sh $BUILD_PATH | cut -f1)
+    - find $BUILD_PATH -name \*.o -delete
+    - echo "Build directory size (cleaned for artefacts):" $(du -sh $BUILD_PATH | cut -f1)
   artifacts:
     paths:
       - $BUILD_DIR
     expire_in: 1 day
 
 # ---------------------------------------------------------
-# cuda build on daint gh200 with debug flags
+# cuda build debug
 # ---------------------------------------------------------
 ippl-build-cuda12-sm90-debug:
   extends: .ippl-build-cuda-common
   variables:
-    BUILD_DIR: "ippl-build-debug"
-    CMAKE_BUILD_TYPE: Debug
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug"
+    BUILD_TYPE: Debug
 
 # ---------------------------------------------------------
-# cuda build on daint gh200 with release flags
+# cuda build release
 # ---------------------------------------------------------
 ippl-build-cuda12-sm90-release:
   extends: .ippl-build-cuda-common
   variables:
-    BUILD_DIR: "ippl-build-release"
-    CMAKE_BUILD_TYPE: Release
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
+    BUILD_TYPE: Release
