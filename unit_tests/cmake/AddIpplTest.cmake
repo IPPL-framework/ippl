@@ -120,7 +120,7 @@ function(add_ippl_test TEST_NAME)
   endif()
 
   # Parallel-ctest friendliness: processors = ranks * threads
-  set(_threads "$ENV{OMP_NUM_THREADS}")
+  set(_threads "${IPPL_OPENMP_THREADS}")
   if(NOT _threads)
     set(_threads 1)
   endif()
@@ -162,18 +162,22 @@ function(add_ippl_test TEST_NAME)
 
     if(TEST_INTEGRATION)
       math(EXPR _processors "${_procs}*${_threads}")
+      # TODO: We might not want to set FFTW/MKL/BLAS threads to all available
+      set(ENV_VARS)
+      list(
+        APPEND
+        ENV_VARS
+        "OMP_PROC_BIND=spread"
+        "OMP_PLACES=threads"
+        "OMP_NUM_THREADS=${_threads} "
+        "KOKKOS_NUM_THREADS=${_threads}"
+        "MKL_NUM_THREADS=${_threads}"
+        "OPENBLAS_NUM_THREADS=${_threads}"
+        "FFTW_THREADS=${_threads}")
+
       # Set processors, working directory, and environment for parallel tests
-      set_tests_properties(
-        ${_ctest_name}
-        PROPERTIES
-          PROCESSORS
-          ${_processors}
-          ENVIRONMENT
-          "OMP_NUM_THREADS=${_threads};
-     KOKKOS_NUM_THREADS=${_threads};
-     MKL_NUM_THREADS=1;
-     OPENBLAS_NUM_THREADS=1;
-     FFTW_THREADS=1")
+      set_tests_properties(${_ctest_name} PROPERTIES PROCESSORS ${_processors} ENVIRONMENT
+                                                     "${ENV_VARS}")
     endif()
 
     # Optional working directory

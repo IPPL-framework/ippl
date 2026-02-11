@@ -9,42 +9,50 @@ variables:
   SRUN_FLAGS: "--uenv=${CUDA12_9_UENV};--view=${WITH_UENV_VIEW};--repo=$SCRATCH/.uenv-images-ci-daint;$WRAPPER"
 
 # ---------------------------------------------------------
-# cuda build on daint gh200 with debug flags
-# this uses a uenv loaded by the uenv-runner and then cmake invoked to build
+# Common settings for cuda builds
+# this uses a uenv loaded by the uenv-runner and then cmake to build
 # ---------------------------------------------------------
-ippl-build-cuda12-sm90-debug:
+.ippl-build-cuda-common:
   stage: ippl_build
   extends: [.uenv-runner-daint-gh200]
-  # this feild tells the uenv runner which uenv to load
   image: "${CUDA12_9_UENV}"
   variables:
-    BUILD_DIR: "ippl-build-debug"
     SLURM_JOB_NUM_NODES: 1
   before_script:
-    # NOTE: error 'script config should be a string or a nested array of
-    # strings up to 10 levels deep' -> add '' around the command to execute
     - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
     - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
   script:
     - pwd
-    - mkdir $BUILD_DIR
-    - cd $BUILD_DIR
+    - env | sort
     - >-
-      cmake -S .. -B . -G Ninja 
+      if [ -n "$CI_MERGE_REQUEST_IID" ]; then
+        echo "Running for MR !${CI_MERGE_REQUEST_IID}"
+      else
+        echo "Not a merge request pipeline"
+      fi
+      if [[ "$CI_COMMIT_REF_NAME" =~ pr([0-9]+) ]]; then
+        PR_NUMBER="${BASH_REMATCH[1]}"
+        echo "GitHub PR number: $PR_NUMBER"
+      fi
+    - mkdir "$BUILD_DIR"
+    - cd "$BUILD_DIR"
+    - >-
+      cmake -S .. -B . -G Ninja
       --preset alps-gh200
-      -DCMAKE_BUILD_TYPE=Debug
+      -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
       -DKokkos_VERSION=git.4.7.02
       -DKokkos_ARCH_HOPPER90=ON
       -DIPPL_ENABLE_SOLVERS=ON
       -DIPPL_MARK_FAILING_TESTS=ON
+      -DCTEST_SITE="Daint GH200 CUDA 12.9.1"
       -DMPIEXEC_EXECUTABLE=/usr/bin/srun
       -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"
       -DMPIEXEC_MAX_NUMPROCS=4
     - ninja all
-    - echo "Build directory size:"
+    - echo "Build directory size (before cleanup):"
     - du -sh .
     - find . -name \*.o -delete
-    - echo "Cleanup directory size:"
+    - echo "Build directory size (cleaned for artefacts):"
     - du -sh .
   artifacts:
     paths:
@@ -54,41 +62,17 @@ ippl-build-cuda12-sm90-debug:
 # ---------------------------------------------------------
 # cuda build on daint gh200 with debug flags
 # ---------------------------------------------------------
+ippl-build-cuda12-sm90-debug:
+  extends: .ippl-build-cuda-common
+  variables:
+    BUILD_DIR: "ippl-build-debug"
+    CMAKE_BUILD_TYPE: Debug
+
+# ---------------------------------------------------------
+# cuda build on daint gh200 with release flags
+# ---------------------------------------------------------
 ippl-build-cuda12-sm90-release:
-  stage: ippl_build
-  extends: [.uenv-runner-daint-gh200]
-  # this feild tells the uenv runner which uenv to load
-  image: "${CUDA12_9_UENV}"
+  extends: .ippl-build-cuda-common
   variables:
     BUILD_DIR: "ippl-build-release"
-    SLURM_JOB_NUM_NODES: 1
-  before_script:
-    # NOTE: error 'script config should be a string or a nested array of
-    # strings up to 10 levels deep' -> add '' around the command to execute
-    - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
-    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
-  script:
-    - pwd
-    - mkdir $BUILD_DIR
-    - cd $BUILD_DIR
-    - >-
-      cmake -S .. -B . -G Ninja 
-      --preset alps-gh200
-      -DCMAKE_BUILD_TYPE=Release
-      -DKokkos_VERSION=git.4.7.02
-      -DKokkos_ARCH_HOPPER90=ON
-      -DIPPL_ENABLE_SOLVERS=ON
-      -DIPPL_MARK_FAILING_TESTS=ON
-      -DMPIEXEC_EXECUTABLE=/usr/bin/srun
-      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"
-      -DMPIEXEC_MAX_NUMPROCS=4
-    - ninja all
-    - echo "Build directory size:"
-    - du -sh .
-    - find . -name \*.o -delete
-    - echo "Cleanup directory size:"
-    - du -sh .
-  artifacts:
-    paths:
-      - $BUILD_DIR
-    expire_in: 1 day
+    CMAKE_BUILD_TYPE: Release
