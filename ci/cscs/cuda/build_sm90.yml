@@ -21,16 +21,10 @@ variables:
   variables:
     SLURM_JOB_NUM_NODES: 1
   before_script:
-    - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
-    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
-    - |
-      if [[ "$CI_COMMIT_REF_NAME" =~ pr([0-9]+)$ ]]; then
-        export PR_NUMBER="${BASH_REMATCH[1]}"
-        echo "PR_NUMBER=$PR_NUMBER"
-      fi
+    - !reference [.pr-number-extractor, before_script]
+    - export BUILD_PATH=$(pwd)/$BUILD_DIR
     - pwd
     - env | sort | grep CI
-    - export BUILD_PATH=$(pwd)/$BUILD_DIR
   script:
     - >-
       ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-configure-build.cmake 
