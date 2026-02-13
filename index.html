@@ -87,10 +87,10 @@ $(function() {
 <p ><sub><sub><sup><sup><em> IPPL-logo; design by S.A.T.Klapproth</em> </sup></sup></sub> </sub></p>
 <p ><sub></sub></p>
 <p  align="center"><sub></sub></p>
-<p ><sub> <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/"><img src="https://img.shields.io/badge/CI/CD-red.svg" alt="CI/CD" style="pointer-events: none;" class="inline"/> </a> <a href="https://en.wikipedia.org/wiki/C%2B%2B20"><img src="https://img.shields.io/badge/c%2B%2B-20-blue.svg" alt="C++ standard" style="pointer-events: none;" class="inline"/> </a> <a href="https://doi.org/10.5281/zenodo.8389192"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg" alt="DOI" style="pointer-events: none;" class="inline"/> </a> <a href="https://github.com/IPPL-framework/ippl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/IPPL-framework/ippl" alt="License" class="inline"/> </a> </sub></p>
+<p ><sub> <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/"><img src="https://img.shields.io/badge/CI/CD-red.svg" alt="CI/CD" style="pointer-events: none;" class="inline"/> </a> <a href="https://my.cdash.org/index.php?project=IPPL"><img src="https://my.cdash.org/img/cdash.svg" alt="CI/CD CSCS" style="pointer-events: none;" height="20" class="inline"/> </a> <a href="https://en.wikipedia.org/wiki/C%2B%2B20"><img src="https://img.shields.io/badge/c%2B%2B-20-blue.svg" alt="C++ standard" style="pointer-events: none;" class="inline"/> </a> <a href="https://doi.org/10.5281/zenodo.8389192"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg" alt="DOI" style="pointer-events: none;" class="inline"/> </a> <a href="https://github.com/IPPL-framework/ippl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/IPPL-framework/ippl" alt="License" class="inline"/> </a> </sub></p>
 <p ><sub></sub></p>
 <p ><sub>The IPPL (Independent Parallel Particle Layer) library provides performance portable and dimension independent building blocks for scientific simulations requiring particle-mesh methods, with Eulerian (mesh-based) and Lagrangian (particle-based) approaches. IPPL makes use of <a href="https://github.com/kokkos/kokkos">Kokkos</a>, <a href="https://github.com/icl-utk-edu/heffte">HeFFTe</a>, and MPI (Message Passing Interface) to deliver a portable, massively parallel toolkit for particle-mesh methods. IPPL supports simulations in one to six dimensions, mixed precision, and asynchronous execution in different execution spaces (e.g. CPUs and GPUs).</sub></p>
-<p ><sub><b>Installation</b> | <b>Contributions</b> | <b>Citing IPPL</b> | <b>SLURM Job scripts</b> | <b>Profiling</b></sub></p>
+<p ><sub><b>Installation</b> | <b>Contributions</b> | <b>CI/CD</b> | <b>Citing IPPL</b> | <b>SLURM Job scripts</b> | <b>Profiling</b></sub></p>
 <p ><sub></sub></p>
 <h1><a class="anchor" id="autotoc_md0"></a>
 Installation</h1>
@@ -105,6 +105,10 @@ Contributions</h1>
 </div><!-- fragment --><p> All the contributions (except for bug fixes) need to be accompanied with a unit test. For more information on unit tests in IPPL please take a look at this <a href="https://github.com/IPPL-framework/ippl/blob/master/UNIT_TESTS.md">page</a>.</sub></p>
 <p ><sub></sub></p>
 <h1><a class="anchor" id="autotoc_md2"></a>
+CI/CD and PR testing</h1>
+<p ><sub>Please see <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/">Julich CI results</a> and CSCS PR testing for further information.</sub></p>
+<p ><sub></sub></p>
+<h1><a class="anchor" id="autotoc_md3"></a>
 Citing IPPL</h1>
 <p ><sub> </p><div class="fragment"><div class="line">@inproceedings{muralikrishnan2024scaling,</div>
 <div class="line">  title={Scaling and performance portability of the particle-in-cell scheme for plasma physics applications</div>
@@ -118,11 +122,11 @@ Citing IPPL</h1>
 <div class="line">}</div>
 </div><!-- fragment --><p></sub></p>
 <p ><sub></sub></p>
-<h1><a class="anchor" id="autotoc_md3"></a>
+<h1><a class="anchor" id="autotoc_md4"></a>
 SLURM Job scripts</h1>
 <p ><sub> You can use the following example job scripts to run on the local PSI computing cluster, which uses slurm. More documentation on the local cluster can be found <a href="https://lsm-hpce.gitpages.psi.ch/merlin6/introduction.html">here</a> (need to be in the PSI network to access).</sub></p>
 <p ><sub></sub></p>
-<h2><a class="anchor" id="autotoc_md4"></a>
+<h2><a class="anchor" id="autotoc_md5"></a>
 Merlin CPU (MPI + OpenMP)</h2>
 <p ><sub>For example, to run a job on 1 MPI node, with 44 OpenMP threads: </p><div class="fragment"><div class="line">#!/bin/bash</div>
 <div class="line">#SBATCH --partition=hourly      # Using &#39;hourly&#39; will grant higher priority</div>
@@ -146,7 +150,7 @@ Merlin CPU (MPI + OpenMP)</h2>
 <div class="line">srun --cpus-per-task=44 ./&lt;your_executable&gt; &lt;args&gt;</div>
 </div><!-- fragment --><p></sub></p>
 <p ><sub></sub></p>
-<h2><a class="anchor" id="autotoc_md5"></a>
+<h2><a class="anchor" id="autotoc_md6"></a>
 Gwendolen GPU</h2>
 <p ><sub>For example, to run a job on 4 GPUs (max on Gwendolen is 8 GPUs, which are all on a single node): </p><div class="fragment"><div class="line">#!/bin/bash</div>
 <div class="line">#SBATCH --time=00:05:00         # Define max time job will run (e.g. here 5 mins)</div>
@@ -163,7 +167,7 @@ Gwendolen GPU</h2>
 <div class="line"> </div>
 <div class="line">srun ./&lt;your_executable&gt; &lt;args&gt; --kokkos-map-device-id-by=mpi_rank</div>
 </div><!-- fragment --><p> </sub></p>
-<h2><a class="anchor" id="autotoc_md6"></a>
+<h2><a class="anchor" id="autotoc_md7"></a>
 LUMI GPU partition</h2>
 <p ><sub>For example, to run a job on 8 nodes with 8 GPUs each: </p><div class="fragment"><div class="line">#!/bin/bash</div>
 <div class="line">#SBATCH --job-name=TestGaussian</div>
@@ -191,10 +195,10 @@ LUMI GPU partition</h2>
 <div class="line">rm -rf ./select_gpu</div>
 </div><!-- fragment --><p></sub></p>
 <p ><sub></sub></p>
-<h1><a class="anchor" id="autotoc_md7"></a>
+<h1><a class="anchor" id="autotoc_md8"></a>
 Profiling</h1>
 <p ><sub> </sub></p>
-<h2><a class="anchor" id="autotoc_md8"></a>
+<h2><a class="anchor" id="autotoc_md9"></a>
 MPI Calls</h2>
 <p ><sub>You can use the mpiP tool (<a href="https://github.com/LLNL/mpiP">https://github.com/LLNL/mpiP</a>) to get statistics about the MPI calls in IPPL.</sub></p>
 <p ><sub>To use it, download it from <a href="https://github.com/LLNL/mpiP">Github</a> and follow the instructions to install it. You may run into some issues while installing, here is a list of common issues and the solution:</p><ul>
@@ -208,10 +212,10 @@ MPI Calls</h2>
 <p ><sub>If you application has been correctly instrumented, you will see that mpiP has been found and its version is printed at the top of the standard output. At the end of the standard output, you will get the name of the file containing the MPI statistics: <code>Storing mpiP output in ...</code></sub></p>
 <p ><sub>To get a total amount of bytes moved around by your application, you can use the python script mpiP.py (found in the top level IPPL directory) in the following form: <code>python3 mpiP.py [path/to/directory]</code> where path/to/directory refers to the place where the .mpiP output can be found. This python script will then print out the total amount of Bytes moved by MPI in your application.</sub></p>
 <p ><sub></sub></p>
-<h2><a class="anchor" id="autotoc_md9"></a>
+<h2><a class="anchor" id="autotoc_md10"></a>
 Profiling on LUMI</h2>
 <p ><sub> </sub></p>
-<h3><a class="anchor" id="autotoc_md10"></a>
+<h3><a class="anchor" id="autotoc_md11"></a>
 rocprof</h3>
 <p ><sub> Analysis with: <a href="https://ui.perfetto.dev/">https://ui.perfetto.dev/</a></sub></p>
 <p ><sub></p><div class="fragment"><div class="line">#!/bin/bash -l</div>
@@ -248,7 +252,7 @@ rocprof</h3>
 <div class="line">rm -rf ./select_gpu</div>
 </div><!-- fragment --><p></sub></p>
 <p ><sub></sub></p>
-<h3><a class="anchor" id="autotoc_md11"></a>
+<h3><a class="anchor" id="autotoc_md12"></a>
 omniperf (do not use omnitrace)</h3>
 <p ><sub> doc url: <a href="https://rocm.docs.amd.com/projects/rocprofiler-compute/en/docs-6.2.4/how-to/profile/mode.html">https://rocm.docs.amd.com/projects/rocprofiler-compute/en/docs-6.2.4/how-to/profile/mode.html</a></sub></p>
 <p ><sub></p><div class="fragment"><div class="line">#!/bin/bash -l</div>
