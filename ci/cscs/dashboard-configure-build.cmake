@@ -54,8 +54,14 @@ set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DKokkos_VERSION=${Kokko
 set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -D${Kokkos_ARCH_FLAG}=ON")
 
 # --- configure & build ---
-ctest_configure()
-ctest_build()
+ctest_configure(RETURN_VALUE configure_result)
+ctest_build(RETURN_VALUE build_result)
 
-# --- submit configure + build results ---
-ctest_submit()
+# --- fail if any test failed ---
+# note that we don't submit, if all is ok, because the test phase will submit anyway
+if(configure_result OR build_result)
+  # submit configure + build results
+  ctest_submit()
+  # make sure to fail the build if configure or build failed
+  message(FATAL_ERROR "CTest reported configure/build failures")
+endif()
