@@ -1,0 +1,72 @@
+include:
+  - local: "ci/cscs/common.yml"
+
+variables:
+  CUDA12_9_UENV: "/capstor/store/cscs/cscs/public/uenvs/opal-x-gh200-mpich-gcc-2025-12-19-cuda-12.9.1.squashfs"
+  WITH_UENV_VIEW: "default"
+  WRAPPER: "/user-environment/wrapper-mpi.sh"
+  SCRATCH: "/capstor/scratch/cscs/biddisco"
+  SRUN_FLAGS: "--uenv=${CUDA12_9_UENV};--view=${WITH_UENV_VIEW};--repo=$SCRATCH/.uenv-images-ci-daint;$WRAPPER"
+  BUILD_ARCH: "gh200"
+  CTEST_SITE: "Daint gh200 CUDA 12.9.1"
+
+# ---------------------------------------------------------
+# Common settings for cuda builds
+# this uses a uenv loaded by the uenv-runner and then cmake to build
+# ---------------------------------------------------------
+.ippl-build-cuda-common:
+  stage: ippl_build
+  extends: [.uenv-runner-daint-gh200]
+  image: "${CUDA12_9_UENV}"
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+  before_script:
+    - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
+    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
+    - |
+      if [[ "$CI_COMMIT_REF_NAME" =~ pr([0-9]+)$ ]]; then
+        export PR_NUMBER="${BASH_REMATCH[1]}"
+        echo "PR_NUMBER=$PR_NUMBER"
+      fi
+    - pwd
+    - env | sort | grep CI
+    - export BUILD_PATH=$(pwd)/$BUILD_DIR
+  script:
+    - >-
+      ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-configure-build.cmake 
+      -DCTEST_SITE="$CTEST_SITE"
+      -DPRESET=alps-gh200                   
+      -DPR_NUMBER=$PR_NUMBER                
+      -DBUILD_TYPE=$BUILD_TYPE
+      -DBUILD_DIR=$BUILD_PATH
+      -DBUILD_ARCH=$BUILD_ARCH                
+      -DKokkos_VERSION=git.4.7.02           
+      -DKokkos_ARCH_FLAG=Kokkos_ARCH_HOPPER90 
+      -DMPIEXEC_EXECUTABLE=/usr/bin/srun    
+      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"      
+      -DMPIEXEC_MAX_NUMPROCS=4
+    - echo "Build directory size (before cleanup):" $(du -sh $BUILD_PATH | cut -f1)
+    - find $BUILD_PATH -name \*.o -delete
+    - echo "Build directory size (cleaned for artefacts):" $(du -sh $BUILD_PATH | cut -f1)
+  artifacts:
+    paths:
+      - $BUILD_DIR
+    expire_in: 1 day
+
+# ---------------------------------------------------------
+# cuda build debug
+# ---------------------------------------------------------
+ippl-build-cuda12-sm90-debug:
+  extends: .ippl-build-cuda-common
+  variables:
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug"
+    BUILD_TYPE: Debug
+
+# ---------------------------------------------------------
+# cuda build release
+# ---------------------------------------------------------
+ippl-build-cuda12-sm90-release:
+  extends: .ippl-build-cuda-common
+  variables:
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
+    BUILD_TYPE: Release

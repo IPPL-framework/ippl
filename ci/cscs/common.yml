@@ -1,0 +1,6 @@
+include:
+  - remote: "https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml"
+
+stages:
+  - ippl_build
+  - ippl_test

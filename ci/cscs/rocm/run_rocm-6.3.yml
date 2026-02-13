@@ -1,0 +1,108 @@
+include:
+  - local: "ci/cscs/common.yml"
+
+variables:
+  ROCM6_3_UENV: "prgenv-gnu/25.07-6.3.3:v12"
+  WITH_UENV_VIEW: "default"
+  F7T_CLIENT_ID: $F7T_TDS_CONSUMER_KEY
+  F7T_CLIENT_SECRET: $F7T_TDS_CONSUMER_SECRET
+  WRAPPER: "/users/biddisco/src/opal/ippl/scripts/landau/strong-scaling-alps/wrapper-mi300.sh"
+  SCRATCH: "/capstor/scratch/cscs/biddisco"
+  SRUN_ARGS: "--uenv=${ROCM6_3_UENV} --view=${WITH_UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-beverin $WRAPPER"
+  BUILD_ARCH: "mi300"
+  CTEST_SITE: "Beverin mi300 ROCm 6.3.3"
+
+# ---------------------------------------------------------
+# Common settings for rocm tests
+# this uses a baremetal runner then ctest to test with srun using uenv flags
+# ---------------------------------------------------------
+.ippl-test-rocm-common:
+  stage: ippl_test
+  extends: [.baremetal-runner-beverin-mi300]
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_CPUS_PER_TASK: 8
+    SLURM_TIMELIMIT: "0:20:00"
+  before_script:
+    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
+    - |
+      if [[ "$CI_COMMIT_REF_NAME" =~ pr([0-9]+)$ ]]; then
+        export PR_NUMBER="${BASH_REMATCH[1]}"
+        echo "PR_NUMBER=$PR_NUMBER"
+      fi
+    - export BUILD_PATH=$(pwd)/$BUILD_DIR
+    - pwd
+    - date
+    - ls -alh $BUILD_PATH/bin
+    - ls -alh $BUILD_PATH/lib
+  script:
+    # fix ctest paths to point to the current build directory instead of the cache directory used during the configure step
+    - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" $BUILD_PATH/CMakeCache.txt | cut -d'=' -f2)
+    - echo "Replacing cache_dir $CACHE_DIR with build_dir $BUILD_PATH"
+    - export LD_LIBRARY_PATH=$BUILD_PATH/lib:$LD_LIBRARY_PATH
+    - find $BUILD_PATH -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$BUILD_PATH|g" {} \;
+    - find $BUILD_PATH -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$BUILD_PATH|g" {} \;
+    # reset custom build name for cdash
+    - export CTEST_BUILD_NAME="PR-${PR_NUMBER}-${BUILD_ARCH}-${BUILD_TYPE}-${TEST_INFO}"
+    - find $BUILD_PATH -type f -name \*.xml -exec sed -i "s|BuildName=.*|BuildName=\"${CTEST_BUILD_NAME}\"|g" {} \;
+    # ctest should now have valid file paths, (use srun to launch with uenv setup)
+    - ctest -V --output-on-failure --timeout 60 $TEST_ARGS -S $CI_PROJECT_DIR/ci/cscs/dashboard-test.cmake
+      -DCTEST_SITE="$CTEST_SITE"
+      -DCTEST_BUILD_NAME="$CTEST_BUILD_NAME"
+      -DPR_NUMBER=$PR_NUMBER
+      -DBUILD_TYPE=$BUILD_TYPE
+      -DBUILD_DIR=$BUILD_PATH
+      -DBUILD_ARCH=$BUILD_ARCH
+
+# ---------------------------------------------------------
+# 1 rank debug
+# ---------------------------------------------------------
+ippl-test-rocm6_3-debug-1-rank:
+  needs: ["ippl-build-rocm6_3-debug"]
+  extends: .ippl-test-rocm-common
+  variables:
+    SLURM_NTASKS: 1
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug"
+    BUILD_TYPE: Debug
+    TEST_INFO: "1-rank"
+    TEST_ARGS: "-E known_fail"
+
+# ---------------------------------------------------------
+# 1 rank release
+# ---------------------------------------------------------
+ippl-test-rocm6_3-release-1-rank:
+  needs: ["ippl-build-rocm6_3-release"]
+  extends: .ippl-test-rocm-common
+  variables:
+    SLURM_NTASKS: 1
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
+    BUILD_TYPE: Release
+    TEST_INFO: "1-rank"
+    TEST_ARGS: "-E known_fail"
+
+# ---------------------------------------------------------
+# 4 ranks release
+# ---------------------------------------------------------
+ippl-test-rocm6_3-release-4-ranks:
+  needs: ["ippl-build-rocm6_3-release"]
+  extends: .ippl-test-rocm-common
+  variables:
+    SLURM_NTASKS: 4
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
+    BUILD_TYPE: Release
+    TEST_INFO: "4-ranks"
+    TEST_ARGS: "-E known_fail"
+
+# ---------------------------------------------------------
+# 4 ranks release : known failing tests
+# ---------------------------------------------------------
+ippl-test-rocm6_3-release-failing-4-ranks:
+  needs: ["ippl-build-rocm6_3-release"]
+  extends: .ippl-test-rocm-common
+  variables:
+    SLURM_NTASKS: 4
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
+    BUILD_TYPE: Release
+    TEST_INFO: "4-ranks-known-failing"
+    TEST_ARGS: "-R known_fail"
+  allow_failure: true

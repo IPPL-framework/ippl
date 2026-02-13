@@ -40,6 +40,21 @@ if(NOT "SERIAL" IN_LIST IPPL_PLATFORMS AND NOT "OPENMP" IN_LIST IPPL_PLATFORMS)
 endif()
 
 # -----------------------------------------------------------------------------
+# OpenMP section
+# -----------------------------------------------------------------------------
+if("OPENMP" IN_LIST IPPL_PLATFORMS)
+  include(ProcessorCount)
+  ProcessorCount(num_cores)
+  if(num_cores GREATER 0)
+    math(EXPR default_threads "${num_cores} / 4")
+  else()
+    set(default_threads 1)
+  endif()
+  set(IPPL_OPENMP_THREADS ${default_threads}
+      CACHE STRING "Default number of OpenMP threads to use when launching tests")
+endif()
+
+# -----------------------------------------------------------------------------
 # Sanity check for known platforms
 # -----------------------------------------------------------------------------
 set(unhandled_platforms_ ${IPPL_PLATFORMS})

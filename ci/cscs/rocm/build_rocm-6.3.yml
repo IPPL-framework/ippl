@@ -1,0 +1,81 @@
+include:
+  - local: "ci/cscs/common.yml"
+
+variables:
+  ROCM6_3_UENV: "prgenv-gnu/25.07-6.3.3:v12"
+  WITH_UENV_VIEW: "default"
+  F7T_CLIENT_ID: $F7T_TDS_CONSUMER_KEY
+  F7T_CLIENT_SECRET: $F7T_TDS_CONSUMER_SECRET
+  SCRATCH: "/capstor/scratch/cscs/biddisco"
+  SRUN_FLAGS: "--uenv=${ROCM6_3_UENV};--view=${WITH_UENV_VIEW};--repo=$SCRATCH/.uenv-images-ci-beverin;$WRAPPER"
+  BUILD_ARCH: "mi300"
+  CTEST_SITE: "Beverin mi300 ROCm 6.3.3"
+
+# ---------------------------------------------------------
+# Common settings for rocm builds
+# this uses a uenv loaded by the uenv-runner and then cmake to build
+# ---------------------------------------------------------
+.ippl-build-rocm-common:
+  stage: ippl_build
+  extends: [.uenv-runner-beverin-mi300]
+  image: "${ROCM6_3_UENV}"
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+  before_script:
+    - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
+    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
+    - |
+      if [[ "$CI_COMMIT_REF_NAME" =~ pr([0-9]+)$ ]]; then
+        export PR_NUMBER="${BASH_REMATCH[1]}"
+        echo "PR_NUMBER=$PR_NUMBER"
+      fi
+    - "uenv_dir=`echo $UENV_VIEW |cut -d: -f1`"
+    - "uenv_view=`echo $UENV_VIEW |cut -d: -f3`"
+    - echo "UENV_VIEW=$UENV_VIEW uenv_dir=$uenv_dir uenv_view=$uenv_view"
+    - pwd
+    - env | sort | grep CI
+    - export BUILD_PATH=$(pwd)/$BUILD_DIR
+    - export CC=amdclang
+    - export CXX=amdclang++
+    - export HSA_PATH=$( find /user-environment/ -name hsa-rocr-dev\* )
+    - export CMAKE_PREFIX_PATH=$HSA_PATH:$CMAKE_PREFIX_PATH
+  script:
+    - >-
+      ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-configure-build.cmake 
+      -DCTEST_SITE="$CTEST_SITE"
+      -DPRESET=alps-mi300                   
+      -DPR_NUMBER=$PR_NUMBER                
+      -DBUILD_TYPE=$BUILD_TYPE
+      -DBUILD_DIR=$BUILD_PATH
+      -DBUILD_ARCH=$BUILD_ARCH                
+      -DKokkos_VERSION=git.4.7.02           
+      -DKokkos_ARCH_FLAG=Kokkos_ARCH_AMD_GFX942_APU 
+      -DMPIEXEC_EXECUTABLE=/usr/bin/srun    
+      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"      
+      -DMPIEXEC_MAX_NUMPROCS=4
+    # -DHeffte_ENABLE_GPU_AWARE_MPI=OFF
+    - echo "Build directory size (before cleanup):" $(du -sh $BUILD_PATH | cut -f1)
+    - find $BUILD_PATH -name \*.o -delete
+    - echo "Build directory size (cleaned for artefacts):" $(du -sh $BUILD_PATH | cut -f1)
+  artifacts:
+    paths:
+      - $BUILD_DIR
+    expire_in: 1 day
+
+# ---------------------------------------------------------
+# rocm build debug
+# ---------------------------------------------------------
+ippl-build-rocm6_3-debug:
+  extends: .ippl-build-rocm-common
+  variables:
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug"
+    BUILD_TYPE: Debug
+
+# ---------------------------------------------------------
+# rocm build release
+# ---------------------------------------------------------
+ippl-build-rocm6_3-release:
+  extends: .ippl-build-rocm-common
+  variables:
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
+    BUILD_TYPE: Release

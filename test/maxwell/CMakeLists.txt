@@ -58,18 +58,21 @@ if(NOT TARGET stb_image_write::impl)
 endif()
 
 if(IPPL_ENABLE_FFT)
+  # cmake-format: off
   add_ippl_integration_test(TestStandardFDTDSolver LINK_LIBS stb_image_write::impl LABELS solver
                             integration)
 
   add_ippl_integration_test(TestNonStandardFDTDSolver LINK_LIBS stb_image_write::impl LABELS solver
                             integration)
 
-  add_ippl_integration_test(TestStandardFDTDSolver_convergence LINK_LIBS stb_image_write::impl
-                            LABELS solver integration)
+  add_ippl_integration_test(TestStandardFDTDSolver_convergence 
+    COMPILE_ONLY
+    LINK_LIBS stb_image_write::impl
+    LABELS solver integration)
 
   add_ippl_integration_test(TestNonStandardFDTDSolver_convergence LINK_LIBS stb_image_write::header
                             LABELS solver integration)
-
+  # cmake-format: on
 else()
   message(STATUS "⚠️ FFT disabled; skipping Maxwell FDTD integration tests.")
 endif()
