@@ -35,7 +35,7 @@ variables:
       ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-configure-build.cmake 
       -DCTEST_SITE="$CTEST_SITE"
       -DPRESET=alps-mi300                   
-      -DPR_NUMBER=$PR_NUMBER                
+      -DCDASH_LABEL=$CDASH_LABEL                
       -DBUILD_TYPE=$BUILD_TYPE
       -DBUILD_DIR=$BUILD_PATH
       -DBUILD_ARCH=$BUILD_ARCH                

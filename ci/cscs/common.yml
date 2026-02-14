@@ -7,11 +7,11 @@ include:
     - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
     - |
       if [[ "$CI_COMMIT_REF_NAME" =~ pr([0-9]+)$ ]]; then
-        export PR_NUMBER="PR-${BASH_REMATCH[1]}"
+        export CDASH_LABEL="PR-${BASH_REMATCH[1]}"
       else
-        export PR_NUMBER="$CI_COMMIT_REF_NAME"
+        export CDASH_LABEL="$CI_COMMIT_REF_SLUG"
       fi
-    - echo "PR_NUMBER=$PR_NUMBER"
+    - echo "CDASH_LABEL=$CDASH_LABEL"
 
 stages:
   - ippl_build
