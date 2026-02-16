@@ -22,17 +22,10 @@ variables:
     SLURM_CPUS_PER_TASK: 64
     SLURM_TIMELIMIT: "0:15:00"
   before_script:
-    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
-    - |
-      if [[ "$CI_COMMIT_REF_NAME" =~ pr([0-9]+)$ ]]; then
-        export PR_NUMBER="${BASH_REMATCH[1]}"
-        echo "PR_NUMBER=$PR_NUMBER"
-      fi
-    - export BUILD_PATH=$(pwd)/$BUILD_DIR
+    - !reference [.pr-number-extractor, before_script]
     - pwd
     - date
-    - ls -alh $BUILD_PATH/bin
-    - ls -alh $BUILD_PATH/lib
+    - export BUILD_PATH=$(pwd)/$BUILD_DIR
   script:
     # fix ctest paths to point to the current build directory instead of the cache directory used during the configure step
     - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" $BUILD_PATH/CMakeCache.txt | cut -d'=' -f2)
@@ -41,13 +34,13 @@ variables:
     - find $BUILD_PATH -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$BUILD_PATH|g" {} \;
     - find $BUILD_PATH -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$BUILD_PATH|g" {} \;
     # reset custom build name for cdash
-    - export CTEST_BUILD_NAME="PR-${PR_NUMBER}-${BUILD_ARCH}-${BUILD_TYPE}-${TEST_INFO}"
+    - export CTEST_BUILD_NAME="${CDASH_LABEL}-${BUILD_ARCH}-${BUILD_TYPE}-${TEST_INFO}"
     - find $BUILD_PATH -type f -name \*.xml -exec sed -i "s|BuildName=.*|BuildName=\"${CTEST_BUILD_NAME}\"|g" {} \;
     # ctest should now have valid file paths, (use srun to launch with uenv setup)
     - ctest -V --output-on-failure --timeout 60 $TEST_ARGS -S $CI_PROJECT_DIR/ci/cscs/dashboard-test.cmake
       -DCTEST_SITE="$CTEST_SITE"
       -DCTEST_BUILD_NAME="$CTEST_BUILD_NAME"
-      -DPR_NUMBER=$PR_NUMBER
+      -DCDASH_LABEL=$CDASH_LABEL
       -DBUILD_TYPE=$BUILD_TYPE
       -DBUILD_DIR=$BUILD_PATH
       -DBUILD_ARCH=$BUILD_ARCH

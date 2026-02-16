@@ -4,10 +4,6 @@ if(NOT DEFINED BUILD_TYPE)
   set(BUILD_TYPE Debug)
 endif()
 
-if(NOT DEFINED PR_NUMBER)
-  set(PR_NUMBER "branch")
-endif()
-
 if(NOT DEFINED BUILD_DIR)
   message(FATAL_ERROR "BUILD_DIR must be defined")
 endif()
