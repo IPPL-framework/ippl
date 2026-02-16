@@ -473,10 +473,34 @@ namespace ippl {
 
         IpplTimings::stopTimer(warmup);
 
-        rho2_mr  = 0.0;
+        //rho2_mr  = 0.0;
+        auto rho2_mr_view = rho2_mr.getView();
+        Kokkos::parallel_for(
+            "Zeroing out rho2_mr",
+            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
+                {0, 0, 0},
+                {static_cast<size_t>(rho2_mr_view.extent(0)),
+                static_cast<size_t>(rho2_mr_view.extent(1)),
+                static_cast<size_t>(rho2_mr_view.extent(2))}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                rho2_mr_view(i, j, k) = 0.0;
+            });
+
         rho2tr_m = 0.0;
         grnL_m   = 0.0;
-        grn2n1_m = 0.0;
+
+        // grn2n1_m = 0.0;
+        auto grn2n1_m_view = grn2n1_m.getView();
+        Kokkos::parallel_for(
+            "Zeroing out grn2n1_m",
+            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
+                {0, 0, 0},
+                {static_cast<size_t>(grn2n1_m_view.extent(0)),
+                static_cast<size_t>(grn2n1_m_view.extent(1)),
+                static_cast<size_t>(grn2n1_m_view.extent(2))}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                grn2n1_m_view(i, j, k) = 0.0;
+            });
 
         // call greensFunction and we will get the transformed G in the class attribute
         // this is done in initialization so that we already have the precomputed fct
@@ -522,7 +546,18 @@ namespace ippl {
         meshComplex_m->setMeshSpacing(hr_m);
 
         // field object on the doubled grid; zero-padded
-        rho2_mr = 0.0;
+        //rho2_mr = 0.0;
+        auto rho2_mr_view = rho2_mr.getView();
+        Kokkos::parallel_for(
+            "Zeroing out rho2_mr",
+            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
+                {0, 0, 0},
+                {static_cast<size_t>(rho2_mr_view.extent(0)),
+                static_cast<size_t>(rho2_mr_view.extent(1)),
+                static_cast<size_t>(rho2_mr_view.extent(2))}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                rho2_mr_view(i, j, k) = 0.0;
+            });
 
         // start a timer
         static IpplTimings::TimerRef stod = IpplTimings::getTimer("Solve: Physical to double");
@@ -1054,7 +1089,18 @@ namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
     void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::greensFunction() {
         const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
-        grn_mr               = 0.0;
+        // grn_mr               = 0.0;
+        auto grn_mr_view = grn_mr.getView();
+        Kokkos::parallel_for(
+            "Zeroing out grn_mr",
+            Kokkos::MDRangePolicy<Kokkos::Rank<3>>(
+                {0, 0, 0},
+                {static_cast<size_t>(grn_mr_view.extent(0)),
+                static_cast<size_t>(grn_mr_view.extent(1)),
+                static_cast<size_t>(grn_mr_view.extent(2))}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                grn_mr_view(i, j, k) = 0.0;
+            });
 
         const int alg = this->params_m.template get<int>("algorithm");
 
