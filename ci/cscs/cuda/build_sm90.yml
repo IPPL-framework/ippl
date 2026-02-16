@@ -27,17 +27,18 @@ variables:
     - env | sort | grep CI
   script:
     - >-
-      ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-configure-build.cmake 
+      ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-configure-build.cmake
       -DCTEST_SITE="$CTEST_SITE"
-      -DPRESET=alps-gh200                   
-      -DCDASH_LABEL=$CDASH_LABEL                
+      -DPRESET=alps-gh200
+      -DCDASH_LABEL=$CDASH_LABEL
       -DBUILD_TYPE=$BUILD_TYPE
       -DBUILD_DIR=$BUILD_PATH
-      -DBUILD_ARCH=$BUILD_ARCH                
-      -DKokkos_VERSION=git.4.7.02           
-      -DKokkos_ARCH_FLAG=Kokkos_ARCH_HOPPER90 
-      -DMPIEXEC_EXECUTABLE=/usr/bin/srun    
-      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"      
+      -DBUILD_ARCH=$BUILD_ARCH
+      -DHeffte_VERSION=git.v2.4.1
+      -DKokkos_VERSION=git.4.7.02
+      -DKokkos_ARCH_FLAG=Kokkos_ARCH_HOPPER90
+      -DMPIEXEC_EXECUTABLE=/usr/bin/srun
+      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"
       -DMPIEXEC_MAX_NUMPROCS=4
     - echo "Build directory size (before cleanup):" $(du -sh $BUILD_PATH | cut -f1)
     - find $BUILD_PATH -name \*.o -delete

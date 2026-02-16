@@ -32,17 +32,17 @@ variables:
     - export CMAKE_PREFIX_PATH=$HSA_PATH:$CMAKE_PREFIX_PATH
   script:
     - >-
-      ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-configure-build.cmake 
+      ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-configure-build.cmake
       -DCTEST_SITE="$CTEST_SITE"
-      -DPRESET=alps-mi300                   
-      -DCDASH_LABEL=$CDASH_LABEL                
+      -DPRESET=alps-mi300
+      -DCDASH_LABEL=$CDASH_LABEL
       -DBUILD_TYPE=$BUILD_TYPE
       -DBUILD_DIR=$BUILD_PATH
-      -DBUILD_ARCH=$BUILD_ARCH                
-      -DKokkos_VERSION=git.4.7.02           
-      -DKokkos_ARCH_FLAG=Kokkos_ARCH_AMD_GFX942_APU 
-      -DMPIEXEC_EXECUTABLE=/usr/bin/srun    
-      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"      
+      -DBUILD_ARCH=$BUILD_ARCH
+      -DKokkos_VERSION=git.4.7.02
+      -DKokkos_ARCH_FLAG=Kokkos_ARCH_AMD_GFX942_APU
+      -DMPIEXEC_EXECUTABLE=/usr/bin/srun
+      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"
       -DMPIEXEC_MAX_NUMPROCS=4
     # -DHeffte_ENABLE_GPU_AWARE_MPI=OFF
     - echo "Build directory size (before cleanup):" $(du -sh $BUILD_PATH | cut -f1)
