@@ -1,0 +1,102 @@
+include:
+  - local: "ci/cscs/common.yml"
+
+variables:
+  EIGER_UENV: "prgenv-gnu/25.6:v2"
+  WITH_UENV_VIEW: "default"
+  WRAPPER: ""
+  SCRATCH: "/capstor/scratch/cscs/biddisco"
+  SRUN_ARGS: "--uenv=${EIGER_UENV} --view=${WITH_UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-eiger $WRAPPER"
+  BUILD_ARCH: "openmp"
+  CTEST_SITE: "Eiger OpenMP"
+
+# ---------------------------------------------------------
+# Common settings for tests
+# this uses a baremetal runner then ctest to test with srun using uenv flags
+# ---------------------------------------------------------
+.ippl-test-openmp-common:
+  stage: ippl_test
+  extends: [.baremetal-runner-eiger-zen2]
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_TIMELIMIT: "0:15:00"
+  before_script:
+    - !reference [.pr-number-extractor, before_script]
+    - pwd
+    - date
+    - export BUILD_PATH=$(pwd)/$BUILD_DIR
+  script:
+    # fix ctest paths to point to the current build directory instead of the cache directory used during the configure step
+    - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" $BUILD_PATH/CMakeCache.txt | cut -d'=' -f2)
+    - echo "Replacing cache_dir $CACHE_DIR with build_dir $BUILD_PATH"
+    - export LD_LIBRARY_PATH=$BUILD_PATH/lib:$LD_LIBRARY_PATH
+    - find $BUILD_PATH -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$BUILD_PATH|g" {} \;
+    - find $BUILD_PATH -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$BUILD_PATH|g" {} \;
+    # reset custom build name for cdash
+    - export CTEST_BUILD_NAME="${CDASH_LABEL}-${BUILD_ARCH}-${BUILD_TYPE}-${TEST_INFO}"
+    - find $BUILD_PATH -type f -name \*.xml -exec sed -i "s|BuildName=.*|BuildName=\"${CTEST_BUILD_NAME}\"|g" {} \;
+    # ctest should now have valid file paths, (use srun to launch with uenv setup)
+    - ctest -V --output-on-failure --timeout 60 $TEST_ARGS -S $CI_PROJECT_DIR/ci/cscs/dashboard-test.cmake
+      -DCTEST_SITE="$CTEST_SITE"
+      -DCTEST_BUILD_NAME="$CTEST_BUILD_NAME"
+      -DCDASH_LABEL=$CDASH_LABEL
+      -DBUILD_TYPE=$BUILD_TYPE
+      -DBUILD_DIR=$BUILD_PATH
+      -DBUILD_ARCH=$BUILD_ARCH
+
+# ---------------------------------------------------------
+# 1 rank debug
+# ---------------------------------------------------------
+ippl-test-openmp-debug-1-rank:
+  needs: ["ippl-build-openmp-debug"]
+  extends: .ippl-test-openmp-common
+  variables:
+    SLURM_NTASKS: 1
+    SLURM_CPUS_PER_TASK: 64
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug"
+    BUILD_TYPE: Debug
+    TEST_INFO: "1-rank"
+    TEST_ARGS: "-E known_fail"
+
+# ---------------------------------------------------------
+# 1 rank release
+# ---------------------------------------------------------
+ippl-test-openmp-release-1-rank:
+  needs: ["ippl-build-openmp-release"]
+  extends: .ippl-test-openmp-common
+  variables:
+    SLURM_NTASKS: 1
+    SLURM_CPUS_PER_TASK: 64
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
+    BUILD_TYPE: Release
+    TEST_INFO: "1-rank"
+    TEST_ARGS: "-E known_fail"
+
+# ---------------------------------------------------------
+# 4 ranks release
+# ---------------------------------------------------------
+ippl-test-openmp-release-4-ranks:
+  needs: ["ippl-build-openmp-release"]
+  extends: .ippl-test-openmp-common
+  variables:
+    SLURM_NTASKS: 4
+    SLURM_CPUS_PER_TASK: 32
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
+    BUILD_TYPE: Release
+    TEST_INFO: "4-ranks"
+    TEST_ARGS: "-E known_fail"
+
+# ---------------------------------------------------------
+# 4 ranks release : known failing tests
+# ---------------------------------------------------------
+ippl-test-openmp-release-failing-4-ranks:
+  needs: ["ippl-build-openmp-release"]
+  extends: .ippl-test-openmp-common
+  variables:
+    SLURM_NTASKS: 4
+    SLURM_CPUS_PER_TASK: 32
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
+    BUILD_TYPE: Release
+    TEST_INFO: "4-ranks-known-failing"
+    TEST_ARGS: "-R known_fail"
+  allow_failure: true

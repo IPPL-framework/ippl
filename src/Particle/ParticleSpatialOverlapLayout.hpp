@@ -131,7 +131,7 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION constexpr bool
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::isCloseToBoundary(
         const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& globalRegion,
-        Vector<bool, Dim> periodic, T overlap) {
+        Kokkos::Array<bool, Dim> periodic, T overlap) {
         return ((periodic[Idx]
                  && (pos[Idx] < globalRegion[Idx].min() + overlap
                      || pos[Idx] > globalRegion[Idx].max() - overlap))
@@ -178,16 +178,16 @@ namespace ippl {
         /* periodic boundary conditions come in pairs. Thus collect whether each dimension is
          * subject to periodic boundary conditions
          */
-        Vector<bool, Dim> periodic;
+        Kokkos::Array<bool, Dim> periodic;
         for (unsigned d = 0; d < Dim; ++d) {
-            periodic[d] = this->getParticleBC()[2 * d];
+            periodic[d] = this->getParticleBC()[2 * d] == BC::PERIODIC;
         }
         // no need to create periodic ghost particles if no dimension is periodic
-        if (!std::any_of(periodic.begin(), periodic.end(), [](auto bc) {
-                return bc == BC::PERIODIC;
-            })) {
-            return;
+        bool anyPeriodic = false;
+        for (unsigned d = 0; d < Dim; ++d) {
+            anyPeriodic = anyPeriodic || periodic[d];
         }
+        if (!anyPeriodic) return;
 
         const auto& globalRegion = this->rlayout_m.getDomain();
         const auto overlap       = rcutoff_m;
@@ -510,7 +510,7 @@ namespace ippl {
         }
 
         // Step 1. Mark all non-neighbor ranks, by removing all neighbors and self
-        const auto total_ranks = Comm->rank();
+        const auto total_ranks = Comm->size();
         bool_type is_remaining("is_remaining", total_ranks);
         Kokkos::deep_copy(is_remaining, true);
         Kokkos::fence();
@@ -526,6 +526,8 @@ namespace ippl {
 
         // Step 2. Fill remaining ranks
         Kokkos::View<size_type> counter("counter");
+        Kokkos::deep_copy(counter, 0);
+        Kokkos::fence();
         Kokkos::parallel_for(
             "fill_remaining", total_ranks, KOKKOS_LAMBDA(const size_t& i) {
                 if (is_remaining(i)) {
@@ -704,10 +706,10 @@ namespace ippl {
                 KOKKOS_LAMBDA(const size_t& i) {
                     /// pID: (local) ID of the particle that is currently being searched.
                     const size_type pId    = outsideIds(i);
-                    const size_type offset = rankOffsets(pId) + counts(pId);
+                    const size_type offset = rankOffsets(pId) + counts(pId) - outsideCounts(pId);
                     for (size_t local_count = 0, j = 0; j < nonNeighborsView.extent(0); ++j) {
                         const auto rank = nonNeighborsView(j);
-                        if (positionInRegion(is, positions(i), regions(rank), overlap)) {
+                        if (positionInRegion(is, positions(pId), regions(rank), overlap)) {
                             ranks(offset + local_count) = rank;
                             local_count++;
                         }

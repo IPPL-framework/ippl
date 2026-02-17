@@ -1,0 +1,18 @@
+include:
+  - remote: "https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml"
+
+.pr-number-extractor:
+  before_script:
+    - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
+    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
+    - |
+      if [[ "$CI_COMMIT_REF_NAME" =~ pr([0-9]+)$ ]]; then
+        export CDASH_LABEL="PR-${BASH_REMATCH[1]}"
+      else
+        export CDASH_LABEL="$CI_COMMIT_REF_SLUG"
+      fi
+    - echo "CDASH_LABEL=$CDASH_LABEL"
+
+stages:
+  - ippl_build
+  - ippl_test
