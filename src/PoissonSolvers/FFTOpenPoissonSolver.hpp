@@ -475,8 +475,12 @@ namespace ippl {
 
         rho2_mr  = 0.0;
         rho2tr_m = 0.0;
-        grnL_m   = 0.0;
-        grn2n1_m = 0.0;
+        if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
+            grnL_m   = 0.0;
+        }
+        if (alg == Algorithm::DCT_VICO) {
+            grn2n1_m = 0.0;
+        }
 
         // call greensFunction and we will get the transformed G in the class attribute
         // this is done in initialization so that we already have the precomputed fct
