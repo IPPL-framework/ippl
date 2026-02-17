@@ -170,10 +170,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class... ViewArgs>
     BareField<T, Dim, ViewArgs...>& BareField<T, Dim, ViewArgs...>::operator=(T x) {
-        using index_array_type = typename RangePolicy<Dim, execution_space>::index_array_type;
-        ippl::parallel_for(
-            "BareField::operator=(T)", getRangePolicy(dview_m),
-            KOKKOS_CLASS_LAMBDA(const index_array_type& args) { apply(dview_m, args) = x; });
+        Kokkos::deep_copy(dview_m, x);
         return *this;
     }
 

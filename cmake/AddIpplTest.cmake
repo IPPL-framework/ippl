@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # AddIpplTest.cmake
 #
-# Defines a helper macro `add_ippl_test()` to create a unit test executable. It links to IPPL and
+# Defines a helper function `add_ippl_test()` to create a unit test executable. It links to IPPL and
 # GoogleTest, and sets include directories and labels.
 # -----------------------------------------------------------------------------
 
