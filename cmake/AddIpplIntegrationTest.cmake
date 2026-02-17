@@ -26,6 +26,7 @@
 # )
 # ~~~
 # -----------------------------------------------------------------------------
+include(AddIpplTest)
 
 function(add_ippl_integration_test TEST_NAME)
   add_ippl_test(${TEST_NAME} INTEGRATION ${ARGN})

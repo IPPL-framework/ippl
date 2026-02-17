@@ -6,7 +6,6 @@
 # check successful execution.
 # -----------------------------------------------------------------------------
 
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/test/cmake")
 include(AddIpplIntegrationTest)
 
 add_subdirectory(kokkos)
