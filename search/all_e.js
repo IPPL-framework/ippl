@@ -2,8 +2,8 @@ var searchData=
 [
   ['offset_5fm_0',['offset_m',['../classippl_1_1ExtrapolateFace.html#ada5bf90967717800ab72ee6350f7c601',1,'ippl::ExtrapolateFace']]],
   ['omega_5fm_1',['omega_m',['../structippl_1_1ssor__preconditioner.html#a7d1df5a109c03fba1a83420a2c910311',1,'ippl::ssor_preconditioner']]],
-  ['on_2',['on',['../classInform.html#a189cdfcc6fa3ae18adbe635d0800fb06',1,'Inform']]],
-  ['on_3',['On',['../classInform.html#a4a9809f06f5824b7c5b781c351ed645d',1,'Inform']]],
+  ['on_2',['On',['../classInform.html#a4a9809f06f5824b7c5b781c351ed645d',1,'Inform']]],
+  ['on_3',['on',['../classInform.html#a189cdfcc6fa3ae18adbe635d0800fb06',1,'Inform']]],
   ['op_5fm_4',['op_m',['../structippl_1_1richardson__preconditioner__alt.html#a23ac220b587978e49ff321461e2bd40a',1,'ippl::richardson_preconditioner_alt::op_m()'],['../structippl_1_1polynomial__chebyshev__preconditioner.html#ab3cb9998d7d94975d112b4d63bc7ed71',1,'ippl::polynomial_chebyshev_preconditioner::op_m()'],['../structippl_1_1polynomial__newton__preconditioner.html#a52544438bf5d0d050d650214d1e24e63',1,'ippl::polynomial_newton_preconditioner::op_m()'],['../classippl_1_1CG_3_01OperatorRet_00_01LowerRet_00_01UpperRet_00_01UpperLowerRet_00_01InverseDiagR1aeb04630d191cc1c271d88db5e47b23.html#a7c799422eab4c72b267e41ca894f2719',1,'ippl::CG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FEMVector&lt; T &gt;, FEMVector&lt; T &gt; &gt;::op_m()'],['../classippl_1_1CG.html#a1e701df28e9f1e3a139995f11fcb0c8e',1,'ippl::CG::op_m()']]],
   ['open_5fsolver_5',['OPEN_SOLVER',['../namespaceippl_1_1mpi_1_1tag.html#a15d567b75f6be9891166d172c200185aa342f5e85007357553e121e4dd66ada16',1,'ippl::mpi::tag']]],
   ['openedsuccessfully_6',['OpenedSuccessfully',['../classInform.html#aaf0e29260629df8cbb6d38b3092c498e',1,'Inform']]],

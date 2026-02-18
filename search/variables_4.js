@@ -6,7 +6,7 @@ var searchData=
   ['elementindices_3',['elementIndices',['../classippl_1_1LagrangeSpace.html#aaee8a2bd5ab988cb57a90831bc4aa72e',1,'ippl::LagrangeSpace::elementIndices()'],['../classippl_1_1NedelecSpace.html#a3925c549caacc3261dac5a128cf148e9',1,'ippl::NedelecSpace::elementIndices()']]],
   ['elements_5fm_4',['elements_m',['../classippl_1_1detail_1_1MultispaceContainer.html#adb548d3ad1cfbf05dc34753835ccc46b',1,'ippl::detail::MultispaceContainer']]],
   ['en_5fmp_5',['En_mp',['../classippl_1_1Maxwell.html#ac7914e58653042029e79182a4ea80db0',1,'ippl::Maxwell']]],
-  ['enable_6',['enable',['../structippl_1_1detail_1_1WrapUnique_1_1Verifier.html#ad5b1eca52c053bb71a97eaa5a7978878',1,'ippl::detail::WrapUnique::Verifier::enable()'],['../structippl_1_1detail_1_1IsEnabled.html#a316e19a8a4a67a78ac0180658309851c',1,'ippl::detail::IsEnabled::enable()'],['../structippl_1_1detail_1_1IsUnique.html#a97a7f83822095bbb0eaf7326e1b5edac',1,'ippl::detail::IsUnique::enable()']]],
+  ['enable_6',['enable',['../structippl_1_1detail_1_1IsEnabled.html#a316e19a8a4a67a78ac0180658309851c',1,'ippl::detail::IsEnabled::enable()'],['../structippl_1_1detail_1_1WrapUnique_1_1Verifier.html#ad5b1eca52c053bb71a97eaa5a7978878',1,'ippl::detail::WrapUnique::Verifier::enable()'],['../structippl_1_1detail_1_1IsUnique.html#a97a7f83822095bbb0eaf7326e1b5edac',1,'ippl::detail::IsUnique::enable()']]],
   ['enablefences_7',['enableFences',['../classTimer.html#a8b51eb0491ef135b32ea1de96d117bc3',1,'Timer']]],
   ['enableids_8',['EnableIDs',['../classippl_1_1ParticleBase.html#a8e690016f62ca9003de23d671c55cbb1',1,'ippl::ParticleBase']]],
   ['enablephasedump_9',['EnablePhaseDump',['../BumponTailInstabilityManager_8h.html#a1a8c92c7f4f6c14186353b7b50cc6dc4',1,'BumponTailInstabilityManager.h']]],
@@ -17,5 +17,7 @@ var searchData=
   ['estimate_5fm_14',['estimate_m',['../classippl_1_1random_1_1Distribution.html#a28210290d84f3a37c72179abbd996bad',1,'ippl::random::Distribution']]],
   ['eta_5fm_15',['eta_m',['../structippl_1_1polynomial__newton__preconditioner.html#a8289c494e0be3fa2acccf59b694b40f0',1,'ippl::polynomial_newton_preconditioner']]],
   ['eweights_16',['Eweights',['../structsecond__order__abc__edge.html#a77d6456a1fc8ac4b4c567bb119a7ff5a',1,'second_order_abc_edge']]],
-  ['extent_5fm_17',['extent_m',['../structippl_1_1detail_1_1ParticleBC.html#aca3268269cb2bbd30ff91d4b12ba5747',1,'ippl::detail::ParticleBC']]]
+  ['ex_5ffield_5fenergy_17',['Ex_field_energy',['../structCSVRow.html#a97b665c8611e3d4b563b6fab224ebcea',1,'CSVRow']]],
+  ['ex_5fmax_5fnorm_18',['Ex_max_norm',['../structCSVRow.html#aa8037446ba8c31f6a6cdbf6f98d003c6',1,'CSVRow']]],
+  ['extent_5fm_19',['extent_m',['../structippl_1_1detail_1_1ParticleBC.html#aca3268269cb2bbd30ff91d4b12ba5747',1,'ippl::detail::ParticleBC']]]
 ];

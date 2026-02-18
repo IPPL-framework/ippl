@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['name_0',['Name',['../classInform.html#ac51a65202140728946392db3ad3ff184',1,'Inform']]],
-  ['name_1',['name',['../classIpplTimerInfo.html#a701f790d76e60744d6527f8bdfabf68f',1,'IpplTimerInfo']]],
+  ['name_0',['name',['../classIpplTimerInfo.html#a701f790d76e60744d6527f8bdfabf68f',1,'IpplTimerInfo']]],
+  ['name_1',['Name',['../classInform.html#ac51a65202140728946392db3ad3ff184',1,'Inform']]],
   ['name_5fm_2',['name_m',['../classippl_1_1detail_1_1ParticleAttribBase.html#a878b80f9d5e3ba7e47490ef9ca84384e',1,'ippl::detail::ParticleAttribBase']]],
   ['nedelecspace_5fm_3',['nedelecSpace_m',['../classippl_1_1FEMMaxwellDiffusionSolver.html#acc8c0d2cd7be80a191b800b0c1bbfa15',1,'ippl::FEMMaxwellDiffusionSolver']]],
   ['needclose_4',['NeedClose',['../classInform.html#a7507c459df8456e03663a1f2beecc53f',1,'Inform']]],
@@ -31,6 +31,6 @@ var searchData=
   ['numlocalparticles_5fm_28',['numLocalParticles_m',['../classippl_1_1ParticleSpatialOverlapLayout.html#a7a149b9214577a085263747ad99267d5',1,'ippl::ParticleSpatialOverlapLayout']]],
   ['numnodes1d_29',['numNodes1D',['../classippl_1_1Quadrature.html#a667f52ecf501b53c2229754dc240752f',1,'ippl::Quadrature']]],
   ['numnodes_5fm_30',['numNodes_m',['../classippl_1_1ParticleBase.html#ad2b4cf5416a10ecbd693e4e50a9b8236',1,'ippl::ParticleBase']]],
-  ['numvertices_31',['numVertices',['../classippl_1_1Element.html#a2f176e2447f6a48a83398250d9288e5e',1,'ippl::Element']]],
-  ['numvertices_32',['NumVertices',['../classippl_1_1EdgeElement.html#a709865403a4f5c323549b5b4afb8aa6b',1,'ippl::EdgeElement::NumVertices()'],['../classippl_1_1HexahedralElement.html#ad4bf71da4c41d445fec3fc77f8b263fc',1,'ippl::HexahedralElement::NumVertices()'],['../classippl_1_1QuadrilateralElement.html#abf85717d5589529380e6aaab015314b1',1,'ippl::QuadrilateralElement::NumVertices()']]]
+  ['numvertices_31',['NumVertices',['../classippl_1_1EdgeElement.html#a709865403a4f5c323549b5b4afb8aa6b',1,'ippl::EdgeElement::NumVertices()'],['../classippl_1_1HexahedralElement.html#ad4bf71da4c41d445fec3fc77f8b263fc',1,'ippl::HexahedralElement::NumVertices()'],['../classippl_1_1QuadrilateralElement.html#abf85717d5589529380e6aaab015314b1',1,'ippl::QuadrilateralElement::NumVertices()']]],
+  ['numvertices_32',['numVertices',['../classippl_1_1Element.html#a2f176e2447f6a48a83398250d9288e5e',1,'ippl::Element']]]
 ];

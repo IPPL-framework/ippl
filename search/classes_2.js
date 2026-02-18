@@ -79,5 +79,6 @@ var searchData=
   ['cos1transform_76',['Cos1Transform',['../classippl_1_1Cos1Transform.html',1,'ippl']]],
   ['costransform_77',['CosTransform',['../classippl_1_1CosTransform.html',1,'ippl']]],
   ['createuniformtype_78',['CreateUniformType',['../structippl_1_1detail_1_1CreateUniformType.html',1,'ippl::detail']]],
-  ['customdistributionfunctions_79',['CustomDistributionFunctions',['../structCustomDistributionFunctions.html',1,'']]]
+  ['csvrow_79',['CSVRow',['../structCSVRow.html',1,'']]],
+  ['customdistributionfunctions_80',['CustomDistributionFunctions',['../structCustomDistributionFunctions.html',1,'']]]
 ];

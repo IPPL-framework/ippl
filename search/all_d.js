@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['name_0',['name',['../classIpplTimerInfo.html#a701f790d76e60744d6527f8bdfabf68f',1,'IpplTimerInfo']]],
-  ['name_1',['Name',['../classInform.html#ac51a65202140728946392db3ad3ff184',1,'Inform']]],
+  ['name_0',['Name',['../classInform.html#ac51a65202140728946392db3ad3ff184',1,'Inform']]],
+  ['name_1',['name',['../classIpplTimerInfo.html#a701f790d76e60744d6527f8bdfabf68f',1,'IpplTimerInfo']]],
   ['name_5fm_2',['name_m',['../classippl_1_1detail_1_1ParticleAttribBase.html#a878b80f9d5e3ba7e47490ef9ca84384e',1,'ippl::detail::ParticleAttribBase']]],
   ['ndindex_3',['NDIndex',['../classippl_1_1NDIndex.html',1,'ippl::NDIndex&lt; Dim &gt;'],['../classippl_1_1NDIndex.html#a8ca5ffdd9829db26ba48f499fcac4877',1,'ippl::NDIndex::NDIndex()'],['../classippl_1_1NDIndex.html#a1a7b0eeac23ce62f8a38d30d9ee36e69',1,'ippl::NDIndex::NDIndex(const Args &amp;... args)'],['../classippl_1_1NDIndex.html#a91603046eb4f271f99e1e0d9c3cea9b0',1,'ippl::NDIndex::NDIndex(const Vector&lt; unsigned, Dim &gt; &amp;sizes)'],['../classippl_1_1NDIndex.html#a2b4d847b879e225bdc977610f0ec2a66',1,'ippl::NDIndex::NDIndex(std::initializer_list&lt; Index &gt; indices)']]],
   ['ndindex_2eh_4',['NDIndex.h',['../NDIndex_8h.html',1,'']]],
@@ -79,6 +79,6 @@ var searchData=
   ['numlocalparticles_5fm_76',['numLocalParticles_m',['../classippl_1_1ParticleSpatialOverlapLayout.html#a7a149b9214577a085263747ad99267d5',1,'ippl::ParticleSpatialOverlapLayout']]],
   ['numnodes1d_77',['numNodes1D',['../classippl_1_1Quadrature.html#a667f52ecf501b53c2229754dc240752f',1,'ippl::Quadrature']]],
   ['numnodes_5fm_78',['numNodes_m',['../classippl_1_1ParticleBase.html#ad2b4cf5416a10ecbd693e4e50a9b8236',1,'ippl::ParticleBase']]],
-  ['numvertices_79',['numVertices',['../classippl_1_1Element.html#a2f176e2447f6a48a83398250d9288e5e',1,'ippl::Element']]],
-  ['numvertices_80',['NumVertices',['../classippl_1_1EdgeElement.html#a709865403a4f5c323549b5b4afb8aa6b',1,'ippl::EdgeElement::NumVertices()'],['../classippl_1_1HexahedralElement.html#ad4bf71da4c41d445fec3fc77f8b263fc',1,'ippl::HexahedralElement::NumVertices()'],['../classippl_1_1QuadrilateralElement.html#abf85717d5589529380e6aaab015314b1',1,'ippl::QuadrilateralElement::NumVertices()']]]
+  ['numvertices_79',['NumVertices',['../classippl_1_1EdgeElement.html#a709865403a4f5c323549b5b4afb8aa6b',1,'ippl::EdgeElement::NumVertices()'],['../classippl_1_1HexahedralElement.html#ad4bf71da4c41d445fec3fc77f8b263fc',1,'ippl::HexahedralElement::NumVertices()'],['../classippl_1_1QuadrilateralElement.html#abf85717d5589529380e6aaab015314b1',1,'ippl::QuadrilateralElement::NumVertices()']]],
+  ['numvertices_80',['numVertices',['../classippl_1_1Element.html#a2f176e2447f6a48a83398250d9288e5e',1,'ippl::Element']]]
 ];
