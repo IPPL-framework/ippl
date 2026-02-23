@@ -47,7 +47,8 @@ namespace ippl::mpi {
         int logSize = buffer.size();
 
         this->send(logSize, 1, 0, 0);
-        this->send<char>(buffer.data(), logSize, 0, 0);
+        if (logSize > 0)
+            this->send<char>(buffer.data(), logSize, 0, 0);
     }
 
     std::vector<LogEntry> Communicator::gatherLogsFromAllRanks(
@@ -58,13 +59,15 @@ namespace ippl::mpi {
             int logSize;
             Status status;
 
+            SPDLOG_TRACE("{}, logSize {} ", "GatheringLogs", logSize);
             this->recv(logSize, 1, rank, 0, status);
 
-            std::vector<char> buffer(logSize);
-            this->recv<char>(buffer.data(), logSize, rank, 0, status);
-
-            std::vector<LogEntry> deserializedLogs = deserializeLogs(buffer);
-            allLogs.insert(allLogs.end(), deserializedLogs.begin(), deserializedLogs.end());
+            if (logSize > 0) {
+                std::vector<char> buffer(logSize);
+                this->recv<char>(buffer.data(), logSize, rank, 0, status);
+                std::vector<LogEntry> deserializedLogs = deserializeLogs(buffer);
+                allLogs.insert(allLogs.end(), deserializedLogs.begin(), deserializedLogs.end());
+            }
         }
 
         return allLogs;

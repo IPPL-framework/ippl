@@ -4,7 +4,6 @@
 
 #include <array>
 #include <iostream>
-#include <typeinfo>
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -144,6 +143,8 @@ int main(int argc, char* argv[]) {
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
+
+        SPDLOG_TRACE("{} logSize {} ", "GatheringLogs", nRanks);
 
         layout.comm.printLogs("buffer_memory_logging.csv");
     }

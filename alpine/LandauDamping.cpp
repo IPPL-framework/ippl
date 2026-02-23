@@ -37,16 +37,11 @@ const char* TestName   = "LandauDamping";
 #include "Manager/datatypes.h"
 
 #include "Utility/IpplTimings.h"
-#include "Utility/Logging.h"
 
 #include "LandauDampingManager.h"
 #include "Manager/PicManager.h"
 
 int main(int argc, char* argv[]) {
-#if defined(SPDLOG_ACTIVE_LEVEL) && (SPDLOG_ACTIVE_LEVEL != SPDLOG_LEVEL_OFF)
-    spdlog::set_pattern("[%^%-8l%$]%t| %v");
-    spdlog::set_level(spdlog::level::trace);
-#endif
     ippl::initialize(argc, argv);
     {
         Inform msg(TestName);
