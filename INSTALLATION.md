@@ -122,7 +122,7 @@ cmake .. \
       -DBUILD_SHARED_LIBS=ON \
       -DCMAKE_HIP_ARCHITECTURES=gfx90a \
       -DCMAKE_HIP_FLAGS=--offload-arch=gfx90a \
-      -DKokkos_ENABLE_DEBUG_BOUNDS_CHECK=ON \
+      -DKokkos_ENABLE_DEBUG_BOUNDS_CHECK=OFF \
       -DKokkos_ENABLE_DEBUG=OFF \
       -DKokkos_ARCH_ZEN3=ON \
       -DKokkos_ARCH_AMD_GFX90A=ON \
