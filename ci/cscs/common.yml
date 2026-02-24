@@ -6,7 +6,7 @@ include:
     - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
     - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
     - |
-      if [[ "$CI_COMMIT_REF_NAME" =~ gh-readonly-queue.*-pr-([0-9]+)- ]]; then
+      if [[ "$CI_COMMIT_REF_NAME" =~ gh-readonly-queue/.*/pr-([0-9]+)- ]]; then
         export CDASH_LABEL="Merge-Queue-PR-${BASH_REMATCH[1]}"
       elif [[ "$CI_COMMIT_REF_NAME" =~ pr([0-9]+)$ ]]; then
         export CDASH_LABEL="PR-${BASH_REMATCH[1]}"
