@@ -44,6 +44,8 @@ option(IPPL_ENABLE_TESTS "Build integration tests in test/ directory" OFF)
 option(IPPL_ENABLE_COVERAGE "Enable code coverage" OFF)
 option(IPPL_ENABLE_NSYS_PROFILER "Enable Nvidia Nsys Profiler" OFF)
 option(IPPL_ENABLE_SANITIZER "Enable sanitizer(s)" OFF)
+option(IPPL_ENABLE_ALIGNED_COMMUNICATION_BUFFERS "Enable aligned memory buffersvfor communication"
+       OFF)
 option(IPPL_USE_ALTERNATIVE_VARIANT
        "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)
 option(IPPL_USE_STANDARD_FOLDERS "Put all generated binaries in bin/lib folders" OFF)
@@ -51,6 +53,19 @@ option(IPPL_MARK_FAILING_TESTS
        "Prefix names of tests that are known to fail with 'known_fail' for filtering with ctest"
        OFF)
 option(IPPL_ENABLE_SCRIPTS "Generate job script templates for some benchmarks/tests" OFF)
+option(IPPL_GPU_AWARE_MPI "Allow MPI to/from from device memory buffers" OFF)
+# logging options
+set(IPPL_LOG_LEVEL "off" CACHE STRING "Enable logging for messages of >=level")
+set_property(
+  CACHE IPPL_LOG_LEVEL
+  PROPERTY STRINGS
+           off
+           trace
+           debug
+           info
+           warn
+           error
+           critical)
 
 # "Build IPPL as a shared library (ON) or static library (OFF)" OFF) if(IPPL_DYL)
 # set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE) message(WARNING "IPPL_DYL is deprecated; use
@@ -97,21 +112,6 @@ if(DEFINED USE_ALTERNATIVE_VARIANT)
     WARNING ${Red}
     "USE_ALTERNATIVE_VARIANT is deprecated. Please set IPPL_USE_ALTERNATIVE_VARIANT instead.")
   set(IPPL_USE_ALTERNATIVE_VARIANT ${USE_ALTERNATIVE_VARIANT} CACHE BOOL "" FORCE)
-endif()
-
-# ------------------------------------------------------------------------------
-# Debug: This tells the compiler to replace occurrences of ${<DIR>} with <x> in debug info and error
-# messages.
-# ------------------------------------------------------------------------------
-add_compile_options(
-  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-ffile-prefix-map=${CMAKE_SOURCE_DIR}=.>
-  $<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang,GNU>:-ffile-prefix-map=${CMAKE_SOURCE_DIR}=.>)
-
-if(DEFINED FETCHCONTENT_BASE_DIR)
-  add_compile_options(
-    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-ffile-prefix-map=${FETCHCONTENT_BASE_DIR}=.3p>
-    $<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang,GNU>:-ffile-prefix-map=${FETCHCONTENT_BASE_DIR}=.3p>
-  )
 endif()
 
 # ------------------------------------------------------------------------------

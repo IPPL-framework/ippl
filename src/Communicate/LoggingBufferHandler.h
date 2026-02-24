@@ -10,7 +10,7 @@
 #include "Communicate/BufferHandler.h"
 #include "Communicate/LogEntry.h"
 
-namespace ippl {
+namespace ippl::comms {
 
     /**
      * @class LoggingBufferHandler
@@ -28,10 +28,12 @@ namespace ippl {
      * Instead, it adds logging for monitoring purposes.
      */
     template <typename MemorySpace>
-    class LoggingBufferHandler : public BufferHandler<MemorySpace> {
+    class LoggingBufferHandler : public BufferHandler<archive_buffer<MemorySpace>, MemorySpace> {
     public:
-        using buffer_type = typename BufferHandler<MemorySpace>::buffer_type;
-        using size_type   = typename BufferHandler<MemorySpace>::size_type;
+        using buffer_type =
+            typename BufferHandler<archive_buffer<MemorySpace>, MemorySpace>::buffer_type;
+        using size_type =
+            typename BufferHandler<archive_buffer<MemorySpace>, MemorySpace>::size_type;
 
         /**
          * @brief Constructs a LoggingBufferHandler with an existing buffer handler.
@@ -39,7 +41,9 @@ namespace ippl {
          * operations.
          * @param rank The MPI rank for logging purposes, used to identify the source of logs.
          */
-        LoggingBufferHandler(std::shared_ptr<BufferHandler<MemorySpace>> handler, int rank);
+        LoggingBufferHandler(
+            std::shared_ptr<BufferHandler<archive_buffer<MemorySpace>, MemorySpace>> handler,
+            int rank);
 
         /**
          * @brief Default constructor, creates an internal `BufferHandler` for managing buffers.
@@ -104,7 +108,7 @@ namespace ippl {
         const std::vector<LogEntry>& getLogs() const;
 
     private:
-        std::shared_ptr<BufferHandler<MemorySpace>>
+        std::shared_ptr<BufferHandler<archive_buffer<MemorySpace>, MemorySpace>>
             handler_m;                       ///< Internal handler for buffer management.
         std::vector<LogEntry> logEntries_m;  ///< Log entries for buffer operations.
         int rank_m;                          ///< MPI rank for identifying log sources.
@@ -122,7 +126,7 @@ namespace ippl {
         void logMethod(const std::string& methodName,
                        const std::map<std::string, std::string>& parameters);
     };
-}  // namespace ippl
+}  // namespace ippl::comms
 
 #include "Communicate/LoggingBufferHandler.hpp"
 

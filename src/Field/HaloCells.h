@@ -22,7 +22,7 @@ namespace ippl {
         template <typename T, class... ViewArgs>
         struct FieldBufferData {
             using view_type    = typename detail::ViewType<T, 1, ViewArgs...>::view_type;
-            using archive_type = Archive<typename view_type::memory_space>;
+            using archive_type = comms::archive_buffer<typename view_type::memory_space>;
 
             void serialize(archive_type& ar, size_type nsends) { ar.serialize(buffer, nsends); }
 
@@ -139,7 +139,8 @@ namespace ippl {
              * unpack function call
              */
             template <class Op>
-            void exchangeBoundaries(view_type& view, Layout_t* layout, SendOrder order, int nghost = 1);
+            void exchangeBoundaries(view_type& view, Layout_t* layout, SendOrder order,
+                                    int nghost = 1);
 
             /*!
              * Extract the subview of the original data. This does not copy.

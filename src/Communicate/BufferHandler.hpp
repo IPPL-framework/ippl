@@ -1,7 +1,7 @@
 #ifndef IPPL_BUFFER_HANDLER_HPP
 #define IPPL_BUFFER_HANDLER_HPP
 
-namespace ippl {
+namespace ippl::comms {
 
     template <typename MemorySpace>
     DefaultBufferHandler<MemorySpace>::~DefaultBufferHandler() {}
@@ -112,6 +112,7 @@ namespace ippl {
         freeSize_m -= buffer->getBufferSize();
         usedSize_m += buffer->getBufferSize();
 
+        buffer->resetReadWritePos();
         free_buffers.erase(buffer);
         used_buffers.insert(buffer);
         return buffer;
@@ -128,6 +129,7 @@ namespace ippl {
 
         free_buffers.erase(buffer);
         buffer->reallocBuffer(requiredSize);
+        buffer->resetReadWritePos();
 
         used_buffers.insert(buffer);
         return buffer;
@@ -140,9 +142,10 @@ namespace ippl {
 
         usedSize_m += newBuffer->getBufferSize();
         used_buffers.insert(newBuffer);
+        newBuffer->resetReadWritePos();
         return newBuffer;
     }
 
-}  // namespace ippl
+}  // namespace ippl::comms
 
 #endif

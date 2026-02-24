@@ -11,6 +11,54 @@
 
 #include "Utility/IpplInfo.h"
 
+#if defined(IPPL_LOGGING_ENABLED)
+#include <spdlog/cfg/env.h>
+#include <spdlog/spdlog.h>
+#endif
+
+#if defined(IPPL_LOGGING_ENABLED)
+namespace {
+    spdlog::level::level_enum default_spdlog_level() {
+#if SPDLOG_ACTIVE_LEVEL == SPDLOG_LEVEL_TRACE
+        return spdlog::level::trace;
+#elif SPDLOG_ACTIVE_LEVEL == SPDLOG_LEVEL_DEBUG
+        return spdlog::level::debug;
+#elif SPDLOG_ACTIVE_LEVEL == SPDLOG_LEVEL_INFO
+        return spdlog::level::info;
+#elif SPDLOG_ACTIVE_LEVEL == SPDLOG_LEVEL_WARN
+        return spdlog::level::warn;
+#elif SPDLOG_ACTIVE_LEVEL == SPDLOG_LEVEL_ERROR
+        return spdlog::level::err;
+#elif SPDLOG_ACTIVE_LEVEL == SPDLOG_LEVEL_CRITICAL
+        return spdlog::level::critical;
+#else
+        return spdlog::level::info;
+#endif
+    }
+
+    void initialize_spdlog_from_env() {
+        const char* pattern = std::getenv("IPPL_LOG_PATTERN");
+        if (pattern == nullptr || pattern[0] == '\0') {
+            pattern = std::getenv("SPDLOG_PATTERN");
+        }
+
+        if (pattern && pattern[0] != '\0') {
+            spdlog::set_pattern(pattern);
+        } else {
+            spdlog::set_pattern("[%^%-8l%$]%t| %v");
+        }
+
+        spdlog::set_level(default_spdlog_level());
+        spdlog::cfg::load_env_levels();
+
+        const char* level = std::getenv("IPPL_LOG_LEVEL");
+        if (level && level[0] != '\0') {
+            spdlog::set_level(spdlog::level::from_str(level));
+        }
+    }
+}  // namespace
+#endif
+
 namespace ippl {
 
     void initialize(int& argc, char* argv[], MPI_Comm comm) {
@@ -21,6 +69,10 @@ namespace ippl {
         Info  = std::make_unique<Inform>("Ippl");
         Warn  = std::make_unique<Inform>("Warning", std::cerr);
         Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
+
+#if defined(IPPL_LOGGING_ENABLED)
+        initialize_spdlog_from_env();
+#endif
 
         try {
             std::list<std::string> notparsed;
@@ -71,6 +123,14 @@ namespace ippl {
                     }
                     auto factor = detail::getNumericalOption<double>(argv[nargs]);
                     Comm->setDefaultOverallocation(factor);
+                } else if (detail::checkOption(argv[nargs], "--debug", "-g")) {
+                    ++nargs;
+                    if (Comm->rank() == 0) {
+                        std::cout << "Please attach debugger and hit return" << std::endl;
+                        char c;
+                        std::cin >> c;
+                    }
+                    Comm->barrier();
                 } else if (nargs > 0 && std::strstr(argv[nargs], "--kokkos") == nullptr) {
                     notparsed.push_back(argv[nargs]);
                 }
@@ -80,7 +140,7 @@ namespace ippl {
             Info->setOutputLevel(infoLevel);
             Error->setOutputLevel(infoLevel);
             Warn->setOutputLevel(infoLevel);
-            
+
         } catch (const std::exception& e) {
             if (Comm->rank() == 0) {
                 std::cerr << e.what() << std::endl;
