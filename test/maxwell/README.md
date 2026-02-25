@@ -11,7 +11,7 @@ This directory contains testcases for both the Standard and Non-Standard FDTD so
 
 1. **Build the executables** (in existing IPPL build directory):
    ```bash
-   cd ippl/build/test/solver/
+   cd ippl/build/test/maxwell/
    make TestStandardFDTDSolver
    make TestNonStandardFDTDSolver
    ```
@@ -24,6 +24,7 @@ This directory contains testcases for both the Standard and Non-Standard FDTD so
 
 3. **Run the testcases**:
    ```bash
+   ../.././bin/TestStandardFDTDSolver
    ./TestStandardFDTDSolver
    ./TestNonStandardFDTDSolver
    ```
@@ -45,8 +46,8 @@ This directory contains testcases for both the Standard and Non-Standard FDTD so
 
 2. **Run the testcases**:
    ```bash
-   ./TestStandardFDTDSolver_convergence
-   ./TestNonStandardFDTDSolver_convergence
+   ../.././TestStandardFDTDSolver_convergence
+   ../.././TestNonStandardFDTDSolver_convergence
    ```
 
 3. **Output**:
