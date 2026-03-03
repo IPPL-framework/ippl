@@ -60,6 +60,9 @@ take a look at this [page](https://github.com/IPPL-framework/ippl/blob/master/UN
 # CI/CD and PR testing
 Please see [Julich CI results](https://ippl-bc4558.pages.jsc.fz-juelich.de/) and [CSCS PR testing](ci/cscs/cscs-ci-cd.md) for further information.
 
+# Code Formatting
+Please see [Code Formatting Setup](doc/extras/CodeFormattingSetup.md) for further information and instructions.
+
 # Citing IPPL
 
 ```
