@@ -65,7 +65,7 @@ function(add_ippl_test TEST_NAME)
   # Link libraries (ippl exports includes/flags/deps; pick your GTest flavor)
   if(TEST_USE_GTEST_MAIN)
     target_link_libraries(${TEST_NAME} PRIVATE IPPL::ippl GTest::gtest_main)
-  else()
+  elseif(NOT TEST_INTEGRATION)
     target_link_libraries(${TEST_NAME} PRIVATE IPPL::ippl GTest::gtest)
   endif()
 
