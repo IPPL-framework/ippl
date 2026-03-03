@@ -41,7 +41,7 @@ namespace ippl {
 
         using view_type = typename detail::ViewType<T, 1, Properties...>::view_type;
 
-        using HostMirror = typename view_type::host_mirror_type;
+        using host_mirror_type = typename view_type::host_mirror_type;
 
         using memory_space    = typename view_type::memory_space;
         using execution_space = typename view_type::execution_space;
@@ -87,7 +87,7 @@ namespace ippl {
         void realloc(size_type n) { Kokkos::realloc(dview_m, n); }
 
         void print() {
-            HostMirror hview = Kokkos::create_mirror_view(dview_m);
+            host_mirror_type hview = Kokkos::create_mirror_view(dview_m);
             Kokkos::deep_copy(hview, dview_m);
             for (size_type i = 0; i < *(this->localNum_mp); ++i) {
                 std::cout << hview(i) << std::endl;
@@ -100,8 +100,8 @@ namespace ippl {
 
         const view_type& getView() const { return dview_m; }
 
-        HostMirror getHostMirror() const { return Kokkos::create_mirror(dview_m); }
-        
+        host_mirror_type getHostMirror() const { return Kokkos::create_mirror(dview_m); }
+
         void set_name(const std::string& name_) override {
             size_t len = name_.size();
             if (len >= detail::ATTRIB_NAME_MAX_LEN) {
