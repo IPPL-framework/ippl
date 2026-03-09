@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['name_0',['name',['../classIpplTimerInfo.html#a701f790d76e60744d6527f8bdfabf68f',1,'IpplTimerInfo']]],
-  ['name_1',['Name',['../classInform.html#ac51a65202140728946392db3ad3ff184',1,'Inform']]],
+  ['name_0',['Name',['../classInform.html#ac51a65202140728946392db3ad3ff184',1,'Inform']]],
+  ['name_1',['name',['../classIpplTimerInfo.html#a701f790d76e60744d6527f8bdfabf68f',1,'IpplTimerInfo']]],
   ['name_5fm_2',['name_m',['../classippl_1_1detail_1_1ParticleAttribBase.html#a878b80f9d5e3ba7e47490ef9ca84384e',1,'ippl::detail::ParticleAttribBase']]],
   ['nedelecspace_5fm_3',['nedelecSpace_m',['../classippl_1_1FEMMaxwellDiffusionSolver.html#acc8c0d2cd7be80a191b800b0c1bbfa15',1,'ippl::FEMMaxwellDiffusionSolver']]],
   ['needclose_4',['NeedClose',['../classInform.html#a7507c459df8456e03663a1f2beecc53f',1,'Inform']]],

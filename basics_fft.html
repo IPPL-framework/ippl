@@ -139,7 +139,7 @@ Usage</h1>
 <div class="line"> </div>
 <div class="line"><span class="comment">// Fill Field fieldInput with random numbers</span></div>
 <div class="line"><span class="keyword">typename</span> field_type_real::view_type&amp; view            = fieldInput.getView();</div>
-<div class="line"><span class="keyword">typename</span> field_type_real::HostMirror fieldInput_host = fieldInput.getHostMirror();</div>
+<div class="line"><span class="keyword">typename</span> field_type_real::host_mirror_type fieldInput_host = fieldInput.getHostMirror();</div>
 <div class="line"> </div>
 <div class="line"><span class="keyword">const</span> <span class="keywordtype">int</span> nghost = fieldInput.getNghost();</div>
 <div class="line">std::mt19937_64 eng(42 + <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">ippl::Comm</a>-&gt;rank());</div>
