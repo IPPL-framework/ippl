@@ -68,7 +68,7 @@ field_type_complex fieldOutput(meshOutput, layoutOutput);
 
 // Fill Field fieldInput with random numbers
 typename field_type_real::view_type& view            = fieldInput.getView();
-typename field_type_real::HostMirror fieldInput_host = fieldInput.getHostMirror();
+typename field_type_real::host_mirror_type fieldInput_host = fieldInput.getHostMirror();
 
 const int nghost = fieldInput.getNghost();
 std::mt19937_64 eng(42 + ippl::Comm->rank());

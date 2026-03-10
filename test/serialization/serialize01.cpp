@@ -207,13 +207,15 @@ int main(int argc, char* argv[]) {
         bunch.update();
 
         if (rank > 0) {
-            BunchBase::view_type::HostMirror h_id = Kokkos::create_mirror_view(bunch.id_m);
+            BunchBase::view_type::host_mirror_type h_id = Kokkos::create_mirror_view(bunch.id_m);
             Kokkos::deep_copy(h_id, bunch.id_m);
 
-            BunchBase::view_type::HostMirror h_charge = Kokkos::create_mirror_view(bunch.charge_m);
+            BunchBase::view_type::host_mirror_type h_charge =
+                Kokkos::create_mirror_view(bunch.charge_m);
             Kokkos::deep_copy(h_charge, bunch.charge_m);
 
-            BunchBase::view_type::HostMirror h_mass = Kokkos::create_mirror_view(bunch.mass_m);
+            BunchBase::view_type::host_mirror_type h_mass =
+                Kokkos::create_mirror_view(bunch.mass_m);
             Kokkos::deep_copy(h_mass, bunch.mass_m);
 
             for (size_t i = 0; i < h_id.size(); ++i) {

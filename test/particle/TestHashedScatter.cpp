@@ -68,8 +68,9 @@ int main(int argc, char* argv[]) {
         eng.discard(nLoc * ippl::Comm->rank());
         std::uniform_real_distribution<double> unif(hx[0] / 2, 1 - (hx[0] / 2));
 
-        typename bunch_type::particle_position_type::HostMirror R_host = bunch.R.getHostMirror();
-        double sum_coord                                               = 0.0;
+        typename bunch_type::particle_position_type::host_mirror_type R_host =
+            bunch.R.getHostMirror();
+        double sum_coord = 0.0;
         for (unsigned int i = 0; i < nLoc; ++i) {
             ippl::Vector<double, 3> r = {unif(eng), unif(eng), unif(eng)};
             R_host(i)                 = r;
@@ -88,22 +89,23 @@ int main(int argc, char* argv[]) {
         Inform msg2All("TestHashedScatter", INFORM_ALL_NODES);
 
         bunch.update();
-        msg << "Updated bunch and local number of particles: " << nLoc << " --> " << bunch.getLocalNum() << endl;
-        nLoc = bunch.getLocalNum(); // update moves particles --> update nLoc for multi rank
+        msg << "Updated bunch and local number of particles: " << nLoc << " --> "
+            << bunch.getLocalNum() << endl;
+        nLoc = bunch.getLocalNum();  // update moves particles --> update nLoc for multi rank
 
         /*
-        First test for custom range policy: Only scatter pt/2 particles and compare to the 
+        First test for custom range policy: Only scatter pt/2 particles and compare to the
         total sum of the field.
-        For this test, charges need to be all the same. 
+        For this test, charges need to be all the same.
         */
         {
-            bunch.Q = 1.0;
-            field = 0.0;
+            bunch.Q         = 1.0;
+            field           = 0.0;
             int NScatterred = nLoc / 2 + ippl::Comm->rank();
-            
+
             double Q_total = 1.0 * NScatterred;
             ippl::Comm->allreduce(Q_total, 1, std::plus<double>());
-            
+
             Kokkos::RangePolicy<> policy(0, NScatterred);
             scatter(bunch.Q, field, bunch.R, policy);
 
@@ -114,27 +116,30 @@ int main(int argc, char* argv[]) {
 
             msg2All << "Total charge in the field:     " << Total_charge_field << endl;
             msg2All << "Total charge of the particles: " << Q_total << endl;
-            msg2All << "Error:                         --> " << std::fabs(Q_total - Total_charge_field) << endl;
+            msg2All << "Error:                         --> "
+                    << std::fabs(Q_total - Total_charge_field) << endl;
         }
         ippl::Comm->barrier();
-        
-        
+
         /*
-        Second test for custom hash_type: Assign random charges, create an index array, shuffle it 
-        and scatter the first half of the particles. Then compute the total charge in a loop and compare
-        it to the sum from the field. 
+        Second test for custom hash_type: Assign random charges, create an index array, shuffle it
+        and scatter the first half of the particles. Then compute the total charge in a loop and
+        compare it to the sum from the field.
          */
         using hash_type = typename bunch_type::charge_container_type::hash_type;
         {
             // Sample random charges uniformly (use the same eng from before)
             std::uniform_real_distribution<double> unif_charge(0.5, 1.5);
-            typename bunch_type::charge_container_type::HostMirror Q_host = bunch.Q.getHostMirror();
-            for (unsigned int i = 0; i < nLoc; ++i) { Q_host(i) = unif_charge(eng); }
+            typename bunch_type::charge_container_type::host_mirror_type Q_host =
+                bunch.Q.getHostMirror();
+            for (unsigned int i = 0; i < nLoc; ++i) {
+                Q_host(i) = unif_charge(eng);
+            }
             Kokkos::deep_copy(bunch.Q.getView(), Q_host);
-            
+
             // Reset the field
             unsigned int NScatterred = nLoc / 2 + ippl::Comm->rank();
-            field = 0.0;
+            field                    = 0.0;
 
             // Create index array using hash_type
             std::vector<int> host_indices(nLoc);
@@ -142,19 +147,23 @@ int main(int argc, char* argv[]) {
             std::shuffle(host_indices.begin(), host_indices.end(), eng);
 
             hash_type hash("indexArray", nLoc);
-            auto hash_host = Kokkos::create_mirror_view(hash);                          // Create a host mirror of the hash array
-            for (unsigned int i = 0; i < nLoc; ++i) { hash_host(i) = host_indices[i]; } // Fill the host mirror with the shuffled index array
-            Kokkos::deep_copy(hash, hash_host);                                         // Copy the shuffled host mirror back to the device 
+            auto hash_host =
+                Kokkos::create_mirror_view(hash);  // Create a host mirror of the hash array
+            for (unsigned int i = 0; i < nLoc; ++i) {
+                hash_host(i) = host_indices[i];
+            }  // Fill the host mirror with the shuffled index array
+            Kokkos::deep_copy(hash, hash_host);  // Copy the shuffled host mirror back to the device
 
             // The custom range policy
             Kokkos::RangePolicy<> policy(0, NScatterred);
 
             // Compute total scattered charge manually
             double Q_total = 0.0;
-            auto viewQ = bunch.Q.getView();
-            Kokkos::parallel_reduce("computeTotalCharge", policy, KOKKOS_LAMBDA(const size_t i, double& val) {
-                val += viewQ(hash(i));
-            }, Kokkos::Sum<double>(Q_total));
+            auto viewQ     = bunch.Q.getView();
+            Kokkos::parallel_reduce(
+                "computeTotalCharge", policy,
+                KOKKOS_LAMBDA(const size_t i, double& val) { val += viewQ(hash(i)); },
+                Kokkos::Sum<double>(Q_total));
             ippl::Comm->allreduce(Q_total, 1, std::plus<double>());
 
             /*{
@@ -178,11 +187,14 @@ int main(int argc, char* argv[]) {
 
             msg2All << "Total charge in the field:     " << Total_charge_field << endl;
             msg2All << "Total charge of the particles: " << Q_total << endl;
-            msg2All << "Error:                         --> " << std::fabs(Q_total - Total_charge_field) << endl;
+            msg2All << "Error:                         --> "
+                    << std::fabs(Q_total - Total_charge_field) << endl;
         }
         ippl::Comm->barrier();
-        msg << endl << "Note: the values should all be the same per test case, since they are communicated over ranks!" << endl;
-
+        msg << endl
+            << "Note: the values should all be the same per test case, since they are communicated "
+               "over ranks!"
+            << endl;
     }
     ippl::finalize();
 

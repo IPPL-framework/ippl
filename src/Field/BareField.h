@@ -50,7 +50,7 @@ namespace ippl {
         using view_type = typename detail::ViewType<T, Dim, ViewArgs...>::view_type;
         typedef typename view_type::memory_space memory_space;
         typedef typename view_type::execution_space execution_space;
-        using HostMirror = typename view_type::host_mirror_type;
+        using host_mirror_type = typename view_type::host_mirror_type;
         template <class... PolicyArgs>
         using policy_type = typename RangePolicy<Dim, PolicyArgs...>::policy_type;
 
@@ -170,7 +170,7 @@ namespace ippl {
 
         const view_type& getView() const { return dview_m; }
 
-        HostMirror getHostMirror() const { return Kokkos::create_mirror(dview_m); }
+        host_mirror_type getHostMirror() const { return Kokkos::create_mirror(dview_m); }
 
         /*!
          * Generate the range policy for iterating over the field,
