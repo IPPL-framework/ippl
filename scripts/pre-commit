@@ -5,7 +5,7 @@
 # (*.c, *.cpp, *.hpp, *.h, *.tpp, etc.) are correctly clang-formatted
 # and that CMakeLists.txt and *.cmake files are cmake-formatted
 
-# To use this hook, you must have clang-format-18 and cmake-format
+# To use this hook, you must have clang-format-21 and cmake-format
 # installed on your system. See doc/extras/CodeFormattingSetup.md
 # for setup instructions.
 
@@ -14,7 +14,7 @@
 # from the .git/hooks directory, so the symlink has to be redirected)
 # ln -s -f ../../scripts/pre-commit .git/hooks/pre-commit
 
-CLANG_FORMAT_VERSION=clang-format-18
+CLANG_FORMAT_VERSION=clang-format-21
 
 red=$(tput setaf 1)
 green=$(tput setaf 2)

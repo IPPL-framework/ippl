@@ -5,38 +5,38 @@ This guide explains how to set up automatic code formatting for IPPL development
 ## Overview
 
 IPPL uses two automatic formatters:
-- **clang-format-18**: For C/C++ source files (`.c`, `.cc`, `.cpp`, `.cxx`, `.h`, `.hpp`, etc.)
+- **clang-format-21**: For C/C++ source files (`.c`, `.cc`, `.cpp`, `.cxx`, `.h`, `.hpp`, etc.)
 - **cmake-format**: For CMake configuration files (`CMakeLists.txt`, `*.cmake`)
 
 The pre-commit hook runs these formatters automatically before each commit, ensuring all committed code adheres to the project's styling conventions.
 
-## 1. Installing clang-format-18
+## 1. Installing clang-format-21
 
 ### Ubuntu/Debian
 
-Add the LLVM repository and install clang-format-18:
+Add the LLVM repository and install clang-format-21:
 
 ```bash
 # Add LLVM repository (Ubuntu 20.04+, Debian 11+)
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-sudo apt-add-repository "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-18 main"
+sudo apt-add-repository "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-21 main"
 sudo apt update
 
-# Install clang-format-18
-sudo apt install clang-format-18
+# Install clang-format-21
+sudo apt install clang-format-21
 ```
 
 Verify the installation:
 
 ```bash
-clang-format-18 --version
+clang-format-21 --version
 ```
 
-Note: If you have `clang-format` installed but it doesn't use the full name `clang-format-18`, then just create a symlink in your `.local` path that redirects `clang-format-18` to your real `clang-format` executable  
+Note: If you have `clang-format` installed but it doesn't use the full name `clang-format-21`, then just create a symlink in your `.local` path that redirects `clang-format-21` to your real `clang-format` executable  
 
 ### Other Systems
 
-For other operating systems, visit the [LLVM download page](https://releases.llvm.org/) or use your system's package manager to locate `clang-format` version 18 or later.
+For other operating systems, visit the [LLVM download page](https://releases.llvm.org/) or use your system's package manager to locate `clang-format` version 21 or later.
 
 ## 2. Installing cmake-format
 
@@ -115,7 +115,7 @@ git add src/myfile.cpp
 git commit -m "Add feature"
 
 # If formatting is needed, you'll see:
-# clang-format-18 -style=file -i src/myfile.cpp
+# clang-format-21 -style=file -i src/myfile.cpp
 # Then re-stage and retry
 git add src/myfile.cpp
 git commit -m "Add feature"
@@ -137,10 +137,10 @@ To format files without committing:
 
 ```bash
 # Format a single C/C++ file
-clang-format-18 -style=file -i src/myfile.cpp
+clang-format-21 -style=file -i src/myfile.cpp
 
 # Format all C/C++ files in a directory
-find src -type f \( -name "*.cpp" -o -name "*.hpp" \) -exec clang-format-18 -style=file -i {} \;
+find src -type f \( -name "*.cpp" -o -name "*.hpp" \) -exec clang-format-21 -style=file -i {} \;
 
 # Format CMake files
 cmake-format -c /path/to/ippl/.cmake-format.py -i CMakeLists.txt
@@ -152,18 +152,18 @@ cmake-format -c /path/to/ippl/.cmake-format.py -i CMakeLists.txt
 
 - Verify the script is executable: `chmod +x .git/hooks/pre-commit`
 - Verify the symlink points to the correct location: `ls -la .git/hooks/pre-commit`
-- Ensure `clang-format-18` and `cmake-format` are in your `$PATH`: `which clang-format-18 cmake-format`
+- Ensure `clang-format-21` and `cmake-format` are in your `$PATH`: `which clang-format-21 cmake-format`
 
 ### Formatting succeeds locally but hook still rejects?
 
 This is typically due to:
-- Different `clang-format-18` versions installed (ensure you have version 18)
+- Different `clang-format-21` versions installed (ensure you have version 21)
 - Nested `.clang-format` configuration files in subdirectories that override the root config
 
 ### Path issues on HPC systems?
 
 If you're on a shared HPC system where multiple compiler modules are available:
-- Load the correct module before working: `module load llvm/18` or similar
+- Load the correct module before working: `module load llvm/21` or similar
 - Create a symlink to `clang-format` in `~/.local/bin` if module loading is inconvenient
 
 ## 8. Configuration Files
