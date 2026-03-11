@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------
+# simple pre commit hook script to check that C/C++ source files
+# (*.c, *.cpp, *.hpp, *.h, *.tpp, etc.) are correctly clang-formatted
+# and that CMakeLists.txt and *.cmake files are cmake-formatted
+
+# To use this hook, you must have clang-format-21 and cmake-format
+# installed on your system. See doc/extras/CodeFormattingSetup.md
+# for setup instructions.
+
+# To install this hook, symlink this hook to your git hooks as follows
+# (note that the extra ../../ in the path is because git runs the hook
+# from the .git/hooks directory, so the symlink has to be redirected)
+# ln -s -f ../../scripts/pre-commit .git/hooks/pre-commit
+
+CLANG_FORMAT_VERSION=clang-format-21
+
+red=$(tput setaf 1)
+green=$(tput setaf 2)
+yellow=$(tput setaf 3)
+blue=$(tput setaf 4)
+normal=$(tput sgr0)
+
+cxx_match="c|cc|cp|cxx|cpp|c\+\+|h|hh|hpp|hxx|h\+\+|ipp|tpp|tcc|txx|inl|inc"
+cmake_match="CMakeLists\.txt|\.cmake"
+
+cxxfiles=()
+for file in `git diff --cached --name-only --diff-filter=ACMRT | grep -E "\.(${cxx_match})$"`; do
+    if ! cmp -s <(git show :${file}) <(git show :${file}|$CLANG_FORMAT_VERSION -style=file --assume-filename="${file}"); then
+        cxxfiles+=("${file}")
+    fi
+done
+
+cmakefiles=()
+for file in `git diff --cached --name-only --diff-filter=ACMRT | grep -E "(${cmake_match})$"`; do
+    tmpfile=$(mktemp /tmp/cmake-check.XXXXXX)
+    git show :${file} > $tmpfile
+    cmake-format -c $(pwd)/.cmake-format.py -i $tmpfile
+    if ! cmp -s <(git show :${file}) <(cat $tmpfile); then
+        cmakefiles+=("${file}")
+    fi
+    rm $tmpfile
+done
+
+returncode=0
+full_list=
+
+if [ -n "${cxxfiles}" ]; then
+    printf "# ${blue}clang-format ${red}error pre-commit${normal} : To fix run the following (use git commit ${yellow}--no-verify${normal} to bypass)\n"
+    for f in "${cxxfiles[@]}" ; do
+        rel=$(realpath --relative-to "./$GIT_PREFIX" "$f")
+        printf "$CLANG_FORMAT_VERSION -style=file -i %s\n" "$rel"
+        full_list="${rel} ${full_list}"
+    done
+    returncode=1
+fi
+
+if [ -n "${cmakefiles}" ]; then
+    printf "# ${green}cmake-format ${red}error pre-commit${normal} : To fix run the following (use git commit ${yellow}--no-verify${normal} to bypass)\n"
+    for f in "${cmakefiles[@]}" ; do
+        rel=$(realpath --relative-to "./$GIT_PREFIX" "$f")
+        printf "cmake-format -i %s\n" "$rel"
+        full_list="${rel} ${full_list}"
+    done
+    returncode=1
+fi
+
+if [ ! -z "$full_list" ]; then
+    printf "\n# ${red}To commit the corrected files, run\n${normal}\ngit add ${full_list}\n"
+fi
+
+exit $returncode
