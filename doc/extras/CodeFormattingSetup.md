@@ -34,6 +34,12 @@ clang-format-21 --version
 
 Note: If you have `clang-format` installed but it doesn't use the full name `clang-format-21`, then just create a symlink in your `.local` path that redirects `clang-format-21` to your real `clang-format` executable  
 
+### APPLE macOS Tahoe
+```bash
+brew install llvm@21
+clang-format --version                                                                                               
+```
+
 ### Other Systems
 
 For other operating systems, visit the [LLVM download page](https://releases.llvm.org/) or use your system's package manager to locate `clang-format` version 21 or later.
