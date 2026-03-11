@@ -105,9 +105,13 @@ Ubuntu/Debian</h2>
 </div><!-- fragment --><p >Note: If you have <code>clang-format</code> installed but it doesn't use the full name <code>clang-format-21</code>, then just create a symlink in your <code>.local</code> path that redirects <code>clang-format-21</code> to your real <code>clang-format</code> executable <br  />
 </p>
 <h2><a class="anchor" id="autotoc_md41"></a>
+APPLE macOS Tahoe</h2>
+<div class="fragment"><div class="line">brew install llvm@21</div>
+<div class="line">clang-format --version                                                                                               </div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md42"></a>
 Other Systems</h2>
 <p >For other operating systems, visit the <a href="https://releases.llvm.org/">LLVM download page</a> or use your system's package manager to locate <code>clang-format</code> version 21 or later.</p>
-<h1><a class="anchor" id="autotoc_md42"></a>
+<h1><a class="anchor" id="autotoc_md43"></a>
 2. Installing cmake-format</h1>
 <p >cmake-format is a Python package available via pip:</p>
 <div class="fragment"><div class="line"># Install cmake-format (Python 3.x required)</div>
@@ -115,9 +119,9 @@ Other Systems</h2>
 </div><!-- fragment --><p >Verify the installation:</p>
 <div class="fragment"><div class="line">cmake-format --version</div>
 </div><!-- fragment --><p >If you prefer to install it system-wide or in a virtual environment, refer to the <a href="https://cmake-format.readthedocs.io/">cmake-format documentation</a>.</p>
-<h1><a class="anchor" id="autotoc_md43"></a>
+<h1><a class="anchor" id="autotoc_md44"></a>
 3. Setting Up the Pre-Commit Hook</h1>
-<h2><a class="anchor" id="autotoc_md44"></a>
+<h2><a class="anchor" id="autotoc_md45"></a>
 Basic Setup</h2>
 <p >The repository includes the git hook script. From the repository root, setup a symlink to the git hook (in the .git/hooks dir):</p>
 <div class="fragment"><div class="line">cd /path/to/ippl</div>
@@ -128,13 +132,13 @@ Basic Setup</h2>
 <div class="fragment"><div class="line">cd /path/to/ippl/.git/hooks</div>
 <div class="line">ln -s -f ../../scripts/pre-commit pre-commit</div>
 <div class="line">chmod +x pre-commit</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md45"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md46"></a>
 Verification</h2>
 <p >To verify the hook is installed, check that the symlink exists:</p>
 <div class="fragment"><div class="line">ls -la /path/to/ippl/.git/hooks/pre-commit</div>
 </div><!-- fragment --><p >You should see output similar to:</p>
 <div class="fragment"><div class="line">lrwxrwxrwx  1 user group  23 Mar  4 12:00 pre-commit -&gt; ../../scripts/pre-commit</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md46"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md47"></a>
 4. How the Hook Works</h1>
 <p >When you run <code>git commit</code>:</p>
 <ol type="1">
@@ -150,7 +154,7 @@ Verification</h2>
 <li>Retry <code>git commit</code></li>
 </ol>
 <p >Note that we include the command-line parameter <code>-style=file</code> in all clang-format commands mentioned here, but this is actually the default and skipping it should not cause problems. Providing there is a <code>.clang-format</code> file present in the repository root, all should work as expected.</p>
-<h2><a class="anchor" id="autotoc_md47"></a>
+<h2><a class="anchor" id="autotoc_md48"></a>
 Example Workflow</h2>
 <div class="fragment"><div class="line"># Make changes and stage them</div>
 <div class="line">git add src/myfile.cpp</div>
@@ -163,12 +167,12 @@ Example Workflow</h2>
 <div class="line"># Then re-stage and retry</div>
 <div class="line">git add src/myfile.cpp</div>
 <div class="line">git commit -m &quot;Add feature&quot;</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md48"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md49"></a>
 5. Bypassing the Hook</h1>
 <p >If you need to commit without running the hook (not recommended), use:</p>
 <div class="fragment"><div class="line">git commit --no-verify</div>
 </div><!-- fragment --><p ><b>Warning</b>: Code committed without formatting may not adhere to project standards.</p>
-<h1><a class="anchor" id="autotoc_md49"></a>
+<h1><a class="anchor" id="autotoc_md50"></a>
 6. Manual Formatting</h1>
 <p >To format files without committing:</p>
 <div class="fragment"><div class="line"># Format a single C/C++ file</div>
@@ -179,28 +183,28 @@ Example Workflow</h2>
 <div class="line"> </div>
 <div class="line"># Format CMake files</div>
 <div class="line">cmake-format -c /path/to/ippl/.cmake-format.py -i CMakeLists.txt</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md50"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md51"></a>
 7. Troubleshooting</h1>
-<h2><a class="anchor" id="autotoc_md51"></a>
+<h2><a class="anchor" id="autotoc_md52"></a>
 Hook not executing?</h2>
 <ul>
 <li>Verify the script is executable: <code>chmod +x .git/hooks/pre-commit</code></li>
 <li>Verify the symlink points to the correct location: <code>ls -la .git/hooks/pre-commit</code></li>
 <li>Ensure <code>clang-format-21</code> and <code>cmake-format</code> are in your <code>$PATH</code>: <code>which clang-format-21 cmake-format</code></li>
 </ul>
-<h2><a class="anchor" id="autotoc_md52"></a>
+<h2><a class="anchor" id="autotoc_md53"></a>
 Formatting succeeds locally but hook still rejects?</h2>
 <p >This is typically due to:</p><ul>
 <li>Different <code>clang-format-21</code> versions installed (ensure you have version 21)</li>
 <li>Nested <code>.clang-format</code> configuration files in subdirectories that override the root config</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md53"></a>
+<h2><a class="anchor" id="autotoc_md54"></a>
 Path issues on HPC systems?</h2>
 <p >If you're on a shared HPC system where multiple compiler modules are available:</p><ul>
 <li>Load the correct module before working: <code>module load llvm/21</code> or similar</li>
 <li>Create a symlink to <code>clang-format</code> in <code>~/.local/bin</code> if module loading is inconvenient</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md54"></a>
+<h1><a class="anchor" id="autotoc_md55"></a>
 8. Configuration Files</h1>
 <p >The formatting behavior is controlled by:</p>
 <ul>
@@ -211,7 +215,7 @@ Path issues on HPC systems?</h2>
 <li><a href="https://clang.llvm.org/docs/ClangFormatStyleOptions.html">clang-format documentation</a></li>
 <li><a href="https://cmake-format.readthedocs.io/">cmake-format documentation</a></li>
 </ul>
-<h1><a class="anchor" id="autotoc_md55"></a>
+<h1><a class="anchor" id="autotoc_md56"></a>
 Questions?</h1>
 <p >Refer to the main WORKFLOW.md guide for additional context on IPPL's development practices. </p>
 </div></div><!-- contents -->
