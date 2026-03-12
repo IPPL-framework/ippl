@@ -98,8 +98,8 @@ Inheritance diagram for ippl::PicManager&lt; T, Dim, pc, fc, orb &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1PicManager__inherit__graph.png" border="0" usemap="#aippl_1_1PicManager_3_01T_00_01Dim_00_01pc_00_01fc_00_01orb_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1PicManager_3_01T_00_01Dim_00_01pc_00_01fc_00_01orb_01_4_inherit__map" id="aippl_1_1PicManager_3_01T_00_01Dim_00_01pc_00_01fc_00_01orb_01_4_inherit__map">
-<area shape="rect" title="A template class for managing Particle&#45;in&#45;Cell (PIC) simulations." alt="" coords="5,196,164,485"/>
-<area shape="rect" href="classippl_1_1BaseManager.html" title="A base class for managing simulations using IPPL." alt="" coords="19,5,151,148"/>
+<area shape="rect" title="A template class for managing Particle&#45;in&#45;Cell (PIC) simulations." alt="" coords="5,196,199,485"/>
+<area shape="rect" href="classippl_1_1BaseManager.html" title="A base class for managing simulations using IPPL." alt="" coords="36,5,168,148"/>
 </map>
 </div>
 <div class="dynheader">
@@ -107,8 +107,8 @@ Collaboration diagram for ippl::PicManager&lt; T, Dim, pc, fc, orb &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1PicManager__coll__graph.png" border="0" usemap="#aippl_1_1PicManager_3_01T_00_01Dim_00_01pc_00_01fc_00_01orb_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1PicManager_3_01T_00_01Dim_00_01pc_00_01fc_00_01orb_01_4_coll__map" id="aippl_1_1PicManager_3_01T_00_01Dim_00_01pc_00_01fc_00_01orb_01_4_coll__map">
-<area shape="rect" title="A template class for managing Particle&#45;in&#45;Cell (PIC) simulations." alt="" coords="5,196,164,485"/>
-<area shape="rect" href="classippl_1_1BaseManager.html" title="A base class for managing simulations using IPPL." alt="" coords="19,5,151,148"/>
+<area shape="rect" title="A template class for managing Particle&#45;in&#45;Cell (PIC) simulations." alt="" coords="5,196,199,485"/>
+<area shape="rect" href="classippl_1_1BaseManager.html" title="A base class for managing simulations using IPPL." alt="" coords="36,5,168,148"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -125,9 +125,23 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a125a23175033b3b32544dc0ec62026d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Grid-to-particle operation.  <a href="classippl_1_1PicManager.html#a125a23175033b3b32544dc0ec62026d7">More...</a><br /></td></tr>
 <tr class="separator:a125a23175033b3b32544dc0ec62026d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ac13db4c4682879a2323a58692c44ca"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; pc &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#a9ac13db4c4682879a2323a58692c44ca">getParticleContainer</a> ()</td></tr>
+<tr class="memdesc:a9ac13db4c4682879a2323a58692c44ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the default (first) particle container.  <a href="classippl_1_1PicManager.html#a9ac13db4c4682879a2323a58692c44ca">More...</a><br /></td></tr>
 <tr class="separator:a9ac13db4c4682879a2323a58692c44ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0cd2c07ba2a6b3f006c8bab41db91f4a"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; pc &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#a0cd2c07ba2a6b3f006c8bab41db91f4a">getParticleContainer</a> (size_t i)</td></tr>
+<tr class="memdesc:a0cd2c07ba2a6b3f006c8bab41db91f4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a particle container by index.  <a href="classippl_1_1PicManager.html#a0cd2c07ba2a6b3f006c8bab41db91f4a">More...</a><br /></td></tr>
+<tr class="separator:a0cd2c07ba2a6b3f006c8bab41db91f4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1eff6e890ea5cee9dc22b931e5bac65a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#a1eff6e890ea5cee9dc22b931e5bac65a">setParticleContainer</a> (std::shared_ptr&lt; pc &gt; pcontainer)</td></tr>
+<tr class="memdesc:a1eff6e890ea5cee9dc22b931e5bac65a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the default (first) particle container.  <a href="classippl_1_1PicManager.html#a1eff6e890ea5cee9dc22b931e5bac65a">More...</a><br /></td></tr>
 <tr class="separator:a1eff6e890ea5cee9dc22b931e5bac65a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeae1e0864315e74b8a744df17f175336"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#aeae1e0864315e74b8a744df17f175336">addParticleContainer</a> (std::shared_ptr&lt; pc &gt; pcontainer)</td></tr>
+<tr class="memdesc:aeae1e0864315e74b8a744df17f175336"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add an additional particle container (bunch).  <a href="classippl_1_1PicManager.html#aeae1e0864315e74b8a744df17f175336">More...</a><br /></td></tr>
+<tr class="separator:aeae1e0864315e74b8a744df17f175336"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac572cd6ff6c1e67054d804d589979b88"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#ac572cd6ff6c1e67054d804d589979b88">getNumParticleContainers</a> () const</td></tr>
+<tr class="memdesc:ac572cd6ff6c1e67054d804d589979b88"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the number of particle containers (bunches).  <a href="classippl_1_1PicManager.html#ac572cd6ff6c1e67054d804d589979b88">More...</a><br /></td></tr>
+<tr class="separator:ac572cd6ff6c1e67054d804d589979b88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9116ffc0e2b94da7bee68c0f9a054999"><td class="memItemLeft" align="right" valign="top">const std::vector&lt; std::shared_ptr&lt; pc &gt; &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#a9116ffc0e2b94da7bee68c0f9a054999">getParticleContainers</a> () const</td></tr>
+<tr class="memdesc:a9116ffc0e2b94da7bee68c0f9a054999"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a const reference to the vector of all particle containers.  <a href="classippl_1_1PicManager.html#a9116ffc0e2b94da7bee68c0f9a054999">More...</a><br /></td></tr>
+<tr class="separator:a9116ffc0e2b94da7bee68c0f9a054999"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1794a9f7ac00567097427b993ee6f310"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; fc &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#a1794a9f7ac00567097427b993ee6f310">getFieldContainer</a> ()</td></tr>
 <tr class="separator:a1794a9f7ac00567097427b993ee6f310"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afd4fedc120a6e325ccd2bb58d1086598"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#afd4fedc120a6e325ccd2bb58d1086598">setFieldContainer</a> (std::shared_ptr&lt; fc &gt; fcontainer)</td></tr>
@@ -166,7 +180,11 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:aa45e309161b4a22d2eb3ea4daa974e2f"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; fc &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#aa45e309161b4a22d2eb3ea4daa974e2f">fcontainer_m</a></td></tr>
 <tr class="separator:aa45e309161b4a22d2eb3ea4daa974e2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a162bca7531cc11944f9969c4bd74ada6"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; pc &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#a162bca7531cc11944f9969c4bd74ada6">pcontainer_m</a></td></tr>
+<tr class="memdesc:a162bca7531cc11944f9969c4bd74ada6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default (first) particle container, kept for backward compatibility.  <a href="classippl_1_1PicManager.html#a162bca7531cc11944f9969c4bd74ada6">More...</a><br /></td></tr>
 <tr class="separator:a162bca7531cc11944f9969c4bd74ada6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08f9a68e83d28c0f144909e7d2496d05"><td class="memItemLeft" align="right" valign="top">std::vector&lt; std::shared_ptr&lt; pc &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#a08f9a68e83d28c0f144909e7d2496d05">pcontainers_m</a></td></tr>
+<tr class="memdesc:a08f9a68e83d28c0f144909e7d2496d05"><td class="mdescLeft">&#160;</td><td class="mdescRight">All particle containers managed by this PIC manager. the first entry (index 0) is the same as the one pointed to by pcontainer_m.  <a href="classippl_1_1PicManager.html#a08f9a68e83d28c0f144909e7d2496d05">More...</a><br /></td></tr>
+<tr class="separator:a08f9a68e83d28c0f144909e7d2496d05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abf8c351989d0abcd28d5bded35ad833a"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; orb &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#abf8c351989d0abcd28d5bded35ad833a">loadbalancer_m</a></td></tr>
 <tr class="separator:abf8c351989d0abcd28d5bded35ad833a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e35a3507cf0e1d3db1409088d82e6ec"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classippl_1_1FieldSolverBase.html">ippl::FieldSolverBase</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PicManager.html#a3e35a3507cf0e1d3db1409088d82e6ec">fsolver_m</a></td></tr>
@@ -176,6 +194,7 @@ Protected Attributes</h2></td></tr>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, unsigned Dim, class pc, class fc, class orb&gt;<br />
 class ippl::PicManager&lt; T, Dim, pc, fc, orb &gt;</div><p >A template class for managing Particle-in-Cell (PIC) simulations. </p>
 <p >The <a class="el" href="classippl_1_1PicManager.html" title="A template class for managing Particle-in-Cell (PIC) simulations.">PicManager</a> class is a template class that extends the functionality of the <a class="el" href="classippl_1_1BaseManager.html" title="A base class for managing simulations using IPPL.">BaseManager</a> class for Particle-in-Cell simulations. It provides methods for particle-to-grid and grid-to-particle operations, as well as a method for dumping simulation data.</p>
+<p >It supports multiple particle containers (bunches). By default, a single bunch is used, preserving backward compatibility. The load balancer applies to the first (default) bunch.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">T</td><td>The data type for simulation variables. </td></tr>
@@ -242,6 +261,43 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="aeae1e0864315e74b8a744df17f175336" name="aeae1e0864315e74b8a744df17f175336"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeae1e0864315e74b8a744df17f175336">&#9670;&#160;</a></span>addParticleContainer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class pc , class fc , class orb &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t <a class="el" href="classippl_1_1PicManager.html">ippl::PicManager</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, pc, fc, orb &gt;::addParticleContainer </td>
+          <td>(</td>
+          <td class="paramtype">std::shared_ptr&lt; pc &gt;&#160;</td>
+          <td class="paramname"><em>pcontainer</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add an additional particle container (bunch). </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pcontainer</td><td>Shared pointer to the particle container to add. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The index assigned to the new particle container. </dd></dl>
+
+</div>
+</div>
 <a id="a1794a9f7ac00567097427b993ee6f310" name="a1794a9f7ac00567097427b993ee6f310"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1794a9f7ac00567097427b993ee6f310">&#9670;&#160;</a></span>getFieldContainer()</h2>
 
@@ -323,8 +379,38 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 
 </div>
 </div>
+<a id="ac572cd6ff6c1e67054d804d589979b88" name="ac572cd6ff6c1e67054d804d589979b88"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac572cd6ff6c1e67054d804d589979b88">&#9670;&#160;</a></span>getNumParticleContainers()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class pc , class fc , class orb &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t <a class="el" href="classippl_1_1PicManager.html">ippl::PicManager</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, pc, fc, orb &gt;::getNumParticleContainers </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the number of particle containers (bunches). </p>
+<dl class="section return"><dt>Returns</dt><dd>The number of particle containers. </dd></dl>
+
+</div>
+</div>
 <a id="a9ac13db4c4682879a2323a58692c44ca" name="a9ac13db4c4682879a2323a58692c44ca"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9ac13db4c4682879a2323a58692c44ca">&#9670;&#160;</a></span>getParticleContainer()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ac13db4c4682879a2323a58692c44ca">&#9670;&#160;</a></span>getParticleContainer() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -347,6 +433,82 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Get the default (first) particle container. </p>
+<p >Provided for backward compatibility with single-bunch simulations. </p>
+
+</div>
+</div>
+<a id="a0cd2c07ba2a6b3f006c8bab41db91f4a" name="a0cd2c07ba2a6b3f006c8bab41db91f4a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0cd2c07ba2a6b3f006c8bab41db91f4a">&#9670;&#160;</a></span>getParticleContainer() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class pc , class fc , class orb &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt; pc &gt; <a class="el" href="classippl_1_1PicManager.html">ippl::PicManager</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, pc, fc, orb &gt;::getParticleContainer </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>i</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get a particle container by index. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">i</td><td>The index of the particle container (0-based). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Shared pointer to the particle container at index i. </dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::out_of_range</td><td>if the index is invalid. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a9116ffc0e2b94da7bee68c0f9a054999" name="a9116ffc0e2b94da7bee68c0f9a054999"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9116ffc0e2b94da7bee68c0f9a054999">&#9670;&#160;</a></span>getParticleContainers()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class pc , class fc , class orb &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const std::vector&lt; std::shared_ptr&lt; pc &gt; &gt; &amp; <a class="el" href="classippl_1_1PicManager.html">ippl::PicManager</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, pc, fc, orb &gt;::getParticleContainers </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get a const reference to the vector of all particle containers. </p>
+<dl class="section return"><dt>Returns</dt><dd>Const reference to the vector of shared pointers. </dd></dl>
 
 </div>
 </div>
@@ -524,6 +686,9 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </table>
 </div><div class="memdoc">
 
+<p>Set the default (first) particle container. </p>
+<p >Provided for backward compatibility. This sets the first bunch and also updates pcontainers_m[0] to stay in sync. </p>
+
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
@@ -620,6 +785,34 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Default (first) particle container, kept for backward compatibility. </p>
+
+</div>
+</div>
+<a id="a08f9a68e83d28c0f144909e7d2496d05" name="a08f9a68e83d28c0f144909e7d2496d05"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a08f9a68e83d28c0f144909e7d2496d05">&#9670;&#160;</a></span>pcontainers_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class pc , class fc , class orb &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;std::shared_ptr&lt;pc&gt; &gt; <a class="el" href="classippl_1_1PicManager.html">ippl::PicManager</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, pc, fc, orb &gt;::pcontainers_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>All particle containers managed by this PIC manager. the first entry (index 0) is the same as the one pointed to by pcontainer_m. </p>
 
 </div>
 </div>
