@@ -48,31 +48,51 @@ int main(int argc, char* argv[]) {
     {
         Inform msg(TestName);
 
-	static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
-	IpplTimings::startTimer(mainTimer);
+        static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
+        IpplTimings::startTimer(mainTimer);
+        
         unsigned arg = 1;    
         Vector_t<int, Dim> nr;
         for (unsigned d = 0; d < Dim; d++) {
             nr[d] = std::atoi(argv[arg++]);
         }
 
-	int np = std::atoi(argv[arg++]);
-
+        int np = std::atoi(argv[arg++]);
         int nt  = std::atoi(argv[arg++]);
-
         std::string solver = argv[arg++];
-
         int dump_freq  = std::atoi(argv[arg++]);
         
-	msg << " Grid size: " << nr << " No. of particles: " << np << " No. of time steps: " << nt << endl;
+        msg << " Grid size: " << nr << " No. of particles: " << np << " No. of time steps: " << nt << endl;
         
-        VortexInCellManager<T, Dim, Band> manager(nt, nr, np, solver, dump_freq);
+        // ===== CRITICAL: Create mesh and layout with proper MPI decomposition =====
+        ippl::NDIndex<Dim> domain;
+        for (unsigned i = 0; i < Dim; i++) {
+            domain[i] = ippl::Index(nr[i]);
+        }
+
+        // Domain bounds (adjust as needed for your vortex problem)
+        Vector_t<double, Dim> rmin(0.0);
+        Vector_t<double, Dim> rmax(10.0);
+        Vector_t<double, Dim> origin = rmin;
+        Vector_t<double, Dim> hr = (rmax - rmin) / nr;
+
+        std::array<bool, Dim> isParallel;
+        isParallel.fill(true);
+        const bool isAllPeriodic = true;
+
+        // Create the mesh and layout with MPI communicator
+        Mesh_t<Dim> mesh(domain, hr, origin);
+        FieldLayout_t<Dim> FL(MPI_COMM_WORLD, domain, isParallel, isAllPeriodic);
+        
+        // Now create manager WITH the layout info
+        VortexInCellManager<T, Dim, Band> manager(nt, nr, np, solver, dump_freq, 
+                                                   rmin, rmax, origin, FL, mesh);
 
         manager.pre_run();
-
         manager.run(manager.getNt());
-	IpplTimings::stopTimer(mainTimer);
-	IpplTimings::print();
+        
+        IpplTimings::stopTimer(mainTimer);
+        IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
