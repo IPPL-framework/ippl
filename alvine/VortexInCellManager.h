@@ -16,7 +16,7 @@
 #include "VortexDistributions.h"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
-using host_type = typename ippl::ParticleAttrib<T>::HostMirror;
+using host_type = typename ippl::ParticleAttrib<T>::host_mirror_type; /*using host_type = typename ippl::ParticleAttrib<T>::HostMirror;*/
 
 
 template <typename T, unsigned Dim, typename VortexDistribution>
