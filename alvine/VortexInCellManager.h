@@ -232,6 +232,7 @@ void initializeParticles() {
     Kokkos::parallel_for(
         "init_particle_vorticity",
         nlocal,
+        Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, nlocal),
         VortexDistribution(*R, omega_host,
                            this->rmin_m, this->rmax_m,
                            this->origin_m, nlocal)
