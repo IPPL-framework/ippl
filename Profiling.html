@@ -203,7 +203,20 @@ mpiP.py</h1>
 <p >if <b>name</b> == '<b>main</b>': folder_path = sys.argv[1] if os.path.exists(folder_path): </p>
 <h1><a class="anchor" id="autotoc_md79"></a>
 Look for any file in the folder ending with .mpiP</h1>
-<p >for filename in os.listdir(folder_path): if filename.endswith('.mpiP'): file_path = os.path.join(folder_path, filename) try: total_bytes = sum_send_bytes_from_file(file_path) except Exception as e: print(f"Error processing {file_path}: {e}") break # Only one histogram file per run assumed print(f"Total bytes = ", total_bytes) else: print(f"Path given does not exist!") </p>
+<p >for filename in os.listdir(folder_path): if filename.endswith('.mpiP'): file_path = os.path.join(folder_path, filename) try: total_bytes = sum_send_bytes_from_file(file_path) except Exception as e: print(f"Error processing {file_path}: {e}") break # Only one histogram file per run assumed print(f"Total bytes = ", total_bytes) else: print(f"Path given does not exist!")</p>
+<hr  />
+<h2><a class="anchor" id="autotoc_md81"></a>
+Debugging apps with gdb</h2>
+<h3><a class="anchor" id="autotoc_md82"></a>
+LandauDamping</h3>
+<p >Some applications (LandauDamping currently) accept a command line option <code>--debug</code>, this causes them to pause on startup and allows you to attach a debugger and then resume (by pressing &lt;enter&gt;). This is useful when debugging N mpi ranks and you want to attach gdb to one or more of them, but can't launch using gdb directly.</p>
+<p >Usually one would attach gdb using a launch command such as this (on a remote machine supporting xterm over X11 for example, to open N xterm windows with gdb attached to one rank in each) </p><div class="fragment"><div class="line">srun -N 1 -n 2 wrapper-script.sh xterm -fn 10x20 -e gdb </div>
+<div class="line">  -ex=&#39;set confirm on&#39; \</div>
+<div class="line">  -ex=record \</div>
+<div class="line">  -ex=run \</div>
+<div class="line">  -ex=&quot;set pagination off&quot; \</div>
+<div class="line">  --args my/path/to/executable</div>
+</div><!-- fragment --><p> The extra <code>-ex</code> parameters tell gdb to launch the application and start executing and not wait for additional prompting. </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 <!-- start footer part -->
