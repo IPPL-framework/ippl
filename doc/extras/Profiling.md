@@ -201,3 +201,20 @@ if __name__ == '__main__':
         print(f"Path given does not exist!")
 
 
+---
+
+## Debugging apps with gdb
+
+### LandauDamping
+Some applications (LandauDamping currently) accept a command line option `--debug`, this causes them to pause on startup and allows you to attach a debugger and then resume (by pressing <enter>). This is useful when debugging N mpi ranks and you want to attach gdb to one or more of them, but can't launch using gdb directly. 
+
+Usually one would attach gdb using a launch command such as this (on a remote machine supporting xterm over X11 for example, to open N xterm windows with gdb attached to one rank in each) 
+```
+srun -N 1 -n 2 wrapper-script.sh xterm -fn 10x20 -e gdb 
+  -ex='set confirm on' \
+  -ex=record \
+  -ex=run \
+  -ex="set pagination off" \
+  --args my/path/to/executable
+```
+The extra `-ex` parameters tell gdb to launch the application and start executing and not wait for additional prompting. 
