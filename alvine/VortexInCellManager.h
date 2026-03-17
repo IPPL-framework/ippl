@@ -183,7 +183,7 @@ void initializeParticles() {
     double xmin = this->rmin_m[0];
     double xmax = this->rmax_m[0];
 
-    // ===== VORTEX BAND - BASED ON GLOBAL Y COORDINATES =====
+
     double ymin_band = (this->rmin_m[1] + this->rmax_m[1]) / 2.0 - 1.0;
     double ymax_band = (this->rmin_m[1] + this->rmax_m[1]) / 2.0 + 1.0;
 
@@ -231,7 +231,6 @@ void initializeParticles() {
 
     Kokkos::parallel_for(
         "init_particle_vorticity",
-        nlocal,
         Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, nlocal),
         VortexDistribution(*R, omega_host,
                            this->rmin_m, this->rmax_m,
