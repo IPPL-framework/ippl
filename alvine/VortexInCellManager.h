@@ -228,15 +228,44 @@ void initializeParticles() {
             (*R)(i)[1] = ymin_band + (iy_global + 0.5) * dy_global + jitter_y;
         }
     );
+// --- Device views (positions and vorticity) ---
+auto R_view = pc->R.getView();
+auto omega_view = pc->omega.getView();
 
-    Kokkos::parallel_for(
-        "init_particle_vorticity",
-        Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(0, nlocal),
-        VortexDistribution(*R, omega_host,
-                           this->rmin_m, this->rmax_m,
-                           this->origin_m, nlocal)
-    );
+// --- Copy data from 'this' to local variables (captured by value) ---
+double origin_x = this->origin_m[0];
+double origin_y = this->origin_m[1];
+double rmin_x   = this->rmin_m[0];
+double rmin_y   = this->rmin_m[1];
+double rmax_x   = this->rmax_m[0];
+double rmax_y   = this->rmax_m[1];
+double np_global = this->np_m;
+double radius    = 3.0;
 
+// --- Vorticity kernel (runs on GPU) ---
+Kokkos::parallel_for(
+    "init_particle_vorticity",
+    nlocal,
+    KOKKOS_LAMBDA(const int i) {
+        // Read position (already set in previous kernel)
+        double x = R_view(i)[0];
+        double y = R_view(i)[1];
+
+        // Distance from origin
+        double dx = x - origin_x;
+        double dy = y - origin_y;
+        double norm = Kokkos::sqrt(dx*dx + dy*dy);
+
+        if (norm > radius) {
+            omega_view(i) = 0.0;
+        } else {
+            // Example: constant 1 inside disk (adjust formula as needed)
+            omega_view(i) = (2* (rmax_x - rmin_x)) / np_global; // Scale by area per particle (assuming uniform distribution) 
+            
+        }
+    }
+);
+Kokkos::fence();
     Kokkos::deep_copy(pc->omega.getView(), omega_host);
 
     Kokkos::fence();
