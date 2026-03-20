@@ -7,7 +7,7 @@
 #include "ParticleContainer.hpp"
 
 using view_type   = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
-using host_type   = typename ippl::ParticleAttrib<T>::HostMirror;
+using host_type   = typename ippl::ParticleAttrib<T>::host_mirror_type;;/*typename ippl::ParticleAttrib<T>::HostMirror;*/
 using vector_type = ippl::Vector<double, Dim>;
 
 class BaseDistribution {

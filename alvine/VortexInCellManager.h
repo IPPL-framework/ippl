@@ -256,13 +256,9 @@ Kokkos::parallel_for(
         double dy = y - origin_y;
         double norm = Kokkos::sqrt(dx*dx + dy*dy);
 
-        if (norm > radius) {
-            omega_view(i) = 0.0;
-        } else {
-            // Example: constant 1 inside disk (adjust formula as needed)
-            omega_view(i) = (2* (rmax_x - rmin_x)) / np_global; // Scale by area per particle (assuming uniform distribution) 
+        omega_view(i) = (2* (rmax_x - rmin_x)) / np_global; // Scale by area per particle (assuming uniform distribution) 
             
-        }
+ 
     }
 );
 Kokkos::fence();
@@ -377,7 +373,7 @@ void dumpParticleDataPerRank() {
     void dump() override {
       static IpplTimings::TimerRef dumpTimer = IpplTimings::getTimer("dump");
       IpplTimings::startTimer(dumpTimer);
-      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+/*      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
 
       Inform csvout(NULL, "particles.csv", Inform::APPEND);
 
@@ -387,7 +383,7 @@ void dumpParticleDataPerRank() {
           csvout << "," << pc->R(i)[d];
         }
         csvout << "," << pc->omega(i) << endl;
-      }
+      }*/
       dumpParticleDataPerRank();
       IpplTimings::stopTimer(dumpTimer);
        
