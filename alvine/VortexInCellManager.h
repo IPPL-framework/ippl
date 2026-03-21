@@ -261,9 +261,6 @@ Kokkos::parallel_for(
  
     }
 );
-Kokkos::fence();
-    Kokkos::deep_copy(pc->omega.getView(), omega_host);
-
     Kokkos::fence();
     ippl::Comm->barrier();
 }

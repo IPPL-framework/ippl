@@ -9,4 +9,4 @@
 #SBATCH --gres=gpu:1             # GPUs per node (must match ntasks-per-node if each rank uses one GPU)
 
 srun --cpu-bind=sockets compute-sanitizer --tool memcheck \
-     ./build_gpu/alvine/VortexInCell 128 128 10000 100 FFT 1 --overallocate 1.0 --info 5
+     ./build_gpu/alvine/VortexInCell 128 128 10000 1000 FFT 1 --overallocate 1.0 --info 5
