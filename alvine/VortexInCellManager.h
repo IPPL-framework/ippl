@@ -111,47 +111,7 @@ public:
 
     }
 
- /*   void initializeParticles() {
-
-      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-
-      // Create np_m particles in container
-      size_type totalP = this->np_m;
-      pc->create(totalP); // TODO: local number of particles? from kokkos?
-      
-      view_type* R = &(pc->R.getView()); // Position vector
-      host_type omega_host = pc->omega.getHostMirror(); // Vorticity values
-        
-      // Random number generator
-      int seed         = 42;
-      Kokkos::Random_XorShift64_Pool<> rand_pool64((size_type)(seed + 100 * ippl::Comm->rank()));
-
-      double rmin[Dim];
-      double rmax[Dim];
-      for(unsigned int i=0; i<Dim; i++){
-	  if(i==0) {
-          	rmin[i] = this->rmin_m[i];
-          	rmax[i] = this->rmax_m[i];
-	  }
-	  else {
-		rmin[i] = (this->rmin_m[i] + this->rmax_m[i]) / 2.0 - 1.0;
-		rmax[i] = (this->rmin_m[i] + this->rmax_m[i]) / 2.0 + 1.0;
-	  }
-      }
-
-      // Sample from uniform distribution
-      Kokkos::parallel_for(totalP, ippl::random::randu<double, Dim>(*R, rand_pool64, rmin, rmax));
-
-      // Assign vorticity based on radius from center
-      Kokkos::parallel_for(totalP,
-        VortexDistribution(*R, omega_host, this->rmin_m, this->rmax_m, this->origin_m, this->np_m));
-    
-      Kokkos::deep_copy(pc->omega.getView(), omega_host);
-
-      Kokkos::fence();
-      ippl::Comm->barrier();
-
-    }*/
+ 
 void initializeParticles() {
     auto* mesh = &this->fcontainer_m->getMesh();
     auto* FL   = &this->fcontainer_m->getFL();
@@ -407,17 +367,6 @@ void dumpParticleDataPerRank() {
     void dump() override {
       static IpplTimings::TimerRef dumpTimer = IpplTimings::getTimer("dump");
       IpplTimings::startTimer(dumpTimer);
-/*      std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
-
-      Inform csvout(NULL, "particles.csv", Inform::APPEND);
-
-      for (unsigned i = 0; i < this->np_m; i++) {
-        csvout << this->it_m << "," << i; 
-        for (unsigned d = 0; d < Dim; d++) {
-          csvout << "," << pc->R(i)[d];
-        }
-        csvout << "," << pc->omega(i) << endl;
-      }*/
       dumpParticleDataPerRank();
       IpplTimings::stopTimer(dumpTimer);
        
