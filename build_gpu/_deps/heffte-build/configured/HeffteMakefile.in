@@ -1,4 +1,0 @@
-heffte_include = -I/p/home/jusers/mostafa3/juwels/ippl/build_gpu/include/  -I/p/software/default/stages/2026/software/CUDA/13/targets/x86_64-linux/include -I/p/software/default/stages/2026/software/CUDA/13/targets/x86_64-linux/include/cccl
-heffte_link = -L/p/home/jusers/mostafa3/juwels/ippl/build_gpu/lib/
-heffte_libs = -lheffte  /p/software/default/stages/2026/software/CUDA/13/lib/libcufft.so /p/software/default/stages/2026/software/CUDA/13/lib/libcudart.so
-heffte_fortran_libs =  $(heffte_libs) -lstdc++

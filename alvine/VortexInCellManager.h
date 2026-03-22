@@ -160,110 +160,147 @@ void initializeParticles() {
     const bool isFEM = (this->solver_m == "FEM") || (this->solver_m == "FEM_PRECON");
     rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>(*FL, *mesh, isFEM);
     const ippl::NDIndex<Dim>& local = FL->getLocalNDIndex();
-    // For rank 0 : local = { [0,3], [0,7] }
-    //          x: 0 to 3   y: 0 to 7
 
-    int local_start_x = local[0].first(); // For rank 0, this is 0;
-    int local_end_x   = local[0].last(); // For rank 0, this is 3; (use last(), not second())
-    int local_start_y = local[1].first(); // For rank 0, this is 0;
-    int local_end_y   = local[1].last(); // For rank 0, this is 7; (use last(), not second())
-    
-    // Number of local grid cells in each direction
-    unsigned nxp_local = local[0].length(); // Number of x-cells this rank owns
-    unsigned nyp_local = local[1].length(); // Number of y-cells this rank owns
-    
-    // Each grid cell gets one particle at its center
-    size_type nlocal = nxp_local * nyp_local; // Local number of particles for this rank
+    // 1. Global lattice dimensions based on user‑supplied particle count
+    unsigned nxp_global = static_cast<unsigned>(std::sqrt(this->np_m));
+    unsigned nyp_global = this->np_m / nxp_global;
+    size_type totalP_global = nxp_global * nyp_global;
 
-    pc->create(nlocal); // Each rank will only initialize its local portion of these particles.
+    // 2. Physical bounds and spacing
+    double xmin_global = this->rmin_m[0];
+    double xmax_global = this->rmax_m[0];
+    double ymin_global = this->rmin_m[1];
+    double ymax_global = this->rmax_m[1];
+    double ymin_band = (ymin_global + ymax_global) / 2.0 - 1.0;
+    double ymax_band = (ymin_global + ymax_global) / 2.0 + 1.0;
 
-    auto* R = &(pc->R.getView());
-    auto omega_host = pc->omega.getHostMirror();
+    double dxp = (xmax_global - xmin_global) / nxp_global;
+    double dyp = (ymax_band - ymin_band) / nyp_global;
 
-    double xmin = this->rmin_m[0];
-    double xmax = this->rmax_m[0];
+    // 3. Local domain from grid decomposition
+    int local_start_x = local[0].first();
+    int local_end_x   = local[0].last();
+    int local_start_y = local[1].first();
+    int local_end_y   = local[1].last();
 
+    double xmin_local = xmin_global + local_start_x * this->hr_m[0];
+    double xmax_local = xmin_global + (local_end_x + 1) * this->hr_m[0];
+    double ymin_local = ymin_global + local_start_y * this->hr_m[1];
+    double ymax_local = ymin_global + (local_end_y + 1) * this->hr_m[1];
 
-    double ymin_band = (this->rmin_m[1] + this->rmax_m[1]) / 2.0 - 1.0;
-    double ymax_band = (this->rmin_m[1] + this->rmax_m[1]) / 2.0 + 1.0;
+    // 4. Intersect rank's physical rectangle with the vortex band
+    double y_low  = std::max(ymin_local, ymin_band);
+    double y_high = std::min(ymax_local, ymax_band);
+    // If the intersection is empty, the rank gets no particles
+    if (y_low >= y_high) {
+        pc->create(0);
+        return;
+    }
 
-    // Calculate local physical bounds in x (still need this for x positions)
-    double xmin_local = xmin + local_start_x * this->hr_m[0];
-    double xmax_local = xmin + (local_end_x + 1) * this->hr_m[0];
+    // 5. Find the range of lattice indices that fall inside the rank's rectangle
+    int ix_start = static_cast<int>(std::ceil((xmin_local - xmin_global - 0.5 * dxp) / dxp));
+    int ix_end   = static_cast<int>(std::floor((xmax_local - xmin_global - 0.5 * dxp) / dxp));
+    ix_start = std::max(0, ix_start);
+    ix_end   = std::min(static_cast<int>(nxp_global - 1), ix_end);
 
-    // For y, we use the GLOBAL band bounds, not local!
-    // But we still need local y indices to know which particles belong to this rank
-    double dy_global = (ymax_band - ymin_band) / (this->nr_m[1]); // Global y spacing in band
+    int iy_start = static_cast<int>(std::ceil((y_low - ymin_band - 0.5 * dyp) / dyp));
+    int iy_end   = static_cast<int>(std::floor((y_high - ymin_band - 0.5 * dyp) / dyp));
+    iy_start = std::max(0, iy_start);
+    iy_end   = std::min(static_cast<int>(nyp_global - 1), iy_end);
 
-    // Local grid spacing in x (based on local domain)
-    double dx_local = (xmax_local - xmin_local) / nxp_local;
+    unsigned nxp_local = ix_end - ix_start + 1;
+    unsigned nyp_local = iy_end - iy_start + 1;
+    size_type nlocal = nxp_local * nyp_local;
 
+    // 6. Create particles
+    pc->create(nlocal);
+
+    // 7. Random number generator for jitter
     int seed = 42;
     Kokkos::Random_XorShift64_Pool<> rand_pool(seed + 100 * ippl::Comm->rank());
+
+    // 8. Fill positions on the lattice (device side)
+    auto R_view = pc->R.getView();
 
     Kokkos::parallel_for(
         "init_particle_positions",
         nlocal,
         KOKKOS_LAMBDA(const int i) {
+            unsigned ix_local = i % nxp_local;
+            unsigned iy_local = i / nxp_local;
+            unsigned ix_global = ix_start + ix_local;
+            unsigned iy_global = iy_start + iy_local;
 
-            //Convert 1D index to 2D grid indices
-            unsigned ix_local = i % nxp_local; // Local x index within this rank's domain
-            unsigned iy_local = i / nxp_local; // Local y index within this rank's domain
+            auto rand_gen = rand_pool.get_state();
+            double jitter_x = (rand_gen.drand() - 0.5) * dxp * 0.2;
+            double jitter_y = (rand_gen.drand() - 0.5) * dyp * 0.2;
+            rand_pool.free_state(rand_gen);
 
-            // Convert local y index to global y index
-            unsigned iy_global = local_start_y + iy_local;
+            double x = xmin_global + (ix_global + 0.5) * dxp + jitter_x;
+            double y = ymin_band + (iy_global + 0.5) * dyp + jitter_y;
 
-            auto rand_gen = rand_pool.get_state();// Get random generator for this thread
-
-            // Add jitter to avoid particles being exactly on grid points
-            double jitter_x = (rand_gen.drand() - 0.5) * dx_local * 0.2;
-            double jitter_y = (rand_gen.drand() - 0.5) * dy_global * 0.2; // Use global dy for jitter
-
-            rand_pool.free_state(rand_gen); // free the random generator state
-
-            // Calculate particle position:
-            // X: based on LOCAL domain (rank-specific)
-            // Y: based on GLOBAL vortex band (same for all ranks)
-            (*R)(i)[0] = xmin_local + (ix_local + 0.5) * dx_local + jitter_x;
-            (*R)(i)[1] = ymin_band + (iy_global + 0.5) * dy_global + jitter_y;
+            R_view(i)[0] = x;
+            R_view(i)[1] = y;
         }
     );
-// --- Device views (positions and vorticity) ---
-auto R_view = pc->R.getView();
-auto omega_view = pc->omega.getView();
 
-// --- Copy data from 'this' to local variables (captured by value) ---
-double origin_x = this->origin_m[0];
-double origin_y = this->origin_m[1];
-double rmin_x   = this->rmin_m[0];
-double rmin_y   = this->rmin_m[1];
-double rmax_x   = this->rmax_m[0];
-double rmax_y   = this->rmax_m[1];
-double np_global = this->np_m;
-double radius    = 3.0;
+    // 9. Vorticity kernel (device) – unchanged
+    auto omega_view = pc->omega.getView();
+    double origin_x = this->origin_m[0];
+    double origin_y = this->origin_m[1];
+    double rmin_x   = this->rmin_m[0];
+    double rmin_y   = this->rmin_m[1];
+    double rmax_x   = this->rmax_m[0];
+    double rmax_y   = this->rmax_m[1];
+    double np_global = totalP_global;
+    double radius    = 3.0;
 
-// --- Vorticity kernel (runs on GPU) ---
-Kokkos::parallel_for(
-    "init_particle_vorticity",
-    nlocal,
-    KOKKOS_LAMBDA(const int i) {
-        // Read position (already set in previous kernel)
-        double x = R_view(i)[0];
-        double y = R_view(i)[1];
+    Kokkos::parallel_for(
+        "init_particle_vorticity",
+        nlocal,
+        KOKKOS_LAMBDA(const int i) {
+            double x = R_view(i)[0];
+            double y = R_view(i)[1];
+            double dx = x - origin_x;
+            double dy = y - origin_y;
+            double norm = Kokkos::sqrt(dx*dx + dy*dy);
+            // Example vorticity (replace with your physics)
+            omega_view(i) = (2.0 * (rmax_x - rmin_x)) / np_global;
+        }
+    );
 
-        // Distance from origin
-        double dx = x - origin_x;
-        double dy = y - origin_y;
-        double norm = Kokkos::sqrt(dx*dx + dy*dy);
-
-        omega_view(i) = (2* (rmax_x - rmin_x)) / np_global; // Scale by area per particle (assuming uniform distribution) 
-            
- 
-    }
-);
     Kokkos::fence();
+
+    // Diagnostic output (unchanged)
+    int rank = ippl::Comm->rank();
+    int size = ippl::Comm->size();
+
+    std::cout << "Rank " << rank << "/" << size << " initialized " << nlocal << " particles\n";
+    ippl::Comm->barrier();
+
+    // Dump all particles to a file per rank (unchanged)
+    auto R_host = Kokkos::create_mirror_view(R_view);
+    auto omega_host_debug = Kokkos::create_mirror_view(omega_view);
+    Kokkos::deep_copy(R_host, R_view);
+    Kokkos::deep_copy(omega_host_debug, omega_view);
+
+    std::stringstream fname;
+    fname << "particles_init_rank_" << rank << ".csv";
+    std::ofstream out(fname.str());
+    out << "index,pos_x,pos_y,vorticity\n";
+    for (size_type i = 0; i < nlocal; ++i) {
+        out << i << ","
+            << R_host(i)[0] << ","
+            << R_host(i)[1] << ","
+            << omega_host_debug(i) << "\n";
+    }
+    out.close();
+
+    std::cout << "Rank " << rank << " wrote particle data to " << fname.str() << "\n";
     ippl::Comm->barrier();
 }
+
+
 
     void advance() override {
       LeapFrogStep();     
