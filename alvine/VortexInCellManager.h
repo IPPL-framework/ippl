@@ -271,14 +271,14 @@ void initializeParticles() {
 
     Kokkos::fence();
 
-    // Diagnostic output (unchanged)
+    // Diagnostic output 
     int rank = ippl::Comm->rank();
     int size = ippl::Comm->size();
 
     std::cout << "Rank " << rank << "/" << size << " initialized " << nlocal << " particles\n";
     ippl::Comm->barrier();
 
-    // Dump all particles to a file per rank (unchanged)
+    // Dump all particles to a file per rank 
     auto R_host = Kokkos::create_mirror_view(R_view);
     auto omega_host_debug = Kokkos::create_mirror_view(omega_view);
     Kokkos::deep_copy(R_host, R_view);
