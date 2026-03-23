@@ -71,14 +71,13 @@ var searchData=
   ['constructvariant_3c_20std_3a_3avariant_3c_3e_2c_20std_3a_3avariant_3c_20t_2e_2e_2e_20_3e_2c_20verifier_20_3e_68',['ConstructVariant&lt; std::variant&lt;&gt;, std::variant&lt; T... &gt;, Verifier &gt;',['../structippl_1_1detail_1_1ConstructVariant_3_01std_1_1variant_3_4_00_01std_1_1variant_3_01T_8_8_8_01_4_00_01Verifier_01_4.html',1,'ippl::detail']]],
   ['constructvariant_3c_20std_3a_3avariant_3c_3e_2c_20std_3a_3avariant_3c_3e_2c_20verifier_20_3e_69',['ConstructVariant&lt; std::variant&lt;&gt;, std::variant&lt;&gt;, Verifier &gt;',['../structippl_1_1detail_1_1ConstructVariant_3_01std_1_1variant_3_4_00_01std_1_1variant_3_4_00_01Verifier_01_4.html',1,'ippl::detail']]],
   ['containerforallspaces_70',['ContainerForAllSpaces',['../structippl_1_1detail_1_1ContainerForAllSpaces.html',1,'ippl::detail']]],
-  ['containerforallspaces_3c_20buffer_5fcontainer_5ftype_20_3e_71',['ContainerForAllSpaces&lt; buffer_container_type &gt;',['../structippl_1_1detail_1_1ContainerForAllSpaces.html',1,'ippl::detail']]],
-  ['containerforallspaces_3c_20container_5ftype_20_3e_72',['ContainerForAllSpaces&lt; container_type &gt;',['../structippl_1_1detail_1_1ContainerForAllSpaces.html',1,'ippl::detail']]],
-  ['containerforallspaces_3c_20detail_3a_3ahash_5ftype_20_3e_73',['ContainerForAllSpaces&lt; detail::hash_type &gt;',['../structippl_1_1detail_1_1ContainerForAllSpaces.html',1,'ippl::detail']]],
-  ['coords_74',['Coords',['../structippl_1_1detail_1_1Coords.html',1,'ippl::detail']]],
-  ['coords_3c_201_2c_20t_20_3e_75',['Coords&lt; 1, T &gt;',['../structippl_1_1detail_1_1Coords_3_011_00_01T_01_4.html',1,'ippl::detail']]],
-  ['cos1transform_76',['Cos1Transform',['../classippl_1_1Cos1Transform.html',1,'ippl']]],
-  ['costransform_77',['CosTransform',['../classippl_1_1CosTransform.html',1,'ippl']]],
-  ['createuniformtype_78',['CreateUniformType',['../structippl_1_1detail_1_1CreateUniformType.html',1,'ippl::detail']]],
-  ['csvrow_79',['CSVRow',['../structCSVRow.html',1,'']]],
-  ['customdistributionfunctions_80',['CustomDistributionFunctions',['../structCustomDistributionFunctions.html',1,'']]]
+  ['containerforallspaces_3c_20container_5ftype_20_3e_71',['ContainerForAllSpaces&lt; container_type &gt;',['../structippl_1_1detail_1_1ContainerForAllSpaces.html',1,'ippl::detail']]],
+  ['containerforallspaces_3c_20detail_3a_3ahash_5ftype_20_3e_72',['ContainerForAllSpaces&lt; detail::hash_type &gt;',['../structippl_1_1detail_1_1ContainerForAllSpaces.html',1,'ippl::detail']]],
+  ['coords_73',['Coords',['../structippl_1_1detail_1_1Coords.html',1,'ippl::detail']]],
+  ['coords_3c_201_2c_20t_20_3e_74',['Coords&lt; 1, T &gt;',['../structippl_1_1detail_1_1Coords_3_011_00_01T_01_4.html',1,'ippl::detail']]],
+  ['cos1transform_75',['Cos1Transform',['../classippl_1_1Cos1Transform.html',1,'ippl']]],
+  ['costransform_76',['CosTransform',['../classippl_1_1CosTransform.html',1,'ippl']]],
+  ['createuniformtype_77',['CreateUniformType',['../structippl_1_1detail_1_1CreateUniformType.html',1,'ippl::detail']]],
+  ['csvrow_78',['CSVRow',['../structCSVRow.html',1,'']]],
+  ['customdistributionfunctions_79',['CustomDistributionFunctions',['../structCustomDistributionFunctions.html',1,'']]]
 ];

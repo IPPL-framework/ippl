@@ -108,9 +108,8 @@ Collaboration diagram for ippl::mpi::Communicator:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1mpi_1_1Communicator__coll__graph.png" border="0" usemap="#aippl_1_1mpi_1_1Communicator_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1mpi_1_1Communicator_coll__map" id="aippl_1_1mpi_1_1Communicator_coll__map">
-<area shape="rect" title=" " alt="" coords="81,240,265,573"/>
-<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="5,5,139,177"/>
-<area shape="rect" href="structippl_1_1detail_1_1ContainerForAllSpaces.html" title=" " alt="" coords="163,57,389,126"/>
+<area shape="rect" title=" " alt="" coords="5,225,189,573"/>
+<area shape="rect" href="classTagMaker.html" title=" " alt="" coords="31,5,164,177"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -226,6 +225,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af76d6d4adfc2d438b017163074cdf116"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ffa3d354e0b6d96b16de2fc13751367"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Communicator.html#a4ffa3d354e0b6d96b16de2fc13751367">printLogs</a> (const std::string &amp;filename)</td></tr>
 <tr class="separator:a4ffa3d354e0b6d96b16de2fc13751367"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af74fbaecf4ce7769d220a2ee4dc1e1ed"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0dbd4028645dfe8a863e177ca4077599">buffer_handler_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Communicator.html#af74fbaecf4ce7769d220a2ee4dc1e1ed">get_buffer_handler_instance</a> ()</td></tr>
+<tr class="separator:af74fbaecf4ce7769d220a2ee4dc1e1ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classTagMaker"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classTagMaker')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classTagMaker.html">TagMaker</a></td></tr>
 <tr class="memitem:a87c93f990f5b5a9bf63ccf17eccba851 inherit pub_methods_classTagMaker"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTagMaker.html#a87c93f990f5b5a9bf63ccf17eccba851">TagMaker</a> (void)</td></tr>
 <tr class="separator:a87c93f990f5b5a9bf63ccf17eccba851 inherit pub_methods_classTagMaker"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -253,10 +254,10 @@ Protected Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
 Private Types</h2></td></tr>
-<tr class="memitem:aea5eafd525b4467820e3c6905767e71e"><td class="memTemplParams" colspan="2">template&lt;typename MemorySpace &gt; </td></tr>
-<tr class="memitem:aea5eafd525b4467820e3c6905767e71e"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Communicator.html#aea5eafd525b4467820e3c6905767e71e">buffer_container_type</a> = <a class="el" href="classippl_1_1LoggingBufferHandler.html">LoggingBufferHandler</a>&lt; MemorySpace &gt;</td></tr>
-<tr class="separator:aea5eafd525b4467820e3c6905767e71e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0dbd4028645dfe8a863e177ca4077599"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0dbd4028645dfe8a863e177ca4077599">buffer_handler_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ContainerForAllSpaces.html">detail::ContainerForAllSpaces</a>&lt; <a class="el" href="classippl_1_1mpi_1_1Communicator.html#aea5eafd525b4467820e3c6905767e71e">buffer_container_type</a> &gt;::type</td></tr>
+<tr class="memitem:a0bc4cadcd389875415681632991cd65b"><td class="memTemplParams" colspan="2">template&lt;typename MemorySpace &gt; </td></tr>
+<tr class="memitem:a0bc4cadcd389875415681632991cd65b"><td class="memTemplItemLeft" align="right" valign="top">using&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0bc4cadcd389875415681632991cd65b">buffer_container_type</a> = <a class="el" href="classippl_1_1DefaultBufferHandler.html">DefaultBufferHandler</a>&lt; MemorySpace &gt;</td></tr>
+<tr class="separator:a0bc4cadcd389875415681632991cd65b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0dbd4028645dfe8a863e177ca4077599"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0dbd4028645dfe8a863e177ca4077599">buffer_handler_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ContainerForAllSpaces.html">detail::ContainerForAllSpaces</a>&lt; <a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0bc4cadcd389875415681632991cd65b">buffer_container_type</a> &gt;::type</td></tr>
 <tr class="separator:a0dbd4028645dfe8a863e177ca4077599"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
@@ -272,8 +273,8 @@ Private Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:aca662db780e48ce6a7f4823c2372f1ee"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0dbd4028645dfe8a863e177ca4077599">buffer_handler_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Communicator.html#aca662db780e48ce6a7f4823c2372f1ee">buffer_handlers_m</a></td></tr>
-<tr class="separator:aca662db780e48ce6a7f4823c2372f1ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa7a06745f3f107ec3f372a7592f7f39"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0dbd4028645dfe8a863e177ca4077599">buffer_handler_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Communicator.html#aaa7a06745f3f107ec3f372a7592f7f39">buffer_handlers_m</a></td></tr>
+<tr class="separator:aaa7a06745f3f107ec3f372a7592f7f39"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa54100e1dbb79f2178513625e5bbf765"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Communicator.html#aa54100e1dbb79f2178513625e5bbf765">defaultOveralloc_m</a> = 1.0</td></tr>
 <tr class="separator:aa54100e1dbb79f2178513625e5bbf765"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -294,8 +295,8 @@ template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&
 
 </div>
 </div>
-<a id="aea5eafd525b4467820e3c6905767e71e" name="aea5eafd525b4467820e3c6905767e71e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aea5eafd525b4467820e3c6905767e71e">&#9670;&#160;</a></span>buffer_container_type</h2>
+<a id="a0bc4cadcd389875415681632991cd65b" name="a0bc4cadcd389875415681632991cd65b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0bc4cadcd389875415681632991cd65b">&#9670;&#160;</a></span>buffer_container_type</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -306,7 +307,7 @@ template&lt;typename MemorySpace &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1mpi_1_1Communicator.html#aea5eafd525b4467820e3c6905767e71e">ippl::mpi::Communicator::buffer_container_type</a> =  <a class="el" href="classippl_1_1LoggingBufferHandler.html">LoggingBufferHandler</a>&lt;MemorySpace&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0bc4cadcd389875415681632991cd65b">ippl::mpi::Communicator::buffer_container_type</a> =  <a class="el" href="classippl_1_1DefaultBufferHandler.html">DefaultBufferHandler</a>&lt;MemorySpace&gt;</td>
         </tr>
       </table>
   </td>
@@ -328,7 +329,7 @@ template&lt;typename MemorySpace &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0dbd4028645dfe8a863e177ca4077599">ippl::mpi::Communicator::buffer_handler_type</a> =  typename <a class="el" href="structippl_1_1detail_1_1ContainerForAllSpaces.html">detail::ContainerForAllSpaces</a>&lt;<a class="el" href="classippl_1_1mpi_1_1Communicator.html#aea5eafd525b4467820e3c6905767e71e">buffer_container_type</a>&gt;::type</td>
+          <td class="memname">using <a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0dbd4028645dfe8a863e177ca4077599">ippl::mpi::Communicator::buffer_handler_type</a> =  typename <a class="el" href="structippl_1_1detail_1_1ContainerForAllSpaces.html">detail::ContainerForAllSpaces</a>&lt;<a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0bc4cadcd389875415681632991cd65b">buffer_container_type</a>&gt;::type</td>
         </tr>
       </table>
   </td>
@@ -782,6 +783,23 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <span class="mlabels"><span class="mlabel">private</span></span>  </td>
   </tr>
 </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af74fbaecf4ce7769d220a2ee4dc1e1ed" name="af74fbaecf4ce7769d220a2ee4dc1e1ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af74fbaecf4ce7769d220a2ee4dc1e1ed">&#9670;&#160;</a></span>get_buffer_handler_instance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt; <a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0dbd4028645dfe8a863e177ca4077599">Communicator::buffer_handler_type</a> &gt; ippl::mpi::Communicator::get_buffer_handler_instance </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
 </div><div class="memdoc">
 
 </div>
@@ -1844,8 +1862,8 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="aca662db780e48ce6a7f4823c2372f1ee" name="aca662db780e48ce6a7f4823c2372f1ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aca662db780e48ce6a7f4823c2372f1ee">&#9670;&#160;</a></span>buffer_handlers_m</h2>
+<a id="aaa7a06745f3f107ec3f372a7592f7f39" name="aaa7a06745f3f107ec3f372a7592f7f39"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa7a06745f3f107ec3f372a7592f7f39">&#9670;&#160;</a></span>buffer_handlers_m</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1854,7 +1872,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0dbd4028645dfe8a863e177ca4077599">buffer_handler_type</a> ippl::mpi::Communicator::buffer_handlers_m</td>
+          <td class="memname">std::shared_ptr&lt;<a class="el" href="classippl_1_1mpi_1_1Communicator.html#a0dbd4028645dfe8a863e177ca4077599">buffer_handler_type</a>&gt; ippl::mpi::Communicator::buffer_handlers_m</td>
         </tr>
       </table>
   </td>

@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classippl_1_1detail_1_1ParticleLayout.html" title=" " alt="" coords="5,5,200,45"/>
+<area shape="rect" id="node1" href="$classippl_1_1detail_1_1ParticleLayout.html" title=" " alt="" coords="5,49,209,89"/>
+<area shape="rect" id="node2" href="$classippl_1_1ParticleSpatialLayout.html" title=" " alt="" coords="267,5,482,60"/>
+<area shape="rect" id="node3" href="$classippl_1_1ParticleSpatialLayout.html" title=" " alt="" coords="257,85,492,125"/>
+<area shape="rect" id="node4" href="$classippl_1_1ParticleSpatialOverlapLayout.html" title=" " alt="" coords="540,85,813,125"/>
 </map>
