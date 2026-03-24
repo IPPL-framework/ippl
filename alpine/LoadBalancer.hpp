@@ -58,6 +58,7 @@ public:
         IpplTimings::startTimer(tupdateLayout);
         (*E_m).updateLayout(*fl);
         (*rho_m).updateLayout(*fl);
+        rho_m->setFieldBC(rho_m->getFieldBC());
 
         if (fs_m->getStype() == "CG" || fs_m->getStype() == "PCG" || fs_m->getStype() == "FEM" ||
             fs_m->getStype() == "FEM_PRECON") {

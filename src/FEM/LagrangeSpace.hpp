@@ -17,8 +17,9 @@ namespace ippl {
         // Initialize the elementIndices view
         initializeElementIndices(layout);
 
-        // Initialize the resultField
+        // Initialize or resize the workspace field to the current layout.
         resultField.initialize(mesh, layout);
+        resultField.updateLayout(layout);
     }
 
     // LagrangeSpace constructor, which calls the FiniteElementSpace constructor.
@@ -47,8 +48,9 @@ namespace ippl {
         // Initialize the elementIndices view
         initializeElementIndices(layout);
 
-        // Initialize the resultField
+        // Initialize or resize the workspace field to the current layout.
         resultField.initialize(mesh, layout);
+        resultField.updateLayout(layout);
     }
 
     // Initialize element indices Kokkos View by distributing elements among MPI ranks.
