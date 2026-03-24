@@ -67,7 +67,7 @@ public:
     using region_type = ippl::NDRegion<T, Dim>;
     region_type nr;
 
-    using mirror_type = typename bunch_type::particle_position_type::HostMirror;
+    using mirror_type = typename bunch_type::particle_position_type::host_mirror_type;
     mirror_type mirror;
 
     playout_type playout;

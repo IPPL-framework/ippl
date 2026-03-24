@@ -88,9 +88,15 @@ export CUDA_VISIBLE_DEVICES=$gpu
 # ---------------
 #  cray-mpich : see https://cpe.ext.hpe.com/docs/24.03/mpt/mpich/intro_mpi.html#general-mpich-environment-variables
 # ---------------
-export MPICH_GPU_SUPPORT_ENABLED=1
+# profiling and debugging options
 #export MPICH_OFI_CXI_COUNTER_REPORT=1
-export MPICH_GPU_IPC_ENABLED=0
+
+# gpu support
+export MPICH_GPU_IPC_ENABLED=1
+export MPICH_GPU_IPC_CACHE_MAX_SIZE=256
+if [ "$IPC_ON" -eq "0" ]; then
+    export MPICH_GPU_IPC_ENABLED=0
+fi
 
 # ---------------
 # OpenMPI mappings for MCA variables
