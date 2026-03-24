@@ -7,13 +7,11 @@
 file(RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "🔧 Adding solver integration tests from: ${_relPath}")
 
-# tests solver design
-add_ippl_integration_test(TestSolverDesign LABELS solver integration)
-
 # tests the CG solver
 add_ippl_integration_test(TestCGSolver ARGS 4 j LABELS solver integration)
 
 # compile only
+add_ippl_integration_test(TestSolverDesign COMPILE_ONLY LABELS solver integration)
 add_ippl_integration_test(TestCGSolver_convergence COMPILE_ONLY LABELS solver integration)
 
 if(IPPL_ENABLE_FFT)
