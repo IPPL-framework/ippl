@@ -59,17 +59,22 @@ public:
         (*E_m).updateLayout(*fl);
         (*rho_m).updateLayout(*fl);
 
-        if (fs_m->getStype() == "CG" || fs_m->getStype() == "PCG") {
-            phi_m->updateLayout(*fl);
-            phi_m->setFieldBC(phi_m->getFieldBC());
-        } else if (fs_m->getStype() == "FEM" || fs_m->getStype() == "FEM_PRECON") {
+        if (fs_m->getStype() == "CG" || fs_m->getStype() == "PCG" || fs_m->getStype() == "FEM" ||
+            fs_m->getStype() == "FEM_PRECON") {
             phi_m->updateLayout(*fl);
             phi_m->setFieldBC(phi_m->getFieldBC());
 
-            // also update the layout in the FEM space
-            auto* solver = dynamic_cast<FieldSolver_t*>(this->fsolver_m.get());
-            auto& space = solver->getSpace();
-            space.updateLayout(*fl);
+            if (fs_m->getStype() == "FEM") {
+                // also update the layout in the FEM space
+                auto& space = std::get<FEMSolver_t<T, Dim>>(fs_m->getSolver()).getSpace();
+                space.updateLayout(*fl);
+            } 
+
+            if (fs_m->getStype() == "FEM_PRECON") {
+                // also update the layout in the FEM space
+                auto& space = std::get<FEMPreconSolver_t<T, Dim>>(fs_m->getSolver()).getSpace();
+                space.updateLayout(*fl);
+            } 
         }
 
         // Update layout with new FieldLayout
