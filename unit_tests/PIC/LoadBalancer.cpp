@@ -13,6 +13,18 @@
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
+/**
+ * @file LoadBalancer.cpp
+ * @brief Regression test for PIC load balancing with FEM field-operator reinitialization.
+ *
+ * This test creates a deliberately imbalanced particle distribution, triggers ORB-based
+ * repartitioning, and then verifies two invariants:
+ * - particle migration preserves the total particle count and reduces the imbalance
+ * - the FEM operator can be reinitialized on the new layout without stale field extents
+ *
+ * The second check targets the issue fixed in #485, where repartitioned FEM workspaces could
+ * retain the old layout and cause later operator application to use mismatched local extents.
+ */
 const char* TestName = "LoadBalancerRegression";
 
 namespace {
@@ -48,6 +60,13 @@ namespace {
         return globalParticles;
     }
 
+    /**
+     * @brief Return the maximum local-view extent mismatch after repartition.
+     *
+     * For each dimension this compares the actual Kokkos view extent against the extent implied
+     * by the current local domain and ghost width. A nonzero result indicates that a field view
+     * still reflects an old layout.
+     */
     template <typename Field>
     int maxExtentMismatch(Field& field) {
         constexpr unsigned Dim = Field::dim;
@@ -68,6 +87,18 @@ namespace {
     }
 }  // namespace
 
+/**
+ * @brief Rebalance an artificial particle pile-up and verify FEM operator reinitialization.
+ *
+ * The particle cloud is biased toward low x by sampling x = u^2 with u uniformly distributed
+ * on [0,1], while y and z remain uniform. This creates a reproducible but still smooth load
+ * imbalance that ORB can rebalance on the fixed 17^3 mesh.
+ *
+ * After repartition the test does not run a full physics solve. Instead, it forces the FEM
+ * solver to rebuild its state for the redistributed layout and directly applies evaluateAx()
+ * to a constant field. The returned field must have extents consistent with the new layout on
+ * every rank. That is the specific regression guard for the stale-workspace bug from #485.
+ */
 TEST(LoadBalancer, RebalancesArtificialPileUpAndReinitializesFEMOperator) {
     constexpr unsigned Dim      = 3;
     using value_type            = double;
