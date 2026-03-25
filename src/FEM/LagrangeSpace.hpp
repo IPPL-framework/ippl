@@ -108,6 +108,17 @@ namespace ippl {
             });
     }
 
+    // Update resultField and elementIndices according to changed domain decomposition.
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                       FieldRHS>::updateLayout(Layout_t& layout) {
+        // repartition elements
+        initializeElementIndices(layout);
+        // update layout of resultField member variable
+        resultField.updateLayout(layout);
+    }
+
     ///////////////////////////////////////////////////////////////////////
     /// Degree of Freedom operations //////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////

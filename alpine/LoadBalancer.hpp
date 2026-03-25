@@ -64,6 +64,18 @@ public:
             fs_m->getStype() == "FEM_PRECON") {
             phi_m->updateLayout(*fl);
             phi_m->setFieldBC(phi_m->getFieldBC());
+
+            if (fs_m->getStype() == "FEM") {
+                // also update the layout in the FEM space
+                auto& space = std::get<FEMSolver_t<T, Dim>>(fs_m->getSolver()).getSpace();
+                space.updateLayout(*fl);
+            } 
+
+            if (fs_m->getStype() == "FEM_PRECON") {
+                // also update the layout in the FEM space
+                auto& space = std::get<FEMPreconSolver_t<T, Dim>>(fs_m->getSolver()).getSpace();
+                space.updateLayout(*fl);
+            } 
         }
 
         // Update layout with new FieldLayout

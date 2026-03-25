@@ -110,6 +110,14 @@ namespace ippl {
          */
         void initializeElementIndices(Layout_t& layout);
 
+        ///////////////////////////////////////////////////////////////////////
+        /**
+         * @brief Function to update the element partition and the layout of 
+         * fields in the LagrangeSpace if the layout has been changed during
+         * the simulation (for example by the load balancer).
+         */
+        void updateLayout(Layout_t& layout);
+
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
