@@ -3,3 +3,4 @@ message(STATUS "Adding unit tests found in ${_relPath}")
 
 add_ippl_test(ORB)
 add_ippl_test(PIC)
+add_ippl_test(LoadBalancer INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/alpine TIMEOUT 300)
