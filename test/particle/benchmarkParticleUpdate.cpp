@@ -180,7 +180,7 @@ int main(int argc, char* argv[]) {
         }
         std::uniform_real_distribution<double> unif(0, 1);
 
-        typename bunch_type::particle_position_type::HostMirror R_host = P->R.getHostMirror();
+        typename bunch_type::particle_position_type::host_mirror_type R_host = P->R.getHostMirror();
 
         double sum_coord = 0.0;
         for (unsigned long int i = 0; i < nloc; i++) {
@@ -209,7 +209,7 @@ int main(int argc, char* argv[]) {
         msg << "particles created and initial conditions assigned " << endl;
 
         std::uniform_real_distribution<double> unifP(0, hr_min);
-        typename bunch_type::particle_position_type::HostMirror P_host = P->P.getHostMirror();
+        typename bunch_type::particle_position_type::host_mirror_type P_host = P->P.getHostMirror();
 
         // begin main timestep loop
         msg << "Starting iterations ..." << endl;

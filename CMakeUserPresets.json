@@ -64,9 +64,7 @@
         "default"
       ],
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "IPPL_ENABLE_SANITIZER": "ON",
-        "IPPL_PLATFORMS": "SERIAL"
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {

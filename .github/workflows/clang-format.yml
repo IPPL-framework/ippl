@@ -16,11 +16,14 @@ jobs:
         with:
           fetch-depth: 0 # IMPORTANT: required for git diff
 
-      - name: Install clang-format 18
+      - name: Install clang-format 21
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-format-18
-          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-18 100
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 21
+          sudo apt-get install -y clang-format-21
+          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-21 100
 
       - name: Get list of modified source files
         id: files

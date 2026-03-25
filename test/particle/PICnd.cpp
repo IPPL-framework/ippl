@@ -297,7 +297,7 @@ public:
     //        0 -> gridpoints
     void initPositions(FieldLayout_t& fl, Vector_t& hr, unsigned int nloc, int tag = 2) {
         Inform m("initPositions ");
-        typename ippl::ParticleBase<PLayout>::particle_position_type::HostMirror R_host =
+        typename ippl::ParticleBase<PLayout>::particle_position_type::host_mirror_type R_host =
             this->R.getHostMirror();
 
         std::mt19937_64 eng[Dim];
