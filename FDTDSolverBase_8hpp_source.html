@@ -163,9 +163,9 @@ $(function() {
 <div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>        Kokkos::parallel_for(</div>
 <div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>            this-&gt;A_n.getFieldRangePolicy(), KOKKOS_LAMBDA(<span class="keywordtype">size_t</span> i, <span class="keywordtype">size_t</span> j, <span class="keywordtype">size_t</span> k) {</div>
 <div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>                <a class="code hl_class" href="classippl_1_1Vector.html">ippl::Vector&lt;scalar, 3&gt;</a> dAdt;</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>                dAdt[0] = (A_np1(i, j, k)[1] - A_n(i, j, k)[1]) * idt;</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>                dAdt[1] = (A_np1(i, j, k)[2] - A_n(i, j, k)[2]) * idt;</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>                dAdt[2] = (A_np1(i, j, k)[3] - A_n(i, j, k)[3]) * idt;</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>                dAdt[0] = (A_n(i, j, k)[1] - A_nm1(i, j, k)[1]) * idt;</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>                dAdt[1] = (A_n(i, j, k)[2] - A_nm1(i, j, k)[2]) * idt;</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>                dAdt[2] = (A_n(i, j, k)[3] - A_nm1(i, j, k)[3]) * idt;</div>
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span> </div>
 <div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>                <a class="code hl_class" href="classippl_1_1Vector.html">ippl::Vector&lt;scalar, 4&gt;</a> dAdx =</div>
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>                    (A_n(i + 1, j, k) - A_n(i - 1, j, k)) * inverse_2_spacing[0];</div>
