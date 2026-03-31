@@ -493,6 +493,7 @@ TEST(FEMVector, CG) {
         std::vector<double> aRef = {5, 4, 5, 1, 5, 1, 2, 2, 5, 1};
         
         std::vector<double> matRef = {
+	    // clang-format off
             10, -1, 3, 0, 0, 0, 0, 0, 0, 0,
             -1, 10, -1, 3, 0, 0, 0, 0, 0, 0,
             3, -1, 10, -1, 3, 0, 0, 0, 0, 0,
@@ -503,6 +504,7 @@ TEST(FEMVector, CG) {
             0, 0, 0, 0, 0, 3, -1, 10, -1, 3,
             0, 0, 0, 0, 0, 0, 3, -1, 10, -1,
             0, 0, 0, 0, 0, 0, 0, 3, -1, 10
+	    // clang-format on
         };
         
     

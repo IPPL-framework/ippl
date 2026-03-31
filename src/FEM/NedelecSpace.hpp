@@ -711,10 +711,12 @@ namespace ippl {
             T y = localPoint(1);
 
             switch (localDOF){
+	        // clang-format off
                 case 0: result(0) = 1 - y; break;
                 case 1: result(1) = 1 - x; break;
                 case 2: result(0) = y; break;
                 case 3: result(1) = x; break;
+	        // clang-format on
             }
         } else if constexpr (Dim == 3) {
             T x = localPoint(0);
@@ -722,6 +724,7 @@ namespace ippl {
             T z = localPoint(2);
 
             switch (localDOF){
+                // clang-format off
                 case 0:  result(0) = y*z - y - z + 1; break;
                 case 1:  result(1) = x*z - x - z + 1; break;
                 case 2:  result(0) = y*(1 - z);       break;
@@ -734,6 +737,7 @@ namespace ippl {
                 case 9:  result(1) = z*(1 - x);       break;
                 case 10: result(0) = y*z;             break;
                 case 11: result(1) = x*z;             break;
+                // clang-format on
             }
         }
 
@@ -763,10 +767,12 @@ namespace ippl {
             // run into any problems
             
             switch (localDOF) {
+	        // clang-format off
                 case 0: result(0) = 1; break;
                 case 1: result(0) = -1; break;
                 case 2: result(0) = -1; break;
                 case 3: result(0) = 1; break;
+	        // clang-format on
             }
         } else {
             T x = localPoint(0);
