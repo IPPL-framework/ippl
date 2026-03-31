@@ -1,19 +1,22 @@
 /**
 @page custom_solver Creating Custom Solver
 
-Here, we'll provide detailed guidelines on how to extend this base class of the 'SolverAlgorithm' to develop your own solver algorithm, 
-using the PCG (Preconditioned Conjugate Gradient) solver as an example.
+Here, we'll provide detailed guidelines on how to extend this base class of the 'SolverAlgorithm' to
+develop your own solver algorithm, using the PCG (Preconditioned Conjugate Gradient) solver as an
+example.
 
 ## Introduction to SolverAlgorithm Base Class
 
 The SolverAlgorithm class is a template abstract class designed to serve as a
-foundation for various numerical solver algorithms. 
-It provides a common interface for solving problems of the form 
+foundation for various numerical solver algorithms.
+It provides a common interface for solving problems of the form
 Op(lhs) = rhs, where Op is a differential operator and lhs and rhs are fields.
 
 ** Key Components of SolverAlgorithm **
-- Template Parameters: The class template parameters FieldLHS and FieldRHS define the types for the left-hand side (LHS) and right-hand side (RHS) of the equation respectively.
-- Virtual Function: The operator() function is a pure virtual function that must be implemented by derived classes. It is where the main logic of the solver is implemented.
+- Template Parameters: The class template parameters FieldLHS and FieldRHS define the types for the
+left-hand side (LHS) and right-hand side (RHS) of the equation respectively.
+- Virtual Function: The operator() function is a pure virtual function that must be implemented by
+derived classes. It is where the main logic of the solver is implemented.
 
 
 @code
@@ -42,13 +45,14 @@ namespace ippl {
 
 }  // namespace ippl
 
-@endcode 
+@endcode
 
 
 ## Steps to Create a Custom Solver
 ### 1. Define the Solver Class
 
-Start by defining your solver class that inherits from SolverAlgorithm. Specify any additional data members or methods needed for your solver.
+Start by defining your solver class that inherits from SolverAlgorithm. Specify any additional data
+members or methods needed for your solver.
 
 @code
 #include "SolverAlgorithm.h"
@@ -63,10 +67,12 @@ public:
 @endcode
 ## 2. Implement the Solver Logic
 
-Implement the operator() function, which contains the core logic for the solver. This function should use the provided lhs, rhs, and params to compute the solution to the problem.
+Implement the operator() function, which contains the core logic for the solver. This function
+should use the provided lhs, rhs, and params to compute the solution to the problem.
 
 @code
-void operator()(typename Base::lhs_type& lhs, typename Base::rhs_type& rhs, const ParameterList& params) override {
+void operator()(typename Base::lhs_type& lhs, typename Base::rhs_type& rhs, const ParameterList&
+params) override {
     // Initialization and setup
     // Iterative solution process
     // Post-processing and cleanup

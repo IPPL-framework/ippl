@@ -96,7 +96,7 @@ namespace ippl {
                 bool allocated_m;
             };
         }  // namespace rma
-    }      // namespace mpi
+    }  // namespace mpi
 }  // namespace ippl
 
 #include "Communicate/Window.hpp"

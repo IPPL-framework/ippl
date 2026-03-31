@@ -22,17 +22,18 @@ namespace ippl {
     /**
      * @class SubFieldLayout
      * @brief SubFieldLayout provides a layout for a sub-region of a larger field
-     * 
+     *
      * SubFieldLayout extends FieldLayout to handle sub-regions of a larger computational domain.
      * It ensures that the sub-region is partitioned in the same way as the original FieldLayout,
-     * maintaining consistent parallel decomposition and neighbor relationships within the sub-region.
-     * 
+     * maintaining consistent parallel decomposition and neighbor relationships within the
+     * sub-region.
+     *
      * @par Important Constraint:
      * SubFieldLayout only allows for sub-layouts that do NOT leave local domains empty.
      * All MPI ranks must have at least some portion of the sub-domain assigned to them.
      * If a sub-domain would result in empty local domains for some ranks, an exception
      * will be thrown during initialization.
-     * 
+     *
      * @tparam Dim Number of spatial dimensions
      */
     template <unsigned Dim>
@@ -45,71 +46,74 @@ namespace ippl {
         /**
          * @brief Default constructor, which should only be used if you are going to
          * call 'initialize' soon after (before using in any context)
-         * 
+         *
          * @param communicator MPI communicator to use (defaults to MPI_COMM_WORLD)
          */
         SubFieldLayout(const mpi::Communicator& = MPI_COMM_WORLD);
 
         /**
          * @brief Constructor that creates a SubFieldLayout for a sub-region of a larger domain
-         * 
+         *
          * @param communicator MPI communicator to use
          * @param domain The full domain that defines the partitioning
-         * @param subDomain The sub-region within the full domain, which is partitioned in the same way as the fullomain
+         * @param subDomain The sub-region within the full domain, which is partitioned in the same
+         * way as the fullomain
          * @param decomp Array specifying which dimensions should be parallel
          * @param isAllPeriodic Whether all dimensions have periodic boundary conditions
          */
-        SubFieldLayout(mpi::Communicator, const NDIndex<Dim>& domain, const NDIndex<Dim>& subDomain, std::array<bool, Dim> decomp,
-                    bool isAllPeriodic = false);
+        SubFieldLayout(mpi::Communicator, const NDIndex<Dim>& domain, const NDIndex<Dim>& subDomain,
+                       std::array<bool, Dim> decomp, bool isAllPeriodic = false);
 
         /**
          * @brief Constructor for full-domain layout.
-         * 
+         *
          * @param communicator MPI communicator to use
-         * @param domain The full domain that defines the partitioning and is used as the sub-domain simultaneously
+         * @param domain The full domain that defines the partitioning and is used as the sub-domain
+         * simultaneously
          * @param decomp Array specifying which dimensions should be parallel
          * @param isAllPeriodic Whether all dimensions have periodic boundary conditions
          */
         SubFieldLayout(mpi::Communicator, const NDIndex<Dim>& domain, std::array<bool, Dim> decomp,
-                    bool isAllPeriodic = false);
+                       bool isAllPeriodic = false);
 
         /**
          * @brief Destructor: Everything deletes itself automatically
          */
         virtual ~SubFieldLayout() = default;
-        
+
         /**
          * @brief Initializes a SubFieldLayout with the sub-domain partitioned in the same way
          * as the original FieldLayout partitiones the full domain
-         * 
+         *
          * @param domain The full domain to be partitioned
          * @param subDomain The sub-region within the full domain
          * @param decomp Array specifying which dimensions should be parallel
          * @param isAllPeriodic Whether all dimensions have periodic boundary conditions
          */
-        void initialize(const NDIndex<Dim>& domain, const NDIndex<Dim>& subDomain, std::array<bool, Dim> decomp,
-            bool isAllPeriodic = false);
-            
+        void initialize(const NDIndex<Dim>& domain, const NDIndex<Dim>& subDomain,
+                        std::array<bool, Dim> decomp, bool isAllPeriodic = false);
+
         /**
-         * @brief Initializes a SubFieldLayout using the domain as both the full domain and sub-domain
-         * 
+         * @brief Initializes a SubFieldLayout using the domain as both the full domain and
+         * sub-domain
+         *
          * @param domain The domain to be partitioned
          * @param decomp Array specifying which dimensions should be parallel
          * @param isAllPeriodic Whether all dimensions have periodic boundary conditions
          */
         void initialize(const NDIndex<Dim>& domain, std::array<bool, Dim> decomp,
-            bool isAllPeriodic = false);
+                        bool isAllPeriodic = false);
 
         /**
          * @brief Return the original domain before sub-region extraction
-         * 
+         *
          * @return Reference to the original full domain
          */
         const NDIndex<Dim>& getOriginDomain() const { return originDomain_m; }
-                
+
         /**
          * @brief Compare SubFieldLayouts to see if they represent the same domain
-         * 
+         *
          * @tparam Dim2 Dimension of the other SubFieldLayout
          * @param x The other SubFieldLayout to compare with
          * @return true if both the current domain, origin domain and local domains match
@@ -139,10 +143,11 @@ namespace ippl {
 
         /**
          * @brief Compare SubFieldLayout to a FieldLayout to see if they represent the same domain
-         * 
+         *
          * @tparam Dim2 Dimension of the FieldLayout
          * @param x The FieldLayout to compare with
-         * @return true if the SubFieldLayout's domain equals its original domain and matches the FieldLayout's domain and local domains
+         * @return true if the SubFieldLayout's domain equals its original domain and matches the
+         * FieldLayout's domain and local domains
          */
         template <unsigned Dim2>
         bool operator==(const FieldLayout<Dim2>& x) const {
@@ -170,7 +175,7 @@ namespace ippl {
     private:
         /**
          * @brief Original global domain in which the sub-field is defined
-         * 
+         *
          * This stores the full domain before any sub-region extraction,
          * allowing comparison with regular FieldLayouts.
          */

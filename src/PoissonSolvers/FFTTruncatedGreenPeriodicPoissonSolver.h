@@ -69,7 +69,6 @@ namespace ippl {
         // compute standard Green's function
         void greensFunction();
 
-
     private:
         Field_t grn_m;  // the Green's function
 
@@ -124,12 +123,13 @@ namespace ippl {
                     this->params_m.add("comm", p2p_pl);
                     break;
                 default:
-                    throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters",
-                                        "Unrecognized heffte communication type");
+                    throw IpplException(
+                        "FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters",
+                        "Unrecognized heffte communication type");
             }
         }
     };
 }  // namespace ippl
 
 #include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.hpp"
-#endif // IPPL_FFT_TRUNCATED_GREEN_PERIODIC_POISSON_SOLVER_H_SOLVER_H_
+#endif  // IPPL_FFT_TRUNCATED_GREEN_PERIODIC_POISSON_SOLVER_H_SOLVER_H_

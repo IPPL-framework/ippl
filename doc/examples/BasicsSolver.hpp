@@ -1,5 +1,5 @@
 /**
-@page basic_solver Basics: Solver {#Solver} 
+@page basic_solver Basics: Solver {#Solver}
 
 @section solvers Solvers
 
@@ -96,7 +96,7 @@ FFTsolver.solve();
 The potential is stored in the rho Field. The E-Field is stored in the fieldE Field.
 
 
-## [Optional] Using a Preconditioner 
+## [Optional] Using a Preconditioner
 
 If you want to precondition the solver you can add following parameters to the parameter list:
 @code

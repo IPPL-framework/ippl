@@ -1,8 +1,8 @@
 #ifndef IPPL_BUMPON_TAIL_INSTABILITY_MANAGER_H
 #define IPPL_BUMPON_TAIL_INSTABILITY_MANAGER_H
 
-#include <memory>
 #include <filesystem>
+#include <memory>
 
 #include "AlpineManager.h"
 #include "FieldContainer.hpp"
@@ -83,9 +83,9 @@ private:
 public:
     void pre_run() override {
         Inform m("Pre Run");
-	
-	const double pi = Kokkos::numbers::pi_v<T>;
-	
+
+        const double pi = Kokkos::numbers::pi_v<T>;
+
         if (this->solver_m == "OPEN") {
             throw IpplException("BumpOnTailInstability",
                                 "Open boundaries solver incompatible with this simulation!");
@@ -393,9 +393,8 @@ public:
             auto& Pi = pc->P;
             for (unsigned d = allDims ? 0 : Dim - 1; d < Dim; d++) {
                 Kokkos::parallel_for(
-                    "Copy phase space", pcount, KOKKOS_CLASS_LAMBDA(const size_t i) {
-                        phase(i) = {Ri(i)[d], Pi(i)[d]};
-                    });
+                    "Copy phase space", pcount,
+                    KOKKOS_CLASS_LAMBDA(const size_t i) { phase(i) = {Ri(i)[d], Pi(i)[d]}; });
                 phaseSpace = 0;
                 Kokkos::fence();
                 scatter(pc->q, phaseSpace, phase);

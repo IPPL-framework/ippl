@@ -27,14 +27,14 @@ namespace ippl {
 
         // Cannot define common functions to all Element child classes
         // due to problem with accessing the Element functions through
-        // the Finite Element Space class from device code 
+        // the Finite Element Space class from device code
         // (defaults to base class virtual function which causes errors)
-        // 
+        //
         // The common functions would be globalToLocal, localToGlobal,
         // getDeterminantOfTransformationJacobian, getInverseTransposeTransformationJacobian,
         // and isPointInRefElement.
         //
-        // Virtual functions would be getLocalVertices, getTransformationJacobian, 
+        // Virtual functions would be getLocalVertices, getTransformationJacobian,
         // and getInverseTransformationJacobian.
     };
 

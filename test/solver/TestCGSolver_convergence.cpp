@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
         m << "size, relError, residue, itCount" << endl;
 
         for (unsigned pt = 1 << 2; pt <= 1 << 10; pt = pt << 1) {
-            ippl::Vector <unsigned, dim> I(pt);
+            ippl::Vector<unsigned, dim> I(pt);
             ippl::NDIndex<dim> domain(I);
 
             std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
@@ -81,10 +81,10 @@ int main(int argc, char* argv[]) {
                     double y        = (jg + 0.5) * hx[1];
                     double z        = (kg + 0.5) * hx[2];
 
-                    //viewSol(i) = sin(sin(pi*x)); 
-                    //viewSol(i, j) = sin(sin(pi*x)) * sin(sin(pi*y)); 
-                    viewSol(i, j, k) = sin(sin(pi*x)) * sin(sin(pi*y)) * sin(sin(pi*z));
-            });
+                    // viewSol(i) = sin(sin(pi*x));
+                    // viewSol(i, j) = sin(sin(pi*x)) * sin(sin(pi*y));
+                    viewSol(i, j, k) = sin(sin(pi * x)) * sin(sin(pi * y)) * sin(sin(pi * z));
+                });
 
             const int shift2 = rhs.getNghost();
             auto policyRHS   = rhs.getFieldRangePolicy();
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
                     double x        = (ig + 0.5) * hx[0];
                     double y        = (jg + 0.5) * hx[1];
                     double z        = (kg + 0.5) * hx[2];
-                    
+
                     viewRHS(i, j, k) =
                         pow(pi, 2)
                         * (cos(sin(pi * z)) * sin(pi * z) * sin(sin(pi * x)) * sin(sin(pi * y))
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
                     double x        = (ig + 0.5) * hx[0];
 
                     viewRHS(i) =
-                        pow(pi, 2) * ((cos(sin(pi * x)) * sin(pi * x)) 
+                        pow(pi, 2) * ((cos(sin(pi * x)) * sin(pi * x))
                                  + (pow(cos(pi * x), 2) * sin(sin(pi * x))));
                 });
             */
@@ -156,14 +156,13 @@ int main(int argc, char* argv[]) {
             // Laplace(solver solution) - rhs
             error          = -laplace(lhs) - rhs;
             double residue = norm(error) / norm(rhs);
-            
+
             residue = lapsolver.getResidue();
 
             int size    = pt;
             int itCount = lapsolver.getIterationCount();
-            m << size << "," << std::setprecision(16) << relError << "," << residue << "," << itCount
-              << endl;
-
+            m << size << "," << std::setprecision(16) << relError << "," << residue << ","
+              << itCount << endl;
         }
         IpplTimings::print("timings.dat");
     }

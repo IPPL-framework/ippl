@@ -22,8 +22,7 @@ namespace ippl {
          * Derived classes can override this method to allocate memory, initialize variables, etc.
          * The default implementation does nothing.
          */
-        virtual void pre_run() { /* default does nothing */
-        }
+        virtual void pre_run() { /* default does nothing */ }
 
         /**
          * @brief A method that should be used for preparation before perfoming a step of
@@ -32,8 +31,7 @@ namespace ippl {
          * The default implementation does nothing.
          */
 
-        virtual void pre_step() { /* default does nothing */
-        }
+        virtual void pre_step() { /* default does nothing */ }
 
         /**
          * @brief A method that should be used after perfoming a step of simulation.
@@ -41,8 +39,7 @@ namespace ippl {
          * Derived classes can override this method to dump data, increment time, etc.
          * The default implementation does nothing.
          */
-        virtual void post_step() { /* default does nothing */
-        }
+        virtual void post_step() { /* default does nothing */ }
 
         /**
          * @brief A method that should be used to execute/advance a step of simulation.

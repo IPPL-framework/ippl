@@ -59,7 +59,7 @@ namespace ippl {
                 }
             };
         }  // namespace detail
-    }      // namespace random
+    }  // namespace random
 }  // namespace ippl
 
 #endif

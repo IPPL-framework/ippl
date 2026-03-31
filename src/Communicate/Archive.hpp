@@ -86,8 +86,7 @@ namespace ippl {
         template <class... Properties>
         template <typename T, unsigned Dim, class... ViewArgs>
         void Archive<Properties...>::deserialize(Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view,
-                                                 size_type nrecvs) 
-        {
+                                                 size_type nrecvs) {
             // if we have to enlarge the destination view
             if (nrecvs > view.extent(0)) {
                 Kokkos::realloc(view, nrecvs);
