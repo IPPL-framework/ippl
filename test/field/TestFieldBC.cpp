@@ -12,12 +12,12 @@ int main(int argc, char* argv[]) {
 
         int pt = 4;
         ippl::Index I(pt);
-        ippl::NDIndex<dim> owned(I, I, I);
+        ippl::NDIndex<dim> global_domain(I, I, I);
 
         std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
         isParallel.fill(true);
 
-        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, global_domain, isParallel);
 
         double dx                        = 1.0 / double(pt);
         ippl::Vector<double, dim> hx     = dx;
@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
         using Mesh_t      = ippl::UniformCartesian<double, dim>;
         using Centering_t = Mesh_t::DefaultCentering;
 
-        Mesh_t mesh(owned, hx, origin);
+        Mesh_t mesh(global_domain, hx, origin);
 
         typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
 
