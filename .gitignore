@@ -22,3 +22,6 @@ build*/
 
 # mac
 .DS_Store
+
+# lsp info
+compile_commands.json
