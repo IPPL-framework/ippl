@@ -115,9 +115,9 @@ namespace ippl {
         Kokkos::parallel_for(
             this->A_n.getFieldRangePolicy(), KOKKOS_LAMBDA(size_t i, size_t j, size_t k) {
                 ippl::Vector<scalar, 3> dAdt;
-                dAdt[0] = (A_np1(i, j, k)[1] - A_n(i, j, k)[1]) * idt;
-                dAdt[1] = (A_np1(i, j, k)[2] - A_n(i, j, k)[2]) * idt;
-                dAdt[2] = (A_np1(i, j, k)[3] - A_n(i, j, k)[3]) * idt;
+                dAdt[0] = (A_n(i, j, k)[1] - A_nm1(i, j, k)[1]) * idt;
+                dAdt[1] = (A_n(i, j, k)[2] - A_nm1(i, j, k)[2]) * idt;
+                dAdt[2] = (A_n(i, j, k)[3] - A_nm1(i, j, k)[3]) * idt;
 
                 ippl::Vector<scalar, 4> dAdx =
                     (A_n(i + 1, j, k) - A_n(i - 1, j, k)) * inverse_2_spacing[0];
