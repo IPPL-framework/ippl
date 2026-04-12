@@ -123,14 +123,103 @@ public:
       }
     }
 
-    void scatterCIC() {
-      this->fcontainer_m->getOmegaField() = 0.0;
-      if constexpr (Dim == 2) {
-          scatter(this->pcontainer_m->omega, this->fcontainer_m->getOmegaField(), this->pcontainer_m->R);
-	  this->fcontainer_m->getOmegaField() = this->fcontainer_m->getOmegaField() / (hr_m[0] * hr_m[1]);
-      } else if constexpr (Dim == 3) {
-        //TODO: for some reason the scatter method doesn't work in three dimensions but gather does. 
-      }
+double computeParticleCirculation() {
+    double gamma_local = 0.0;
+
+    auto omega_view = this->pcontainer_m->omega.getView();
+    auto nlocal = this->pcontainer_m->getLocalNum();
+
+    Kokkos::parallel_reduce(
+        "particle_circulation",
+        nlocal,
+        KOKKOS_LAMBDA(const int i, double& lsum) {
+            lsum += omega_view(i);
+        },
+        gamma_local
+    );
+
+    double gamma_global = 0.0;
+    ippl::Comm->reduce(gamma_local, gamma_global, 1, std::plus<double>());
+
+    return gamma_global;
+}
+
+
+double computeGridCirculation() {
+    double gamma_local = 0.0;
+
+    auto& omegaField = this->fcontainer_m->getOmegaField();
+    auto omega_view = omegaField.getView();
+
+    const double dA = hr_m[0] * hr_m[1];
+    const int nghost = omegaField.getNghost();
+
+    Kokkos::parallel_reduce(
+        "grid_circulation",
+        ippl::getRangePolicy(omega_view, nghost),
+        KOKKOS_LAMBDA(const int i, const int j, double& lsum) {
+            lsum += omega_view(i, j);
+        },
+        gamma_local
+    );
+
+    gamma_local *= dA;
+
+    double gamma_global = 0.0;
+    ippl::Comm->reduce(gamma_local, gamma_global, 1, std::plus<double>());
+
+    return gamma_global;
+}
+
+void checkCirculationConservation(double relError, Inform& m) {
+    size_type TotalParticles = 0;
+    size_type localParticles = this->pcontainer_m->getLocalNum();
+
+    ippl::Comm->reduce(localParticles, TotalParticles, 1, std::plus<size_type>());
+
+    if (ippl::Comm->rank() == 0) {
+        if (TotalParticles != np_m || relError > 1e-12) {
+            m << "Time step: " << it_m << endl;
+            m << "Total particles expected: " << np_m
+              << " after update: " << TotalParticles << endl;
+            m << "Rel. error in circulation conservation: " << relError << endl;
+            ippl::Comm->abort();
+        }
     }
+}
+
+
+void scatterCIC() {
+    Inform m("scatter ");
+
+    this->fcontainer_m->getOmegaField() = 0.0;
+
+    if constexpr (Dim == 2) {
+        // Scatter particle strengths to grid
+        scatter(this->pcontainer_m->omega,
+                this->fcontainer_m->getOmegaField(),
+                this->pcontainer_m->R);
+
+        // Convert deposited circulation to vorticity density
+        this->fcontainer_m->getOmegaField() =
+            this->fcontainer_m->getOmegaField() / (hr_m[0] * hr_m[1]);
+
+        // Conservation check
+        double gammaParticles = computeParticleCirculation();
+        double gammaGrid      = computeGridCirculation();
+
+        double relError = std::fabs((gammaParticles - gammaGrid) /
+                                    std::max(std::fabs(gammaParticles), 1e-30));
+
+        m << "particle circulation = " << gammaParticles
+          << ", grid circulation = " << gammaGrid
+          << ", relError = " << relError << endl;
+
+        checkCirculationConservation(relError, m);
+
+    } else if constexpr (Dim == 3) {
+        // TODO 3D version
+    }
+}
 };
 #endif

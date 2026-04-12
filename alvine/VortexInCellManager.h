@@ -364,13 +364,13 @@ void dumpParticleDataPerRank() {
     ippl::Comm->barrier();
 }
 
-    void dump() override {
+  /*  void dump() override {
       static IpplTimings::TimerRef dumpTimer = IpplTimings::getTimer("dump");
       IpplTimings::startTimer(dumpTimer);
       dumpParticleDataPerRank();
       IpplTimings::stopTimer(dumpTimer);
        
-    }
+    }*/
 
 };
 #endif
