@@ -153,13 +153,197 @@ TYPED_TEST(AssembleCurrentTest, SingleParticle_Smoke) {
 
   auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
   auto fem_vector = space.createFEMVector();
+  fem_vector = T(0);
 
-  // Call function (no assertions yet)
-  ippl::assemble_current_whitney1(mesh, bunch.Q, bunch.R, bunch_next.R, fem_vector, space, policy);
+  T dt = T(1.0);
+  ippl::assemble_current_whitney1(mesh, bunch.Q, bunch.R, bunch_next.R, fem_vector, space, policy, dt);
+  fem_vector.accumulateHalo();
 
 
   SUCCEED() << "assemble_current_whitney1 ran without error for 1 particle in "
             << Dim << "D.";
+}
+
+TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
+  using T = typename TestFixture::value_type;
+  constexpr unsigned Dim = TestFixture::dim;
+
+  using bunch_t   = typename TestFixture::bunch_t;
+  using playout_t = typename TestFixture::playout_t;
+
+  int nx = 4;
+  ippl::Vector<T, Dim> origin(0.0);
+  ippl::Vector<T, Dim> h(1.0);
+
+  auto owned  = TestFixture::make_owned_nd(nx);
+  auto layout = TestFixture::make_layout(owned);
+  auto mesh   = TestFixture::make_mesh(owned, h, origin);
+  auto space  = TestFixture::make_space(mesh, layout);
+
+
+  //create the two positions used for the test, representing pure x-motion within one cell)
+  playout_t playout(layout, mesh);
+  bunch_t bunch(playout);
+  bunch.create(1);
+  {
+    auto R_host = bunch.R.getHostMirror();
+    auto Q_host = bunch.Q.getHostMirror();
+    R_host(0)[0] = T(0.25);
+    for (unsigned d = 1; d < Dim; ++d) R_host(0)[d] = T(0.50);
+    Q_host(0) = T(1.0);
+    Kokkos::deep_copy(bunch.R.getView(), R_host);
+    Kokkos::deep_copy(bunch.Q.getView(), Q_host);
+    bunch.update();
+  }
+
+  bunch_t bunch_next(playout);
+  bunch_next.create(1);
+  {
+    auto Rn_host = bunch_next.R.getHostMirror();
+    Rn_host(0)[0] = T(0.75);
+    for (unsigned d = 1; d < Dim; ++d) Rn_host(0)[d] = T(0.50);
+    Kokkos::deep_copy(bunch_next.R.getView(), Rn_host);
+    bunch_next.update();
+  }
+
+  //Compute current contribution 
+  auto policy     = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
+  auto fem_vector = space.createFEMVector();
+  fem_vector = T(0);
+
+  T dt = T(1.0);
+  ippl::assemble_current_whitney1(mesh, bunch.Q, bunch.R, bunch_next.R,
+                                  fem_vector, space, policy, dt);
+  fem_vector.accumulateHalo();
+
+  typename TestFixture::NedelecType::indices_t cellIdx(0);
+  auto ldom   = space.getLocalNDIndex();
+  auto dofIdx = space.getFEMVectorDOFIndices(cellIdx, ldom);
+
+  auto view      = fem_vector.getView();
+  auto view_host = Kokkos::create_mirror_view(view);
+  Kokkos::deep_copy(view_host, view);
+  Kokkos::fence();
+
+  const T tol = std::numeric_limits<T>::epsilon() * T(100);
+
+  //Check that current contributions are correct, which is easy here, as the current should distribute equally over all x-aligned axis
+  if constexpr (Dim == 2) {
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[0])), 0.25, static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[1])), 0.0,  static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[2])), 0.25, static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[3])), 0.0,  static_cast<double>(tol));
+  } 
+  else if constexpr (Dim == 3) {
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[0])),  0.125, static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[1])),  0.0,   static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[2])),  0.125, static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[3])),  0.0,   static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[4])),  0.0,   static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[5])),  0.0,   static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[6])),  0.0,   static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[7])),  0.0,   static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[8])),  0.125, static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[9])),  0.0,   static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[10])), 0.125, static_cast<double>(tol));
+    EXPECT_NEAR(static_cast<double>(view_host(dofIdx[11])), 0.0,   static_cast<double>(tol));
+  }
+}
+
+TYPED_TEST(AssembleCurrentTest, DiagonalPath_ThreeCells_ExactValues) {
+  using T = typename TestFixture::value_type;
+  constexpr unsigned Dim = TestFixture::dim;
+
+  if constexpr (Dim != 2) {
+    GTEST_SKIP() << "Exact value check only implemented for 2D";
+  } else {
+    using bunch_t   = typename TestFixture::bunch_t;
+    using playout_t = typename TestFixture::playout_t;
+
+    int nx = 4;
+    ippl::Vector<T, Dim> origin(0.0);
+    ippl::Vector<T, Dim> h(1.0);
+
+    auto owned  = TestFixture::make_owned_nd(nx);
+    auto layout = TestFixture::make_layout(owned);
+    auto mesh   = TestFixture::make_mesh(owned, h, origin);
+    auto space  = TestFixture::make_space(mesh, layout);
+
+    playout_t playout(layout, mesh);
+    bunch_t bunch(playout);
+    //path of particle: (0.75,0.50) -> (1.50,1.25), crossing three cells: (0,0), (1,0), (1,1)
+    bunch.create(1);
+    {
+      auto R_host = bunch.R.getHostMirror();
+      auto Q_host = bunch.Q.getHostMirror();
+      R_host(0)[0] = T(0.75);
+      R_host(0)[1] = T(0.50);
+      Q_host(0) = T(1.0);
+      Kokkos::deep_copy(bunch.R.getView(), R_host);
+      Kokkos::deep_copy(bunch.Q.getView(), Q_host);
+      bunch.update();
+    }
+
+    bunch_t bunch_next(playout);
+    bunch_next.create(1);
+    {
+      auto Rn_host = bunch_next.R.getHostMirror();
+      Rn_host(0)[0] = T(1.50);
+      Rn_host(0)[1] = T(1.25);
+      Kokkos::deep_copy(bunch_next.R.getView(), Rn_host);
+      bunch_next.update();
+    }
+
+    auto policy     = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
+    auto fem_vector = space.createFEMVector();
+    fem_vector = T(0);
+
+    T dt = T(1.0);
+    ippl::assemble_current_whitney1(mesh, bunch.Q, bunch.R, bunch_next.R,
+                                    fem_vector, space, policy, dt);
+    fem_vector.accumulateHalo();
+
+    auto ldom = space.getLocalNDIndex();
+
+    auto view      = fem_vector.getView();
+    auto view_host = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(view_host, view);
+    Kokkos::fence();
+
+    const T tol = std::numeric_limits<T>::epsilon() * T(100);
+
+    // Each segment contributes to the 4 edge DOFs of its cell. Edges shared
+    // between adjacent cells map to the same FEM vector entry, so those entries
+    // add contributions from both neighbouring segments.
+  
+    //Results calculated on paper:
+    {
+      typename TestFixture::NedelecType::indices_t cell00(0);
+      auto dof = space.getFEMVectorDOFIndices(cell00, ldom);
+      EXPECT_NEAR(static_cast<double>(view_host(dof[0])), 0.09375, static_cast<double>(tol));
+      EXPECT_NEAR(static_cast<double>(view_host(dof[1])), 0.03125, static_cast<double>(tol));
+      EXPECT_NEAR(static_cast<double>(view_host(dof[2])), 0.15625, static_cast<double>(tol));
+      EXPECT_NEAR(static_cast<double>(view_host(dof[3])), 0.4375,  static_cast<double>(tol));
+    }
+    {
+      typename TestFixture::NedelecType::indices_t cell10(0);
+      cell10[0] = 1;
+      auto dof = space.getFEMVectorDOFIndices(cell10, ldom);
+      EXPECT_NEAR(static_cast<double>(view_host(dof[0])), 0.03125, static_cast<double>(tol));
+      EXPECT_NEAR(static_cast<double>(view_host(dof[1])), 0.4375,  static_cast<double>(tol));
+      EXPECT_NEAR(static_cast<double>(view_host(dof[2])), 0.4375,  static_cast<double>(tol));
+      EXPECT_NEAR(static_cast<double>(view_host(dof[3])), 0.03125, static_cast<double>(tol));
+    }
+    {
+      typename TestFixture::NedelecType::indices_t cell11(0);
+      cell11[0] = 1; cell11[1] = 1;
+      auto dof = space.getFEMVectorDOFIndices(cell11, ldom);
+      EXPECT_NEAR(static_cast<double>(view_host(dof[0])), 0.4375,  static_cast<double>(tol));
+      EXPECT_NEAR(static_cast<double>(view_host(dof[1])), 0.15625, static_cast<double>(tol));
+      EXPECT_NEAR(static_cast<double>(view_host(dof[2])), 0.03125, static_cast<double>(tol));
+      EXPECT_NEAR(static_cast<double>(view_host(dof[3])), 0.09375, static_cast<double>(tol));
+    }
+  }
 }
 
 int main(int argc, char* argv[]) {
