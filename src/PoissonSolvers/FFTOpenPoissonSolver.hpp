@@ -2187,4 +2187,96 @@ namespace ippl {
         }
         ippl::Comm->freeAllBuffers();
     };
+
+    ////////////////////////////////////////////////////////////////////////
+    // Shifted Green's function: fills grn_mr with G(r - shift) on the doubled
+    // grid and caches FFT into grntr_m. Kokkos-parallel, mirrors the HOCKNEY
+    // greensFunction() branch in structure.
+    //
+    // After this call, solve() will convolve rho with the shifted kernel.
+    // To restore the standard kernel, call greensFunction() explicitly.
+
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::shiftedGreensFunction(
+        const Vector<double, Dim>& shift) {
+        const int alg = this->params_m.template get<int>("algorithm");
+        if (alg != Algorithm::HOCKNEY) {
+            throw IpplException(
+                "FFTOpenPoissonSolver::shiftedGreensFunction",
+                "Shifted Green's function is only implemented for HOCKNEY.");
+        }
+
+        // Sync mesh spacing with the current RHS mesh (same logic as solve()'s
+        // mesh-change detection). Without this, two failure modes compound:
+        //   1. We would compute the shifted kernel at a STALE hr_m.
+        //   2. A subsequent solve() would see hr_m != mesh->getMeshSpacing(),
+        //      set green=true, and call greensFunction() — overwriting the
+        //      shifted kernel with the standard one.
+        // By updating hr_m (and the dependent mesh2_m / meshComplex_m) here,
+        // solve()'s mesh check finds no change and leaves grntr_m intact.
+        mesh_mp = &(this->rhs_mp->get_mesh());
+        for (unsigned int i = 0; i < Dim; ++i) {
+            hr_m[i] = mesh_mp->getMeshSpacing(i);
+        }
+        mesh2_m->setMeshSpacing(hr_m);
+        meshComplex_m->setMeshSpacing(hr_m);
+
+        const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
+
+        typename Field_t::view_type view = grn_mr.getView();
+        const int nghost                 = grn_mr.getNghost();
+        const auto& ldom                 = layout2_m->getLocalNDIndex();
+
+        // Capture simple value arrays for the lambda.
+        Vector<int, Dim> nr       = nr_m;
+        Vector_t hs               = hr_m;
+        Vector<double, Dim> shft  = shift;
+
+        // Regularization threshold (axis-min mesh spacing, squared, quartered).
+        scalar_type hmin2 = hs[0] * hs[0];
+        for (unsigned int d = 1; d < Dim; ++d) {
+            hmin2 = (hs[d] * hs[d] < hmin2) ? (hs[d] * hs[d]) : hmin2;
+        }
+        const scalar_type regThresh = 0.25 * hmin2;
+
+        Kokkos::parallel_for(
+            "Shifted Green's function", grn_mr.getFieldRangePolicy(),
+            KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                // local -> global indices
+                const int ig[3] = {i + ldom[0].first() - nghost,
+                                   j + ldom[1].first() - nghost,
+                                   k + ldom[2].first() - nghost};
+
+                // Half-wrap each axis so FFT cyclic convention gives symmetric
+                // physical offsets around the origin:
+                //   ig in [0, N)   -> offset =  ig           * h
+                //   ig in [N, 2N)  -> offset = (ig - 2N)     * h
+                // Then subtract the per-axis shift.
+                double rsq = 0.0;
+                for (unsigned int d = 0; d < Dim; ++d) {
+                    const double ig_signed = (ig[d] < nr[d])
+                                                 ? static_cast<double>(ig[d])
+                                                 : static_cast<double>(ig[d] - 2 * nr[d]);
+                    const double xoff      = ig_signed * hs[d] - shft[d];
+                    rsq += xoff * xoff;
+                }
+
+                // Sign convention matches greensFunction() (HOCKNEY): grn_mr stores -G0
+                // so that solve()'s `rho2tr_m = -rho2tr_m * grntr_m` yields +conv(rho,G0)
+                // where G0(r) = 1/(4 pi |r|).
+                const bool nearSing = (rsq < regThresh);
+                const scalar_type r = Kokkos::sqrt(rsq + nearSing * regThresh);
+                view(i, j, k)       = -1.0 / (4.0 * pi * r);
+            });
+
+        // Fourier-space cache for convolution.
+        static IpplTimings::TimerRef fftsg =
+            IpplTimings::getTimer("FFT: Shifted Green");
+        IpplTimings::startTimer(fftsg);
+
+        fft_m->transform(FORWARD, grn_mr, grntr_m);
+
+        IpplTimings::stopTimer(fftsg);
+    }
+
 }  // namespace ippl
