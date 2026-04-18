@@ -21,6 +21,9 @@ if(IPPL_ENABLE_FFT)
   # tests FFTOpenPoissonSolver
   add_ippl_integration_test(TestGaussian ARGS 16 16 16 pencils a2a no-reorder HOCKNEY LABELS solver integration)
 
+  # tests FFTOpenPoissonSolver::shiftedGreensFunction (Dirichlet image correction)
+  add_ippl_integration_test(TestShiftedGreensFunction LABELS solver integration)
+
   # tests the FFTTruncatedGreenPeriodicPoissonSolver
   add_ippl_integration_test(TestFFTTruncatedGreenPeriodicPoissonSolver ARGS 16 16 16 LABELS solver integration)
 
