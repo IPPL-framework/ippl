@@ -2210,7 +2210,7 @@ namespace ippl {
         // mesh-change detection). Without this, two failure modes compound:
         //   1. We would compute the shifted kernel at a STALE hr_m.
         //   2. A subsequent solve() would see hr_m != mesh->getMeshSpacing(),
-        //      set green=true, and call greensFunction() — overwriting the
+        //      set green=true, and call greensFunction(), overwriting the
         //      shifted kernel with the standard one.
         // By updating hr_m (and the dependent mesh2_m / meshComplex_m) here,
         // solve()'s mesh check finds no change and leaves grntr_m intact.

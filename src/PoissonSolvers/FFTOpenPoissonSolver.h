@@ -156,7 +156,7 @@ namespace ippl {
         // using the same sign convention as greensFunction() (HOCKNEY). After
         // this call, solve() will convolve rho with the shifted kernel instead
         // of the standard one, up to the usual caveat that solve() recomputes
-        // greensFunction() if it detects a change in mesh spacing — so the
+        // greensFunction() if it detects a change in mesh spacing, so the
         // caller should keep the mesh fixed between setup and solve().
         //
         // To restore the standard kernel, call greensFunction() explicitly.
