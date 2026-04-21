@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <ostream>
 #include <vector>
 
 #include "Types/Vector.h"
@@ -244,7 +245,8 @@ namespace ippl {
 
         void prolong_add(const size_t level) {
             if (level >= L.size() - 1)
-                return;  // Cannot prolong from below the coarsest level
+                std::cerr << "Trying to prolong at invalid level" << std::endl;
+            return;
 
             auto& lev_fine   = L[level];
             auto& lev_coarse = L[level + 1];
