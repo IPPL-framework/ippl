@@ -150,6 +150,28 @@ namespace ippl {
         // compute standard Green's function
         void greensFunction();
 
+        // Replace the cached FFT Green's function (grntr_m) with the FFT of a
+        // free-space Green's function translated by `shift` in real space, i.e.
+        //   G(r) = -1 / (4 pi |r - shift|)
+        // using the same sign convention as greensFunction() (HOCKNEY). After
+        // this call, solve() will convolve rho with the shifted kernel instead
+        // of the standard one, up to the usual caveat that solve() recomputes
+        // greensFunction() if it detects a change in mesh spacing, so the
+        // caller should keep the mesh fixed between setup and solve().
+        //
+        // To restore the standard kernel, call greensFunction() explicitly.
+        //
+        // Intended use for Dirichlet boundary conditions via the method of
+        // images: pick `shift[d] = 2 * (plane[d] - domain_center[d])` for each
+        // axis with a Dirichlet plane, then call solve() and axis-flip the
+        // resulting potential in the active axes to obtain the image-charge
+        // contribution. The caller composes open-BC and image contributions
+        // additively. See test/solver/TestShiftedGreensFunction.cpp for the
+        // reference orchestration.
+        //
+        // Preconditions: algorithm = HOCKNEY (throws otherwise).
+        void shiftedGreensFunction(const Vector<double, Dim>& shift);
+
         // function called in the constructor to initialize the fields
         void initializeFields();
 
