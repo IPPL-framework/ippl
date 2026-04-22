@@ -2191,7 +2191,7 @@ namespace ippl {
     ////////////////////////////////////////////////////////////////////////
     // Shifted Green's function: fills grn_mr with G(r - shift) on the doubled
     // grid and caches FFT into grntr_m. Kokkos-parallel, mirrors the HOCKNEY
-    // greensFunction() branch in structure.
+    // greensFunction() method in structure.
     //
     // After this call, solve() will convolve rho with the shifted kernel.
     // To restore the standard kernel, call greensFunction() explicitly.
@@ -2201,9 +2201,8 @@ namespace ippl {
         const Vector<double, Dim>& shift) {
         const int alg = this->params_m.template get<int>("algorithm");
         if (alg != Algorithm::HOCKNEY) {
-            throw IpplException(
-                "FFTOpenPoissonSolver::shiftedGreensFunction",
-                "Shifted Green's function is only implemented for HOCKNEY.");
+            throw IpplException("FFTOpenPoissonSolver::shiftedGreensFunction",
+                                "Shifted Green's function is only implemented for HOCKNEY.");
         }
 
         // Sync mesh spacing with the current RHS mesh (same logic as solve()'s
@@ -2228,9 +2227,9 @@ namespace ippl {
         const auto& ldom                 = layout2_m->getLocalNDIndex();
 
         // Capture simple value arrays for the lambda.
-        Vector<int, Dim> nr       = nr_m;
-        Vector_t hs               = hr_m;
-        Vector<double, Dim> shft  = shift;
+        Vector<int, Dim> nr      = nr_m;
+        Vector_t hs              = hr_m;
+        Vector<double, Dim> shft = shift;
 
         // Regularization threshold (axis-min mesh spacing, squared, quartered).
         scalar_type hmin2 = hs[0] * hs[0];
@@ -2243,15 +2242,13 @@ namespace ippl {
             "Shifted Green's function", grn_mr.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
                 // local -> global indices
-                const int ig[3] = {i + ldom[0].first() - nghost,
-                                   j + ldom[1].first() - nghost,
+                const int ig[3] = {i + ldom[0].first() - nghost, j + ldom[1].first() - nghost,
                                    k + ldom[2].first() - nghost};
 
-                // Half-wrap each axis so FFT cyclic convention gives symmetric
-                // physical offsets around the origin:
-                //   ig in [0, N)   -> offset =  ig           * h
-                //   ig in [N, 2N)  -> offset = (ig - 2N)     * h
-                // Then subtract the per-axis shift.
+                // Hockney convention: map doubled-grid indices.
+                //   ig in [0, N)   -> offset =  ig        * h
+                //   ig in [N, 2N)  -> offset = (ig - 2N)  * h
+                // Subtract the shift to evaluate the shifted Green's function G(r-s).
                 double rsq = 0.0;
                 for (unsigned int d = 0; d < Dim; ++d) {
                     const double ig_signed = (ig[d] < nr[d])
@@ -2269,9 +2266,8 @@ namespace ippl {
                 view(i, j, k)       = -1.0 / (4.0 * pi * r);
             });
 
-        // Fourier-space cache for convolution.
-        static IpplTimings::TimerRef fftsg =
-            IpplTimings::getTimer("FFT: Shifted Green");
+        // Store Fourier transform of shifted Green's function for convolution in solve()
+        static IpplTimings::TimerRef fftsg = IpplTimings::getTimer("FFT: Shifted Green");
         IpplTimings::startTimer(fftsg);
 
         fft_m->transform(FORWARD, grn_mr, grntr_m);
