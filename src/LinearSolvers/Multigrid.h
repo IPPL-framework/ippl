@@ -335,7 +335,8 @@ namespace ippl {
         void prolong_add(const size_t level) {
             if (level >= L_.size() - 1) {
                 std::cerr << "Trying to prolong at invalid level" << std::endl;
-            return;
+                return;
+            }
 
             auto& lev_fine   = L_[level];
             auto& lev_coarse = L_[level + 1];
