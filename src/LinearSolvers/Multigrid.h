@@ -17,15 +17,39 @@
 
 #include "LinearSolvers/Preconditioner.h"
 namespace ippl {
+
     namespace multigrid {
+
         template <typename Field>
         struct Level {
             constexpr static unsigned Dim = Field::dim;
+            using mesh_type               = typename Field::Mesh_t;
+            using layout_type             = typename Field::Layout_t;
+
             ippl::Vector<int, Dim> nx;
             ippl::Vector<double, Dim> hx;
             ippl::Vector<double, Dim> origin;
 
-            Field u, f, r, t;
+            Field u, f, r;
+
+            template <typename BCType>
+            Level(const mesh_type& mesh, const layout_type& layout, const BCType& bcs)
+                : u(mesh, layout)
+                , f(mesh, layout)
+                , r(mesh, layout) {
+                // Apply boundary conditions to all fields
+                u.setFieldBC(bcs);
+                f.setFieldBC(bcs);
+                r.setFieldBC(bcs);
+
+                // Extract grid info from the provided mesh and layout
+                auto domain = layout.getDomain();
+                for (unsigned d = 0; d < Dim; ++d) {
+                    nx[d]     = domain[d].length();
+                    hx[d]     = mesh.getMeshSpacing(d);
+                    origin[d] = mesh.getOrigin(d);
+                }
+            }
         };
 
         template <typename LevelType>
