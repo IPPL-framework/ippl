@@ -234,22 +234,7 @@ namespace ippl {
                 Field res = residual(u, f);
                 u         = u + omega_ * (res / diag);
             }
-        };
-
-        // void restrict_fullweight(const size_t level) {
-        //     if (level == L.size() - 1)
-        //         std::cerr << "Trying to restrict at lowest level.";
-        //
-        //     auto& lev_fine   = L[level];
-        //     auto& lev_coarse = L[level + 1];
-        //     auto &u_fine = lev_fine.u, f_fine = lev_fine.f;
-        //     auto &u_coarse = lev_coarse.u, f_coarse = lev_coarse.f;
-        //
-        //     Field residual_fine = residual(u_fine, f_fine);
-        //
-        //     residual_fine.fillHalo();
-        //     f_coarse = 0.0;
-        // };
+        }
 
         void restrict_fullweight(const size_t level) {
             if (level >= L_.size() - 1) {
