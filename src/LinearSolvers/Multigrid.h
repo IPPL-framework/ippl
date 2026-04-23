@@ -67,18 +67,15 @@ namespace ippl {
         using layout_type             = typename Field::Layout_t;
 
     public:
-        multigrid_preconditioner(OperatorF&& op, std::vector<multigrid::Level<Field>>&& hierarchy,
-                                 unsigned pre_smooth_iters = 2, unsigned post_smooth_iters = 2,
-                                 double omega_jacobi = 0.8)
+        multigrid_preconditioner(OperatorF&& op, unsigned pre_smooth_iters = 2,
+                                 unsigned post_smooth_iters = 2, double omega_jacobi = 0.8)
             : preconditioner<Field>("Multigrid")
-            , initialized(true)
-            , L(std::move(hierarchy))
+            , op_m(std::forward<OperatorF>(op))
             , nu1(pre_smooth_iters)
             , nu2(post_smooth_iters)
-            , omega(omega_jacobi) {
-            op_m = std::move(op);
-        }
-        Field operator()(const Field& b) override {
+            , omega(omega_jacobi) {}
+
+        Field operator()(Field& b) override {
             L[0].f = b.deepCopy();
             for (size_t level = 0; level < L.size(); ++level)
                 L[level].u = 0.0;
@@ -87,7 +84,6 @@ namespace ippl {
         }
 
     protected:
-        bool initialized;
         std::vector<multigrid::Level<Field>> L;
         OperatorF op_m;
         unsigned nu1, nu2;
