@@ -94,17 +94,17 @@ namespace ippl {
         multigrid_preconditioner(OperatorF&& op, unsigned pre_smooth_iters = 2,
                                  unsigned post_smooth_iters = 2, double omega_jacobi = 0.8)
             : preconditioner<Field>("Multigrid")
-            , op_m(std::forward<OperatorF>(op))
-            , nu1(pre_smooth_iters)
-            , nu2(post_smooth_iters)
-            , omega(omega_jacobi) {}
+            , op_(std::forward<OperatorF>(op))
+            , nu1_(pre_smooth_iters)
+            , nu2_(post_smooth_iters)
+            , omega_(omega_jacobi) {}
 
         Field operator()(Field& b) override {
-            L[0].f = b.deepCopy();
-            for (size_t level = 0; level < L.size(); ++level)
-                L[level].u = 0.0;
+            L_[0].f = b.deepCopy();
+            for (size_t level = 0; level < L_.size(); ++level)
+                L_[level].u = 0.0;
             vcycle(0);
-            return L[0].u;
+            return L_[0].u;
         }
 
         void init_fields(Field& b) override {
@@ -152,8 +152,8 @@ namespace ippl {
                 }
             }
 
-            L.clear();
-            L.reserve(nlevels);
+            L_.clear();
+            L_.reserve(nlevels);
 
             // 2. Build the hierarchy (Meshes, Layouts, and Levels)
             ippl::NDIndex<Dim> current_domain = fine_domain;
@@ -180,7 +180,7 @@ namespace ippl {
                 layout_type level_layout(current_domain, decomp);
 
                 // Emplace the new level
-                L.emplace_back(level_mesh, level_layout, bcs);
+                L_.emplace_back(level_mesh, level_layout, bcs);
 
                 // Check termination criteria
                 bool can_coarsen = true;
@@ -201,30 +201,30 @@ namespace ippl {
         }
 
     protected:
-        std::vector<multigrid::Level<Field>> L;
-        OperatorF op_m;
-        unsigned nu1, nu2;
-        double omega;
+        std::vector<multigrid::Level<Field>> L_;
+        OperatorF op_;
+        unsigned nu1_, nu2_;
+        double omega_;
 
-        Field residual(const Field& u, const Field& f) { return f - op_m(u); };
+        Field residual(const Field& u, const Field& f) { return f - op_(u); };
 
         void vcycle(size_t level) {
-            auto& lev = L[level];
+            auto& lev = L_[level];
 
-            if (level == L.size() - 1) {
+            if (level == L_.size() - 1) {
                 // Coarsest grid: just smooth a lot (or use a direct solver)
                 smooth_jacobi(level, 50);
                 return;
             }
-            smooth_jacobi(level, nu1);   // Pre-smoothing
+            smooth_jacobi(level, nu1_);  // Pre-smoothing
             restrict_fullweight(level);  // Pass level
             vcycle(level + 1);           // Recursively go down one level
             prolong_add(level);          // Pass level
-            smooth_jacobi(level, nu2);   // Post-smoothing
-        };
+            smooth_jacobi(level, nu2_);  // Post-smoothing
+        }
 
-        void smooth_jacobi(const size_t level, const unsigned iters, double omega) {
-            auto& lev = L[level];
+        void smooth_jacobi(const size_t level, const unsigned iters) {
+            auto& lev = L_[level];
             auto &u = lev.u, f = lev.f;
 
             const auto diag = multigrid::compute_diag(lev);
@@ -232,7 +232,7 @@ namespace ippl {
             for (unsigned it = 0; it < iters; ++it) {
                 u.fillHalo();
                 Field res = residual(u, f);
-                u         = u + omega * (res / diag);
+                u         = u + omega_ * (res / diag);
             }
         };
 
@@ -252,13 +252,13 @@ namespace ippl {
         // };
 
         void restrict_fullweight(const size_t level) {
-            if (level >= L.size() - 1) {
+            if (level >= L_.size() - 1) {
                 std::cerr << "Trying to restrict at lowest level." << std::endl;
                 return;
             }
 
-            auto& lev_fine   = L[level];
-            auto& lev_coarse = L[level + 1];
+            auto& lev_fine   = L_[level];
+            auto& lev_coarse = L_[level + 1];
 
             // 1. Calculate and sync residual
             Field residual_fine = residual(lev_fine.u, lev_fine.f);
@@ -348,12 +348,12 @@ namespace ippl {
         }
 
         void prolong_add(const size_t level) {
-            if (level >= L.size() - 1)
+            if (level >= L_.size() - 1) {
                 std::cerr << "Trying to prolong at invalid level" << std::endl;
             return;
 
-            auto& lev_fine   = L[level];
-            auto& lev_coarse = L[level + 1];
+            auto& lev_fine   = L_[level];
+            auto& lev_coarse = L_[level + 1];
 
             // 1. Sync coarse grid ghost cells (crucial because interpolation reads adjacent coarse
             // nodes)
