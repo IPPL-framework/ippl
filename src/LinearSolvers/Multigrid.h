@@ -217,6 +217,7 @@ namespace ippl {
             const auto diag = multigrid::compute_diag(lev);
 
             for (unsigned it = 0; it < iters; ++it) {
+                u.fillHalo();
                 Field res = residual(u, f);
                 u         = u + omega * (res / diag);
             }
@@ -329,18 +330,8 @@ namespace ippl {
 
             ippl::fence();
 
-            // 4. Apply IPPL Boundary Conditions
-            // Instead of hardcoding 0.0 on boundaries inside the Kokkos loop, we compute
-            // the restriction everywhere on the physical domain, and then let IPPL's
-            // generalized boundary condition mechanisms overwrite the edges.
-            // Make sure your lev_coarse.f has its boundary conditions configured!
-
-            // (Assuming you configured field BCs elsewhere in the code like:)
-            // lev_coarse.f.setFieldBC(...);
-
-            // Update the boundaries based on IPPL configurations:
-            // lev_coarse.f.applyBoundaryConditions(); // Or however it is invoked in your IPPL
-            // version
+            // Handle boundary
+            lev_coarse.f.fillHalo();
         }
 
         void prolong_add(const size_t level) {
