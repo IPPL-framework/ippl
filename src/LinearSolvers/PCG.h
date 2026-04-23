@@ -6,9 +6,10 @@
 #ifndef IPPL_PCG_H
 #define IPPL_PCG_H
 
+#include "FEM/FEMVector.h"
+#include "Multigrid.h"
 #include "Preconditioner.h"
 #include "SolverAlgorithm.h"
-#include "FEM/FEMVector.h"
 
 namespace ippl {
     template <typename OperatorRet, typename LowerRet, typename UpperRet, typename UpperLowerRet,
@@ -409,6 +410,10 @@ namespace ippl {
                               ssor_preconditioner<FieldLHS, LowerF, UpperF, InverseDiagF, DiagF>>(
                         std::move(lower), std::move(upper), std::move(inverse_diagonal),
                         std::move(diagonal), inner, outer, omega));
+            } else if (preconditioner_type == "multigrid") {
+                preconditioner_m =
+                    std::move(std::make_unique<multigrid_preconditioner<FieldLHS, OperatorF>>(
+                        std::move(op), inner, outer, omega));
             } else {
                 preconditioner_m = std::move(std::make_unique<preconditioner<FieldLHS>>());
             }
