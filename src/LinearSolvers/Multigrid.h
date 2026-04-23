@@ -170,13 +170,10 @@ namespace ippl {
                 // Construct mesh and layout for the current level
                 mesh_type level_mesh(current_domain, current_hx, origin);
 
-                // IPPL typically requires parallel decomposition flags.
                 // We copy the decomposition from the fine layout.
-                std::array<bool, Dim> decomp;
-                for (unsigned d = 0; d < Dim; ++d) {
-                    decomp[d] = fine_layout.getRequestedDistribution(d);
-                }
-                layout_type level_layout(current_domain, decomp);
+                std::array<bool, Dim> decomp = fine_layout.isParallel();
+
+                layout_type level_layout(fine_layout.comm, current_domain, decomp);
 
                 // Emplace the new level
                 if (current_level == 0) {
