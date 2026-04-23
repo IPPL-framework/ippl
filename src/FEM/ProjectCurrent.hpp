@@ -4,15 +4,14 @@
 namespace ippl {
 
 /**
- * @brief Assemble the current density RHS vector for a Nedelec FEM space
- *        using a generalized zigzag current deposition scheme.
+ * @brief Assemble the current density RHS vector for a Nedelec FEM space.
  *
  * For each particle p moving from X0(p) to X1(p) during one time step dt,
  * the particle trajectory is split into sub-segments that each lie within a
  * single mesh cell (via GridPathSegmenter).
  * Each sub-segment's contribution to the current density is computed and then 
  * scattered onto the edge DOFs of the cell that contains the sub-segment's midpoint,
- * using the Whitney-1 basis functions evaluated at the midpoint.  
+ * using the Whitney-1 basis functions evaluated at the midpoint (equivalent to linear interpolation).  
  * 
  */
 template <typename Mesh,
