@@ -107,6 +107,86 @@ namespace ippl {
             return L[0].u;
         }
 
+        void init_fields(Field& b) override {
+            auto& fine_mesh   = b.get_mesh();
+            auto& fine_layout = b.getLayout();
+            auto fine_domain  = fine_layout.getDomain();
+            auto bcs          = b.getFieldBC();
+
+            auto half = [](int n) {
+                return (n - 1) / 2 + 1;
+            };
+
+            // 1. Calculate number of levels
+            int nlevels = 0;
+            {
+                ippl::NDIndex<Dim> current_domain = fine_domain;
+                while (true) {
+                    ++nlevels;
+                    bool can_coarsen = true;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        if (current_domain[d].length() <= 3) {
+                            can_coarsen = false;
+                        }
+                    }
+                    if (!can_coarsen)
+                        break;
+
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        current_domain[d] =
+                            ippl::Index(std::max(3, half(current_domain[d].length())));
+                    }
+                }
+            }
+
+            L.clear();
+            L.reserve(nlevels);
+
+            // 2. Build the hierarchy (Meshes, Layouts, and Levels)
+            ippl::NDIndex<Dim> current_domain = fine_domain;
+            ippl::Vector<double, Dim> current_hx;
+            for (unsigned d = 0; d < Dim; ++d) {
+                current_hx[d] = fine_mesh.getMeshSpacing(d);
+            }
+
+            // Note: We use the fine grid origin for all levels
+            ippl::Vector<double, Dim> origin;
+            for (unsigned d = 0; d < Dim; ++d)
+                origin[d] = fine_mesh.getOrigin(d);
+
+            while (true) {
+                // Construct mesh and layout for the current level
+                mesh_type level_mesh(current_domain, current_hx, origin);
+
+                // IPPL typically requires parallel decomposition flags.
+                // We copy the decomposition from the fine layout.
+                std::array<bool, Dim> decomp;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    decomp[d] = fine_layout.getRequestedDistribution(d);
+                }
+                layout_type level_layout(current_domain, decomp);
+
+                // Emplace the new level
+                L.emplace_back(level_mesh, level_layout, bcs);
+
+                // Check termination criteria
+                bool can_coarsen = true;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    if (current_domain[d].length() <= 3) {
+                        can_coarsen = false;
+                    }
+                }
+                if (!can_coarsen)
+                    break;
+
+                // Coarsen for the next level
+                for (unsigned d = 0; d < Dim; ++d) {
+                    current_domain[d] = ippl::Index(std::max(3, half(current_domain[d].length())));
+                    current_hx[d] *= 2.0;  // Mesh spacing doubles on coarser grids
+                }
+            }
+        }
+
     protected:
         std::vector<multigrid::Level<Field>> L;
         OperatorF op_m;
