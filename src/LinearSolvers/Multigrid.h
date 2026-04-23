@@ -168,14 +168,14 @@ namespace ippl {
             }
 
             constexpr int stencil_size = multigrid::power3(Dim);
-            constexpr double denom     = (double)(1 << (2 * Dim));  // 4^Dim
+            constexpr double denom     = static_cast<double>(1 << (2 * Dim));  // 4^Dim
 
             // 3. N-Dimensional Kokkos Loop
             ippl::parallel_for(
                 "restrict_fullweight", lev_coarse.f.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const auto... args) {
                     // Pack variadic arguments into a generic array
-                    Kokkos::Array<int, Dim> idxC{(int)args...};
+                    Kokkos::Array<int, Dim> idxC{static_cast<int>(args)...};
                     Kokkos::Array<int, Dim> global_idxC;
 
                     bool outside = false;
@@ -217,7 +217,7 @@ namespace ippl {
                         }
 
                         // Weight is 2^(number of zero-offsets)
-                        const double w = (double)(1 << zeroes);
+                        const double w = static_cast<double>(1 << zeroes);
 
                         sum += w * multigrid::access_view<Dim>(rf, idxF_current);
                     }
@@ -276,7 +276,7 @@ namespace ippl {
             // 3. N-Dimensional Kokkos Loop over the Fine Grid
             ippl::parallel_for(
                 "prolong_add", lev_fine.u.getFieldRangePolicy(), KOKKOS_LAMBDA(const auto... args) {
-                    Kokkos::Array<int, Dim> idxF{(int)args...};
+                    Kokkos::Array<int, Dim> idxF{static_cast<int>(args)...};
                     Kokkos::Array<int, Dim> global_idxF;
 
                     bool outside = false;
