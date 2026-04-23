@@ -4,152 +4,17 @@
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
 //
-
-// Communication specific functions (pack and unpack).
-template <typename Tb, typename Tf>
-void pack(const ippl::NDIndex<3> intersect, Kokkos::View<Tf***>& view,
-          ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
-          ippl::mpi::Communicator::size_type& nsends) {
-    Kokkos::View<Tb*>& buffer = fd.buffer;
-
-    size_t size = intersect.size();
-    nsends      = size;
-    if (buffer.size() < size) {
-        const int overalloc = ippl::Comm->getDefaultOverallocation();
-        Kokkos::realloc(buffer, size * overalloc);
-    }
-
-    const int first0 = intersect[0].first() + nghost - ldom[0].first();
-    const int first1 = intersect[1].first() + nghost - ldom[1].first();
-    const int first2 = intersect[2].first() + nghost - ldom[2].first();
-
-    const int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
-    const int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
-    const int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
-
-    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-    // This type casting to long int is necessary as otherwise Kokkos complains for
-    // intel compilers
-    Kokkos::parallel_for(
-        "pack()",
-        mdrange_type({first0, first1, first2}, {(long int)last0, (long int)last1, (long int)last2}),
-        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-            const int ig = i - first0;
-            const int jg = j - first1;
-            const int kg = k - first2;
-
-            int l = ig + jg * intersect[0].length()
-                    + kg * intersect[1].length() * intersect[0].length();
-
-            Kokkos::complex<Tb> val = view(i, j, k);
-
-            buffer(l) = Kokkos::real(val);
-        });
-    Kokkos::fence();
-}
-
-template <int tensorRank, typename Tb, typename Tf>
-void unpack_impl(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
-                 ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
-                 size_t dim1 = 0, size_t dim2 = 0, bool x = false, bool y = false, bool z = false) {
-    Kokkos::View<Tb*>& buffer = fd.buffer;
-
-    const int first0 = intersect[0].first() + nghost - ldom[0].first();
-    const int first1 = intersect[1].first() + nghost - ldom[1].first();
-    const int first2 = intersect[2].first() + nghost - ldom[2].first();
-
-    const int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
-    const int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
-    const int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
-
-    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-    Kokkos::parallel_for(
-        "pack()", mdrange_type({first0, first1, first2}, {last0, last1, last2}),
-        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-            int ig = i - first0;
-            int jg = j - first1;
-            int kg = k - first2;
-
-            ig = x * (intersect[0].length() - 2 * ig - 1) + ig;
-            jg = y * (intersect[1].length() - 2 * jg - 1) + jg;
-            kg = z * (intersect[2].length() - 2 * kg - 1) + kg;
-
-            int l = ig + jg * intersect[0].length()
-                    + kg * intersect[1].length() * intersect[0].length();
-
-            ippl::detail::ViewAccess<tensorRank, decltype(view)>::get(view, dim1, dim2, i, j, k) =
-                buffer(l);
-        });
-    Kokkos::fence();
-}
-
-template <typename Tb, typename Tf>
-void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
-            ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
-            bool x = false, bool y = false, bool z = false) {
-    unpack_impl<0, Tb, Tf>(intersect, view, fd, nghost, ldom, 0, 0, x, y, z);
-}
-
-template <typename Tb, typename Tf>
-void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<ippl::Vector<Tf, 3>***>& view,
-            size_t dim1, ippl::detail::FieldBufferData<Tb>& fd, int nghost,
-            const ippl::NDIndex<3> ldom) {
-    unpack_impl<1, Tb, ippl::Vector<Tf, 3>>(intersect, view, fd, nghost, ldom, dim1);
-}
-
-template <typename Tb, typename Tf>
-void unpack(const ippl::NDIndex<3> intersect,
-            const Kokkos::View<ippl::Vector<ippl::Vector<Tf, 3>, 3>***>& view,
-            ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
-            size_t dim1, size_t dim2) {
-    unpack_impl<2, Tb, ippl::Vector<ippl::Vector<Tf, 3>, 3>>(intersect, view, fd, nghost, ldom,
-                                                             dim1, dim2);
-}
-
-template <typename Tb, typename Tf, unsigned Dim>
-void solver_send(int TAG, int id, int i, const ippl::NDIndex<Dim> intersection,
-                 const ippl::NDIndex<Dim> ldom, int nghost, Kokkos::View<Tf***>& view,
-                 ippl::detail::FieldBufferData<Tb>& fd, std::vector<MPI_Request>& requests) {
-    using memory_space = typename Kokkos::View<Tf***>::memory_space;
-
-    requests.resize(requests.size() + 1);
-
-    ippl::mpi::Communicator::size_type nsends;
-    pack(intersection, view, fd, nghost, ldom, nsends);
-
-    // Buffer message indicates the domain intersection (x, y, z, xy, yz, xz, xyz).
-    ippl::mpi::Communicator::buffer_type<memory_space> buf =
-        ippl::Comm->getBuffer<memory_space, Tf>(nsends);
-
-    int tag = TAG + id;
-
-    ippl::Comm->isend(i, tag, fd, *buf, requests.back(), nsends);
-    buf->resetWritePos();
-}
-
-template <typename Tb, typename Tf, unsigned Dim>
-void solver_recv(int TAG, int id, int i, const ippl::NDIndex<Dim> intersection,
-                 const ippl::NDIndex<Dim> ldom, int nghost, Kokkos::View<Tf***>& view,
-                 ippl::detail::FieldBufferData<Tb>& fd, bool x = false, bool y = false,
-                 bool z = false) {
-    using memory_space = typename Kokkos::View<Tf***>::memory_space;
-
-    ippl::mpi::Communicator::size_type nrecvs;
-    nrecvs = intersection.size();
-
-    // Buffer message indicates the domain intersection (x, y, z, xy, yz, xz, xyz).
-    ippl::mpi::Communicator::buffer_type<memory_space> buf =
-        ippl::Comm->getBuffer<memory_space, Tf>(nrecvs);
-
-    int tag = TAG + id;
-
-    ippl::Comm->recv(i, tag, fd, *buf, nrecvs * sizeof(Tf), nrecvs);
-    buf->resetReadPos();
-
-    unpack(intersection, view, fd, nghost, ldom, x, y, z);
-}
+// Communication helpers (pack / unpack / solver_send / solver_recv) now live in
+// Field/FieldBufferOps.hpp and are included via FFTOpenPoissonSolver.h. All call
+// sites below use the ippl::detail:: qualified names.
 
 namespace ippl {
+
+    using detail::pack;
+    using detail::solver_recv;
+    using detail::solver_send;
+    using detail::unpack;
+
 
     /////////////////////////////////////////////////////////////////////////
     // constructor and destructor
