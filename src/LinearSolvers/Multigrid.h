@@ -43,11 +43,11 @@ namespace ippl {
                 r.setFieldBC(bcs);
 
                 // Extract grid info from the provided mesh and layout
+                origin      = mesh.getOrigin();
                 auto domain = layout.getDomain();
                 for (unsigned d = 0; d < Dim; ++d) {
-                    nx[d]     = domain[d].length();
-                    hx[d]     = mesh.getMeshSpacing(d);
-                    origin[d] = mesh.getOrigin(d);
+                    nx[d] = domain[d].length();
+                    hx[d] = mesh.getMeshSpacing(d);
                 }
             }
         };
@@ -163,9 +163,7 @@ namespace ippl {
             }
 
             // Note: We use the fine grid origin for all levels
-            ippl::Vector<double, Dim> origin;
-            for (unsigned d = 0; d < Dim; ++d)
-                origin[d] = fine_mesh.getOrigin(d);
+            ippl::Vector<double, Dim> origin = fine_mesh.getOrigin();
 
             while (true) {
                 // Construct mesh and layout for the current level
