@@ -111,8 +111,21 @@ namespace ippl {
             auto& fine_mesh   = b.get_mesh();
             auto& fine_layout = b.getLayout();
             auto fine_domain  = fine_layout.getDomain();
-            auto bcs          = b.getFieldBC();
 
+            auto bcs      = b.getFieldBC();
+            auto zero_bcs = bcs;
+
+            // Iterate over all faces (2 * Dim) to zero out Dirichlet conditions
+            for (size_t i = 0; i < 2 * Dim; ++i) {
+                // Ensure the BC pointer actually exists
+                if (zero_bcs[i]) {
+                    if ((zero_bcs[i]->getBCType() & ippl::CONSTANT_FACE) == ippl::CONSTANT_FACE) {
+                        // If it is any constant value (e.g. u = 100), replace it with a ZeroFace (e
+                        // = 0)
+                        zero_bcs[i] = std::make_shared<ippl::ZeroFace<Field>>(i);
+                    }
+                }
+            }
             auto half = [](int n) {
                 return (n - 1) / 2 + 1;
             };
