@@ -165,6 +165,7 @@ namespace ippl {
             // Note: We use the fine grid origin for all levels
             ippl::Vector<double, Dim> origin = fine_mesh.getOrigin();
 
+            unsigned current_level = 0;
             while (true) {
                 // Construct mesh and layout for the current level
                 mesh_type level_mesh(current_domain, current_hx, origin);
@@ -178,7 +179,11 @@ namespace ippl {
                 layout_type level_layout(current_domain, decomp);
 
                 // Emplace the new level
-                L_.emplace_back(level_mesh, level_layout, bcs);
+                if (current_level == 0) {
+                    L_.emplace_back(level_mesh, level_layout, bcs);
+                } else {
+                    L_.emplace_back(level_mesh, level_layout, zero_bcs);
+                }
 
                 // Check termination criteria
                 bool can_coarsen = true;
@@ -195,6 +200,7 @@ namespace ippl {
                     current_domain[d] = ippl::Index(std::max(3, half(current_domain[d].length())));
                     current_hx[d] *= 2.0;  // Mesh spacing doubles on coarser grids
                 }
+                current_level++;
             }
         }
 
