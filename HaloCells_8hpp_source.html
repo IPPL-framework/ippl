@@ -187,7 +187,7 @@ $(function() {
 <div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>                    }</div>
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span> </div>
 <div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>                    <a class="code hl_typedef" href="datatypes_8h.html#a117948da4a7f2c353ea5ef900c1762c4">size_type</a> nsends;</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                    <a class="code hl_function" href="FFTOpenPoissonSolver_8hpp.html#ac6873845aaf1a303d95c7c65c8cda7a1">pack</a>(range, view, haloData_m, nsends);</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                    pack(range, view, haloData_m, nsends);</div>
 <div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span> </div>
 <div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                    buffer_type buf = comm.template getBuffer&lt;memory_space, T&gt;(nsends);</div>
 <div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span> </div>
@@ -380,7 +380,6 @@ $(function() {
 <div class="ttc" id="aBumponTailInstability_8cpp_html_a6b2d038ea9c8d2651eecffe0e28b7ebb"><div class="ttname"><a href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a></div><div class="ttdeci">double T</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:23</div></div>
 <div class="ttc" id="aBumponTailInstability_8cpp_html_afef54e0ebfe65da0a396b342dcbe30f5"><div class="ttname"><a href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a></div><div class="ttdeci">constexpr unsigned Dim</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:22</div></div>
 <div class="ttc" id="aCommunicator_8h_html"><div class="ttname"><a href="Communicator_8h.html">Communicator.h</a></div></div>
-<div class="ttc" id="aFFTOpenPoissonSolver_8hpp_html_ac6873845aaf1a303d95c7c65c8cda7a1"><div class="ttname"><a href="FFTOpenPoissonSolver_8hpp.html#ac6873845aaf1a303d95c7c65c8cda7a1">pack</a></div><div class="ttdeci">void pack(const ippl::NDIndex&lt; 3 &gt; intersect, Kokkos::View&lt; Tf *** &gt; &amp;view, ippl::detail::FieldBufferData&lt; Tb &gt; &amp;fd, int nghost, const ippl::NDIndex&lt; 3 &gt; ldom, ippl::mpi::Communicator::size_type &amp;nsends)</div><div class="ttdef"><b>Definition:</b> FFTOpenPoissonSolver.hpp:10</div></div>
 <div class="ttc" id="aIpplException_8h_html"><div class="ttname"><a href="IpplException_8h.html">IpplException.h</a></div></div>
 <div class="ttc" id="aclassippl_1_1FieldLayout_html"><div class="ttname"><a href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a></div><div class="ttdef"><b>Definition:</b> FieldLayout.h:166</div></div>
 <div class="ttc" id="aclassippl_1_1FieldLayout_html_a0b47487f2d5c8740819b151c8ef5b705"><div class="ttname"><a href="classippl_1_1FieldLayout.html#a0b47487f2d5c8740819b151c8ef5b705">ippl::FieldLayout::getNeighbors</a></div><div class="ttdeci">const neighbor_list &amp; getNeighbors() const</div><div class="ttdef"><b>Definition:</b> FieldLayout.hpp:140</div></div>
