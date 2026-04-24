@@ -58,7 +58,7 @@ namespace ippl {
         };
 
         // Pack a 3D view region into a linear buffer via the real-part of each
-        // cell (legacy FFT-solver semantics: tolerates real or Kokkos::complex
+        // cell (FFT-solver semantics: tolerates real or Kokkos::complex
         // views; discards imaginary parts of complex views).
         template <typename Tb, typename Tf>
         inline void pack(const ippl::NDIndex<3> intersect, Kokkos::View<Tf***>& view,
