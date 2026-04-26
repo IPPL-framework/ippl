@@ -78,7 +78,7 @@ namespace ippl {
             size_type getParticleCount() const { return *localNum_mp; }
 
             virtual void applyPermutation(const hash_type&) = 0;
-            virtual void internalCopy(const hash_type&) = 0;
+            virtual void internalCopy(const hash_type&)     = 0;
 
         protected:
             const size_type* localNum_mp;

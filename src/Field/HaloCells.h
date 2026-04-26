@@ -139,7 +139,8 @@ namespace ippl {
              * unpack function call
              */
             template <class Op>
-            void exchangeBoundaries(view_type& view, Layout_t* layout, SendOrder order, int nghost = 1);
+            void exchangeBoundaries(view_type& view, Layout_t* layout, SendOrder order,
+                                    int nghost = 1);
 
             /*!
              * Extract the subview of the original data. This does not copy.

@@ -75,7 +75,7 @@ namespace ippl {
          * @brief Evaluates the electric and magnetic fields.
          */
         void evaluate_EB();
-    
+
         /**
          * @brief Initializes the solver. This is a pure virtual function.
          */

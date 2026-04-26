@@ -179,5 +179,5 @@ namespace ippl {
             }
 
         }  // namespace rma
-    }      // namespace mpi
+    }  // namespace mpi
 }  // namespace ippl

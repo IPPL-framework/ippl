@@ -68,7 +68,7 @@ namespace ippl {
      *
      *  Minimal empty base class for all ParticleBase specializations.
      *  Needed for e.g: c++20 constraints and concepts using std::derived_from
-     * 
+     *
      */
     class ParticleBaseBase {
     public:
@@ -84,7 +84,7 @@ namespace ippl {
      * IDs will be disabled for the bunch)
      */
     template <class PLayout, typename... IDProperties>
-    class ParticleBase: public ParticleBaseBase {
+    class ParticleBase : public ParticleBaseBase {
         constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
 
     public:

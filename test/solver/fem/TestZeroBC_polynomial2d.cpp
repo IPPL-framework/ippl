@@ -9,8 +9,8 @@
 // This is only 2D!
 //
 // The test prints out the relative error as we refine
-// the mesh spacing i.e. it is a convergence study. 
-// The order of convergence should be 2. 
+// the mesh spacing i.e. it is a convergence study.
+// The order of convergence should be 2.
 //
 // Usage:
 //    ./TestZeroBC_polynomial2d --info 5
@@ -22,9 +22,11 @@
 
 template <typename T, unsigned Dim>
 KOKKOS_INLINE_FUNCTION T RHSFunction(ippl::Vector<T, Dim> x_vec) {
-    T val = -2.0 * (x_vec[1]*x_vec[1] - Kokkos::pow(x_vec[1],4) + (Kokkos::pow(x_vec[0],4)
-         * (-1.0 + 6*x_vec[1]*x_vec[1])) + x_vec[0]*x_vec[0]*(1 - 12*x_vec[1]*x_vec[1]
-         + 6*Kokkos::pow(x_vec[1],4)));
+    T val =
+        -2.0
+        * (x_vec[1] * x_vec[1] - Kokkos::pow(x_vec[1], 4)
+           + (Kokkos::pow(x_vec[0], 4) * (-1.0 + 6 * x_vec[1] * x_vec[1]))
+           + x_vec[0] * x_vec[0] * (1 - 12 * x_vec[1] * x_vec[1] + 6 * Kokkos::pow(x_vec[1], 4)));
 
     return val;
 }
@@ -32,8 +34,8 @@ KOKKOS_INLINE_FUNCTION T RHSFunction(ippl::Vector<T, Dim> x_vec) {
 template <typename T, unsigned Dim>
 struct AnalyticSol {
     KOKKOS_FUNCTION const T operator()(ippl::Vector<T, Dim> x_vec) const {
-        T val = (x_vec[0] * x_vec[0]) * (1 - (x_vec[0]*x_vec[0])) 
-                * (x_vec[1] * x_vec[1]) * (1 - (x_vec[1]*x_vec[1]));
+        T val = (x_vec[0] * x_vec[0]) * (1 - (x_vec[0] * x_vec[0])) * (x_vec[1] * x_vec[1])
+                * (1 - (x_vec[1] * x_vec[1]));
         return val;
     }
 };
@@ -41,7 +43,6 @@ struct AnalyticSol {
 template <typename T, unsigned Dim>
 void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
                    const T& domain_end = 1.0) {
-    
     // start the timer
     static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("initTest");
     IpplTimings::startTimer(initTimer);

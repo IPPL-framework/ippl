@@ -1,7 +1,7 @@
 // Tests the FEM Poisson solver by solving the problem:
 //
 // -Laplacian(u) = pi^2 * cos(pi * x),
-// where x in [-1,1] and u(-1) = u(1) = -1. 
+// where x in [-1,1] and u(-1) = u(1) = -1.
 //
 // The exact solution is u(x) = cos(pi * x).
 //
@@ -9,8 +9,8 @@
 // This is only 1D!
 //
 // The test prints out the relative error as we refine
-// the mesh spacing i.e. it is a convergence study. 
-// The order of convergence should be 2. 
+// the mesh spacing i.e. it is a convergence study.
+// The order of convergence should be 2.
 //
 // Usage:
 //     ./TestNonHomDirichlet_1dcos --info 5
@@ -124,7 +124,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // Compute the error
     const T relError = solver.getL2Error(analytic);
 
-    lhs = lhs - sol;
+    lhs               = lhs - sol;
     const T normError = norm(lhs) / norm(sol);
 
     m << std::setw(10) << numNodesPerDim;

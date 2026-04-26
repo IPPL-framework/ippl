@@ -22,8 +22,8 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
 
-#include "PoissonSolvers/PoissonCG.h"
 #include "PoissonSolvers/FEMPoissonSolver.h"
+#include "PoissonSolvers/PoissonCG.h"
 
 template <typename T, unsigned Dim>
 KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
@@ -33,32 +33,38 @@ KOKKOS_INLINE_FUNCTION T sinusoidalRHSFunction(ippl::Vector<T, Dim> x_vec) {
     if (Dim == 1) {
         T x = x_vec[0];
 
-        val = Kokkos::pow(pi, 2) * ((Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x))
-                + (Kokkos::pow(Kokkos::cos(pi * x), 2) * Kokkos::sin(Kokkos::sin(pi * x))));
+        val = Kokkos::pow(pi, 2)
+              * ((Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x))
+                 + (Kokkos::pow(Kokkos::cos(pi * x), 2) * Kokkos::sin(Kokkos::sin(pi * x))));
 
     } else if (Dim == 2) {
         T x = x_vec[0];
         T y = x_vec[1];
 
         val = Kokkos::pow(pi, 2)
-                * (Kokkos::cos(Kokkos::sin(pi * y)) * Kokkos::sin(pi * y) * Kokkos::sin(Kokkos::sin(pi * x))
-                + (Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x)
-                + (Kokkos::pow(Kokkos::cos(pi * x), 2) + Kokkos::pow(Kokkos::cos(pi * y), 2)) * Kokkos::sin(Kokkos::sin(pi * x)))
-                * Kokkos::sin(Kokkos::sin(pi * y)));
-                
+              * (Kokkos::cos(Kokkos::sin(pi * y)) * Kokkos::sin(pi * y)
+                     * Kokkos::sin(Kokkos::sin(pi * x))
+                 + (Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x)
+                    + (Kokkos::pow(Kokkos::cos(pi * x), 2) + Kokkos::pow(Kokkos::cos(pi * y), 2))
+                          * Kokkos::sin(Kokkos::sin(pi * x)))
+                       * Kokkos::sin(Kokkos::sin(pi * y)));
+
     } else if (Dim == 3) {
         T x = x_vec[0];
         T y = x_vec[1];
         T z = x_vec[2];
 
         val = Kokkos::pow(pi, 2)
-                * (Kokkos::cos(Kokkos::sin(pi * z)) * Kokkos::sin(pi * z) * Kokkos::sin(Kokkos::sin(pi * x)) * Kokkos::sin(Kokkos::sin(pi * y))
-                + (Kokkos::cos(Kokkos::sin(pi * y)) * Kokkos::sin(pi * y) * Kokkos::sin(Kokkos::sin(pi * x))
-                + (Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x)
-                + (Kokkos::pow(Kokkos::cos(pi * x), 2) + Kokkos::pow(Kokkos::cos(pi * y), 2) + Kokkos::pow(Kokkos::cos(pi * z), 2))
-                * Kokkos::sin(Kokkos::sin(pi * x)))
-                * Kokkos::sin(Kokkos::sin(pi * y)))
-                * Kokkos::sin(Kokkos::sin(pi * z)));
+              * (Kokkos::cos(Kokkos::sin(pi * z)) * Kokkos::sin(pi * z)
+                     * Kokkos::sin(Kokkos::sin(pi * x)) * Kokkos::sin(Kokkos::sin(pi * y))
+                 + (Kokkos::cos(Kokkos::sin(pi * y)) * Kokkos::sin(pi * y)
+                        * Kokkos::sin(Kokkos::sin(pi * x))
+                    + (Kokkos::cos(Kokkos::sin(pi * x)) * Kokkos::sin(pi * x)
+                       + (Kokkos::pow(Kokkos::cos(pi * x), 2) + Kokkos::pow(Kokkos::cos(pi * y), 2)
+                          + Kokkos::pow(Kokkos::cos(pi * z), 2))
+                             * Kokkos::sin(Kokkos::sin(pi * x)))
+                          * Kokkos::sin(Kokkos::sin(pi * y)))
+                       * Kokkos::sin(Kokkos::sin(pi * z)));
     }
 
     return val;
@@ -108,7 +114,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD, domain, isParallel);
     Field_t lhs(mesh, layout, numGhosts);  // left hand side (updated in the algorithm)
     Field_t rhs(mesh, layout, numGhosts);  // right hand side (updated - load vector)
-    Field_t rhs_store(mesh, layout, numGhosts); 
+    Field_t rhs_store(mesh, layout, numGhosts);
 
     // Define boundary conditions
     BConds_t bcField;
@@ -153,7 +159,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // start the timer
     static IpplTimings::TimerRef solveTimer = IpplTimings::getTimer("solve");
     for (int i = 0; i < 5; ++i) {
-	    lhs = 0;
+        lhs = 0;
 
         IpplTimings::startTimer(solveTimer);
         solver.solve();

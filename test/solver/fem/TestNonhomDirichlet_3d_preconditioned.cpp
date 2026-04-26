@@ -2,16 +2,16 @@
 // by solving the problem:
 //
 // -Laplacian(u) = f(x, y, z),
-// where x,y,z in [0,2]^3 and u(boundaries) = 8, 
-// and f(x,y,z) is such that the exact solution is 
+// where x,y,z in [0,2]^3 and u(boundaries) = 8,
+// and f(x,y,z) is such that the exact solution is
 // u(x,y,z) = -x^2(4 - x^2)*y^2(4 - y^2)*z^2(4 - z^2) + 8.
 //
 // BCs: Dirichlet BCs (Constant Face = 8.0).
 // This is only 3D!
 //
 // The test prints out the relative error as we refine
-// the mesh spacing i.e. it is a convergence study. 
-// The order of convergence should be 2. 
+// the mesh spacing i.e. it is a convergence study.
+// The order of convergence should be 2.
 //
 // Usage:
 //     ./TestNonHomDirichlet_3d_preconditioned --info 5
@@ -28,21 +28,24 @@ struct AnalyticSol {
         T y = x_vec[1];
         T z = x_vec[2];
 
-        return -(x*x)*(4 - x*x)*(y*y)*(4 - y*y)*(z*z)*(4 - z*z) + 8.0;
+        return -(x * x) * (4 - x * x) * (y * y) * (4 - y * y) * (z * z) * (4 - z * z) + 8.0;
     }
 };
 
 template <typename T>
 KOKKOS_INLINE_FUNCTION T rhs_function(ippl::Vector<T, 3> x_vec) {
-    T x2  = x_vec[0]*x_vec[0];
-    T y2  = x_vec[1]*x_vec[1];
-    T z2  = x_vec[2]*x_vec[2];
-    T x4  = x2*x2;
-    T y4  = y2*y2;
-    T z4  = z2*z2;
+    T x2 = x_vec[0] * x_vec[0];
+    T y2 = x_vec[1] * x_vec[1];
+    T z2 = x_vec[2] * x_vec[2];
+    T x4 = x2 * x2;
+    T y4 = y2 * y2;
+    T z4 = z2 * z2;
 
-    return 8*y2*(-4+y2)*z2*(-4+z2)-4*x4*(-2*z2*(-4+z2)+y4*(-2+3*z2)+y2*(8-24*z2+3*z4)) 
-            -4*x2*(8*z2*(-4+z2) + y4*(8-24*z2+3*z4)-8*y2*(4-18*z2+3*z4));
+    return 8 * y2 * (-4 + y2) * z2 * (-4 + z2)
+           - 4 * x4 * (-2 * z2 * (-4 + z2) + y4 * (-2 + 3 * z2) + y2 * (8 - 24 * z2 + 3 * z4))
+           - 4 * x2
+                 * (8 * z2 * (-4 + z2) + y4 * (8 - 24 * z2 + 3 * z4)
+                    - 8 * y2 * (4 - 18 * z2 + 3 * z4));
 }
 
 template <typename T, unsigned Dim>
@@ -115,13 +118,13 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     ippl::PreconditionedFEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
 
     // parameters for the preconditioner
-    std::string preconditioner_type = "richardson";
+    std::string preconditioner_type   = "richardson";
     int gauss_seidel_inner_iterations = 4;
     int gauss_seidel_outer_iterations = 2;
-    int newton_level = 1; // unused
-    int chebyshev_degree = 1; // unused
-    int richardson_iterations = 4;
-    double ssor_omega = 1.57079632679;
+    int newton_level                  = 1;  // unused
+    int chebyshev_degree              = 1;  // unused
+    int richardson_iterations         = 4;
+    double ssor_omega                 = 1.57079632679;
 
     // set the parameters
     ippl::ParameterList params;
@@ -147,7 +150,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // Compute the error
     const T relError = solver.getL2Error(analytic);
 
-    lhs = lhs - sol;
+    lhs               = lhs - sol;
     const T normError = norm(lhs) / norm(sol);
 
     m << std::setw(10) << numNodesPerDim;

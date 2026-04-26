@@ -75,15 +75,15 @@ namespace ippl {
         }
 
         virtual ~ParticleAttrib() = default;
-        
+
         size_type size() const override { return dview_m.extent(0); }
-        
+
         size_type packedSize(const size_type count) const override {
             return count * sizeof(value_type);
         }
-        
+
         void resize(size_type n) { Kokkos::resize(dview_m, n); }
-        
+
         void realloc(size_type n) { Kokkos::realloc(dview_m, n); }
 
         void print() {

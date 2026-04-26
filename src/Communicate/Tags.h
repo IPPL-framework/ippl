@@ -47,7 +47,7 @@ namespace ippl {
                 FIELD_MIRROR = 40500
             };
         }  // namespace tag
-    }      // namespace mpi
+    }  // namespace mpi
 }  // namespace ippl
 
 #endif

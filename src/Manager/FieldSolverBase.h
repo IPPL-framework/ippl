@@ -3,8 +3,9 @@
 
 #include <memory>
 
-#include "Manager/BaseManager.h"
 #include "datatypes.h"
+
+#include "Manager/BaseManager.h"
 
 // Define the FieldSolverBase class
 namespace ippl {

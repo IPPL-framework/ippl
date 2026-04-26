@@ -25,13 +25,12 @@ public:
     using centering_type = typename mesh_type::DefaultCentering;
     using field_type     = ippl::Field<T, Dim, mesh_type, centering_type, ExecSpace>;
     using vfield_type =
-    ippl::Field<ippl::Vector<T, Dim>, Dim, mesh_type, centering_type, ExecSpace>;
-    using layout_type = ippl::SubFieldLayout<Dim>;
+        ippl::Field<ippl::Vector<T, Dim>, Dim, mesh_type, centering_type, ExecSpace>;
+    using layout_type     = ippl::SubFieldLayout<Dim>;
     using testlayout_type = ippl::FieldLayout<Dim>;
 
     FieldSubLayoutTest()
         : nPoints(getGridSizes<Dim>()) {
-
         // Calculate the domain size of the original layout
         // In this test we use a domain of +1 Point in each direction,
         // which is the domain of the origin layout,
@@ -40,17 +39,17 @@ public:
         unsigned int subDomainReduction = 1;
 
         for (unsigned d = 0; d < Dim; d++) {
-            domain[d] = (nPoints[d]+subDomainReduction) / 32.;
+            domain[d] = (nPoints[d] + subDomainReduction) / 32.;
         }
 
         std::array<ippl::Index, Dim> originIndices;
         std::array<ippl::Index, Dim> indices;
         for (unsigned d = 0; d < Dim; d++) {
-            originIndices[d] = ippl::Index(nPoints[d]+subDomainReduction);
-            indices[d] = ippl::Index(nPoints[d]);
+            originIndices[d] = ippl::Index(nPoints[d] + subDomainReduction);
+            indices[d]       = ippl::Index(nPoints[d]);
         }
         auto originOwned = std::make_from_tuple<ippl::NDIndex<Dim>>(originIndices);
-        auto owned = std::make_from_tuple<ippl::NDIndex<Dim>>(indices);
+        auto owned       = std::make_from_tuple<ippl::NDIndex<Dim>>(indices);
 
         ippl::Vector<T, Dim> hx;
         ippl::Vector<T, Dim> origin;
@@ -59,14 +58,13 @@ public:
         isParallel.fill(true);
 
         for (unsigned d = 0; d < Dim; d++) {
-            hx[d]     = domain[d] / (nPoints[d]+subDomainReduction);
+            hx[d]     = domain[d] / (nPoints[d] + subDomainReduction);
             origin[d] = 0;
         }
 
         layout = std::make_shared<layout_type>(MPI_COMM_WORLD, originOwned, owned, isParallel);
         mesh   = std::make_shared<mesh_type>(owned, hx, origin);
         field  = std::make_shared<field_type>(*mesh, *layout);
-        
     }
 
     std::shared_ptr<field_type> field;
@@ -257,9 +255,10 @@ TYPED_TEST(FieldSubLayoutTest, VolumeIntegral) {
     auto& field = this->field;
 
     /// to avoid error accumulation we increase the tolerance by the number of summands
-    std::size_t totalNumberOfPoints = std::accumulate(this->nPoints.begin(), this->nPoints.end(), std::size_t{1}, std::multiplies<>{});
+    std::size_t totalNumberOfPoints = std::accumulate(this->nPoints.begin(), this->nPoints.end(),
+                                                      std::size_t{1}, std::multiplies<>{});
 
-    T tol                         = totalNumberOfPoints * tolerance<T>;
+    T tol = totalNumberOfPoints * tolerance<T>;
 
     const ippl::NDIndex<Dim> lDom = field->getLayout().getLocalNDIndex();
     const int shift               = field->getNghost();

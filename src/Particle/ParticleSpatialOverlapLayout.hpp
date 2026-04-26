@@ -187,7 +187,8 @@ namespace ippl {
         for (unsigned d = 0; d < Dim; ++d) {
             anyPeriodic = anyPeriodic || periodic[d];
         }
-        if (!anyPeriodic) return;
+        if (!anyPeriodic)
+            return;
 
         const auto& globalRegion = this->rlayout_m.getDomain();
         const auto overlap       = rcutoff_m;

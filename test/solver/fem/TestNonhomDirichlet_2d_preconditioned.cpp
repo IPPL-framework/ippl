@@ -2,16 +2,16 @@
 // by solving the problem:
 //
 // -Laplacian(u) = f(x, y),
-// where x,y in [0,1]^2 and u(boundaries) = 1.56, 
-// and f(x,y) is such that the exact solution is 
+// where x,y in [0,1]^2 and u(boundaries) = 1.56,
+// and f(x,y) is such that the exact solution is
 // u(x,y) = x^2(1 - x^2) + y^2(1 - y^2) + 1.56.
 //
 // BCs: Dirichlet BCs (Constant Face = 1.56).
 // This is only 2D!
 //
 // The test prints out the relative error as we refine
-// the mesh spacing i.e. it is a convergence study. 
-// The order of convergence should be 2. 
+// the mesh spacing i.e. it is a convergence study.
+// The order of convergence should be 2.
 //
 // Usage:
 //     ./TestNonHomDirichlet_2d_preconditioned --info 5
@@ -24,8 +24,9 @@
 template <typename T>
 struct AnalyticSol {
     KOKKOS_FUNCTION const T operator()(ippl::Vector<T, 2> x_vec) const {
-        return (x_vec[0] * x_vec[0]) * (1.0 - x_vec[0] * x_vec[0])
-               * (x_vec[1] * x_vec[1]) * (1.0 - x_vec[1]*x_vec[1]) + 1.56;
+        return (x_vec[0] * x_vec[0]) * (1.0 - x_vec[0] * x_vec[0]) * (x_vec[1] * x_vec[1])
+                   * (1.0 - x_vec[1] * x_vec[1])
+               + 1.56;
     }
 };
 
@@ -36,7 +37,7 @@ KOKKOS_INLINE_FUNCTION T rhs_function(ippl::Vector<T, 2> x_vec) {
     double x4 = Kokkos::pow(x_vec[0], 4);
     double y4 = Kokkos::pow(x_vec[1], 4);
 
-    return -2.0*(y2 - y4 + (x4*(-1.0 + 6*y2)) + x2*(1.0-12*y2+6*y4));
+    return -2.0 * (y2 - y4 + (x4 * (-1.0 + 6 * y2)) + x2 * (1.0 - 12 * y2 + 6 * y4));
 }
 
 template <typename T, unsigned Dim>
@@ -108,13 +109,13 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     ippl::PreconditionedFEMPoissonSolver<Field_t, Field_t> solver(lhs, rhs);
 
     // parameters for the preconditioner
-    std::string preconditioner_type = "richardson";
+    std::string preconditioner_type   = "richardson";
     int gauss_seidel_inner_iterations = 4;
     int gauss_seidel_outer_iterations = 2;
-    int newton_level = 1; // unused
-    int chebyshev_degree = 1; // unused
-    int richardson_iterations = 4;
-    double ssor_omega = 1.57079632679;
+    int newton_level                  = 1;  // unused
+    int chebyshev_degree              = 1;  // unused
+    int richardson_iterations         = 4;
+    double ssor_omega                 = 1.57079632679;
 
     // set the parameters
     ippl::ParameterList params;
@@ -140,7 +141,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     // Compute the error
     const T relError = solver.getL2Error(analytic);
 
-    lhs = lhs - sol;
+    lhs               = lhs - sol;
     const T normError = norm(lhs) / norm(sol);
 
     m << std::setw(10) << numNodesPerDim;

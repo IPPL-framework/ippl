@@ -60,8 +60,7 @@ namespace ippl {
     ParticleSpatialLayout<T, Dim, Mesh, Properties...>::ParticleSpatialLayout(FieldLayout<Dim>& fl,
                                                                               Mesh& mesh, bool fem)
         : rlayout_m(fl, mesh, fem)
-        , flayout_m(fl)
-    {   
+        , flayout_m(fl) {
         nRecvs_m.resize(Comm->size());
         if (Comm->size() > 1) {
             window_m.create(*Comm, nRecvs_m.begin(), nRecvs_m.end());

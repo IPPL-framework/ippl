@@ -62,7 +62,6 @@ namespace ippl {
          */
         std::shared_ptr<pc> getParticleContainer() { return pcontainer_m; }
 
-
         /**
          * @brief Get a particle container by index.
          * @param i The index of the particle container (0-based).
@@ -137,7 +136,7 @@ namespace ippl {
         std::shared_ptr<fc> fcontainer_m;
 
         /**
-         * @brief Default (first) particle container, kept for backward 
+         * @brief Default (first) particle container, kept for backward
          * compatibility.
          */
         std::shared_ptr<pc> pcontainer_m;

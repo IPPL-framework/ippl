@@ -16,7 +16,7 @@ protected:
     void SetUp() override {}
 
 public:
-    using value_t = T;
+    using value_t                 = T;
     static constexpr unsigned dim = Dim;
 
     static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
@@ -26,23 +26,22 @@ public:
         Dim == 1, ippl::EdgeElement<T>,
         std::conditional_t<Dim == 2, ippl::QuadrilateralElement<T>, ippl::HexahedralElement<T>>>;
 
-    using QuadratureType = ippl::MidpointQuadrature<T, 1, ElementType>;
-    using FieldType      = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
-    using FieldLayoutType= ippl::FieldLayout<Dim>;
+    using QuadratureType  = ippl::MidpointQuadrature<T, 1, ElementType>;
+    using FieldType       = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
+    using FieldLayoutType = ippl::FieldLayout<Dim>;
 
     // Initialize a 4x4 mesh with 1.0 spacing and 0.0 offset.
     // 4 nodes in each dimension, or 3 elements in each dimension
-    
+
     FiniteElementSpaceTest()
         : rng(42)
         , meshSizes(4)
         , ref_element()
         , mesh(ippl::NDIndex<Dim>(meshSizes), ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(-1.0))
         , quadrature(ref_element)
-        , layout(MPI_COMM_WORLD, ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(4)), 
+        , layout(MPI_COMM_WORLD, ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(4)),
                  std::array<bool, Dim>{true})
-        , fem_space(mesh, ref_element, quadrature, layout)
-        {}
+        , fem_space(mesh, ref_element, quadrature, layout) {}
 
     std::mt19937 rng;
 
@@ -81,8 +80,8 @@ TYPED_TEST(FiniteElementSpaceTest, numElementsInDim) {
 }
 
 TYPED_TEST(FiniteElementSpaceTest, getMeshVertexNDIndex) {
-    const auto& fem_space  = this->fem_space;
-    const auto& meshSizes  = this->meshSizes;
+    const auto& fem_space            = this->fem_space;
+    const auto& meshSizes            = this->meshSizes;
     static constexpr std::size_t dim = TestFixture::dim;
 
     // compute the number of vertices
@@ -112,8 +111,8 @@ TYPED_TEST(FiniteElementSpaceTest, getMeshVertexNDIndex) {
 }
 
 TYPED_TEST(FiniteElementSpaceTest, getMeshVertexIndex) {
-    const auto& fem_space  = this->fem_space;
-    const auto& meshSizes  = this->meshSizes;
+    const auto& fem_space            = this->fem_space;
+    const auto& meshSizes            = this->meshSizes;
     static constexpr std::size_t dim = TestFixture::dim;
 
     // compute the number of vertices
@@ -141,7 +140,7 @@ TYPED_TEST(FiniteElementSpaceTest, getMeshVertexIndex) {
 }
 
 TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexNDIndices) {
-    const auto& fem_space  = this->fem_space;
+    const auto& fem_space            = this->fem_space;
     static constexpr std::size_t dim = TestFixture::dim;
 
     if (dim == 1) {
@@ -171,9 +170,9 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexNDIndices) {
 }
 
 TYPED_TEST(FiniteElementSpaceTest, getElementNDIndex) {
-    const auto& fem_space          = this->fem_space;
+    const auto& fem_space            = this->fem_space;
     static constexpr std::size_t dim = TestFixture::dim;
-    const std::size_t& numElements = fem_space.numElements();
+    const std::size_t& numElements   = fem_space.numElements();
 
     std::vector<std::vector<std::size_t>> element_nd_indices(dim);
 
@@ -207,9 +206,9 @@ TYPED_TEST(FiniteElementSpaceTest, getElementNDIndex) {
 }
 
 TYPED_TEST(FiniteElementSpaceTest, getElementIndex) {
-    const auto& fem_space          = this->fem_space;
+    const auto& fem_space            = this->fem_space;
     static constexpr std::size_t dim = TestFixture::dim;
-    const std::size_t& numElements = fem_space.numElements();
+    const std::size_t& numElements   = fem_space.numElements();
 
     std::vector<ippl::Vector<size_t, dim>> element_nd_indices(numElements);
 
@@ -235,7 +234,7 @@ TYPED_TEST(FiniteElementSpaceTest, getElementIndex) {
 }
 
 TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexIndices) {
-    const auto& fem_space  = this->fem_space;
+    const auto& fem_space            = this->fem_space;
     static constexpr std::size_t dim = TestFixture::dim;
 
     ippl::Vector<std::size_t, dim> elementNDIndex;
@@ -433,7 +432,7 @@ TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexIndices) {
 }
 
 TYPED_TEST(FiniteElementSpaceTest, getElementMeshVertexPoints) {
-    const auto& fem_space  = this->fem_space;
+    const auto& fem_space            = this->fem_space;
     static constexpr std::size_t dim = TestFixture::dim;
 
     const auto element_ndindex = ippl::Vector<unsigned, dim>(2);

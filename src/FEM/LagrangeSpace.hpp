@@ -33,14 +33,13 @@ namespace ippl {
                       "Finite Element space only supports 1D, 2D and 3D meshes");
     }
 
-    // LagrangeSpace initializer, to be made available to the FEMPoissonSolver 
+    // LagrangeSpace initializer, to be made available to the FEMPoissonSolver
     // such that we can call it from setRhs.
     // Sets the correct mesh ad decomposes the elements among ranks according to layout.
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     void LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::initialize(
-        UniformCartesian<T, Dim>& mesh, Layout_t& layout)
-    {
+        UniformCartesian<T, Dim>& mesh, Layout_t& layout) {
         FiniteElementSpace<T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType,
                            QuadratureType, FieldLHS, FieldRHS>::setMesh(mesh);
 
@@ -68,7 +67,7 @@ namespace ippl {
 
         int upperBoundaryPoints = -1;
 
-        // We iterate over the local domain points, getting the corresponding elements, 
+        // We iterate over the local domain points, getting the corresponding elements,
         // while tagging upper boundary points such that they can be removed after.
         Kokkos::View<size_t*> points("npoints", npoints);
         Kokkos::parallel_reduce(
@@ -135,9 +134,9 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
-    KOKKOS_FUNCTION
-    size_t LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::getLocalDOFIndex
-    (const size_t& elementIndex, const size_t& globalDOFIndex) const {
+    KOKKOS_FUNCTION size_t
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::getLocalDOFIndex(
+        const size_t& elementIndex, const size_t& globalDOFIndex) const {
         static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
         // TODO fix not order independent, only works for order 1
         static_assert(Order == 1, "Only order 1 is supported at the moment");
@@ -147,16 +146,16 @@ namespace ippl {
             this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
 
         // Find the global DOF in the vector and return the local DOF index
-        // Note: It is important that this only works because the global_dofs 
+        // Note: It is important that this only works because the global_dofs
         // are already arranged in the correct order from getGlobalDOFIndices
         for (size_t i = 0; i < global_dofs.dim; ++i) {
             if (global_dofs[i] == globalDOFIndex) {
                 return i;
             }
         }
-        // commented this due to this being on device 
+        // commented this due to this being on device
         // however, it would be good to throw an error in this case
-        //throw IpplException("LagrangeSpace::getLocalDOFIndex()",
+        // throw IpplException("LagrangeSpace::getLocalDOFIndex()",
         //                    "FEM Lagrange Space: Global DOF not found in specified element");
         return 0;
     }
@@ -368,11 +367,11 @@ namespace ippl {
         Inform m("");
 
         // declare timers
-        static IpplTimings::TimerRef evalAx = IpplTimings::getTimer("evaluateAx");
+        static IpplTimings::TimerRef evalAx       = IpplTimings::getTimer("evaluateAx");
         static IpplTimings::TimerRef evalAx_outer = IpplTimings::getTimer("evaluateAx: outer loop");
-        static IpplTimings::TimerRef evalAx_bc = IpplTimings::getTimer("evaluateAx: BCs");
+        static IpplTimings::TimerRef evalAx_bc    = IpplTimings::getTimer("evaluateAx: BCs");
         static IpplTimings::TimerRef evalAx_setup = IpplTimings::getTimer("evaluateAx: setup");
-        static IpplTimings::TimerRef accumHalo = IpplTimings::getTimer("evaluateAx: accumHalo");
+        static IpplTimings::TimerRef accumHalo    = IpplTimings::getTimer("evaluateAx: accumHalo");
 
         // start a timer
         IpplTimings::startTimer(evalAx);
@@ -419,7 +418,7 @@ namespace ippl {
 
         // Get boundary conditions from field
         BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
-        FieldBC bcType = bcField[0]->getBCType();
+        FieldBC bcType                 = bcField[0]->getBCType();
 
         // Get domain and ghost cell information
         auto ldom = (field.getLayout()).getLocalNDIndex();
@@ -438,7 +437,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+                const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -465,7 +464,7 @@ namespace ippl {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
-                        apply(resultView, I_nd) =  apply(view, I_nd);
+                        apply(resultView, I_nd) = apply(view, I_nd);
                         continue;
                     } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         continue;
@@ -480,7 +479,7 @@ namespace ippl {
                         J_nd = global_dof_ndindices[j];
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
-                        if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
+                        if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE))
                             && this->isDOFOnBoundary(J_nd)) {
                             continue;
                         }
@@ -569,7 +568,7 @@ namespace ippl {
 
         // Get boundary conditions from field
         BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
-        FieldBC bcType = bcField[0]->getBCType();
+        FieldBC bcType                 = bcField[0]->getBCType();
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
@@ -583,7 +582,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+                const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -610,7 +609,7 @@ namespace ippl {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
-                        apply(resultView, I_nd) =  apply(view, I_nd);
+                        apply(resultView, I_nd) = apply(view, I_nd);
                         continue;
                     } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         continue;
@@ -629,7 +628,7 @@ namespace ippl {
                         }
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
-                        if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
+                        if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE))
                             && this->isDOFOnBoundary(J_nd)) {
                             continue;
                         }
@@ -711,7 +710,7 @@ namespace ippl {
 
         // Get boundary conditions from field
         BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
-        FieldBC bcType = bcField[0]->getBCType();
+        FieldBC bcType                 = bcField[0]->getBCType();
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
@@ -725,7 +724,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+                const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -752,7 +751,7 @@ namespace ippl {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
-                        apply(resultView, I_nd) =  apply(view, I_nd);
+                        apply(resultView, I_nd) = apply(view, I_nd);
                         continue;
                     } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         continue;
@@ -771,7 +770,7 @@ namespace ippl {
                         }
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
-                        if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
+                        if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE))
                             && this->isDOFOnBoundary(J_nd)) {
                             continue;
                         }
@@ -807,7 +806,8 @@ namespace ippl {
         Inform m("");
 
         // declare timer
-        static IpplTimings::TimerRef evalAx_upperlower = IpplTimings::getTimer("evaluateAxUpperLower");
+        static IpplTimings::TimerRef evalAx_upperlower =
+            IpplTimings::getTimer("evaluateAxUpperLower");
 
         // start a timer
         IpplTimings::startTimer(evalAx_upperlower);
@@ -853,7 +853,7 @@ namespace ippl {
 
         // Get boundary conditions from field
         BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
-        FieldBC bcType = bcField[0]->getBCType();
+        FieldBC bcType                 = bcField[0]->getBCType();
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
@@ -867,7 +867,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+                const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -894,7 +894,7 @@ namespace ippl {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
-                        apply(resultView, I_nd) =  apply(view, I_nd);
+                        apply(resultView, I_nd) = apply(view, I_nd);
                         continue;
                     } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         continue;
@@ -909,7 +909,7 @@ namespace ippl {
                         J_nd = global_dof_ndindices[j];
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
-                        if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
+                        if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE))
                             && this->isDOFOnBoundary(J_nd)) {
                             continue;
                         }
@@ -990,7 +990,7 @@ namespace ippl {
 
         // Get boundary conditions from field
         BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
-        FieldBC bcType = bcField[0]->getBCType();
+        FieldBC bcType                 = bcField[0]->getBCType();
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
@@ -1004,7 +1004,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+                const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -1056,7 +1056,8 @@ namespace ippl {
 
         // apply the inverse diagonal after already summed all contributions from element matrices
         using index_array_type = typename RangePolicy<Dim, exec_space>::index_array_type;
-        ippl::parallel_for("Loop over result view to apply inverse", field.getFieldRangePolicy(),
+        ippl::parallel_for(
+            "Loop over result view to apply inverse", field.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 if (apply(resultView, args) != 0.0) {
                     apply(resultView, args) = (1.0 / apply(resultView, args)) * apply(view, args);
@@ -1073,7 +1074,7 @@ namespace ippl {
     FieldLHS LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
                            FieldRHS>::evaluateAx_diag(FieldLHS& field, F& evalFunction) {
         Inform m("");
-        
+
         // declare timer
         static IpplTimings::TimerRef evalAx_diag = IpplTimings::getTimer("evaluateAxDiag");
 
@@ -1119,7 +1120,7 @@ namespace ippl {
 
         // Get boundary conditions from field
         BConds<FieldLHS, Dim>& bcField = field.getFieldBC();
-        FieldBC bcType = bcField[0]->getBCType();
+        FieldBC bcType                 = bcField[0]->getBCType();
 
         // Get domain information
         auto ldom = (field.getLayout()).getLocalNDIndex();
@@ -1133,7 +1134,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+                const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -1160,7 +1161,7 @@ namespace ippl {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
-                        apply(resultView, I_nd) =  apply(view, I_nd);
+                        apply(resultView, I_nd) = apply(view, I_nd);
                         continue;
                     } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
                         continue;
@@ -1251,7 +1252,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+                const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
@@ -1293,7 +1294,6 @@ namespace ippl {
                             apply(resultView, I_nd) += A_K[i][j] * apply(view, J_nd);
                             continue;
                         }
-
                     }
                 }
             });
@@ -1344,7 +1344,7 @@ namespace ippl {
 
         // Get boundary conditions from field
         BConds<FieldRHS, Dim>& bcField = field.getFieldBC();
-        FieldBC bcType = bcField[0]->getBCType();
+        FieldBC bcType                 = bcField[0]->getBCType();
 
         FieldRHS temp_field(field.get_mesh(), field.getLayout(), nghost);
         temp_field.setFieldBC(bcField);
@@ -1362,7 +1362,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+                const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
 
@@ -1407,7 +1407,6 @@ namespace ippl {
 
                     // add the contribution of the element to the field
                     apply(atomic_view, dof_ndindex_I) += contrib;
-
                 }
             });
         temp_field.accumulateHalo();
@@ -1467,7 +1466,7 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+                const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
                     this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
 
@@ -1671,28 +1670,27 @@ namespace ippl {
     // Function to return the device struct of this Lagrange Space
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
-    typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
-    DeviceStruct
-    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
-    getDeviceMirror() const {
+    typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                           FieldRHS>::DeviceStruct
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::getDeviceMirror()
+        const {
         DeviceStruct space_mirror;
-        space_mirror.nr_m = this->nr_m;
+        space_mirror.nr_m          = this->nr_m;
         space_mirror.ref_element_m = this->ref_element_m;
         return space_mirror;
     }
 
     // I don't know how to avoid code duplication here...
-    // Make sure that any changes in getLocalDOFIndex, getGlobalDOFIndices, 
+    // Make sure that any changes in getLocalDOFIndex, getGlobalDOFIndices,
     // evaluateRefElementShapeFunction, and getMeshVertexNDIndex from the
     // parent class FiniteElementSpace get propagated here.
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION size_t
-    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
-    DeviceStruct::getLocalDOFIndex(const indices_t& elementNDIndex, 
-                                   const size_t& globalDOFIndex) const {
-
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                  FieldRHS>::DeviceStruct::getLocalDOFIndex(const indices_t& elementNDIndex,
+                                                            const size_t& globalDOFIndex) const {
         static_assert(Dim == 1 || Dim == 2 || Dim == 3, "Dim must be 1, 2 or 3");
         // TODO fix not order independent, only works for order 1
         static_assert(Order == 1, "Only order 1 is supported at the moment");
@@ -1702,16 +1700,16 @@ namespace ippl {
             this->getGlobalDOFIndices(elementNDIndex);
 
         // Find the global DOF in the vector and return the local DOF index
-        // Note: It is important that this only works because the global_dofs 
+        // Note: It is important that this only works because the global_dofs
         // are already arranged in the correct order from getGlobalDOFIndices
         for (size_t i = 0; i < global_dofs.dim; ++i) {
             if (global_dofs[i] == globalDOFIndex) {
                 return i;
             }
         }
-        // commented this due to this being on device 
+        // commented this due to this being on device
         // however, it would be good to throw an error in this case
-        //throw IpplException("LagrangeSpace::getLocalDOFIndex()",
+        // throw IpplException("LagrangeSpace::getLocalDOFIndex()",
         //                    "FEM Lagrange Space: Global DOF not found in specified element");
         return 0;
     }
@@ -1719,10 +1717,10 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION Vector<size_t, LagrangeSpace<T, Dim, Order, ElementType, QuadratureType,
-                                   FieldLHS, FieldRHS>::DeviceStruct::numElementDOFs>
-    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
-    DeviceStruct::getGlobalDOFIndices(const indices_t& elementNDIndex) const {
-
+                                                 FieldLHS, FieldRHS>::DeviceStruct::numElementDOFs>
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                  FieldRHS>::DeviceStruct::getGlobalDOFIndices(const indices_t& elementNDIndex)
+        const {
         Vector<size_t, numElementDOFs> globalDOFs(0);
 
         // Compute the vector to multiply the ndindex with
@@ -1793,11 +1791,11 @@ namespace ippl {
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION T
-    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
-    DeviceStruct::evaluateRefElementShapeFunction(const size_t& localDOF,
-        const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::DeviceStruct::
+        evaluateRefElementShapeFunction(
+            const size_t& localDOF,
+            const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
                                 FieldRHS>::point_t& localPoint) const {
-
         static_assert(Order == 1, "Only order 1 is supported at the moment");
         // Assert that the local vertex index is valid.
         assert(localDOF < DeviceStruct::numElementDOFs
@@ -1828,8 +1826,9 @@ namespace ippl {
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
     KOKKOS_FUNCTION typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
                                            FieldRHS>::point_t
-    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
-    DeviceStruct::evaluateRefElementShapeFunctionGradient(const size_t& localDOF,
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::DeviceStruct::
+        evaluateRefElementShapeFunctionGradient(
+            const size_t& localDOF,
             const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
                                 FieldRHS>::point_t& localPoint) const {
         // TODO fix not order independent, only works for order 1
@@ -1880,10 +1879,10 @@ namespace ippl {
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
-    KOKKOS_FUNCTION typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType,
-                                           FieldLHS, FieldRHS>::indices_t
-    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
-    DeviceStruct::getMeshVertexNDIndex(const size_t& vertex_index) const {
+    KOKKOS_FUNCTION typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                                           FieldRHS>::indices_t
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                  FieldRHS>::DeviceStruct::getMeshVertexNDIndex(const size_t& vertex_index) const {
         // Copy the vertex index to the index variable we can alter during the computation.
         size_t index = vertex_index;
 

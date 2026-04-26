@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
         ippl::Tuple<int, float, double> red;
         Kokkos::parallel_reduce(
             100,
-            KOKKOS_LAMBDA(size_t idx, ippl::Tuple<int, float, double> & ref)->void {
+            KOKKOS_LAMBDA(size_t idx, ippl::Tuple<int, float, double>& ref)->void {
                 ref += view(idx);
             },
             red);

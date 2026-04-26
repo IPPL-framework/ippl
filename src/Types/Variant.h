@@ -354,7 +354,7 @@ namespace std _GLIBCXX_VISIBILITY(default) {
                 _Variadic_union& operator=(const _Variadic_union&) = default;
                 _Variadic_union& operator=(_Variadic_union&&)      = default;
 
-                ~_Variadic_union(){};
+                ~_Variadic_union() {};
 
                 constexpr ~_Variadic_union()
                     requires(!__has_trivial_destructor(_First))
@@ -974,7 +974,7 @@ namespace std _GLIBCXX_VISIBILITY(default) {
             }
 
         }  // namespace __variant
-    }      // namespace __detail
+    }  // namespace __detail
 
     template <typename _Tp, typename... _Types>
     constexpr bool holds_alternative(const variant<_Types...>& __v) noexcept {
@@ -1284,8 +1284,8 @@ namespace std _GLIBCXX_VISIBILITY(default) {
                                              && is_assignable_v<__accepted_type<_Tp&&>&, _Tp>,
                                          variant&>
         operator=(_Tp&& __rhs) noexcept(
-            is_nothrow_assignable_v<__accepted_type<_Tp&&>&, _Tp>&&
-                is_nothrow_constructible_v<__accepted_type<_Tp&&>, _Tp>) {
+            is_nothrow_assignable_v<__accepted_type<_Tp&&>&, _Tp>
+            && is_nothrow_constructible_v<__accepted_type<_Tp&&>, _Tp>) {
             constexpr auto __index = __accepted_index<_Tp>;
             if (index() == __index)
                 std::get<__index>(*this) = std::forward<_Tp>(__rhs);
@@ -1524,7 +1524,7 @@ namespace std _GLIBCXX_VISIBILITY(default) {
 
                 using __detail::__variant::__gen_vtable_impl;
                 using __detail::__variant::_Multi_array;
-                using _Ma = _Multi_array<_Result_type (*)(_Visitor&&, _V0 &&)>;
+                using _Ma = _Multi_array<_Result_type (*)(_Visitor&&, _V0&&)>;
 
 #ifdef _GLIBCXX_DEBUG
 #define _GLIBCXX_VISIT_UNREACHABLE __builtin_trap

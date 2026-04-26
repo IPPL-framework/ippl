@@ -8,9 +8,10 @@
 
 #include "Types/Vector.h"
 
+#include "Utility/ParameterList.h"
+
 #include "Field/Field.h"
 
-#include "Utility/ParameterList.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
 
@@ -53,7 +54,6 @@ namespace ippl {
             En_mp = &E;
             Bn_mp = &B;
         }
-
 
         /*!
          * Merges another parameter set into the solver's parameters, overwriting
