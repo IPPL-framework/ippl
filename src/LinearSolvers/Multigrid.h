@@ -214,8 +214,6 @@ namespace ippl {
         };
 
         void vcycle(size_t level) {
-            auto& lev = L_[level];
-
             if (level == L_.size() - 1) {
                 // Coarsest grid: just smooth a lot (or use a direct solver)
                 smooth_jacobi(level, 50);
