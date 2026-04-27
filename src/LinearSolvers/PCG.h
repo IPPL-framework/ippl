@@ -78,8 +78,14 @@ namespace ippl {
             // set in main
             [[maybe_unused]] int outer =
                 1,  // This is a dummy default parameter, actual default parameter should be
-            [[maybe_unused]] double omega = 1  // This is a dummy default parameter, actual default
-                                               // parameter should be set in main
+            [[maybe_unused]] double omega = 1,  // This is a dummy default parameter, actual default
+                                                // parameter should be set in main
+            [[maybe_unused]] int mg_pre = 2,    // This is a dummy default parameter, actual default
+                                                // parameter should be set in main
+            [[maybe_unused]] int mg_post = 2,   // This is a dummy default parameter, actual default
+                                                // parameter should be set in main
+            [[maybe_unused]] double mg_omega = 0.8  // This is a dummy default parameter, actual
+                                                    // default parameter should be set in main
         ) {}
         /*!
          * Query how many iterations were required to obtain the solution
@@ -357,11 +363,18 @@ namespace ippl {
             // set in main
             int outer = 2,  // This is a dummy default parameter, actual default parameter should be
             // set in main
-            double omega = 1.57079632679  // This is a dummy default parameter, actual default
+            double omega = 1.57079632679,  // This is a dummy default parameter, actual default
             // parameter should be set in main
             // default = pi/2 as this was found optimal during hyperparameter scan for test case
             // (see
             // https://amas.web.psi.ch/people/aadelmann/ETH-Accel-Lecture-1/projectscompleted/cse/BSc-mbolliger.pdf)
+            int mg_pre = 2,   // This is a dummy default parameter, actual default parameter should
+                              // be set in main
+            int mg_post = 2,  // This is a dummy default parameter, actual default parameter should
+                              // be set in main
+            double mg_omega = 0.8  // This is a dummy default parameter, actual default parameter
+                                   // should be set in main
+
             ) override {
             if (preconditioner_type == "jacobi") {
                 // Turn on damping parameter
@@ -406,7 +419,7 @@ namespace ippl {
             } else if (preconditioner_type == "multigrid") {
                 preconditioner_m =
                     std::move(std::make_unique<multigrid_preconditioner<FieldLHS, OperatorF>>(
-                        std::move(op), inner, outer, omega));
+                        std::move(op), mg_pre, mg_post, mg_omega));
             } else {
                 preconditioner_m = std::move(std::make_unique<preconditioner<FieldLHS>>());
             }

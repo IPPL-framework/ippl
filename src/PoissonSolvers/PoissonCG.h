@@ -74,6 +74,12 @@ namespace ippl {
                 int richardson_iterations =
                     this->params_m.template get<int>("richardson_iterations");
                 int communication = this->params_m.template get<int>("communication");
+
+                // Extract Multigrid params
+                int mg_pre      = this->params_m.template get<int>("mg_pre_smooth_iters");
+                int mg_post     = this->params_m.template get<int>("mg_post_smooth_iters");
+                double mg_omega = this->params_m.template get<double>("mg_omega");
+
                 // Analytical eigenvalues for the d dimensional laplace operator
                 // Going brute force through all possible eigenvalues seems to be the only way to
                 // find max and min
@@ -107,7 +113,7 @@ namespace ippl {
                         IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(diagonal_laplace, lhs_type), alpha, beta,
                         preconditioner_type, level, degree, richardson_iterations, inner, outer,
-                        omega);
+                        omega, mg_pre, mg_post, mg_omega);
                 } else {
                     algo_m->setPreconditioner(
                         IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type),
@@ -117,7 +123,7 @@ namespace ippl {
                         IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(diagonal_laplace, lhs_type), alpha, beta,
                         preconditioner_type, level, degree, richardson_iterations, inner, outer,
-                        omega);
+                        omega, mg_pre, mg_post, mg_omega);
                 }
             } else {
                 algo_m = std::move(
