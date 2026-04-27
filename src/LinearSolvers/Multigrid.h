@@ -26,6 +26,9 @@ namespace ippl {
             using mesh_type               = typename Field::Mesh_t;
             using layout_type             = typename Field::Layout_t;
 
+            std::shared_ptr<mesh_type> mesh_ptr;
+            std::shared_ptr<layout_type> layout_ptr;
+
             ippl::Vector<int, Dim> nx;
             ippl::Vector<double, Dim> hx;
             ippl::Vector<double, Dim> origin;
@@ -33,25 +36,26 @@ namespace ippl {
             Field u, f, r;
 
             template <typename BCType>
-            Level(const mesh_type& mesh, const layout_type& layout, const BCType& bcs)
-                : u(mesh, layout)
-                , f(mesh, layout)
-                , r(mesh, layout) {
+            Level(std::shared_ptr<mesh_type> m, std::shared_ptr<layout_type> l, BCType& bcs)
+                : mesh_ptr(m)
+                , layout_ptr(l)
+                , u(*m, *l)
+                , f(*m, *l)
+                , r(*m, *l) {
                 // Apply boundary conditions to all fields
                 u.setFieldBC(bcs);
                 f.setFieldBC(bcs);
                 r.setFieldBC(bcs);
 
                 // Extract grid info from the provided mesh and layout
-                origin      = mesh.getOrigin();
-                auto domain = layout.getDomain();
+                origin      = m->getOrigin();
+                auto domain = l->getDomain();
                 for (unsigned d = 0; d < Dim; ++d) {
                     nx[d] = domain[d].length();
-                    hx[d] = mesh.getMeshSpacing(d);
+                    hx[d] = m->getMeshSpacing(d);
                 }
             }
         };
-
         template <typename LevelType>
         double compute_diag(const LevelType& lev) {
             double diag = 0.0;
@@ -168,12 +172,13 @@ namespace ippl {
             unsigned current_level = 0;
             while (true) {
                 // Construct mesh and layout for the current level
-                mesh_type level_mesh(current_domain, current_hx, origin);
+                auto level_mesh = std::make_shared<mesh_type>(current_domain, current_hx, origin);
 
                 // We copy the decomposition from the fine layout.
                 std::array<bool, Dim> decomp = fine_layout.isParallel();
 
-                layout_type level_layout(fine_layout.comm, current_domain, decomp);
+                auto level_layout =
+                    std::make_shared<layout_type>(fine_layout.comm, current_domain, decomp);
 
                 // Emplace the new level
                 if (current_level == 0) {
