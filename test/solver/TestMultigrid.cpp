@@ -5,8 +5,8 @@
 //      ./TestMultigridCGSolver [log2_size] [test_case]
 //
 // Examples:
-//      ./TestMultigridCGSolver 5 1   -> size 32^3, Test Case 1 (All Periodic)
-//      ./TestMultigridCGSolver 6 2   -> size 64^3, Test Case 2 (Mixed Periodic/Dirichlet)
+//      ./TestMultigrid 5 1   -> size 32^3, Test Case 1 (All Periodic)
+//      ./TestMultigrid 6 2   -> size 64^3, Test Case 2 (Mixed Periodic/Dirichlet)
 
 #include "Ippl.h"
 
