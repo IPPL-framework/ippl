@@ -19,7 +19,6 @@
 namespace ippl {
 
     namespace multigrid {
-
         template <typename Field>
         struct Level {
             constexpr static unsigned Dim = Field::dim;
@@ -280,9 +279,12 @@ namespace ippl {
             // 3. N-Dimensional Kokkos Loop
             ippl::parallel_for(
                 "restrict_fullweight", lev_coarse.f.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const auto... args) {
+                KOKKOS_LAMBDA(const auto& args) {
                     // Pack variadic arguments into a generic array
-                    Kokkos::Array<int, Dim> idxC{static_cast<int>(args)...};
+                    Kokkos::Array<int, Dim> idxC;
+                    for (unsigned d = 0; d < Dim; ++d)
+                        idxC[d] = static_cast<int>(args[d]);
+
                     Kokkos::Array<int, Dim> global_idxC;
 
                     bool outside = false;
@@ -330,6 +332,7 @@ namespace ippl {
                     }
 
                     // Write to coarse grid view using unpacking helper
+                    // apply(fc, args);
                     multigrid::access_view_impl(fc, idxC, std::make_index_sequence<Dim>{}) =
                         sum / denom;
                 });
@@ -373,8 +376,11 @@ namespace ippl {
 
             // 3. N-Dimensional Kokkos Loop over the Fine Grid
             ippl::parallel_for(
-                "prolong_add", lev_fine.u.getFieldRangePolicy(), KOKKOS_LAMBDA(const auto... args) {
-                    Kokkos::Array<int, Dim> idxF{static_cast<int>(args)...};
+                "prolong_add", lev_fine.u.getFieldRangePolicy(), KOKKOS_LAMBDA(const auto& args) {
+                    Kokkos::Array<int, Dim> idxF;
+                    for (unsigned d = 0; d < Dim; ++d)
+                        idxF[d] = static_cast<int>(args[d]);
+
                     Kokkos::Array<int, Dim> global_idxF;
 
                     bool outside = false;
