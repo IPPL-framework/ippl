@@ -207,7 +207,11 @@ namespace ippl {
         unsigned nu1_, nu2_;
         double omega_;
 
-        Field residual(const Field& u, const Field& f) { return f - op_(u); };
+        Field residual(const Field& u, const Field& f) {
+            Field res = f.deepCopy();
+            res       = f - op_(u);
+            return res;
+        };
 
         void vcycle(size_t level) {
             auto& lev = L_[level];
