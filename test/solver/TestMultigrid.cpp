@@ -134,9 +134,19 @@ int main(int argc, char* argv[]) {
         params.add("solver", "preconditioned");
         params.add("preconditioner_type", "multigrid");  // Hooks into your new class
 
-        // If you wired custom parameters in PoissonCG for your MG preconditioner:
-        // params.add("mg_pre_smooth_iters", 2);
-        // params.add("mg_post_smooth_iters", 2);
+        // --- Required by PoissonCG generic setup to prevent IpplException ---
+        params.add("newton_level", 5);
+        params.add("chebyshev_degree", 31);
+        params.add("gauss_seidel_inner_iterations", 2);
+        params.add("gauss_seidel_outer_iterations", 2);
+        params.add("ssor_omega", 1.57079632679);
+        params.add("richardson_iterations", 4);
+        params.add("communication", 1);
+
+        // --- MG Parameters ---
+        params.add("mg_pre_smooth_iters", 2);
+        params.add("mg_post_smooth_iters", 2);
+        params.add("mg_omega", 0.8);
 
         lapsolver.mergeParameters(params);
         lapsolver.setRhs(rhs);
