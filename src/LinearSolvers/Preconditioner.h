@@ -296,12 +296,11 @@ namespace ippl {
         }
 
         Field operator()(Field& r) override {
-
-            // In the FEM solver, which uses the preconditioner, 
+            // In the FEM solver, which uses the preconditioner,
             // we re-use a resultField to avoid allocating new
             // memory at every iteration.
             // In order for the operator calls to not rewrite
-            // on this same field over and over when calling 
+            // on this same field over and over when calling
             // the operators (upper, diag, inverse, lower, etc)
             // we need deep copies to the preconditioner fields.
 
@@ -310,7 +309,7 @@ namespace ippl {
                 ULg_m = upper_and_lower_m(g_m);
                 ULg_m = ULg_m.deepCopy();
                 g_m   = r - ULg_m;
-         
+
                 // The inverse diagonal is applied to the
                 // vector itself to return the result usually.
                 // However, the operator for FEM already
@@ -332,7 +331,7 @@ namespace ippl {
             mesh_type& mesh     = b.get_mesh();
 
             ULg_m = Field(mesh, layout);
-            g_m = Field(mesh, layout);
+            g_m   = Field(mesh, layout);
         }
 
     protected:
@@ -357,23 +356,23 @@ namespace ippl {
         using layout_type             = typename Field::Layout_t;
 
         richardson_preconditioner_alt(OperatorF&& op, InvDiagF&& inverse_diagonal,
-                                  unsigned innerloops = 5)
+                                      unsigned innerloops = 5)
             : preconditioner<Field>("Richardson_alt")
             , innerloops_m(innerloops) {
-            op_m  = std::move(op);
+            op_m               = std::move(op);
             inverse_diagonal_m = std::move(inverse_diagonal);
         }
 
         Field operator()(Field& r) override {
-            // In the FEM solver, which uses the preconditioner, 
+            // In the FEM solver, which uses the preconditioner,
             // we re-use a resultField to avoid allocating new
             // memory at every iteration.
             // In order for the operator calls to not rewrite
-            // on this same field over and over when calling 
+            // on this same field over and over when calling
             // the operators (upper, diag, inverse, lower, etc)
             // we need deep copies to the preconditioner fields.
 
-            g_m = 0;
+            g_m     = 0;
             g_old_m = 0;
 
             for (unsigned int j = 0; j < innerloops_m; ++j) {
@@ -402,8 +401,8 @@ namespace ippl {
             layout_type& layout = b.getLayout();
             mesh_type& mesh     = b.get_mesh();
 
-            Ag_m = Field(mesh, layout);
-            g_m = Field(mesh, layout);
+            Ag_m    = Field(mesh, layout);
+            g_m     = Field(mesh, layout);
             g_old_m = Field(mesh, layout);
         }
 
@@ -443,11 +442,11 @@ namespace ippl {
 
             x = 0;  // Initial guess
 
-            // In the FEM solver, which uses the preconditioner, 
+            // In the FEM solver, which uses the preconditioner,
             // we re-use a resultField to avoid allocating new
             // memory at every iteration.
             // In order for the operator calls to not rewrite
-            // on this same field over and over when calling 
+            // on this same field over and over when calling
             // the operators (upper, diag, inverse, lower, etc)
             // we need deep copies to the preconditioner fields.
 
@@ -554,11 +553,11 @@ namespace ippl {
             static IpplTimings::TimerRef loopTimer = IpplTimings::getTimer("SSOR loop");
             IpplTimings::startTimer(loopTimer);
 
-            // In the FEM solver, which uses the preconditioner, 
+            // In the FEM solver, which uses the preconditioner,
             // we re-use a resultField to avoid allocating new
             // memory at every iteration.
             // In order for the operator calls to not rewrite
-            // on this same field over and over when calling 
+            // on this same field over and over when calling
             // the operators (upper, diag, inverse, lower, etc)
             // we need deep copies to the preconditioner fields.
 
