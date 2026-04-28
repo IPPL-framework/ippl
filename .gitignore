@@ -1,11 +1,14 @@
 # Build directories
 build/
+build_*/
 notebooks/
 cmake-build*/
 CMakeFiles/
 CMakeCache.txt
 *.cmake
-
+*.sh
+vic.*
+*.csv
 # Spack
 .spack-env/
 

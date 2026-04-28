@@ -1,4 +1,3 @@
-"""Module to plot the particle positions from a txt file."""
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -6,7 +5,7 @@ import glob
 from matplotlib.animation import FuncAnimation
 
 # Change this path to the path of the txt file
-PATH = "../build/alvine"
+PATH = "../"
 
 # Find all rank files and combine them
 rank_files = glob.glob(f'{PATH}/particles_rank_*.csv')
@@ -19,7 +18,19 @@ for file in rank_files:
     dfs.append(df)
 
 df = pd.concat(dfs, ignore_index=True)
+# ... after loading and concatenating
+df = pd.concat(dfs, ignore_index=True)
 
+# Convert vorticity column to numeric, coercing errors to NaN
+df['vorticity'] = pd.to_numeric(df['vorticity'], errors='coerce')
+
+# Optionally drop rows with NaN vorticity (if any)
+df.dropna(subset=['vorticity'], inplace=True)
+
+# Then continue as before
+df = df.sort_values(['time', 'index']).reset_index(drop=True)
+
+# ... rest of the code
 # Sort by time and index to ensure proper ordering
 df = df.sort_values(['time', 'index']).reset_index(drop=True)
 

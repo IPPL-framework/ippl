@@ -1,0 +1,35 @@
++ '[' -z '' ']'
++ case "$-" in
++ __lmod_vx=x
++ '[' -n x ']'
++ set +x
+Shell debugging temporarily silenced: export LMOD_SH_DBG_ON=1 for this output (/p/software/juwelsbooster/lmod/8.7.64/init/bash)
+Shell debugging restarted
++ unset __lmod_vx
++ source /p/home/jusers/mostafa3/juwels/ippl/plotting/.venv/bin/activate
+++ deactivate nondestructive
+++ '[' -n '' ']'
+++ '[' -n '' ']'
+++ '[' -n /bin/bash -o -n '' ']'
+++ hash -r
+++ '[' -n '' ']'
+++ unset VIRTUAL_ENV
+++ '[' '!' nondestructive = nondestructive ']'
+++ VIRTUAL_ENV=/p/home/jusers/mostafa3/juwels/ippl/plotting/.venv
+++ export VIRTUAL_ENV
+++ _OLD_VIRTUAL_PATH=/p/software/default/stages/2026/software/nano/8.5-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/NCCL/default-GCCcore-14.3.0-CUDA-13/bin:/p/software/default/stages/2026/software/CMake/4.0.3-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/libarchive/3.8.1-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/zstd/1.5.7-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/lz4/1.10.0-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/gzip/1.14-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/cURL/8.14.1-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/libpsl/0.21.5-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/libiconv/1.18-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/libidn2/2.3.8-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/bzip2/1.0.8-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/ncurses/6.5-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/OpenMPI/5.0.8-GCC-14.3.0/bin:/p/software/default/stages/2026/software/UCC/default-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/PMIx/5.0.8-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/UCX/default-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/libevent/2.1.12-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/OpenSSL/3/bin:/p/software/default/stages/2026/software/hwloc/2.12.1-GCCcore-14.3.0/sbin:/p/software/default/stages/2026/software/hwloc/2.12.1-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/libxml2/2.14.3-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/XZ/5.8.1-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/numactl/2.0.19-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/CUDA/13/nvvm/bin:/p/software/default/stages/2026/software/CUDA/13/bin:/p/software/default/stages/2026/software/GCCcore/14.3.0/bin:/p/software/default/stages/2026/software/make/4.4.1-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/binutils/2.44-GCCcore-14.3.0/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/jsc/bin:/usr/local/jsc/bin:/opt/parastation/bin:/p/software/default/bin
+++ PATH=/p/home/jusers/mostafa3/juwels/ippl/plotting/.venv/bin:/p/software/default/stages/2026/software/nano/8.5-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/NCCL/default-GCCcore-14.3.0-CUDA-13/bin:/p/software/default/stages/2026/software/CMake/4.0.3-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/libarchive/3.8.1-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/zstd/1.5.7-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/lz4/1.10.0-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/gzip/1.14-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/cURL/8.14.1-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/libpsl/0.21.5-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/libiconv/1.18-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/libidn2/2.3.8-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/bzip2/1.0.8-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/ncurses/6.5-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/OpenMPI/5.0.8-GCC-14.3.0/bin:/p/software/default/stages/2026/software/UCC/default-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/PMIx/5.0.8-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/UCX/default-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/libevent/2.1.12-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/OpenSSL/3/bin:/p/software/default/stages/2026/software/hwloc/2.12.1-GCCcore-14.3.0/sbin:/p/software/default/stages/2026/software/hwloc/2.12.1-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/libxml2/2.14.3-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/XZ/5.8.1-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/numactl/2.0.19-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/CUDA/13/nvvm/bin:/p/software/default/stages/2026/software/CUDA/13/bin:/p/software/default/stages/2026/software/GCCcore/14.3.0/bin:/p/software/default/stages/2026/software/make/4.4.1-GCCcore-14.3.0/bin:/p/software/default/stages/2026/software/binutils/2.44-GCCcore-14.3.0/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/jsc/bin:/usr/local/jsc/bin:/opt/parastation/bin:/p/software/default/bin
+++ export PATH
+++ '[' -n '' ']'
+++ '[' -z '' ']'
+++ _OLD_VIRTUAL_PS1=
+++ PS1='(.venv) '
+++ export PS1
+++ '[' -n /bin/bash -o -n '' ']'
+++ hash -r
++ python /p/home/jusers/mostafa3/juwels/ippl/plotting/particle_positions.py
+/p/home/jusers/mostafa3/juwels/ippl/plotting/particle_positions.py:20: FutureWarning: The behavior of DataFrame concatenation with empty or all-NA entries is deprecated. In a future version, this will no longer exclude empty or all-NA columns when determining the result dtypes. To retain the old behavior, exclude the relevant entries before the concat operation.
+  df = pd.concat(dfs, ignore_index=True)
+/p/home/jusers/mostafa3/juwels/ippl/plotting/particle_positions.py:22: FutureWarning: The behavior of DataFrame concatenation with empty or all-NA entries is deprecated. In a future version, this will no longer exclude empty or all-NA columns when determining the result dtypes. To retain the old behavior, exclude the relevant entries before the concat operation.
+  df = pd.concat(dfs, ignore_index=True)
+MovieWriter ffmpeg unavailable; using Pillow instead.

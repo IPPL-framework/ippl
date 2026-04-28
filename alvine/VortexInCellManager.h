@@ -47,7 +47,7 @@ public:
 
     ~VortexInCellManager() {}
 
-    void pre_run() override {
+void pre_run() override {
 
       Inform csvout(NULL, "particles.csv", Inform::OVERWRITE);
       csvout.precision(16);
@@ -100,7 +100,9 @@ public:
 
       this->fsolver_m->runSolver();
       this->computeVelocityField();
-
+      logEnergyDiagnostics();
+      logEnstrophyDiagnostics();
+      logDivergenceDiagnostics();
       this->grid2par();
 
       std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
@@ -204,64 +206,112 @@ void initializeParticles() {
         }
     );
 
-    // 9. Vorticity kernel (device) – unchanged
-    auto omega_view = pc->omega.getView();
-    double origin_x = this->origin_m[0];
-    double origin_y = this->origin_m[1];
-    double rmin_x   = this->rmin_m[0];
-    double rmin_y   = this->rmin_m[1];
-    double rmax_x   = this->rmax_m[0];
-    double rmax_y   = this->rmax_m[1];
-    double np_global = totalP_global;
-    double radius    = 3.0;
+// 9. Particle circulation strength (2D VIC)
+auto omega_view = pc->omega.getView();
+double omega0 = 1.0;         // physical vorticity amplitude
+double Ap = dxp * dyp;       // particle area
 
-    Kokkos::parallel_for(
-        "init_particle_vorticity",
-        nlocal,
-        KOKKOS_LAMBDA(const int i) {
-            double x = R_view(i)[0];
-            double y = R_view(i)[1];
-            double dx = x - origin_x;
-            double dy = y - origin_y;
-            double norm = Kokkos::sqrt(dx*dx + dy*dy);
-            // Example vorticity (replace with your physics)
-            omega_view(i) = (2.0 * (rmax_x - rmin_x)) / np_global;
-        }
-    );
+Kokkos::parallel_for(
+    "init_particle_vorticity",
+    nlocal,
+    KOKKOS_LAMBDA(const int i) {
+        omega_view(i) = omega0 * Ap;
+    }
+);
 
     Kokkos::fence();
 
-    // Diagnostic output 
-    int rank = ippl::Comm->rank();
-    int size = ippl::Comm->size();
+}
 
-    std::cout << "Rank " << rank << "/" << size << " initialized " << nlocal << " particles\n";
-    ippl::Comm->barrier();
+void logEnergyDiagnostics() {
+    double energy = this->computeKineticEnergy();
 
-    // Dump all particles to a file per rank 
-    auto R_host = Kokkos::create_mirror_view(R_view);
-    auto omega_host_debug = Kokkos::create_mirror_view(omega_view);
-    Kokkos::deep_copy(R_host, R_view);
-    Kokkos::deep_copy(omega_host_debug, omega_view);
+    if (!this->energy_initialized_m) {
+        this->energy0_m = energy;
+        this->energy_initialized_m = true;
 
-    std::stringstream fname;
-    fname << "particles_init_rank_" << rank << ".csv";
-    std::ofstream out(fname.str());
-    out << "index,pos_x,pos_y,vorticity\n";
-    for (size_type i = 0; i < nlocal; ++i) {
-        out << i << ","
-            << R_host(i)[0] << ","
-            << R_host(i)[1] << ","
-            << omega_host_debug(i) << "\n";
+        if (ippl::Comm->rank() == 0) {
+            std::ofstream out("energy.csv", std::ios::out);
+            out << "step,time,energy,rel_error\n";
+            out.close();
+        }
+        ippl::Comm->barrier();
     }
-    out.close();
 
-    std::cout << "Rank " << rank << " wrote particle data to " << fname.str() << "\n";
-    ippl::Comm->barrier();
+    double relErr = this->relativeError(energy, this->energy0_m);
+
+    if (ippl::Comm->rank() == 0) {
+        Inform m("energy ");
+        m << "kinetic energy = " << energy
+          << ", relError = " << relErr << endl;
+
+        std::ofstream out("energy.csv", std::ios::app);
+        out.precision(16);
+        out.setf(std::ios::scientific, std::ios::floatfield);
+        out << this->it_m << ","
+            << this->time_m << ","
+            << energy << ","
+            << relErr << "\n";
+        out.close();
+    }
+}
+
+void logEnstrophyDiagnostics() {
+    double enstrophy = this->computeEnstrophy();
+
+    if (!this->enstrophy_initialized_m) {
+        this->enstrophy0_m = enstrophy;
+        this->enstrophy_initialized_m = true;
+
+        if (ippl::Comm->rank() == 0) {
+            std::ofstream out("enstrophy.csv", std::ios::out);
+            out << "step,time,enstrophy,rel_error\n";
+            out.close();
+        }
+        ippl::Comm->barrier();
+    }
+
+    double relErr = this->relativeError(enstrophy, this->enstrophy0_m);
+
+    if (ippl::Comm->rank() == 0) {
+        Inform m("enstrophy ");
+        m << "enstrophy = " << enstrophy
+          << ", relError = " << relErr << endl;
+
+        std::ofstream out("enstrophy.csv", std::ios::app);
+        out.precision(16);
+        out.setf(std::ios::scientific, std::ios::floatfield);
+        out << this->it_m << ","
+            << this->time_m << ","
+            << enstrophy << ","
+            << relErr << "\n";
+        out.close();
+    }
 }
 
 
+void logDivergenceDiagnostics() {
+    double divL2 = this->computeDivergenceL2();
 
+    if (ippl::Comm->rank() == 0) {
+        Inform m("divergence ");
+        m << "L2 = " << divL2 << endl;
+
+        std::ofstream out("divergence.csv", std::ios::app);
+
+        if (this->it_m == 0) {
+            out << "step,time,div_l2\n";
+        }
+
+        out.precision(16);
+        out.setf(std::ios::scientific, std::ios::floatfield);
+
+        out << this->it_m << ","
+            << this->time_m << ","
+            << divL2 << "\n";
+        out.close();
+    }
+}
     void advance() override {
       LeapFrogStep();     
     }
@@ -290,6 +340,9 @@ void initializeParticles() {
       // calculate velocity from stream function
       IpplTimings::startTimer(PTimer);
       this->computeVelocityField();
+      logEnergyDiagnostics();
+      logEnstrophyDiagnostics();
+      logDivergenceDiagnostics();
       IpplTimings::stopTimer(PTimer);
 
       // gather velocity field

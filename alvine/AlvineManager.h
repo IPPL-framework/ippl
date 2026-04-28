@@ -56,7 +56,10 @@ protected:
     Vector_t<double, Dim> rmax_m;
     Vector_t<double, Dim> origin_m;
     Vector_t<double, Dim> hr_m;
-
+    double energy0_m = 0.0;
+    bool energy_initialized_m = false;
+    double enstrophy0_m = 0.0;
+    bool enstrophy_initialized_m = false;
 public:
 
     double getTime() { return time_m; }
@@ -123,6 +126,10 @@ public:
       }
     }
 
+double relativeError(double value, double reference) const {
+    return std::fabs((value - reference) / std::max(std::fabs(reference), 1e-30));
+}
+
 double computeParticleCirculation() {
     double gamma_local = 0.0;
 
@@ -186,6 +193,89 @@ void checkCirculationConservation(double relError, Inform& m) {
             ippl::Comm->abort();
         }
     }
+}
+
+
+double computeKineticEnergy() {
+    double energy_local = 0.0;
+
+    auto& uField = this->fcontainer_m->getUField();
+    auto u_view = uField.getView();
+
+    const double dA = hr_m[0] * hr_m[1];
+    const int nghost = uField.getNghost();
+
+    Kokkos::parallel_reduce(
+        "kinetic_energy",
+        ippl::getRangePolicy(u_view, nghost),
+        KOKKOS_LAMBDA(const int i, const int j, double& lsum) {
+            const double ux = u_view(i, j)[0];
+            const double uy = u_view(i, j)[1];
+            lsum += 0.5 * (ux * ux + uy * uy);
+        },
+        energy_local
+    );
+
+    energy_local *= dA;
+
+    double energy_global = 0.0;
+    ippl::Comm->reduce(energy_local, energy_global, 1, std::plus<double>());
+
+    return energy_global;
+}
+
+void checkEnergyConservation(double energy, double relError, Inform& m) {
+    if (ippl::Comm->rank() == 0) {
+        m << "kinetic energy = " << energy
+          << ", relError = " << relError << endl;
+    }
+}
+
+double computeEnstrophy() {
+    double enstrophy_local = 0.0;
+
+    auto& omegaField = this->fcontainer_m->getOmegaField();
+    auto omega_view = omegaField.getView();
+    const double dA = hr_m[0] * hr_m[1];
+
+    auto localND = this->fcontainer_m->getFL().getLocalNDIndex();
+    const int i0 = localND[0].first();
+    const int i1 = localND[0].last();
+    const int j0 = localND[1].first();
+    const int j1 = localND[1].last();
+
+    Kokkos::parallel_reduce(
+        "enstrophy",
+        Kokkos::MDRangePolicy<Kokkos::Rank<2>>({i0, j0}, {i1 + 1, j1 + 1}),
+        KOKKOS_LAMBDA(const int i, const int j, double& lsum) {
+            const double omega = omega_view(i, j);
+            lsum += 0.5 * omega * omega;
+        },
+        enstrophy_local
+    );
+
+    enstrophy_local *= dA;
+
+    double enstrophy_global = 0.0;
+    ippl::Comm->reduce(enstrophy_local, enstrophy_global, 1, std::plus<double>());
+
+    return enstrophy_global;
+}
+
+
+
+double computeDivergenceL2() {
+    auto& uField = this->fcontainer_m->getUField();
+    uField.fillHalo();
+
+    auto divField = this->fcontainer_m->getOmegaField();
+
+    divField = div(uField);
+
+    double div_l2 = norm(divField, 2);
+
+    // restore omega by recomputing par2grid later if needed
+    return div_l2;
 }
 
 
