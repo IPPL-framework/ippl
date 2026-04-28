@@ -102,6 +102,14 @@ namespace ippl {
             , nu2_(post_smooth_iters)
             , omega_(omega_jacobi) {}
 
+        // --- DEBUGGING - To be deleted ---
+
+        void setDebugPrint(bool enabled) { debug_print_ = enabled; }
+
+        void printDebugState(const std::string& label) const { debug_print_all_levels(label); }
+
+        // --- END OF DEBUGGING ---
+
         Field operator()(Field& b) override {
             L_[0].f = b.deepCopy();
             for (size_t level = 0; level < L_.size(); ++level)
@@ -203,6 +211,9 @@ namespace ippl {
                 }
                 current_level++;
             }
+            // --- DEBUGGING - To be deleted ---
+            debug_print_all_levels("after init_fields");
+            // --- END OF DEBUGGING ---
         }
 
     protected:
@@ -211,7 +222,70 @@ namespace ippl {
         unsigned nu1_, nu2_;
         double omega_;
 
-        Field residual(const Field& u, const Field& f) {
+        // --- DEBUGGING - To be deleted ---
+
+        bool debug_print_ = false;
+
+        void debug_print_field(const Field& field, const std::string& name, size_t level) const {
+            if (!debug_print_) {
+                return;
+            }
+
+            Kokkos::fence();
+
+            const int myRank = ippl::Comm->rank();
+            const int nRanks = ippl::Comm->size();
+
+            for (int rank = 0; rank < nRanks; ++rank) {
+                if (rank == myRank) {
+                    std::cout << "\n";
+                    std::cout << "============================================================\n";
+                    std::cout << "MG DEBUG | rank " << myRank << " | level " << level << " | "
+                              << name << "\n";
+                    std::cout << "owned domain: " << field.getOwned() << "\n";
+                    std::cout << "allocated domain including ghosts: " << field.getAllocated()
+                              << "\n";
+                    std::cout << "nghost: " << field.getNghost() << "\n";
+                    std::cout << "------------------------------------------------------------\n";
+
+                    field.write(std::cout);
+
+                    std::cout << "============================================================\n";
+                    std::cout << std::flush;
+                }
+
+                ippl::Comm->barrier();
+            }
+        }
+
+        void debug_print_level(size_t level, const std::string& label) const {
+            if (!debug_print_) {
+                return;
+            }
+
+            const auto& lev = L_[level];
+
+            std::cout << "\nMG DEBUG LEVEL " << level << ": " << label << "\n";
+            std::cout << "nx = " << lev.nx << "\n";
+            std::cout << "hx = " << lev.hx << "\n";
+            std::cout << "origin = " << lev.origin << "\n";
+
+            debug_print_field(lev.u, "u", level);
+            debug_print_field(lev.f, "f", level);
+            debug_print_field(lev.r, "r", level);
+        }
+
+        void debug_print_all_levels(const std::string& label) const {
+            if (!debug_print_) {
+                return;
+            }
+
+            for (size_t level = 0; level < L_.size(); ++level) {
+                debug_print_level(level, label);
+            }
+        }
+        // --- END OF DEBUGGING ---
+
         Field residual(Field& u, const Field& f) {
             Field res = f.deepCopy();
             res       = f - op_(u);
