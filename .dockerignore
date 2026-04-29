@@ -1,0 +1,13 @@
+.git
+.github
+build
+cmake-build-*
+docs
+doc/html
+*.o
+*.a
+*.so
+*.dylib
+*.pyc
+__pycache__
+.DS_Store
