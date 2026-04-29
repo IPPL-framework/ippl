@@ -43,7 +43,7 @@ namespace ippl {
          * @brief An estimator for the initial guess that is used in Newton-Raphson method of
          * Inverste Transfrom Sampling
          *
-         * @param x Input value.
+         * @param u Input value.
          * @param mean Mean of the distribution.
          * @param stddev Standard deviation of the distribution.
          * @return The estimate value.
@@ -156,7 +156,7 @@ namespace ippl {
              */
             KOKKOS_INLINE_FUNCTION NormalDistribution(const T* par_p)
                 : ippl::random::Distribution<T, Dim, 2 * Dim, NormalDistributionFunctions<T>>(
-                    par_p) {}
+                      par_p) {}
         };
 
     }  // namespace random

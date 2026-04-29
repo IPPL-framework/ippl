@@ -112,7 +112,7 @@ namespace ippl {
 
         ///////////////////////////////////////////////////////////////////////
         /**
-         * @brief Function to update the element partition and the layout of 
+         * @brief Function to update the element partition and the layout of
          * fields in the LagrangeSpace if the layout has been changed during
          * the simulation (for example by the load balancer).
          */
@@ -138,7 +138,7 @@ namespace ippl {
          * @return size_t - The local DOF index
          */
         KOKKOS_FUNCTION size_t getLocalDOFIndex(const size_t& elementIndex,
-                                 const size_t& globalDOFIndex) const override;
+                                                const size_t& globalDOFIndex) const override;
 
         /**
          * @brief Get the global DOF index from the element index and local DOF
@@ -163,7 +163,7 @@ namespace ippl {
         /**
          * @brief Get the global DOF indices (vector of global DOF indices) of an element
          *
-         * @param elementIndex size_t - The index of the element
+         * @param element_index size_t - The index of the element
          *
          * @return Vector<size_t, NumElementDOFs> - The global DOF indices
          */
@@ -203,7 +203,8 @@ namespace ippl {
         /// Functions to access element info from outside /////////////////////
         ///////////////////////////////////////////////////////////////////////
 
-        KOKKOS_FUNCTION point_t getInverseTransposeTransformationJacobian(vertex_points_t pt) const {
+        KOKKOS_FUNCTION point_t
+        getInverseTransposeTransformationJacobian(vertex_points_t pt) const {
             return this->ref_element_m.getInverseTransposeTransformationJacobian(pt);
         }
 
@@ -238,8 +239,8 @@ namespace ippl {
         FieldLHS evaluateAx_diag(FieldLHS& field, F& evalFunction);
 
         /**
-         * @brief Assemble the left stiffness matrix A of the system 
-         * but only for the boundary values, so that they can be 
+         * @brief Assemble the left stiffness matrix A of the system
+         * but only for the boundary values, so that they can be
          * subtracted from the RHS for treatment of Dirichlet BCs
          *
          * @param field The field to assemble the matrix for
@@ -253,9 +254,7 @@ namespace ippl {
         /**
          * @brief Assemble the load vector b of the system Ax = b
          *
-         * @param rhs_field The field to set with the load vector
-         *
-         * @return FieldRHS - The RHS field containing b
+         * @param field The field to set with the load vector
          */
         void evaluateLoadVector(FieldRHS& field) const;
         void evaluateLumpedMass(FieldRHS& field) const;
@@ -298,17 +297,17 @@ namespace ippl {
             KOKKOS_FUNCTION indices_t getMeshVertexNDIndex(const size_t& vertex_index) const;
 
             KOKKOS_FUNCTION size_t getLocalDOFIndex(const indices_t& elementNDIndex,
-                const size_t& globalDOFIndex) const;
+                                                    const size_t& globalDOFIndex) const;
             KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getGlobalDOFIndices(
                 const indices_t& elementNDIndex) const;
 
             KOKKOS_FUNCTION T evaluateRefElementShapeFunction(const size_t& localDOF,
-                const point_t& localPoint) const;
+                                                              const point_t& localPoint) const;
             KOKKOS_FUNCTION point_t evaluateRefElementShapeFunctionGradient(
                 const size_t& localDOF, const point_t& localPoint) const;
         };
 
-        DeviceStruct getDeviceMirror() const; 
+        DeviceStruct getDeviceMirror() const;
 
     private:
         /**

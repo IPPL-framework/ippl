@@ -58,7 +58,8 @@ namespace ippl {
          *
          * @return point_t
          */
-        KOKKOS_FUNCTION point_t globalToLocal(const vertex_points_t&, const point_t&) const;
+        KOKKOS_FUNCTION point_t globalToLocal(const vertex_points_t& global_vertices,
+                                              const point_t& point) const;
 
         /**
          * @brief Transforms a point from local to global coordinates.
