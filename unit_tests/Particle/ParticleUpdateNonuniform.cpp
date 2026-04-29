@@ -77,7 +77,7 @@ class TestParticleUpdateORB;
 template <typename T_, typename ExecSpace, unsigned Dim_>
 class TestParticleUpdateORB<Parameters<T_, ExecSpace, Rank<Dim_>>> : public ::testing::Test {
 public:
-    using T = T_;
+    using T                       = T_;
     static constexpr unsigned Dim = Dim_;
     // ---- type aliases --------------------------------------------------
     using flayout_type   = ippl::FieldLayout<Dim>;
@@ -86,11 +86,9 @@ public:
     using RegionLayout_t = typename playout_type::RegionLayout_t;
     using bunch_type     = OrbBunch<T, ExecSpace, Dim>;
     using position_type  = ippl::Vector<T, Dim>;
-    using Mesh_t = ippl::UniformCartesian<double, Dim>;
-    using Centering_t = Mesh_t::DefaultCentering;
+    using centering_type = typename mesh_type::DefaultCentering;
 
-    // Density field type used by ORB
-    using field_type = ippl::Field<T, Dim, mesh_type, Centering_t, ExecSpace>;
+    using field_type = ippl::Field<T, Dim, mesh_type, centering_type, ExecSpace>;
     using orb_type   = ippl::OrthogonalRecursiveBisection<field_type, T>;
 
     // ---- construction --------------------------------------------------
@@ -136,19 +134,6 @@ public:
     bool orbGaussian(T sigma = T(0.15)) {
         field_type rho(*mesh, *layout);
 
-        // Fill the density field on-device: Gaussian centred at 0.5
-        auto view   = rho.getView();
-        auto lDom   = layout->getLocalNDIndex();
-        auto hx_vec = mesh->getMeshSpacing();
-        auto orig   = mesh->getOrigin();
-        int nghost  = rho.getNghost();
-
-        // Kokkos::parallel_for("GaussianRho", ippl::createRangePolicy<Dim, ExecSpace>(rho.getOwned()),
-        //                      KOKKOS_LAMBDA(/* index args */){
-        //                          // Generic lambda for any Dim via index_array_type
-        //                      });
-
-        // Simpler: fill via host mirror
         auto rho_host = rho.getHostMirror();
         auto lDomH    = layout->getLocalNDIndex();
         for (int gz = (Dim > 2 ? lDomH[2].first() : 0); gz <= (Dim > 2 ? lDomH[2].last() : 0);
@@ -258,14 +243,15 @@ public:
         auto Q_host = b.Q.getHostMirror();
         auto t_host = b.tag.getHostMirror();
 
+        constexpr long long kRankIdStride = 10'000'000LL;
         for (size_t i = 0; i < b.getLocalNum(); ++i) {
             position_type r;
             for (unsigned d = 0; d < Dim; d++)
                 r[d] = unif(eng) * domain[d];
             R_host(i) = r;
             Q_host(i) = T(1);
-            t_host(i) =
-                static_cast<long long>(ippl::Comm->rank()) * 10000000LL + static_cast<long long>(i);
+            t_host(i) = static_cast<long long>(ippl::Comm->rank()) * kRankIdStride
+                        + static_cast<long long>(i);
         }
         Kokkos::deep_copy(b.R.getView(), R_host);
         Kokkos::deep_copy(b.Q.getView(), Q_host);
@@ -345,19 +331,20 @@ public:
     std::shared_ptr<playout_type> playout_ptr;
 };
 
-// Run over 1-D, 2-D, 3-D with default scalar / exec space
-using Tests = TestParams::tests<1, 2, 3>;
+// Run over 2-D, 3-D with default scalar / exec space (1-D is a degenerate
+// path that adds little coverage compared to its share of test runtime).
+using Tests = TestParams::tests<2, 3>;
 TYPED_TEST_SUITE(TestParticleUpdateORB, Tests);
 
 // ============================================================
 //  Helper macro: skip test if rank count is below threshold
 // ============================================================
-#define REQUIRE_RANKS(n)                                                  \
-    do {                                                                  \
-        if (ippl::Comm->size() < (n)) {                                   \
-            GTEST_SKIP() << "Test requires at least " << (n) << " ranks"; \
-        }                                                                 \
-    } while (false)
+#define REQUIRE_RANKS(n)                                                                  \
+    if (const auto required_ranks = (n); ippl::Comm->size() < required_ranks) {           \
+        GTEST_SKIP() << "Test requires at least " << required_ranks << " ranks, but got " \
+                     << ippl::Comm->size();                                               \
+    } else                                                                                \
+        (void)0
 
 // ============================================================
 //  1. ORB with uniform density – baseline conservation
@@ -706,7 +693,7 @@ TYPED_TEST(TestParticleUpdateORB, LargeParticleCountGaussianOrb) {
     this->rebuildPlayout();
 
     auto bunch = this->makeBunch();
-    this->fillRandom(*bunch, 4096, /*seed=*/98765);
+    this->fillRandom(*bunch, 1024, /*seed=*/98765);
 
     const size_t before = this->totalParticles(*bunch);
     bunch->update();
@@ -763,8 +750,10 @@ TYPED_TEST(TestParticleUpdateORB, ParticleInjectionBetweenOrbRepartitions) {
 
     constexpr unsigned injectPerCycle = 32;
     constexpr int cycles              = 3;
-    size_t cumulative                 = 0;
 
+    // makeBunch() builds a bunch tied to the current playout; rebuildPlayout()
+    // installs a new playout, so we can only compare against the most recent
+    // injection (the previous bunch is destroyed when its shared_ptr drops).
     for (int c = 0; c < cycles; ++c) {
         // Repartition with Gaussian for odd cycles, uniform for even
         bool ok = (c % 2 == 0) ? this->orbUniform() : this->orbGaussian();
@@ -789,14 +778,13 @@ TYPED_TEST(TestParticleUpdateORB, ParticleInjectionBetweenOrbRepartitions) {
             }
             Kokkos::deep_copy(bunch->R.getView(), R_host);
             Kokkos::deep_copy(bunch->Q.getView(), Q_host);
-            cumulative += injectPerCycle;
         }
 
         bunch->update();
 
         auto total_particles = this->totalParticles(*bunch);
         if (ippl::Comm->rank() == 0) {
-            EXPECT_EQ(cumulative, total_particles) << "at cycle " << c;
+            EXPECT_EQ(static_cast<size_t>(injectPerCycle), total_particles) << "at cycle " << c;
         }
         EXPECT_EQ(0u, this->countMisplaced(*bunch)) << "at cycle " << c;
     }

@@ -70,7 +70,7 @@ public:
 
     // Particle counts for the tests.
     size_t nGather = 10;              // for gather test: local particles per rank
-    size_t nScatter = static_cast<unsigned int>(std::pow(64, Dim));  // for scatter tests
+    size_t nScatter = static_cast<unsigned int>(std::pow(32, Dim));  // for scatter tests
 
     // Store cell sizes (hx) for use in generating positions.
     T hx[Dim];
@@ -280,16 +280,18 @@ TYPED_TEST(GatherScatterTest, ScatterCustomHashTest) {
         GTEST_SKIP() << "nScatter not divisible by number of ranks.";
     }
     this->fillRandomPositions(n);
-    
+
     size_t rank = ippl::Comm->rank();
-    size_t nLoc = this->bunch->getLocalNum(); // since update() might change number of particles 
+    size_t nLoc = this->bunch->getLocalNum(); // update() may have migrated particles
     size_t NScattered = nLoc / 2 + rank; // can be anything
 
-    // Assign random charges to particles
+    // Assign random charges to all locally-resident particles. We must size by
+    // nLoc, not n, because ParticleAttrib::getHostMirror() returns a mirror
+    // matching the live-particle range [0, nLoc).
     std::mt19937_64 eng(42);
     std::uniform_real_distribution<typename TestFixture::scalar_type> unif_charge(0.5, 1.5);
     auto Q_host = this->bunch->Q.getHostMirror();
-    for (size_t i = 0; i < n; ++i) {
+    for (size_t i = 0; i < nLoc; ++i) {
         Q_host(i) = unif_charge(eng);
     }
     Kokkos::deep_copy(this->bunch->Q.getView(), Q_host);

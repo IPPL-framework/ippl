@@ -374,10 +374,12 @@ public:
             fname << ippl::Comm->size();
             fname << "_manager";
             fname << ".csv";
-            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            const bool firstStep = std::fabs(this->time_m) < 1e-14;
+            Inform csvout(NULL, fname.str().c_str(),
+                          firstStep ? Inform::OVERWRITE : Inform::APPEND);
             csvout.precision(16);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
-            if (std::fabs(this->time_m) < 1e-14) {
+            if (firstStep) {
                 csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
             }
             csvout << this->time_m << " " << fieldEnergy << " " << ExAmp << endl;
@@ -385,8 +387,8 @@ public:
         ippl::Comm->barrier();
     }
 
-    // Overloaded dumpLandau which computes the E-field energy using the particles 
-    // instead of using the E-field on the grid (as above). Since we have E for 
+    // Overloaded dumpLandau which computes the E-field energy using the particles
+    // instead of using the E-field on the grid (as above). Since we have E for
     // each particle, we treat the particles as Monte-Carlo samples to compute
     // the energy integral.
     void dumpLandau() {
@@ -425,10 +427,12 @@ public:
             fname << ippl::Comm->size();
             fname << "_manager";
             fname << ".csv";
-            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            const bool firstStep = std::fabs(this->time_m) < 1e-14;
+            Inform csvout(NULL, fname.str().c_str(),
+                          firstStep ? Inform::OVERWRITE : Inform::APPEND);
             csvout.precision(16);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
-            if (std::fabs(this->time_m) < 1e-14) {
+            if (firstStep) {
                 csvout << "time, Ex_field_energy" << endl;
             }
             csvout << this->time_m << " " << fieldEnergy << endl;

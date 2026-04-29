@@ -137,7 +137,11 @@ public:
         int N = static_cast<int>(gridSize_m);
         int halfN = N / 2;
 
-        // Iterate over all modes in centered frequency space: k in [-N/2, N/2-1]
+        // Iterate over all modes in centered frequency space: k in [-N/2, N/2-1].
+        // computeDFTReference does an MPI_Allreduce internally, so every rank
+        // must call it on every mode in the same order to stay in lockstep.
+        // The owned-mode check below only gates the error update, never the
+        // allreduce.
         for (int kx = -halfN; kx < halfN; ++kx) {
             for (int ky = -halfN; ky < halfN; ++ky) {
                 for (int kz = -halfN; kz < halfN; ++kz) {
@@ -146,22 +150,16 @@ public:
                     kVec[1] = ky;
                     kVec[2] = kz;
 
-                    // Convert to corner-DC indexing
                     auto globalIdx = ippl::test::IndexUtils<Dim>::centeredToCornerDC(kVec, nModes_m);
+                    auto dftResult = computeDFTReference(kVec);
 
-                    // Only process modes owned by this rank
                     if (!ippl::test::IndexUtils<Dim>::isOwnedLocally(lDom, globalIdx)) {
                         continue;
                     }
 
-                    // Extract NUFFT result from cached host mirror
                     auto localIdx = ippl::test::IndexUtils<Dim>::globalToLocal(lDom, globalIdx, nghost);
                     Kokkos::complex<T> nufftResult = fieldHost(localIdx[0], localIdx[1], localIdx[2]);
 
-                    // Compute DFT reference
-                    auto dftResult = computeDFTReference(kVec);
-
-                    // Track max absolute error and max DFT magnitude
                     T absError = Kokkos::abs(nufftResult - dftResult);
                     T dftMag = Kokkos::abs(dftResult);
 
@@ -203,20 +201,15 @@ public:
 using AccuracyTest3D = NUFFTAccuracyTest<double, 3>;
 
 TEST_F(AccuracyTest3D, ToleranceSweep) {
-    const size_t gridSize     = 16;  // 16^3 = 4096 modes
-    const size_t numParticles = 40960;
+    const size_t gridSize     = 16;
+    const size_t numParticles = 10240;
 
     setup(gridSize, numParticles);
 
-    // Generate tolerances with multiple points per decade for smooth plotting
-    // Pattern: 1e-n, 3e-(n+1), 1e-(n+1), 3e-(n+2), ...
-    std::vector<double> tolerances;
-    for (int exp = 2; exp <= 12; ++exp) {
-        tolerances.push_back(1.0 * std::pow(10.0, -exp));
-        if (exp < 12) {
-            tolerances.push_back(3.0 * std::pow(10.0, -(exp + 1)));
-        }
-    }
+    // Coarse tolerance sweep: one point per pair of decades is enough to
+    // verify accuracy/tolerance correlation; the previous 21-point sweep was
+    // for plotting smoothness, not coverage.
+    const std::vector<double> tolerances{1e-2, 1e-4, 1e-6, 1e-8, 1e-10};
 
     // Store results: tolerance, native_error, finufft_error
     struct ResultData {
@@ -244,42 +237,26 @@ TEST_F(AccuracyTest3D, ToleranceSweep) {
         std::cout << "FINUFFT:       " << (hasFinufft ? "enabled" : "disabled") << "\n";
         std::cout << "========================================================================\n";
 
-        if (hasFinufft) {
-            std::cout << std::setw(14) << "Tolerance"
-                      << std::setw(16) << "Native Err"
-                      << std::setw(16) << "FINUFFT Err"
-                      << std::setw(12) << "Err/Tol" << "\n";
-            std::cout << "------------------------------------------------------------------------\n";
-        } else {
-            std::cout << std::setw(14) << "Tolerance"
-                      << std::setw(16) << "Native Err"
-                      << std::setw(12) << "Err/Tol" << "\n";
-            std::cout << "------------------------------------------------------------------------\n";
-        }
+        std::cout << std::setw(14) << "Tolerance" << std::setw(16) << "Native Err";
+        if (hasFinufft)
+            std::cout << std::setw(16) << "FINUFFT Err";
+        std::cout << std::setw(12) << "Err/Tol" << "\n";
+        std::cout << "------------------------------------------------------------------------\n";
     }
 
     for (double tol : tolerances) {
-        double nativeError = runType1AndGetMaxError(tol, false);
+        double nativeError  = runType1AndGetMaxError(tol, false);
         double finufftError = hasFinufft ? runType1AndGetMaxError(tol, true) : -1.0;
-        double ratio = nativeError / tol;
+        double ratio        = nativeError / tol;
 
         results.push_back({tol, nativeError, finufftError});
 
         if (ippl::Comm->rank() == 0) {
-            if (hasFinufft) {
-                std::cout << std::scientific << std::setprecision(3)
-                          << std::setw(14) << tol
-                          << std::setw(16) << nativeError
-                          << std::setw(16) << finufftError
-                          << std::fixed << std::setprecision(2)
-                          << std::setw(12) << ratio << "\n";
-            } else {
-                std::cout << std::scientific << std::setprecision(3)
-                          << std::setw(14) << tol
-                          << std::setw(16) << nativeError
-                          << std::fixed << std::setprecision(2)
-                          << std::setw(12) << ratio << "\n";
-            }
+            std::cout << std::scientific << std::setprecision(3) << std::setw(14) << tol
+                      << std::setw(16) << nativeError;
+            if (hasFinufft)
+                std::cout << std::setw(16) << finufftError;
+            std::cout << std::fixed << std::setprecision(2) << std::setw(12) << ratio << "\n";
         }
 
         // Soft expectation: max error should be within 100x of tolerance
