@@ -17,16 +17,6 @@ The first runner is intentionally minimal:
 docker build -t ippl-runner:local -f tools/browser-runner/Dockerfile .
 ```
 
-## Start the published image
-
-Bind only to `127.0.0.1` on the host:
-
-```bash
-docker run --rm \
-  -p 127.0.0.1:5050:5050 \
-  ghcr.io/ippl-framework/ippl-runner:latest
-```
-
 ## Start a locally built image
 
 Bind only to `127.0.0.1` on the host:
@@ -35,6 +25,29 @@ Bind only to `127.0.0.1` on the host:
 docker run --rm \
   -p 127.0.0.1:5050:5050 \
   ippl-runner:local
+```
+
+## Optional registry image
+
+The GitHub Actions workflow can push `ghcr.io/ippl-framework/ippl-runner:latest`, but some
+organizations prevent public GHCR packages. In that case anonymous pulls fail with `unauthorized`.
+Use the local build above unless the package is public or the user is authenticated with
+`docker login ghcr.io`.
+
+```bash
+docker run --rm \
+  -p 127.0.0.1:5050:5050 \
+  ghcr.io/ippl-framework/ippl-runner:latest
+```
+
+## Start from any runner image
+
+Bind only to `127.0.0.1` on the host:
+
+```bash
+docker run --rm \
+  -p 127.0.0.1:5050:5050 \
+  IMAGE_NAME
 ```
 
 The runner prints a token on startup:
