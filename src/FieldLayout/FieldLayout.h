@@ -201,7 +201,7 @@ namespace ippl {
         FieldLayout(const mpi::Communicator& = MPI_COMM_WORLD);
 
         FieldLayout(mpi::Communicator, const NDIndex<Dim>& domain, std::array<bool, Dim> decomp,
-                    bool isAllPeriodic = false);
+                    bool isAllPeriodic = false, int nghost = 1);
 
         // Destructor: Everything deletes itself automatically ... the base
         // class destructors inform all the FieldLayoutUser's we're going away.
@@ -213,38 +213,29 @@ namespace ippl {
         // FieldLayout constructors:
 
         void initialize(const NDIndex<Dim>& domain, std::array<bool, Dim> decomp,
-                        bool isAllPeriodic = false);
+                        bool isAllPeriodic = false, int nghost = 1);
 
         // Return the domain.
         const NDIndex<Dim>& getDomain() const { return gDomain_m; }
 
-        // Compare FieldLayouts to see if they represent the same domain; if
-        // dimensionalities are different, the NDIndex operator==() will return
-        // false:
+        // Compare FieldLayouts. Different dimensionalities or different global
+        // domains are not equal; same global domain but different per-rank
+        // local-domain decompositions are also not equal.
         template <unsigned Dim2>
         bool operator==(const FieldLayout<Dim2>& x) const {
-
-            // Throw exception if the domains are not the same
-            if (gDomain_m != x.getDomain()) {
-                throw std::runtime_error("FieldLayout: only FieldLayouts with the same global domain should be compared");
-            }
-
-            return gDomain_m == x.getDomain();
-        }
-
-        bool operator==(const FieldLayout<Dim>& x) const {
-
-            // Throw exception if the domains are not the same
-            if (gDomain_m != x.getDomain()) {
-                throw std::runtime_error("FieldLayout: only FieldLayouts with the same global domain should be compared");
-            }
-
-            for (unsigned int i = 0; i < Dim; ++i) {
-                if (hLocalDomains_m(comm.rank())[i] != x.getLocalNDIndex()[i]) {
+            if constexpr (Dim != Dim2) {
+                return false;
+            } else {
+                if (gDomain_m != x.getDomain()) {
                     return false;
                 }
+                for (unsigned int i = 0; i < Dim; ++i) {
+                    if (hLocalDomains_m(comm.rank())[i] != x.getLocalNDIndex()[i]) {
+                        return false;
+                    }
+                }
+                return true;
             }
-            return true;
         }
 
         // for the requested dimension, report if the distribution is
@@ -330,7 +321,7 @@ namespace ippl {
          * Finds all neighboring ranks based on the field layout
          * @param nghost number of ghost cells (default 1)
          */
-        void findNeighbors(int nghost = 1);
+        void findNeighbors(int nghost);
 
         /*!
          * Adds a neighbor to the neighbor list
@@ -388,6 +379,9 @@ namespace ippl {
 
         // Minimum width of all the local domains for each dimension
         unsigned int minWidth_m[Dim];
+
+        // Nghost needed for computing send/receive ranges
+        int nghost_m;
 
         void calcWidths();
     };
