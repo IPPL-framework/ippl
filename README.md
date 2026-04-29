@@ -32,6 +32,7 @@ IPPL makes use of [Kokkos](https://github.com/kokkos/kokkos), [HeFFTe](https://g
 massively parallel toolkit for particle-mesh methods. IPPL supports simulations in one to six dimensions, mixed precision, and asynchronous execution in different execution spaces (e.g. CPUs and GPUs).
 
 **[Installation](#installation)** |
+**[Dev Container](#dev-container-and-codespaces)** |
 **[Contributions](#contributions)** |
 **[CI/CD](#cicd-and-pr-testing)** |
 **[Citing IPPL](#citing-ippl)** |
@@ -40,6 +41,21 @@ massively parallel toolkit for particle-mesh methods. IPPL supports simulations 
 
 # Installation
 We compiled installation [instructions](./INSTALLATION.md) for many HPC systems. 
+
+# Dev Container and Codespaces
+IPPL has a CPU-first development container for browser or local development with MPI, Kokkos,
+HeFFTe, and FFTW. It is intended for runnable manual examples and quick onboarding, not as a
+replacement for machine-specific GPU/HPC builds.
+
+Open the repository in GitHub Codespaces or VS Code Dev Containers, then use:
+```bash
+.devcontainer/scripts/configure.sh
+.devcontainer/scripts/build.sh
+.devcontainer/scripts/test-smoke.sh
+```
+
+The devcontainer configures `build/devcontainer` with the `devcontainer-openmp-fft` CMake preset.
+See [.devcontainer/README.md](.devcontainer/README.md) for details.
 
 # Contributions
 We are open and welcome contributions from others. Please open an issue and a corresponding pull request in the main repository if it is a bug fix or a minor change.

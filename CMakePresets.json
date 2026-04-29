@@ -1,0 +1,64 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "devcontainer-openmp-fft",
+      "displayName": "Dev Container: OpenMP + FFT",
+      "description": "CPU development build for Codespaces/devcontainers with MPI, Kokkos, HeFFTe, FFTW, examples, and tests enabled.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/devcontainer",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": "ON",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_CXX_COMPILER": "mpicxx",
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "Heffte_ENABLE_FFTW": "ON",
+        "Heffte_VERSION": "git.v2.4.1",
+        "IPPL_DEFAULT_TEST_PROCS": "2",
+        "IPPL_ENABLE_ALPINE": "OFF",
+        "IPPL_ENABLE_COSMOLOGY": "OFF",
+        "IPPL_ENABLE_EXAMPLES": "ON",
+        "IPPL_ENABLE_FFT": "ON",
+        "IPPL_ENABLE_SOLVERS": "ON",
+        "IPPL_ENABLE_TESTS": "ON",
+        "IPPL_ENABLE_UNIT_TESTS": "ON",
+        "IPPL_OPENMP_THREADS": "2",
+        "IPPL_PLATFORMS": "SERIAL;OPENMP",
+        "IPPL_USE_STANDARD_FOLDERS": "ON",
+        "Kokkos_VERSION": "git.4.7.02",
+        "MPIEXEC_PREFLAGS": "--oversubscribe"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "devcontainer",
+      "configurePreset": "devcontainer-openmp-fft",
+      "jobs": 2
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "devcontainer-smoke",
+      "configurePreset": "devcontainer-openmp-fft",
+      "filter": {
+        "include": {
+          "name": "^FFT$"
+        }
+      },
+      "execution": {
+        "jobs": 1,
+        "timeout": 600
+      },
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

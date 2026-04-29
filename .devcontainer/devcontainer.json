@@ -1,0 +1,30 @@
+{
+  "name": "IPPL CPU (MPI + Kokkos + HeFFTe)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "workspaceFolder": "/workspaces/ippl",
+  "remoteUser": "vscode",
+  "containerEnv": {
+    "OMPI_ALLOW_RUN_AS_ROOT": "1",
+    "OMPI_ALLOW_RUN_AS_ROOT_CONFIRM": "1",
+    "OMP_NUM_THREADS": "2",
+    "KOKKOS_NUM_THREADS": "2"
+  },
+  "postCreateCommand": ".devcontainer/scripts/configure.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cmake-tools",
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "twxs.cmake"
+      ],
+      "settings": {
+        "cmake.configureOnOpen": false,
+        "cmake.buildDirectory": "${workspaceFolder}/build/devcontainer"
+      }
+    }
+  }
+}
