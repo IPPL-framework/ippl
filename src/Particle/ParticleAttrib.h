@@ -48,9 +48,15 @@ namespace ippl {
 
         using size_type = detail::size_type;
 
-        // Create storage for M particle attributes.  The storage is uninitialized.
-        // New items are appended to the end of the array.
-        void create(size_type) override;
+        // Create storage for M particle attributes. The storage is uninitialized.
+        // New items are appended to the end of the array. When non_destructive is
+        // true, existing entries are preserved across a capacity grow.
+        void create(size_type, bool non_destructive = false) override;
+
+        // Allocate capacity for n particles (multiplied by the default overallocation
+        // factor) without touching the logical particle count. Existing data is
+        // discarded.
+        void alloc(size_type) override;
 
         /*!
          * Particle deletion function. Partition the particles into a valid region
