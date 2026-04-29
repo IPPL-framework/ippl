@@ -89,7 +89,17 @@ namespace ippl {
         }
         
         void resize(size_type n) { Kokkos::resize(dview_m, n); }
-        
+
+        /*!
+         * @brief Reallocate the underlying view with a new size.
+         *
+         * This function reallocates the device view to a new size. Existing data is
+         * discarded and should not be relied upon after this call. Note that this function does not
+         * apply overallocation. For use from outside, call `ParticleAttrib::alloc(size_type)`
+         * instead.
+         *
+         * @param n The new size to allocate in the internal view.
+         */
         void realloc(size_type n) { Kokkos::realloc(dview_m, n); }
 
         void print() {

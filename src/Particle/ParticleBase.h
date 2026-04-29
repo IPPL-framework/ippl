@@ -259,8 +259,8 @@ namespace ippl {
         /*!
          * Pre-allocate capacity for nLocal particles on every attribute, without
          * touching the logical particle count or assigning IDs. Caller is
-         * responsible for filling the entries.
-         * 
+         * responsible for filling the entries. Overallocation is additionally applied.
+         *
          * @param nLocal capacity (in particles) to allocate per attribute.
          */
         void alloc(size_type nLocal);
