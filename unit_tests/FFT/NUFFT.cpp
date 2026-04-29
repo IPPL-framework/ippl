@@ -622,6 +622,43 @@ public:
         field.fillHalo();
     }
 
+    // Zero everything in `field` (sized to the upsampled grid) outside the
+    // corner-DC band that NUFFT treats as actual modes.
+    void zeroNonCornerDCBand(field_type& field, const ippl::Vector<int, Dim>& nModes) {
+        auto fieldView = field.getView();
+        const int nghost = field.getNghost();
+        const auto& lDom = field.getLayout().getLocalNDIndex();
+
+        ippl::Vector<int, Dim> localFirst, localLength;
+        for (unsigned d = 0; d < Dim; ++d) {
+            localFirst[d]  = lDom[d].first();
+            localLength[d] = lDom[d].length();
+        }
+
+        // 2 * nModes is the upsampled grid size in each dim; the band is
+        // [0, n/2) U [n + n/2, 2n).
+        ippl::Vector<int, Dim> nModesD = nModes;
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>, exec_space>;
+        Kokkos::parallel_for(
+            "zero_outside_corner_dc",
+            mdrange_type({0, 0, 0}, {localLength[0], localLength[1], localLength[2]}),
+            KOKKOS_LAMBDA(const int li, const int lj, const int lk) {
+                auto in_band = [](int g, int n) {
+                    return (g >= 0 && g < n / 2) || (g >= n + n / 2 && g < 2 * n);
+                };
+                const int gi = li + localFirst[0];
+                const int gj = lj + localFirst[1];
+                const int gk = lk + localFirst[2];
+                if (!(in_band(gi, nModesD[0]) && in_band(gj, nModesD[1])
+                      && in_band(gk, nModesD[2]))) {
+                    fieldView(li + nghost, lj + nghost, lk + nghost) = Kokkos::complex<T>(0, 0);
+                }
+            });
+        Kokkos::fence();
+        field.fillHalo();
+    }
+
     void generateConstantField(field_type& field, T realVal = 1.0, T imagVal = 0.0) {
         auto field_host = field.getHostMirror();
         int nghost      = field.getNghost();
@@ -742,6 +779,15 @@ public:
         }
 
         generateRandomField(field);
+
+        // When the user-supplied "modes" field lives on the upsampled grid,
+        // NUFFT type-2 only treats the corner-DC band as real modes and zeros
+        // everything else during the pre-correction step. Mirror that here so
+        // the DFT reference (which iterates the full grid) and NUFFT see the
+        // same input data.
+        if (useUpsampling) {
+            zeroNonCornerDCBand(field, nModes);
+        }
 
         // Get test particle position before transform
         auto testPos = getTestParticlePosition();

@@ -7,13 +7,6 @@
 #include "Interpolation/Scatter/ScatterArgumentsBase.h"
 
 namespace ippl::Interpolation::detail {
-    template <typename RealType, int Dim, int W>
-    struct KwPad {
-        static constexpr int base   = Dim * W;
-        static constexpr int pad    = (base & 1) ? 0 : 1;  // force stride odd
-        static constexpr int stride = base + pad;
-    };
-
     template <int W, class Types, class Policy>
     struct AtomicScatter {
         static constexpr bool requires_binning = false;
@@ -24,7 +17,7 @@ namespace ippl::Interpolation::detail {
         using memory_space    = typename Types::memory_space;
         using execution_space = typename Types::execution_space;
 
-        using team_policy = Kokkos::TeamPolicy<execution_space, Kokkos::LaunchBounds<64, 16>>;
+        using team_policy = Kokkos::TeamPolicy<execution_space>;
         using team_member = typename team_policy::member_type;
 
         using scratch_space = typename execution_space::scratch_memory_space;
@@ -38,8 +31,28 @@ namespace ippl::Interpolation::detail {
             return result;
         }();
 
-        // Warp size (vector length)
-        static constexpr int vector_length = 32;
+        // Per-backend defaults. Host backends require vector_length=1 and
+        // team_size=1; HIP wavefronts are 64-wide; CUDA warps are 32-wide.
+        static constexpr bool is_serial =
+#ifdef KOKKOS_ENABLE_SERIAL
+            std::is_same_v<execution_space, Kokkos::Serial>;
+#else
+            false;
+#endif
+        static constexpr bool is_openmp =
+#ifdef KOKKOS_ENABLE_OPENMP
+            std::is_same_v<execution_space, Kokkos::OpenMP>;
+#else
+            false;
+#endif
+        static constexpr bool is_hip =
+#ifdef KOKKOS_ENABLE_HIP
+            std::is_same_v<execution_space, Kokkos::HIP>;
+#else
+            false;
+#endif
+        static constexpr bool is_host_backend = is_serial || is_openmp;
+        static constexpr int  vector_length   = is_host_backend ? 1 : (is_hip ? 64 : 32);
 
         // Scratch view types for N particles
         using ScratchBaseView    = Kokkos::View<int**, scratch_space, unmanaged>;
@@ -50,13 +63,16 @@ namespace ippl::Interpolation::detail {
         struct Arguments : ScatterArgumentsBase<Arguments, Types> {
             using PermuteView = Kokkos::View<uint64_t*, memory_space>;
             PermuteView permute;
+            int particles_per_team = 1;
 
             template <class Field, class Positions, class Values, class Kernel>
             static Arguments create(Field& field, const Positions& pos, const Values& vals,
-                                    const Kernel& k, const ScatterConfig<Dim>&,
+                                    const Kernel& k, const ScatterConfig<Dim>& cfg,
                                     const BinningResult<Dim, memory_space>& binning = {}) {
                 Arguments a;
                 a.initBase(field, pos, vals, k);
+                a.particles_per_team =
+                    is_serial ? 1 : (cfg.team_size > 0 ? cfg.team_size : 2);
                 if constexpr (Policy::use_sorting) {
                     a.permute = binning.permute;
                 }
@@ -64,26 +80,27 @@ namespace ippl::Interpolation::detail {
             }
         };
 
-        // Compute scratch size for N particles per team
-        template <bool>
+        // Compute per-team scratch size for `particles_per_team` particles.
+        template <bool /*IsComplex*/>
         static size_t compute_scratch_size(int particles_per_team) {
             return ScratchBaseView::shmem_size(particles_per_team, Dim)
                    + ScratchWeightsView::shmem_size(particles_per_team, Dim, W)
                    + G0View::shmem_size(particles_per_team, Dim);
         }
 
-        template <bool>
-        static size_t compute_scratch_size(Vector<int, 3> /* tile_size */, int /* team_size */,
-                                           int /* z_batches */ = 1) {
+        // Uniform interface required by Scatter::clamp_tile_to_shmem; AtomicScatter
+        // has nothing to clamp (requires_binning == false), so this returns 0 and
+        // is reached only via the discarded `if constexpr` branch.
+        template <bool /*IsComplex*/>
+        static size_t compute_scratch_size(const Vector<int, Dim>& /*tile_size*/,
+                                           int /*team_size*/, int /*z_batches*/ = 1) {
             return 0;
         }
 
         Arguments args;
-        int particles_per_team_;
 
         AtomicScatter(const Arguments& a)
-            : args(a)
-            , particles_per_team_(2) {}
+            : args(a) {}
 
         // Convert linear stencil index to multi-dimensional indices
         KOKKOS_INLINE_FUNCTION Kokkos::Array<int, Dim> linear_to_multi(int linear_idx) const {
@@ -247,14 +264,14 @@ namespace ippl::Interpolation::detail {
         }
 
         void run(size_t) {
-            const int team_size       = particles_per_team_;
+            const int team_size       = args.particles_per_team;
             const size_t scratch_size = compute_scratch_size<true>(team_size);
             const size_t n_teams      = (args.n_particles + team_size - 1) / team_size;
 
             team_policy policy(n_teams, team_size, vector_length);
             policy.set_scratch_size(0, Kokkos::PerTeam(scratch_size));
 
-            Kokkos::parallel_for("AtomicScatterVectorized", policy, *this);
+            Kokkos::parallel_for("AtomicScatter", policy, *this);
         }
     };
 

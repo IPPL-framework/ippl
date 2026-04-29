@@ -9,6 +9,17 @@
 
 using MemorySpaces = ippl::detail::TypeForAllSpaces<::testing::Types>::memory_spaces_type;
 
+// DefaultBufferHandler::getBuffer() rounds requests up to a 4 KiB page so the
+// GPU-aware MPI registration cache is not churned by tiny allocations. The
+// tests below compare against the page-aligned size, not the raw request.
+constexpr size_t kBufferPageSize = 4096;
+constexpr size_t expectedSize(size_t requested) {
+    if (requested < kBufferPageSize) {
+        return kBufferPageSize;
+    }
+    return ((requested + kBufferPageSize - 1) / kBufferPageSize) * kBufferPageSize;
+}
+
 template <typename MemorySpace>
 class TypedBufferHandlerTest : public ::testing::Test {
 protected:
@@ -37,7 +48,7 @@ TYPED_TEST_SUITE(TypedBufferHandlerTest, MemorySpaces);
 TYPED_TEST(TypedBufferHandlerTest, GetBuffer_EmptyFreeBuffers) {
     auto buffer = this->handler->getBuffer(100, 1.0);
     ASSERT_NE(buffer, nullptr);
-    EXPECT_EQ(buffer->getBufferSize(), 100);
+    EXPECT_EQ(buffer->getBufferSize(), expectedSize(100));
     EXPECT_EQ(this->handler->usedBuffersSize(), 1);
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
@@ -48,7 +59,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetBuffer_SuitableBufferAvailable) {
     this->handler->freeBuffer(buffer1);
 
     auto buffer2 = this->handler->getBuffer(40, 1.0);
-    EXPECT_EQ(buffer2->getBufferSize(), 50);
+    EXPECT_EQ(buffer2->getBufferSize(), expectedSize(50));
     EXPECT_EQ(this->handler->usedBuffersSize(), 1);
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
@@ -85,15 +96,21 @@ TYPED_TEST(TypedBufferHandlerTest, DeleteAllBuffers) {
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
 
-// Test: Allocating a buffer larger than any available free buffer resizes the largest free buffer
+// Test: Allocating a buffer larger than any available free buffer falls back
+// to a fresh allocation; the smaller free buffer is retained in the pool so a
+// later small request can reuse it (and so we never call free()+alloc() on the
+// same virtual address, which would invalidate the GPU-aware MPI registration
+// cache).
 TYPED_TEST(TypedBufferHandlerTest, GetBuffer_ResizeLargerThanAvailable) {
-    auto smallBuffer = this->handler->getBuffer(50, 1.0);
+    constexpr size_t small = 50;
+    constexpr size_t large = kBufferPageSize + 1;
+    auto smallBuffer = this->handler->getBuffer(small, 1.0);
     this->handler->freeBuffer(smallBuffer);
 
-    auto largeBuffer = this->handler->getBuffer(200, 1.0);
-    EXPECT_EQ(largeBuffer->getBufferSize(), 200);
+    auto largeBuffer = this->handler->getBuffer(large, 1.0);
+    EXPECT_EQ(largeBuffer->getBufferSize(), expectedSize(large));
     EXPECT_EQ(this->handler->usedBuffersSize(), 1);
-    EXPECT_EQ(this->handler->freeBuffersSize(), 0);
+    EXPECT_EQ(this->handler->freeBuffersSize(), 1);
 }
 
 // Test: Allocating a buffer that matches the size of a free buffer exactly
@@ -102,7 +119,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetBuffer_ExactSizeMatch) {
     this->handler->freeBuffer(buffer1);
 
     auto buffer2 = this->handler->getBuffer(100, 1.0);
-    EXPECT_EQ(buffer2->getBufferSize(), 100);
+    EXPECT_EQ(buffer2->getBufferSize(), expectedSize(100));
     EXPECT_EQ(this->handler->usedBuffersSize(), 1);
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
@@ -147,7 +164,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_EmptyHandler) {
 // Test: Allocating increases used buffer size correctly
 TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterBufferAllocation) {
     auto buffer = this->handler->getBuffer(100, 1.0);
-    EXPECT_EQ(this->handler->getUsedSize(), 100);
+    EXPECT_EQ(this->handler->getUsedSize(), expectedSize(100));
     EXPECT_EQ(this->handler->getFreeSize(), 0);
 }
 
@@ -157,7 +174,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterFreeBuffer) {
     this->handler->freeBuffer(buffer);
 
     EXPECT_EQ(this->handler->getUsedSize(), 0);
-    EXPECT_EQ(this->handler->getFreeSize(), 100);
+    EXPECT_EQ(this->handler->getFreeSize(), expectedSize(100));
 }
 
 // Test: Correct size is computed after freeing all buffers
@@ -168,7 +185,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterFreeAllBuffers) 
     this->handler->freeAllBuffers();
 
     EXPECT_EQ(this->handler->getUsedSize(), 0);
-    EXPECT_EQ(this->handler->getFreeSize(), 150);
+    EXPECT_EQ(this->handler->getFreeSize(), expectedSize(50) + expectedSize(100));
 }
 
 // Test: Deleting all buffers results in zero free or used buffer sizes
@@ -182,15 +199,16 @@ TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_AfterDeleteAllBuffers
     EXPECT_EQ(this->handler->getFreeSize(), 0);
 }
 
-// Test: Buffer size is correctly accounted for if a free buffer is available but we request a larger one, thus reallocating this one
 TYPED_TEST(TypedBufferHandlerTest, GetAllocatedAndFreeSize_ResizeBufferLargerThanAvailable) {
-    auto smallBuffer = this->handler->getBuffer(50, 1.0);
+    constexpr size_t small = 50;
+    constexpr size_t large = kBufferPageSize + 1;
+    auto smallBuffer = this->handler->getBuffer(small, 1.0);
     this->handler->freeBuffer(smallBuffer);
 
-    auto largeBuffer = this->handler->getBuffer(200, 1.0);
+    auto largeBuffer = this->handler->getBuffer(large, 1.0);
 
-    EXPECT_EQ(this->handler->getUsedSize(), 200);
-    EXPECT_EQ(this->handler->getFreeSize(), 0);
+    EXPECT_EQ(this->handler->getUsedSize(), expectedSize(large));
+    EXPECT_EQ(this->handler->getFreeSize(), expectedSize(small));
 }
 
 int main(int argc, char* argv[]) {

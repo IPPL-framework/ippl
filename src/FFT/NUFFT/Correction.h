@@ -9,7 +9,6 @@
 #include "Types/ViewTypes.h"
 
 #include "FFT/NUFFT/ESKernel.h"
-#include "FFT/NUFFT/Quadrature.h"
 #include "FFT/NUFFT/NUFFTUtilities.h"
 
 namespace ippl {
@@ -27,14 +26,14 @@ namespace ippl {
         // where the exp(+i pi k / N) arises because the kernel is evaluated
         // at (x_p / h - j - 1/2) instead of (x_p / h - j).
         //
-        // Type 1: f_k = conj(G_hat_k * factor)
-        //   requires  factor = deconv * exp(-i pi k / N)   [negative phase]
+        // The shared `factor` stored in the `factors` views is
+        //   factor = deconv * exp(-i pi k / N)   [negative phase]
         //
-        // Type 2: G_hat_k = N * f_k * conj(factor)
-        //   requires  conj(factor) = deconv * exp(+i pi k / N)  [positive phase]
-        //
-        // The factors array always stores the Type-1 factor (negative phase).
-        // Type-2 functions apply conj(factor) explicitly.
+        // Type 1 (post-FFT):  f_k = conj(G_hat_k * factor)
+        // Type 2 (pre-IFFT):  G_hat_k = f_k * factor
+        //   The +i pi phase needed by the cell-centered gather emerges from the
+        //   IFFT of the conjugate-symmetric mode field, so no explicit conj() is
+        //   applied here.
         // ====================================================================
 
         /**
@@ -140,7 +139,7 @@ namespace ippl {
                     {local_first[0], local_first[1], local_first[2]},
                     {local_last[0] + 1, local_last[1] + 1, local_last[2] + 1}),
                 KOKKOS_LAMBDA(int gi, int gj, int gk) {
-                    // Corner-DC layout: modes in [0, N/2) ∪ [N+N/2, 2N)
+                    // Corner-DC layout: modes in [0, N/2) U [N+N/2, 2N)
                     auto in_bounds = [&](int g, int n) {
                         return (g >= 0 && g < n / 2) || (g >= n + n / 2 && g < 2 * n);
                     };
@@ -177,15 +176,10 @@ namespace ippl {
          * @brief Apply pre-correction for Type 2 NUFFT (pre-IFFT).
          *
          * Type 2: uniform Fourier modes -> nonuniform points.
-         * Before the IFFT and cell-centered gather, the mode field must be
-         * pre-multiplied so that the gather recovers the correct values:
-         *
-         *   G_hat_k = N * f_k * conj(factor_k)
-         *
-         * where factor_k = deconv_k * exp(-i pi k / N)  (stored in `factors`),
-         * so conj(factor_k) = deconv_k * exp(+i pi k / N).
-         *
-         * Entries outside the mode band are set to zero.
+         * Before the IFFT and cell-centered gather, the mode field is
+         * pre-multiplied by `factor_k = deconv_k * exp(-i pi k / N)` so the
+         * gather recovers the correct values. Entries outside the mode band
+         * are set to zero.
          */
         template <typename FieldIn, typename FieldOut, typename ExecSpace, typename T>
         void applyPreCorrectionType2(
@@ -211,8 +205,6 @@ namespace ippl {
                 local_first[d] = lDom[d].first();
                 local_last[d]  = lDom[d].last();
             }
-
-            Kokkos::deep_copy(output_view, complex_type(0, 0));
 
             auto f0 = factors[0];
             auto f1 = factors[1];
@@ -244,13 +236,11 @@ namespace ippl {
                             return (g < n) ? g : g - n;
                         };
 
-                        // factor = deconv * exp(-i pi freq / N_grid)
                         const complex_type factor =
                             f0(rescale(gi, nx)) * f1(rescale(gj, ny)) * f2(rescale(gk, nz));
 
-                        // G_hat_k = f_k * conj(factor)  [conj gives +i pi phase]
                         output_view(li_out, lj_out, lk_out) =
-                            input_view(li_in, lj_in, lk_in) * Kokkos::conj(factor);
+                            input_view(li_in, lj_in, lk_in) * factor;
                     } else {
                         output_view(li_out, lj_out, lk_out) = complex_type(0, 0);
                     }
@@ -325,10 +315,7 @@ namespace ippl {
          * Same as applyPreCorrectionType2 but operates directly on a field
          * already in mode space (0..n_modes[d]-1 per dim, corner-DC).
          *
-         *   field(gi,gj,gk) <- field(gi,gj,gk) * conj( f0(gi)*f1(gj)*f2(gk) )
-         *
-         * The conj gives the +i pi phase needed for the IFFT + cell-centered gather
-         * to recover the correct values.
+         *   field(gi,gj,gk) <- field(gi,gj,gk) * f0(gi) * f1(gj) * f2(gk)
          */
         template <typename FieldType, typename ExecSpace, typename T>
         void applyPrecorrectionPruned(
@@ -372,10 +359,7 @@ namespace ippl {
                     const int lj = gj - local_first[1] + nghost;
                     const int lk = gk - local_first[2] + nghost;
 
-                    // factor = deconv * exp(-i pi freq / N_grid)
                     const complex_type factor = f0(gi) * f1(gj) * f2(gk);
-
-                    // G_hat_k = f_k * conj(factor)  [conj gives +i pi phase]
                     view(li, lj, lk) *= factor;
                 });
 
