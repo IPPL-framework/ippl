@@ -1,24 +1,37 @@
 //
-// benchmarkParticleUpdate.cpp
+// benchmarkParticleUpdateScaling.cpp
 //
-// Per-phase IpplTimings benchmark for particle update with selectable
-// count-exchange mode (RMA / P2P / Alltoall) and warmup steps.
+// Scaling benchmark for particle update. Times only ParticleSpatialLayout::update()
+// (with barrier before/after), reports per-step max wall time across ranks, and
+// appends a CSV row per run.
 //
 // Usage:
-//   srun ./benchmarkParticleUpdate Nx Ny Nz nParticles nSteps
+//   srun ./benchmarkParticleUpdateScaling Nx Ny Nz nParticles nSteps
 //       [--warmup N] [--exchange rma|p2p|alltoall]
-//       [--overallocate F] [--info N]
+//       [--ranks-per-node R] [--overallocate F] [--info N]
+//
+// --ranks-per-node defaults to the number of MPI ranks (single-node). On a
+// multi-node run, pass the actual GPUs/CPUs per node so the CSV reports it.
 //
 
 #include "Ippl.h"
 
 #include <Kokkos_Random.hpp>
+#include <chrono>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <limits>
+#include <numeric>
 #include <random>
 #include <string>
+#include <vector>
 
 #include "BenchParticles.h"
 #include "Utility/IpplTimings.h"
+
+using Clock = std::chrono::steady_clock;
+using Sec   = std::chrono::duration<double>;
 
 int main(int argc, char* argv[]) {
     using namespace bench;
@@ -31,7 +44,7 @@ int main(int argc, char* argv[]) {
                 std::cerr << "Usage: " << argv[0]
                           << " Nx Ny Nz nParticles nSteps"
                              " [--warmup N] [--exchange rma|p2p|alltoall]"
-                             " [--overallocate F] [--info N]\n";
+                             " [--ranks-per-node R] [--overallocate F] [--info N]\n";
             ippl::finalize();
             return 1;
         }
@@ -43,6 +56,7 @@ int main(int argc, char* argv[]) {
         int warmupSteps         = 5;
         std::string exchangeStr = "alltoall";
         int infoEvery           = 0;
+        int ranksPerNode        = 0;  // 0 → fill in from comm size below
 
         for (int i = 6; i < argc; ++i) {
             std::string flag = argv[i];
@@ -52,11 +66,13 @@ int main(int argc, char* argv[]) {
                 exchangeStr = argv[++i];
             else if (flag == "--info" && i + 1 < argc)
                 infoEvery = std::stoi(argv[++i]);
+            else if (flag == "--ranks-per-node" && i + 1 < argc)
+                ranksPerNode = std::stoi(argv[++i]);
         }
 
         const ippl::CountExchange exchangeMode = parseMode(exchangeStr);
 
-        msg << "benchmarkParticleUpdate" << endl
+        msg << "benchmarkParticleUpdateScaling\n"
             << "nt=" << nt << " Np=" << totalP << " grid=" << nr << " exchange=" << exchangeStr
             << " warmup=" << warmupSteps << endl;
 
@@ -84,35 +100,26 @@ int main(int argc, char* argv[]) {
         auto P           = std::make_unique<bunch_type>(PL, isParallel);
 
         unsigned long int nloc = totalP / ippl::Comm->size();
-
-        static IpplTimings::TimerRef tCreate = IpplTimings::getTimer("particlesCreation");
-        IpplTimings::startTimer(tCreate);
-
         P->create(nloc);
 
-        std::mt19937_64 eng[Dim];
-        for (unsigned i = 0; i < Dim; ++i) {
-            eng[i].seed(42 + i * Dim);
-            eng[i].discard(nloc * ippl::Comm->rank());
-        }
-        std::uniform_real_distribution<double> unif(0, 1);
+        Kokkos::Random_XorShift64_Pool<> initPool(
+            static_cast<uint64_t>(42 + ippl::Comm->rank() * nloc));
 
-        typename bunch_type::particle_position_type::host_mirror_type R_host = P->R.getHostMirror();
-
-        for (unsigned long int i = 0; i < nloc; ++i)
-            for (int d = 0; d < 3; ++d)
-                R_host(i)[d] = unif(eng[d]);
-
-        Kokkos::deep_copy(P->R.getView(), R_host);
+        auto R_view = P->R.getView();
+        Kokkos::parallel_for(
+            "init_positions", Kokkos::RangePolicy<>(0, (int)nloc), KOKKOS_LAMBDA(const int i) {
+                auto gen = initPool.get_state();
+                for (int d = 0; d < 3; ++d)
+                    R_view(i)[d] = gen.drand();
+                initPool.free_state(gen);
+            });
+        Kokkos::fence();
         P->qm = 1.0 / totalP;
         P->E  = 0.0;
 
-        IpplTimings::stopTimer(tCreate);
-
-        static IpplTimings::TimerRef tUpdate = IpplTimings::getTimer("ParticleUpdate");
-        IpplTimings::startTimer(tUpdate);
+        ippl::Comm->barrier();
         P->update();
-        IpplTimings::stopTimer(tUpdate);
+        ippl::Comm->barrier();
 
         if (ippl::Comm->rank() == 0)
             std::cout << "Running " << warmupSteps << " warmup step(s)...\n";
@@ -130,27 +137,18 @@ int main(int argc, char* argv[]) {
                     pool.free_state(gen);
                 });
             Kokkos::fence();
-
             P->R = P->R + dt * P->P;
             P->update();
             P->P = P->P + dt * P->qm * P->E;
         }
 
-        IpplTimings::resetAllTimers();
-
         if (ippl::Comm->rank() == 0)
-            std::cout << "Warmup done. Timers reset. Starting timed run.\n";
+            std::cout << "Warmup done. Starting timed run.\n";
 
-        static IpplTimings::TimerRef tMain  = IpplTimings::getTimer("mainTimer");
-        static IpplTimings::TimerRef tRandP = IpplTimings::getTimer("RandomP");
-        static IpplTimings::TimerRef tPos   = IpplTimings::getTimer("positionUpdate");
-        static IpplTimings::TimerRef tVel   = IpplTimings::getTimer("velocityUpdate");
-        tUpdate = IpplTimings::getTimer("ParticleUpdate");
-
-        IpplTimings::startTimer(tMain);
+        std::vector<double> stepTimes;
+        stepTimes.reserve(nt);
 
         for (unsigned int it = 0; it < nt; ++it) {
-            IpplTimings::startTimer(tRandP);
             {
                 auto P_view = P->P.getView();
                 Kokkos::parallel_for(
@@ -163,30 +161,62 @@ int main(int argc, char* argv[]) {
                     });
                 Kokkos::fence();
             }
-            IpplTimings::stopTimer(tRandP);
 
-            IpplTimings::startTimer(tPos);
             P->R = P->R + dt * P->P;
-            IpplTimings::stopTimer(tPos);
 
-            IpplTimings::startTimer(tUpdate);
+            ippl::Comm->barrier();
+            auto t0 = Clock::now();
+
             P->update();
-            IpplTimings::stopTimer(tUpdate);
 
-            IpplTimings::startTimer(tVel);
+            Kokkos::fence();
+            ippl::Comm->barrier();
+            double elapsed = Sec(Clock::now() - t0).count();
+            stepTimes.push_back(elapsed);
+
             P->P = P->P + dt * P->qm * P->E;
-            IpplTimings::stopTimer(tVel);
 
-            if (infoEvery > 0 && (it + 1) % infoEvery == 0 && ippl::Comm->rank() == 0) {
+            if (infoEvery > 0 && (it + 1) % infoEvery == 0 && ippl::Comm->rank() == 0)
                 std::cout << "  step " << (it + 1) << "/" << nt
                           << "  local particles: " << P->getLocalNum() << "\n";
-            }
         }
 
-        IpplTimings::stopTimer(tMain);
+        std::vector<double> maxTimes(nt);
+        MPI_Reduce(stepTimes.data(), maxTimes.data(), (int)nt, MPI_DOUBLE, MPI_MAX, 0,
+                   MPI_COMM_WORLD);
 
-        IpplTimings::print();
-        IpplTimings::print(std::string("timing_") + exchangeStr + ".dat");
+        if (ippl::Comm->rank() == 0) {
+            double total  = std::accumulate(maxTimes.begin(), maxTimes.end(), 0.0);
+            double minVal = *std::min_element(maxTimes.begin(), maxTimes.end());
+            double maxVal = *std::max_element(maxTimes.begin(), maxTimes.end());
+            double mean   = total / (double)nt;
+
+            std::cout << "\nParticleUpdate stats (max across ranks per step):\n"
+                      << "  total=" << total << " s\n"
+                      << "  mean=" << mean << " s\n"
+                      << "  min=" << minVal << " s\n"
+                      << "  max=" << maxVal << " s\n";
+
+            const std::string csvPath = "particle_scaling_results.csv";
+            const bool fileExists     = std::ifstream(csvPath).good();
+            std::ofstream csv(csvPath, std::ios::app);
+            if (!csv) {
+                std::cerr << "Could not open " << csvPath << " for writing\n";
+            } else {
+                if (!fileExists)
+                    csv << "exchange_mode,num_ranks,ranks_per_node,num_nodes,"
+                           "update_total_s,update_mean_s,"
+                           "update_min_s,update_max_s,nsteps\n";
+
+                const int nRanks = ippl::Comm->size();
+                const int rpn    = (ranksPerNode > 0) ? ranksPerNode : nRanks;
+                const int nNodes = (nRanks + rpn - 1) / rpn;
+                csv << std::fixed << std::setprecision(6) << exchangeStr << "," << nRanks << ","
+                    << rpn << "," << nNodes << "," << total << "," << mean << "," << minVal << ","
+                    << maxVal << "," << nt << "\n";
+                std::cout << "Appended results to " << csvPath << "\n";
+            }
+        }
     }
     ippl::finalize();
     return 0;
