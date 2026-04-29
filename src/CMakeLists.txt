@@ -47,6 +47,14 @@ target_compile_options(
          $<$<CONFIG:Release>:-O3>
          >)
 
+# Disable host LTO on the IPPL library when CUDA is enabled. Repeated
+# `fatbinData` symbols in nvcc-generated fat binaries fail LTO merging,
+# but this only matters for code that links against cuFFT/cuFFTMp/cufinufft
+# — keep the rest of the build LTO-eligible.
+if("CUDA" IN_LIST IPPL_PLATFORMS)
+  target_compile_options(ippl PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-fno-lto>)
+endif()
+
 get_target_property(_ippl_type ippl TYPE)
 if(_ippl_type)
   string(REPLACE "_LIBRARY" "" _ippl_type "${_ippl_type}") # -> STATIC / SHARED / OBJECT / INTERFACE
@@ -67,7 +75,8 @@ target_sources(ippl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Ippl.cpp)
 target_include_directories(
   ippl PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
               $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ippl>
-  PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+          ${CMAKE_BINARY_DIR}/include)  # generated IpplAutoTunePresets.h
 
 add_subdirectory(Communicate)
 
@@ -103,9 +112,18 @@ include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)
 target_link_libraries(ippl PUBLIC Kokkos::kokkos MPI::MPI_CXX)
 
 if(IPPL_ENABLE_FFT)
-  target_link_libraries(ippl PUBLIC Heffte::Heffte)
-endif()
+  if(IPPL_ENABLE_CUFFTMP)
+    target_link_libraries(ippl PUBLIC ${CUFFTMP_LIBRARY} ${NVSHMEM_HOST_LIBRARY})
+  endif()
 
+  target_link_libraries(ippl PUBLIC Heffte::Heffte)
+  if(IPPL_ENABLE_FINUFFT)
+    target_link_libraries(ippl PUBLIC finufft)
+    if("CUDA" IN_LIST IPPL_PLATFORMS)
+       target_link_libraries(ippl PRIVATE cufinufft)
+    endif()
+  endif()
+endif()
 # this alias should be created after all target properties have been set
 add_library(IPPL::ippl ALIAS ippl)
 
