@@ -246,7 +246,8 @@ namespace ippl {
         }
 
         /*!
-         * Create nLocal rank local particles.
+         * Create nLocal rank local particles. This is a collective call,
+         * i.e. all MPI ranks must call this.
          *
          * @param nLocal number of local particles to be created (delta, not total).
          * @param non_destructive if true, preserve existing particle data when the
