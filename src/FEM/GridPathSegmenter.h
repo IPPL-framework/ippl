@@ -6,7 +6,7 @@ namespace ippl {
 
 template<unsigned Dim, typename T>
 struct Segment {
-  ippl::Vector<T,Dim> p0, p1;
+  Vector<T,Dim> p0, p1;
 };
 
 struct DefaultCellCrossingRule {};
@@ -15,11 +15,11 @@ template<unsigned Dim, typename T, typename Rule = DefaultCellCrossingRule>
 struct GridPathSegmenter {
 
   static KOKKOS_INLINE_FUNCTION
-  std::array<Segment<Dim,T>, Dim+1>
-  split(const ippl::Vector<T, Dim>& A,
-        const ippl::Vector<T, Dim>& B,
-        const ippl::Vector<T, Dim>& origin,
-        const ippl::Vector<T, Dim>& h);
+  Kokkos::Array<Segment<Dim,T>, Dim+1>
+  split(const Vector<T, Dim>& A,
+        const Vector<T, Dim>& B,
+        const Vector<T, Dim>& origin,
+        const Vector<T, Dim>& h);
 };
 
 } // namespace ippl 

@@ -59,4 +59,7 @@
 #include "FEM/GridPathSegmenter.h"
 #include "FEM/ProjectCurrent.hpp"
 
+// Interpolation
+#include "Interpolation/ProjectCurrentFDTD.hpp"
+
 #endif

@@ -414,7 +414,7 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_VertexHit_3D) {
     const T tol = std::numeric_limits<T>::epsilon() * T(100);
 
     // Cell (0,0,0): midpoint xi=(0.95, 0.95, 0.9), dp=(0.1, 0.1, 0.2)
-    // No shared edges with cell (1,1,1) since they differ in all 3 dimensions.
+    // No shared edges with cell (1,1,1), so simple computation
     {
       typename TestFixture::NedelecType::indices_t cell000(0);
       auto dof = space.getFEMVectorDOFIndices(cell000, ldom);
@@ -431,7 +431,7 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_VertexHit_3D) {
       EXPECT_NEAR(static_cast<double>(view_host(dof[10])), 0.0855, static_cast<double>(tol));
       EXPECT_NEAR(static_cast<double>(view_host(dof[11])), 0.0855, static_cast<double>(tol));
     }
-    // Cell (1,1,1): midpoint xi=(0.05, 0.05, 0.1), dp=(0.1, 0.1, 0.2)
+    // Cell (1,1,1): indentical to first cell, except different order as cell is mirrored across vertex
     {
       typename TestFixture::NedelecType::indices_t cell111(0);
       cell111[0] = 1; cell111[1] = 1; cell111[2] = 1;

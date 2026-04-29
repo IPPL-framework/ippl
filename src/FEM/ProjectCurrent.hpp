@@ -46,7 +46,7 @@ inline void assemble_current_whitney1(const Mesh& mesh,
         KOKKOS_LAMBDA(const std::size_t p) {
 
         // Split trajectory
-        auto segs = ippl::GridPathSegmenter<Dim, T, ippl::DefaultCellCrossingRule>
+        auto segs = GridPathSegmenter<Dim, T, DefaultCellCrossingRule>
                         ::split(X0(p), X1(p), origin, h);
 
         const T q_over_dt = q_attrib(p) / dt;
@@ -55,7 +55,7 @@ inline void assemble_current_whitney1(const Mesh& mesh,
             const auto& seg = segs[i];
 
             // Calcualte displacement of this sub-segment
-            ippl::Vector<T, Dim> dp{};
+            Vector<T, Dim> dp{};
             T len_sq = T(0);
             for (unsigned d = 0; d < Dim; ++d) {
                 dp[d] = seg.p1[d] - seg.p0[d];
@@ -65,7 +65,7 @@ inline void assemble_current_whitney1(const Mesh& mesh,
             if (len_sq == T(0)) continue;
 
             // Calculate midpoint of the segment
-            ippl::Vector<T, Dim> mid{};
+            Vector<T, Dim> mid{};
             for (unsigned d = 0; d < Dim; ++d)
                 mid[d] = T(0.5) * (seg.p0[d] + seg.p1[d]);
 

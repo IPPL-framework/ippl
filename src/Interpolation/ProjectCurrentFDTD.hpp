@@ -42,7 +42,7 @@ inline void assemble_current_yee(const Mesh& mesh,
     Kokkos::parallel_for("assemble_current_yee", iteration_policy,
         KOKKOS_LAMBDA(const std::size_t p) {
 
-        auto segs = ippl::GridPathSegmenter<Dim, T, ippl::DefaultCellCrossingRule>
+        auto segs = GridPathSegmenter<Dim, T, DefaultCellCrossingRule>
                         ::split(X0(p), X1(p), origin, h);
 
         const T q_over_dt = q_attrib(p) / dt;
@@ -50,7 +50,7 @@ inline void assemble_current_yee(const Mesh& mesh,
         for (unsigned i = 0; i < Dim + 1; ++i) {
             const auto& seg = segs[i];
 
-            ippl::Vector<T, Dim> dp{};
+            Vector<T, Dim> dp{};
             T len_sq = T(0);
             for (unsigned d = 0; d < Dim; ++d) {
                 dp[d] = seg.p1[d] - seg.p0[d];
@@ -58,15 +58,15 @@ inline void assemble_current_yee(const Mesh& mesh,
             }
             if (len_sq == T(0)) continue;
 
-            ippl::Vector<T, Dim> mid{};
+            Vector<T, Dim> mid{};
             for (unsigned d = 0; d < Dim; ++d)
                 mid[d] = T(0.5) * (seg.p0[d] + seg.p1[d]);
 
-            size_t cellIdx[Dim];
+            Kokkos::Array<size_t, Dim> cellIdx;
             for (unsigned d = 0; d < Dim; ++d)
                 cellIdx[d] = static_cast<size_t>((mid[d] - origin[d]) / h[d]);
 
-            T xi[Dim];
+            Kokkos::Array<T, Dim> xi;
             for (unsigned d = 0; d < Dim; ++d)
                 xi[d] = (mid[d] - origin[d]) / h[d] - T(cellIdx[d]);
 
