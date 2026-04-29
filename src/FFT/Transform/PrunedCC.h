@@ -1,0 +1,421 @@
+#ifndef IPPL_FFT_TRANSFORM_PRUNEDCC_H
+#define IPPL_FFT_TRANSFORM_PRUNEDCC_H
+
+#include <array>
+#include <mpi.h>
+#include <type_traits>
+
+#include "Utility/IpplTimings.h"
+#include "Utility/ParameterList.h"
+
+#include "Communicate/Communicator.h"
+#include "FFT/Backend/Backend.h"
+#include "FFT/Traits.h"
+#include "FFT/Transform/Common.h"
+
+namespace ippl {
+
+    namespace detail {
+        // Wrapper to safely evaluate OpenMP at compile-time to prevent nested
+        // parallelism errors when Kokkos is using the OpenMP execution space.
+        template <bool IsCPU, typename Func>
+        inline void runConcurrentBatch(int count, Func&& func) {
+            if constexpr (IsCPU) {
+                // Serial outer loop for CPU (Kokkos will parallelize the inner loops)
+                for (int local = 0; local < count; ++local) {
+                    func(local);
+                }
+            } else {
+                // OpenMP outer loop for GPU (to overlap asynchronous stream launches)
+#if defined(_OPENMP)
+#pragma omp parallel for
+#endif
+                for (int local = 0; local < count; ++local) {
+                    func(local);
+                }
+            }
+        }
+    }  // namespace detail
+
+    //=========================================================================
+    // Pruned Complex-to-Complex Transform
+    //=========================================================================
+
+    template <typename ComplexField>
+    class FFT<PrunedCCTransform, ComplexField> {
+    public:
+        static constexpr unsigned Dim   = ComplexField::dim;
+        static constexpr int NumSubFFTs = 1 << Dim;
+
+        using Complex_t = typename ComplexField::value_type;
+        using T         = typename Complex_t::value_type;
+        using MemSpace  = typename ComplexField::memory_space;
+        using ExecSpace = typename ComplexField::execution_space;
+        using Layout_t  = FieldLayout<Dim>;
+
+        using Backend_t  = fft::HeffteC2C<T, Dim, MemSpace>;
+        using GPUOps     = fft::Stream<MemSpace>;
+        using Stream_t   = typename GPUOps::stream_type;
+        using DeviceExec = typename GPUOps::exec_space;
+        using TempView_t = Kokkos::View<Complex_t***, Kokkos::LayoutLeft, MemSpace>;
+
+        FFT(const Layout_t& layoutIn, const Layout_t& layoutOut, const PruningParams<Dim>& pruning,
+            const ParameterList& params)
+            : pruning_(pruning)
+            , numConcurrent_(std::clamp(params.get<int>("num_concurrent_ffts", 4), 1, NumSubFFTs)) {
+            static_assert(Dim == 3, "Pruned FFT currently only supports 3D");
+
+            auto& prunedLayout =
+                (layoutOut.getLocalNDIndex().size() < layoutIn.getLocalNDIndex().size()) ? layoutOut
+                                                                                         : layoutIn;
+
+            std::array<long long, 3> low, high;
+            fft::domainToBounds<Dim>(prunedLayout.getLocalNDIndex(), low, high);
+            heffte::box3d<long long> box{low, high};
+
+            for (int s = 0; s < numConcurrent_; ++s) {
+                MPI_Comm_dup(Comm->getCommunicator(), &comms_[s]);
+                GPUOps::create(streams_[s]);
+                backends_[s] = std::make_unique<Backend_t>(box, box, comms_[s], params);
+            }
+        }
+
+        ~FFT() {
+            for (int s = 0; s < numConcurrent_; ++s) {
+                GPUOps::destroy(streams_[s]);
+                MPI_Comm_free(&comms_[s]);
+            }
+        }
+
+        void transform(TransformDirection direction, ComplexField& input, ComplexField& output,
+                       int dir = 1) {
+            if (direction == FORWARD) {
+                forwardPruned(dir, input, output);
+            } else {
+                backwardPruned(dir, input, output);
+            }
+        }
+
+        void forwardPruned(int dir, ComplexField& input, ComplexField& output);
+        void backwardPruned(int dir, ComplexField& input, ComplexField& output);
+
+    private:
+        PruningParams<Dim> pruning_;
+        int numConcurrent_;
+
+        std::array<std::unique_ptr<Backend_t>, NumSubFFTs> backends_;
+        std::array<TempView_t, NumSubFFTs> temps_;
+        std::array<MPI_Comm, NumSubFFTs> comms_{};
+        std::array<Stream_t, NumSubFFTs> streams_{};
+    };
+
+    //-------------------------------------------------------------------------
+    // Forward Pruned C2C Implementation
+    //-------------------------------------------------------------------------
+
+    template <typename ComplexField>
+    void FFT<PrunedCCTransform, ComplexField>::forwardPruned(int dir, ComplexField& input,
+                                                             ComplexField& output) {
+        static IpplTimings::TimerRef twiddleTimer = IpplTimings::getTimer("TwiddleAdd");
+        static IpplTimings::TimerRef subFFTTimer  = IpplTimings::getTimer("subFFTs");
+
+        auto inView     = input.getView();
+        auto outView    = output.getView();
+        const int ngIn  = input.getNghost();
+        const int ngOut = output.getNghost();
+
+        const auto& lDomPruned = output.getLayout().getLocalNDIndex();
+        const auto& gDomFull   = input.getLayout().getDomain();
+        const auto& modes      = pruning_.n_modes;
+
+        // Ensure temps
+        for (int s = 0; s < numConcurrent_; ++s) {
+            if (temps_[s].size() != output.getOwned().size()) {
+                temps_[s] = detail::shrinkView("pruned_temp_" + std::to_string(s), outView, ngOut);
+            }
+        }
+
+        Kokkos::deep_copy(outView, Complex_t(0, 0));
+
+        double scale = 1.0;
+        if (dir == 1) {
+            for (unsigned d = 0; d < Dim; ++d) {
+                scale *= double(modes[d]) / double(gDomFull[d].length());
+            }
+        }
+
+        std::array<Vector<long, Dim>, NumSubFFTs> offsets;
+        for (int k = 0; k < NumSubFFTs; ++k) {
+            for (unsigned d = 0; d < Dim; ++d) {
+                offsets[k][d] = (k >> d) & 1;
+            }
+        }
+
+        Vector<int, Dim> localFirst;
+        for (unsigned d = 0; d < Dim; ++d) {
+            localFirst[d] = lDomPruned[d].first();
+        }
+
+        auto owned           = output.getOwned();
+        const int numBatches = (NumSubFFTs + numConcurrent_ - 1) / numConcurrent_;
+
+        constexpr bool is_cpu = false
+#ifdef KOKKOS_ENABLE_SERIAL
+                                || std::is_same_v<ExecSpace, Kokkos::Serial>
+#endif
+#ifdef KOKKOS_ENABLE_OPENMP
+                                || std::is_same_v<ExecSpace, Kokkos::OpenMP>
+#endif
+            ;
+
+        for (int batch = 0; batch < numBatches; ++batch) {
+            const int start = batch * numConcurrent_;
+            const int end   = std::min(start + numConcurrent_, NumSubFFTs);
+            const int count = end - start;
+
+            IpplTimings::startTimer(subFFTTimer);
+
+            // Using the wrapper to evaluate thread parallelism safely
+            detail::runConcurrentBatch<is_cpu>(count, [&](int local) {
+                const int k = start + local;
+                auto offs   = offsets[k];
+                auto& temp  = temps_[local];
+
+                auto copy_lambda = KOKKOS_LAMBDA(int i0, int i1, int i2) {
+                    int si           = i0 * 2 + offs[0] + ngIn;
+                    int sj           = i1 * 2 + offs[1] + ngIn;
+                    int sk           = i2 * 2 + offs[2] + ngIn;
+                    temp(i0, i1, i2) = inView(si, sj, sk);
+                };
+
+                if constexpr (is_cpu) {
+                    // CPU execution: Dispatch cleanly without stream instances
+                    Kokkos::parallel_for(
+                        "strided_copy_forward",
+                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
+                            {0, 0, 0}, {long(owned[0].length()), long(owned[1].length()),
+                                        long(owned[2].length())}),
+                        copy_lambda);
+                } else {
+                    // GPU execution: Dispatch to designated streams to overlap sub-FFT work
+                    auto exec = GPUOps::instance(streams_[local]);
+                    Kokkos::parallel_for("strided_copy_forward",
+                                         Kokkos::MDRangePolicy<DeviceExec, Kokkos::Rank<3>>(
+                                             exec, {0, 0, 0},
+                                             {long(owned[0].length()), long(owned[1].length()),
+                                              long(owned[2].length())}),
+                                         copy_lambda);
+                    GPUOps::sync(streams_[local]);  // Ensure copy finishes before HeFFTe reads it
+                }
+
+                if (dir == 1) {
+                    backends_[local]->forward(temp.data(), temp.data());
+                } else {
+                    backends_[local]->backward(temp.data(), temp.data());
+                }
+            });
+
+            Kokkos::fence();
+            IpplTimings::stopTimer(subFFTTimer);
+
+            IpplTimings::startTimer(twiddleTimer);
+
+            for (int local = 0; local < count; ++local) {
+                const int k = start + local;
+                auto offs   = offsets[k];
+                auto& temp  = temps_[local];
+
+                Kokkos::parallel_for(
+                    "twiddle_add_forward",
+                    Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
+                        {ngOut, ngOut, ngOut},
+                        {int(outView.extent(0)) - ngOut, int(outView.extent(1)) - ngOut,
+                         int(outView.extent(2)) - ngOut}),
+                    KOKKOS_LAMBDA(int i, int j, int kk) {
+                        int gi = i - ngOut + localFirst[0];
+                        int gj = j - ngOut + localFirst[1];
+                        int gk = kk - ngOut + localFirst[2];
+
+                        int64_t f0 = (gi < int64_t(modes[0]) / 2)
+                                         ? gi
+                                         : int64_t(gDomFull[0].length()) - int64_t(modes[0]) + gi;
+                        int64_t f1 = (gj < int64_t(modes[1]) / 2)
+                                         ? gj
+                                         : int64_t(gDomFull[1].length()) - int64_t(modes[1]) + gj;
+                        int64_t f2 = (gk < int64_t(modes[2]) / 2)
+                                         ? gk
+                                         : int64_t(gDomFull[2].length()) - int64_t(modes[2]) + gk;
+
+                        Complex_t w(1.0, 0.0);
+                        auto twiddle = [&](int64_t freq, int64_t N) {
+                            double ang = -dir * 2.0 * M_PI * double(freq) / double(N);
+                            return Complex_t(Kokkos::cos(ang), Kokkos::sin(ang));
+                        };
+
+                        if (offs[0])
+                            w *= twiddle(f0, gDomFull[0].length());
+                        if (offs[1])
+                            w *= twiddle(f1, gDomFull[1].length());
+                        if (offs[2])
+                            w *= twiddle(f2, gDomFull[2].length());
+
+                        auto val = temp(i - ngOut, j - ngOut, kk - ngOut);
+                        outView(i, j, kk) += w * val * scale;
+                    });
+            }
+
+            IpplTimings::stopTimer(twiddleTimer);
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    // Backward Pruned C2C Implementation
+    //-------------------------------------------------------------------------
+
+    template <typename ComplexField>
+    void FFT<PrunedCCTransform, ComplexField>::backwardPruned(int dir, ComplexField& input,
+                                                              ComplexField& output) {
+        static IpplTimings::TimerRef subIFFTTimer      = IpplTimings::getTimer("subIFFTs");
+        static IpplTimings::TimerRef stridedWriteTimer = IpplTimings::getTimer("StridedWrite");
+
+        auto inView     = input.getView();   // Pruned frequency domain
+        auto outView    = output.getView();  // Full spatial domain
+        const int ngIn  = input.getNghost();
+        const int ngOut = output.getNghost();
+
+        const auto& lDomPruned = input.getLayout().getLocalNDIndex();
+        const auto& gDomFull   = output.getLayout().getDomain();
+        const auto& modes      = pruning_.n_modes;
+
+        for (int s = 0; s < numConcurrent_; ++s) {
+            if (temps_[s].size() != input.getOwned().size()) {
+                temps_[s] =
+                    detail::shrinkView("pruned_ifft_temp_" + std::to_string(s), inView, ngIn);
+            }
+        }
+
+        Kokkos::deep_copy(outView, Complex_t(0, 0));
+
+        std::array<Vector<long, Dim>, NumSubFFTs> offsets;
+        for (int k = 0; k < NumSubFFTs; ++k) {
+            for (unsigned d = 0; d < Dim; ++d) {
+                offsets[k][d] = (k >> d) & 1;
+            }
+        }
+
+        Vector<int, Dim> localFirst;
+        for (unsigned d = 0; d < Dim; ++d) {
+            localFirst[d] = lDomPruned[d].first();
+        }
+
+        auto owned           = input.getOwned();
+        const int numBatches = (NumSubFFTs + numConcurrent_ - 1) / numConcurrent_;
+
+        constexpr bool is_cpu = false
+#ifdef KOKKOS_ENABLE_SERIAL
+                                || std::is_same_v<ExecSpace, Kokkos::Serial>
+#endif
+#ifdef KOKKOS_ENABLE_OPENMP
+                                || std::is_same_v<ExecSpace, Kokkos::OpenMP>
+#endif
+            ;
+
+        for (int batch = 0; batch < numBatches; ++batch) {
+            const int start = batch * numConcurrent_;
+            const int end   = std::min(start + numConcurrent_, NumSubFFTs);
+            const int count = end - start;
+
+            IpplTimings::startTimer(subIFFTTimer);
+
+            // Using the wrapper to evaluate thread parallelism safely
+            detail::runConcurrentBatch<is_cpu>(count, [&](int local) {
+                const int k = start + local;
+                auto offs   = offsets[k];
+                auto& temp  = temps_[local];
+
+                auto multiply_lambda = KOKKOS_LAMBDA(int i0, int i1, int i2) {
+                    int gi = i0 + localFirst[0];
+                    int gj = i1 + localFirst[1];
+                    int gk = i2 + localFirst[2];
+
+                    int64_t f0 = (gi < int64_t(modes[0]) / 2)
+                                     ? gi
+                                     : int64_t(gDomFull[0].length()) - int64_t(modes[0]) + gi;
+                    int64_t f1 = (gj < int64_t(modes[1]) / 2)
+                                     ? gj
+                                     : int64_t(gDomFull[1].length()) - int64_t(modes[1]) + gj;
+                    int64_t f2 = (gk < int64_t(modes[2]) / 2)
+                                     ? gk
+                                     : int64_t(gDomFull[2].length()) - int64_t(modes[2]) + gk;
+
+                    Complex_t w(1.0, 0.0);
+                    auto twiddle = [&](int64_t freq, int64_t N) {
+                        double ang = dir * 2.0 * M_PI * double(freq) / double(N);
+                        return Complex_t(Kokkos::cos(ang), Kokkos::sin(ang));
+                    };
+
+                    if (offs[0])
+                        w *= twiddle(f0, gDomFull[0].length());
+                    if (offs[1])
+                        w *= twiddle(f1, gDomFull[1].length());
+                    if (offs[2])
+                        w *= twiddle(f2, gDomFull[2].length());
+
+                    auto input_val   = inView(i0 + ngIn, i1 + ngIn, i2 + ngIn);
+                    temp(i0, i1, i2) = w * input_val;
+                };
+
+                if constexpr (is_cpu) {
+                    Kokkos::parallel_for(
+                        "twiddle_multiply_backward",
+                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
+                            {0, 0, 0}, {long(owned[0].length()), long(owned[1].length()),
+                                        long(owned[2].length())}),
+                        multiply_lambda);
+                } else {
+                    auto exec = GPUOps::instance(streams_[local]);
+                    Kokkos::parallel_for("twiddle_multiply_backward",
+                                         Kokkos::MDRangePolicy<DeviceExec, Kokkos::Rank<3>>(
+                                             exec, {0, 0, 0},
+                                             {long(owned[0].length()), long(owned[1].length()),
+                                              long(owned[2].length())}),
+                                         multiply_lambda);
+                    GPUOps::sync(streams_[local]);  // Ensure copy finishes before HeFFTe reads it
+                }
+
+                if (dir == -1) {
+                    backends_[local]->forward(temp.data(), temp.data());
+                } else {
+                    backends_[local]->backward(temp.data(), temp.data());
+                }
+            });
+
+            Kokkos::fence();
+            IpplTimings::stopTimer(subIFFTTimer);
+
+            IpplTimings::startTimer(stridedWriteTimer);
+
+            for (int local = 0; local < count; ++local) {
+                const int k = start + local;
+                auto offs   = offsets[k];
+                auto& temp  = temps_[local];
+
+                Kokkos::parallel_for(
+                    "strided_write_backward",
+                    Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
+                        {0, 0, 0}, {long(owned[0].length()), long(owned[1].length()),
+                                    long(owned[2].length())}),
+                    KOKKOS_LAMBDA(int i0, int i1, int i2) {
+                        int oi              = i0 * 2 + offs[0] + ngOut;
+                        int oj              = i1 * 2 + offs[1] + ngOut;
+                        int ok              = i2 * 2 + offs[2] + ngOut;
+                        outView(oi, oj, ok) = temp(i0, i1, i2);
+                    });
+            }
+
+            IpplTimings::stopTimer(stridedWriteTimer);
+        }
+    }
+}  // namespace ippl
+
+#endif
