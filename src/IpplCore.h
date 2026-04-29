@@ -60,6 +60,6 @@
 #include "FEM/ProjectCurrent.hpp"
 
 // Interpolation
-#include "Interpolation/ProjectCurrentFDTD.hpp"
+#include "Interpolation/CurrentDeposition.hpp"
 
 #endif
