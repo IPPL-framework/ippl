@@ -1,9 +1,4 @@
-//
-// Class CIC
-//   First order/cloud-in-cell grid interpolation. Currently implemented as
-//   global functions, but in order to support higher or lower order interpolation,
-//   these should be moved into structs.
-//
+#include <Kokkos_Core.hpp>
 
 namespace ippl {
     namespace detail {
@@ -15,9 +10,6 @@ namespace ippl {
             } else {
                 return whi[Index];
             }
-            // device code cannot throw exceptions, but we need a
-            // dummy return to silence the warning
-            return 0;
         }
 
         template <unsigned long Point, unsigned long Index, typename Indices>
@@ -28,9 +20,6 @@ namespace ippl {
             } else {
                 return args[Index];
             }
-            // device code cannot throw exceptions, but we need a
-            // dummy return to silence the warning
-            return 0;
         }
 
         template <unsigned long ScatterPoint, unsigned long... Index, typename View, typename T,

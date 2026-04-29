@@ -9,7 +9,7 @@
 
 namespace ippl {
     namespace detail {
-        /*!
+        /**
          * Computes the weight for a given point for a given axial direction
          * @tparam Point index of the point
          * @tparam Index index of the axis
@@ -22,7 +22,7 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION constexpr typename Weights::value_type interpolationWeight(
             const Weights& wlo, const Weights& whi);
 
-        /*!
+        /**
          * Computes the index for a given point for a given axis
          * @tparam Point index of the point
          * @tparam Index index of the axis
@@ -34,7 +34,7 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION constexpr typename Indices::value_type interpolationIndex(
             const Indices& args);
 
-        /*!
+        /**
          * Scatters to a field at a single point
          * @tparam ScatterPoint the index of the point to which we are scattering
          * @tparam Index the sequence 0...Dim - 1
@@ -54,7 +54,7 @@ namespace ippl {
             const Vector<T, View::rank>& wlo, const Vector<T, View::rank>& whi,
             const Vector<IndexType, View::rank>& args, const T& val);
 
-        /*!
+        /**
          * Scatters the particle attribute to the field.
          *
          * The coordinates to which an attribute must be scattered is given by 2^n,
@@ -81,7 +81,7 @@ namespace ippl {
             const Vector<T, View::rank>& wlo, const Vector<T, View::rank>& whi,
             const Vector<IndexType, View::rank>& args, T val = 1);
 
-        /*!
+        /**
          * Gathers from a field at a single point
          * @tparam GatherPoint the index of the point from which data is gathered
          * @tparam Index the sequence 0...Dim - 1
@@ -101,7 +101,7 @@ namespace ippl {
             const Vector<T, View::rank>& wlo, const Vector<T, View::rank>& whi,
             const Vector<IndexType, View::rank>& args);
 
-        /*!
+        /**
          * Gathers the particle attribute from a field (see scatter_field for more details)
          * @tparam GatherPoint... the indices of the points from which to gather (sequence 0 to
          * 2^Dim)
