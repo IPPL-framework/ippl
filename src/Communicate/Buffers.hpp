@@ -20,21 +20,23 @@
 //   exchanging particle data between ranks.
 //
 
+#include "Utility/IpplTimings.h"
 namespace ippl {
     namespace mpi {
 
         template <typename MemorySpace, typename T>
         Communicator::buffer_type<MemorySpace> Communicator::getBuffer(size_type size,
                                                                        double overallocation) {
-            auto& buffer_handler = buffer_handlers_m->get<MemorySpace>();
+            auto& buffer_handler = getBufferHandler().get<MemorySpace>();
 
-            return buffer_handler.getBuffer(size * sizeof(T),
-                                            std::max(overallocation, defaultOveralloc_m));
+            auto buf = buffer_handler.getBuffer(size * sizeof(T),
+                                                std::max(overallocation, defaultOveralloc_m));
+            return buf;
         }
 
         template <typename MemorySpace>
         void Communicator::freeBuffer(Communicator::buffer_type<MemorySpace> buffer) {
-            auto& buffer_handler = buffer_handlers_m->get<MemorySpace>();
+            auto& buffer_handler = getBufferHandler().get<MemorySpace>();
 
             buffer_handler.freeBuffer(buffer);
         }
