@@ -90,7 +90,7 @@ TYPED_TEST(ParticleBaseTest, CreateAndDestroy) {
 
 TYPED_TEST(ParticleBaseTest, Alloc) {
     if (ippl::Comm->size() > 1) {
-        std::cerr << "ParticleBaseTest::Alloc test only works for one MPI rank!" << std::endl;
+        std::cerr << "ParticleBaseTest::Alloc test only works on one MPI rank!" << std::endl;
         return;
     }
     constexpr size_t nReserved = 1024;
