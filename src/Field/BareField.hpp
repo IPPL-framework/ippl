@@ -14,6 +14,7 @@
 
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
+#include "Types/IpplTypes.h"
 namespace Kokkos {
     template <typename T, unsigned Dim>
     struct reduction_identity<ippl::Vector<T, Dim>> {
@@ -24,14 +25,19 @@ namespace Kokkos {
             return ippl::Vector<T, Dim>(1);
         }
         KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> min() {
-            return ippl::Vector<T, Dim>(std::numeric_limits<T>::infinity());
+            return ippl::Vector<T, Dim>(ippl::detail::infinity<T>());
         }
         KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> max() {
-            return ippl::Vector<T, Dim>(-std::numeric_limits<T>::infinity());
+            return ippl::Vector<T, Dim>(-ippl::detail::infinity<T>());
         }
     };
 }  // namespace Kokkos
 
+// Reducer wrappers that pull ippl::max / ippl::min into the join-overload
+// resolution set. The stock Kokkos::Max / Kokkos::Min join uses
+// Kokkos::max only, which has no overload for ippl::Vector<T,Dim>; the
+// using-declarations below let ADL find the IPPL element-wise overloads while
+// keeping the scalar Kokkos path intact.
 namespace KokkosCorrection {
     template <typename Scalar, class Space = Kokkos::HostSpace>
     struct Max : Kokkos::Max<Scalar, Space> {
@@ -100,7 +106,6 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     BareField<T, Dim, ViewArgs...>::BareField(Layout_t& l, int nghost)
         : nghost_m(nghost)
-        //     , owned_m(0)
         , layout_m(&l) {
         setup();
     }
@@ -114,10 +119,8 @@ namespace ippl {
         }
     }
 
-    // ML
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::updateLayout(Layout_t& l, int nghost) {
-        // std::cout << "Got in BareField::updateLayout()" << std::endl;
         layout_m = &l;
         nghost_m = nghost;
         setup();
@@ -142,7 +145,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::fillHalo() {
         if (layout_m->comm.size() > 1) {
-            halo_m.fillHalo(dview_m, layout_m);
+            halo_m.fillHalo(dview_m, layout_m, nghost_m);
         }
         if (layout_m->isAllPeriodic_m) {
             using Op = typename detail::HaloCells<T, Dim, ViewArgs...>::assign;
@@ -153,7 +156,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::accumulateHalo() {
         if (layout_m->comm.size() > 1) {
-            halo_m.accumulateHalo(dview_m, layout_m);
+            halo_m.accumulateHalo(dview_m, layout_m, nghost_m);
         }
         if (layout_m->isAllPeriodic_m) {
             using Op = typename detail::HaloCells<T, Dim, ViewArgs...>::rhs_plus_assign;
@@ -204,16 +207,17 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>                                     \
     T BareField<T, Dim, ViewArgs...>::name(int nghost) const {                                 \
         PAssert_LE(nghost, nghost_m);                                                          \
-        T temp                 = Kokkos::reduction_identity<T>::name();                        \
+        const T identity       = Kokkos::reduction_identity<T>::name();                        \
+        T temp                 = identity;                                                     \
         using index_array_type = typename RangePolicy<Dim, execution_space>::index_array_type; \
         ippl::parallel_reduce(                                                                 \
-            "fun", getRangePolicy(dview_m, nghost_m - nghost),                                 \
+            "BareField::" #name, getRangePolicy(dview_m, nghost_m - nghost),                   \
             KOKKOS_CLASS_LAMBDA(const index_array_type& args, T& valL) {                       \
                 T myVal = apply(dview_m, args);                                                \
                 op;                                                                            \
             },                                                                                 \
             KokkosCorrection::fun<T>(temp));                                                   \
-        T globaltemp = 0.0;                                                                    \
+        T globaltemp = identity;                                                               \
         layout_m->comm.allreduce(temp, globaltemp, 1, MPI_Op<T>());                            \
         return globaltemp;                                                                     \
     }

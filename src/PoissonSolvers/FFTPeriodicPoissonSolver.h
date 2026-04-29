@@ -71,7 +71,8 @@ namespace ippl {
 
     protected:
         virtual void setDefaultParameters() override {
-            using heffteBackend       = typename FFT_t::heffteBackend;
+            using heffteBackend =
+                typename fft::HeffteBackend<typename CxField_t::view_type::memory_space>::c2c;
             heffte::plan_options opts = heffte::default_options<heffteBackend>();
             this->params_m.add("use_pencils", opts.use_pencils);
             this->params_m.add("use_reorder", opts.use_reorder);

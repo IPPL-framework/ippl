@@ -9,6 +9,7 @@
 #include <cstring>
 #include <list>
 
+#include "Interpolation/Scatter/AutoTune.h"
 #include "Utility/IpplInfo.h"
 
 namespace ippl {
@@ -97,10 +98,15 @@ namespace ippl {
         }
 
         Kokkos::initialize(argc, argv);
+
+        // Seed scatter/gather caches with per-exec-space defaults and, when
+        // IPPL_AUTO_TUNE is set, run the sweep. See AutoTune.h.
+        ippl::Interpolation::AutoTune::initialize();
     }
 
     void finalize() {
         Comm->deleteAllBuffers();
+        ippl::detail::finalizeBinSortBuffers();
         Kokkos::finalize();
         // we must first delete the communicator and
         // afterwards the MPI environment

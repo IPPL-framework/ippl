@@ -11,6 +11,15 @@ namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim>
         struct isExpression<Vector<T, Dim>> : std::true_type {};
+
+        template <typename T>
+        struct VectorTraits;
+
+        template <typename T, unsigned Dim>
+        struct VectorTraits<Vector<T, Dim>> {
+            using real_type               = T;
+            static constexpr unsigned dim = Dim;
+        };
     }  // namespace detail
 
     template <typename T, unsigned Dim>
@@ -189,9 +198,8 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION T Vector<T, Dim>::Pnorm(const int p) const {
-
         T val = 0.0;
-        for(unsigned i = 0; i < Dim; ++i) {
+        for (unsigned i = 0; i < Dim; ++i) {
             val += Kokkos::pow(Kokkos::abs(data_m[i]), p);
         }
 
