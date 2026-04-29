@@ -87,7 +87,7 @@ namespace ippl {
          * Set the problem LHS
          * @param lhs Reference to problem LHS field
          */
-        void setLhs(lhs_type& lhs) { lhs_mp = &lhs; }
+        virtual void setLhs(lhs_type& lhs) { lhs_mp = &lhs; }
 
         /*!
          * Set the problem RHS

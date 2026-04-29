@@ -59,9 +59,22 @@ public:
         (*E_m).updateLayout(*fl);
         (*rho_m).updateLayout(*fl);
 
-        if (fs_m->getStype() == "CG" || fs_m->getStype() == "PCG") {
+        if (fs_m->getStype() == "CG" || fs_m->getStype() == "PCG" || fs_m->getStype() == "FEM" ||
+            fs_m->getStype() == "FEM_PRECON") {
             phi_m->updateLayout(*fl);
             phi_m->setFieldBC(phi_m->getFieldBC());
+
+            if (fs_m->getStype() == "FEM") {
+                // also update the layout in the FEM space
+                auto& space = std::get<FEMSolver_t<T, Dim>>(fs_m->getSolver()).getSpace();
+                space.updateLayout(*fl);
+            } 
+
+            if (fs_m->getStype() == "FEM_PRECON") {
+                // also update the layout in the FEM space
+                auto& space = std::get<FEMPreconSolver_t<T, Dim>>(fs_m->getSolver()).getSpace();
+                space.updateLayout(*fl);
+            } 
         }
 
         // Update layout with new FieldLayout
@@ -94,6 +107,12 @@ public:
             }
             // Update
             this->updateLayout(fl, mesh, isFirstRepartition);
+            if (fs_m->getStype() == "FEM") {
+                std::get<FEMSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*rho_m);
+            }
+            if (fs_m->getStype() == "FEM_PRECON") {
+                std::get<FEMPreconSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*rho_m);
+            }
             if constexpr (Dim == 2 || Dim == 3) {
                 if (fs_m->getStype() == "FFT") {
                     std::get<FFTSolver_t<T, Dim>>(fs_m->getSolver()).setRhs(*rho_m);

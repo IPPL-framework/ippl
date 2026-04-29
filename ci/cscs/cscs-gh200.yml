@@ -1,0 +1,4 @@
+include:
+  # NVIDIA/GH200:
+  - local: "ci/cscs/cuda/build_sm90.yml"
+  - local: "ci/cscs/cuda/run_sm90.yml"

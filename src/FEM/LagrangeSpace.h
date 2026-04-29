@@ -81,7 +81,7 @@ namespace ippl {
          * @param layout Reference to the field layout
          */
         LagrangeSpace(UniformCartesian<T, Dim>& mesh, ElementType& ref_element,
-                      const QuadratureType& quadrature, const Layout_t& layout);
+                      const QuadratureType& quadrature, Layout_t& layout);
 
         /**
          * @brief Construct a new LagrangeSpace object (without layout)
@@ -101,14 +101,22 @@ namespace ippl {
          * @param mesh Reference to the mesh
          * @param layout Reference to the field layout
          */
-        void initialize(UniformCartesian<T, Dim>& mesh, const Layout_t& layout);
+        void initialize(UniformCartesian<T, Dim>& mesh, Layout_t& layout);
 
         ///////////////////////////////////////////////////////////////////////
         /**
          * @brief Initialize a Kokkos view containing the element indices.
          * This distributes the elements among MPI ranks.
          */
-        void initializeElementIndices(const Layout_t& layout);
+        void initializeElementIndices(Layout_t& layout);
+
+        ///////////////////////////////////////////////////////////////////////
+        /**
+         * @brief Function to update the element partition and the layout of 
+         * fields in the LagrangeSpace if the layout has been changed during
+         * the simulation (for example by the load balancer).
+         */
+        void updateLayout(Layout_t& layout);
 
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
@@ -192,6 +200,14 @@ namespace ippl {
             const size_t& localDOF, const point_t& localPoint) const;
 
         ///////////////////////////////////////////////////////////////////////
+        /// Functions to access element info from outside /////////////////////
+        ///////////////////////////////////////////////////////////////////////
+
+        KOKKOS_FUNCTION point_t getInverseTransposeTransformationJacobian(vertex_points_t pt) const {
+            return this->ref_element_m.getInverseTransposeTransformationJacobian(pt);
+        }
+
+        ///////////////////////////////////////////////////////////////////////
         /// Assembly operations ///////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 
@@ -204,22 +220,22 @@ namespace ippl {
          * @return FieldLHS - The LHS field containing A*x
          */
         template <typename F>
-        FieldLHS evaluateAx(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx(FieldLHS& field, F& evalFunction);
 
         template <typename F>
-        FieldLHS evaluateAx_lower(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx_lower(FieldLHS& field, F& evalFunction);
 
         template <typename F>
-        FieldLHS evaluateAx_upper(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx_upper(FieldLHS& field, F& evalFunction);
 
         template <typename F>
-        FieldLHS evaluateAx_upperlower(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx_upperlower(FieldLHS& field, F& evalFunction);
 
         template <typename F>
-        FieldLHS evaluateAx_inversediag(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx_inversediag(FieldLHS& field, F& evalFunction);
 
         template <typename F>
-        FieldLHS evaluateAx_diag(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx_diag(FieldLHS& field, F& evalFunction);
 
         /**
          * @brief Assemble the left stiffness matrix A of the system 
@@ -232,7 +248,7 @@ namespace ippl {
          * @return FieldLHS - The LHS field containing A*x
          */
         template <typename F>
-        FieldLHS evaluateAx_lift(FieldLHS& field, F& evalFunction) const;
+        FieldLHS evaluateAx_lift(FieldLHS& field, F& evalFunction);
 
         /**
          * @brief Assemble the load vector b of the system Ax = b
@@ -242,6 +258,7 @@ namespace ippl {
          * @return FieldRHS - The RHS field containing b
          */
         void evaluateLoadVector(FieldRHS& field) const;
+        void evaluateLumpedMass(FieldRHS& field) const;
 
         ///////////////////////////////////////////////////////////////////////
         /// Error norm computations ///////////////////////////////////////////
@@ -251,7 +268,7 @@ namespace ippl {
          * @brief Given two fields, compute the L2 norm error
          *
          * @param u_h The numerical solution found using FEM
-         * @param u_sol The analytical solution (functor)
+         * @param u_sol The analytical solution (functor)
          *
          * @return error - The error ||u_h - u_sol||_L2
          */
@@ -266,6 +283,32 @@ namespace ippl {
          * @return avg The average of the field on the domain
          */
         T computeAvg(const FieldLHS& u_h) const;
+
+        ///////////////////////////////////////////////////////////////////////
+        /// Device struct for copies //////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
+        struct DeviceStruct {
+            // members we need to copy for the following functions:
+            // works since numElementDOFs in LagrangeSpace is static constexpr
+            static constexpr unsigned numElementDOFs = LagrangeSpace::numElementDOFs;
+            Vector<size_t, Dim> nr_m;
+            ElementType ref_element_m;
+
+            // these are the functions needed for interpolation to the space
+            KOKKOS_FUNCTION indices_t getMeshVertexNDIndex(const size_t& vertex_index) const;
+
+            KOKKOS_FUNCTION size_t getLocalDOFIndex(const indices_t& elementNDIndex,
+                const size_t& globalDOFIndex) const;
+            KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getGlobalDOFIndices(
+                const indices_t& elementNDIndex) const;
+
+            KOKKOS_FUNCTION T evaluateRefElementShapeFunction(const size_t& localDOF,
+                const point_t& localPoint) const;
+            KOKKOS_FUNCTION point_t evaluateRefElementShapeFunctionGradient(
+                const size_t& localDOF, const point_t& localPoint) const;
+        };
+
+        DeviceStruct getDeviceMirror() const; 
 
     private:
         /**
@@ -285,7 +328,14 @@ namespace ippl {
             return false;
         }
 
+        ///////////////////////////////////////////////////////////////////////
+        /// Private member containing the element indices owned by ////////////
+        /// my MPI rank. //////////////////////////////////////////////////////
+        ///////////////////////////////////////////////////////////////////////
         Kokkos::View<size_t*> elementIndices;
+
+        // One time allocated field of type FieldLHS to store results
+        FieldLHS resultField;
     };
 
 }  // namespace ippl

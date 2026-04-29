@@ -52,10 +52,11 @@ include(Messages)
 # ------------------------------------------------------------------------------
 # Static/Dynamic build : use cmake's BUILD_SHARED_LIBS but set IPPL_LIB_TYPE for log purposes
 # ------------------------------------------------------------------------------
-
-# the user should use cmake's BUILD_SHARED_LIBS set(IPPL_LIB_TYPE STATIC)
-# mark_as_advanced(IPPL_LIB_TYPE) if(BUILD_SHARED_LIBS) set(IPPL_LIB_TYPE SHARED) endif()
-colour_message(STATUS ${Green} "🔧 IPPL will be built as a ${IPPL_LIB_TYPE} library")
+set(IPPL_LIB_TYPE STATIC)
+if(BUILD_SHARED_LIBS)
+  set(IPPL_LIB_TYPE SHARED)
+endif()
+colour_message(STATUS ${Green} "🔧IPPL will be built as a ${IPPL_LIB_TYPE} library")
 
 # ------------------------------------------------------------------------------
 # Default Build Type

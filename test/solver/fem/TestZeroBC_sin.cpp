@@ -113,6 +113,7 @@ void testFEMSolver(const unsigned& numNodesPerDim, const T& domain_start = 0.0,
     ippl::ParameterList params;
     params.add("tolerance", 1e-13);
     params.add("max_iterations", 2000);
+    params.add("output_type", ippl::FEMPoissonSolver<Field_t, Field_t, 1, 2>::SOL);
     solver.mergeParameters(params);
 
     // solve the problem
@@ -164,18 +165,18 @@ int main(int argc, char* argv[]) {
 
         if (dim == 1) {
             // 1D Sinusoidal
-            for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                testFEMSolver<T, 1>(n, 1.0, 3.0);
+            for (unsigned n = 1 << 2; n <= 1 << 10; n = n << 1) {
+                testFEMSolver<T, 1>(n, -1.0, 1.0);
             }
         } else if (dim == 2) {
             // 2D Sinusoidal
-            for (unsigned n = 1 << 3; n <= 1 << 10; n = n << 1) {
-                testFEMSolver<T, 2>(n, 1.0, 3.0);
+            for (unsigned n = 1 << 2; n <= 1 << 8; n = n << 1) {
+                testFEMSolver<T, 2>(n, -1.0, 1.0);
             }
         } else {
             // 3D Sinusoidal
-            for (unsigned n = 1 << 3; n <= 1 << 9; n = n << 1) {
-                testFEMSolver<T, 3>(n, 1.0, 3.0);
+            for (unsigned n = 1 << 2; n <= 1 << 7; n = n << 1) {
+                testFEMSolver<T, 3>(n, -1.0, 1.0);
             }
         }
 

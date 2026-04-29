@@ -66,14 +66,14 @@ TYPED_TEST(LocateElementTest, DeterministicPoints) {
     ippl::Vector<size_t,Dim> e_nd{};
     ippl::Vector<T,Dim>      xi{};
 
-    ippl::locate_element_nd_and_xi<T,Dim>(M, x1, e_nd, xi);
+    ippl::locate_element_nd_and_xi<T,Dim>(M.h, M.org, x1, e_nd, xi);
 
     for (unsigned d=0; d<Dim; ++d) {
         EXPECT_EQ(e_nd[d], size_t(1));
         EXPECT_NEAR(xi[d], T(0.25), TestFixture::tol());
     }
     
-    ippl::locate_element_nd_and_xi<T,Dim>(M, x2, e_nd, xi);
+    ippl::locate_element_nd_and_xi<T,Dim>(M.h, M.org, x2, e_nd, xi);
     for (unsigned d=0; d<Dim; ++d) {
       EXPECT_EQ(e_nd[d], size_t(2));
       EXPECT_NEAR(xi[d], T(0.75), TestFixture::tol());

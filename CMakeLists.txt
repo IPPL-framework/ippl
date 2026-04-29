@@ -8,9 +8,11 @@ cmake_minimum_required(VERSION 3.24)
 # ------------------------------------------------------------------------------
 cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
 
-# but disable c++20 module scanning until we have better support for it this seems to cause some
+# Disable c++20 module scanning until we have better support for it this seems to cause some
 # problems when using gcc@14
-cmake_policy(SET CMP0155 OLD)
+if(POLICY CMP0155)
+  cmake_policy(SET CMP0155 OLD)
+endif()
 
 # ------------------------------------------------------------------------------
 # Project declaration and version
@@ -30,7 +32,7 @@ include(ProjectSetup)
 # ------------------------------------------------------------------------------
 # Primary IPPL options
 # ------------------------------------------------------------------------------
-set(IPPL_PLATFORMS "Platforms to build IPPL for" CACHE STRING "OPENMP;CUDA")
+set(IPPL_PLATFORMS "SERIAL" CACHE STRING "Platforms to build IPPL for")
 option(BUILD_SHARED_LIBS "Build IPPL as a shared library" OFF)
 option(IPPL_ENABLE_UNIT_TESTS "Enable unit tests using GoogleTest" OFF)
 option(IPPL_ENABLE_FFT "Enable FFT support" OFF)
@@ -45,8 +47,12 @@ option(IPPL_ENABLE_SANITIZER "Enable sanitizer(s)" OFF)
 option(IPPL_USE_ALTERNATIVE_VARIANT
        "Use modified variant implementation (required for CUDA 12.2 + GCC 12.3.0)" OFF)
 option(IPPL_USE_STANDARD_FOLDERS "Put all generated binaries in bin/lib folders" OFF)
-option(IPPL_SKIP_FAILING_TESTS "Do not build/test tests that are currently marked as failing" OFF)
-# option(IPPL_DYL "Build IPPL as a shared library (ON) or static library (OFF)" OFF) if(IPPL_DYL)
+option(IPPL_MARK_FAILING_TESTS
+       "Prefix names of tests that are known to fail with 'known_fail' for filtering with ctest"
+       OFF)
+option(IPPL_ENABLE_SCRIPTS "Generate job script templates for some benchmarks/tests" OFF)
+
+# "Build IPPL as a shared library (ON) or static library (OFF)" OFF) if(IPPL_DYL)
 # set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE) message(WARNING "IPPL_DYL is deprecated; use
 # -DBUILD_SHARED_LIBS=ON instead.") endif()
 
@@ -94,21 +100,6 @@ if(DEFINED USE_ALTERNATIVE_VARIANT)
 endif()
 
 # ------------------------------------------------------------------------------
-# Debug: This tells the compiler to replace occurrences of ${<DIR>} with <x> in debug info and error
-# messages.
-# ------------------------------------------------------------------------------
-add_compile_options(
-  $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-ffile-prefix-map=${CMAKE_SOURCE_DIR}=.>
-  $<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang,GNU>:-ffile-prefix-map=${CMAKE_SOURCE_DIR}=.>)
-
-if(DEFINED FETCHCONTENT_BASE_DIR)
-  add_compile_options(
-    $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang,GNU>:-ffile-prefix-map=${FETCHCONTENT_BASE_DIR}=.3p>
-    $<$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang,GNU>:-ffile-prefix-map=${FETCHCONTENT_BASE_DIR}=.3p>
-  )
-endif()
-
-# ------------------------------------------------------------------------------
 # Define sources for project
 # ------------------------------------------------------------------------------
 add_subdirectory(src)
@@ -142,4 +133,8 @@ endif()
 
 if(IPPL_ENABLE_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+if(IPPL_ENABLE_SCRIPTS)
+  add_subdirectory(scripts)
 endif()

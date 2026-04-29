@@ -4,152 +4,17 @@
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
 //
-
-// Communication specific functions (pack and unpack).
-template <typename Tb, typename Tf>
-void pack(const ippl::NDIndex<3> intersect, Kokkos::View<Tf***>& view,
-          ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
-          ippl::mpi::Communicator::size_type& nsends) {
-    Kokkos::View<Tb*>& buffer = fd.buffer;
-
-    size_t size = intersect.size();
-    nsends      = size;
-    if (buffer.size() < size) {
-        const int overalloc = ippl::Comm->getDefaultOverallocation();
-        Kokkos::realloc(buffer, size * overalloc);
-    }
-
-    const int first0 = intersect[0].first() + nghost - ldom[0].first();
-    const int first1 = intersect[1].first() + nghost - ldom[1].first();
-    const int first2 = intersect[2].first() + nghost - ldom[2].first();
-
-    const int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
-    const int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
-    const int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
-
-    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-    // This type casting to long int is necessary as otherwise Kokkos complains for
-    // intel compilers
-    Kokkos::parallel_for(
-        "pack()",
-        mdrange_type({first0, first1, first2}, {(long int)last0, (long int)last1, (long int)last2}),
-        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-            const int ig = i - first0;
-            const int jg = j - first1;
-            const int kg = k - first2;
-
-            int l = ig + jg * intersect[0].length()
-                    + kg * intersect[1].length() * intersect[0].length();
-
-            Kokkos::complex<Tb> val = view(i, j, k);
-
-            buffer(l) = Kokkos::real(val);
-        });
-    Kokkos::fence();
-}
-
-template <int tensorRank, typename Tb, typename Tf>
-void unpack_impl(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
-                 ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
-                 size_t dim1 = 0, size_t dim2 = 0, bool x = false, bool y = false, bool z = false) {
-    Kokkos::View<Tb*>& buffer = fd.buffer;
-
-    const int first0 = intersect[0].first() + nghost - ldom[0].first();
-    const int first1 = intersect[1].first() + nghost - ldom[1].first();
-    const int first2 = intersect[2].first() + nghost - ldom[2].first();
-
-    const int last0 = intersect[0].last() + nghost - ldom[0].first() + 1;
-    const int last1 = intersect[1].last() + nghost - ldom[1].first() + 1;
-    const int last2 = intersect[2].last() + nghost - ldom[2].first() + 1;
-
-    using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
-    Kokkos::parallel_for(
-        "pack()", mdrange_type({first0, first1, first2}, {last0, last1, last2}),
-        KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-            int ig = i - first0;
-            int jg = j - first1;
-            int kg = k - first2;
-
-            ig = x * (intersect[0].length() - 2 * ig - 1) + ig;
-            jg = y * (intersect[1].length() - 2 * jg - 1) + jg;
-            kg = z * (intersect[2].length() - 2 * kg - 1) + kg;
-
-            int l = ig + jg * intersect[0].length()
-                    + kg * intersect[1].length() * intersect[0].length();
-
-            ippl::detail::ViewAccess<tensorRank, decltype(view)>::get(view, dim1, dim2, i, j, k) =
-                buffer(l);
-        });
-    Kokkos::fence();
-}
-
-template <typename Tb, typename Tf>
-void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<Tf***>& view,
-            ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
-            bool x = false, bool y = false, bool z = false) {
-    unpack_impl<0, Tb, Tf>(intersect, view, fd, nghost, ldom, 0, 0, x, y, z);
-}
-
-template <typename Tb, typename Tf>
-void unpack(const ippl::NDIndex<3> intersect, const Kokkos::View<ippl::Vector<Tf, 3>***>& view,
-            size_t dim1, ippl::detail::FieldBufferData<Tb>& fd, int nghost,
-            const ippl::NDIndex<3> ldom) {
-    unpack_impl<1, Tb, ippl::Vector<Tf, 3>>(intersect, view, fd, nghost, ldom, dim1);
-}
-
-template <typename Tb, typename Tf>
-void unpack(const ippl::NDIndex<3> intersect,
-            const Kokkos::View<ippl::Vector<ippl::Vector<Tf, 3>, 3>***>& view,
-            ippl::detail::FieldBufferData<Tb>& fd, int nghost, const ippl::NDIndex<3> ldom,
-            size_t dim1, size_t dim2) {
-    unpack_impl<2, Tb, ippl::Vector<ippl::Vector<Tf, 3>, 3>>(intersect, view, fd, nghost, ldom,
-                                                             dim1, dim2);
-}
-
-template <typename Tb, typename Tf, unsigned Dim>
-void solver_send(int TAG, int id, int i, const ippl::NDIndex<Dim> intersection,
-                 const ippl::NDIndex<Dim> ldom, int nghost, Kokkos::View<Tf***>& view,
-                 ippl::detail::FieldBufferData<Tb>& fd, std::vector<MPI_Request>& requests) {
-    using memory_space = typename Kokkos::View<Tf***>::memory_space;
-
-    requests.resize(requests.size() + 1);
-
-    ippl::mpi::Communicator::size_type nsends;
-    pack(intersection, view, fd, nghost, ldom, nsends);
-
-    // Buffer message indicates the domain intersection (x, y, z, xy, yz, xz, xyz).
-    ippl::mpi::Communicator::buffer_type<memory_space> buf =
-        ippl::Comm->getBuffer<memory_space, Tf>(nsends);
-
-    int tag = TAG + id;
-
-    ippl::Comm->isend(i, tag, fd, *buf, requests.back(), nsends);
-    buf->resetWritePos();
-}
-
-template <typename Tb, typename Tf, unsigned Dim>
-void solver_recv(int TAG, int id, int i, const ippl::NDIndex<Dim> intersection,
-                 const ippl::NDIndex<Dim> ldom, int nghost, Kokkos::View<Tf***>& view,
-                 ippl::detail::FieldBufferData<Tb>& fd, bool x = false, bool y = false,
-                 bool z = false) {
-    using memory_space = typename Kokkos::View<Tf***>::memory_space;
-
-    ippl::mpi::Communicator::size_type nrecvs;
-    nrecvs = intersection.size();
-
-    // Buffer message indicates the domain intersection (x, y, z, xy, yz, xz, xyz).
-    ippl::mpi::Communicator::buffer_type<memory_space> buf =
-        ippl::Comm->getBuffer<memory_space, Tf>(nrecvs);
-
-    int tag = TAG + id;
-
-    ippl::Comm->recv(i, tag, fd, *buf, nrecvs * sizeof(Tf), nrecvs);
-    buf->resetReadPos();
-
-    unpack(intersection, view, fd, nghost, ldom, x, y, z);
-}
+// Communication helpers (pack / unpack / solver_send / solver_recv) now live in
+// Field/FieldBufferOps.hpp and are included via FFTOpenPoissonSolver.h. All call
+// sites below use the ippl::detail:: qualified names.
 
 namespace ippl {
+
+    using detail::pack;
+    using detail::solver_recv;
+    using detail::solver_send;
+    using detail::unpack;
+
 
     /////////////////////////////////////////////////////////////////////////
     // constructor and destructor
@@ -475,8 +340,12 @@ namespace ippl {
 
         rho2_mr  = 0.0;
         rho2tr_m = 0.0;
-        grnL_m   = 0.0;
-        grn2n1_m = 0.0;
+        if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
+            grnL_m   = 0.0;
+        }
+        if (alg == Algorithm::DCT_VICO) {
+            grn2n1_m = 0.0;
+        }
 
         // call greensFunction and we will get the transformed G in the class attribute
         // this is done in initialization so that we already have the precomputed fct
@@ -2183,4 +2052,92 @@ namespace ippl {
         }
         ippl::Comm->freeAllBuffers();
     };
+
+    ////////////////////////////////////////////////////////////////////////
+    // Shifted Green's function: fills grn_mr with G(r - shift) on the doubled
+    // grid and caches FFT into grntr_m. Kokkos-parallel, mirrors the HOCKNEY
+    // greensFunction() method in structure.
+    //
+    // After this call, solve() will convolve rho with the shifted kernel.
+    // To restore the standard kernel, call greensFunction() explicitly.
+
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::shiftedGreensFunction(
+        const Vector<double, Dim>& shift) {
+        const int alg = this->params_m.template get<int>("algorithm");
+        if (alg != Algorithm::HOCKNEY) {
+            throw IpplException("FFTOpenPoissonSolver::shiftedGreensFunction",
+                                "Shifted Green's function is only implemented for HOCKNEY.");
+        }
+
+        // Sync mesh spacing with the current RHS mesh (same logic as solve()'s
+        // mesh-change detection). Without this, two failure modes compound:
+        //   1. We would compute the shifted kernel at a STALE hr_m.
+        //   2. A subsequent solve() would see hr_m != mesh->getMeshSpacing(),
+        //      set green=true, and call greensFunction(), overwriting the
+        //      shifted kernel with the standard one.
+        // By updating hr_m (and the dependent mesh2_m / meshComplex_m) here,
+        // solve()'s mesh check finds no change and leaves grntr_m intact.
+        mesh_mp = &(this->rhs_mp->get_mesh());
+        for (unsigned int i = 0; i < Dim; ++i) {
+            hr_m[i] = mesh_mp->getMeshSpacing(i);
+        }
+        mesh2_m->setMeshSpacing(hr_m);
+        meshComplex_m->setMeshSpacing(hr_m);
+
+        const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
+
+        typename Field_t::view_type view = grn_mr.getView();
+        const int nghost                 = grn_mr.getNghost();
+        const auto& ldom                 = layout2_m->getLocalNDIndex();
+
+        // Capture simple value arrays for the lambda.
+        Vector<int, Dim> nr      = nr_m;
+        Vector_t hs              = hr_m;
+        Vector<double, Dim> shft = shift;
+
+        // Regularization threshold (axis-min mesh spacing, squared, quartered).
+        scalar_type hmin2 = hs[0] * hs[0];
+        for (unsigned int d = 1; d < Dim; ++d) {
+            hmin2 = (hs[d] * hs[d] < hmin2) ? (hs[d] * hs[d]) : hmin2;
+        }
+        const scalar_type regThresh = 0.25 * hmin2;
+
+        Kokkos::parallel_for(
+            "Shifted Green's function", grn_mr.getFieldRangePolicy(),
+            KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                // local -> global indices
+                const int ig[3] = {i + ldom[0].first() - nghost, j + ldom[1].first() - nghost,
+                                   k + ldom[2].first() - nghost};
+
+                // Hockney convention: map doubled-grid indices.
+                //   ig in [0, N)   -> offset =  ig        * h
+                //   ig in [N, 2N)  -> offset = (ig - 2N)  * h
+                // Subtract the shift to evaluate the shifted Green's function G(r-s).
+                double rsq = 0.0;
+                for (unsigned int d = 0; d < Dim; ++d) {
+                    const double ig_signed = (ig[d] < nr[d])
+                                                 ? static_cast<double>(ig[d])
+                                                 : static_cast<double>(ig[d] - 2 * nr[d]);
+                    const double xoff      = ig_signed * hs[d] - shft[d];
+                    rsq += xoff * xoff;
+                }
+
+                // Sign convention matches greensFunction() (HOCKNEY): grn_mr stores -G0
+                // so that solve()'s `rho2tr_m = -rho2tr_m * grntr_m` yields +conv(rho,G0)
+                // where G0(r) = 1/(4 pi |r|).
+                const bool nearSing = (rsq < regThresh);
+                const scalar_type r = Kokkos::sqrt(rsq + nearSing * regThresh);
+                view(i, j, k)       = -1.0 / (4.0 * pi * r);
+            });
+
+        // Store Fourier transform of shifted Green's function for convolution in solve()
+        static IpplTimings::TimerRef fftsg = IpplTimings::getTimer("FFT: Shifted Green");
+        IpplTimings::startTimer(fftsg);
+
+        fft_m->transform(FORWARD, grn_mr, grntr_m);
+
+        IpplTimings::stopTimer(fftsg);
+    }
+
 }  // namespace ippl

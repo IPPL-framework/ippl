@@ -18,8 +18,8 @@ private:
     PLayout_t<T, Dim> pl_m;
 
 public:
-    ParticleContainer(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& FL)
-        : pl_m(FL, mesh) {
+    ParticleContainer(Mesh_t<Dim>& mesh, FieldLayout_t<Dim>& FL, bool fem = false)
+        : pl_m(FL, mesh, fem) {
         this->initialize(pl_m);
         registerAttributes();
         setupBCs();
@@ -31,6 +31,10 @@ public:
     void setPL(std::shared_ptr<PLayout_t<T, Dim>>& pl) { pl_m = pl; }
 
     void registerAttributes() {
+        //only needed for vis
+        P.set_name("velocity");
+        q.set_name("charge");
+        E.set_name("electric_field");
         // register the particle attributes
         this->addAttribute(q);
         this->addAttribute(P);

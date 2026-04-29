@@ -18,6 +18,7 @@ namespace ippl{
 
     
     template <typename T>
+    KOKKOS_FUNCTION
     FEMVector<T>::FEMVector(const FEMVector<T>& other) : data_m(other.data_m),
                                                     boundaryInfo_m(other.boundaryInfo_m) {
 

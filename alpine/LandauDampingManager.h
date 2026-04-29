@@ -2,6 +2,7 @@
 #define IPPL_LANDAU_DAMPING_MANAGER_H
 
 #include <memory>
+#include <filesystem>
 
 #include "AlpineManager.h"
 #include "FieldContainer.hpp"
@@ -65,7 +66,7 @@ public:
     void pre_run() override {
         Inform m("Pre Run");
 
-	const double pi = Kokkos::numbers::pi_v<T>;
+        const double pi = Kokkos::numbers::pi_v<T>;
 	
         if (this->solver_m == "OPEN") {
             throw IpplException("LandauDamping",
@@ -82,7 +83,15 @@ public:
         this->rmin_m  = 0.0;
         this->rmax_m  = 2 * pi / this->kw_m;
 
-        this->hr_m = this->rmax_m / this->nr_m;
+        bool isFEM = ((this->getSolver() == "FEM") || (this->getSolver() == "FEM_PRECON"));
+        
+        Vector<int, Dim> nElements = this->nr_m - 1;
+        if (isFEM) {
+            this->hr_m = this->rmax_m / nElements;
+        } else {
+            this->hr_m = this->rmax_m / this->nr_m;
+        }
+
         // Q = -\int\int f dx dv
         this->Q_m =
             std::reduce(this->rmax_m.begin(), this->rmax_m.end(), -1., std::multiplies<double>());
@@ -101,11 +110,12 @@ public:
             this->isAllPeriodic_m));
 
         this->setParticleContainer(std::make_shared<ParticleContainer_t>(
-            this->fcontainer_m->getMesh(), this->fcontainer_m->getFL()));
+            this->fcontainer_m->getMesh(), this->fcontainer_m->getFL(),
+            isFEM));
 
         this->fcontainer_m->initializeFields(this->solver_m);
 
-        if (this->getSolver() == "PCG") {
+        if ((this->getSolver() == "PCG") || (this->getSolver() == "FEM_PRECON")) {
             this->setFieldSolver(std::make_shared<FieldSolver_t>(
                 this->solver_m, &this->fcontainer_m->getRho(), &this->fcontainer_m->getE(),
                 &this->fcontainer_m->getPhi(), this->preconditioner_params_m));
@@ -161,6 +171,8 @@ public:
         }
         DistR_t distR(parR);
 
+        bool isFEM = ((this->getSolver() == "FEM") || (this->getSolver() == "FEM_PRECON"));
+
         Vector_t<double, Dim> kw                         = this->kw_m;
         Vector_t<double, Dim> hr                         = this->hr_m;
         Vector_t<double, Dim> origin                     = this->origin_m;
@@ -179,13 +191,12 @@ public:
                 this->fcontainer_m->getRho().getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     // local to global index conversion
-                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5) * hr + origin;
+                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5*(!isFEM)) * hr + origin;
 
                     // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
                     ippl::apply(rhoview, args) = distR.getFullPdf(xvec);
                 });
-
             Kokkos::fence();
 
             this->loadbalancer_m->initializeORB(FL, mesh);
@@ -198,7 +209,7 @@ public:
 
         // Sample particle positions:
         ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
-        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>(*FL, *mesh);
+        rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>(*FL, *mesh, isFEM);
 
         // unsigned int
         size_type totalP = this->totalP_m;
@@ -233,6 +244,13 @@ public:
         IpplTimings::stopTimer(particleCreation);
 
         this->pcontainer_m->q = this->Q_m / totalP;
+
+        // For FEM need an update due to node-centering, as periodic BCs mean
+        // that a particle at R=0 is equivalent to R=1 so it could be on the 
+        // wrong rank and needs to be sent over.
+        if (isFEM) {
+            this->pcontainer_m->update();
+        }
         m << "particles created and initial conditions assigned " << endl;
     }
 
@@ -304,7 +322,16 @@ public:
     void dump() override {
         static IpplTimings::TimerRef dumpDataTimer = IpplTimings::getTimer("dumpData");
         IpplTimings::startTimer(dumpDataTimer);
-        dumpLandau(this->fcontainer_m->getE().getView());
+
+        if ((this->getSolver() == "FEM") || (this->getSolver() == "FEM_PRECON")) {
+            // When using FEM, we only have E on particles
+            // so we use the dump function which computes the 
+            // energy using the particles instead of the field.
+            dumpLandau();
+        } else {
+            dumpLandau(this->fcontainer_m->getE().getView());
+        }
+
         IpplTimings::stopTimer(dumpDataTimer);
     }
 
@@ -341,6 +368,7 @@ public:
         ippl::Comm->reduce(localExNorm, ExAmp, 1, std::greater<double>());
 
         if (ippl::Comm->rank() == 0) {
+            std::filesystem::create_directory("data");
             std::stringstream fname;
             fname << "data/FieldLandau_";
             fname << ippl::Comm->size();
@@ -353,6 +381,57 @@ public:
                 csvout << "time, Ex_field_energy, Ex_max_norm" << endl;
             }
             csvout << this->time_m << " " << fieldEnergy << " " << ExAmp << endl;
+        }
+        ippl::Comm->barrier();
+    }
+
+    // Overloaded dumpLandau which computes the E-field energy using the particles 
+    // instead of using the E-field on the grid (as above). Since we have E for 
+    // each particle, we treat the particles as Monte-Carlo samples to compute
+    // the energy integral.
+    void dumpLandau() {
+        auto Eview = this->pcontainer_m->E.getView();
+        size_type localParticles = this->pcontainer_m->getLocalNum();
+
+        using exec_space = typename Kokkos::View<const size_t*>::execution_space;
+        using policy_type = Kokkos::RangePolicy<exec_space>;
+        policy_type iteration_policy(0, localParticles);
+
+        double localEx2 = 0;
+        Kokkos::parallel_reduce(
+            "Ex stats", iteration_policy,
+            KOKKOS_LAMBDA(const size_t i, double& E2) {
+                double val = Eview(i)[0];
+                double e2  = Kokkos::pow(val, 2);
+                E2 += e2;
+            },
+            Kokkos::Sum<double>(localEx2));
+
+        double globaltemp = 0.0;
+        ippl::Comm->reduce(localEx2, globaltemp, 1, std::plus<double>());
+
+        // MC integration: divide by no. of particles N and multiply by volume
+        ippl::Vector<T, Dim> domain_size = this->rmax_m - this->rmin_m;
+        double fieldEnergy =
+            std::reduce(domain_size.begin(), domain_size.end(),
+                        globaltemp, std::multiplies<double>());
+
+        fieldEnergy = fieldEnergy / this->totalP_m;
+
+        if (ippl::Comm->rank() == 0) {
+            std::filesystem::create_directory("data");
+            std::stringstream fname;
+            fname << "data/FieldLandau_";
+            fname << ippl::Comm->size();
+            fname << "_manager";
+            fname << ".csv";
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(16);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+            if (std::fabs(this->time_m) < 1e-14) {
+                csvout << "time, Ex_field_energy" << endl;
+            }
+            csvout << this->time_m << " " << fieldEnergy << endl;
         }
         ippl::Comm->barrier();
     }

@@ -164,7 +164,6 @@ endfunction()
 #   * if the requested version is not found on the system
 #   * if the requested version is found but doesn't have the backends/platforms we need
 # then build from source. 
-# We use FIND_PACKAGE_ARGS (cmake 3.24+) to allow FetchContent to find a system version
 # cmake-format: on
 # ------------------------------------------------------------------------------
 # set the default version of kokkos we will ask for if not already set
@@ -244,18 +243,30 @@ if(IPPL_ENABLE_FFT)
   if(Heffte_FOUND)
     colour_message(STATUS ${Green} "✅ Heffte ${Heffte_VERSION} found externally")
     set(HEFFTE_OK TRUE)
+    # if we want cuda, but the installed heffte isn't using cuda
     if("CUDA" IN_LIST IPPL_PLATFORMS AND NOT Heffte_CUDA_FOUND)
       set(HEFFTE_OK FALSE)
+      set(heffte_error "CUDA support requested, but installed Heffte does not use cuda")
     endif()
+
+    # if we want do not want cuda, but the installed heffte is using  using cuda
+    if((NOT "CUDA" IN_LIST IPPL_PLATFORMS) AND Heffte_CUDA_FOUND)
+      set(HEFFTE_OK FALSE)
+      set(heffte_error "Installed Heffte uses CUDA but user has not requested CUDA support")
+    endif()
+    # if Heffte isn't using fftw
     if(IPPL_ENABLE_FFTW AND NOT Heffte_FFTW_FOUND)
       set(HEFFTE_OK FALSE)
+      set(heffte_error "Installed Heffte library does not use fftw, but fft support requested")
     endif()
+
     if(NOT HEFFTE_OK)
       colour_message(
         FATAL_ERROR
         ${Red}
-        "❌ Heffte found but Heffte_CUDA_FOUND=${Heffte_CUDA_FOUND} and Heffte_FFTW_FOUND=${Heffte_FFTW_FOUND}\n"
-        "use -DHeffte_VERSION=git.xxx (tag/branch/sha), (eg -DHeffte_VERSION=git.v2.4.1)")
+        "❌ ${heffte_error}\n"
+        "IPPL_PLATFORMS=${IPPL_PLATFORMS}, Heffte_CUDA_FOUND=${Heffte_CUDA_FOUND}, Heffte_FFTW_FOUND=${Heffte_FFTW_FOUND}\n"
+        "Try -DHeffte_VERSION=git.xxx (tag/branch/sha), (eg -DHeffte_VERSION=git.v2.4.1)\n")
     endif()
   else()
     # Define options BEFORE calling MakeAvailable

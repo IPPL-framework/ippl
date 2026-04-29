@@ -61,7 +61,7 @@ namespace ippl {
 
     public:
         // constructor: this one also takes a Mesh
-        ParticleSpatialLayout(FieldLayout<Dim>&, Mesh&);
+        ParticleSpatialLayout(FieldLayout<Dim>&, Mesh&, bool fem = false);
 
         ParticleSpatialLayout()
             : detail::ParticleLayout<T, Dim, PositionProperties...>() {}

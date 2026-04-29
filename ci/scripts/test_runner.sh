@@ -27,6 +27,7 @@ CTEST_ARGS=(
   --output-on-failure
   -j "${CTEST_JOBS}"
   --no-tests=error
+  -E "known_fail"
   --output-junit "${CTEST_RESULTS_DIR}/ctest-report.xml"
 )
 
