@@ -57,7 +57,7 @@ namespace ippl {
 
             virtual std::string get_name() const = 0;
 
-            // Allocate raw capacity for N particles. Does NOT touch the logical
+            // Allocate internal capacity for N particles. Does NOT touch the logical
             // particle count (localNum_m on ParticleBase). Existing data is not preserved.
             virtual void alloc(size_type) = 0;
 
