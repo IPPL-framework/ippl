@@ -135,8 +135,10 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a245c7868a65cc159d2107c89be7d9728"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a245c7868a65cc159d2107c89be7d9728">create</a> (<a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a>) override</td></tr>
-<tr class="separator:a245c7868a65cc159d2107c89be7d9728"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56ffe686e87234cd8f3c745425b52fcc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a56ffe686e87234cd8f3c745425b52fcc">create</a> (<a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a>, bool non_destructive=false) override</td></tr>
+<tr class="separator:a56ffe686e87234cd8f3c745425b52fcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a116791f4bb46361b40568d0e7bba260e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a116791f4bb46361b40568d0e7bba260e">alloc</a> (<a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a>) override</td></tr>
+<tr class="separator:a116791f4bb46361b40568d0e7bba260e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05312a1889815853c70f2f0b53fc26d6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a05312a1889815853c70f2f0b53fc26d6">destroy</a> (const <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> &amp;deleteIndex, const <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> &amp;keepIndex, <a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a> invalidCount) override</td></tr>
 <tr class="separator:a05312a1889815853c70f2f0b53fc26d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2c248837b2a5a79f3c53dff4e9904c4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ae2c248837b2a5a79f3c53dff4e9904c4">pack</a> (const <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> &amp;) override</td></tr>
@@ -156,6 +158,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af17581dfc1c80932122c3bb8635ad639"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#af17581dfc1c80932122c3bb8635ad639">resize</a> (<a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a> n)</td></tr>
 <tr class="separator:af17581dfc1c80932122c3bb8635ad639"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade0eb9794eb380bb58813913852a2a23"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ade0eb9794eb380bb58813913852a2a23">realloc</a> (<a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a> n)</td></tr>
+<tr class="memdesc:ade0eb9794eb380bb58813913852a2a23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reallocate the underlying view with a new size.  <a href="classippl_1_1ParticleAttrib.html#ade0eb9794eb380bb58813913852a2a23">More...</a><br /></td></tr>
 <tr class="separator:ade0eb9794eb380bb58813913852a2a23"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3166186f30b00e52ff4274c9d9ba3a2d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a3166186f30b00e52ff4274c9d9ba3a2d">print</a> ()</td></tr>
 <tr class="separator:a3166186f30b00e52ff4274c9d9ba3a2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -378,6 +381,34 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a116791f4bb46361b40568d0e7bba260e" name="a116791f4bb46361b40568d0e7bba260e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a116791f4bb46361b40568d0e7bba260e">&#9670;&#160;</a></span>alloc()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::alloc </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a>&#160;</td>
+          <td class="paramname"><em>n</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="aeaf71c160901943212aeeceb41d9e8fb" name="aeaf71c160901943212aeeceb41d9e8fb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aeaf71c160901943212aeeceb41d9e8fb">&#9670;&#160;</a></span>applyPermutation()</h2>
 
@@ -416,8 +447,8 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 
 </div>
 </div>
-<a id="a245c7868a65cc159d2107c89be7d9728" name="a245c7868a65cc159d2107c89be7d9728"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a245c7868a65cc159d2107c89be7d9728">&#9670;&#160;</a></span>create()</h2>
+<a id="a56ffe686e87234cd8f3c745425b52fcc" name="a56ffe686e87234cd8f3c745425b52fcc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a56ffe686e87234cd8f3c745425b52fcc">&#9670;&#160;</a></span>create()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -431,8 +462,18 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
           <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::create </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a>&#160;</td>
-          <td class="paramname"><em>n</em></td><td>)</td>
+          <td class="paramname"><em>n</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>non_destructive</em> = <code>false</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -985,6 +1026,15 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Reallocate the underlying view with a new size. </p>
+<p >This function reallocates the device view to a new size. Existing data is discarded and should not be relied upon after this call. Note that this function does not apply overallocation. For use from outside, call <code><a class="el" href="classippl_1_1ParticleAttrib.html#a116791f4bb46361b40568d0e7bba260e">ParticleAttrib::alloc(size_type)</a></code> instead.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">n</td><td>The new size to allocate in the internal view. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
