@@ -1,6 +1,8 @@
 #ifndef IPPL_GATHER_H
 #define IPPL_GATHER_H
 
+#include "Utility/IpplException.h"
+
 #include "Interpolation/Binning.h"
 #include "Interpolation/Gather/AtomicGather.h"
 #include "Interpolation/Gather/GatherArgumentsBase.h"
@@ -16,9 +18,16 @@ namespace ippl {
             using FieldTr = ippl::detail::FieldTraits<std::decay_t<FieldType>>;
             using PosTr   = ippl::detail::AttribTraits<std::decay_t<PositionsType>>;
             using ValTr   = ippl::detail::AttribTraits<std::decay_t<ValuesType>>;
-            using VecTr   = ippl::detail::VectorTraits<typename PosTr::value_type>;
 
-            using type = GatherTypes<FieldTr::dim, typename VecTr::real_type, std::decay_t<Kernel>,
+            // Use the kernel's own value_type for the geometric real-precision
+            // computations (origin, invdx, weights). When the position attribute
+            // is float but the mesh is double, taking RealType from the position
+            // would silently downcast the mesh spacing and lose precision; the
+            // kernel knows the correct working precision and the legacy CIC
+            // path uses the mesh type explicitly via Kernel = LinearKernel<T>.
+            using RealType = typename std::decay_t<Kernel>::value_type;
+
+            using type = GatherTypes<FieldTr::dim, RealType, std::decay_t<Kernel>,
                                      typename FieldTr::view_type, typename PosTr::view_type,
                                      typename ValTr::view_type>;
         };
@@ -52,14 +61,8 @@ namespace ippl {
                 case Interpolation::GatherMethod::AtomicSort:
                     dispatch<Interpolation::detail::AtomicGather, Types, true>(field, positions, values);
                     break;
-                case Interpolation::GatherMethod::Tiled:
-                    // TODO: Implement tiled, fallback to atomic
-                    dispatch<Interpolation::detail::AtomicGather, Types, false>(field, positions, values);
-                    break;
-                case Interpolation::GatherMethod::Native:
-                    // TODO: Implement native, fallback to atomic
-                    dispatch<Interpolation::detail::AtomicGather, Types, false>(field, positions, values);
-                    break;
+                default:
+                    throw IpplException("Gather", "Unknown GatherMethod");
             }
         }
 
@@ -81,11 +84,15 @@ namespace ippl {
             const int width          = kernel_m.width();
             const size_t n_particles = positions.getParticleCount();
 
-            Interpolation::WidthDispatcher<1, 14>::dispatch(width, [&]<int W>() {
+            // The halo must be valid before any stencil reads it, and is
+            // independent of the runtime kernel width — fill once outside
+            // the WidthDispatcher.
+            field.fillHalo();
+
+            Interpolation::WidthDispatcher<1, std::decay_t<Kernel>::max_width>::dispatch(width, [&]<int W>() {
                 auto args = Impl<W, Types, UseSorting>::Arguments::create(field, positions, values, kernel_m,
                                                                            config_m, binning);
                 Impl<W, Types, UseSorting> functor(std::move(args));
-                field.fillHalo();
                 functor.run(n_particles);
             });
         }

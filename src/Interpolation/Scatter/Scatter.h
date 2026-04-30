@@ -32,9 +32,12 @@ namespace ippl {
             using FieldTr = ippl::detail::FieldTraits<std::decay_t<FieldType>>;
             using PosTr   = ippl::detail::AttribTraits<std::decay_t<PositionsType>>;
             using ValTr   = ippl::detail::AttribTraits<std::decay_t<ValuesType>>;
-            using VecTr   = ippl::detail::VectorTraits<typename PosTr::value_type>;
 
-            using type = ScatterTypes<FieldTr::dim, typename VecTr::real_type, std::decay_t<Kernel>,
+            // RealType from the kernel's value_type — see Gather.h for the
+            // rationale (avoids float-position downcasting the mesh spacing).
+            using RealType = typename std::decay_t<Kernel>::value_type;
+
+            using type = ScatterTypes<FieldTr::dim, RealType, std::decay_t<Kernel>,
                                       typename FieldTr::view_type, typename PosTr::view_type,
                                       typename ValTr::view_type>;
         };
@@ -44,8 +47,11 @@ namespace ippl {
             typename DeduceScatterTypes<Kernel, FieldType, PositionsType, ValuesType>::type;
 
         template <template <int, class, class> class Impl, unsigned Dim, typename RealType,
-                  bool IsComplex>
+                   bool IsComplex>
         TileSizeTuner<Dim, Vector<int, Dim>>& get_scatter_tuner() {
+            // The IsComplex template parameter is only used as part of the
+            // function template's mangled name, ensuring real and complex
+            // tuners stay separate without sharing a static-local instance.
             static TileSizeTuner<Dim, Vector<int, Dim>> tuner;
             return tuner;
         }
@@ -66,6 +72,17 @@ namespace ippl {
             : kernel_m(kernel)
             , config_m(config) {}
 
+        /**
+         * @brief Scatter `values` from `positions` into `field`.
+         *
+         * Side effects:
+         *  - `field` is overwritten (zeroed and refilled with the scatter sum).
+         *    Callers wanting to accumulate must keep their own running buffer.
+         *  - `field.accumulateHalo()` is invoked at the end (one MPI exchange).
+         *  - When `enable_tuning=false` and `lock_method=false`, the resolved
+         *    method may be re-selected from `TileSizeCache::get_best(...)`,
+         *    which mutates `config_m.method` for subsequent calls.
+         */
         template <typename ValueT, typename FieldT, class Mesh, class Centering, class... ViewArgs,
                   typename ParticleT, class... PosProps, class... ValProps>
         void operator()(Field<FieldT, Dim, Mesh, Centering, ViewArgs...>& field,
@@ -94,11 +111,32 @@ namespace ippl {
                 }
             }
 
+            // Backend-feasibility clamp. CSV presets are tagged by GPU arch but
+            // a runtime mismatch (e.g. an sm_90 CSV being read by a Serial
+            // build) leaves the cache holding Tiled/OutputFocused configs with
+            // team_size > 1 - those abort inside their TeamPolicy construction
+            // on a host backend. Force Atomic on backends where teams are not
+            // a meaningful parallelism (Serial today; extend the trait below
+            // if more host-only backends ever land).
+#ifdef KOKKOS_ENABLE_SERIAL
+            using exec_space_ = typename Types::execution_space;
+#endif
+            constexpr bool host_only_backend =
+#ifdef KOKKOS_ENABLE_SERIAL
+                std::is_same_v<exec_space_, Kokkos::Serial>
+#else
+                false
+#endif
+                ;
+            if constexpr (host_only_backend) {
+                if (config_m.method != Interpolation::ScatterMethod::Atomic) {
+                    config_m.method = Interpolation::ScatterMethod::Atomic;
+                }
+            }
+
             const auto method = config_m.method;
 
-            const bool run_atomic =
-                (method == Interpolation::ScatterMethod::Atomic)
-                || (method == Interpolation::ScatterMethod::OutputFocusedZBatch);
+            const bool run_atomic = (method == Interpolation::ScatterMethod::Atomic);
 
             if (run_atomic) {
                 if (config_m.sort) {
@@ -199,10 +237,12 @@ namespace ippl {
 
             Vector<int, Dim> tile = cfg.get_tile_size();
 
+            // Per-team scratch capacity is invariant across the loop iterations
+            // for a fixed team_size. Hoist the query.
+            const size_t avail = team_policy(1, cfg.team_size).scratch_size_max(0);
+
             const int max_iter = static_cast<int>(Dim) * 64 + 8;
             for (int itr = 0; itr < max_iter; ++itr) {
-                const size_t avail = team_policy(1, cfg.team_size).scratch_size_max(0);
-
                 const size_t req = Impl<W, Types, Policy>::template compute_scratch_size<IsComplex>(
                     tile, cfg.team_size, cfg.z_batches);
                 if (req <= avail)
@@ -255,7 +295,7 @@ namespace ippl {
             const int width          = kernel_m.width();
             const size_t n_particles = positions.getParticleCount();
 
-            Interpolation::WidthDispatcher<1, 14>::dispatch(width, [&]<int W>() {
+            Interpolation::WidthDispatcher<1, std::decay_t<decltype(kernel_m)>::max_width>::dispatch(width, [&]<int W>() {
                 // ── Step 1: Resolve config from cache (density-aware) ──────────
                 auto tuned_config = resolve_config<Impl, W, Types, Policy, is_complex>(rho_est);
 
