@@ -23,8 +23,7 @@
 namespace ippl {
     namespace detail {
         /*!
-         * @file Archive.h
-         * Serialize and desesrialize particle attributes.
+         * Serialize and deserialize particle attributes.
          * @tparam Properties variadic template for Kokkos::View
          */
 
@@ -112,29 +111,53 @@ namespace ippl {
             void resetWritePos() { writepos_m = 0; }
             void resetReadPos() { readpos_m = 0; }
 
+            using memory_space = typename buffer_type::memory_space;
+
+            //! True iff this Archive's memory space is host-inaccessible
+            //! (CUDA device or HIP device). UVM is excluded — it works with
+            //! the regular Kokkos::View path because the host can address
+            //! the memory directly. For a HostSpace archive the host-side
+            //! memcpy in serialize() requires a host-accessible buffer, so
+            //! the raw device allocation path must NOT be used there.
+            static constexpr bool uses_raw_device_alloc =
+#if defined(KOKKOS_ENABLE_CUDA)
+                std::is_same_v<memory_space, Kokkos::CudaSpace>
+#elif defined(KOKKOS_ENABLE_HIP)
+                std::is_same_v<memory_space, Kokkos::HIPSpace>
+#else
+                false
+#endif
+                ;
+
         private:
             //! write position for serialization
             size_type writepos_m;
             //! read position for deserialization
             size_type readpos_m;
 
-#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
-            //! Raw device pointer from cudaMalloc/hipMalloc (page-aligned, IPC-safe)
+            //! Raw device pointer (only valid when uses_raw_device_alloc).
             pointer_type buffer_ptr_m = nullptr;
             size_type buffer_size_m   = 0;
+            //! Standard Kokkos view buffer (used for host-accessible spaces).
+            buffer_type buffer_m;
 
-            pointer_type bufferData() const { return buffer_ptr_m; }
-            size_type bufferSize() const { return buffer_size_m; }
+            pointer_type bufferData() const {
+                if constexpr (uses_raw_device_alloc) {
+                    return buffer_ptr_m;
+                } else {
+                    return buffer_m.data();
+                }
+            }
+            size_type bufferSize() const {
+                if constexpr (uses_raw_device_alloc) {
+                    return buffer_size_m;
+                } else {
+                    return buffer_m.size();
+                }
+            }
 
             void gpuAlloc(size_type size);
             void gpuFree();
-#else
-            //! serialized data (standard Kokkos view on CPU)
-            buffer_type buffer_m;
-
-            pointer_type bufferData() const { return buffer_m.data(); }
-            size_type bufferSize() const { return buffer_m.size(); }
-#endif
         };
     }  // namespace detail
 }  // namespace ippl
