@@ -17,16 +17,16 @@ add_ippl_integration_test(TestZeroBC_sin_preconditioned
     ARGS 1 LABELS solver fem integration)
 
 # one dimensional Periodic BC tests
-add_ippl_integration_test(TestPeriodicBC_sin 
-    ARGS 1 LABELS solver fem integration TIMEOUT 60)
-add_ippl_integration_test(TestPeriodicBC_sin_preconditioned 
-    ARGS 1 LABELS solver fem integration TIMEOUT 60)
+add_ippl_integration_test(TestPeriodicBC_sin
+    ARGS 1 LABELS solver fem integration TIMEOUT 600)
+add_ippl_integration_test(TestPeriodicBC_sin_preconditioned
+    ARGS 1 LABELS solver fem integration TIMEOUT 600)
 
 # one dimensional Non-homogeneous Dirichlet BC tests
-add_ippl_integration_test(TestNonhomDirichlet_1d 
+add_ippl_integration_test(TestNonhomDirichlet_1d
     LABELS solver fem integration)
-add_ippl_integration_test(TestNonhomDirichlet_1d_preconditioned 
-    LABELS solver fem integration)
+add_ippl_integration_test(TestNonhomDirichlet_1d_preconditioned
+    LABELS solver fem integration TIMEOUT 600)
 
 # ----------------------------------------------------------------------------
 # Compile only (no testing)

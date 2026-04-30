@@ -27,6 +27,11 @@ namespace ippl {
         ippl::parallel_reduce(
             "Field::innerProduct(Field&, Field&)", f1.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const index_array_type& args, T& val) {
+                // Force-capture view1/view2 outside the if-constexpr branches:
+                // nvcc cannot first-capture variables inside a constexpr-if
+                // branch on extended __host__ __device__ lambdas.
+                (void)view1;
+                (void)view2;
                 if constexpr (is_complex_v<T>) {
                     val += apply(view1, args) * Kokkos::conj(apply(view2, args));
                 } else {
