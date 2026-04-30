@@ -68,7 +68,7 @@ namespace ippl {
      *
      *  Minimal empty base class for all ParticleBase specializations.
      *  Needed for e.g: c++20 constraints and concepts using std::derived_from
-     * 
+     *
      */
     class ParticleBaseBase {
     public:
@@ -84,7 +84,7 @@ namespace ippl {
      * IDs will be disabled for the bunch)
      */
     template <class PLayout, typename... IDProperties>
-    class ParticleBase: public ParticleBaseBase {
+    class ParticleBase : public ParticleBaseBase {
         constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
 
     public:
@@ -173,7 +173,7 @@ namespace ippl {
 
         /*!
          * Set all boundary conditions
-         * @param bc the boundary conditions
+         * @param bcs the boundary conditions
          */
         void setParticleBC(const bc_container_type& bcs) { layout_m->setParticleBC(bcs); }
 
@@ -308,7 +308,6 @@ namespace ippl {
          * @tparam HashType the hash view type
          * @param rank the destination rank
          * @param tag the MPI tag
-         * @param sendNum the number of messages already sent (to distinguish the buffers)
          * @param requests destination vector in which to store the MPI requests for polling
          * purposes
          * @param hash a hash view indicating which particles need to be sent to which rank
@@ -321,7 +320,6 @@ namespace ippl {
          * Receives particles from another rank
          * @param rank the source rank
          * @param tag the MPI tag
-         * @param recvNum the number of messages already received (to distinguish the buffers)
          * @param nRecvs the number of particles to receive
          */
         void recvFromRank(int rank, int tag, size_type nRecvs);
@@ -329,6 +327,7 @@ namespace ippl {
         /*!
          * Serialize to do MPI calls.
          * @param ar archive
+         * @param nsends number of particles to serialize
          */
         template <typename Archive>
         void serialize(Archive& ar, size_type nsends);
@@ -336,6 +335,7 @@ namespace ippl {
         /*!
          * Deserialize to do MPI calls.
          * @param ar archive
+         * @param nrecvs number of particles to deserialize
          */
         template <typename Archive>
         void deserialize(Archive& ar, size_type nrecvs);
@@ -352,14 +352,13 @@ namespace ippl {
     protected:
         /*!
          * Fill attributes of buffer.
-         * @param buffer to send
          * @param hash function to access index.
          */
         void pack(const hash_container_type& hash);
 
         /*!
          * Fill my attributes.
-         * @param buffer received
+         * @param nrecvs number of particles to unpack
          */
         void unpack(size_type nrecvs);
 

@@ -14,7 +14,16 @@
 # from the .git/hooks directory, so the symlink has to be redirected)
 # ln -s -f ../../scripts/pre-commit .git/hooks/pre-commit
 
-CLANG_FORMAT_VERSION=clang-format-21
+CLANG_FORMAT_VERSION=${CLANG_FORMAT_VERSION:-clang-format-21}
+
+if ! command -v "$CLANG_FORMAT_VERSION" >/dev/null 2>&1; then
+    if command -v clang-format >/dev/null 2>&1; then
+        CLANG_FORMAT_VERSION=clang-format
+    else
+        printf "clang-format executable not found. Install clang-format-21 or set CLANG_FORMAT_VERSION.\n"
+        exit 1
+    fi
+fi
 
 red=$(tput setaf 1)
 green=$(tput setaf 2)
@@ -25,9 +34,33 @@ normal=$(tput sgr0)
 cxx_match="c|cc|cp|cxx|cpp|c\+\+|h|hh|hpp|hxx|h\+\+|ipp|tpp|tcc|txx|inl|inc"
 cmake_match="CMakeLists\.txt|\.cmake"
 
+relative_to_git_prefix() {
+    local path="$1"
+    local prefix="${GIT_PREFIX:-}"
+
+    if [ -n "$prefix" ]; then
+        case "$path" in
+            "$prefix"*) printf "%s\n" "${path#$prefix}" ;;
+            *) printf "%s\n" "$path" ;;
+        esac
+    else
+        printf "%s\n" "$path"
+    fi
+}
+
+clang_assume_filename() {
+    local path="$1"
+
+    case "$path" in
+        *.h) printf "%s.cpp\n" "$path" ;;
+        *) printf "%s\n" "$path" ;;
+    esac
+}
+
 cxxfiles=()
 for file in `git diff --cached --name-only --diff-filter=ACMRT | grep -E "\.(${cxx_match})$"`; do
-    if ! cmp -s <(git show :${file}) <(git show :${file}|$CLANG_FORMAT_VERSION -style=file --assume-filename="${file}"); then
+    assume_filename=$(clang_assume_filename "$file")
+    if ! cmp -s <(git show :${file}) <(git show :${file}|$CLANG_FORMAT_VERSION -style=file --assume-filename="${assume_filename}"); then
         cxxfiles+=("${file}")
     fi
 done
@@ -49,7 +82,7 @@ full_list=
 if [ -n "${cxxfiles}" ]; then
     printf "# ${blue}clang-format ${red}error pre-commit${normal} : To fix run the following (use git commit ${yellow}--no-verify${normal} to bypass)\n"
     for f in "${cxxfiles[@]}" ; do
-        rel=$(realpath --relative-to "./$GIT_PREFIX" "$f")
+        rel=$(relative_to_git_prefix "$f")
         printf "$CLANG_FORMAT_VERSION -style=file -i %s\n" "$rel"
         full_list="${rel} ${full_list}"
     done
@@ -59,7 +92,7 @@ fi
 if [ -n "${cmakefiles}" ]; then
     printf "# ${green}cmake-format ${red}error pre-commit${normal} : To fix run the following (use git commit ${yellow}--no-verify${normal} to bypass)\n"
     for f in "${cmakefiles[@]}" ; do
-        rel=$(realpath --relative-to "./$GIT_PREFIX" "$f")
+        rel=$(relative_to_git_prefix "$f")
         printf "cmake-format -i %s\n" "$rel"
         full_list="${rel} ${full_list}"
     done
