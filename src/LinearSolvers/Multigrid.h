@@ -73,18 +73,6 @@ namespace ippl {
         constexpr int power3(int d) {
             return (d == 0) ? 1 : 3 * power3(d - 1);
         }
-
-        // Helper to unpack an array of indices into a Kokkos View
-        template <typename ViewType, typename ArrayType, std::size_t... Is>
-        KOKKOS_INLINE_FUNCTION auto& access_view_impl(const ViewType& view, const ArrayType& idx,
-                                                      std::index_sequence<Is...>) {
-            return view(idx[Is]...);
-        }
-
-        template <unsigned Dim, typename ViewType, typename ArrayType>
-        KOKKOS_INLINE_FUNCTION auto& access_view(const ViewType& view, const ArrayType& idx) {
-            return access_view_impl(view, idx, std::make_index_sequence<Dim>{});
-        }
     }  // namespace multigrid
 
     template <typename Field, typename OperatorF>
