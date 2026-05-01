@@ -123,6 +123,20 @@ namespace ippl {
 #endif
 #endif
 
+#ifdef KOKKOS_ENABLE_SYCL
+        // No SYCL-specific Heffte backend wired up yet. Heffte's oneMKL backend
+        // would go here when Heffte_ENABLE_ONEAPI plumbing is added in IPPL's
+        // Dependencies.cmake. For now, fall back to the stock CPU backend so
+        // SYCL builds at least compile (FFTs will run on the host).
+        template <>
+        struct HeffteBackendType<Kokkos::SYCLDeviceUSMSpace> {
+            using backend     = heffte::backend::stock;
+            using backendSine = heffte::backend::stock_sin;
+            using backendCos  = heffte::backend::stock_cos;
+            using backendCos1 = heffte::backend::stock_cos1;
+        };
+#endif
+
 #if !defined(Heffte_ENABLE_MKL) && !defined(Heffte_ENABLE_FFTW)
         /**
          * Use heFFTe's inbuilt 1D fft computation on CPUs if no
