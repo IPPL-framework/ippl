@@ -111,6 +111,15 @@ namespace ippl {
          */
         void initializeElementIndices(const Layout_t& layout);
 
+        /**
+         * @brief Return the local NDIndex of this rank's subdomain.
+         *
+         * Exposed so that free-function assembly kernels (e.g.
+         * assemble_current_whitney1) can obtain the ldom needed by
+         * getFEMVectorDOFIndices without accessing the private layout_m.
+         */
+        NDIndex<Dim> getLocalNDIndex() const { return layout_m.getLocalNDIndex(); }
+
         /// Degree of Freedom operations //////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////
 

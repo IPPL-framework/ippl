@@ -56,5 +56,10 @@
 
 // FEM Operators
 #include "FEM/FEMInterpolate.hpp"
+#include "FEM/GridPathSegmenter.h"
+#include "FEM/ProjectCurrent.hpp"
+
+// Interpolation
+#include "Interpolation/CurrentDeposition.hpp"
 
 #endif
