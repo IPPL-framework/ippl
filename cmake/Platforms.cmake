@@ -18,7 +18,7 @@
 # -----------------------------------------------------------------------------
 # platforms we do support
 # -----------------------------------------------------------------------------
-set(IPPL_SUPPORTED_PLATFORMS "SERIAL;OPENMP;CUDA;HIP")
+set(IPPL_SUPPORTED_PLATFORMS "SERIAL;OPENMP;CUDA;HIP;SYCL")
 
 # === Default to SERIAL if IPPL_PLATFORMS not set ===
 if(NOT IPPL_PLATFORMS)
