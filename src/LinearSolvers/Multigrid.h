@@ -317,7 +317,7 @@ namespace ippl {
 
             // 1. Calculate and sync residual
             Field residual_fine = residual(lev_fine.u, lev_fine.f);
-            residual_fine.fillHalo();  // IPPL halo exchange
+            residual_fine.fillHalo();
             lev_coarse.f = 0.0;
 
             // 2. Setup domains and views
@@ -330,79 +330,37 @@ namespace ippl {
             auto rf = residual_fine.getView();
             auto fc = lev_coarse.f.getView();
 
-            // N-dimensional grid sizes for boundaries
-            Kokkos::Array<int, Dim> nxc;
-            for (unsigned d = 0; d < Dim; ++d) {
-                nxc[d] = lev_coarse.nx[d];
-            }
+            // 3. Calculate number of children per coarser cell
+            constexpr int num_children = 1 << Dim;                           // 2^Dim
+            constexpr double denom     = static_cast<double>(num_children);  // 2^Dim
 
-            constexpr int stencil_size = multigrid::power3(Dim);
-            constexpr double denom     = static_cast<double>(1 << (2 * Dim));  // 4^Dim
+            using index_array_type = typename RangePolicy<Dim>::index_array_type;
 
-            // 3. N-Dimensional Kokkos Loop
+            // 4. N-Dimensional Kokkos Loop
             ippl::parallel_for(
                 "restrict_fullweight", lev_coarse.f.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const auto& args) {
-                    // Pack variadic arguments into a generic array
-                    Kokkos::Array<int, Dim> idxC;
-                    for (unsigned d = 0; d < Dim; ++d)
-                        idxC[d] = static_cast<int>(args[d]);
-
-                    Kokkos::Array<int, Dim> global_idxC;
-
-                    bool outside = false;
-
-                    // Check domain bounds generically
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    // Local coarse index -> local fine "lower corner" of the contained block
+                    ippl::Vector<int, Dim> idxF_base;
                     for (unsigned d = 0; d < Dim; ++d) {
-                        global_idxC[d] = idxC[d] + lDomC[d].first() - nghC;
-                        if (global_idxC[d] < 0 || global_idxC[d] >= nxc[d]) {
-                            outside = true;
-                        }
+                        int global_idxC = static_cast<int>(args[d]) + lDomC[d].first() - nghC;
+                        idxF_base[d]    = 2 * global_idxC - lDomF[d].first() + nghF;
                     }
 
-                    if (outside)
-                        return;
-
-                    // Map coarse coordinates to fine coordinates
-                    Kokkos::Array<int, Dim> idxF_center;
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        int global_idxF = 2 * global_idxC[d];
-                        idxF_center[d]  = global_idxF - lDomF[d].first() + nghF;
-                    }
-
+                    // Sum the 2^Dim contained fine cells
                     double sum = 0.0;
-
-                    // Flat loop over the 3^Dim stencil
-                    for (int s = 0; s < stencil_size; ++s) {
-                        int temp   = s;
-                        int zeroes = 0;
-                        Kokkos::Array<int, Dim> idxF_current;
-
-                        // Decode flat index 's' into N-dimensional offsets (-1, 0, 1)
+                    for (int s = 0; s < num_children; ++s) {
+                        Vector<int, Dim> idxF = idxF_base;
                         for (unsigned d = 0; d < Dim; ++d) {
-                            int offset = (temp % 3) - 1;
-                            temp /= 3;
-
-                            idxF_current[d] = idxF_center[d] + offset;
-                            if (offset == 0)
-                                zeroes++;
+                            idxF[d] += (s >> d) & 1;
                         }
-
-                        // Weight is 2^(number of zero-offsets)
-                        const double w = static_cast<double>(1 << zeroes);
-
-                        sum += w * multigrid::access_view<Dim>(rf, idxF_current);
+                        sum += apply(rf, idxF);
                     }
 
-                    // Write to coarse grid view using unpacking helper
-                    // apply(fc, args);
-                    multigrid::access_view_impl(fc, idxC, std::make_index_sequence<Dim>{}) =
-                        sum / denom;
+                    apply(fc, args) = sum / denom;
                 });
 
             ippl::fence();
-
-            // Handle boundary
             lev_coarse.f.fillHalo();
         }
 
@@ -429,83 +387,44 @@ namespace ippl {
             auto uf = lev_fine.u.getView();
             auto uc = lev_coarse.u.getView();
 
-            Kokkos::Array<int, Dim> nxf;
-            for (unsigned d = 0; d < Dim; ++d) {
-                nxf[d] = lev_fine.nx[d];
-            }
+            constexpr int num_corners = 1 << Dim;  // 2^Dim contributing coarse cells
 
-            constexpr int num_corners =
-                1 << Dim;  // 2^Dim adjacent coarse nodes for N-linear interpolation
+            using index_array_type = typename RangePolicy<Dim>::index_array_type;
 
             // 3. N-Dimensional Kokkos Loop over the Fine Grid
             ippl::parallel_for(
-                "prolong_add", lev_fine.u.getFieldRangePolicy(), KOKKOS_LAMBDA(const auto& args) {
-                    Kokkos::Array<int, Dim> idxF;
-                    for (unsigned d = 0; d < Dim; ++d)
-                        idxF[d] = static_cast<int>(args[d]);
-
-                    Kokkos::Array<int, Dim> global_idxF;
-
-                    bool outside = false;
-
-                    // Compute global indices and check domain bounds
+                "prolong_add", lev_fine.u.getFieldRangePolicy(),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    // For each dim: which coarse cell contains us, and on which side?
+                    //   sgn = -1 -> fine cell in lower half, neighbor is C-1
+                    //   sgn = +1 -> fine cell in upper half, neighbor is C+1
+                    ippl::Vector<int, Dim> idxC_base;
+                    ippl::Vector<int, Dim> sgn;
                     for (unsigned d = 0; d < Dim; ++d) {
-                        global_idxF[d] = idxF[d] + lDomF[d].first() - nghF;
-                        if (global_idxF[d] < 0 || global_idxF[d] >= nxf[d]) {
-                            outside = true;
-                        }
+                        int global_idxF = static_cast<int>(args[d]) + lDomF[d].first() - nghF;
+                        int global_idxC = global_idxF / 2;
+                        int rem         = global_idxF % 2;
+                        sgn[d]          = (rem == 0) ? -1 : +1;
+                        idxC_base[d]    = global_idxC - lDomC[d].first() + nghC;
                     }
 
-                    if (outside)
-                        return;
-
-                    // Find the base coarse coordinate (bottom-left-front equivalent) and the offset
-                    // remainder
-                    Kokkos::Array<int, Dim> idxC_base;
-                    Kokkos::Array<int, Dim> rem;
-
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        int global_idxC = global_idxF[d] / 2;
-                        rem[d] = global_idxF[d] % 2;  // 0 if aligned with coarse node, 1 if halfway
-                        idxC_base[d] = global_idxC - lDomC[d].first() + nghC;
-                    }
-
+                    // Tensor product of {3/4 (containing), 1/4 (neighbor)} per dim
                     double interp_val = 0.0;
-
-                    // Loop over the 2^Dim corners of the containing coarse cell
                     for (int s = 0; s < num_corners; ++s) {
-                        double weight = 1.0;
-                        Kokkos::Array<int, Dim> idxC_current;
-
+                        Vector<int, Dim> idxC = idxC_base;
+                        double weight         = 1.0;
                         for (unsigned d = 0; d < Dim; ++d) {
-                            int b = (s >> d) & 1;  // Extract the bit for dimension d (0 or 1)
-                            idxC_current[d] = idxC_base[d] + b;
-
-                            // N-linear interpolation weights:
-                            // If exactly on a coarse point (rem == 0), weight is 1.0 for b=0, and
-                            // 0.0 for b=1. If halfway (rem == 1), weight is 0.5 for both b=0 and
-                            // b=1.
-                            double w_d = (rem[d] == 0) ? (b == 0 ? 1.0 : 0.0) : 0.5;
-                            weight *= w_d;
+                            int b = (s >> d) & 1;  // 0 = self, 1 = neighbor
+                            idxC[d] += b * sgn[d];
+                            weight *= (b == 0) ? 0.75 : 0.25;
                         }
-
-                        // Only read from memory if this corner actually contributes
-                        if (weight > 0.0) {
-                            interp_val += weight * multigrid::access_view<Dim>(uc, idxC_current);
-                        }
+                        interp_val += weight * apply(uc, idxC);
                     }
 
-                    // Multigrid prolongation ADDS the coarse correction to the existing fine
-                    // solution
-                    multigrid::access_view_impl(uf, idxF, std::make_index_sequence<Dim>{}) +=
-                        interp_val;
+                    // Multigrid: ADD the correction onto the existing fine solution
+                    apply(uf, args) += interp_val;
                 });
-
             ippl::fence();
-
-            // Note: Boundary conditions on lev_fine.u are usually enforced during
-            // the subsequent post-smoothing step (smooth_jacobi), so we don't
-            // strictly need to call applyBoundaryConditions() right here.
         }
     };
 
