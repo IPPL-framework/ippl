@@ -383,11 +383,12 @@ namespace ippl {
             auto uf = lev_fine.u.getView();
             auto uc = lev_coarse.u.getView();
 
+            // 3. Calculate number of corners
             constexpr int num_corners = 1 << Dim;  // 2^Dim contributing coarse cells
 
             using index_array_type = typename RangePolicy<Dim>::index_array_type;
 
-            // 3. N-Dimensional Kokkos Loop over the Fine Grid
+            // 4. N-Dimensional Kokkos Loop over the Fine Grid
             ippl::parallel_for(
                 "prolong_add", lev_fine.u.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const index_array_type& args) {
