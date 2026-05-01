@@ -69,10 +69,6 @@ namespace ippl {
 
             return diag;
         }
-
-        constexpr int power3(int d) {
-            return (d == 0) ? 1 : 3 * power3(d - 1);
-        }
     }  // namespace multigrid
 
     template <typename Field, typename OperatorF>
