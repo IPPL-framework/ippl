@@ -21,7 +21,8 @@ namespace ippl {
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
-        void HaloCells<T, Dim, ViewArgs...>::accumulateHalo_noghost(view_type& view, Layout_t* layout, int nghost) {
+        void HaloCells<T, Dim, ViewArgs...>::accumulateHalo_noghost(view_type& view,
+                                                                    Layout_t* layout, int nghost) {
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL_NOGHOST, nghost);
         }
         template <typename T, unsigned Dim, class... ViewArgs>
@@ -54,7 +55,7 @@ namespace ippl {
             // needed for the NOGHOST approach - we want to remove the ghost
             // cells on the boundaries of the global domain from the halo
             // exchange when we set HALO_TO_INTERNAL_NOGHOST
-            const auto domain = layout->getDomain();
+            const auto domain    = layout->getDomain();
             const auto& ldomains = layout->getHostLocalDomains();
 
             size_t totalRequests = 0;
@@ -62,7 +63,7 @@ namespace ippl {
                 totalRequests += componentNeighbors.size();
             }
 
-            int me=Comm->rank();
+            int me = Comm->rank();
 
             using memory_space = typename view_type::memory_space;
             using buffer_type  = mpi::Communicator::buffer_type<memory_space>;
@@ -150,7 +151,7 @@ namespace ippl {
             if (totalRequests > 0) {
                 MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
-            
+
             comm.freeAllBuffers();
         }
 
