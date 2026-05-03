@@ -44,10 +44,12 @@ int main(int argc, char* argv[]) {
         if (argc >= 3) {
             test_case = std::atoi(argv[2]);
         }
+        const char* tc_name = (test_case == 1)   ? " (All Periodic)"
+                              : (test_case == 2) ? " (Mixed Periodic/Dirichlet)"
+                                                 : " (All ConstantFace)";
 
         info << "Grid Size: " << pt << "^3" << endl;
-        info << "Test Case: " << test_case
-             << (test_case == 1 ? " (All Periodic)" : " (Mixed Periodic/Dirichlet)") << endl;
+        info << "Test Case: " << test_case << tc_name << endl;
 
         // 1. Setup Domain and Layout
         ippl::Index I(pt);
@@ -61,30 +63,27 @@ int main(int argc, char* argv[]) {
         bc_type bcField;
 
         if (test_case == 1) {
-            // Test 1: All Periodic on domain [0, 2]^3
-            dx = 2.0 / double(pt);
-            dy = 2.0 / double(pt);
-            dz = 2.0 / double(pt);
-
+            dx = dy = dz = 2.0 / double(pt);
             for (unsigned int i = 0; i < 2 * dim; ++i) {
                 bcField[i] = std::make_shared<ippl::PeriodicFace<field_type>>(i);
             }
-        } else {
-            // Test 2: Mixed BCs on domain [0, 2] x [0, 1] x [0, 1]
-            // X is Periodic, Y and Z are Zero Dirichlet
+        } else if (test_case == 2) {
             dx = 2.0 / double(pt);
             dy = 1.0 / double(pt);
             dz = 1.0 / double(pt);
 
-            // X-faces
             bcField[0] = std::make_shared<ippl::PeriodicFace<field_type>>(0);
             bcField[1] = std::make_shared<ippl::PeriodicFace<field_type>>(1);
-            // Y-faces
             bcField[2] = std::make_shared<ippl::ZeroFace<field_type>>(2);
             bcField[3] = std::make_shared<ippl::ZeroFace<field_type>>(3);
-            // Z-faces
             bcField[4] = std::make_shared<ippl::ZeroFace<field_type>>(4);
             bcField[5] = std::make_shared<ippl::ZeroFace<field_type>>(5);
+        } else {
+            // Test 3: All ConstantFace on [0,1]^3 with value bc_const
+            dx = dy = dz = 1.0 / double(pt);
+            for (unsigned int i = 0; i < 2 * dim; ++i) {
+                bcField[i] = std::make_shared<ippl::ConstantFace<field_type>>(i, 0.0);
+            }
         }
 
         ippl::Vector<double, dim> hx = {dx, dy, dz};
@@ -113,16 +112,13 @@ int main(int argc, char* argv[]) {
                 const size_t jg = j + lDom[1].first() - nghost;
                 const size_t kg = k + lDom[2].first() - nghost;
 
-                // Cell-centered coordinates
                 double x = (ig + 0.5) * hx[0] + origin[0];
                 double y = (jg + 0.5) * hx[1] + origin[1];
                 double z = (kg + 0.5) * hx[2] + origin[2];
 
-                // Exact solution: u = sin(pi*x) * sin(pi*y) * sin(pi*z)
-                double u_exact   = Kokkos::sin(pi * x) * Kokkos::sin(pi * y) * Kokkos::sin(pi * z);
-                viewSol(i, j, k) = u_exact;
+                double u_exact = Kokkos::sin(pi * x) * Kokkos::sin(pi * y) * Kokkos::sin(pi * z);
 
-                // Analytical RHS: -Laplacian(u) = 3 * pi^2 * u
+                viewSol(i, j, k) = u_exact;
                 viewRHS(i, j, k) = 3.0 * pi * pi * u_exact;
             });
 
