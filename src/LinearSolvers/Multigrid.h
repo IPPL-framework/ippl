@@ -32,19 +32,17 @@ namespace ippl {
             ippl::Vector<double, Dim> hx;
             ippl::Vector<double, Dim> origin;
 
-            Field u, f, r;
+            Field u, f;
 
             template <typename BCType>
             Level(std::shared_ptr<mesh_type> m, std::shared_ptr<layout_type> l, BCType& bcs)
                 : mesh_ptr(m)
                 , layout_ptr(l)
                 , u(*m, *l)
-                , f(*m, *l)
-                , r(*m, *l) {
+                , f(*m, *l) {
                 // Apply boundary conditions to all fields
                 u.setFieldBC(bcs);
                 f.setFieldBC(bcs);
-                r.setFieldBC(bcs);
 
                 // Extract grid info from the provided mesh and layout
                 origin      = m->getOrigin();
