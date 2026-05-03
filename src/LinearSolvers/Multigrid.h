@@ -253,7 +253,6 @@ namespace ippl {
 
             debug_print_field(lev.u, "u", level);
             debug_print_field(lev.f, "f", level);
-            debug_print_field(lev.r, "r", level);
         }
 
         void debug_print_all_levels(const std::string& label) const {
