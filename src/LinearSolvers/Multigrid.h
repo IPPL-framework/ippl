@@ -289,7 +289,8 @@ namespace ippl {
 
         void smooth_jacobi(const size_t level, const unsigned iters) {
             auto& lev = L_[level];
-            auto &u = lev.u, f = lev.f;
+            auto& u   = lev.u;
+            auto& f   = lev.f;
 
             const auto diag = multigrid::compute_diag(lev);
 
