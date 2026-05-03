@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
         ippl::NDIndex<dim> domain(I, J);
 
         std::array<bool, dim> isParallel;
-        isParallel.fill(false);
+        isParallel.fill(true);
 
         layout_type layout(MPI_COMM_WORLD, domain, isParallel);
 
