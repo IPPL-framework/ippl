@@ -6,16 +6,25 @@
 #define IPPL_MULTIGRID
 
 #include "Kokkos_Core.hpp"
-#include "IpplCore.h"
+#include "Ippl.h"
 
+#include <array>
 #include <cstddef>
 #include <iostream>
+#include <limits>
+#include <memory>
 #include <ostream>
 #include <vector>
 
+#include "Field/BcTypes.h"
+
 #include "Types/Vector.h"
 
+#include "FieldLayout/SubFieldLayout.h"
+#include "Index/Index.h"
+#include "Index/NDIndex.h"
 #include "LinearSolvers/Preconditioner.h"
+
 namespace ippl {
 
     namespace multigrid {
@@ -101,98 +110,88 @@ namespace ippl {
         }
 
         void init_fields(Field& b) override {
-            auto& fine_mesh   = b.get_mesh();
-            auto& fine_layout = b.getLayout();
-            auto fine_domain  = fine_layout.getDomain();
+            auto& fine_mesh              = b.get_mesh();
+            auto& fine_layout            = b.getLayout();
+            auto fine_domain             = fine_layout.getDomain();
+            std::array<bool, Dim> decomp = fine_layout.isParallel();
 
-            auto bcs      = b.getFieldBC();
-            auto zero_bcs = bcs;
-
-            // Iterate over all faces (2 * Dim) to zero out Dirichlet conditions
-            for (size_t i = 0; i < 2 * Dim; ++i) {
-                // Ensure the BC pointer actually exists
-                if (zero_bcs[i]) {
-                    if ((zero_bcs[i]->getBCType() & ippl::CONSTANT_FACE) == ippl::CONSTANT_FACE) {
-                        // If it is any constant value (e.g. u = 100), replace it with a ZeroFace (e
-                        // = 0)
-                        zero_bcs[i] = std::make_shared<ippl::ZeroFace<Field>>(i);
-                    }
-                }
-            }
-            auto half = [](int n) {
-                return (n - 1) / 2 + 1;
-            };
+            auto bcs = b.getFieldBC();
 
             // 1. Calculate number of levels
-            int nlevels = 0;
-            {
-                ippl::NDIndex<Dim> current_domain = fine_domain;
-                while (true) {
-                    ++nlevels;
-                    bool can_coarsen = true;
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        if (current_domain[d].length() <= 3) {
-                            can_coarsen = false;
-                        }
-                    }
-                    if (!can_coarsen)
-                        break;
+            const auto& localFine = fine_layout.getLocalNDIndex();  // this rank's slab
+            int min_local         = std::numeric_limits<int>::max();
 
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        current_domain[d] =
-                            ippl::Index(std::max(3, half(current_domain[d].length())));
-                    }
-                }
+            for (unsigned d = 0; d < Dim; ++d) {
+                // For serial dims, every rank's local extent == global extent, so this naturally
+                // covers them too. We do not have to check if dim is parallel or not.
+                min_local = std::min(min_local, static_cast<int>(localFine[d].length()));
             }
 
+            // reduce over all ranks to find smallest dimensional extent
+            int min_local_global = min_local;
+            ippl::Comm->allreduce(min_local, min_local_global, 1, std::less<int>{});
+
+            constexpr int min_cells_on_coarsest = 4;
+            int nlevels                         = 1;
+            int at_level                        = min_local_global;
+            while (at_level / 2 >= min_cells_on_coarsest) {
+                at_level /= 2;
+                ++nlevels;
+            }
+
+            // reserve full vector to avoid implicit copying when adding new elements
             L_.clear();
             L_.reserve(nlevels);
 
             // 2. Build the hierarchy (Meshes, Layouts, and Levels)
-            ippl::NDIndex<Dim> current_domain = fine_domain;
-            ippl::Vector<double, Dim> current_hx;
-            for (unsigned d = 0; d < Dim; ++d) {
-                current_hx[d] = fine_mesh.getMeshSpacing(d);
-            }
+            for (int ell = 0; ell < nlevels; ++ell) {
+                // Create SubFieldLayout using strided index over the original mesh
+                ippl::NDIndex<Dim> sub_domain;
+                ippl::Vector<double, Dim> level_hx;
 
-            // Note: We use the fine grid origin for all levels
-            ippl::Vector<double, Dim> origin = fine_mesh.getOrigin();
-
-            unsigned current_level = 0;
-            while (true) {
-                // Construct mesh and layout for the current level
-                auto level_mesh = std::make_shared<mesh_type>(current_domain, current_hx, origin);
-
-                // We copy the decomposition from the fine layout.
-                std::array<bool, Dim> decomp = fine_layout.isParallel();
-
-                auto level_layout =
-                    std::make_shared<layout_type>(fine_layout.comm, current_domain, decomp);
-
-                // Emplace the new level
-                if (current_level == 0) {
-                    L_.emplace_back(level_mesh, level_layout, bcs);
-                } else {
-                    L_.emplace_back(level_mesh, level_layout, zero_bcs);
+                for (unsigned d = 0; d < Dim; ++d) {
+                    const int stride = 1 << ell;  // 2^ell
+                    // strided sub-index: first, last, stride
+                    sub_domain[d] =
+                        ippl::Index(fine_domain[d].first(), fine_domain[d].last(), stride);
+                    level_hx[d] = fine_mesh.getMeshSpacing(d) * stride;
                 }
 
-                // Check termination criteria
-                bool can_coarsen = true;
-                for (unsigned d = 0; d < Dim; ++d) {
-                    if (current_domain[d].length() <= 3) {
-                        can_coarsen = false;
+                auto level_layout = std::make_shared<ippl::SubFieldLayout<Dim>>(
+                    fine_layout.comm, fine_domain, sub_domain, decomp, fine_layout.isAllPeriodic_m);
+
+                auto level_mesh =
+                    std::make_shared<mesh_type>(sub_domain, level_hx, fine_mesh.getOrigin());
+
+                // create BCs for each level
+                ippl::BConds<Field, Dim> level_bcs;
+                for (size_t i = 0; i < 2 * Dim; ++i) {
+                    if (bcs[i]) {
+                        int bc_type = bcs[i]->getBCType();
+
+                        if (bc_type == ippl::PERIODIC_FACE) {
+                            // PeriodicFace has internal MPI state (faceNeighbors_m, haloData_m).
+                            // We MUST create a fresh instance for every level so it binds
+                            // correctly.
+                            level_bcs[i] = std::make_shared<ippl::PeriodicFace<Field>>(i);
+
+                        } else if (ell > 0
+                                   && (bc_type == ippl::CONSTANT_FACE
+                                       || bc_type == ippl::ZERO_FACE)) {
+                            // Error equation on coarse grids: inhomogeneous Dirichlet becomes Zero
+                            level_bcs[i] = std::make_shared<ippl::ZeroFace<Field>>(i);
+
+                        } else {
+                            // For ell == 0 CONSTANT_FACE, or ZERO_FACE, or NO_FACE,
+                            // they have no internal layout state. We can safely share the pointer
+                            level_bcs[i] = bcs[i];
+                        }
                     }
                 }
-                if (!can_coarsen)
-                    break;
 
-                // Coarsen for the next level
-                for (unsigned d = 0; d < Dim; ++d) {
-                    current_domain[d] = ippl::Index(std::max(3, half(current_domain[d].length())));
-                    current_hx[d] *= 2.0;  // Mesh spacing doubles on coarser grids
-                }
-                current_level++;
+                L_.emplace_back(level_mesh, level_layout, level_bcs);
             }
+
             // --- DEBUGGING - To be deleted ---
             debug_print_all_levels("after init_fields");
             // --- END OF DEBUGGING ---
@@ -338,8 +337,13 @@ namespace ippl {
                     // Local coarse index -> local fine "lower corner" of the contained block
                     ippl::Vector<int, Dim> idxF_base;
                     for (unsigned d = 0; d < Dim; ++d) {
-                        int global_idxC = static_cast<int>(args[d]) + lDomC[d].first() - nghC;
-                        idxF_base[d]    = 2 * global_idxC - lDomF[d].first() + nghF;
+                        const int localC = static_cast<int>(args[d]) - nghC;
+
+                        // Coarse point in the original fine-grid index space.
+                        const int globalC = lDomC[d].first() + localC * lDomC[d].stride();
+
+                        // Same physical/index-space point, expressed as fine-level view index.
+                        idxF_base[d] = (globalC - lDomF[d].first()) / lDomF[d].stride() + nghF;
                     }
 
                     // Sum the 2^Dim contained fine cells
@@ -382,6 +386,8 @@ namespace ippl {
             auto uf = lev_fine.u.getView();
             auto uc = lev_coarse.u.getView();
 
+            const auto gDomF = lev_fine.u.getLayout().getDomain();
+
             // 3. Calculate number of corners
             constexpr int num_corners = 1 << Dim;  // 2^Dim contributing coarse cells
 
@@ -397,11 +403,24 @@ namespace ippl {
                     ippl::Vector<int, Dim> idxC_base;
                     ippl::Vector<int, Dim> sgn;
                     for (unsigned d = 0; d < Dim; ++d) {
-                        int global_idxF = static_cast<int>(args[d]) + lDomF[d].first() - nghF;
-                        int global_idxC = global_idxF / 2;
-                        int rem         = global_idxF % 2;
-                        sgn[d]          = (rem == 0) ? -1 : +1;
-                        idxC_base[d]    = global_idxC - lDomC[d].first() + nghC;
+                        // Fine-level point in original fine-grid index space.
+                        const int localF  = static_cast<int>(args[d]) - nghF;
+                        const int globalF = lDomF[d].first() + localF * lDomF[d].stride();
+
+                        // Logical index on this fine level:
+                        // level 0: global 0,1,2,3 -> logical 0,1,2,3
+                        // level 1: global 0,2,4,6 -> logical 0,1,2,3
+                        // level 2: global 0,4,8   -> logical 0,1,2
+                        const int logicalF = (globalF - gDomF[d].first()) / lDomF[d].stride();
+
+                        const int logicalC = logicalF / 2;
+                        sgn[d]             = (logicalF % 2 == 0) ? -1 : +1;
+
+                        // Coarse-level global coordinate corresponding to logicalC.
+                        const int globalC = gDomF[d].first() + logicalC * lDomC[d].stride();
+
+                        // Map coarse global coordinate to coarse view index.
+                        idxC_base[d] = (globalC - lDomC[d].first()) / lDomC[d].stride() + nghC;
                     }
 
                     // Tensor product of {3/4 (containing), 1/4 (neighbor)} per dim
