@@ -4,6 +4,7 @@
 
 namespace ippl {
 
+// Helper to pass loop indices as compile-time constants to f.
 template<int I, int End, class F>
 KOKKOS_INLINE_FUNCTION
 constexpr void static_for(F&& f) {
@@ -13,14 +14,17 @@ constexpr void static_for(F&& f) {
   }
 }
 
+//Utility function to sort crossing times, so path segments are ordered correctly. Without sorting, they would be ordered by which dimension is crossed
 template<typename T>
 KOKKOS_INLINE_FUNCTION
 void sort2(T& a, T& b) { if (a > b) { T t=a; a=b; b=t; } }
 
+//Same as above for the case of 3 crossings
 template<typename T>
 KOKKOS_INLINE_FUNCTION
 void sort3(T& a, T& b, T& c) { sort2(a,b); sort2(b,c); sort2(a,b); }
 
+//Linear interpolation helper to convert the crossing times into segment endpoints.
 template<unsigned Dim, typename T>
 KOKKOS_INLINE_FUNCTION
 Vector<T,Dim> lerp_point(const Vector<T,Dim>& A,
@@ -62,6 +66,7 @@ CutTimes<Dim,T> compute_axis_cuts_default(
     if (t > eps1 && t < one - eps1) cuts.t[a] = t;
   };
 
+  //Loop over axes 0..Dim-1 at compile time so each index is a compile-time constant.
   static_for<0,Dim>(axis_cut);
   return cuts;
 }

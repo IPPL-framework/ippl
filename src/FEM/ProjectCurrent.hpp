@@ -11,7 +11,7 @@ namespace ippl {
  * single mesh cell (via GridPathSegmenter).
  * Each sub-segment's contribution to the current density is computed and then 
  * scattered onto the edge DOFs of the cell that contains the sub-segment's midpoint,
- * using the Whitney-1 basis functions evaluated at the midpoint (equivalent to linear interpolation).  
+ * using the Nedelec basis functions evaluated at the midpoint (equivalent to linear interpolation).  
  * 
  */
 template <typename Mesh,
@@ -20,7 +20,7 @@ template <typename Mesh,
           typename FEMVector,
           typename NedelecSpace,
           typename policy_type = Kokkos::RangePolicy<>>
-inline void assemble_current_whitney1(const Mesh& mesh,
+inline void assemble_current_nedelec(const Mesh& mesh,
                                       const ChargeAttrib& q_attrib,
                                       const PosAttrib& X0,
                                       const PosAttrib& X1,
@@ -42,7 +42,7 @@ inline void assemble_current_whitney1(const Mesh& mesh,
 
     constexpr unsigned numDOFs = NedelecSpace::numElementDOFs;
 
-    Kokkos::parallel_for("assemble_current_whitney1", iteration_policy,
+    Kokkos::parallel_for("assemble_current_nedelec", iteration_policy,
         KOKKOS_LAMBDA(const std::size_t p) {
 
         // Split trajectory

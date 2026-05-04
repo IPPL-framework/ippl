@@ -10,7 +10,7 @@ namespace ippl {
  *
  * For each particle p moving from X0(p) to X1(p) during one time step dt,
  * the trajectory is split into sub-segments each lying within a single mesh
- * cell (via GridPathSegmenter). Each segment's contribution to J is
+ * cell (via GridPathSegmenter). For each spatial component, every segment's contribution to J is
  * scattered onto the 2^(Dim-1) Yee-grid nodes using linear
  * interpolation weights evaluated at the midpoint.
  *
@@ -92,13 +92,7 @@ inline void assemble_current_yee(const Mesh& mesh,
                         }
                     }
 
-                    if constexpr (Dim == 2) {
-                        Kokkos::atomic_add(&(view(idx[0], idx[1])[c]),
-                                           val_c * weight);
-                    } else {
-                        Kokkos::atomic_add(&(view(idx[0], idx[1], idx[2])[c]),
-                                           val_c * weight);
-                    }
+                    Kokkos::atomic_add(&(apply(view, idx)[c]), val_c * weight);
                 }
             }
         }

@@ -22,15 +22,6 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
 template <unsigned Dim, typename T> struct ElemSelector;
 
 template <typename T>
-struct ElemSelector<1, T> {
-  using Elem = ippl::EdgeElement<T>;
-  using Quad = ippl::MidpointQuadrature<T, 1, Elem>;
-
-  static Elem make_elem() { return Elem{}; }
-  static Quad make_quad(const Elem& e) { return Quad(e); }
-};
-
-template <typename T>
 struct ElemSelector<2, T> {
   using Elem = ippl::QuadrilateralElement<T>;
   using Quad = ippl::MidpointQuadrature<T, 1, Elem>;
@@ -150,11 +141,11 @@ TYPED_TEST(AssembleCurrentTest, SingleParticle_Smoke) {
   fem_vector = T(0);
 
   T dt = T(1.0);
-  ippl::assemble_current_whitney1(mesh, bunch.Q, bunch.R, bunch.R_next, fem_vector, space, policy, dt);
+  ippl::assemble_current_nedelec(mesh, bunch.Q, bunch.R, bunch.R_next, fem_vector, space, policy, dt);
   fem_vector.accumulateHalo();
 
 
-  SUCCEED() << "assemble_current_whitney1 ran without error for 1 particle in "
+  SUCCEED() << "assemble_current_nedelec ran without error for 1 particle in "
             << Dim << "D.";
 }
 
@@ -198,7 +189,7 @@ TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
   fem_vector = T(0);
 
   T dt = T(1.0);
-  ippl::assemble_current_whitney1(mesh, bunch.Q, bunch.R, bunch.R_next,
+  ippl::assemble_current_nedelec(mesh, bunch.Q, bunch.R, bunch.R_next,
                                   fem_vector, space, policy, dt);
   fem_vector.accumulateHalo();
 
@@ -293,7 +284,7 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_ThreeCells_ExactValues) {
 
     T dt = T(1.0);
 
-    ippl::assemble_current_whitney1(mesh, bunch.Q, bunch.R, bunch.R_next,
+    ippl::assemble_current_nedelec(mesh, bunch.Q, bunch.R, bunch.R_next,
                                     fem_vector, space, policy, dt);
     fem_vector.accumulateHalo();
 
@@ -397,7 +388,7 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_VertexHit_3D) {
     fem_vector = T(0);
 
     T dt = T(1.0);
-    ippl::assemble_current_whitney1(mesh, bunch.Q, bunch.R, bunch.R_next,
+    ippl::assemble_current_nedelec(mesh, bunch.Q, bunch.R, bunch.R_next,
                                     fem_vector, space, policy, dt);
     fem_vector.accumulateHalo();
 
