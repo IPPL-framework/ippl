@@ -77,6 +77,7 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_ThreeCells_ExactValues) {
         auto mesh   = TestFixture::make_mesh(owned, h, origin);
 
         JField_t J_field(mesh, layout);
+        
         J_field = T(0);
 
         // path: (0.75, 0.50) -> (1.50, 1.25), same as FEM test
@@ -139,6 +140,196 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_ThreeCells_ExactValues) {
         check(2, 0, 1, 0.03125);
         check(2, 1, 1, 0.09375);
         
+    }
+}
+
+TYPED_TEST(AssembleCurrentYeeTest, SingleAxis_X_SameCell_ExactValues) {
+    using T = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
+
+    using bunch_t   = typename TestFixture::bunch_t;
+    using playout_t = typename TestFixture::playout_t;
+    using JField_t  = typename TestFixture::JField_t;
+
+    int nx = 4;
+    ippl::Vector<T, Dim> origin(0.0);
+    ippl::Vector<T, Dim> h(1.0);
+
+    auto owned  = TestFixture::make_owned_nd(nx);
+    auto layout = TestFixture::make_layout(owned);
+    auto mesh   = TestFixture::make_mesh(owned, h, origin);
+
+    JField_t J_field(mesh, layout);
+    J_field = T(0);
+
+    playout_t playout(layout, mesh);
+    bunch_t bunch(playout);
+    bunch.create(ippl::Comm->rank() == 0 ? 1 : 0);
+    if (ippl::Comm->rank() == 0) {
+        auto R_host  = bunch.R.getHostMirror();
+        auto Rn_host = bunch.R_next.getHostMirror();
+        auto Q_host  = bunch.Q.getHostMirror();
+        R_host(0)[0]  = T(0.25);
+        Rn_host(0)[0] = T(0.75);
+        for (unsigned d = 1; d < Dim; ++d) { R_host(0)[d] = T(0.50); Rn_host(0)[d] = T(0.50); }
+        Q_host(0) = T(1.0);
+        Kokkos::deep_copy(bunch.R.getView(), R_host);
+        Kokkos::deep_copy(bunch.R_next.getView(), Rn_host);
+        Kokkos::deep_copy(bunch.Q.getView(), Q_host);
+    }
+    bunch.update();
+
+    auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
+    T dt = T(1.0);
+    ippl::assemble_current_yee(mesh, bunch.Q, bunch.R, bunch.R_next, J_field, policy, dt);
+    J_field.accumulateHalo();
+
+    auto ldom      = J_field.getLayout().getLocalNDIndex();
+    int  nghost    = J_field.getNghost();
+    auto view      = J_field.getView();
+    auto view_host = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(view_host, view);
+    Kokkos::fence();
+
+    const T tol = std::numeric_limits<T>::epsilon() * T(100);
+
+    auto in_ldom = [&](const Kokkos::Array<int, Dim>& cell) {
+        for (unsigned d = 0; d < Dim; ++d)
+            if (cell[d] < ldom.first()[d] || cell[d] > ldom.last()[d]) return false;
+        return true;
+    };
+
+    auto check = [&](const Kokkos::Array<int, Dim>& cell, unsigned c, double expected) {
+        double local_val = 0.0;
+        if (in_ldom(cell)) {
+            size_t idx[Dim];
+            for (unsigned d = 0; d < Dim; ++d)
+                idx[d] = static_cast<size_t>(cell[d] - ldom.first()[d] + nghost);
+            local_val = static_cast<double>(ippl::apply(view_host, idx)[c]);
+        }
+        double global_val = 0.0;
+        MPI_Allreduce(&local_val, &global_val, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        EXPECT_NEAR(global_val, expected, static_cast<double>(tol));
+    };
+
+    // Pure x-motion in cell (0,...,0): mid=(0.5,0.5,...), xi=(0.5,0.5,...)
+    // x-component scatters evenly to 2^(Dim-1) transverse neighbours.
+    if constexpr (Dim == 2) {
+        check({0, 0}, 0, 0.25);
+        check({0, 1}, 0, 0.25);
+    } else if constexpr (Dim == 3) {
+        check({0, 0, 0}, 0, 0.125);
+        check({0, 1, 0}, 0, 0.125);
+        check({0, 0, 1}, 0, 0.125);
+        check({0, 1, 1}, 0, 0.125);
+    }
+}
+
+TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_VertexHit_3D) {
+    using T = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
+
+    if constexpr (Dim != 3) {
+        GTEST_SKIP() << "Vertex-hit crossing test only implemented for 3D";
+    } else {
+        using bunch_t   = typename TestFixture::bunch_t;
+        using playout_t = typename TestFixture::playout_t;
+        using JField_t  = typename TestFixture::JField_t;
+
+        int nx = 4;
+        ippl::Vector<T, Dim> origin(0.0);
+        ippl::Vector<T, Dim> h(1.0);
+
+        auto owned  = TestFixture::make_owned_nd(nx);
+        auto layout = TestFixture::make_layout(owned);
+        auto mesh   = TestFixture::make_mesh(owned, h, origin);
+
+        JField_t J_field(mesh, layout);
+        J_field = T(0);
+
+        playout_t playout(layout, mesh);
+        bunch_t bunch(playout);
+        // path: (0.9,0.9,0.8)->(1.1,1.1,1.2), all three axis crossings at t=0.5 (vertex hit)
+        // seg0 in cell (0,0,0), seg1 in cell (1,1,1)
+        bunch.create(ippl::Comm->rank() == 0 ? 1 : 0);
+        if (ippl::Comm->rank() == 0) {
+            auto R_host  = bunch.R.getHostMirror();
+            auto Rn_host = bunch.R_next.getHostMirror();
+            auto Q_host  = bunch.Q.getHostMirror();
+            R_host(0)[0]  = T(0.9); R_host(0)[1]  = T(0.9); R_host(0)[2]  = T(0.8);
+            Rn_host(0)[0] = T(1.1); Rn_host(0)[1] = T(1.1); Rn_host(0)[2] = T(1.2);
+            Q_host(0) = T(1.0);
+            Kokkos::deep_copy(bunch.R.getView(), R_host);
+            Kokkos::deep_copy(bunch.R_next.getView(), Rn_host);
+            Kokkos::deep_copy(bunch.Q.getView(), Q_host);
+        }
+        bunch.update();
+
+        auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
+        T dt = T(1.0);
+        ippl::assemble_current_yee(mesh, bunch.Q, bunch.R, bunch.R_next, J_field, policy, dt);
+        J_field.accumulateHalo();
+
+        auto ldom      = J_field.getLayout().getLocalNDIndex();
+        int  nghost    = J_field.getNghost();
+        auto view      = J_field.getView();
+        auto view_host = Kokkos::create_mirror_view(view);
+        Kokkos::deep_copy(view_host, view);
+        Kokkos::fence();
+
+        const T tol = std::numeric_limits<T>::epsilon() * T(100);
+
+        auto in_ldom = [&](const Kokkos::Array<int, Dim>& cell) {
+            for (unsigned d = 0; d < Dim; ++d)
+                if (cell[d] < ldom.first()[d] || cell[d] > ldom.last()[d]) return false;
+            return true;
+        };
+
+        auto check = [&](const Kokkos::Array<int, Dim>& cell, unsigned c, double expected) {
+            double local_val = 0.0;
+            if (in_ldom(cell)) {
+                size_t idx[Dim];
+                for (unsigned d = 0; d < Dim; ++d)
+                    idx[d] = static_cast<size_t>(cell[d] - ldom.first()[d] + nghost);
+                local_val = static_cast<double>(ippl::apply(view_host, idx)[c]);
+            }
+            double global_val = 0.0;
+            MPI_Allreduce(&local_val, &global_val, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            EXPECT_NEAR(global_val, expected, static_cast<double>(tol));
+        };
+
+        // seg0: mid=(0.95,0.95,0.9), cell=(0,0,0), xi=(0.95,0.95,0.9), dp=(0.1,0.1,0.2)
+        // seg1: mid=(1.05,1.05,1.1), cell=(1,1,1), xi=(0.05,0.05,0.1), dp=(0.1,0.1,0.2)
+
+        // Component 0 (x):
+        check({0, 0, 0}, 0, 0.0005);
+        check({0, 1, 0}, 0, 0.0095);
+        check({0, 0, 1}, 0, 0.0045);
+        check({0, 1, 1}, 0, 0.0855);
+        check({1, 1, 1}, 0, 0.0855);
+        check({1, 2, 1}, 0, 0.0045);
+        check({1, 1, 2}, 0, 0.0095);
+        check({1, 2, 2}, 0, 0.0005);
+
+        // Component 1 (y):
+        check({0, 0, 0}, 1, 0.0005);
+        check({1, 0, 0}, 1, 0.0095);
+        check({0, 0, 1}, 1, 0.0045);
+        check({1, 0, 1}, 1, 0.0855);
+        check({1, 1, 1}, 1, 0.0855);
+        check({2, 1, 1}, 1, 0.0045);
+        check({1, 1, 2}, 1, 0.0095);
+        check({2, 1, 2}, 1, 0.0005);
+
+        // Component 2 (z):
+        check({0, 0, 0}, 2, 0.0005);
+        check({1, 0, 0}, 2, 0.0095);
+        check({0, 1, 0}, 2, 0.0095);
+        check({1, 1, 0}, 2, 0.1805);
+        check({1, 1, 1}, 2, 0.1805);
+        check({2, 1, 1}, 2, 0.0095);
+        check({1, 2, 1}, 2, 0.0095);
+        check({2, 2, 1}, 2, 0.0005);
     }
 }
 
