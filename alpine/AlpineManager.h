@@ -96,6 +96,10 @@ public:
 
     void setTime(double time_) { time_m = time_; }
 
+    int getIt() const { return it_m; }
+
+    void setIt(int it) { it_m = it; }
+
     std::vector<std::string> getPreconditionerParams() const { return preconditioner_params_m; };
 
     virtual void dump(){/* default does nothing */};

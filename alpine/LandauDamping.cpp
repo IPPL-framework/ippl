@@ -47,6 +47,23 @@ int main(int argc, char* argv[]) {
         Inform msg(TestName);
         Inform msg2all(TestName, INFORM_ALL_NODES);
 
+        // Optional warmup: --warmup <N>. Defaults to 0 (no warmup, baseline
+        // behaviour). Stripping the flag from argv here lets the positional
+        // parser below see the same layout as before.
+        int n_warmup = 0;
+        {
+            int write_i = 1;
+            for (int read_i = 1; read_i < argc; ) {
+                if (std::string(argv[read_i]) == "--warmup" && read_i + 1 < argc) {
+                    n_warmup = std::atoi(argv[read_i + 1]);
+                    read_i += 2;
+                } else {
+                    argv[write_i++] = argv[read_i++];
+                }
+            }
+            argc = write_i;
+        }
+
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
         static IpplTimings::TimerRef initializeTimer = IpplTimings::getTimer("initialize");
         IpplTimings::startTimer(mainTimer);
@@ -82,8 +99,30 @@ int main(int argc, char* argv[]) {
         manager.pre_run();
 
         IpplTimings::stopTimer(initializeTimer);
-        
+
         manager.setTime(0.0);
+
+        // Optional warmup: run N timesteps before the timed run so JIT,
+        // first-touch allocations, GPU caches, MPI/IPC registration and
+        // any tile-size autotune transients don't show up in the measured
+        // timers. After the warmup we wipe ALL accumulated timer state so
+        // the printed report covers exactly the measured run, not the
+        // warmup pass. Pass --warmup <N> on the CLI to enable.
+        if (n_warmup > 0) {
+            msg << "Running " << n_warmup << " warmup step(s) ..." << endl;
+            manager.run(n_warmup);
+
+            // Reset simulation state so the measured run starts from t = 0,
+            // step 0 — comparable across branches.
+            manager.setTime(0.0);
+            manager.setIt(0);
+
+            // Wipe all timer accumulators (including 'total' and 'initialize'
+            // we already started above) so the report reflects only the run.
+            IpplTimings::stopTimer(mainTimer);
+            IpplTimings::resetAllTimers();
+            IpplTimings::startTimer(mainTimer);
+        }
 
         msg << "Starting iterations ..." << endl;
 
