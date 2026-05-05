@@ -1,6 +1,8 @@
 file(RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "Adding unit tests found in ${_relPath}")
 
+add_ippl_test(AssembleCurrentRHS)
+add_ippl_test(GenerateSegments)
 add_ippl_test(EdgeElement)
 add_ippl_test(QuadrilateralElement)
 add_ippl_test(HexahedralElement)
