@@ -772,7 +772,7 @@ namespace ippl::Interpolation::AutoTune {
             if (host_backend) {
                 raw = {1};
             } else if (m == ScatterMethod::Atomic) {
-                raw = {1, 2, 4, 8, 16};
+                raw = {1, 2, 4, 8, 16, 32, 64};
             } else if (m == ScatterMethod::Tiled) {
                 raw = {16, 32, 64, 128, 256};
             } else {  // OutputFocused
@@ -862,18 +862,10 @@ namespace ippl::Interpolation::AutoTune {
             best_pt.v   = {lo_tile, lo_tile, lo_tile, 0, std::max(lo4, 1)};
             double best = 0.0;
 
-            // Phase 1: cheap-fidelity LHS warm-up at smaller grid (N=24).
-            const int n_init = std::max(8, std::min(budget / 3, 5 * (hi_ts + 1)));
-            const unsigned warm_N    = atomic ? N : std::max(16u, N / 2);
-            const int       warm_runs = host_backend ? 3 : 4;
-            for (int i = 0; i < n_init; ++i) {
-                BOSearchPoint pt;
-                pt.v[0] = atomic ? 1 : rand_int(lo_tile, hi_tile);
-                pt.v[1] = atomic ? 1 : rand_int(lo_tile, hi_tile);
-                pt.v[2] = atomic ? 1 : rand_int(lo_tile, hi_tile);
-                pt.v[3] = rand_int(0, hi_ts);
-                pt.v[4] = rand_int(lo4, hi4);
-                ThroughputStats s = evaluate(pt, warm_N, warm_runs);
+            const int meas_runs = host_backend ? 5 : 6;
+
+            auto eval_and_record = [&](const BOSearchPoint& pt) {
+                ThroughputStats s = evaluate(pt, N, meas_runs);
                 if (s.mean > 0) {
                     GP::Point xp;
                     for (int d = 0; d < 5; ++d) {
@@ -885,14 +877,65 @@ namespace ippl::Interpolation::AutoTune {
                     best    = s.mean;
                     best_pt = pt;
                 }
+                return s;
+            };
+
+            // Phase 0: structured anchors. Always include the cube tiles the
+            // grid sweep enumerated, paired with sensible team-size defaults,
+            // so the BO never returns worse than the structured optimum and
+            // the GP starts with informative observations along the cube line.
+            const std::vector<int> anchor_cubes = {2, 3, 4, 5, 6, 8};
+            // Pick a per-method default team-size index that lands near the
+            // grid sweep's seed (atomic_team=32, tiled_team=64, of_team=128).
+            auto closest_ts_idx = [&](int target) {
+                int best_i = 0, best_d = INT_MAX;
+                for (int i = 0; i <= hi_ts; ++i) {
+                    int d = std::abs(ts_cands[i] - target);
+                    if (d < best_d) { best_d = d; best_i = i; }
+                }
+                return best_i;
+            };
+            const int default_ts =
+                atomic ? closest_ts_idx(32)
+                       : (method == ScatterMethod::Tiled ? closest_ts_idx(64)
+                                                         : closest_ts_idx(128));
+            if (atomic) {
+                // Atomic anchor: just sweep the team_size candidates with osub=1.
+                for (int i = 0; i <= hi_ts; ++i) {
+                    BOSearchPoint pt;
+                    pt.v = {1, 1, 1, i, std::max(lo4, 1)};
+                    eval_and_record(pt);
+                }
+            } else {
+                for (int t : anchor_cubes) {
+                    if (t < lo_tile || t > hi_tile) continue;
+                    BOSearchPoint pt;
+                    pt.v = {t, t, t, default_ts, std::max(lo4, 1)};
+                    eval_and_record(pt);
+                }
+            }
+
+            // Phase 1: LHS over the full 5D box (rectangular tiles, varied
+            // team & osub/zb). Smaller now because Phase 0 already provides
+            // structured coverage along the cube axis.
+            const int n_init = std::max(6, std::min(budget / 4, 4 * (hi_ts + 1)));
+            for (int i = 0; i < n_init; ++i) {
+                BOSearchPoint pt;
+                pt.v[0] = atomic ? 1 : rand_int(lo_tile, hi_tile);
+                pt.v[1] = atomic ? 1 : rand_int(lo_tile, hi_tile);
+                pt.v[2] = atomic ? 1 : rand_int(lo_tile, hi_tile);
+                pt.v[3] = rand_int(0, hi_ts);
+                pt.v[4] = rand_int(lo4, hi4);
+                eval_and_record(pt);
             }
             if (gp.size() >= 4) {
                 gp.fit();
             }
 
             // Phase 2: full-fidelity acquisition loop.
-            const int n_acq = std::max(0, budget - n_init);
-            const int meas_runs = host_backend ? 5 : 6;
+            const int n_phase0 = atomic ? (hi_ts + 1)
+                                        : static_cast<int>(anchor_cubes.size());
+            const int n_acq    = std::max(0, budget - n_phase0 - n_init);
             for (int it = 0; it < n_acq; ++it) {
                 if (gp.size() >= 4 && (it % 5) == 0) {
                     gp.fit();
@@ -1006,10 +1049,9 @@ namespace ippl::Interpolation::AutoTune {
 #endif
                 ;
 
-            const std::vector<unsigned> grids =
-                host_backend ? std::vector<unsigned>{32}
-                             : std::vector<unsigned>{32, 64};
-            const std::vector<double> rhos = {0.5, 2.0, 8.0, 32.0};
+            const unsigned N = host_backend ? 64u : 128u;
+
+            const std::vector<double> rhos   = {0.5, 2.0, 4.0, 8.0};
             const std::vector<int>    widths = {1, 2};
             const std::vector<ScatterMethod> methods = {ScatterMethod::Atomic,
                                                         ScatterMethod::Tiled,
@@ -1025,26 +1067,26 @@ namespace ippl::Interpolation::AutoTune {
                 (ippl::Comm == nullptr) || (ippl::Comm->rank() == 0);
 
             const size_t total_buckets =
-                grids.size() * rhos.size() * widths.size() * methods.size();
+                rhos.size() * widths.size() * methods.size();
             size_t done = 0;
 
-            for (unsigned N : grids) {
-                for (double rho : rhos) {
-                    const size_t nParticle = std::max<size_t>(
-                        1, static_cast<size_t>(rho * double(N) * double(N) * double(N)));
-                    for (int w : widths) {
-                        for (ScatterMethod m : methods) {
-                            ++done;
-                            if (is_rank_zero && ippl::Info) {
-                                *ippl::Info << ::level1 << "[AutoTune-bo] " << done
-                                            << " / " << total_buckets << "  N=" << N
-                                            << " rho=" << rho << " w=" << w << " "
-                                            << method_name(m) << endl;
-                            }
-                            Sample s = sweep_bo_bucket<ExecSpace>(
-                                m, w, rho, N, nParticle, per_bucket, host_backend);
-                            out.push_back(s);
+            for (double rho : rhos) {
+                const size_t nParticle = std::max<size_t>(
+                    1, static_cast<size_t>(rho * double(N) * double(N) * double(N)));
+                for (int w : widths) {
+                    for (ScatterMethod m : methods) {
+                        ++done;
+                        if (is_rank_zero && ippl::Info) {
+                            *ippl::Info << ::level1 << "[AutoTune-bo] " << done
+                                        << " / " << total_buckets << "  N=" << N
+                                        << " rho=" << rho
+                                        << " (nP=" << nParticle << ")"
+                                        << " w=" << w << " "
+                                        << method_name(m) << endl;
                         }
+                        Sample s = sweep_bo_bucket<ExecSpace>(
+                            m, w, rho, N, nParticle, per_bucket, host_backend);
+                        out.push_back(s);
                     }
                 }
             }

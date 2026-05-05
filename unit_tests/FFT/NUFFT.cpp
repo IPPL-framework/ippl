@@ -200,7 +200,7 @@ namespace {
 
 TYPED_TEST(NUFFT1Test, BasicCorrectness_NoUpsampling) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(512);
     this->generateRandomParticles();
@@ -210,7 +210,7 @@ TYPED_TEST(NUFFT1Test, BasicCorrectness_NoUpsampling) {
 
 TYPED_TEST(NUFFT1Test, BasicCorrectness_WithUpsampling) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(512);
     this->generateRandomParticles();
@@ -220,7 +220,7 @@ TYPED_TEST(NUFFT1Test, BasicCorrectness_WithUpsampling) {
 
 TYPED_TEST(NUFFT1Test, MediumGrid_NoUpsampling) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
@@ -230,7 +230,7 @@ TYPED_TEST(NUFFT1Test, MediumGrid_NoUpsampling) {
 
 TYPED_TEST(NUFFT1Test, SpreadMethod_Atomic) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
@@ -241,7 +241,7 @@ TYPED_TEST(NUFFT1Test, SpreadMethod_Atomic) {
 
 TYPED_TEST(NUFFT1Test, SpreadMethod_Tiled) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
@@ -251,7 +251,7 @@ TYPED_TEST(NUFFT1Test, SpreadMethod_Tiled) {
 
 TYPED_TEST(NUFFT1Test, SpreadMethod_OutputFocused) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
@@ -262,7 +262,7 @@ TYPED_TEST(NUFFT1Test, SpreadMethod_OutputFocused) {
 
 TYPED_TEST(NUFFT1Test, ToleranceSweep) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
@@ -280,7 +280,7 @@ TYPED_TEST(NUFFT1Test, ToleranceSweep) {
 #ifdef ENABLE_FINUFFT
 TYPED_TEST(NUFFT1Test, FINUFFT_NoUpsampling) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
@@ -632,7 +632,7 @@ TYPED_TEST_SUITE(NUFFT2Test, NUFFTTypes);
 
 TYPED_TEST(NUFFT2Test, BasicCorrectness_NoUpsampling) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(512);
     this->generateRandomParticles();
@@ -643,7 +643,7 @@ TYPED_TEST(NUFFT2Test, BasicCorrectness_NoUpsampling) {
 
 TYPED_TEST(NUFFT2Test, BasicCorrectness_WithUpsampling) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(512);
     this->generateRandomParticles();
@@ -654,7 +654,7 @@ TYPED_TEST(NUFFT2Test, BasicCorrectness_WithUpsampling) {
 
 TYPED_TEST(NUFFT2Test, MediumGrid_NoUpsampling) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
@@ -665,7 +665,7 @@ TYPED_TEST(NUFFT2Test, MediumGrid_NoUpsampling) {
 
 TYPED_TEST(NUFFT2Test, GatherMethod_Atomic) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
@@ -676,7 +676,7 @@ TYPED_TEST(NUFFT2Test, GatherMethod_Atomic) {
 
 TYPED_TEST(NUFFT2Test, GatherMethod_AtomicSort) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
@@ -687,7 +687,7 @@ TYPED_TEST(NUFFT2Test, GatherMethod_AtomicSort) {
 
 TYPED_TEST(NUFFT2Test, ToleranceSweep) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
@@ -706,7 +706,7 @@ TYPED_TEST(NUFFT2Test, ToleranceSweep) {
 #ifdef ENABLE_FINUFFT
 TYPED_TEST(NUFFT2Test, FINUFFT_NoUpsampling) {
     using T                = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
+    [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
