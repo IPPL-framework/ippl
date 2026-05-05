@@ -161,6 +161,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a447fb23307b18f780f8edf6b3a2948ae"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NedelecSpace.html#a447fb23307b18f780f8edf6b3a2948ae">initializeElementIndices</a> (const <a class="el" href="classippl_1_1NedelecSpace.html#a4d10d5317c67c9c4ef9fd57074320235">Layout_t</a> &amp;layout)</td></tr>
 <tr class="memdesc:a447fb23307b18f780f8edf6b3a2948ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize a <a class="el" href="namespaceKokkos.html">Kokkos</a> view containing the element indices.  <a href="classippl_1_1NedelecSpace.html#a447fb23307b18f780f8edf6b3a2948ae">More...</a><br /></td></tr>
 <tr class="separator:a447fb23307b18f780f8edf6b3a2948ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f5c2e493bbe30ccaae34bab7568a4d5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NedelecSpace.html#a1f5c2e493bbe30ccaae34bab7568a4d5">getLocalNDIndex</a> () const</td></tr>
+<tr class="memdesc:a1f5c2e493bbe30ccaae34bab7568a4d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the local <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a> of this rank's subdomain.  <a href="classippl_1_1NedelecSpace.html#a1f5c2e493bbe30ccaae34bab7568a4d5">More...</a><br /></td></tr>
+<tr class="separator:a1f5c2e493bbe30ccaae34bab7568a4d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c4300b1ac55b11aec4aac9738f730a7"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NedelecSpace.html#a5c4300b1ac55b11aec4aac9738f730a7">numGlobalDOFs</a> () const override</td></tr>
 <tr class="memdesc:a5c4300b1ac55b11aec4aac9738f730a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Degree of Freedom operations //////////////////////////////////////.  <a href="classippl_1_1NedelecSpace.html#a5c4300b1ac55b11aec4aac9738f730a7">More...</a><br /></td></tr>
 <tr class="separator:a5c4300b1ac55b11aec4aac9738f730a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1168,6 +1171,36 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 
 <p>Get the cartesion position of a local DOF in the reference element. </p>
 <p >Given the local DOF index this function will return the cartesian position of this DOF with respect to the reference element. </p>
+
+</div>
+</div>
+<a id="a1f5c2e493bbe30ccaae34bab7568a4d5" name="a1f5c2e493bbe30ccaae34bab7568a4d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f5c2e493bbe30ccaae34bab7568a4d5">&#9670;&#160;</a></span>getLocalNDIndex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldType &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="classippl_1_1NedelecSpace.html">ippl::NedelecSpace</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Order, ElementType, QuadratureType, FieldType &gt;::getLocalNDIndex </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Return the local <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a> of this rank's subdomain. </p>
+<p >Exposed so that free-function assembly kernels (e.g. assemble_current_nedelec) can obtain the ldom needed by getFEMVectorDOFIndices without accessing the private layout_m. </p>
 
 </div>
 </div>

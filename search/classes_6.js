@@ -7,5 +7,6 @@ var searchData=
   ['generate_5frandom_4',['generate_random',['../structgenerate__random.html',1,'']]],
   ['getmpiopimpl_5',['getMpiOpImpl',['../structippl_1_1mpi_1_1getMpiOpImpl.html',1,'ippl::mpi']]],
   ['getnontrivialmpiopimpl_6',['getNontrivialMpiOpImpl',['../structippl_1_1mpi_1_1getNontrivialMpiOpImpl.html',1,'ippl::mpi']]],
-  ['gs_5fpreconditioner_7',['gs_preconditioner',['../structippl_1_1gs__preconditioner.html',1,'ippl']]]
+  ['gridpathsegmenter_7',['GridPathSegmenter',['../structippl_1_1GridPathSegmenter.html',1,'ippl']]],
+  ['gs_5fpreconditioner_8',['gs_preconditioner',['../structippl_1_1gs__preconditioner.html',1,'ippl']]]
 ];
