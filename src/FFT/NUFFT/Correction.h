@@ -8,6 +8,8 @@
 
 #include "Types/ViewTypes.h"
 
+#include "Utility/ParallelDispatch.h"
+
 #include "FFT/NUFFT/ESKernel.h"
 #include "FFT/NUFFT/NUFFTUtilities.h"
 
@@ -100,15 +102,18 @@ namespace ippl {
          * Operates locally; input lives on the upsampled grid, output on the
          * mode grid. Entries outside the mode band are set to zero.
          */
-        template <typename FieldIn, typename FieldOut, typename ExecSpace, typename T>
+        template <typename FieldIn, typename FieldOut, typename ExecSpace, typename T,
+                  unsigned Dim>
         void applyDeconvolutionType1(
             FieldIn& input,
             const std::array<Kokkos::View<Kokkos::complex<T>*, typename ExecSpace::memory_space>,
-                             3>& factors,
-            FieldOut& output, const Vector<size_t, 3>& n_modes, const Vector<size_t, 3>&) {
-            using complex_type = Kokkos::complex<T>;
-
-            constexpr unsigned Dim = 3;
+                             Dim>& factors,
+            FieldOut& output, const Vector<size_t, Dim>& n_modes,
+            const Vector<size_t, Dim>& /*n_grid*/) {
+            using complex_type     = Kokkos::complex<T>;
+            using factor_view_t    = Kokkos::View<Kokkos::complex<T>*,
+                                                  typename ExecSpace::memory_space>;
+            using index_array_type = typename ippl::RangePolicy<Dim, ExecSpace>::index_array_type;
 
             auto input_view  = input.getView();
             auto output_view = output.getView();
@@ -119,53 +124,51 @@ namespace ippl {
             const int nghost_in  = input.getNghost();
             const int nghost_out = output.getNghost();
 
-            Vector<int, Dim> local_first, local_last;
+            // Capture-by-value device-friendly arrays.
+            Vector<int, Dim> local_first;
+            Kokkos::Array<int64_t, Dim> begin, end;
+            Kokkos::Array<factor_view_t, Dim> f_arr;
+            Kokkos::Array<int, Dim> n_modes_arr;
             for (unsigned d = 0; d < Dim; ++d) {
                 local_first[d] = lDom[d].first();
-                local_last[d]  = lDom[d].last();
+                begin[d]       = lDom[d].first();
+                end[d]         = lDom[d].last() + 1;
+                f_arr[d]       = factors[d];
+                n_modes_arr[d] = static_cast<int>(n_modes[d]);
             }
 
-            auto f0 = factors[0];
-            auto f1 = factors[1];
-            auto f2 = factors[2];
+            ippl::parallel_for(
+                "deconv_type1_local",
+                ippl::createRangePolicy<Dim, ExecSpace>(begin, end),
+                KOKKOS_LAMBDA(const index_array_type& g) {
+                    bool inside = true;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        const int gi = static_cast<int>(g[d]);
+                        const int n  = n_modes_arr[d];
+                        if (!((gi >= 0 && gi < n / 2) || (gi >= n + n / 2 && gi < 2 * n))) {
+                            inside = false;
+                            break;
+                        }
+                    }
 
-            const int nx = static_cast<int>(n_modes[0]);
-            const int ny = static_cast<int>(n_modes[1]);
-            const int nz = static_cast<int>(n_modes[2]);
+                    index_array_type idx_in, idx_out;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        idx_in[d]  = static_cast<int>(g[d]) - local_first[d] + nghost_in;
+                        idx_out[d] = static_cast<int>(g[d]) - local_first[d] + nghost_out;
+                    }
 
-            Kokkos::parallel_for(
-                "deconv_type1_3d_local",
-                Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                    {local_first[0], local_first[1], local_first[2]},
-                    {local_last[0] + 1, local_last[1] + 1, local_last[2] + 1}),
-                KOKKOS_LAMBDA(int gi, int gj, int gk) {
-                    // Corner-DC layout: modes in [0, N/2) U [N+N/2, 2N)
-                    auto in_bounds = [&](int g, int n) {
-                        return (g >= 0 && g < n / 2) || (g >= n + n / 2 && g < 2 * n);
-                    };
-
-                    const int li_in  = gi - local_first[0] + nghost_in;
-                    const int lj_in  = gj - local_first[1] + nghost_in;
-                    const int lk_in  = gk - local_first[2] + nghost_in;
-                    const int li_out = gi - local_first[0] + nghost_out;
-                    const int lj_out = gj - local_first[1] + nghost_out;
-                    const int lk_out = gk - local_first[2] + nghost_out;
-
-                    if (in_bounds(gi, nx) && in_bounds(gj, ny) && in_bounds(gk, nz)) {
-                        // Map upsampled-grid corner-DC index back to factor index [0, n_modes)
-                        auto rescale = [](int g, int n) {
-                            return (g < n) ? g : g - n;
-                        };
-
-                        // factor = deconv * exp(-i pi freq / N_grid)
-                        const complex_type factor =
-                            f0(rescale(gi, nx)) * f1(rescale(gj, ny)) * f2(rescale(gk, nz));
-
-                        // f_k = conj(G_hat_k * factor)
-                        output_view(li_out, lj_out, lk_out) =
-                            Kokkos::conj(input_view(li_in, lj_in, lk_in) * factor);
+                    if (inside) {
+                        complex_type factor(T(1), T(0));
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            const int gi = static_cast<int>(g[d]);
+                            const int n  = n_modes_arr[d];
+                            const int rescaled = (gi < n) ? gi : gi - n;
+                            factor *= f_arr[d](rescaled);
+                        }
+                        ippl::apply(output_view, idx_out) =
+                            Kokkos::conj(ippl::apply(input_view, idx_in) * factor);
                     } else {
-                        output_view(li_out, lj_out, lk_out) = complex_type(0, 0);
+                        ippl::apply(output_view, idx_out) = complex_type(0, 0);
                     }
                 });
 
@@ -174,22 +177,19 @@ namespace ippl {
 
         /**
          * @brief Apply pre-correction for Type 2 NUFFT (pre-IFFT).
-         *
-         * Type 2: uniform Fourier modes -> nonuniform points.
-         * Before the IFFT and cell-centered gather, the mode field is
-         * pre-multiplied by `factor_k = deconv_k * exp(-i pi k / N)` so the
-         * gather recovers the correct values. Entries outside the mode band
-         * are set to zero.
          */
-        template <typename FieldIn, typename FieldOut, typename ExecSpace, typename T>
+        template <typename FieldIn, typename FieldOut, typename ExecSpace, typename T,
+                  unsigned Dim>
         void applyPreCorrectionType2(
             FieldIn& input,
             const std::array<Kokkos::View<Kokkos::complex<T>*, typename ExecSpace::memory_space>,
-                             3>& factors,
-            FieldOut& output, const Vector<size_t, 3>& n_modes, const Vector<size_t, 3>&) {
-            using complex_type = Kokkos::complex<T>;
-
-            constexpr unsigned Dim = 3;
+                             Dim>& factors,
+            FieldOut& output, const Vector<size_t, Dim>& n_modes,
+            const Vector<size_t, Dim>& /*n_grid*/) {
+            using complex_type     = Kokkos::complex<T>;
+            using factor_view_t    = Kokkos::View<Kokkos::complex<T>*,
+                                                  typename ExecSpace::memory_space>;
+            using index_array_type = typename ippl::RangePolicy<Dim, ExecSpace>::index_array_type;
 
             auto input_view  = input.getView();
             auto output_view = output.getView();
@@ -200,49 +200,50 @@ namespace ippl {
             const int nghost_in  = input.getNghost();
             const int nghost_out = output.getNghost();
 
-            Vector<int, Dim> local_first, local_last;
+            Vector<int, Dim> local_first;
+            Kokkos::Array<int64_t, Dim> begin, end;
+            Kokkos::Array<factor_view_t, Dim> f_arr;
+            Kokkos::Array<int, Dim> n_modes_arr;
             for (unsigned d = 0; d < Dim; ++d) {
                 local_first[d] = lDom[d].first();
-                local_last[d]  = lDom[d].last();
+                begin[d]       = lDom[d].first();
+                end[d]         = lDom[d].last() + 1;
+                f_arr[d]       = factors[d];
+                n_modes_arr[d] = static_cast<int>(n_modes[d]);
             }
 
-            auto f0 = factors[0];
-            auto f1 = factors[1];
-            auto f2 = factors[2];
+            ippl::parallel_for(
+                "precorr_type2_local",
+                ippl::createRangePolicy<Dim, ExecSpace>(begin, end),
+                KOKKOS_LAMBDA(const index_array_type& g) {
+                    bool inside = true;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        const int gi = static_cast<int>(g[d]);
+                        const int n  = n_modes_arr[d];
+                        if (!((gi >= 0 && gi < n / 2) || (gi >= n + n / 2 && gi < 2 * n))) {
+                            inside = false;
+                            break;
+                        }
+                    }
 
-            const int nx = static_cast<int>(n_modes[0]);
-            const int ny = static_cast<int>(n_modes[1]);
-            const int nz = static_cast<int>(n_modes[2]);
+                    index_array_type idx_in, idx_out;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        idx_in[d]  = static_cast<int>(g[d]) - local_first[d] + nghost_in;
+                        idx_out[d] = static_cast<int>(g[d]) - local_first[d] + nghost_out;
+                    }
 
-            Kokkos::parallel_for(
-                "precorr_type2_3d_local",
-                Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                    {local_first[0], local_first[1], local_first[2]},
-                    {local_last[0] + 1, local_last[1] + 1, local_last[2] + 1}),
-                KOKKOS_LAMBDA(int gi, int gj, int gk) {
-                    auto in_bounds = [&](int g, int n) {
-                        return (g >= 0 && g < n / 2) || (g >= n + n / 2 && g < 2 * n);
-                    };
-
-                    const int li_in  = gi - local_first[0] + nghost_in;
-                    const int lj_in  = gj - local_first[1] + nghost_in;
-                    const int lk_in  = gk - local_first[2] + nghost_in;
-                    const int li_out = gi - local_first[0] + nghost_out;
-                    const int lj_out = gj - local_first[1] + nghost_out;
-                    const int lk_out = gk - local_first[2] + nghost_out;
-
-                    if (in_bounds(gi, nx) && in_bounds(gj, ny) && in_bounds(gk, nz)) {
-                        auto rescale = [](int g, int n) {
-                            return (g < n) ? g : g - n;
-                        };
-
-                        const complex_type factor =
-                            f0(rescale(gi, nx)) * f1(rescale(gj, ny)) * f2(rescale(gk, nz));
-
-                        output_view(li_out, lj_out, lk_out) =
-                            input_view(li_in, lj_in, lk_in) * factor;
+                    if (inside) {
+                        complex_type factor(T(1), T(0));
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            const int gi = static_cast<int>(g[d]);
+                            const int n  = n_modes_arr[d];
+                            const int rescaled = (gi < n) ? gi : gi - n;
+                            factor *= f_arr[d](rescaled);
+                        }
+                        ippl::apply(output_view, idx_out) =
+                            ippl::apply(input_view, idx_in) * factor;
                     } else {
-                        output_view(li_out, lj_out, lk_out) = complex_type(0, 0);
+                        ippl::apply(output_view, idx_out) = complex_type(0, 0);
                     }
                 });
 
@@ -251,20 +252,17 @@ namespace ippl {
 
         /**
          * @brief Apply deconvolution for Type 1 NUFFT on the pruned mode grid.
-         *
-         * Same as applyDeconvolutionType1 but operates directly on a field
-         * already living in mode space (0..n_modes[d]-1 per dim, corner-DC).
-         *
-         *   field(gi,gj,gk) <- conj( field(gi,gj,gk) * f0(gi)*f1(gj)*f2(gk) )
          */
-        template <typename FieldType, typename ExecSpace, typename T>
+        template <typename FieldType, typename ExecSpace, typename T, unsigned Dim>
         void applyDeconvolutionPruned(
             FieldType& field,
             const std::array<Kokkos::View<Kokkos::complex<T>*, typename ExecSpace::memory_space>,
-                             3>& factors,
-            const Vector<size_t, 3>& n_modes, const Vector<size_t, 3>& /*n_grid*/) {
+                             Dim>& factors,
+            const Vector<size_t, Dim>& n_modes, const Vector<size_t, Dim>& /*n_grid*/) {
             using complex_type     = Kokkos::complex<T>;
-            constexpr unsigned Dim = 3;
+            using factor_view_t    = Kokkos::View<Kokkos::complex<T>*,
+                                                  typename ExecSpace::memory_space>;
+            using index_array_type = typename ippl::RangePolicy<Dim, ExecSpace>::index_array_type;
 
             auto view    = field.getView();
             auto& layout = field.getLayout();
@@ -272,38 +270,38 @@ namespace ippl {
 
             const int nghost = field.getNghost();
 
-            Vector<int, Dim> local_first, local_last;
+            Vector<int, Dim> local_first;
+            Kokkos::Array<int64_t, Dim> begin, end;
+            Kokkos::Array<factor_view_t, Dim> f_arr;
+            Kokkos::Array<int, Dim> n_modes_arr;
             for (unsigned d = 0; d < Dim; ++d) {
                 local_first[d] = lDom[d].first();
-                local_last[d]  = lDom[d].last();
+                begin[d]       = lDom[d].first();
+                end[d]         = lDom[d].last() + 1;
+                f_arr[d]       = factors[d];
+                n_modes_arr[d] = static_cast<int>(n_modes[d]);
             }
 
-            auto f0 = factors[0];
-            auto f1 = factors[1];
-            auto f2 = factors[2];
-
-            const int nx = static_cast<int>(n_modes[0]);
-            const int ny = static_cast<int>(n_modes[1]);
-            const int nz = static_cast<int>(n_modes[2]);
-
-            Kokkos::parallel_for(
+            ippl::parallel_for(
                 "deconv_type1_pruned_local",
-                Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                    {local_first[0], local_first[1], local_first[2]},
-                    {local_last[0] + 1, local_last[1] + 1, local_last[2] + 1}),
-                KOKKOS_LAMBDA(int gi, int gj, int gk) {
-                    if (gi < 0 || gj < 0 || gk < 0 || gi >= nx || gj >= ny || gk >= nz)
-                        return;
+                ippl::createRangePolicy<Dim, ExecSpace>(begin, end),
+                KOKKOS_LAMBDA(const index_array_type& g) {
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        const int gi = static_cast<int>(g[d]);
+                        if (gi < 0 || gi >= n_modes_arr[d]) return;
+                    }
 
-                    const int li = gi - local_first[0] + nghost;
-                    const int lj = gj - local_first[1] + nghost;
-                    const int lk = gk - local_first[2] + nghost;
+                    index_array_type idx;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        idx[d] = static_cast<int>(g[d]) - local_first[d] + nghost;
+                    }
 
-                    // factor = deconv * exp(-i pi freq / N_grid)
-                    const complex_type factor = f0(gi) * f1(gj) * f2(gk);
+                    complex_type factor(T(1), T(0));
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        factor *= f_arr[d](static_cast<int>(g[d]));
+                    }
 
-                    // f_k = conj(G_hat_k * factor)
-                    view(li, lj, lk) = Kokkos::conj(view(li, lj, lk) * factor);
+                    ippl::apply(view, idx) = Kokkos::conj(ippl::apply(view, idx) * factor);
                 });
 
             Kokkos::fence();
@@ -311,20 +309,17 @@ namespace ippl {
 
         /**
          * @brief Apply pre-correction for Type 2 NUFFT on the pruned mode grid.
-         *
-         * Same as applyPreCorrectionType2 but operates directly on a field
-         * already in mode space (0..n_modes[d]-1 per dim, corner-DC).
-         *
-         *   field(gi,gj,gk) <- field(gi,gj,gk) * f0(gi) * f1(gj) * f2(gk)
          */
-        template <typename FieldType, typename ExecSpace, typename T>
+        template <typename FieldType, typename ExecSpace, typename T, unsigned Dim>
         void applyPrecorrectionPruned(
             FieldType& field,
             const std::array<Kokkos::View<Kokkos::complex<T>*, typename ExecSpace::memory_space>,
-                             3>& factors,
-            const Vector<size_t, 3>& n_modes, const Vector<size_t, 3>& /*n_grid*/) {
+                             Dim>& factors,
+            const Vector<size_t, Dim>& n_modes, const Vector<size_t, Dim>& /*n_grid*/) {
             using complex_type     = Kokkos::complex<T>;
-            constexpr unsigned Dim = 3;
+            using factor_view_t    = Kokkos::View<Kokkos::complex<T>*,
+                                                  typename ExecSpace::memory_space>;
+            using index_array_type = typename ippl::RangePolicy<Dim, ExecSpace>::index_array_type;
 
             auto view    = field.getView();
             auto& layout = field.getLayout();
@@ -332,35 +327,38 @@ namespace ippl {
 
             const int nghost = field.getNghost();
 
-            Vector<int, Dim> local_first, local_last;
+            Vector<int, Dim> local_first;
+            Kokkos::Array<int64_t, Dim> begin, end;
+            Kokkos::Array<factor_view_t, Dim> f_arr;
+            Kokkos::Array<int, Dim> n_modes_arr;
             for (unsigned d = 0; d < Dim; ++d) {
                 local_first[d] = lDom[d].first();
-                local_last[d]  = lDom[d].last();
+                begin[d]       = lDom[d].first();
+                end[d]         = lDom[d].last() + 1;
+                f_arr[d]       = factors[d];
+                n_modes_arr[d] = static_cast<int>(n_modes[d]);
             }
 
-            auto f0 = factors[0];
-            auto f1 = factors[1];
-            auto f2 = factors[2];
-
-            const int nx = static_cast<int>(n_modes[0]);
-            const int ny = static_cast<int>(n_modes[1]);
-            const int nz = static_cast<int>(n_modes[2]);
-
-            Kokkos::parallel_for(
+            ippl::parallel_for(
                 "precorr_type2_pruned_local",
-                Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                    {local_first[0], local_first[1], local_first[2]},
-                    {local_last[0] + 1, local_last[1] + 1, local_last[2] + 1}),
-                KOKKOS_LAMBDA(int gi, int gj, int gk) {
-                    if (gi < 0 || gj < 0 || gk < 0 || gi >= nx || gj >= ny || gk >= nz)
-                        return;
+                ippl::createRangePolicy<Dim, ExecSpace>(begin, end),
+                KOKKOS_LAMBDA(const index_array_type& g) {
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        const int gi = static_cast<int>(g[d]);
+                        if (gi < 0 || gi >= n_modes_arr[d]) return;
+                    }
 
-                    const int li = gi - local_first[0] + nghost;
-                    const int lj = gj - local_first[1] + nghost;
-                    const int lk = gk - local_first[2] + nghost;
+                    index_array_type idx;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        idx[d] = static_cast<int>(g[d]) - local_first[d] + nghost;
+                    }
 
-                    const complex_type factor = f0(gi) * f1(gj) * f2(gk);
-                    view(li, lj, lk) *= factor;
+                    complex_type factor(T(1), T(0));
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        factor *= f_arr[d](static_cast<int>(g[d]));
+                    }
+
+                    ippl::apply(view, idx) = ippl::apply(view, idx) * factor;
                 });
 
             Kokkos::fence();

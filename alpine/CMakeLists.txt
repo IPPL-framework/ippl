@@ -21,6 +21,7 @@ if(IPPL_ENABLE_TESTS)
   # Add the test
   add_ippl_integration_test(LandauDamping
     ARGS "16" "16" "16" "10000000" "25" "FFT" "0.01" "LeapFrog" "--overallocate" "2.0" "--info" "10"
+    TIMEOUT 900
     LABELS alpine integration
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/alpine/")
   # cmake-format: on

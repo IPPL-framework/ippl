@@ -206,7 +206,7 @@ namespace ippl::Interpolation::detail {
 
                 Stencil stencil{};
 
-                for_constexpr(std::make_integer_sequence<int, Dim>{}, [&]<int d> {
+                for_constexpr(std::make_integer_sequence<int, Dim>{}, [&]<int d>() {
                     const RealType g = transform.toGridCoordinate(args.x(p)[d], d);
                     const int idx0   = transform.getStencilBase(g - RealType(0.5), W);
 

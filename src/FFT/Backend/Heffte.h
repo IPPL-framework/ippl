@@ -99,7 +99,7 @@ namespace ippl {
             HeffteC2C(const heffte::box3d<long long>& inbox, const heffte::box3d<long long>& outbox,
                       MPI_Comm comm, const ParameterList& params, int maxBatchSize = 1)
                 : maxBatchSize_(maxBatchSize) {
-                static_assert(Dim == 3, "HeFFTe wrapper only supports 3D");
+                static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
                 auto opts = makeHeffteOptions<backend_t>(params);
                 heffte_   = std::make_shared<heffte_t>(inbox, outbox, comm, opts);

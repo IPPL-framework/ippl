@@ -254,10 +254,11 @@ namespace ippl {
                 IpplTimings::startTimer(deconvolutionTimer);
                 // Step 3: Deconvolution and truncation to output modes
                 if (upsampled_output) {
-                    applyDeconvolutionType1<decltype(*grid_field_), decltype(f), ExecSpace, T>(
+                    applyDeconvolutionType1<decltype(*grid_field_), decltype(f), ExecSpace, T, Dim>(
                         *grid_field_, factors_, f, n_modes_, n_grid_);
                 } else {
-                    applyDeconvolutionPruned<decltype(f), ExecSpace, T>(f, factors_, n_modes_, n_grid_);
+                    applyDeconvolutionPruned<decltype(f), ExecSpace, T, Dim>(
+                        f, factors_, n_modes_, n_grid_);
                 }
                 IpplTimings::stopTimer(deconvolutionTimer);
                 IpplTimings::stopTimer(NativeNUFFT1Timer);
@@ -282,10 +283,11 @@ namespace ippl {
                 IpplTimings::startTimer(PrecorrectionTimer);
 
                 if (upsampled_output) {
-                    applyPreCorrectionType2<decltype(f), decltype(*grid_field_), ExecSpace, T>(
+                    applyPreCorrectionType2<decltype(f), decltype(*grid_field_), ExecSpace, T, Dim>(
                         f, factors_, *grid_field_, n_modes_, n_grid_);
                 } else {
-                    applyPrecorrectionPruned<decltype(f), ExecSpace, T>(f, factors_, n_modes_, n_grid_);
+                    applyPrecorrectionPruned<decltype(f), ExecSpace, T, Dim>(
+                        f, factors_, n_modes_, n_grid_);
                 }
                 IpplTimings::stopTimer(PrecorrectionTimer);
 

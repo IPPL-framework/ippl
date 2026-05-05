@@ -26,7 +26,8 @@ namespace ippl {
 #else
         using Backend_t  = fft::HeffteC2C<T, Dim, MemSpace>;
 #endif
-        using TempView_t = Kokkos::View<Complex_t***, Kokkos::LayoutLeft, MemSpace>;
+        using TempView_t = typename Kokkos::View<typename ComplexField::view_type::data_type,
+                                                 Kokkos::LayoutLeft, MemSpace>::uniform_type;
 
         FFT(const Layout_t& layout, const ParameterList& params) {
             static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");

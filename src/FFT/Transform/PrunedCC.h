@@ -57,13 +57,14 @@ namespace ippl {
         using GPUOps     = fft::Stream<MemSpace>;
         using Stream_t   = typename GPUOps::stream_type;
         using DeviceExec = typename GPUOps::exec_space;
-        using TempView_t = Kokkos::View<Complex_t***, Kokkos::LayoutLeft, MemSpace>;
+        using TempView_t = typename Kokkos::View<typename ComplexField::view_type::data_type,
+                                                 Kokkos::LayoutLeft, MemSpace>::uniform_type;
 
         FFT(const Layout_t& layoutIn, const Layout_t& layoutOut, const PruningParams<Dim>& pruning,
             const ParameterList& params)
             : pruning_(pruning)
             , numConcurrent_(std::clamp(params.get<int>("num_concurrent_ffts", 4), 1, NumSubFFTs)) {
-            static_assert(Dim == 3, "Pruned FFT currently only supports 3D");
+            static_assert(Dim == 2 || Dim == 3, "Pruned FFT supports 2D and 3D");
 
             auto& prunedLayout =
                 (layoutOut.getLocalNDIndex().size() < layoutIn.getLocalNDIndex().size()) ? layoutOut
@@ -168,6 +169,11 @@ namespace ippl {
 #endif
             ;
 
+        const long ext0 = static_cast<long>(owned[0].length());
+        const long ext1 = static_cast<long>(owned[1].length());
+        [[maybe_unused]] const long ext2 =
+            (Dim == 3) ? static_cast<long>(owned[Dim == 3 ? 2 : 0].length()) : 1L;
+
         for (int batch = 0; batch < numBatches; ++batch) {
             const int start = batch * numConcurrent_;
             const int end   = std::min(start + numConcurrent_, NumSubFFTs);
@@ -181,31 +187,49 @@ namespace ippl {
                 auto offs   = offsets[k];
                 auto& temp  = temps_[local];
 
-                auto copy_lambda = KOKKOS_LAMBDA(int i0, int i1, int i2) {
-                    int si           = i0 * 2 + offs[0] + ngIn;
-                    int sj           = i1 * 2 + offs[1] + ngIn;
-                    int sk           = i2 * 2 + offs[2] + ngIn;
-                    temp(i0, i1, i2) = inView(si, sj, sk);
-                };
-
-                if constexpr (is_cpu) {
-                    // CPU execution: Dispatch cleanly without stream instances
-                    Kokkos::parallel_for(
-                        "strided_copy_forward",
-                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                            {0, 0, 0}, {long(owned[0].length()), long(owned[1].length()),
-                                        long(owned[2].length())}),
-                        copy_lambda);
+                if constexpr (Dim == 3) {
+                    auto copy_lambda = KOKKOS_LAMBDA(int i0, int i1, int i2) {
+                        int si = i0 * 2 + int(offs[0]) + ngIn;
+                        int sj = i1 * 2 + int(offs[1]) + ngIn;
+                        int sk = i2 * 2 + int(offs[2]) + ngIn;
+                        temp(i0, i1, i2) = inView(si, sj, sk);
+                    };
+                    if constexpr (is_cpu) {
+                        Kokkos::parallel_for(
+                            "strided_copy_forward",
+                            Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
+                                {0, 0, 0}, {ext0, ext1, ext2}),
+                            copy_lambda);
+                    } else {
+                        auto exec = GPUOps::instance(streams_[local]);
+                        Kokkos::parallel_for(
+                            "strided_copy_forward",
+                            Kokkos::MDRangePolicy<DeviceExec, Kokkos::Rank<3>>(
+                                exec, {0, 0, 0}, {ext0, ext1, ext2}),
+                            copy_lambda);
+                        GPUOps::sync(streams_[local]);
+                    }
                 } else {
-                    // GPU execution: Dispatch to designated streams to overlap sub-FFT work
-                    auto exec = GPUOps::instance(streams_[local]);
-                    Kokkos::parallel_for("strided_copy_forward",
-                                         Kokkos::MDRangePolicy<DeviceExec, Kokkos::Rank<3>>(
-                                             exec, {0, 0, 0},
-                                             {long(owned[0].length()), long(owned[1].length()),
-                                              long(owned[2].length())}),
-                                         copy_lambda);
-                    GPUOps::sync(streams_[local]);  // Ensure copy finishes before HeFFTe reads it
+                    auto copy_lambda = KOKKOS_LAMBDA(int i0, int i1) {
+                        int si = i0 * 2 + int(offs[0]) + ngIn;
+                        int sj = i1 * 2 + int(offs[1]) + ngIn;
+                        temp(i0, i1) = inView(si, sj);
+                    };
+                    if constexpr (is_cpu) {
+                        Kokkos::parallel_for(
+                            "strided_copy_forward",
+                            Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<2>>({0, 0},
+                                                                              {ext0, ext1}),
+                            copy_lambda);
+                    } else {
+                        auto exec = GPUOps::instance(streams_[local]);
+                        Kokkos::parallel_for(
+                            "strided_copy_forward",
+                            Kokkos::MDRangePolicy<DeviceExec, Kokkos::Rank<2>>(exec, {0, 0},
+                                                                               {ext0, ext1}),
+                            copy_lambda);
+                        GPUOps::sync(streams_[local]);
+                    }
                 }
 
                 if (dir == 1) {
@@ -225,43 +249,72 @@ namespace ippl {
                 auto offs   = offsets[k];
                 auto& temp  = temps_[local];
 
-                Kokkos::parallel_for(
-                    "twiddle_add_forward",
-                    Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                        {ngOut, ngOut, ngOut},
-                        {int(outView.extent(0)) - ngOut, int(outView.extent(1)) - ngOut,
-                         int(outView.extent(2)) - ngOut}),
-                    KOKKOS_LAMBDA(int i, int j, int kk) {
-                        int gi = i - ngOut + localFirst[0];
-                        int gj = j - ngOut + localFirst[1];
-                        int gk = kk - ngOut + localFirst[2];
+                const long g0 = static_cast<long>(gDomFull[0].length());
+                const long g1 = static_cast<long>(gDomFull[1].length());
+                const long g2 =
+                    (Dim == 3) ? static_cast<long>(gDomFull[Dim == 3 ? 2 : 0].length()) : 1L;
+                const long m0 = static_cast<long>(modes[0]);
+                const long m1 = static_cast<long>(modes[1]);
+                const long m2 = (Dim == 3) ? static_cast<long>(modes[Dim == 3 ? 2 : 0]) : 1L;
+                const int lf0 = localFirst[0];
+                const int lf1 = localFirst[1];
+                const int lf2 = (Dim == 3) ? localFirst[Dim == 3 ? 2 : 0] : 0;
 
-                        int64_t f0 = (gi < int64_t(modes[0]) / 2)
-                                         ? gi
-                                         : int64_t(gDomFull[0].length()) - int64_t(modes[0]) + gi;
-                        int64_t f1 = (gj < int64_t(modes[1]) / 2)
-                                         ? gj
-                                         : int64_t(gDomFull[1].length()) - int64_t(modes[1]) + gj;
-                        int64_t f2 = (gk < int64_t(modes[2]) / 2)
-                                         ? gk
-                                         : int64_t(gDomFull[2].length()) - int64_t(modes[2]) + gk;
+                if constexpr (Dim == 3) {
+                    Kokkos::parallel_for(
+                        "twiddle_add_forward",
+                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
+                            {ngOut, ngOut, ngOut},
+                            {int(outView.extent(0)) - ngOut, int(outView.extent(1)) - ngOut,
+                             int(outView.extent(2)) - ngOut}),
+                        KOKKOS_LAMBDA(int i, int j, int kk) {
+                            int gi = i - ngOut + lf0;
+                            int gj = j - ngOut + lf1;
+                            int gk = kk - ngOut + lf2;
 
-                        Complex_t w(1.0, 0.0);
-                        auto twiddle = [&](int64_t freq, int64_t N) {
-                            double ang = -dir * 2.0 * M_PI * double(freq) / double(N);
-                            return Complex_t(Kokkos::cos(ang), Kokkos::sin(ang));
-                        };
+                            int64_t f0 = (gi < int64_t(m0) / 2) ? gi : int64_t(g0) - int64_t(m0) + gi;
+                            int64_t f1 = (gj < int64_t(m1) / 2) ? gj : int64_t(g1) - int64_t(m1) + gj;
+                            int64_t f2 = (gk < int64_t(m2) / 2) ? gk : int64_t(g2) - int64_t(m2) + gk;
 
-                        if (offs[0])
-                            w *= twiddle(f0, gDomFull[0].length());
-                        if (offs[1])
-                            w *= twiddle(f1, gDomFull[1].length());
-                        if (offs[2])
-                            w *= twiddle(f2, gDomFull[2].length());
+                            Complex_t w(1.0, 0.0);
+                            auto twiddle = [&](int64_t freq, int64_t N) {
+                                double ang = -dir * 2.0 * M_PI * double(freq) / double(N);
+                                return Complex_t(Kokkos::cos(ang), Kokkos::sin(ang));
+                            };
 
-                        auto val = temp(i - ngOut, j - ngOut, kk - ngOut);
-                        outView(i, j, kk) += w * val * scale;
-                    });
+                            if (offs[0]) w *= twiddle(f0, g0);
+                            if (offs[1]) w *= twiddle(f1, g1);
+                            if (offs[2]) w *= twiddle(f2, g2);
+
+                            auto val = temp(i - ngOut, j - ngOut, kk - ngOut);
+                            outView(i, j, kk) += w * val * scale;
+                        });
+                } else {
+                    Kokkos::parallel_for(
+                        "twiddle_add_forward",
+                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<2>>(
+                            {ngOut, ngOut},
+                            {int(outView.extent(0)) - ngOut, int(outView.extent(1)) - ngOut}),
+                        KOKKOS_LAMBDA(int i, int j) {
+                            int gi = i - ngOut + lf0;
+                            int gj = j - ngOut + lf1;
+
+                            int64_t f0 = (gi < int64_t(m0) / 2) ? gi : int64_t(g0) - int64_t(m0) + gi;
+                            int64_t f1 = (gj < int64_t(m1) / 2) ? gj : int64_t(g1) - int64_t(m1) + gj;
+
+                            Complex_t w(1.0, 0.0);
+                            auto twiddle = [&](int64_t freq, int64_t N) {
+                                double ang = -dir * 2.0 * M_PI * double(freq) / double(N);
+                                return Complex_t(Kokkos::cos(ang), Kokkos::sin(ang));
+                            };
+
+                            if (offs[0]) w *= twiddle(f0, g0);
+                            if (offs[1]) w *= twiddle(f1, g1);
+
+                            auto val = temp(i - ngOut, j - ngOut);
+                            outView(i, j) += w * val * scale;
+                        });
+                }
             }
 
             IpplTimings::stopTimer(twiddleTimer);
@@ -320,6 +373,20 @@ namespace ippl {
 #endif
             ;
 
+        const long ext0 = static_cast<long>(owned[0].length());
+        const long ext1 = static_cast<long>(owned[1].length());
+        [[maybe_unused]] const long ext2 =
+            (Dim == 3) ? static_cast<long>(owned[Dim == 3 ? 2 : 0].length()) : 1L;
+        const long g0 = static_cast<long>(gDomFull[0].length());
+        const long g1 = static_cast<long>(gDomFull[1].length());
+        const long g2 = (Dim == 3) ? static_cast<long>(gDomFull[Dim == 3 ? 2 : 0].length()) : 1L;
+        const long m0 = static_cast<long>(modes[0]);
+        const long m1 = static_cast<long>(modes[1]);
+        const long m2 = (Dim == 3) ? static_cast<long>(modes[Dim == 3 ? 2 : 0]) : 1L;
+        const int lf0 = localFirst[0];
+        const int lf1 = localFirst[1];
+        const int lf2 = (Dim == 3) ? localFirst[Dim == 3 ? 2 : 0] : 0;
+
         for (int batch = 0; batch < numBatches; ++batch) {
             const int start = batch * numConcurrent_;
             const int end   = std::min(start + numConcurrent_, NumSubFFTs);
@@ -327,60 +394,84 @@ namespace ippl {
 
             IpplTimings::startTimer(subIFFTTimer);
 
-            // Using the wrapper to evaluate thread parallelism safely
             detail::runConcurrentBatch<is_cpu>(count, [&](int local) {
                 const int k = start + local;
                 auto offs   = offsets[k];
                 auto& temp  = temps_[local];
 
-                auto multiply_lambda = KOKKOS_LAMBDA(int i0, int i1, int i2) {
-                    int gi = i0 + localFirst[0];
-                    int gj = i1 + localFirst[1];
-                    int gk = i2 + localFirst[2];
+                if constexpr (Dim == 3) {
+                    auto multiply_lambda = KOKKOS_LAMBDA(int i0, int i1, int i2) {
+                        int gi = i0 + lf0;
+                        int gj = i1 + lf1;
+                        int gk = i2 + lf2;
 
-                    int64_t f0 = (gi < int64_t(modes[0]) / 2)
-                                     ? gi
-                                     : int64_t(gDomFull[0].length()) - int64_t(modes[0]) + gi;
-                    int64_t f1 = (gj < int64_t(modes[1]) / 2)
-                                     ? gj
-                                     : int64_t(gDomFull[1].length()) - int64_t(modes[1]) + gj;
-                    int64_t f2 = (gk < int64_t(modes[2]) / 2)
-                                     ? gk
-                                     : int64_t(gDomFull[2].length()) - int64_t(modes[2]) + gk;
+                        int64_t f0 = (gi < int64_t(m0) / 2) ? gi : int64_t(g0) - int64_t(m0) + gi;
+                        int64_t f1 = (gj < int64_t(m1) / 2) ? gj : int64_t(g1) - int64_t(m1) + gj;
+                        int64_t f2 = (gk < int64_t(m2) / 2) ? gk : int64_t(g2) - int64_t(m2) + gk;
 
-                    Complex_t w(1.0, 0.0);
-                    auto twiddle = [&](int64_t freq, int64_t N) {
-                        double ang = dir * 2.0 * M_PI * double(freq) / double(N);
-                        return Complex_t(Kokkos::cos(ang), Kokkos::sin(ang));
+                        Complex_t w(1.0, 0.0);
+                        auto twiddle = [&](int64_t freq, int64_t N) {
+                            double ang = dir * 2.0 * M_PI * double(freq) / double(N);
+                            return Complex_t(Kokkos::cos(ang), Kokkos::sin(ang));
+                        };
+
+                        if (offs[0]) w *= twiddle(f0, g0);
+                        if (offs[1]) w *= twiddle(f1, g1);
+                        if (offs[2]) w *= twiddle(f2, g2);
+
+                        auto input_val = inView(i0 + ngIn, i1 + ngIn, i2 + ngIn);
+                        temp(i0, i1, i2) = w * input_val;
                     };
-
-                    if (offs[0])
-                        w *= twiddle(f0, gDomFull[0].length());
-                    if (offs[1])
-                        w *= twiddle(f1, gDomFull[1].length());
-                    if (offs[2])
-                        w *= twiddle(f2, gDomFull[2].length());
-
-                    auto input_val   = inView(i0 + ngIn, i1 + ngIn, i2 + ngIn);
-                    temp(i0, i1, i2) = w * input_val;
-                };
-
-                if constexpr (is_cpu) {
-                    Kokkos::parallel_for(
-                        "twiddle_multiply_backward",
-                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                            {0, 0, 0}, {long(owned[0].length()), long(owned[1].length()),
-                                        long(owned[2].length())}),
-                        multiply_lambda);
+                    if constexpr (is_cpu) {
+                        Kokkos::parallel_for(
+                            "twiddle_multiply_backward",
+                            Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
+                                {0, 0, 0}, {ext0, ext1, ext2}),
+                            multiply_lambda);
+                    } else {
+                        auto exec = GPUOps::instance(streams_[local]);
+                        Kokkos::parallel_for(
+                            "twiddle_multiply_backward",
+                            Kokkos::MDRangePolicy<DeviceExec, Kokkos::Rank<3>>(
+                                exec, {0, 0, 0}, {ext0, ext1, ext2}),
+                            multiply_lambda);
+                        GPUOps::sync(streams_[local]);
+                    }
                 } else {
-                    auto exec = GPUOps::instance(streams_[local]);
-                    Kokkos::parallel_for("twiddle_multiply_backward",
-                                         Kokkos::MDRangePolicy<DeviceExec, Kokkos::Rank<3>>(
-                                             exec, {0, 0, 0},
-                                             {long(owned[0].length()), long(owned[1].length()),
-                                              long(owned[2].length())}),
-                                         multiply_lambda);
-                    GPUOps::sync(streams_[local]);  // Ensure copy finishes before HeFFTe reads it
+                    auto multiply_lambda = KOKKOS_LAMBDA(int i0, int i1) {
+                        int gi = i0 + lf0;
+                        int gj = i1 + lf1;
+
+                        int64_t f0 = (gi < int64_t(m0) / 2) ? gi : int64_t(g0) - int64_t(m0) + gi;
+                        int64_t f1 = (gj < int64_t(m1) / 2) ? gj : int64_t(g1) - int64_t(m1) + gj;
+
+                        Complex_t w(1.0, 0.0);
+                        auto twiddle = [&](int64_t freq, int64_t N) {
+                            double ang = dir * 2.0 * M_PI * double(freq) / double(N);
+                            return Complex_t(Kokkos::cos(ang), Kokkos::sin(ang));
+                        };
+
+                        if (offs[0]) w *= twiddle(f0, g0);
+                        if (offs[1]) w *= twiddle(f1, g1);
+
+                        auto input_val = inView(i0 + ngIn, i1 + ngIn);
+                        temp(i0, i1) = w * input_val;
+                    };
+                    if constexpr (is_cpu) {
+                        Kokkos::parallel_for(
+                            "twiddle_multiply_backward",
+                            Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<2>>({0, 0},
+                                                                              {ext0, ext1}),
+                            multiply_lambda);
+                    } else {
+                        auto exec = GPUOps::instance(streams_[local]);
+                        Kokkos::parallel_for(
+                            "twiddle_multiply_backward",
+                            Kokkos::MDRangePolicy<DeviceExec, Kokkos::Rank<2>>(exec, {0, 0},
+                                                                               {ext0, ext1}),
+                            multiply_lambda);
+                        GPUOps::sync(streams_[local]);
+                    }
                 }
 
                 if (dir == -1) {
@@ -400,17 +491,27 @@ namespace ippl {
                 auto offs   = offsets[k];
                 auto& temp  = temps_[local];
 
-                Kokkos::parallel_for(
-                    "strided_write_backward",
-                    Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                        {0, 0, 0}, {long(owned[0].length()), long(owned[1].length()),
-                                    long(owned[2].length())}),
-                    KOKKOS_LAMBDA(int i0, int i1, int i2) {
-                        int oi              = i0 * 2 + offs[0] + ngOut;
-                        int oj              = i1 * 2 + offs[1] + ngOut;
-                        int ok              = i2 * 2 + offs[2] + ngOut;
-                        outView(oi, oj, ok) = temp(i0, i1, i2);
-                    });
+                if constexpr (Dim == 3) {
+                    Kokkos::parallel_for(
+                        "strided_write_backward",
+                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
+                            {0, 0, 0}, {ext0, ext1, ext2}),
+                        KOKKOS_LAMBDA(int i0, int i1, int i2) {
+                            int oi              = i0 * 2 + int(offs[0]) + ngOut;
+                            int oj              = i1 * 2 + int(offs[1]) + ngOut;
+                            int ok              = i2 * 2 + int(offs[2]) + ngOut;
+                            outView(oi, oj, ok) = temp(i0, i1, i2);
+                        });
+                } else {
+                    Kokkos::parallel_for(
+                        "strided_write_backward",
+                        Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<2>>({0, 0}, {ext0, ext1}),
+                        KOKKOS_LAMBDA(int i0, int i1) {
+                            int oi          = i0 * 2 + int(offs[0]) + ngOut;
+                            int oj          = i1 * 2 + int(offs[1]) + ngOut;
+                            outView(oi, oj) = temp(i0, i1);
+                        });
+                }
             }
 
             IpplTimings::stopTimer(stridedWriteTimer);

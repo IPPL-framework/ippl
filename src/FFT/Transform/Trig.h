@@ -25,7 +25,8 @@ namespace ippl {
             using ExecSpace  = typename Field::execution_space;
             using Layout_t   = FieldLayout<Dim>;
             using Backend_t  = HeffteTrig<T, Dim, MemSpace, Tag>;
-            using TempView_t = Kokkos::View<T***, Kokkos::LayoutLeft, MemSpace>;
+            using TempView_t = typename Kokkos::View<typename Field::view_type::data_type,
+                                                     Kokkos::LayoutLeft, MemSpace>::uniform_type;
 
             TrigBase(const Layout_t& layout, const ParameterList& params) {
                 static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");

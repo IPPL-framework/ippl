@@ -154,7 +154,6 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef dumpDataTimer    = IpplTimings::getTimer("dumpData");
         static IpplTimings::TimerRef PTimer           = IpplTimings::getTimer("kick");
         static IpplTimings::TimerRef RTimer           = IpplTimings::getTimer("drift");
-        static IpplTimings::TimerRef BCTimer          = IpplTimings::getTimer("particleBC");
         static IpplTimings::TimerRef initializeShapeFunctionPIF =
             IpplTimings::getTimer("initializeShapeFunctionPIF");
 

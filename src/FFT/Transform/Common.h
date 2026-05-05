@@ -3,6 +3,8 @@
 
 #include <array>
 
+#include "Expression/IpplOperations.h"
+#include "Utility/ParallelDispatch.h"
 #include "Utility/ViewUtils.h"
 
 namespace ippl::fft {
@@ -19,26 +21,23 @@ namespace ippl::fft {
 
     template <typename ExecSpace, typename OutputViewT, typename InputViewT>
     inline void copyToTemp(OutputViewT& output, const InputViewT& input, int n_ghost) {
-        Kokkos::parallel_for(
-            "FFT_CC_toTemp",
-            Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                {n_ghost, n_ghost, n_ghost}, {static_cast<int>(input.extent(0)) - n_ghost,
-                                              static_cast<int>(input.extent(1)) - n_ghost,
-                                              static_cast<int>(input.extent(2)) - n_ghost}),
-            KOKKOS_LAMBDA(int i, int j, int k) {
-                output(i - n_ghost, j - n_ghost, k - n_ghost) = input(i, j, k);
+        constexpr unsigned Dim = InputViewT::rank;
+        using index_array_type = typename ippl::RangePolicy<Dim, ExecSpace>::index_array_type;
+        ippl::parallel_for(
+            "FFT_toTemp", ippl::getRangePolicy(input, n_ghost),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                ippl::apply(output, args - n_ghost) = ippl::apply(input, args);
             });
     }
+
     template <typename ExecSpace, typename OutputViewT, typename InputViewT>
     inline void copyFromTemp(OutputViewT& output, const InputViewT& input, int n_ghost) {
-        Kokkos::parallel_for(
-            "FFT_CC_fromTemp",
-            Kokkos::MDRangePolicy<ExecSpace, Kokkos::Rank<3>>(
-                {n_ghost, n_ghost, n_ghost}, {static_cast<int>(output.extent(0)) - n_ghost,
-                                              static_cast<int>(output.extent(1)) - n_ghost,
-                                              static_cast<int>(output.extent(2)) - n_ghost}),
-            KOKKOS_LAMBDA(int i, int j, int k) {
-                output(i, j, k) = input(i - n_ghost, j - n_ghost, k - n_ghost);
+        constexpr unsigned Dim = OutputViewT::rank;
+        using index_array_type = typename ippl::RangePolicy<Dim, ExecSpace>::index_array_type;
+        ippl::parallel_for(
+            "FFT_fromTemp", ippl::getRangePolicy(output, n_ghost),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                ippl::apply(output, args) = ippl::apply(input, args - n_ghost);
             });
     }
 

@@ -3,14 +3,6 @@
 //   Type-1 (particles -> grid) and Type-2 (grid -> particles).
 //   Parameterised over precision (double, float) and dimension (2, 3).
 //
-//   Limitations:
-//   - FINUFFT-backed cases are 3D-only because the FINUFFT FFT field type
-//     is hard-coded as 3D in src/FFT/Transform/NUFFT.h.
-//   - Native NUFFT internals (Correction.h, NativeNUFFT.h spread/gather
-//     plumbing) are also currently hard-coded for Dim == 3, so 2D test
-//     instances skip at runtime. They stay in the type list to flag the
-//     coverage gap and so the skips disappear once 2D support lands.
-//
 #include "Ippl.h"
 
 #include <Kokkos_MathematicalConstants.hpp>
@@ -52,10 +44,10 @@ public:
     using exec_space              = ExecSpace;
     constexpr static unsigned dim = Dim;
 
-    using mesh_type      = ippl::UniformCartesian<T, Dim>;
-    using centering_type = typename mesh_type::DefaultCentering;
-    using field_type     = typename ippl::Field<Kokkos::complex<T>, Dim, mesh_type, centering_type,
-                                                ExecSpace>::uniform_type;
+    using mesh_type       = ippl::UniformCartesian<T, Dim>;
+    using centering_type  = typename mesh_type::DefaultCentering;
+    using field_type      = typename ippl::Field<Kokkos::complex<T>, Dim, mesh_type, centering_type,
+                                                 ExecSpace>::uniform_type;
     using real_field_type = ippl::Field<T, Dim, mesh_type, centering_type, ExecSpace>;
     using layout_type     = ippl::FieldLayout<Dim>;
     using playout_type    = ippl::ParticleSpatialLayout<T, Dim>;
@@ -116,8 +108,8 @@ public:
         bunch->update();
     }
 
-    void runStandardType1(const ippl::ParameterList& params,
-                          const ippl::Vector<int, Dim>& testMode, double tolerance) {
+    void runStandardType1(const ippl::ParameterList& params, const ippl::Vector<int, Dim>& testMode,
+                          double tolerance) {
         const bool useUpsampling = params.get<bool>("use_upsampled_inputs");
         const int nghost         = 1;
 
@@ -149,17 +141,16 @@ public:
         field = Kokkos::complex<T>(0);
         fft->transform(bunch->R, bunch->Q, field);
 
-        auto globalIdx = ippl::test::IndexUtils<Dim>::centeredToCornerDC(testMode, nModes,
-                                                                         useUpsampling);
+        auto globalIdx =
+            ippl::test::IndexUtils<Dim>::centeredToCornerDC(testMode, nModes, useUpsampling);
         const auto& lDom = field.getLayout().getLocalNDIndex();
 
         Kokkos::complex<T> nufftResult(0, 0);
         if (ippl::test::IndexUtils<Dim>::isOwnedLocally(lDom, globalIdx)) {
             auto fieldHost = field.getHostMirror();
             Kokkos::deep_copy(fieldHost, field.getView());
-            auto localIdx =
-                ippl::test::IndexUtils<Dim>::globalToLocal(lDom, globalIdx, nghost);
-            nufftResult = ippl::test::readFieldAt<decltype(fieldHost), Dim>(fieldHost, localIdx);
+            auto localIdx = ippl::test::IndexUtils<Dim>::globalToLocal(lDom, globalIdx, nghost);
+            nufftResult   = ippl::test::readFieldAt<decltype(fieldHost), Dim>(fieldHost, localIdx);
         }
 
         T sendBuf[2] = {nufftResult.real(), nufftResult.imag()};
@@ -189,9 +180,8 @@ public:
 
 template <typename T, unsigned Dim>
 using SpaceParam = Parameters<T, Kokkos::DefaultExecutionSpace, Rank<Dim>>;
-using NUFFTTypes =
-    ::testing::Types<SpaceParam<double, 3>, SpaceParam<float, 3>,
-                     SpaceParam<double, 2>, SpaceParam<float, 2>>;
+using NUFFTTypes = ::testing::Types<SpaceParam<double, 3>, SpaceParam<float, 3>,
+                                    SpaceParam<double, 2>, SpaceParam<float, 2>>;
 
 TYPED_TEST_SUITE(NUFFT1Test, NUFFTTypes);
 
@@ -208,107 +198,82 @@ namespace {
     }
 }  // namespace
 
-// Native NUFFT path is currently 3D-only (Correction.h and NativeNUFFT.h
-// hardcode Dim==3). Skip 2D instances until that lands.
-#define IPPL_NUFFT_REQUIRE_3D(Dim)                                                       \
-    if constexpr ((Dim) != 3) {                                                          \
-        GTEST_SKIP() << "Native NUFFT internals (Correction.h) are 3D-only";             \
-    } else
-
 TYPED_TEST(NUFFT1Test, BasicCorrectness_NoUpsampling) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(512);
-        this->generateRandomParticles();
-        auto params = ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), false);
-        this->runStandardType1(params, makeStandardTestMode<Dim>(16), smallTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(512);
+    this->generateRandomParticles();
+    auto params = ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), false);
+    this->runStandardType1(params, makeStandardTestMode<Dim>(16), smallTol<T>());
 }
 
 TYPED_TEST(NUFFT1Test, BasicCorrectness_WithUpsampling) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(512);
-        this->generateRandomParticles();
-        auto params = ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), true);
-        this->runStandardType1(params, makeStandardTestMode<Dim>(16), smallTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(512);
+    this->generateRandomParticles();
+    auto params = ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), true);
+    this->runStandardType1(params, makeStandardTestMode<Dim>(16), smallTol<T>());
 }
 
 TYPED_TEST(NUFFT1Test, MediumGrid_NoUpsampling) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(4096);
-        this->generateRandomParticles();
-        auto params = ippl::test::NUFFTParams::createNativeParams<T>(mediumTol<T>(), false);
-        this->runStandardType1(params, makeStandardTestMode<Dim>(16), mediumTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(4096);
+    this->generateRandomParticles();
+    auto params = ippl::test::NUFFTParams::createNativeParams<T>(mediumTol<T>(), false);
+    this->runStandardType1(params, makeStandardTestMode<Dim>(16), mediumTol<T>());
 }
 
 TYPED_TEST(NUFFT1Test, SpreadMethod_Atomic) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(4096);
-        this->generateRandomParticles();
-        auto params =
-            ippl::test::NUFFTParams::createNativeParams<T>(mediumTol<T>(), false, "atomic");
-        params.update("sort", false);
-        this->runStandardType1(params, makeStandardTestMode<Dim>(16), mediumTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(4096);
+    this->generateRandomParticles();
+    auto params = ippl::test::NUFFTParams::createNativeParams<T>(mediumTol<T>(), false, "atomic");
+    params.update("sort", false);
+    this->runStandardType1(params, makeStandardTestMode<Dim>(16), mediumTol<T>());
 }
 
 TYPED_TEST(NUFFT1Test, SpreadMethod_Tiled) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(4096);
-        this->generateRandomParticles();
-        auto params =
-            ippl::test::NUFFTParams::createNativeParams<T>(mediumTol<T>(), false, "tiled");
-        this->runStandardType1(params, makeStandardTestMode<Dim>(16), mediumTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(4096);
+    this->generateRandomParticles();
+    auto params = ippl::test::NUFFTParams::createNativeParams<T>(mediumTol<T>(), false, "tiled");
+    this->runStandardType1(params, makeStandardTestMode<Dim>(16), mediumTol<T>());
 }
 
 TYPED_TEST(NUFFT1Test, SpreadMethod_OutputFocused) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(4096);
-        this->generateRandomParticles();
-        auto params = ippl::test::NUFFTParams::createNativeParams<T>(mediumTol<T>(), false,
-                                                                     "output_focused");
-        this->runStandardType1(params, makeStandardTestMode<Dim>(16), mediumTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(4096);
+    this->generateRandomParticles();
+    auto params =
+        ippl::test::NUFFTParams::createNativeParams<T>(mediumTol<T>(), false, "output_focused");
+    this->runStandardType1(params, makeStandardTestMode<Dim>(16), mediumTol<T>());
 }
 
 TYPED_TEST(NUFFT1Test, ToleranceSweep) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(4096);
-        this->generateRandomParticles();
+    this->setupGrid(16);
+    this->setupParticles(4096);
+    this->generateRandomParticles();
 
-        const std::vector<double> tols =
-            std::is_same_v<T, float>
-                ? std::vector<double>{1e-2, 1e-3, 1e-4}
-                : std::vector<double>{1e-4, 1e-7, 1e-10};
+    const std::vector<double> tols = std::is_same_v<T, float>
+                                         ? std::vector<double>{1e-2, 1e-3, 1e-4}
+                                         : std::vector<double>{1e-4, 1e-7, 1e-10};
 
-        for (double tol : tols) {
-            auto params =
-                ippl::test::NUFFTParams::createNativeParams<T>(static_cast<T>(tol), false);
-            this->runStandardType1(params, makeStandardTestMode<Dim>(16), tol);
-        }
+    for (double tol : tols) {
+        auto params = ippl::test::NUFFTParams::createNativeParams<T>(static_cast<T>(tol), false);
+        this->runStandardType1(params, makeStandardTestMode<Dim>(16), tol);
     }
 }
 
@@ -316,13 +281,11 @@ TYPED_TEST(NUFFT1Test, ToleranceSweep) {
 TYPED_TEST(NUFFT1Test, FINUFFT_NoUpsampling) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(4096);
-        this->generateRandomParticles();
-        auto params = ippl::test::NUFFTParams::createFinufftParams<T>(smallTol<T>(), false);
-        this->runStandardType1(params, makeStandardTestMode<Dim>(16), smallTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(4096);
+    this->generateRandomParticles();
+    auto params = ippl::test::NUFFTParams::createFinufftParams<T>(smallTol<T>(), false);
+    this->runStandardType1(params, makeStandardTestMode<Dim>(16), smallTol<T>());
 }
 #endif
 
@@ -340,10 +303,10 @@ public:
     using exec_space              = ExecSpace;
     constexpr static unsigned dim = Dim;
 
-    using mesh_type      = ippl::UniformCartesian<T, Dim>;
-    using centering_type = typename mesh_type::DefaultCentering;
-    using field_type     = typename ippl::Field<Kokkos::complex<T>, Dim, mesh_type, centering_type,
-                                                ExecSpace>::uniform_type;
+    using mesh_type       = ippl::UniformCartesian<T, Dim>;
+    using centering_type  = typename mesh_type::DefaultCentering;
+    using field_type      = typename ippl::Field<Kokkos::complex<T>, Dim, mesh_type, centering_type,
+                                                 ExecSpace>::uniform_type;
     using real_field_type = ippl::Field<T, Dim, mesh_type, centering_type, ExecSpace>;
     using layout_type     = ippl::FieldLayout<Dim>;
     using playout_type    = ippl::ParticleSpatialLayout<T, Dim>;
@@ -467,8 +430,7 @@ public:
                     int gk = lk + localFirst[2];
                     if (!(in_band(gi, nModesD[0]) && in_band(gj, nModesD[1])
                           && in_band(gk, nModesD[2]))) {
-                        fieldView(li + nghost, lj + nghost, lk + nghost) =
-                            Kokkos::complex<T>(0, 0);
+                        fieldView(li + nghost, lj + nghost, lk + nghost) = Kokkos::complex<T>(0, 0);
                     }
                 });
         } else if constexpr (Dim == 2) {
@@ -513,8 +475,8 @@ public:
         T posBuf[Dim];
         for (unsigned d = 0; d < Dim; ++d)
             posBuf[d] = testPos[d];
-        MPI_Bcast(posBuf, static_cast<int>(Dim), ippl::test::mpiDatatypeFor<T>(),
-                  rankWithParticles, ippl::Comm->getCommunicator());
+        MPI_Bcast(posBuf, static_cast<int>(Dim), ippl::test::mpiDatatypeFor<T>(), rankWithParticles,
+                  ippl::Comm->getCommunicator());
         for (unsigned d = 0; d < Dim; ++d)
             testPos[d] = posBuf[d];
 
@@ -595,8 +557,7 @@ public:
         }
 
         auto dftResult = ippl::test::DFTReference<T, Dim>::computeType2Value(
-            field.getView(), testPos, fieldLayout.getLocalNDIndex(), hxField, nModesField,
-            nghost);
+            field.getView(), testPos, fieldLayout.getLocalNDIndex(), hxField, nModesField, nghost);
         T refReal = dftResult.real();
 
         // L-infinity scale of input field for magnitude-aware tolerance
@@ -632,8 +593,8 @@ public:
             localFieldMax = tmp;
         }
         T globalFieldMax = 0;
-        MPI_Allreduce(&localFieldMax, &globalFieldMax, 1, ippl::test::mpiDatatypeFor<T>(),
-                      MPI_MAX, ippl::Comm->getCommunicator());
+        MPI_Allreduce(&localFieldMax, &globalFieldMax, 1, ippl::test::mpiDatatypeFor<T>(), MPI_MAX,
+                      ippl::Comm->getCommunicator());
 
         auto QView = bunch->Q.getView();
         Kokkos::parallel_for(
@@ -672,86 +633,73 @@ TYPED_TEST_SUITE(NUFFT2Test, NUFFTTypes);
 TYPED_TEST(NUFFT2Test, BasicCorrectness_NoUpsampling) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(512);
-        this->generateRandomParticles();
-        auto params = ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), false,
-                                                                     "tiled", "atomic_sort");
-        this->runStandardType2(params, smallTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(512);
+    this->generateRandomParticles();
+    auto params = ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), false, "tiled",
+                                                                 "atomic_sort");
+    this->runStandardType2(params, smallTol<T>());
 }
 
 TYPED_TEST(NUFFT2Test, BasicCorrectness_WithUpsampling) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(512);
-        this->generateRandomParticles();
-        auto params = ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), true,
-                                                                     "tiled", "atomic_sort");
-        this->runStandardType2(params, smallTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(512);
+    this->generateRandomParticles();
+    auto params =
+        ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), true, "tiled", "atomic_sort");
+    this->runStandardType2(params, smallTol<T>());
 }
 
 TYPED_TEST(NUFFT2Test, MediumGrid_NoUpsampling) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(4096);
-        this->generateRandomParticles();
-        auto params = ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), false,
-                                                                     "tiled", "atomic_sort");
-        this->runStandardType2(params, smallTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(4096);
+    this->generateRandomParticles();
+    auto params = ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), false, "tiled",
+                                                                 "atomic_sort");
+    this->runStandardType2(params, smallTol<T>());
 }
 
 TYPED_TEST(NUFFT2Test, GatherMethod_Atomic) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(4096);
-        this->generateRandomParticles();
-        auto params = ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), false,
-                                                                     "tiled", "atomic");
-        this->runStandardType2(params, smallTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(4096);
+    this->generateRandomParticles();
+    auto params =
+        ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), false, "tiled", "atomic");
+    this->runStandardType2(params, smallTol<T>());
 }
 
 TYPED_TEST(NUFFT2Test, GatherMethod_AtomicSort) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(4096);
-        this->generateRandomParticles();
-        auto params = ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), false,
-                                                                     "tiled", "atomic_sort");
-        this->runStandardType2(params, smallTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(4096);
+    this->generateRandomParticles();
+    auto params = ippl::test::NUFFTParams::createNativeParams<T>(smallTol<T>(), false, "tiled",
+                                                                 "atomic_sort");
+    this->runStandardType2(params, smallTol<T>());
 }
 
 TYPED_TEST(NUFFT2Test, ToleranceSweep) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(4096);
-        this->generateRandomParticles();
+    this->setupGrid(16);
+    this->setupParticles(4096);
+    this->generateRandomParticles();
 
-        const std::vector<double> tols =
-            std::is_same_v<T, float>
-                ? std::vector<double>{1e-2, 1e-3, 1e-4}
-                : std::vector<double>{1e-4, 1e-7, 1e-10};
+    const std::vector<double> tols = std::is_same_v<T, float>
+                                         ? std::vector<double>{1e-2, 1e-3, 1e-4}
+                                         : std::vector<double>{1e-4, 1e-7, 1e-10};
 
-        for (double tol : tols) {
-            auto params = ippl::test::NUFFTParams::createNativeParams<T>(
-                static_cast<T>(tol), false, "tiled", "atomic_sort");
-            this->runStandardType2(params, tol);
-        }
+    for (double tol : tols) {
+        auto params = ippl::test::NUFFTParams::createNativeParams<T>(static_cast<T>(tol), false,
+                                                                     "tiled", "atomic_sort");
+        this->runStandardType2(params, tol);
     }
 }
 
@@ -759,13 +707,11 @@ TYPED_TEST(NUFFT2Test, ToleranceSweep) {
 TYPED_TEST(NUFFT2Test, FINUFFT_NoUpsampling) {
     using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
-    IPPL_NUFFT_REQUIRE_3D(Dim) {
-        this->setupGrid(16);
-        this->setupParticles(4096);
-        this->generateRandomParticles();
-        auto params = ippl::test::NUFFTParams::createFinufftParams<T>(smallTol<T>(), false);
-        this->runStandardType2(params, smallTol<T>());
-    }
+    this->setupGrid(16);
+    this->setupParticles(4096);
+    this->generateRandomParticles();
+    auto params = ippl::test::NUFFTParams::createFinufftParams<T>(smallTol<T>(), false);
+    this->runStandardType2(params, smallTol<T>());
 }
 #endif
 

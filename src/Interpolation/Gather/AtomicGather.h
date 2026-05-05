@@ -50,7 +50,7 @@ namespace ippl::Interpolation::detail {
             // Build stencil
             CoordinateTransform<RealType, Dim> transform{args.origin, args.invdx, args.n_grid};
             Stencil stencil{};
-            for_constexpr(std::make_integer_sequence<int, Dim>{}, [&]<int d> {
+            for_constexpr(std::make_integer_sequence<int, Dim>{}, [&]<int d>() {
                 const RealType g_pos    = transform.toGridCoordinate(args.x(p)[d], d);
                 const RealType g_pos_cc = g_pos - RealType(0.5);
                 const int idx0          = transform.getStencilBase(g_pos_cc, W);

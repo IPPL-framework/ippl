@@ -213,9 +213,9 @@ namespace ippl {
             using stream_type = hipStream_t;
             using exec_space  = Kokkos::HIP;
 
-            static void create(stream_type& s) { hipStreamCreate(&s); }
-            static void destroy(stream_type& s) { hipStreamDestroy(s); }
-            static void sync(stream_type& s) { hipStreamSynchronize(s); }
+            static void create(stream_type& s) { (void)hipStreamCreate(&s); }
+            static void destroy(stream_type& s) { (void)hipStreamDestroy(s); }
+            static void sync(stream_type& s) { (void)hipStreamSynchronize(s); }
             static exec_space instance(stream_type& s) { return exec_space(s); }
         };
 #endif
