@@ -264,7 +264,18 @@ namespace ippl::Interpolation::detail {
         }
 
         void run(size_t) {
-            const int team_size       = args.particles_per_team;
+            // GPU per-team thread limit: team_size * vector_length must fit in
+            // 1024 threads (HIP enforces strictly less-than 1024). Defensive
+            // clamp here protects against CSV/auto-tune values produced for a
+            // different (e.g. CUDA) device being replayed on HIP.
+            int team_size = args.particles_per_team;
+            if constexpr (!is_host_backend) {
+                const int hw_cap = is_hip ? 1023 : 1024;
+                const int max_team_size = std::max(1, hw_cap / vector_length);
+                if (team_size > max_team_size) team_size = max_team_size;
+            }
+            if (team_size < 1) team_size = 1;
+
             const size_t scratch_size = compute_scratch_size<true>(team_size);
             const size_t n_teams      = (args.n_particles + team_size - 1) / team_size;
 

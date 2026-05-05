@@ -73,6 +73,34 @@ namespace ippl::Interpolation::AutoTune {
                 << s.throughput_Mpts_s << "\n";
         }
 
+        // Per-method per-backend cap on team_size, accounting for the inner
+        // vector_length each scatter functor uses. GPUs limit a single team to
+        // 1024 hardware threads (HIP enforces strictly less-than 1024); blowing
+        // this cap during a sweep aborts the whole run, so we filter out
+        // infeasible candidates before timing them.
+        template <typename ExecSpace>
+        int max_team_size_for(ScatterMethod m) {
+            constexpr bool is_cuda =
+#ifdef KOKKOS_ENABLE_CUDA
+                std::is_same_v<ExecSpace, Kokkos::Cuda>;
+#else
+                false;
+#endif
+            constexpr bool is_hip =
+#ifdef KOKKOS_ENABLE_HIP
+                std::is_same_v<ExecSpace, Kokkos::HIP>;
+#else
+                false;
+#endif
+            if (!is_cuda && !is_hip) return 1;
+
+            // Mirrors AtomicScatter::vector_length; Tiled and OutputFocused
+            // construct their TeamPolicy with vector_length=1.
+            const int vlen = (m == ScatterMethod::Atomic) ? (is_hip ? 64 : 32) : 1;
+            const int hw   = is_hip ? 1023 : 1024;
+            return std::max(1, hw / vlen);
+        }
+
         const char* method_name(ScatterMethod m) {
             switch (m) {
                 case ScatterMethod::Atomic:        return "Atomic";
@@ -289,28 +317,37 @@ namespace ippl::Interpolation::AutoTune {
                 false
 #endif
                 ;
-            const int default_team = host_backend ? 1 : 32;
+            // Cap each method's team size at what the backend actually
+            // supports (HIP rejects team_size*vector_length >= 1024; on AMD
+            // with Atomic's vlen=64 this bites hard).
+            const int atomic_cap = max_team_size_for<ExecSpace>(ScatterMethod::Atomic);
+            const int tiled_cap  = max_team_size_for<ExecSpace>(ScatterMethod::Tiled);
+            const int of_cap     = max_team_size_for<ExecSpace>(ScatterMethod::OutputFocused);
+
+            const int atomic_team = host_backend ? 1 : std::min(32, atomic_cap);
+            const int tiled_team  = host_backend ? 1 : std::min(64, tiled_cap);
+            const int of_team     = host_backend ? 1 : std::min(128, of_cap);
 
             // Atomic — tile is irrelevant to the dispatcher; fix to (1,1,1).
             {
                 Vector<int, 3> tile{1, 1, 1};
                 const double tp =
-                    time_config<ExecSpace>(ScatterMethod::Atomic, tile, default_team, 1, 1);
+                    time_config<ExecSpace>(ScatterMethod::Atomic, tile, atomic_team, 1, 1);
                 out.push_back(Sample{ScatterMethod::Atomic, "real", 2, 0.0,
-                                     1, 1, 1, default_team, 1, 1, tp, 0.0});
+                                     1, 1, 1, atomic_team, 1, 1, tp, 0.0});
             }
 
             // Tiled — small candidate set over (tile, team, osub).
             {
                 Sample best{ScatterMethod::Tiled, "real", 2, 0.0, 4, 4, 4,
-                            host_backend ? 1 : 64, 1, 1, 0.0, 0.0};
+                            tiled_team, 1, 1, 0.0, 0.0};
                 for (const auto& t :
                      std::vector<Vector<int, 3>>{{2, 2, 2}, {4, 4, 4}, {8, 8, 8}}) {
                     const double tp = time_config<ExecSpace>(ScatterMethod::Tiled, t,
-                                                             host_backend ? 1 : 64, 1, 1);
+                                                             tiled_team, 1, 1);
                     if (tp > best.throughput_Mpts_s) {
                         best = Sample{ScatterMethod::Tiled, "real", 2, 0.0, t[0], t[1], t[2],
-                                      host_backend ? 1 : 64, 1, 1, tp, 0.0};
+                                      tiled_team, 1, 1, tp, 0.0};
                     }
                 }
                 out.push_back(best);
@@ -319,15 +356,15 @@ namespace ippl::Interpolation::AutoTune {
             // OutputFocused — tile + z_batches.
             {
                 Sample best{ScatterMethod::OutputFocused, "real", 2, 0.0, 2, 2, 2,
-                            host_backend ? 1 : 128, 1, 1, 0.0, 0.0};
+                            of_team, 1, 1, 0.0, 0.0};
                 for (const auto& t : std::vector<Vector<int, 3>>{{2, 2, 2}, {4, 4, 4}}) {
                     for (int zb : {1, 4}) {
                         const double tp = time_config<ExecSpace>(
-                            ScatterMethod::OutputFocused, t, host_backend ? 1 : 128, 1, zb);
+                            ScatterMethod::OutputFocused, t, of_team, 1, zb);
                         if (tp > best.throughput_Mpts_s) {
                             best = Sample{ScatterMethod::OutputFocused, "real", 2, 0.0,
                                           t[0], t[1], t[2],
-                                          host_backend ? 1 : 128, 1, zb, tp, 0.0};
+                                          of_team, 1, zb, tp, 0.0};
                         }
                     }
                 }
@@ -382,8 +419,24 @@ namespace ippl::Interpolation::AutoTune {
                     ? std::vector<Vector<int, 3>>{{2, 2, 2}, {4, 4, 4}, {8, 8, 8}}
                     : std::vector<Vector<int, 3>>{
                           {2, 2, 2}, {3, 3, 3}, {4, 4, 4}, {5, 5, 5}, {6, 6, 6}, {8, 8, 8}};
-            const std::vector<int> tiled_teams =
-                host_backend ? std::vector<int>{1} : std::vector<int>{32, 64, 128, 256};
+            // Filter team-size candidates against per-backend caps. On HIP,
+            // Atomic's vlen=64 caps team_size at 15 (1023/64), which would
+            // discard every Tiled candidate above 15 if reused as-is — but
+            // Tiled/OutputFocused use vlen=1, so they have a much higher cap.
+            const int tiled_cap = max_team_size_for<ExecSpace>(ScatterMethod::Tiled);
+            const int of_cap    = max_team_size_for<ExecSpace>(ScatterMethod::OutputFocused);
+            const int atomic_cap = max_team_size_for<ExecSpace>(ScatterMethod::Atomic);
+
+            auto filter_teams = [](std::vector<int> teams, int cap) {
+                std::vector<int> out;
+                for (int t : teams) if (t <= cap) out.push_back(t);
+                if (out.empty()) out.push_back(std::max(1, cap));
+                return out;
+            };
+
+            const std::vector<int> tiled_teams = filter_teams(
+                host_backend ? std::vector<int>{1} : std::vector<int>{32, 64, 128, 256},
+                tiled_cap);
             const std::vector<int> tiled_osubs =
                 host_backend ? std::vector<int>{1} : std::vector<int>{1, 2, 4};
 
@@ -392,8 +445,9 @@ namespace ippl::Interpolation::AutoTune {
                     ? std::vector<Vector<int, 3>>{{2, 2, 2}, {4, 4, 4}}
                     : std::vector<Vector<int, 3>>{
                           {2, 2, 2}, {3, 3, 3}, {4, 4, 4}, {5, 5, 5}, {6, 6, 6}};
-            const std::vector<int> of_teams =
-                host_backend ? std::vector<int>{1} : std::vector<int>{64, 128, 256, 512};
+            const std::vector<int> of_teams = filter_teams(
+                host_backend ? std::vector<int>{1} : std::vector<int>{64, 128, 256, 512},
+                of_cap);
             const std::vector<int> of_zbs    = {1, 2, 4, 8};
             const std::vector<int> of_osubs  =
                 host_backend ? std::vector<int>{1} : std::vector<int>{1, 2, 4};
@@ -401,7 +455,7 @@ namespace ippl::Interpolation::AutoTune {
             // Kernel widths covered by the runtime cache (CIC + NGP).
             const std::vector<int> widths = {1, 2};
 
-            const int default_team = host_backend ? 1 : 32;
+            const int default_team = host_backend ? 1 : std::min(32, atomic_cap);
             const int meas_runs    = host_backend ? 5 : 7;
 
             const bool is_rank_zero = (ippl::Comm == nullptr) || (ippl::Comm->rank() == 0);
@@ -442,7 +496,8 @@ namespace ippl::Interpolation::AutoTune {
 
                         // Tiled — sweep tile × team × osub.
                         Sample best_tiled{ScatterMethod::Tiled, "real", w, rho, 4, 4, 4,
-                                          host_backend ? 1 : 64, 1, 1, 0.0, 0.0};
+                                          host_backend ? 1 : std::min(64, tiled_cap),
+                                          1, 1, 0.0, 0.0};
                         for (const auto& t : tiled_tiles) {
                             for (int team : tiled_teams) {
                                 for (int osub : tiled_osubs) {
@@ -463,7 +518,8 @@ namespace ippl::Interpolation::AutoTune {
 
                         // OutputFocused — sweep tile × team × osub × z_batches.
                         Sample best_of{ScatterMethod::OutputFocused, "real", w, rho, 2, 2, 2,
-                                       host_backend ? 1 : 128, 1, 1, 0.0, 0.0};
+                                       host_backend ? 1 : std::min(128, of_cap),
+                                       1, 1, 0.0, 0.0};
                         for (const auto& t : of_tiles) {
                             for (int team : of_teams) {
                                 for (int zb : of_zbs) {
@@ -587,11 +643,11 @@ namespace ippl::Interpolation::AutoTune {
 #ifdef KOKKOS_ENABLE_HIP
         if constexpr (std::is_same_v<Kokkos::DefaultExecutionSpace, Kokkos::HIP>) {
             backend        = "Kokkos::HIP";
-            // CDNA wavefronts are 64-wide; favour larger team sizes than
-            // CUDA's warp-32. Numbers are conservative starting points;
-            // run IPPL_AUTO_TUNE=full and commit the resulting CSV to
-            // cmake/auto_tune/<gfx*>/ for true machine-tuned values.
-            atomic_team    = 64;
+            // CDNA wavefronts are 64-wide. AtomicScatter uses vector_length=64
+            // on HIP, so atomic_team * 64 must be < 1024 → atomic_team ≤ 15.
+            // Tiled and OutputFocused construct their TeamPolicy with
+            // vector_length=1, so the per-team thread cap is 1024 there.
+            atomic_team    = 8;
             tiled_team     = 128; tiled_tile = 4;
             of_team        = 256; of_tile    = 4;  of_zb = 1;
             seed_tiled_of  = true;
