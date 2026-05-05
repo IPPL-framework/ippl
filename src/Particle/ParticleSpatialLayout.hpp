@@ -127,17 +127,14 @@ namespace ippl {
             return;
         }
 
-        ensureNeighborsCached();
+        // Particle MPI exchange:
+        //   1. figure out where each particle goes -> locateParticlesPacked()
+        //   2. exchange counts and send/recv particle data
+        //   3. delete invalidated particles
+        //   4. finalize receives
 
-        /* particle MPI exchange:
-         *   1. figure out which particles need to go where -> locateParticles(...)
-         *   2. fill send buffer and send particles
-         *   3. delete invalidated particles
-         *   4. receive particles
-         */
-
-        // 1.  figure out which particles need to go where -> locateParticles(...) ============= //
-
+        // 1. Locate particles (fills sendIds_d_, rankSendCount_d_, sendOffsets_d_,
+        //    destRanks_d_, nDest_d_).
         static IpplTimings::TimerRef locateTimer = IpplTimings::getTimer("locateParticles");
         IpplTimings::startTimer(locateTimer);
 
@@ -159,23 +156,18 @@ namespace ippl {
         Kokkos::deep_copy(position_execution_space{}, rankSendCount_h_, rankSendCount_d_);
         Kokkos::deep_copy(position_execution_space{}, sendOffsets_h_, sendOffsets_d_);
 
-        // Build host destination list without allocation
-        destinationRanks_host_.clear();
-        for (size_t i = 0; i < (size_t)nDest; ++i)
-            destinationRanks_host_.push_back(destRanks_h_(i));
+        destinationRanks_host_.assign(destRanks_h_.data(),
+                                      destRanks_h_.data() + static_cast<size_t>(nDest));
 
         IpplTimings::stopTimer(locateTimer);
 
-        // 2. fill send buffer and send particles =============================================== //
-
-        // 2.1 Count Exchange
-
+        // 2.1 Count exchange (mode-dependent: RMA / P2P / Alltoall)
         static IpplTimings::TimerRef preprocTimer = IpplTimings::getTimer("sendPreprocess");
         IpplTimings::startTimer(preprocTimer);
 
         if (countExchangeMode_ == CountExchange::RMA) {
             countExchangeRMA();
-        } else if (countExchangeMode_ == CountExchange::P2P) {
+        } else if (countExchangeMode_ == CountExchange::P2P_GPU) {
             countExchangeP2P();
         } else {
             countExchangeAlltoall();
@@ -183,32 +175,27 @@ namespace ippl {
 
         IpplTimings::stopTimer(preprocTimer);
 
-        // 2.2 Particle Sends
-
+        // 2.2 Post sends.
         static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("particleSend");
         IpplTimings::startTimer(sendTimer);
 
+        const int tag = Comm->next_tag(mpi::tag::P_SPATIAL_LAYOUT, mpi::tag::P_LAYOUT_CYCLE);
         std::vector<MPI_Request> requests;
         requests.reserve(destinationRanks_host_.size());
 
-        int tag = Comm->next_tag(mpi::tag::P_SPATIAL_LAYOUT, mpi::tag::P_LAYOUT_CYCLE);
-
         for (int rank : destinationRanks_host_) {
-            if (rank == Comm->rank())
+            if (rank == Comm->rank() || rankSendCount_h_(rank) == 0) {
                 continue;
-            const size_type count = static_cast<size_type>(rankSendCount_h_(rank));
-            if (count == 0)
-                continue;
-            const size_type begin = static_cast<size_type>(sendOffsets_h_(rank));
+            }
+            const size_t begin = static_cast<size_t>(sendOffsets_h_(rank));
+            const size_t count = static_cast<size_t>(rankSendCount_h_(rank));
             auto ids_sub =
-                Kokkos::subview(sendIds_d_, std::make_pair((size_t)begin, (size_t)(begin + count)));
+                Kokkos::subview(sendIds_d_, std::make_pair(begin, begin + count));
             requests.push_back(pc.sendToRank(rank, tag, ids_sub));
         }
-
         IpplTimings::stopTimer(sendTimer);
 
-        // 2.3 Post receives
-
+        // 2.3 Post receives.
         static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
         IpplTimings::startTimer(recvTimer);
 
@@ -242,30 +229,59 @@ namespace ippl {
 
         IpplTimings::stopTimer(recvTimer);
 
-        // 3. Internal destruction of invalid particles ======================================= //
-
+        // 3. Compact local storage by removing the particles we just sent.
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("particleDestroy");
         IpplTimings::startTimer(destroyTimer);
 
-        // locateParticlesPacked already wrote the per-particle "is leaving"
-        // mask into leaving_d_. Reuse it instead of re-running the full
-        // region search inside the destroy predicate.
-        auto leaving = leaving_d_;
+        const auto myRank = Comm->rank();
+        auto neighbors_view =
+            Kokkos::subview(neighbors_d_, std::make_pair(size_t(0), size_t(neighbors_used_)));
+        auto positions           = pc.R.getView();
+        region_view_type Regions = rlayout_m->getdLocalRegions();
+        const auto is            = std::make_index_sequence<Dim>{};
+
+        // Same destination-rank lookup as in locateParticlesPacked (neighbour
+        // first, then full scan, then inclusive fallback for exact-boundary
+        // points). Repeated here because internalDestroy needs a predicate.
+        auto isLeaving = KOKKOS_LAMBDA(const size_t i) {
+            if (positionInRegion(is, positions(i), Regions(myRank))) {
+                return false;
+            }
+            for (size_t j = 0; j < neighbors_view.extent(0); ++j) {
+                const int r = neighbors_view(j);
+                if (positionInRegion(is, positions(i), Regions(r))) {
+                    return r != myRank;
+                }
+            }
+            for (int r = 0; r < static_cast<int>(Regions.extent(0)); ++r) {
+                if (positionInRegion(is, positions(i), Regions(r))) {
+                    return r != myRank;
+                }
+            }
+            for (int r = 0; r < static_cast<int>(Regions.extent(0)); ++r) {
+                if (positionInRegionInclusive(is, positions(i), Regions(r))) {
+                    return r != myRank;
+                }
+            }
+            return false;  // applyBC should have prevented this case
+        };
+
         pc.template internalDestroy<position_memory_space, position_execution_space>(
-            KOKKOS_LAMBDA(size_t i) { return leaving(i); }, nInvalid);
+            isLeaving, nInvalid);
         Kokkos::fence();
 
         IpplTimings::stopTimer(destroyTimer);
 
+        // 4. Wait for all sends/receives, then deserialize the receive buffers.
         requests.insert(requests.end(), recvRequests.begin(), recvRequests.end());
         if (!requests.empty()) {
             MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUSES_IGNORE);
         }
         Comm->freeAllBuffers();
 
-        // 5. Deserialize
-        for (auto& finalize : finalizers)
+        for (auto& finalize : finalizers) {
             finalize(pc.getLocalNum());
+        }
 
         IpplTimings::stopTimer(ParticleUpdateTimer);
     }
@@ -351,12 +367,7 @@ namespace ippl {
             return myRank;  // truly outside all regions - applyBC should have prevented this
         };
 
-        // Make sure the leaving-mask buffer is large enough; it's reused across
-        // updates to avoid reallocation.
-        ensureLeavingCapacity(pc.getLocalNum());
-        auto& leaving_d = leaving_d_;
-
-        // Pass 1: compute send counts + nInvalid + per-particle "is leaving"
+        // Pass 1: compute send counts + nInvalid
         size_type nInvalid    = 0;
         auto& rankSendCount_d = rankSendCount_d_;
         Kokkos::parallel_reduce(
@@ -364,7 +375,6 @@ namespace ippl {
             KOKKOS_LAMBDA(const size_t i, size_type& inval) {
                 const size_type dest = destRankOf(i);
                 const bool leaves    = (dest != myRank);
-                leaving_d(i)         = leaves;
                 inval += leaves;
                 if (leaves)
                     Kokkos::atomic_fetch_add(&rankSendCount_d(dest), size_type(1));
@@ -452,19 +462,6 @@ namespace ippl {
 
         sendIds_capacity_ = newCap;
         Kokkos::realloc(sendIds_d_, newCap);
-    }
-
-    template <typename T, unsigned Dim, class Mesh, typename... Properties>
-    void ParticleSpatialLayout<T, Dim, Mesh, Properties...>::ensureLeavingCapacity(size_t nLocal) {
-        if (nLocal <= leaving_capacity_)
-            return;
-
-        size_t newCap = leaving_capacity_ ? leaving_capacity_ : size_t(1024);
-        while (newCap < nLocal)
-            newCap *= 2;
-
-        leaving_capacity_ = newCap;
-        Kokkos::realloc(leaving_d_, newCap);
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>

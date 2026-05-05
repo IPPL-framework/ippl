@@ -35,17 +35,14 @@
 
 namespace ippl {
 
-    // Controls how the send-count exchange is performed before the particle
-    // data transfer. All paths assume GPU-aware MPI (device pointers passed
-    // directly to Isend/Irecv/Alltoall).
+    // Controls how the send-count exchange is performed before the particle data transfer.
     enum class CountExchange {
-        // One-sided RMA: each sender writes its count directly into the
-        // receiver's window.
+        // One-sided RMA: each sender writes its count directly into the receiver's window.
         RMA,
-        // Two-sided point-to-point: per-rank Isend/Irecv over device pointers.
-        P2P,
-        // Collective Alltoall over device pointers.
-        Alltoall
+        // Two-sided GPU-direct P2P: Isend/Irecv over device pointers
+        P2P_GPU,
+        // AlltoALl GPU
+        Alltoall_GPU
     };
 
     /*!
@@ -138,12 +135,11 @@ namespace ippl {
 
     public:
         /*!
-         * For each local particle, determine its destination rank, write the
-         * indices of leaving particles into `sendIds_d_`, populate the
-         * per-rank send-count and offset buffers, build a compacted list of
-         * destination ranks, and mark each particle's "is leaving" status in
-         * `leaving_d_` so the destroy pass doesn't have to recompute it.
-         * @return number of leaving particles on this rank
+         * Single-pass particle-location step used by `update`. Fills the
+         * device-side scratch (`rankSendCount_d_`, `sendOffsets_d_`,
+         * `sendIds_d_`, `destRanks_d_`, `nDest_d_`) so the caller can drive
+         * sends/receives without rescanning the particle array. Returns the
+         * number of particles that need to leave this rank.
          */
         template <typename ParticleContainer>
         size_t locateParticlesPacked(const ParticleContainer& pc);
@@ -153,9 +149,8 @@ namespace ippl {
         locate_type rankSendCount_d_;  // [nRanks]
         locate_type sendOffsets_d_;    // [nRanks+1]
         hash_type sendIds_d_;          // [capacity >= max nInvalid seen]
-        locate_type cursor_d_;         // [nRanks] per-rank insertion cursor
+        locate_type cursor_d_;         // [nRanks]
         locate_type destRanks_d_;      // [nRanks] (compacted list)
-        bool_type leaving_d_;          // [capacity >= max nLocal seen] mask
 
         // Single scalar on device to count destinations
         Kokkos::View<size_type, position_memory_space> nDest_d_;
@@ -180,12 +175,10 @@ namespace ippl {
 
         // capacities
         size_t sendIds_capacity_ = 0;
-        size_t leaving_capacity_ = 0;
         int nRanks_              = 0;
 
         void initScratch(int nRanks);
         void ensureSendCapacity(size_t nInvalid);
-        void ensureLeavingCapacity(size_t nLocal);
         void ensureNeighborsCached();
 
         void countExchangeRMA();
