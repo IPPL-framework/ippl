@@ -112,6 +112,68 @@ namespace ippl::Interpolation::detail {
             return idx;
         }
 
+        // ------------------------------------------------------------------
+        // Simple flat path used for narrow kernels (W < 3, e.g. NGP / CIC).
+        // ------------------------------------------------------------------
+        KOKKOS_INLINE_FUNCTION void operator()(const size_t i_in) const {
+            using grid_value_t = typename decltype(args.grid)::non_const_value_type;
+
+            size_t p = i_in;
+            if constexpr (Policy::use_sorting)
+                p = args.permute(i_in);
+
+            CoordinateTransform<RealType, Dim> transform{args.origin, args.invdx, args.n_grid};
+            const RealType inv_hw = args.inv_hw;
+            const ValueType v     = args.values(p);
+
+            // Per-dimension stencil base + per-stencil-point weights.
+            int      base[Dim];
+            RealType kw[Dim][W];
+            for (unsigned d = 0; d < Dim; ++d) {
+                const RealType g     = transform.toGridCoordinate(args.x(p)[d], d);
+                const int      idx   = transform.getStencilBase(g - RealType(0.5), W);
+                base[d]              = idx - args.local_offset[d] + args.nghost;
+                const RealType g0    = (g - (RealType(idx) + RealType(0.5))) * inv_hw;
+                for (int k = 0; k < W; ++k) {
+                    const RealType xi = g0 - RealType(k) * inv_hw;
+                    if constexpr (Types::KernelType::has_width_template) {
+                        kw[d][k] = args.kernel.template eval<W>(xi);
+                    } else {
+                        kw[d][k] = args.kernel(xi);
+                    }
+                }
+            }
+
+            auto grid = args.grid;
+            if constexpr (Dim == 1) {
+                for (int i0 = 0; i0 < W; ++i0) {
+                    auto& cell = grid(base[0] + i0);
+                    Kokkos::atomic_add(&to_grid_value<grid_value_t>(cell),
+                                       static_cast<grid_value_t>(v * kw[0][i0]));
+                }
+            } else if constexpr (Dim == 2) {
+                for (int i1 = 0; i1 < W; ++i1) {
+                    for (int i0 = 0; i0 < W; ++i0) {
+                        auto& cell       = grid(base[0] + i0, base[1] + i1);
+                        const RealType w = kw[0][i0] * kw[1][i1];
+                        Kokkos::atomic_add(&to_grid_value<grid_value_t>(cell),
+                                           static_cast<grid_value_t>(v * w));
+                    }
+                }
+            } else if constexpr (Dim == 3) {
+                for (int i2 = 0; i2 < W; ++i2) {
+                    for (int i1 = 0; i1 < W; ++i1) {
+                        for (int i0 = 0; i0 < W; ++i0) {
+                            auto& cell = grid(base[0] + i0, base[1] + i1, base[2] + i2);
+                            const RealType w = kw[0][i0] * kw[1][i1] * kw[2][i2];
+                            Kokkos::atomic_add(&to_grid_value<grid_value_t>(cell),
+                                               static_cast<grid_value_t>(v * w));
+                        }
+                    }
+                }
+            }
+        }
+
         KOKKOS_INLINE_FUNCTION void operator()(const team_member& team) const {
             using grid_value_t = typename decltype(args.grid)::non_const_value_type;
 
@@ -264,6 +326,17 @@ namespace ippl::Interpolation::detail {
         }
 
         void run(size_t) {
+            if constexpr (W < 3) {
+                // NGP / CIC: stencils are too small for team-policy overhead
+                // to pay back. Flat parallel_for with global atomic_add wins
+                // (matches the original IPPL atomic-scatter pattern).
+                Kokkos::parallel_for(
+                    "AtomicScatter::Simple",
+                    Kokkos::RangePolicy<execution_space>(0, args.n_particles), *this);
+                return;
+            }
+
+            // Team-based path for W >= 3.
             // GPU per-team thread limit: team_size * vector_length must fit in
             // 1024 threads (HIP enforces strictly less-than 1024). Defensive
             // clamp here protects against CSV/auto-tune values produced for a
