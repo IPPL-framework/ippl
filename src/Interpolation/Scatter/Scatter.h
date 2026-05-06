@@ -111,6 +111,28 @@ namespace ippl {
                 }
             }
 
+            // Small-grid override: the cache is keyed only by (method, width,
+            // value_type, rho), so a sweep recorded at a large grid (e.g.
+            // 128^3, the size at which Tiled/OutputFocused start beating
+            // Atomic because the grid spills L2) gets returned for runtime
+            // calls whose local grid is far smaller. In that regime the
+            // tile-blocked methods pay binning + radix-sort overhead with
+            // nothing to amortise it against, and Atomic wins easily. Force
+            // Atomic when the local grid has fewer cells than 128^3, i.e.
+            // what was benchmarked. Could definiitely be improved.
+            if (!config_m.lock_method) {
+                const auto& local_dom = field.getLayout().getLocalNDIndex();
+                std::size_t local_cells = 1;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    local_cells *= static_cast<std::size_t>(local_dom[d].length());
+                }
+                constexpr std::size_t kSmallGridThreshold =
+                    static_cast<std::size_t>(128) * 128 * 128;
+                if (local_cells < kSmallGridThreshold) {
+                    config_m.method = Interpolation::ScatterMethod::Atomic;
+                }
+            }
+
             // Backend-feasibility clamp. CSV presets are tagged by GPU arch but
             // a runtime mismatch (e.g. an sm_90 CSV being read by a Serial
             // build) leaves the cache holding Tiled/OutputFocused configs with
