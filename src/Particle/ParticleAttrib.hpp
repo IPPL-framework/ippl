@@ -139,19 +139,25 @@ namespace ippl {
         const size_t nLocal    = static_cast<size_t>(*(this->localNum_mp));
         const size_t policyEnd = static_cast<size_t>(iteration_policy.end());
 
-        // Default-policy, no-hash CIC case (alpine PIC examples): route
-        // through the kernel-aware Interpolation::Scatter framework so the
-        // same atomic / tiled / output-focused dispatch (and TileSizeCache
-        // lookup) used by NUFFT applies to PIC too. The new framework's
-        // dimension-specialised AtomicScatter only covers Dim 1..3, so for
-        // higher-dimensional fields we keep the legacy direct path.
+        // Default-policy, no-hash CIC case (alpine PIC examples): the
+        // Interpolation::Scatter framework (atomic / tiled / output-focused
+        // dispatch with the BO cache) is only used for dense and large local
         if (!useHashView && policyEnd == nLocal && Dim <= 3) {
-            Interpolation::LinearKernel<PositionType> cic;
-            this->scatter_kernel(f, pp, cic);
-            return;
+            const auto& local_dom = f.getLayout().getLocalNDIndex();
+            std::size_t local_cells = 1;
+            for (unsigned d = 0; d < Dim; ++d) {
+                local_cells *= static_cast<std::size_t>(local_dom[d].length());
+            }
+            constexpr std::size_t kSmallGridThreshold =
+                static_cast<std::size_t>(256) * 256 * 256;
+            if (local_cells >= kSmallGridThreshold) {
+                Interpolation::LinearKernel<PositionType> cic;
+                this->scatter_kernel(f, pp, cic);
+                return;
+            }
+            // Fall through to the legacy direct CIC scatter below.
         }
 
-        // Custom range / hash-permuted scatter: legacy direct CIC kernel.
         static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
         IpplTimings::startTimer(scatterTimer);
         using view_type = typename Field::view_type;
