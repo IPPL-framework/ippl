@@ -279,6 +279,14 @@ namespace ippl {
         }
         Comm->freeAllBuffers();
 
+        size_type totalRecv = 0;
+        for (const auto& [r, c] : recvList) {
+            totalRecv += c;
+        }
+        if (totalRecv > 0) {
+            pc.forAllAttributes([&](auto& att) { att->create(totalRecv, true); });
+        }
+
         for (auto& finalize : finalizers) {
             finalize(pc.getLocalNum());
         }

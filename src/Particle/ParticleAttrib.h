@@ -93,7 +93,10 @@ namespace ippl {
 
         void deserialize(detail::Archive<memory_space>& ar, size_type offset,
                          size_type nrecvs) override {
-            this->resize(offset + nrecvs);
+            const size_type need = offset + nrecvs;
+            if (need > this->size()) {
+                this->resize(need);
+            }
             ar.deserialize(dview_m, offset, nrecvs);
         }
 
