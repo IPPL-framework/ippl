@@ -41,9 +41,9 @@ namespace bench {
         if (s == "rma")
             return ippl::CountExchange::RMA;
         if (s == "p2p")
-            return ippl::CountExchange::P2P;
+            return ippl::CountExchange::P2P_GPU;
         if (s == "alltoall")
-            return ippl::CountExchange::Alltoall;
+            return ippl::CountExchange::Alltoall_GPU;
         throw std::invalid_argument("Unknown exchange mode: " + s);
     }
 
