@@ -104,10 +104,7 @@ namespace ippl {
         // the local domain and the sub-domain This ensures that the sub-field layout is consistent
         // with the original layout
         for (unsigned int rank = 0; rank < nRanks; ++rank) {
-            if (!this->gDomain_m.contains(this->hLocalDomains_m(rank))) {
-                this->hLocalDomains_m(rank) =
-                    this->hLocalDomains_m(rank).intersect(this->gDomain_m);
-            }
+            this->hLocalDomains_m(rank) = this->hLocalDomains_m(rank).intersect(this->gDomain_m);
         }
 
         this->findNeighbors();
