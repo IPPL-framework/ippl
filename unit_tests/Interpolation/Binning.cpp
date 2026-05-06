@@ -163,11 +163,12 @@ namespace ippl {
             Kokkos::View<size_t*, MemSpace> permute("permute", n_particles);
             Kokkos::View<size_t*, MemSpace> bin_offsets("bin_offsets", total_tiles + 1);
             Kokkos::View<size_t*, MemSpace> bin_keys("bin_keys", n_particles);
+            Kokkos::View<size_t*, MemSpace> cursor("cursor", total_tiles + 1);
 
             // Run binning
             Interpolation::detail::bin_sort<Dim, T, decltype(positions), ExecSpace>(
                 positions, ngrid_global, ngrid_local, local_offset, this->tile_size,
-                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys,
+                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys, cursor,
                 n_particles, num_tiles);
 
             // Check permutation on host
@@ -223,10 +224,11 @@ namespace ippl {
             Kokkos::View<size_type*, MemSpace> permute("permute", n_particles);
             Kokkos::View<size_type*, MemSpace> bin_offsets("bin_offsets", total_tiles + 1);
             Kokkos::View<size_type*, MemSpace> bin_keys("bin_keys", n_particles);
+            Kokkos::View<size_type*, MemSpace> cursor("cursor", total_tiles + 1);
 
             Interpolation::detail::bin_sort<Dim, T, decltype(positions), ExecSpace>(
                 positions, ngrid_global, ngrid_local, local_offset, this->tile_size,
-                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys,
+                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys, cursor,
                 n_particles, num_tiles);
 
             auto offsets_host =
@@ -283,19 +285,22 @@ namespace ippl {
             Kokkos::View<size_type*, MemSpace> permute("permute", n_particles);
             Kokkos::View<size_type*, MemSpace> bin_offsets("bin_offsets", total_tiles + 1);
             Kokkos::View<size_type*, MemSpace> bin_keys("bin_keys", n_particles);
+            Kokkos::View<size_type*, MemSpace> cursor("cursor", total_tiles + 1);
 
             Interpolation::detail::bin_sort<Dim, T, decltype(positions), ExecSpace>(
                 positions, ngrid_global, ngrid_local, local_offset, this->tile_size,
-                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys,
+                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys, cursor,
                 n_particles, num_tiles);
 
-            auto keys_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), bin_keys);
+            auto keys_host    = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), bin_keys);
+            auto permute_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), permute);
 
-            // Keys should be sorted (non-decreasing)
             for (size_t i = 1; i < n_particles; ++i) {
-                EXPECT_GE(keys_host(i), keys_host(i - 1))
-                    << "Keys not sorted at index " << i << ": " << keys_host(i - 1) << " > "
-                    << keys_host(i);
+                const auto k_curr = keys_host(permute_host(i));
+                const auto k_prev = keys_host(permute_host(i - 1));
+                EXPECT_GE(k_curr, k_prev)
+                    << "Particles not grouped by bin at slot " << i << ": "
+                    << k_prev << " > " << k_curr;
             }
         }
 
@@ -336,25 +341,33 @@ namespace ippl {
             Kokkos::View<size_type*, MemSpace> permute("permute", n_particles);
             Kokkos::View<size_type*, MemSpace> bin_offsets("bin_offsets", total_tiles + 1);
             Kokkos::View<size_type*, MemSpace> bin_keys("bin_keys", n_particles);
+            Kokkos::View<size_type*, MemSpace> cursor("cursor", total_tiles + 1);
 
             Interpolation::detail::bin_sort<Dim, T, decltype(positions), ExecSpace>(
                 positions, ngrid_global, ngrid_local, local_offset, this->tile_size,
-                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys,
+                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys, cursor,
                 n_particles, num_tiles);
 
             auto keys_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), bin_keys);
             auto offsets_host =
                 Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), bin_offsets);
 
-            // For each bin, verify all particles in [offset[b], offset[b+1]) have key == b
+            // For each bin, verify all particles in [offset[b], offset[b+1])
+            // have their bin key == b. With the counting-sort grouping the
+            // permute slot at position i references the original particle id;
+            // bin_keys is indexed by ORIGINAL particle id, not by sorted slot.
+            auto permute_host =
+                Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), permute);
             for (size_t b = 0; b < total_tiles; ++b) {
                 size_t start = offsets_host(b);
                 size_t end   = offsets_host(b + 1);
 
                 for (size_t i = start; i < end; ++i) {
-                    EXPECT_EQ(keys_host(i), b)
-                        << "Particle " << i << " in bin range [" << start << ", " << end
-                        << ") has key " << keys_host(i) << " but expected " << b;
+                    const size_t orig = permute_host(i);
+                    EXPECT_EQ(keys_host(orig), b)
+                        << "Slot " << i << " in bin range [" << start << ", " << end
+                        << ") references particle " << orig << " whose bin key is "
+                        << keys_host(orig) << " but expected " << b;
                 }
             }
         }
@@ -383,11 +396,12 @@ namespace ippl {
             Kokkos::View<size_type*, MemSpace> permute("permute", 1);
             Kokkos::View<size_type*, MemSpace> bin_offsets("bin_offsets", total_tiles + 1);
             Kokkos::View<size_type*, MemSpace> bin_keys("bin_keys", 1);
+            Kokkos::View<size_type*, MemSpace> cursor("cursor", total_tiles + 1);
 
             // Should not crash
             Interpolation::detail::bin_sort<Dim, T, decltype(positions), ExecSpace>(
                 positions, ngrid_global, ngrid_local, local_offset, this->tile_size,
-                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys,
+                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys, cursor,
                 n_particles, num_tiles);
 
             auto offsets_host =
@@ -432,10 +446,11 @@ namespace ippl {
             Kokkos::View<size_type*, MemSpace> permute("permute", n_particles);
             Kokkos::View<size_type*, MemSpace> bin_offsets("bin_offsets", total_tiles + 1);
             Kokkos::View<size_type*, MemSpace> bin_keys("bin_keys", n_particles);
+            Kokkos::View<size_type*, MemSpace> cursor("cursor", total_tiles + 1);
 
             Interpolation::detail::bin_sort<Dim, T, decltype(positions), ExecSpace>(
                 positions, ngrid_global, ngrid_local, local_offset, this->tile_size,
-                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys,
+                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys, cursor,
                 n_particles, num_tiles);
 
             auto permute_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), permute);
@@ -521,10 +536,11 @@ namespace ippl {
             Kokkos::View<size_type*, MemSpace> permute("permute", n_particles);
             Kokkos::View<size_type*, MemSpace> bin_offsets("bin_offsets", total_tiles + 1);
             Kokkos::View<size_type*, MemSpace> bin_keys("bin_keys", n_particles);
+            Kokkos::View<size_type*, MemSpace> cursor("cursor", total_tiles + 1);
 
             Interpolation::detail::bin_sort<Dim, T, decltype(positions), ExecSpace>(
                 positions, ngrid_global, ngrid_local, local_offset, this->tile_size,
-                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys,
+                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys, cursor,
                 n_particles, num_tiles);
 
             // Verify permutation is valid
@@ -587,19 +603,19 @@ namespace ippl {
             Kokkos::View<size_type*, MemSpace> permute("permute", n_particles);
             Kokkos::View<size_type*, MemSpace> bin_offsets("bin_offsets", total_tiles + 1);
             Kokkos::View<size_type*, MemSpace> bin_keys("bin_keys", n_particles);
+            Kokkos::View<size_type*, MemSpace> cursor("cursor", total_tiles + 1);
 
             Interpolation::detail::bin_sort<Dim, T, decltype(positions), ExecSpace>(
                 positions, ngrid_global, ngrid_local, local_offset, this->tile_size,
-                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys,
+                this->kernel_width, this->origin, this->invdx, permute, bin_offsets, bin_keys, cursor,
                 n_particles, num_tiles);
 
             auto permute_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), permute);
             auto keys_host    = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), bin_keys);
 
-            // Verify each particle's bin matches our reference calculation
             for (size_t i = 0; i < n_particles; ++i) {
                 size_t orig_idx  = permute_host(i);
-                int actual_bin   = keys_host(i);
+                int actual_bin   = keys_host(orig_idx);
                 int expected_bin = this->computeExpectedBin(pos_host(orig_idx), ngrid_global,
                                                             local_offset, num_tiles);
 
