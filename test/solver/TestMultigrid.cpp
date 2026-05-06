@@ -152,7 +152,10 @@ int main(int argc, char* argv[]) {
         lhs = 0.0;
 
         info << "Starting Conjugate Gradient solve..." << endl;
+        IpplTimings::TimerRef solve = IpplTimings::getTimer("solve");
+        IpplTimings::startTimer(solve);
         lapsolver.solve();
+        IpplTimings::stopTimer(solve);
         info << "Solve completed." << endl;
 
         // 6. Error Analysis
