@@ -229,7 +229,7 @@ namespace ippl {
                     std::cout << "nghost: " << field.getNghost() << "\n";
                     std::cout << "------------------------------------------------------------\n";
 
-                    field.write(std::cout);
+                    // field.write(std::cout);
 
                     std::cout << "============================================================\n";
                     std::cout << std::flush;
