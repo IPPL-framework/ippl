@@ -197,108 +197,6 @@ namespace ippl {
             // --- END OF DEBUGGING ---
         }
 
-    protected:
-        std::vector<multigrid::Level<Field>> L_;
-        OperatorF op_;
-        unsigned nu1_, nu2_;
-        double omega_;
-
-        // --- DEBUGGING - To be deleted ---
-
-        bool debug_print_ = false;
-
-        void debug_print_field(const Field& field, const std::string& name, size_t level) const {
-            if (!debug_print_) {
-                return;
-            }
-
-            Kokkos::fence();
-
-            const int myRank = ippl::Comm->rank();
-            const int nRanks = ippl::Comm->size();
-
-            for (int rank = 0; rank < nRanks; ++rank) {
-                if (rank == myRank) {
-                    std::cout << "\n";
-                    std::cout << "============================================================\n";
-                    std::cout << "MG DEBUG | rank " << myRank << " | level " << level << " | "
-                              << name << "\n";
-                    std::cout << "owned domain: " << field.getOwned() << "\n";
-                    std::cout << "allocated domain including ghosts: " << field.getAllocated()
-                              << "\n";
-                    std::cout << "nghost: " << field.getNghost() << "\n";
-                    std::cout << "------------------------------------------------------------\n";
-
-                    // field.write(std::cout);
-
-                    std::cout << "============================================================\n";
-                    std::cout << std::flush;
-                }
-
-                ippl::Comm->barrier();
-            }
-        }
-
-        void debug_print_level(size_t level, const std::string& label) const {
-            if (!debug_print_) {
-                return;
-            }
-
-            const auto& lev = L_[level];
-
-            std::cout << "\nMG DEBUG LEVEL " << level << ": " << label << "\n";
-            std::cout << "nx = " << lev.nx << "\n";
-            std::cout << "hx = " << lev.hx << "\n";
-            std::cout << "origin = " << lev.origin << "\n";
-
-            debug_print_field(lev.u, "u", level);
-            debug_print_field(lev.f, "f", level);
-        }
-
-        void debug_print_all_levels(const std::string& label) const {
-            if (!debug_print_) {
-                return;
-            }
-
-            for (size_t level = 0; level < L_.size(); ++level) {
-                debug_print_level(level, label);
-            }
-        }
-        // --- END OF DEBUGGING ---
-
-        Field residual(Field& u, const Field& f) {
-            Field res = f.deepCopy();
-            res       = f - op_(u);
-            return res;
-        };
-
-        void vcycle(size_t level) {
-            if (level == L_.size() - 1) {
-                // Coarsest grid: just smooth a lot (or use a direct solver)
-                smooth_jacobi(level, 50);
-                return;
-            }
-            smooth_jacobi(level, nu1_);  // Pre-smoothing
-            restrict_fullweight(level);  // Pass level
-            vcycle(level + 1);           // Recursively go down one level
-            prolong_add(level);          // Pass level
-            smooth_jacobi(level, nu2_);  // Post-smoothing
-        }
-
-        void smooth_jacobi(const size_t level, const unsigned iters) {
-            auto& lev = L_[level];
-            auto& u   = lev.u;
-            auto& f   = lev.f;
-
-            const auto diag = multigrid::compute_diag(lev);
-
-            for (unsigned it = 0; it < iters; ++it) {
-                u.fillHalo();
-                Field res = residual(u, f);
-                u         = u + omega_ * (res / diag);
-            }
-        }
-
         void restrict_fullweight(const size_t level) {
             if (level >= L_.size() - 1) {
                 std::cerr << "Trying to restrict at lowest level." << std::endl;
@@ -440,8 +338,109 @@ namespace ippl {
                 });
             ippl::fence();
         }
-    };
 
+    protected:
+        std::vector<multigrid::Level<Field>> L_;
+        OperatorF op_;
+        unsigned nu1_, nu2_;
+        double omega_;
+
+        // --- DEBUGGING - To be deleted ---
+
+        bool debug_print_ = false;
+
+        void debug_print_field(const Field& field, const std::string& name, size_t level) const {
+            if (!debug_print_) {
+                return;
+            }
+
+            Kokkos::fence();
+
+            const int myRank = ippl::Comm->rank();
+            const int nRanks = ippl::Comm->size();
+
+            for (int rank = 0; rank < nRanks; ++rank) {
+                if (rank == myRank) {
+                    std::cout << "\n";
+                    std::cout << "============================================================\n";
+                    std::cout << "MG DEBUG | rank " << myRank << " | level " << level << " | "
+                              << name << "\n";
+                    std::cout << "owned domain: " << field.getOwned() << "\n";
+                    std::cout << "allocated domain including ghosts: " << field.getAllocated()
+                              << "\n";
+                    std::cout << "nghost: " << field.getNghost() << "\n";
+                    std::cout << "------------------------------------------------------------\n";
+
+                    // field.write(std::cout);
+
+                    std::cout << "============================================================\n";
+                    std::cout << std::flush;
+                }
+
+                ippl::Comm->barrier();
+            }
+        }
+
+        void debug_print_level(size_t level, const std::string& label) const {
+            if (!debug_print_) {
+                return;
+            }
+
+            const auto& lev = L_[level];
+
+            std::cout << "\nMG DEBUG LEVEL " << level << ": " << label << "\n";
+            std::cout << "nx = " << lev.nx << "\n";
+            std::cout << "hx = " << lev.hx << "\n";
+            std::cout << "origin = " << lev.origin << "\n";
+
+            debug_print_field(lev.u, "u", level);
+            debug_print_field(lev.f, "f", level);
+        }
+
+        void debug_print_all_levels(const std::string& label) const {
+            if (!debug_print_) {
+                return;
+            }
+
+            for (size_t level = 0; level < L_.size(); ++level) {
+                debug_print_level(level, label);
+            }
+        }
+        // --- END OF DEBUGGING ---
+
+        Field residual(Field& u, const Field& f) {
+            Field res = f.deepCopy();
+            res       = f - op_(u);
+            return res;
+        };
+
+        void vcycle(size_t level) {
+            if (level == L_.size() - 1) {
+                // Coarsest grid: just smooth a lot (or use a direct solver)
+                smooth_jacobi(level, 50);
+                return;
+            }
+            smooth_jacobi(level, nu1_);  // Pre-smoothing
+            restrict_fullweight(level);  // Pass level
+            vcycle(level + 1);           // Recursively go down one level
+            prolong_add(level);          // Pass level
+            smooth_jacobi(level, nu2_);  // Post-smoothing
+        }
+
+        void smooth_jacobi(const size_t level, const unsigned iters) {
+            auto& lev = L_[level];
+            auto& u   = lev.u;
+            auto& f   = lev.f;
+
+            const auto diag = multigrid::compute_diag(lev);
+
+            for (unsigned it = 0; it < iters; ++it) {
+                u.fillHalo();
+                Field res = residual(u, f);
+                u         = u + omega_ * (res / diag);
+            }
+        }
+    };
 }  // namespace ippl
 
 #endif  // !IPPL_MULTIGRID
