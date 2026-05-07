@@ -61,7 +61,7 @@ namespace ippl::Interpolation::detail {
         using G0View             = Kokkos::View<RealType**, scratch_space, unmanaged>;
 
         struct Arguments : ScatterArgumentsBase<Arguments, Types> {
-            using PermuteView = Kokkos::View<uint64_t*, memory_space>;
+            using PermuteView = Kokkos::View<ippl::detail::size_type*, memory_space>;
             PermuteView permute;
             int particles_per_team = 1;
 

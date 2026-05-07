@@ -32,8 +32,8 @@ namespace ippl::Interpolation::detail {
             Kokkos::View<RealType*, scratch_space, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
         struct Arguments : ScatterArgumentsBase<Arguments, Types> {
-            Kokkos::View<uint64_t*, memory_space> permute;
-            Kokkos::View<uint64_t*, memory_space> bin_offsets;
+            Kokkos::View<ippl::detail::size_type*, memory_space> permute;
+            Kokkos::View<ippl::detail::size_type*, memory_space> bin_offsets;
             Vector<int, Dim> num_tiles;
             Vector<int, Dim> tile_size;
             int team_size;

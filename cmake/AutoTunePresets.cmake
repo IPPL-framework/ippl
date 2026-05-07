@@ -12,6 +12,8 @@
 # ============================================================================
 
 function(ippl_configure_autotune_presets)
+  set(_ippl_cmake_dir "${CMAKE_CURRENT_FUNCTION_LIST_DIR}")
+
   # ---- Pick a tag that matches the layout under cmake/auto_tune/. -------
   #
   # Try Kokkos_ARCH_* cache variables first (they're reliable even when
@@ -84,7 +86,7 @@ function(ippl_configure_autotune_presets)
     set(_tag "serial")
   endif()
 
-  set(_src_dir "${CMAKE_SOURCE_DIR}/cmake/auto_tune/${_tag}")
+  set(_src_dir "${_ippl_cmake_dir}/auto_tune/${_tag}")
   set(_dst_dir "${CMAKE_BINARY_DIR}/share/ippl/auto_tune")
 
   # Wipe any stale presets from a previous configure (e.g. arch changed or the
@@ -128,7 +130,7 @@ function(ippl_configure_autotune_presets)
   set(IPPL_AUTOTUNE_PRESET_DIR "${_dst_dir}")
   set(IPPL_AUTOTUNE_ARCH_TAG "${_tag}")
   configure_file(
-    "${CMAKE_SOURCE_DIR}/cmake/IpplAutoTunePresets.h.in"
+    "${_ippl_cmake_dir}/IpplAutoTunePresets.h.in"
     "${CMAKE_BINARY_DIR}/include/IpplAutoTunePresets.h"
     @ONLY)
 

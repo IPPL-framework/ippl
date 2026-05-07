@@ -15,8 +15,8 @@ namespace ippl {
 
             template <int Dim, typename MemorySpace>
             struct BinningResult {
-                Kokkos::View<size_type*, MemorySpace> permute;
-                Kokkos::View<size_type*, MemorySpace> bin_offsets;
+                Kokkos::View<ippl::detail::size_type*, MemorySpace> permute;
+                Kokkos::View<ippl::detail::size_type*, MemorySpace> bin_offsets;
                 Vector<int, Dim> num_tiles;
             };
 

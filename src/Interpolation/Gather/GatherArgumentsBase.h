@@ -1,6 +1,7 @@
 #ifndef IPPL_GATHER_ARGUMENTS_BASE_H
 #define IPPL_GATHER_ARGUMENTS_BASE_H
 
+#include "Types/IpplTypes.h"
 #include "Types/Vector.h"
 
 namespace ippl::Interpolation::detail {
@@ -73,8 +74,8 @@ namespace ippl::Interpolation::detail {
     // Reuse BinningResult from scatter
     template <typename MemorySpace>
     struct GatherBinningResult {
-        Kokkos::View<uint64_t*, MemorySpace> permute;
-        Kokkos::View<uint64_t*, MemorySpace> bin_offsets;
+        Kokkos::View<ippl::detail::size_type*, MemorySpace> permute;
+        Kokkos::View<ippl::detail::size_type*, MemorySpace> bin_offsets;
         Vector<int, 3> num_tiles;
 
         operator bool() const { return permute.data() != nullptr; }

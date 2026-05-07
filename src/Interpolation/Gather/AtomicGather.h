@@ -19,7 +19,7 @@ namespace ippl::Interpolation::detail {
         using execution_space = typename Types::execution_space;
 
         struct Arguments : GatherArgumentsBase<Arguments, Types> {
-            using PermuteView = Kokkos::View<uint64_t*, memory_space>;
+            using PermuteView = Kokkos::View<ippl::detail::size_type*, memory_space>;
             PermuteView permute;  // Only used when UseSorting = true
 
             template <class Field, class Positions, class Values, class Kernel>
