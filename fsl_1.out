@@ -1,0 +1,331 @@
+FSL>  Grid size: ( 64 , 64 ) No. of virtual particles per step: 4096 No. of time steps: 50
+energy > kinetic energy = 9.33625, relError = 0
+enstrophy > enstrophy = 20.4044, relError = 0
+divergence > L2 = 1.07028e-16
+scatter > particle circulation = -1.17801, grid circulation = -1.17801, relError = 0
+debug > omega L2 before = 27.7128, omega L2 after = 7.60618
+Step: > 1 Done
+energy > kinetic energy = 0.120512, relError = 0.987092
+enstrophy > enstrophy = 0.232096, relError = 0.988625
+divergence > L2 = 1.05202e-17
+scatter > particle circulation = -0.183831, grid circulation = -0.183831, relError = 3.01968e-16
+debug > omega L2 before = 7.60618, omega L2 after = 1.26732
+Step: > 2 Done
+energy > kinetic energy = 0.00362456, relError = 0.999612
+enstrophy > enstrophy = 0.00675077, relError = 0.999669
+divergence > L2 = 1.97602e-18
+scatter > particle circulation = -0.0319833, grid circulation = -0.0319833, relError = 0
+debug > omega L2 before = 1.26732, omega L2 after = 0.222598
+Step: > 3 Done
+energy > kinetic energy = 0.000115065, relError = 0.999988
+enstrophy > enstrophy = 0.000208716, relError = 0.99999
+divergence > L2 = 3.49904e-19
+scatter > particle circulation = -0.00583586, grid circulation = -0.00583586, relError = 2.97253e-16
+debug > omega L2 before = 0.222598, omega L2 after = 0.0398291
+Step: > 4 Done
+energy > kinetic energy = 3.74776e-06, relError = 1
+enstrophy > enstrophy = 6.68531e-06, relError = 1
+divergence > L2 = 6.37021e-20
+scatter > particle circulation = -0.00108441, grid circulation = -0.00108441, relError = 0
+debug > omega L2 before = 0.0398291, omega L2 after = 0.00720837
+Step: > 5 Done
+energy > kinetic energy = 1.24332e-07, relError = 1
+enstrophy > enstrophy = 2.19407e-07, relError = 1
+divergence > L2 = 1.11235e-20
+scatter > particle circulation = -0.000202777, grid circulation = -0.000202777, relError = 2.67338e-16
+debug > omega L2 before = 0.00720837, omega L2 after = 0.00131593
+Step: > 6 Done
+energy > kinetic energy = 4.18436e-09, relError = 1
+enstrophy > enstrophy = 7.33093e-09, relError = 1
+divergence > L2 = 2.08193e-21
+scatter > particle circulation = -3.79886e-05, grid circulation = -3.79886e-05, relError = 1.78376e-16
+debug > omega L2 before = 0.00131593, omega L2 after = 0.000241856
+Step: > 7 Done
+energy > kinetic energy = 1.42398e-10, relError = 1
+enstrophy > enstrophy = 2.48246e-10, relError = 1
+divergence > L2 = 3.66801e-22
+scatter > particle circulation = -7.11925e-06, grid circulation = -7.11925e-06, relError = 0
+debug > omega L2 before = 0.000241856, omega L2 after = 4.46806e-05
+Step: > 8 Done
+energy > kinetic energy = 4.88681e-12, relError = 1
+enstrophy > enstrophy = 8.49027e-12, relError = 1
+divergence > L2 = 7.02626e-23
+scatter > particle circulation = -1.33403e-06, grid circulation = -1.33403e-06, relError = 0
+debug > omega L2 before = 4.46806e-05, omega L2 after = 8.28618e-06
+Step: > 9 Done
+energy > kinetic energy = 1.6875e-13, relError = 1
+enstrophy > enstrophy = 2.92492e-13, relError = 1
+divergence > L2 = 1.2489e-23
+scatter > particle circulation = -2.49925e-07, grid circulation = -2.49925e-07, relError = 0
+debug > omega L2 before = 8.28618e-06, omega L2 after = 1.54104e-06
+Step: > 10 Done
+energy > kinetic energy = 5.85353e-15, relError = 1
+enstrophy > enstrophy = 1.01293e-14, relError = 1
+divergence > L2 = 2.37854e-24
+scatter > particle circulation = -4.6814e-08, grid circulation = -4.6814e-08, relError = 1.41356e-16
+debug > omega L2 before = 1.54104e-06, omega L2 after = 2.87181e-07
+Step: > 11 Done
+energy > kinetic energy = 2.03699e-16, relError = 1
+enstrophy > enstrophy = 3.521e-16, relError = 1
+divergence > L2 = 4.09407e-25
+scatter > particle circulation = -8.76768e-09, grid circulation = -8.76768e-09, relError = 1.88689e-16
+debug > omega L2 before = 2.87181e-07, omega L2 after = 5.35948e-08
+Step: > 12 Done
+energy > kinetic energy = 7.1047e-18, relError = 1
+enstrophy > enstrophy = 1.22713e-17, relError = 1
+divergence > L2 = 8.08909e-26
+scatter > particle circulation = -1.64193e-09, grid circulation = -1.64193e-09, relError = 0
+debug > omega L2 before = 5.35948e-08, omega L2 after = 1.00122e-08
+Step: > 13 Done
+energy > kinetic energy = 2.48197e-19, relError = 1
+enstrophy > enstrophy = 4.28464e-19, relError = 1
+divergence > L2 = 1.54246e-26
+scatter > particle circulation = -3.07468e-10, grid circulation = -3.07468e-10, relError = 1.68144e-16
+debug > omega L2 before = 1.00122e-08, omega L2 after = 1.87174e-09
+Step: > 14 Done
+energy > kinetic energy = 8.68016e-21, relError = 1
+enstrophy > enstrophy = 1.49793e-20, relError = 1
+divergence > L2 = 2.80932e-27
+scatter > particle circulation = -5.75742e-11, grid circulation = -5.75742e-11, relError = 1.12244e-16
+debug > omega L2 before = 1.87174e-09, omega L2 after = 3.50086e-10
+Step: > 15 Done
+energy > kinetic energy = 3.03804e-22, relError = 1
+enstrophy > enstrophy = 5.24145e-22, relError = 1
+divergence > L2 = 5.45133e-28
+scatter > particle circulation = -1.07807e-11, grid circulation = -1.07807e-11, relError = 0
+debug > omega L2 before = 3.50086e-10, omega L2 after = 6.55016e-11
+Step: > 16 Done
+energy > kinetic energy = 1.06387e-23, relError = 1
+enstrophy > enstrophy = 1.83517e-23, relError = 1
+divergence > L2 = 9.90455e-29
+scatter > particle circulation = -2.01863e-12, grid circulation = -2.01863e-12, relError = 0
+debug > omega L2 before = 6.55016e-11, omega L2 after = 1.22583e-11
+Step: > 17 Done
+energy > kinetic energy = 3.72688e-25, relError = 1
+enstrophy > enstrophy = 6.42809e-25, relError = 1
+divergence > L2 = 1.85344e-29
+scatter > particle circulation = -3.77976e-13, grid circulation = -3.77976e-13, relError = 1.33572e-16
+debug > omega L2 before = 1.22583e-11, omega L2 after = 2.29445e-12
+Step: > 18 Done
+energy > kinetic energy = 1.3059e-26, relError = 1
+enstrophy > enstrophy = 2.25223e-26, relError = 1
+divergence > L2 = 3.46038e-30
+scatter > particle circulation = -7.07733e-14, grid circulation = -7.07733e-14, relError = 1.78341e-16
+debug > omega L2 before = 2.29445e-12, omega L2 after = 4.29512e-13
+Step: > 19 Done
+energy > kinetic energy = 4.57666e-28, relError = 1
+enstrophy > enstrophy = 7.89278e-28, relError = 1
+divergence > L2 = 6.3234e-31
+scatter > particle circulation = -1.32517e-14, grid circulation = -1.32517e-14, relError = 1.19058e-16
+debug > omega L2 before = 4.29512e-13, omega L2 after = 8.04091e-14
+Step: > 20 Done
+energy > kinetic energy = 1.60413e-29, relError = 1
+enstrophy > enstrophy = 2.76634e-29, relError = 1
+divergence > L2 = 1.25782e-31
+scatter > particle circulation = -2.48127e-15, grid circulation = -2.48127e-15, relError = 0
+debug > omega L2 before = 8.04091e-14, omega L2 after = 1.50542e-14
+Step: > 21 Done
+energy > kinetic energy = 5.62297e-31, relError = 1
+enstrophy > enstrophy = 9.69663e-31, relError = 1
+divergence > L2 = 2.22355e-32
+scatter > particle circulation = -4.64597e-16, grid circulation = -4.64597e-16, relError = 2.12243e-16
+debug > omega L2 before = 1.50542e-14, omega L2 after = 2.81855e-15
+Step: > 22 Done
+energy > kinetic energy = 1.97113e-32, relError = 1
+enstrophy > enstrophy = 3.3991e-32, relError = 1
+divergence > L2 = 4.30726e-33
+scatter > particle circulation = -8.69917e-17, grid circulation = -8.69917e-17, relError = 1.41691e-16
+debug > omega L2 before = 2.81855e-15, omega L2 after = 5.2772e-16
+Step: > 23 Done
+energy > kinetic energy = 6.91006e-34, relError = 1
+enstrophy > enstrophy = 1.19158e-33, relError = 1
+divergence > L2 = 7.7521e-34
+scatter > particle circulation = -1.62884e-17, grid circulation = -1.62884e-17, relError = 1.89183e-16
+debug > omega L2 before = 5.2772e-16, omega L2 after = 9.88072e-17
+Step: > 24 Done
+energy > kinetic energy = 2.42248e-35, relError = 1
+enstrophy > enstrophy = 4.17733e-35, relError = 1
+divergence > L2 = 1.51795e-34
+scatter > particle circulation = -3.04986e-18, grid circulation = -3.04986e-18, relError = 1.26296e-16
+debug > omega L2 before = 9.88072e-17, omega L2 after = 1.85003e-17
+Step: > 25 Done
+energy > kinetic energy = 8.49268e-37, relError = 1
+enstrophy > enstrophy = 1.46448e-36, relError = 1
+divergence > L2 = 2.74177e-35
+scatter > particle circulation = -5.71059e-19, grid circulation = -5.71059e-19, relError = 0
+debug > omega L2 before = 1.85003e-17, omega L2 after = 3.46396e-18
+Step: > 26 Done
+energy > kinetic energy = 2.97738e-38, relError = 1
+enstrophy > enstrophy = 5.13418e-38, relError = 1
+divergence > L2 = 5.06223e-36
+scatter > particle circulation = -1.06926e-19, grid circulation = -1.06926e-19, relError = 0
+debug > omega L2 before = 3.46396e-18, omega L2 after = 6.48587e-19
+Step: > 27 Done
+energy > kinetic energy = 1.04383e-39, relError = 1
+enstrophy > enstrophy = 1.79996e-39, relError = 1
+divergence > L2 = 9.92408e-37
+scatter > particle circulation = -2.00209e-20, grid circulation = -2.00209e-20, relError = 0
+debug > omega L2 before = 6.48587e-19, omega L2 after = 1.21441e-19
+Step: > 28 Done
+energy > kinetic energy = 3.65953e-41, relError = 1
+enstrophy > enstrophy = 6.31044e-41, relError = 1
+divergence > L2 = 1.74029e-37
+scatter > particle circulation = -3.74872e-21, grid circulation = -3.74872e-21, relError = 2.00686e-16
+debug > omega L2 before = 1.21441e-19, omega L2 after = 2.27386e-20
+Step: > 29 Done
+energy > kinetic energy = 1.28299e-42, relError = 1
+enstrophy > enstrophy = 2.21237e-42, relError = 1
+divergence > L2 = 3.33806e-38
+scatter > particle circulation = -7.01915e-22, grid circulation = -7.01915e-22, relError = 1.33976e-16
+debug > omega L2 before = 2.27386e-20, omega L2 after = 4.25759e-21
+Step: > 30 Done
+energy > kinetic energy = 4.49803e-44, relError = 1
+enstrophy > enstrophy = 7.75632e-44, relError = 1
+divergence > L2 = 6.11682e-39
+scatter > particle circulation = -1.31427e-22, grid circulation = -1.31427e-22, relError = 0
+debug > omega L2 before = 4.25759e-21, omega L2 after = 7.97193e-22
+Step: > 31 Done
+energy > kinetic energy = 1.57697e-45, relError = 1
+enstrophy > enstrophy = 2.71929e-45, relError = 1
+divergence > L2 = 1.23996e-39
+scatter > particle circulation = -2.46085e-23, grid circulation = -2.46085e-23, relError = 0
+debug > omega L2 before = 7.97193e-22, omega L2 after = 1.49267e-22
+Step: > 32 Done
+energy > kinetic energy = 5.5287e-47, relError = 1
+enstrophy > enstrophy = 9.53358e-47, relError = 1
+divergence > L2 = 2.28208e-40
+scatter > particle circulation = -4.60773e-24, grid circulation = -4.60773e-24, relError = 1.59446e-16
+debug > omega L2 before = 1.49267e-22, omega L2 after = 2.79488e-23
+Step: > 33 Done
+energy > kinetic energy = 1.93831e-48, relError = 1
+enstrophy > enstrophy = 3.34239e-48, relError = 1
+divergence > L2 = 4.09977e-41
+scatter > particle circulation = -8.62755e-25, grid circulation = -8.62755e-25, relError = 2.12889e-16
+debug > omega L2 before = 2.79488e-23, omega L2 after = 5.23316e-24
+Step: > 34 Done
+energy > kinetic energy = 6.79555e-50, relError = 1
+enstrophy > enstrophy = 1.17181e-49, relError = 1
+divergence > L2 = 7.70482e-42
+scatter > particle circulation = -1.61543e-25, grid circulation = -1.61543e-25, relError = 0
+debug > omega L2 before = 5.23316e-24, omega L2 after = 9.79861e-25
+Step: > 35 Done
+energy > kinetic energy = 2.38246e-51, relError = 1
+enstrophy > enstrophy = 4.10827e-51, relError = 1
+divergence > L2 = 1.41066e-42
+scatter > particle circulation = -3.02475e-26, grid circulation = -3.02475e-26, relError = 1.89759e-16
+debug > omega L2 before = 9.79861e-25, omega L2 after = 1.8347e-25
+Step: > 36 Done
+energy > kinetic energy = 8.35271e-53, relError = 1
+enstrophy > enstrophy = 1.44032e-52, relError = 1
+divergence > L2 = 2.89576e-43
+scatter > particle circulation = -5.66356e-27, grid circulation = -5.66356e-27, relError = 1.26681e-16
+debug > omega L2 before = 1.8347e-25, omega L2 after = 3.43531e-26
+Step: > 37 Done
+energy > kinetic energy = 2.92839e-54, relError = 1
+enstrophy > enstrophy = 5.04965e-54, relError = 1
+divergence > L2 = 5.21534e-44
+scatter > particle circulation = -1.06045e-27, grid circulation = -1.06045e-27, relError = 0
+debug > omega L2 before = 3.43531e-26, omega L2 after = 6.4323e-27
+Step: > 38 Done
+energy > kinetic energy = 1.02667e-55, relError = 1
+enstrophy > enstrophy = 1.77037e-55, relError = 1
+divergence > L2 = 9.30353e-45
+scatter > particle circulation = -1.9856e-28, grid circulation = -1.9856e-28, relError = 1.12917e-16
+debug > omega L2 before = 6.4323e-27, omega L2 after = 1.20439e-27
+Step: > 39 Done
+energy > kinetic energy = 3.59941e-57, relError = 1
+enstrophy > enstrophy = 6.20675e-57, relError = 1
+divergence > L2 = 1.75679e-45
+scatter > particle circulation = -3.71785e-29, grid circulation = -3.71785e-29, relError = 0
+debug > omega L2 before = 1.20439e-27, omega L2 after = 2.25511e-28
+Step: > 40 Done
+energy > kinetic energy = 1.26192e-58, relError = 1
+enstrophy > enstrophy = 2.17604e-58, relError = 1
+divergence > L2 = 3.25334e-46
+scatter > particle circulation = -6.96134e-30, grid circulation = -6.96134e-30, relError = 0
+debug > omega L2 before = 2.25511e-28, omega L2 after = 4.22249e-29
+Step: > 41 Done
+energy > kinetic energy = 4.4242e-60, relError = 1
+enstrophy > enstrophy = 7.629e-60, relError = 1
+divergence > L2 = 6.44454e-47
+scatter > particle circulation = -1.30345e-30, grid circulation = -1.30345e-30, relError = 0
+debug > omega L2 before = 4.22249e-29, omega L2 after = 7.90623e-30
+Step: > 42 Done
+energy > kinetic energy = 1.55109e-61, relError = 1
+enstrophy > enstrophy = 2.67466e-61, relError = 1
+divergence > L2 = 1.16013e-47
+scatter > particle circulation = -2.44059e-31, grid circulation = -2.44059e-31, relError = 0
+debug > omega L2 before = 7.90623e-30, omega L2 after = 1.48037e-30
+Step: > 43 Done
+energy > kinetic energy = 5.43798e-63, relError = 1
+enstrophy > enstrophy = 9.37714e-63, relError = 1
+divergence > L2 = 2.18415e-48
+scatter > particle circulation = -4.56978e-32, grid circulation = -4.56978e-32, relError = 0
+debug > omega L2 before = 1.48037e-30, omega L2 after = 2.77186e-31
+Step: > 44 Done
+energy > kinetic energy = 1.90651e-64, relError = 1
+enstrophy > enstrophy = 3.28755e-64, relError = 1
+divergence > L2 = 4.16123e-49
+scatter > particle circulation = -8.5565e-33, grid circulation = -8.5565e-33, relError = 1.36846e-18
+debug > omega L2 before = 2.77186e-31, omega L2 after = 5.19005e-32
+Step: > 45 Done
+energy > kinetic energy = 6.68407e-66, relError = 1
+enstrophy > enstrophy = 1.15259e-65, relError = 1
+divergence > L2 = 7.45886e-50
+scatter > particle circulation = -1.60213e-33, grid circulation = -1.60213e-33, relError = 3.42114e-19
+debug > omega L2 before = 5.19005e-32, omega L2 after = 9.71791e-33
+Step: > 46 Done
+energy > kinetic energy = 2.34338e-67, relError = 1
+enstrophy > enstrophy = 4.04087e-67, relError = 1
+divergence > L2 = 1.48273e-50
+scatter > particle circulation = -2.99984e-34, grid circulation = -2.99984e-34, relError = 0
+debug > omega L2 before = 9.71791e-33, omega L2 after = 1.81959e-33
+Step: > 47 Done
+energy > kinetic energy = 8.21569e-69, relError = 1
+enstrophy > enstrophy = 1.4167e-68, relError = 1
+divergence > L2 = 2.6831e-51
+scatter > particle circulation = -5.61692e-35, grid circulation = -5.61692e-35, relError = 1.06911e-20
+debug > omega L2 before = 1.81959e-33, omega L2 after = 3.40702e-34
+Step: > 48 Done
+energy > kinetic energy = 2.88035e-70, relError = 1
+enstrophy > enstrophy = 4.96682e-70, relError = 1
+divergence > L2 = 5.36418e-52
+scatter > particle circulation = -1.05172e-35, grid circulation = -1.05172e-35, relError = 2.67276e-21
+debug > omega L2 before = 3.40702e-34, omega L2 after = 6.37933e-35
+Step: > 49 Done
+energy > kinetic energy = 1.00983e-71, relError = 1
+enstrophy > enstrophy = 1.74133e-71, relError = 1
+divergence > L2 = 9.31707e-53
+scatter > particle circulation = -1.96925e-36, grid circulation = -1.96925e-36, relError = 3.34096e-22
+debug > omega L2 before = 6.37933e-35, omega L2 after = 1.19447e-35
+Step: > 50 Done
+Timings> ---------------------------------------------
+Timings>      Timing results for 1 rank(s):
+Timings> ---------------------------------------------
+Timings> total............... Wall tot =   0.177267
+Timings> 
+Timings> pushVelocity........ Wall max =  0.0184401
+Timings>                      Wall avg =  0.0184401
+Timings>                      Wall min =  0.0184401
+Timings> 
+Timings> pushPosition........ Wall max =          0
+Timings>                      Wall avg =          0
+Timings>                      Wall min =          0
+Timings> 
+Timings> solve............... Wall max = 0.00457826
+Timings>                      Wall avg = 0.00457826
+Timings>                      Wall min = 0.00457826
+Timings> 
+Timings> par2grid............ Wall max = 0.00871008
+Timings>                      Wall avg = 0.00871008
+Timings>                      Wall min = 0.00871008
+Timings> 
+Timings> scatter............. Wall max =   0.000727
+Timings>                      Wall avg =   0.000727
+Timings>                      Wall min =   0.000727
+Timings> 
+Timings> accumulateHalo...... Wall max = 0.00144448
+Timings>                      Wall avg = 0.00144448
+Timings>                      Wall min = 0.00144448
+Timings> 
+Timings> ---------------------------------------------

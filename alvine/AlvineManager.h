@@ -266,13 +266,13 @@ double computeEnstrophy() {
 
 double computeDivergenceL2() {
     auto& uField = this->fcontainer_m->getUField();
-    uField.fillHalo();
+//    uField.fillHalo();
 
     auto divField = this->fcontainer_m->getOmegaField();
 
     divField = div(uField);
-
-    double div_l2 = norm(divField, 2);
+    double N = this->nr_m[0]*this->nr_m[1];
+    double div_l2 = norm(divField, 2)/std::sqrt(N);
 
     // restore omega by recomputing par2grid later if needed
     return div_l2;

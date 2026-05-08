@@ -15,8 +15,13 @@ set (IPPL_LIBS ippl ${MPI_CXX_LIBRARIES})
 set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 
 add_executable (VortexInCell VortexInCell.cpp)
+add_executable(Fsl Fsl.cpp)
 target_include_directories(VortexInCell PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/alvine )
 target_link_libraries(VortexInCell ${IPPL_LIBS} ippl MPI::MPI_CXX Heffte::Heffte)
+
+target_include_directories(Fsl PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/alvine )
+target_link_libraries(Fsl ${IPPL_LIBS} ippl MPI::MPI_CXX Heffte::Heffte)
+
 
 # vi: set et ts=4 sw=4 sts=4:
 
