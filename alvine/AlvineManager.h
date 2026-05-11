@@ -268,7 +268,7 @@ double computeDivergenceL2() {
     auto& uField = this->fcontainer_m->getUField();
 //    uField.fillHalo();
 
-    auto divField = this->fcontainer_m->getOmegaField();
+    auto divField = this->fcontainer_m->getOmegaField().deepCopy();
 
     divField = div(uField);
     double N = this->nr_m[0]*this->nr_m[1];

@@ -487,8 +487,11 @@ void advectForward() {
         IpplTimings::getTimer("par2grid");
 
     double omega_before = computeOmegaL2();
+    auto omega_n = this->fcontainer_m->getOmegaField().deepCopy();
 
     // 1. Compute velocity u^n from omega^n
+    // The FFT solver writes the Poisson solution into omegaField. Restore the
+    // saved vorticity before creating/remapping virtual particles.
     IpplTimings::startTimer(SolveTimer);
     this->fsolver_m->runSolver();
     IpplTimings::stopTimer(SolveTimer);
@@ -496,6 +499,7 @@ void advectForward() {
     IpplTimings::startTimer(PTimer);
     this->computeVelocityField();
     IpplTimings::stopTimer(PTimer);
+    Kokkos::deep_copy(this->fcontainer_m->getOmegaField().getView(), omega_n.getView());
 
     // 2. Create virtual particles from omega^n
     initializeVirtualParticles();
@@ -522,6 +526,8 @@ void advectForward() {
     }
 
     // 6. Compute velocity from omega^{n+1} for diagnostics
+    auto omega_np1 = this->fcontainer_m->getOmegaField().deepCopy();
+
     IpplTimings::startTimer(SolveTimer);
     this->fsolver_m->runSolver();
     IpplTimings::stopTimer(SolveTimer);
@@ -530,6 +536,7 @@ void advectForward() {
     this->computeVelocityField();
 
     logEnergyDiagnostics();
+    Kokkos::deep_copy(this->fcontainer_m->getOmegaField().getView(), omega_np1.getView());
     logEnstrophyDiagnostics();
     logDivergenceDiagnostics();
 
