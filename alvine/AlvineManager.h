@@ -238,15 +238,11 @@ double computeEnstrophy() {
     auto omega_view = omegaField.getView();
     const double dA = hr_m[0] * hr_m[1];
 
-    auto localND = this->fcontainer_m->getFL().getLocalNDIndex();
-    const int i0 = localND[0].first();
-    const int i1 = localND[0].last();
-    const int j0 = localND[1].first();
-    const int j1 = localND[1].last();
+    const int nghost = omegaField.getNghost();
 
     Kokkos::parallel_reduce(
         "enstrophy",
-        Kokkos::MDRangePolicy<Kokkos::Rank<2>>({i0, j0}, {i1 + 1, j1 + 1}),
+        ippl::getRangePolicy(omega_view, nghost),
         KOKKOS_LAMBDA(const int i, const int j, double& lsum) {
             const double omega = omega_view(i, j);
             lsum += 0.5 * omega * omega;

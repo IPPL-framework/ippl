@@ -118,6 +118,7 @@ void initializeVirtualParticles(){
     size_type nx = i1 - i0 + 1;
     size_type ny = j1 - j0 + 1;
     size_type nlocal = nx * ny;
+    const int nghost = this->fcontainer_m->getOmegaField().getNghost();
 
     auto pc = this->pcontainer_m;
     pc->create(nlocal);
@@ -139,11 +140,13 @@ void initializeVirtualParticles(){
 
             int i = i0 + ii;
             int j = j0 + jj;
+            int li = ii + nghost;
+            int lj = jj + nghost;
 
             R_view(p)[0] = rmin[0] + (i+0.5) * hr[0];
             R_view(p)[1] = rmin[1] + (j+0.5) * hr[1];
 
-            omega_p(p) = omega_g(i, j) * dA;
+            omega_p(p) = omega_g(li, lj) * dA;
         }
     );
 
@@ -153,18 +156,12 @@ void initializeVirtualParticles(){
 double computeOmegaL2() {
     auto& omegaField = this->fcontainer_m->getOmegaField();
     auto omega = omegaField.getView();
-    auto localND = this->fcontainer_m->getFL().getLocalNDIndex();
-
-    int i0 = localND[0].first();
-    int i1 = localND[0].last();
-    int j0 = localND[1].first();
-    int j1 = localND[1].last();
-
     double local = 0.0;
+    const int nghost = omegaField.getNghost();
 
     Kokkos::parallel_reduce(
         "omega_l2",
-        Kokkos::MDRangePolicy<Kokkos::Rank<2>>({i0, j0}, {i1 + 1, j1 + 1}),
+        ippl::getRangePolicy(omega, nghost),
         KOKKOS_LAMBDA(const int i, const int j, double& sum) {
             sum += omega(i, j) * omega(i, j);
         },
@@ -283,50 +280,30 @@ void initializeGridVorticity() {
     int i1 = localND[0].last();
     int j0 = localND[1].first();
     int j1 = localND[1].last();
+    const int nghost = omegaField.getNghost();
 
     Vector_t<double, Dim> rmin = this->rmin_m;
-    Vector_t<double, Dim> rmax = this->rmax_m;
     Vector_t<double, Dim> hr   = this->hr_m;
-
-    double ymin = rmin[1];
-    double ymax = rmax[1];
-
-    double y_mid = 0.5 * (ymin + ymax);
-    double y_low = y_mid - 1.0;
-    double y_high = y_mid + 1.0;
 
     Kokkos::parallel_for(
         "initialize_grid_vorticity",
-        Kokkos::MDRangePolicy<Kokkos::Rank<2>>({i0, j0}, {i1 + 1, j1 + 1}),
-        KOKKOS_LAMBDA(const int i, const int j) {
-/*            //double x = rmin[0] + (i + 0.5) * hr[0];
-	    double x = rmin[0] + (i + 0.5) * hr[0];
-	    double Lx = rmax[0] - rmin[0];
+        Kokkos::MDRangePolicy<Kokkos::Rank<2>>({nghost, nghost},
+                                               {nghost + i1 - i0 + 1,
+                                                nghost + j1 - j0 + 1}),
+        KOKKOS_LAMBDA(const int li, const int lj) {
+            int i = i0 + li - nghost;
+            int j = j0 + lj - nghost;
+
+            double xc = 5.0;
+            double yc = 5.0;
+            double sigma = 0.5;
+
+            double x = rmin[0] + (i + 0.5) * hr[0];
             double y = rmin[1] + (j + 0.5) * hr[1];
-            double b = y >= y_low && y <= y_high ;
-/*double noise = Kokkos::sin(12.9898 * i + 78.233 * j) * 43758.5453;
-noise = noise - Kokkos::floor(noise); // [0, 1)
-noise = 2.0 * noise - 1.0;            // [-1, 1]
 
-double eps = 0.2;
+            double r2 = (x - xc) * (x - xc) + (y - yc) * (y - yc);
 
-omega_view(i, j) = b * (1.0 + eps * noise);*/ 
-            omega_view(i, j) = 1.0  ;
-           // omega_view(i,j) = b * (1.0 + 0.1 * sin(2.0 * M_PI * x / Lx));*/
-double xc = 5.0;
-double yc = 5.0;
-
-double sigma = 0.5;
-
-double x = rmin[0] + (i + 0.5) * hr[0];
-double y = rmin[1] + (j + 0.5) * hr[1];
-
-double r2 =
-    (x - xc) * (x - xc) +
-    (y - yc) * (y - yc);
-
-omega_view(i,j) =
-    exp(-r2 / (2.0 * sigma * sigma));
+            omega_view(li, lj) = exp(-r2 / (2.0 * sigma * sigma));
         }
     );
 
