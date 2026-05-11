@@ -283,7 +283,12 @@ void initializeGridVorticity() {
     const int nghost = omegaField.getNghost();
 
     Vector_t<double, Dim> rmin = this->rmin_m;
+    Vector_t<double, Dim> rmax = this->rmax_m;
     Vector_t<double, Dim> hr   = this->hr_m;
+
+    double y_mid = 0.5 * (rmin[1] + rmax[1]);
+    double y_low = y_mid - 1.0;
+    double y_high = y_mid + 1.0;
 
     Kokkos::parallel_for(
         "initialize_grid_vorticity",
@@ -294,16 +299,9 @@ void initializeGridVorticity() {
             int i = i0 + li - nghost;
             int j = j0 + lj - nghost;
 
-            double xc = 5.0;
-            double yc = 5.0;
-            double sigma = 0.5;
-
-            double x = rmin[0] + (i + 0.5) * hr[0];
             double y = rmin[1] + (j + 0.5) * hr[1];
 
-            double r2 = (x - xc) * (x - xc) + (y - yc) * (y - yc);
-
-            omega_view(li, lj) = exp(-r2 / (2.0 * sigma * sigma));
+            omega_view(li, lj) = (y >= y_low && y <= y_high) ? 1.0 : 0.0;
         }
     );
 
