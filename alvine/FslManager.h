@@ -87,12 +87,18 @@ void pre_run() override {
       //this->par2grid();
 
       initializeGridVorticity();
-//      this->fsolver_m->runSolver();
-//      this->computeVelocityField();
-//      logEnergyDiagnostics();
-//      logEnstrophyDiagnostics();
-//      logDivergenceDiagnostics();
+      this->fsolver_m->runSolver();
+      this->computeVelocityField();
+      logEnergyDiagnostics();
+      logEnstrophyDiagnostics();
+      logDivergenceDiagnostics();
 //      this->grid2par();
+	double omega_init = computeOmegaL2();
+
+if (ippl::Comm->rank() == 0) {
+    Inform m("debug ");
+    m << "omega L2 after initialization = " << omega_init << endl;
+}
 
     }
 
@@ -132,8 +138,8 @@ void initializeVirtualParticles(){
             int i = i0 + ii;
             int j = j0 + jj;
 
-            R_view(p)[0] = rmin[0] + (i-0.5) * hr[0];
-            R_view(p)[1] = rmin[1] + (j-0.5) * hr[1];
+            R_view(p)[0] = rmin[0] + (i+0.5) * hr[0];
+            R_view(p)[1] = rmin[1] + (j+0.5) * hr[1];
 
             omega_p(p) = omega_g(i, j) * dA;
         }
@@ -169,6 +175,102 @@ double computeOmegaL2() {
     return std::sqrt(global);
 }
 
+void logPushDebug() {
+    auto pc = this->pcontainer_m;
+
+    auto P_view = pc->P.getView();
+
+    double dt = this->dt_m;
+    double dx = this->hr_m[0];
+
+    double localMaxVel = 0.0;
+    double localMaxDx  = 0.0;
+    double localMaxDy  = 0.0;
+
+    Kokkos::parallel_reduce(
+        "push_debug",
+        pc->getLocalNum(),
+        KOKKOS_LAMBDA(const int p,
+                      double& maxVel,
+                      double& maxDx,
+                      double& maxDy) {
+
+            double ux = P_view(p)[0];
+            double uy = P_view(p)[1];
+
+            double vel = sqrt(ux * ux + uy * uy);
+
+            double dispX = fabs(ux * dt);
+            double dispY = fabs(uy * dt);
+
+            if (vel   > maxVel) maxVel = vel;
+            if (dispX > maxDx)  maxDx  = dispX;
+            if (dispY > maxDy)  maxDy  = dispY;
+
+        },
+        Kokkos::Max<double>(localMaxVel),
+        Kokkos::Max<double>(localMaxDx),
+        Kokkos::Max<double>(localMaxDy)
+    );
+
+    double globalMaxVel = localMaxVel;
+    double globalMaxDx  = localMaxDx;
+    double globalMaxDy  = localMaxDy;
+
+    if (ippl::Comm->rank() == 0) {
+        Inform m("push_debug ");
+
+        m << "step = " << this->it_m
+          << ", max velocity = " << globalMaxVel
+          << ", max |dx| = " << globalMaxDx
+          << ", max |dy| = " << globalMaxDy
+          << ", max displacement/dx = "
+          << std::max(globalMaxDx, globalMaxDy) / dx
+          << endl;
+    }
+}
+
+void logVelocityRatioDebug() {
+    auto pc = this->pcontainer_m;
+    auto P_view = pc->P.getView();
+
+    double localMaxRatio = 0.0;
+    double localSumRatio = 0.0;
+    size_type localN = pc->getLocalNum();
+
+    Kokkos::parallel_reduce(
+        "velocity_ratio_debug",
+        localN,
+        KOKKOS_LAMBDA(const int p, double& maxRatio, double& sumRatio) {
+            double ux = fabs(P_view(p)[0]);
+            double uy = fabs(P_view(p)[1]);
+
+            double ratio = uy / (ux + 1.0e-30);
+
+            if (ratio > maxRatio) maxRatio = ratio;
+            sumRatio += ratio;
+        },
+        Kokkos::Max<double>(localMaxRatio),
+        localSumRatio
+    );
+
+    double globalMaxRatio = 0.0;
+    double globalSumRatio = 0.0;
+    size_type globalN = 0;
+
+    MPI_Allreduce(&localMaxRatio, &globalMaxRatio, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    MPI_Allreduce(&localSumRatio, &globalSumRatio, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&localN, &globalN, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+    if (ippl::Comm->rank() == 0) {
+        Inform m("velocity_ratio ");
+        m << "step = " << this->it_m
+          << ", max |uy|/|ux| = " << globalMaxRatio
+          << ", avg |uy|/|ux| = " << globalSumRatio / globalN
+          << endl;
+    }
+}
+
 void initializeGridVorticity() {
     auto& omegaField = this->fcontainer_m->getOmegaField();
     auto omega_view = omegaField.getView();
@@ -195,13 +297,34 @@ void initializeGridVorticity() {
         "initialize_grid_vorticity",
         Kokkos::MDRangePolicy<Kokkos::Rank<2>>({i0, j0}, {i1 + 1, j1 + 1}),
         KOKKOS_LAMBDA(const int i, const int j) {
-            //double x = rmin[0] + (i + 0.5) * hr[0];
+/*            //double x = rmin[0] + (i + 0.5) * hr[0];
 	    double x = rmin[0] + (i + 0.5) * hr[0];
 	    double Lx = rmax[0] - rmin[0];
             double y = rmin[1] + (j + 0.5) * hr[1];
-            double b = y >= y_low && y <= y_high ; 
-            omega_view(i, j) = 1.0 * b;
-           // omega_view(i,j) = b * (1.0 + 0.1 * sin(2.0 * M_PI * x / Lx));
+            double b = y >= y_low && y <= y_high ;
+/*double noise = Kokkos::sin(12.9898 * i + 78.233 * j) * 43758.5453;
+noise = noise - Kokkos::floor(noise); // [0, 1)
+noise = 2.0 * noise - 1.0;            // [-1, 1]
+
+double eps = 0.2;
+
+omega_view(i, j) = b * (1.0 + eps * noise);*/ 
+            omega_view(i, j) = 1.0  ;
+           // omega_view(i,j) = b * (1.0 + 0.1 * sin(2.0 * M_PI * x / Lx));*/
+double xc = 5.0;
+double yc = 5.0;
+
+double sigma = 0.5;
+
+double x = rmin[0] + (i + 0.5) * hr[0];
+double y = rmin[1] + (j + 0.5) * hr[1];
+
+double r2 =
+    (x - xc) * (x - xc) +
+    (y - yc) * (y - yc);
+
+omega_view(i,j) =
+    exp(-r2 / (2.0 * sigma * sigma));
         }
     );
 
@@ -211,10 +334,13 @@ void initializeGridVorticity() {
 void pushVirtualParticlesForward() {
     auto pc = this->pcontainer_m;
 
-    // 1. gather velocity from grid to particles
+    // 1. Gather velocity from grid to particles
     this->grid2par();   // fills pc->P using uField
 
-    // 2. move particles forward
+    // Debug before push: checks expected displacement = P * dt
+    logPushDebug();
+    logVelocityRatioDebug();
+    // 2. Move particles forward
     auto R_view = pc->R.getView();
     auto P_view = pc->P.getView();
 
@@ -229,26 +355,8 @@ void pushVirtualParticlesForward() {
     );
 
     Kokkos::fence();
-double pmax = 0.0;
 
-
-Kokkos::parallel_reduce(
-    "max_particle_velocity",
-    pc->getLocalNum(),
-    KOKKOS_LAMBDA(const int p, double& localMax) {
-        double ux = P_view(p)[0];
-        double uy = P_view(p)[1];
-        double mag = sqrt(ux * ux + uy * uy);
-        if (mag > localMax) localMax = mag;
-    },
-    Kokkos::Max<double>(pmax)
-);
-
-if (ippl::Comm->rank() == 0) {
-    Inform m("debug ");
-    m << "max particle velocity = " << pmax << endl;
-}
-    // 3. apply particle boundary conditions / update ownership
+    // 3. Apply particle boundary conditions / update ownership
     pc->update();
 }
 
@@ -378,52 +486,54 @@ void advectForward() {
     static IpplTimings::TimerRef par2gridTimer =
         IpplTimings::getTimer("par2grid");
 
-    // omega^n is already on the grid
-    
-
     double omega_before = computeOmegaL2();
 
-    // 1. Solve for stream function from omega^n
+    // 1. Compute velocity u^n from omega^n
     IpplTimings::startTimer(SolveTimer);
     this->fsolver_m->runSolver();
     IpplTimings::stopTimer(SolveTimer);
 
-    // 2. Compute velocity u^n
+    IpplTimings::startTimer(PTimer);
+    this->computeVelocityField();
+    IpplTimings::stopTimer(PTimer);
+
+    // 2. Create virtual particles from omega^n
+    initializeVirtualParticles();
+
+    // 3. Push particles using u^n
+    IpplTimings::startTimer(RTimer);
+    pushVirtualParticlesForward();
+    IpplTimings::stopTimer(RTimer);
+
+    // 4. Scatter particles to form omega^{n+1}
+    IpplTimings::startTimer(par2gridTimer);
+    this->par2grid();
+    IpplTimings::stopTimer(par2gridTimer);
+
+    // 5. Delete temporary particles
+    clearVirtualParticles();
+
+    double omega_after = computeOmegaL2();
+
+    if (ippl::Comm->rank() == 0) {
+        Inform m("debug ");
+        m << "omega L2 before = " << omega_before
+          << ", omega L2 after = " << omega_after << endl;
+    }
+
+    // 6. Compute velocity from omega^{n+1} for diagnostics
+    IpplTimings::startTimer(SolveTimer);
+    this->fsolver_m->runSolver();
+    IpplTimings::stopTimer(SolveTimer);
+
     IpplTimings::startTimer(PTimer);
     this->computeVelocityField();
 
-    // These diagnostics are for omega^n / u^n
     logEnergyDiagnostics();
     logEnstrophyDiagnostics();
     logDivergenceDiagnostics();
 
     IpplTimings::stopTimer(PTimer);
-
-    // 3. Create virtual particles from omega^n
-    initializeVirtualParticles();
-
-    // 4. Gather velocity u^n and push particles forward
-   /* IpplTimings::startTimer(RTimer);
-    pushVirtualParticlesForward();
-    IpplTimings::stopTimer(RTimer);*/
-
-    // 5. Scatter moved particles to form omega^{n+1}
-    //this->fcontainer_m->getOmegaField() = 0.0;
-
-    IpplTimings::startTimer(par2gridTimer);
-    this->par2grid();
-    IpplTimings::stopTimer(par2gridTimer);
-
-    double omega_after = computeOmegaL2();
-
-if (ippl::Comm->rank() == 0) {
-    Inform m("debug ");
-    m << "omega L2 before = " << omega_before
-      << ", omega L2 after = " << omega_after << endl;
-}
-
-    // 6. Delete temporary virtual particles
-    clearVirtualParticles();
 }
 };
 #endif
