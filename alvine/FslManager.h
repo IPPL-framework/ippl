@@ -87,9 +87,11 @@ void pre_run() override {
       //this->par2grid();
 
       initializeGridVorticity();
+      auto omega0 = this->fcontainer_m->getOmegaField().deepCopy();
       this->fsolver_m->runSolver();
       this->computeVelocityField();
       logEnergyDiagnostics();
+      Kokkos::deep_copy(this->fcontainer_m->getOmegaField().getView(), omega0.getView());
       logEnstrophyDiagnostics();
       logDivergenceDiagnostics();
 //      this->grid2par();
