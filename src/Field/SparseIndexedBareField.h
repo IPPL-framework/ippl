@@ -61,6 +61,58 @@ namespace ippl {
             return operator=(expr);
         }
 
+        SparseIndexedBareField& operator+=(value_type value) {
+            update(PlusValueAssign{value});
+            return *this;
+        }
+
+        SparseIndexedBareField& operator-=(value_type value) {
+            update(MinusValueAssign{value});
+            return *this;
+        }
+
+        SparseIndexedBareField& operator*=(value_type value) {
+            update(MultiplyValueAssign{value});
+            return *this;
+        }
+
+        SparseIndexedBareField& operator/=(value_type value) {
+            update(DivideValueAssign{value});
+            return *this;
+        }
+
+        template <typename E, size_t N>
+        SparseIndexedBareField& operator+=(const detail::Expression<E, N>& expr) {
+            using capture_type = detail::CapturedExpression<E, N>;
+            capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
+            update(PlusExpressionAssign<E, N>{expr_});
+            return *this;
+        }
+
+        template <typename E, size_t N>
+        SparseIndexedBareField& operator-=(const detail::Expression<E, N>& expr) {
+            using capture_type = detail::CapturedExpression<E, N>;
+            capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
+            update(MinusExpressionAssign<E, N>{expr_});
+            return *this;
+        }
+
+        template <typename E, size_t N>
+        SparseIndexedBareField& operator*=(const detail::Expression<E, N>& expr) {
+            using capture_type = detail::CapturedExpression<E, N>;
+            capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
+            update(MultiplyExpressionAssign<E, N>{expr_});
+            return *this;
+        }
+
+        template <typename E, size_t N>
+        SparseIndexedBareField& operator/=(const detail::Expression<E, N>& expr) {
+            using capture_type = detail::CapturedExpression<E, N>;
+            capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
+            update(DivideExpressionAssign<E, N>{expr_});
+            return *this;
+        }
+
     private:
         view_type view_m;
         NDIndex<field_dim> owned_m;
@@ -76,6 +128,42 @@ namespace ippl {
             }
         };
 
+        struct PlusValueAssign {
+            value_type value;
+
+            template <typename Current, typename Coords>
+            KOKKOS_INLINE_FUNCTION auto operator()(const Current& current, const Coords&) const {
+                return current + value;
+            }
+        };
+
+        struct MinusValueAssign {
+            value_type value;
+
+            template <typename Current, typename Coords>
+            KOKKOS_INLINE_FUNCTION auto operator()(const Current& current, const Coords&) const {
+                return current - value;
+            }
+        };
+
+        struct MultiplyValueAssign {
+            value_type value;
+
+            template <typename Current, typename Coords>
+            KOKKOS_INLINE_FUNCTION auto operator()(const Current& current, const Coords&) const {
+                return current * value;
+            }
+        };
+
+        struct DivideValueAssign {
+            value_type value;
+
+            template <typename Current, typename Coords>
+            KOKKOS_INLINE_FUNCTION auto operator()(const Current& current, const Coords&) const {
+                return current / value;
+            }
+        };
+
         template <typename E, size_t N>
         struct ExpressionAssign {
             detail::CapturedExpression<E, N> expr;
@@ -83,6 +171,46 @@ namespace ippl {
             template <typename Coords>
             KOKKOS_INLINE_FUNCTION auto operator()(const Coords& rel) const {
                 return apply(expr, rel);
+            }
+        };
+
+        template <typename E, size_t N>
+        struct PlusExpressionAssign {
+            detail::CapturedExpression<E, N> expr;
+
+            template <typename Current, typename Coords>
+            KOKKOS_INLINE_FUNCTION auto operator()(const Current& current, const Coords& rel) const {
+                return current + apply(expr, rel);
+            }
+        };
+
+        template <typename E, size_t N>
+        struct MinusExpressionAssign {
+            detail::CapturedExpression<E, N> expr;
+
+            template <typename Current, typename Coords>
+            KOKKOS_INLINE_FUNCTION auto operator()(const Current& current, const Coords& rel) const {
+                return current - apply(expr, rel);
+            }
+        };
+
+        template <typename E, size_t N>
+        struct MultiplyExpressionAssign {
+            detail::CapturedExpression<E, N> expr;
+
+            template <typename Current, typename Coords>
+            KOKKOS_INLINE_FUNCTION auto operator()(const Current& current, const Coords& rel) const {
+                return current * apply(expr, rel);
+            }
+        };
+
+        template <typename E, size_t N>
+        struct DivideExpressionAssign {
+            detail::CapturedExpression<E, N> expr;
+
+            template <typename Current, typename Coords>
+            KOKKOS_INLINE_FUNCTION auto operator()(const Current& current, const Coords& rel) const {
+                return current / apply(expr, rel);
             }
         };
 
@@ -115,6 +243,23 @@ namespace ippl {
                         typename RangePolicy<1, execution_space>::index_array_type rel;
                         rel[0] = i;
                         apply(view_m, pointToView(point)) = functor(rel);
+                    }
+                });
+        }
+
+        template <typename Functor>
+        void update(const Functor& functor) {
+            ippl::parallel_for(
+                "SparseIndexedBareField::operator op=", getRangePolicy(points_m),
+                KOKKOS_CLASS_LAMBDA(
+                    const typename RangePolicy<1, execution_space>::index_array_type& args) {
+                    const auto i = args[0];
+                    const point_type point = points_m(i);
+                    if (isLocal(point)) {
+                        typename RangePolicy<1, execution_space>::index_array_type rel;
+                        rel[0] = i;
+                        const auto viewCoords = pointToView(point);
+                        apply(view_m, viewCoords) = functor(apply(view_m, viewCoords), rel);
                     }
                 });
         }

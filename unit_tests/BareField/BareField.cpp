@@ -544,6 +544,38 @@ TYPED_TEST(BareFieldTest, SparseIndexSubsetPredicateAssignment) {
     });
 }
 
+TYPED_TEST(BareFieldTest, SparseIndexedCompoundAssignment) {
+    using T = typename TestFixture::value_type;
+
+    auto& source = this->field;
+    auto view    = source->getView();
+    const auto lDom = source->getLayout().getLocalNDIndex();
+
+    Kokkos::parallel_for("Set field", source->getFieldRangePolicy(),
+                         FieldVal<TypeParam>{view, lDom});
+    Kokkos::fence();
+
+    typename TestFixture::field_type values(this->layout);
+    values = T(1);
+
+    ippl::SIndex<TestFixture::dim> sindex(this->layout);
+    sindex = *source > T(2);
+    values[sindex] = (*source)[sindex];
+    values[sindex] *= T(1.01);
+
+    auto sourceMirror = source->getHostMirror();
+    auto valuesMirror = values.getHostMirror();
+    Kokkos::deep_copy(sourceMirror, source->getView());
+    Kokkos::deep_copy(valuesMirror, values.getView());
+
+    const int nghost = source->getNghost();
+    nestedViewLoop(sourceMirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        const T value = sourceMirror(args...);
+        const T expected = value > T(2) ? value * T(1.01) : T(1);
+        assertEqual<T>(expected, valuesMirror(args...));
+    });
+}
+
 TYPED_TEST(BareFieldTest, Sum) {
     using T = typename TestFixture::value_type;
 
