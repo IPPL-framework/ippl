@@ -9,9 +9,7 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 #include <cstdlib>
-#include <iostream>
 #include <string>
-#include <typeinfo>
 
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
