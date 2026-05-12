@@ -8,15 +8,21 @@
 #include <Kokkos_Core.hpp>
 
 #include <algorithm>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "FieldLayout/FieldLayout.h"
+#include "Expression/IpplExpressions.h"
 #include "Index/NDIndex.h"
 #include "Index/SOffset.h"
 #include "Types/Vector.h"
+#include "Utility/ParallelDispatch.h"
 
 namespace ippl {
+
+    template <unsigned Dim>
+    class IndexedSIndex;
 
     template <unsigned Dim>
     class SIndex {
@@ -57,6 +63,12 @@ namespace ippl {
         SIndex& operator=(const NDIndex<Dim>& domain) {
             clear();
             addIndex(domain);
+            return *this;
+        }
+
+        template <typename E, size_t N>
+        SIndex& operator=(const detail::Expression<E, N>& expr) {
+            assignExpression(expr, domain_m, EvaluationMode::ViewCoordinates);
             return *this;
         }
 
@@ -178,6 +190,16 @@ namespace ippl {
 
         SIndex operator()(const SOffset<Dim>& offset) const { return SIndex(*this, offset); }
 
+        IndexedSIndex<Dim> operator[](const NDIndex<Dim>& domain) {
+            return IndexedSIndex<Dim>(*this, domain);
+        }
+
+        IndexedSIndex<Dim> operator[](const Index& index) {
+            NDIndex<Dim> domain = domain_m;
+            domain[0] = index;
+            return operator[](domain);
+        }
+
         SIndex operator()(int i0) const {
             static_assert(Dim == 1);
             return operator()(SOffset<Dim>(i0));
@@ -236,6 +258,8 @@ namespace ippl {
         NDIndex<Dim> domain_m;
         std::vector<point_type> points_m;
         SOffset<Dim> offset_m;
+
+        enum class EvaluationMode { ViewCoordinates, RelativeCoordinates };
 
         static bool contains(const NDIndex<Dim>& domain, const point_type& point) {
             for (unsigned d = 0; d < Dim; ++d) {
@@ -320,7 +344,122 @@ namespace ippl {
             }
             return result;
         }
+
+        template <typename Coords>
+        KOKKOS_INLINE_FUNCTION static typename RangePolicy<Dim, Kokkos::DefaultExecutionSpace>::index_type flatIndex(
+            const Coords& coords, const Kokkos::Array<
+                                      typename RangePolicy<Dim, Kokkos::DefaultExecutionSpace>::
+                                          index_type,
+                                      Dim>& extents) {
+            typename RangePolicy<Dim, Kokkos::DefaultExecutionSpace>::index_type flat = 0;
+            for (unsigned d = 0; d < Dim; ++d) {
+                flat = flat * extents[d] + coords[d];
+            }
+            return flat;
+        }
+
+        template <typename E, size_t N>
+        void assignExpression(const detail::Expression<E, N>& expr, const NDIndex<Dim>& domain,
+                              EvaluationMode mode) {
+            clear();
+            setDomain(domain);
+
+            NDIndex<Dim> local = domain.intersect(getFieldLayout().getLocalNDIndex());
+            if (local.empty()) {
+                return;
+            }
+
+            using execution_space   = Kokkos::DefaultExecutionSpace;
+            using range_policy_type = RangePolicy<Dim, execution_space>;
+            using index_type        = typename range_policy_type::index_type;
+            using capture_type      = detail::CapturedExpression<E, N>;
+
+            Kokkos::Array<index_type, Dim> begin, end, extents;
+            index_type size = 1;
+            for (unsigned d = 0; d < Dim; ++d) {
+                begin[d]   = 0;
+                end[d]     = local[d].length();
+                extents[d] = local[d].length();
+                size *= extents[d];
+            }
+
+            Kokkos::View<int*, execution_space> selected("SIndex::selected", size);
+            capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
+            const int nghost   = 1;
+            auto localCopy     = local;
+            auto domainCopy    = domain;
+
+            ippl::parallel_for(
+                "SIndex::operator=", createRangePolicy<Dim, execution_space>(begin, end),
+                KOKKOS_LAMBDA(const typename range_policy_type::index_array_type& args) {
+                    typename range_policy_type::index_array_type exprCoords;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        const auto global = localCopy[d].first() + args[d] * localCopy[d].stride();
+                        if (mode == EvaluationMode::ViewCoordinates) {
+                            exprCoords[d] =
+                                (global - localCopy[d].first()) / localCopy[d].stride() + nghost;
+                        } else {
+                            exprCoords[d] =
+                                (global - domainCopy[d].first()) / domainCopy[d].stride();
+                        }
+                    }
+                    selected(flatIndex(args, extents)) = apply(expr_, exprCoords) ? 1 : 0;
+                });
+
+            auto hostSelected = Kokkos::create_mirror_view(selected);
+            Kokkos::deep_copy(hostSelected, selected);
+
+            point_type global;
+            addSelected(local, extents, hostSelected, global, 0, 0);
+        }
+
+        template <typename HostView>
+        void addSelected(const NDIndex<Dim>& local, const Kokkos::Array<
+                                                       typename RangePolicy<
+                                                           Dim, Kokkos::DefaultExecutionSpace>::
+                                                           index_type,
+                                                       Dim>& extents,
+                         const HostView& selected, point_type& global, unsigned d,
+                         typename RangePolicy<Dim, Kokkos::DefaultExecutionSpace>::index_type flat) {
+            if (d == Dim) {
+                if (selected(flat)) {
+                    addIndex(global);
+                }
+                return;
+            }
+
+            for (typename RangePolicy<Dim, Kokkos::DefaultExecutionSpace>::index_type i = 0;
+                 i < extents[d]; ++i) {
+                global[d] = local[d].first() + static_cast<int>(i) * local[d].stride();
+                addSelected(local, extents, selected, global, d + 1, flat * extents[d] + i);
+            }
+        }
+
+        friend class IndexedSIndex<Dim>;
     };
+
+    template <unsigned Dim>
+    class IndexedSIndex {
+    public:
+        IndexedSIndex(SIndex<Dim>& sindex, const NDIndex<Dim>& domain)
+            : sindex_m(sindex)
+            , domain_m(domain) {}
+
+        template <typename E, size_t N>
+        IndexedSIndex& operator=(const detail::Expression<E, N>& expr) {
+            sindex_m.assignExpression(expr, domain_m, SIndex<Dim>::EvaluationMode::RelativeCoordinates);
+            return *this;
+        }
+
+    private:
+        SIndex<Dim>& sindex_m;
+        NDIndex<Dim> domain_m;
+    };
+
+    template <typename E, size_t N, typename T, typename = std::enable_if_t<std::is_scalar_v<T>>>
+    auto gt(const detail::Expression<E, N>& expr, const T& value) {
+        return expr > value;
+    }
 
 }  // namespace ippl
 

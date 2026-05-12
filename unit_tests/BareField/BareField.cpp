@@ -470,6 +470,80 @@ TYPED_TEST(BareFieldTest, SparseIndexSetOperations) {
     EXPECT_EQ(sindex.size(), 2u);
 }
 
+TYPED_TEST(BareFieldTest, SparseIndexPredicateAssignment) {
+    using T = typename TestFixture::value_type;
+
+    auto& source = this->field;
+    auto view    = source->getView();
+    const auto lDom = source->getLayout().getLocalNDIndex();
+
+    Kokkos::parallel_for("Set field", source->getFieldRangePolicy(),
+                         FieldVal<TypeParam>{view, lDom});
+    Kokkos::fence();
+
+    typename TestFixture::field_type selected(this->layout);
+    selected = T(0);
+
+    ippl::SIndex<TestFixture::dim> sindex(this->layout);
+    sindex = *source > T(2);
+    selected[sindex] = (*source)[sindex];
+
+    auto sourceMirror = source->getHostMirror();
+    auto selectedMirror = selected.getHostMirror();
+    Kokkos::deep_copy(sourceMirror, source->getView());
+    Kokkos::deep_copy(selectedMirror, selected.getView());
+
+    const int nghost = source->getNghost();
+    nestedViewLoop(sourceMirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        const T value = sourceMirror(args...);
+        const T expected = value > T(2) ? value : T(0);
+        assertEqual<T>(expected, selectedMirror(args...));
+    });
+}
+
+TYPED_TEST(BareFieldTest, SparseIndexSubsetPredicateAssignment) {
+    using T = typename TestFixture::value_type;
+
+    auto& source = this->field;
+    auto view    = source->getView();
+    const auto lDom = source->getLayout().getLocalNDIndex();
+
+    Kokkos::parallel_for("Set field", source->getFieldRangePolicy(),
+                         FieldVal<TypeParam>{view, lDom});
+    Kokkos::fence();
+
+    typename TestFixture::field_type selected(this->layout);
+    selected = T(0);
+
+    ippl::NDIndex<TestFixture::dim> subset = source->getDomain();
+    subset[0] = ippl::Index(subset[0].first(), subset[0].last(), 2 * subset[0].stride());
+
+    ippl::SIndex<TestFixture::dim> sindex(this->layout);
+    sindex[subset] = (*source)[subset] > T(2);
+    selected[sindex] = (*source)[sindex];
+
+    auto sourceMirror = source->getHostMirror();
+    auto selectedMirror = selected.getHostMirror();
+    Kokkos::deep_copy(sourceMirror, source->getView());
+    Kokkos::deep_copy(selectedMirror, selected.getView());
+
+    const auto owned = source->getOwned();
+    const int nghost = source->getNghost();
+    nestedViewLoop(sourceMirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        std::array<ippl::Index, TestFixture::dim> pointIndices;
+        const std::array<size_t, TestFixture::dim> viewCoords{static_cast<size_t>(args)...};
+        for (unsigned d = 0; d < TestFixture::dim; ++d) {
+            const int global = owned[d].first()
+                               + static_cast<int>(viewCoords[d] - nghost) * owned[d].stride();
+            pointIndices[d] = ippl::Index(global, global);
+        }
+        auto point = std::make_from_tuple<ippl::NDIndex<TestFixture::dim>>(pointIndices);
+        const T value = sourceMirror(args...);
+        const T expected = subset.contains(point) && value > T(2) ? value : T(0);
+        assertEqual<T>(expected, selectedMirror(args...));
+    });
+}
+
 TYPED_TEST(BareFieldTest, Sum) {
     using T = typename TestFixture::value_type;
 
