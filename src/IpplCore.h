@@ -18,6 +18,7 @@
 
 // #include "Index/Index.h"
 // #include "Index/NDIndex.h"
+#include "Index/SIndex.h"
 
 #include "FieldLayout/FieldLayout.h"
 #include "FieldLayout/SubFieldLayout.h"

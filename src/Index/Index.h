@@ -206,7 +206,7 @@ namespace ippl {
 
         // Test to see if there is any overlap between two Indexes.
         KOKKOS_INLINE_FUNCTION bool touches(const Index& a) const;
-        // Test to see if one contains another (endpoints only)
+        // Test to see if one contains all points of another.
         KOKKOS_INLINE_FUNCTION bool contains(const Index& a) const;
         // Split one into two.
         KOKKOS_INLINE_FUNCTION bool split(Index& l, Index& r) const;

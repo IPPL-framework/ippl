@@ -152,11 +152,37 @@ namespace ippl {
     }
 
     KOKKOS_INLINE_FUNCTION bool Index::touches(const Index& a) const {
-        return (min() <= a.max()) && (max() >= a.min());
+        return !intersect(a).empty();
     }
 
     KOKKOS_INLINE_FUNCTION bool Index::contains(const Index& a) const {
-        return (min() <= a.min()) && (max() >= a.max());
+        if (a.empty()) {
+            return true;
+        }
+        const int thisMin = min();
+        const int thisMax = max();
+        const int thatMin = a.min();
+        const int thatMax = a.max();
+        int thisStride    = stride();
+        int thatStride    = a.stride();
+        if (thisStride < 0) {
+            thisStride = -thisStride;
+        }
+        if (thatStride < 0) {
+            thatStride = -thatStride;
+        }
+
+        const bool endpointsContained = (thisMin <= thatMin) && (thisMax >= thatMax);
+        if (!endpointsContained || thisStride == 1) {
+            return endpointsContained;
+        }
+
+        const bool endpointsOnStride =
+            ((thatMin - thisMin) % thisStride == 0) && ((thisMax - thatMax) % thisStride == 0);
+        if (a.length() == 1) {
+            return endpointsOnStride;
+        }
+        return endpointsOnStride && (thatStride % thisStride == 0);
     }
 
     KOKKOS_INLINE_FUNCTION bool Index::split(Index& l, Index& r) const {
@@ -261,7 +287,7 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION Index Index::grow(int ncells) const {
         Index index;
 
-        index.first_m  = this->first_m - ncells;
+        index.first_m  = this->first_m - ncells * this->stride_m;
         index.length_m = this->length_m + 2 * ncells;
         index.stride_m = this->stride_m;
 

@@ -20,6 +20,7 @@
 
 #include "Field/HaloCells.h"
 #include "FieldLayout/FieldLayout.h"
+#include "Index/SIndex.h"
 
 namespace ippl {
     class Index;
@@ -165,6 +166,14 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION T operator()(Args... args) const {
             return dview_m(args...);
         }
+
+        auto operator[](const Domain_t& domain);
+
+        auto operator[](const Index& index);
+
+        auto operator[](int index);
+
+        auto operator[](const SIndex<Dim>& sindex);
 
         view_type& getView() { return dview_m; }
 

@@ -14,6 +14,8 @@
 
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
+#include "Field/IndexedBareField.h"
+#include "Field/SparseIndexedBareField.h"
 namespace Kokkos {
     template <typename T, unsigned Dim>
     struct reduction_identity<ippl::Vector<T, Dim>> {
@@ -137,6 +139,29 @@ namespace ippl {
     template <typename... Args>
     void BareField<T, Dim, ViewArgs...>::resize(Args... args) {
         Kokkos::resize(dview_m, args...);
+    }
+
+    template <typename T, unsigned Dim, class... ViewArgs>
+    auto BareField<T, Dim, ViewArgs...>::operator[](const Domain_t& domain) {
+        return IndexedBareField<BareField<T, Dim, ViewArgs...>>(*this, domain);
+    }
+
+    template <typename T, unsigned Dim, class... ViewArgs>
+    auto BareField<T, Dim, ViewArgs...>::operator[](const Index& index) {
+        Domain_t domain = getDomain();
+        domain[0] = index;
+        return IndexedBareField<BareField<T, Dim, ViewArgs...>, 1>(*this, domain);
+    }
+
+    template <typename T, unsigned Dim, class... ViewArgs>
+    auto BareField<T, Dim, ViewArgs...>::operator[](int index) {
+        static_assert(Dim == 1, "Integer overload is only available for one-dimensional fields.");
+        return operator[](Index(index, index));
+    }
+
+    template <typename T, unsigned Dim, class... ViewArgs>
+    auto BareField<T, Dim, ViewArgs...>::operator[](const SIndex<Dim>& sindex) {
+        return SparseIndexedBareField<BareField<T, Dim, ViewArgs...>>(*this, sindex);
     }
 
     template <typename T, unsigned Dim, class... ViewArgs>
