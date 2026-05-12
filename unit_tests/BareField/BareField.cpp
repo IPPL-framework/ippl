@@ -345,6 +345,131 @@ TYPED_TEST(BareFieldTest, SparseIndexedSubdomainExpressionAssignment) {
     });
 }
 
+TYPED_TEST(BareFieldTest, SparseIndexedOffsetExpressionAssignment) {
+    using T = typename TestFixture::value_type;
+
+    auto& lhs = this->field;
+    lhs->operator=(0);
+
+    typename TestFixture::field_type rhs(this->layout);
+    rhs = T(5);
+    rhs.fillHalo();
+
+    ippl::SIndex<TestFixture::dim> sindex(this->layout);
+    const auto domain = lhs->getDomain();
+    const int offsetValue = domain[0].stride();
+
+    for (int i = domain[0].first(); i <= domain[0].last() - offsetValue;
+         i += 2 * domain[0].stride()) {
+        typename ippl::SIndex<TestFixture::dim>::point_type point;
+        for (unsigned d = 0; d < TestFixture::dim; ++d) {
+            point[d] = domain[d].first();
+        }
+        point[0] = i;
+        sindex.addIndex(point);
+    }
+
+    ippl::SOffset<TestFixture::dim> offset;
+    offset[0] = offsetValue;
+
+    (*lhs)[sindex] = rhs[sindex + offset] + T(2);
+
+    auto mirror = lhs->getHostMirror();
+    Kokkos::deep_copy(mirror, lhs->getView());
+
+    const auto owned = lhs->getOwned();
+    const int nghost = lhs->getNghost();
+    nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        typename ippl::SIndex<TestFixture::dim>::point_type point;
+        const std::array<size_t, TestFixture::dim> viewCoords{static_cast<size_t>(args)...};
+        for (unsigned d = 0; d < TestFixture::dim; ++d) {
+            point[d] = owned[d].first()
+                       + static_cast<int>(viewCoords[d] - nghost) * owned[d].stride();
+        }
+        const T expected = sindex.hasIndex(point) ? T(7) : T(0);
+        assertEqual<T>(expected, mirror(args...));
+    });
+}
+
+TYPED_TEST(BareFieldTest, SparseIndexedCallOffsetExpressionAssignment) {
+    using T = typename TestFixture::value_type;
+
+    auto& lhs = this->field;
+    lhs->operator=(0);
+
+    typename TestFixture::field_type rhs(this->layout);
+    rhs = T(5);
+    rhs.fillHalo();
+
+    ippl::SIndex<TestFixture::dim> sindex(this->layout);
+    const auto domain = lhs->getDomain();
+    const int offsetValue = domain[0].stride();
+
+    for (int i = domain[0].first(); i <= domain[0].last() - offsetValue;
+         i += 2 * domain[0].stride()) {
+        typename ippl::SIndex<TestFixture::dim>::point_type point;
+        for (unsigned d = 0; d < TestFixture::dim; ++d) {
+            point[d] = domain[d].first();
+        }
+        point[0] = i;
+        sindex.addIndex(point);
+    }
+
+    ippl::SOffset<TestFixture::dim> offset;
+    offset[0] = offsetValue;
+
+    (*lhs)[sindex] = rhs[sindex(offset)] + T(2);
+
+    auto mirror = lhs->getHostMirror();
+    Kokkos::deep_copy(mirror, lhs->getView());
+
+    const auto owned = lhs->getOwned();
+    const int nghost = lhs->getNghost();
+    nestedViewLoop(mirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        typename ippl::SIndex<TestFixture::dim>::point_type point;
+        const std::array<size_t, TestFixture::dim> viewCoords{static_cast<size_t>(args)...};
+        for (unsigned d = 0; d < TestFixture::dim; ++d) {
+            point[d] = owned[d].first()
+                       + static_cast<int>(viewCoords[d] - nghost) * owned[d].stride();
+        }
+        const T expected = sindex.hasIndex(point) ? T(7) : T(0);
+        assertEqual<T>(expected, mirror(args...));
+    });
+}
+
+TYPED_TEST(BareFieldTest, SparseIndexSetOperations) {
+    ippl::SIndex<TestFixture::dim> sindex(this->layout);
+    const auto domain = this->field->getDomain();
+
+    typename ippl::SIndex<TestFixture::dim>::point_type firstPoint;
+    typename ippl::SIndex<TestFixture::dim>::point_type secondPoint;
+    for (unsigned d = 0; d < TestFixture::dim; ++d) {
+        firstPoint[d]  = domain[d].first();
+        secondPoint[d] = domain[d].first();
+    }
+    secondPoint[0] = domain[0].first() + domain[0].stride();
+
+    EXPECT_TRUE(sindex.addIndex(firstPoint));
+    EXPECT_TRUE(sindex.addIndex(secondPoint));
+    EXPECT_FALSE(sindex.addIndex(firstPoint));
+
+    ippl::NDIndex<TestFixture::dim> subset = domain;
+    subset[0] = ippl::Index(firstPoint[0], firstPoint[0], domain[0].stride());
+    sindex &= subset;
+
+    EXPECT_TRUE(sindex.hasIndex(firstPoint));
+    EXPECT_FALSE(sindex.hasIndex(secondPoint));
+
+    ippl::SOffset<TestFixture::dim> secondOffset;
+    for (unsigned d = 0; d < TestFixture::dim; ++d) {
+        secondOffset[d] = secondPoint[d];
+    }
+    sindex |= secondOffset;
+
+    EXPECT_TRUE(sindex.hasIndex(secondPoint));
+    EXPECT_EQ(sindex.size(), 2u);
+}
+
 TYPED_TEST(BareFieldTest, Sum) {
     using T = typename TestFixture::value_type;
 
