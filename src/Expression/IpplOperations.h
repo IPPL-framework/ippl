@@ -71,6 +71,7 @@ namespace ippl {
     struct fun : public detail::Expression<fun<E>, sizeof(E)> {                \
         constexpr static unsigned dim = E::dim;                                \
         using value_type              = typename E::value_type;                \
+        using execution_space         = typename detail::ExecutionSpaceOf<E>::type; \
                                                                                \
         KOKKOS_FUNCTION                                                        \
         fun(const E& u)                                                        \
@@ -132,6 +133,7 @@ namespace ippl {
     struct fun : public detail::Expression<fun<E1, E2>, sizeof(E1) + sizeof(E2)> {             \
         constexpr static unsigned dim = std::max(E1::dim, E2::dim);                            \
         using value_type              = typename E1::value_type;                               \
+        using execution_space         = typename detail::BinaryExecutionSpace<E1, E2>::type;   \
                                                                                                \
         KOKKOS_FUNCTION                                                                        \
         fun(const E1& u, const E2& v)                                                          \

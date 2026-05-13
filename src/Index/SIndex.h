@@ -372,7 +372,7 @@ namespace ippl {
                 return;
             }
 
-            using execution_space   = Kokkos::DefaultExecutionSpace;
+            using execution_space   = typename detail::ExecutionSpaceOf<E>::type;
             using range_policy_type = RangePolicy<Dim, execution_space>;
             using index_type        = typename range_policy_type::index_type;
             using capture_type      = detail::CapturedExpression<E, N>;

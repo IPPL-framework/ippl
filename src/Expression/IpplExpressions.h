@@ -5,6 +5,8 @@
 #ifndef IPPL_EXPRESSIONS_H
 #define IPPL_EXPRESSIONS_H
 
+#include <Kokkos_Core.hpp>
+
 #include <type_traits>
 
 namespace ippl {
@@ -93,6 +95,22 @@ namespace ippl {
 
         template <typename T>
         struct isExpression<Scalar<T>> : std::true_type {};
+
+        template <typename E, typename = void>
+        struct ExecutionSpaceOf {
+            using type = Kokkos::DefaultExecutionSpace;
+        };
+
+        template <typename E>
+        struct ExecutionSpaceOf<E, std::void_t<typename E::execution_space>> {
+            using type = typename E::execution_space;
+        };
+
+        template <typename E1, typename E2>
+        struct BinaryExecutionSpace {
+            using type = std::conditional_t<(E1::dim != 0), typename ExecutionSpaceOf<E1>::type,
+                                            typename ExecutionSpaceOf<E2>::type>;
+        };
 
     }  // namespace detail
 }  // namespace ippl
