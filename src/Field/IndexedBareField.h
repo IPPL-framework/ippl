@@ -90,6 +90,7 @@ namespace ippl {
         Domain_t domain_m;
         int nghost_m;
 
+    public:
         struct ValueAssign {
             value_type value;
 
@@ -109,6 +110,7 @@ namespace ippl {
             }
         };
 
+    private:
         template <typename Coords>
         KOKKOS_INLINE_FUNCTION auto relativeToView(const Coords& rel) const {
             typename RangePolicy<dim, execution_space>::index_array_type viewCoords;

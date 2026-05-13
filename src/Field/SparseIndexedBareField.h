@@ -119,6 +119,7 @@ namespace ippl {
         points_view_type points_m;
         int nghost_m;
 
+    public:
         struct ValueAssign {
             value_type value;
 
@@ -214,6 +215,7 @@ namespace ippl {
             }
         };
 
+    private:
         KOKKOS_INLINE_FUNCTION bool isLocal(const point_type& point) const {
             for (unsigned d = 0; d < field_dim; ++d) {
                 if (!owned_m[d].contains(Index(point[d], point[d]))) {

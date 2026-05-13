@@ -259,8 +259,10 @@ namespace ippl {
         std::vector<point_type> points_m;
         SOffset<Dim> offset_m;
 
+    public:
         enum class EvaluationMode { ViewCoordinates, RelativeCoordinates };
 
+    private:
         static bool contains(const NDIndex<Dim>& domain, const point_type& point) {
             for (unsigned d = 0; d < Dim; ++d) {
                 if (!domain[d].contains(Index(point[d], point[d]))) {
