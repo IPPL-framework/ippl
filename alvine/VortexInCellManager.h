@@ -97,10 +97,12 @@ void pre_run() override {
       initializeParticles();
 
       this->par2grid();
+      auto omega0 = this->fcontainer_m->getOmegaField().deepCopy();
 
       this->fsolver_m->runSolver();
       this->computeVelocityField();
       logEnergyDiagnostics();
+      Kokkos::deep_copy(this->fcontainer_m->getOmegaField().getView(), omega0.getView());
       logEnstrophyDiagnostics();
       logDivergenceDiagnostics();
       this->grid2par();
@@ -331,6 +333,7 @@ void logDivergenceDiagnostics() {
       IpplTimings::startTimer(par2gridTimer);	
       this->par2grid();
       IpplTimings::stopTimer(par2gridTimer);	
+      auto omega_n = this->fcontainer_m->getOmegaField().deepCopy();
 
       // claculate stream function
       IpplTimings::startTimer(SolveTimer);
@@ -341,6 +344,7 @@ void logDivergenceDiagnostics() {
       IpplTimings::startTimer(PTimer);
       this->computeVelocityField();
       logEnergyDiagnostics();
+      Kokkos::deep_copy(this->fcontainer_m->getOmegaField().getView(), omega_n.getView());
       logEnstrophyDiagnostics();
       logDivergenceDiagnostics();
       IpplTimings::stopTimer(PTimer);
