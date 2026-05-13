@@ -105,53 +105,6 @@ if (ippl::Comm->rank() == 0) {
     }
 
  
-void initializeVirtualParticles(){
-    clearVirtualParticles();
-    auto* FL = &this->fcontainer_m->getFL();
-    auto local = FL->getLocalNDIndex();
-
-    int i0 = local[0].first();
-    int i1 = local[0].last();
-    int j0 = local[1].first();
-    int j1 = local[1].last();
-
-    size_type nx = i1 - i0 + 1;
-    size_type ny = j1 - j0 + 1;
-    size_type nlocal = nx * ny;
-    const int nghost = this->fcontainer_m->getOmegaField().getNghost();
-
-    auto pc = this->pcontainer_m;
-    pc->create(nlocal);
-
-    auto R_view = pc->R.getView();
-    auto omega_p = pc->omega.getView();
-    auto omega_g = this->fcontainer_m->getOmegaField().getView();
-
-    Vector_t<double, Dim> rmin = this->rmin_m;
-    Vector_t<double, Dim> hr   = this->hr_m;
-    double dA = hr[0] * hr[1];
-
-    Kokkos::parallel_for(
-        "init_virtual_particles_from_grid",
-        nlocal,
-        KOKKOS_LAMBDA(const int p) {
-            int ii = p % nx;
-            int jj = p / nx;
-
-            int i = i0 + ii;
-            int j = j0 + jj;
-            int li = ii + nghost;
-            int lj = jj + nghost;
-
-            R_view(p)[0] = rmin[0] + (i+0.5) * hr[0];
-            R_view(p)[1] = rmin[1] + (j+0.5) * hr[1];
-
-            omega_p(p) = omega_g(li, lj) * dA;
-        }
-    );
-
-    Kokkos::fence();
-}
 
 double computeOmegaL2() {
     auto& omegaField = this->fcontainer_m->getOmegaField();
@@ -270,6 +223,60 @@ void logVelocityRatioDebug() {
     }
 }
 
+void initializeVirtualParticles(){
+    clearVirtualParticles();
+    auto* FL = &this->fcontainer_m->getFL();
+    auto local = FL->getLocalNDIndex();
+
+    int i0 = local[0].first();
+    int i1 = local[0].last();
+    int j0 = local[1].first();
+    int j1 = local[1].last();
+
+    size_type nx = i1 - i0 + 1;
+    size_type ny = j1 - j0 + 1;
+    size_type nlocal = nx * ny;
+    const int nghost = this->fcontainer_m->getOmegaField().getNghost();
+
+    auto pc = this->pcontainer_m;
+    pc->create(nlocal);
+
+    auto R_view = pc->R.getView();
+    auto omega_p = pc->omega.getView();
+    auto omega_g = this->fcontainer_m->getOmegaField().getView();
+    auto P_view = pc->P.getView();
+    auto u_g = this->fcontainer_m->getUField().getView();
+
+
+
+    Vector_t<double, Dim> rmin = this->rmin_m;
+    Vector_t<double, Dim> hr   = this->hr_m;
+    double dA = hr[0] * hr[1];
+
+    Kokkos::parallel_for(
+        "init_virtual_particles_from_grid",
+        nlocal,
+        KOKKOS_LAMBDA(const int p) {
+            int ii = p % nx;
+            int jj = p / nx;
+
+            int i = i0 + ii;
+            int j = j0 + jj;
+            int li = ii + nghost;
+            int lj = jj + nghost;
+
+            R_view(p)[0] = rmin[0] + (i+0.5) * hr[0];
+            R_view(p)[1] = rmin[1] + (j+0.5) * hr[1];
+
+            omega_p(p) = omega_g(li, lj) * dA;
+            P_view(p) = u_g(li, lj);
+        }
+    );
+
+    Kokkos::fence();
+}
+
+
 void initializeGridVorticity() {
     auto& omegaField = this->fcontainer_m->getOmegaField();
     auto omega_view = omegaField.getView();
@@ -312,7 +319,7 @@ void pushVirtualParticlesForward() {
     auto pc = this->pcontainer_m;
 
     // 1. Gather velocity from grid to particles
-    this->grid2par();   // fills pc->P using uField
+    //this->grid2par();   // fills pc->P using uField
 
     // Debug before push: checks expected displacement = P * dt
     logPushDebug();
