@@ -231,6 +231,7 @@ namespace ippl {
             return viewCoords;
         }
 
+    public:
         template <typename Functor>
         void assign(const Functor& functor) {
             ippl::parallel_for(

@@ -358,6 +358,7 @@ namespace ippl {
             return flat;
         }
 
+    public:
         template <typename E, size_t N>
         void assignExpression(const detail::Expression<E, N>& expr, const NDIndex<Dim>& domain,
                               EvaluationMode mode) {

@@ -137,6 +137,7 @@ namespace ippl {
             return viewCoords;
         }
 
+    public:
         template <typename Functor>
         void assign(const Functor& functor) {
             Domain_t local = domain_m.intersect(owned_m);
