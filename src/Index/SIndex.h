@@ -347,13 +347,10 @@ namespace ippl {
             return result;
         }
 
-        template <typename Coords>
-        KOKKOS_INLINE_FUNCTION static typename RangePolicy<Dim, Kokkos::DefaultExecutionSpace>::index_type flatIndex(
-            const Coords& coords, const Kokkos::Array<
-                                      typename RangePolicy<Dim, Kokkos::DefaultExecutionSpace>::
-                                          index_type,
-                                      Dim>& extents) {
-            typename RangePolicy<Dim, Kokkos::DefaultExecutionSpace>::index_type flat = 0;
+        template <typename Coords, typename IndexType>
+        KOKKOS_INLINE_FUNCTION static IndexType flatIndex(
+            const Coords& coords, const Kokkos::Array<IndexType, Dim>& extents) {
+            IndexType flat = 0;
             for (unsigned d = 0; d < Dim; ++d) {
                 flat = flat * extents[d] + coords[d];
             }
@@ -413,17 +410,12 @@ namespace ippl {
             Kokkos::deep_copy(hostSelected, selected);
 
             point_type global;
-            addSelected(local, extents, hostSelected, global, 0, 0);
+            addSelected(local, extents, hostSelected, global, 0, index_type{0});
         }
 
-        template <typename HostView>
-        void addSelected(const NDIndex<Dim>& local, const Kokkos::Array<
-                                                       typename RangePolicy<
-                                                           Dim, Kokkos::DefaultExecutionSpace>::
-                                                           index_type,
-                                                       Dim>& extents,
-                         const HostView& selected, point_type& global, unsigned d,
-                         typename RangePolicy<Dim, Kokkos::DefaultExecutionSpace>::index_type flat) {
+        template <typename HostView, typename IndexType>
+        void addSelected(const NDIndex<Dim>& local, const Kokkos::Array<IndexType, Dim>& extents,
+                         const HostView& selected, point_type& global, unsigned d, IndexType flat) {
             if (d == Dim) {
                 if (selected(flat)) {
                     addIndex(global);
@@ -431,8 +423,7 @@ namespace ippl {
                 return;
             }
 
-            for (typename RangePolicy<Dim, Kokkos::DefaultExecutionSpace>::index_type i = 0;
-                 i < extents[d]; ++i) {
+            for (IndexType i = 0; i < extents[d]; ++i) {
                 global[d] = local[d].first() + static_cast<int>(i) * local[d].stride();
                 addSelected(local, extents, selected, global, d + 1, flat * extents[d] + i);
             }
