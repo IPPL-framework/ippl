@@ -136,15 +136,11 @@ void initializeParticles() {
     double xmax_global = this->rmax_m[0];
     double ymin_global = this->rmin_m[1];
     double ymax_global = this->rmax_m[1];
-    double y_mid = (ymin_global + ymax_global) / 2.0;
-    double amp = 0.25;
-    double x_len = xmax_global - xmin_global;
-    double kx = 2.0 * Kokkos::numbers::pi_v<double> / x_len;
-    double ymin_band = y_mid - 1.0 - amp;
-    double ymax_band = y_mid + 1.0 + amp;
+    double ymin_band = (ymin_global + ymax_global) / 2.0 - 1.0;
+    double ymax_band = (ymin_global + ymax_global) / 2.0 + 1.0;
 
     double dxp = (xmax_global - xmin_global) / nxp_global;
-    double dyp = 2.0 / nyp_global;
+    double dyp = (ymax_band - ymin_band) / nyp_global;
 
     // 3. Local domain from grid decomposition
     int local_start_x = local[0].first();
@@ -206,8 +202,7 @@ void initializeParticles() {
             rand_pool.free_state(rand_gen);
 
             double x = xmin_global + (ix_global + 0.5) * dxp + jitter_x;
-            double y_center = y_mid + amp * Kokkos::sin(kx * (x - xmin_global));
-            double y = y_center - 1.0 + (iy_global + 0.5) * dyp + jitter_y;
+            double y = ymin_band + (iy_global + 0.5) * dyp + jitter_y;
 
             R_view(i)[0] = x;
             R_view(i)[1] = y;
