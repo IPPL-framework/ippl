@@ -435,11 +435,6 @@ void dumpParticleDataPerRank() {
       alvine::vtk::writeScalarField2D("data/VortexInCell", "omega",
                                       this->fcontainer_m->getOmegaField(),
                                       this->rmin_m, this->hr_m, this->it_m);
-      alvine::vtk::writeVectorField2D("data/VortexInCell", "velocity",
-                                      this->fcontainer_m->getUField(),
-                                      this->rmin_m, this->hr_m, this->it_m);
-      alvine::vtk::writeParticles2D("data/VortexInCell", "particles", *this->pcontainer_m,
-                                    this->it_m);
 
       IpplTimings::stopTimer(dumpTimer);
     }

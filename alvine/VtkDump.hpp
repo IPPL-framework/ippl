@@ -66,7 +66,7 @@ void writeScalarField2D(const std::string& outputDir, const std::string& name, F
     vtkout << name << "\n";
     vtkout << "ASCII\n";
     vtkout << "DATASET STRUCTURED_POINTS\n";
-    vtkout << "DIMENSIONS " << nx + 1 << " " << ny + 1 << " 1\n";
+    vtkout << "DIMENSIONS " << nx + 1 << " " << ny + 1 << " 2\n";
     vtkout << "ORIGIN " << origin[0] + local[0].first() * spacing[0] << " "
            << origin[1] + local[1].first() * spacing[1] << " 0\n";
     vtkout << "SPACING " << spacing[0] << " " << spacing[1] << " 1\n";
@@ -111,7 +111,7 @@ void writeVectorField2D(const std::string& outputDir, const std::string& name, F
     vtkout << name << "\n";
     vtkout << "ASCII\n";
     vtkout << "DATASET STRUCTURED_POINTS\n";
-    vtkout << "DIMENSIONS " << nx + 1 << " " << ny + 1 << " 1\n";
+    vtkout << "DIMENSIONS " << nx + 1 << " " << ny + 1 << " 2\n";
     vtkout << "ORIGIN " << origin[0] + local[0].first() * spacing[0] << " "
            << origin[1] + local[1].first() * spacing[1] << " 0\n";
     vtkout << "SPACING " << spacing[0] << " " << spacing[1] << " 1\n";

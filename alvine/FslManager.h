@@ -464,8 +464,6 @@ void logDivergenceDiagnostics() {
 
       alvine::vtk::writeScalarField2D("data/FSL", "omega", this->fcontainer_m->getOmegaField(),
                                       this->rmin_m, this->hr_m, this->it_m);
-      alvine::vtk::writeVectorField2D("data/FSL", "velocity", this->fcontainer_m->getUField(),
-                                      this->rmin_m, this->hr_m, this->it_m);
 
       IpplTimings::stopTimer(dumpTimer);
     }
