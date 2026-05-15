@@ -127,6 +127,51 @@ void writeVectorField2D(const std::string& outputDir, const std::string& name, F
     }
 }
 
+template <typename ParticleContainerType>
+void writeParticles2D(const std::string& outputDir, const std::string& name,
+                      ParticleContainerType& particles, int step) {
+    ensureOutputDirectory(outputDir);
+
+    auto rHost     = particles.R.getHostMirror();
+    auto omegaHost = particles.omega.getHostMirror();
+
+    Kokkos::deep_copy(rHost, particles.R.getView());
+    Kokkos::deep_copy(omegaHost, particles.omega.getView());
+
+    const auto nlocal = particles.getLocalNum();
+    const auto file   = legacyFileName(outputDir, name, step);
+
+    std::ofstream vtkout(file, std::ios::out);
+    if (!vtkout) {
+        throw std::runtime_error("Could not open VTK file: " + file.string());
+    }
+
+    vtkout.precision(10);
+    vtkout.setf(std::ios::scientific, std::ios::floatfield);
+
+    vtkout << "# vtk DataFile Version 2.0\n";
+    vtkout << name << "\n";
+    vtkout << "ASCII\n";
+    vtkout << "DATASET POLYDATA\n";
+    vtkout << "POINTS " << nlocal << " float\n";
+
+    for (ippl::detail::size_type i = 0; i < nlocal; ++i) {
+        vtkout << rHost(i)[0] << "\t" << rHost(i)[1] << "\t0\n";
+    }
+
+    vtkout << "VERTICES " << nlocal << " " << 2 * nlocal << "\n";
+    for (ippl::detail::size_type i = 0; i < nlocal; ++i) {
+        vtkout << "1 " << i << "\n";
+    }
+
+    vtkout << "POINT_DATA " << nlocal << "\n";
+    vtkout << "SCALARS omega float\n";
+    vtkout << "LOOKUP_TABLE default\n";
+    for (ippl::detail::size_type i = 0; i < nlocal; ++i) {
+        vtkout << omegaHost(i) << "\n";
+    }
+}
+
 }  // namespace alvine::vtk
 
 #endif

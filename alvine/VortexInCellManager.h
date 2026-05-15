@@ -426,12 +426,20 @@ void dumpParticleDataPerRank() {
       static IpplTimings::TimerRef dumpTimer = IpplTimings::getTimer("vtkDump");
       IpplTimings::startTimer(dumpTimer);
 
+      this->par2grid();
+      auto omega_current = this->fcontainer_m->getOmegaField().deepCopy();
+      this->fsolver_m->runSolver();
+      this->computeVelocityField();
+      Kokkos::deep_copy(this->fcontainer_m->getOmegaField().getView(), omega_current.getView());
+
       alvine::vtk::writeScalarField2D("data/VortexInCell", "omega",
                                       this->fcontainer_m->getOmegaField(),
                                       this->rmin_m, this->hr_m, this->it_m);
       alvine::vtk::writeVectorField2D("data/VortexInCell", "velocity",
                                       this->fcontainer_m->getUField(),
                                       this->rmin_m, this->hr_m, this->it_m);
+      alvine::vtk::writeParticles2D("data/VortexInCell", "particles", *this->pcontainer_m,
+                                    this->it_m);
 
       IpplTimings::stopTimer(dumpTimer);
     }
