@@ -14,6 +14,7 @@
 #include "Random/NormalDistribution.h"
 #include "Random/Randu.h"
 #include "VortexDistributions.h"
+#include "VtkDump.hpp"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 using host_type = typename ippl::ParticleAttrib<T>::host_mirror_type; /*using host_type = typename ippl::ParticleAttrib<T>::HostMirror;*/
@@ -420,6 +421,20 @@ void dumpParticleDataPerRank() {
     csvout.close();
     ippl::Comm->barrier();
 }
+
+    void dump() override {
+      static IpplTimings::TimerRef dumpTimer = IpplTimings::getTimer("vtkDump");
+      IpplTimings::startTimer(dumpTimer);
+
+      alvine::vtk::writeScalarField2D("data/VortexInCell", "omega",
+                                      this->fcontainer_m->getOmegaField(),
+                                      this->rmin_m, this->hr_m, this->it_m);
+      alvine::vtk::writeVectorField2D("data/VortexInCell", "velocity",
+                                      this->fcontainer_m->getUField(),
+                                      this->rmin_m, this->hr_m, this->it_m);
+
+      IpplTimings::stopTimer(dumpTimer);
+    }
 
   /*  void dump() override {
       static IpplTimings::TimerRef dumpTimer = IpplTimings::getTimer("dump");
