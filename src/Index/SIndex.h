@@ -8,6 +8,7 @@
 #include <Kokkos_Core.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -409,23 +410,30 @@ namespace ippl {
             auto hostSelected = Kokkos::create_mirror_view(selected);
             Kokkos::deep_copy(hostSelected, selected);
 
+            std::size_t selectedCount = 0;
+            for (index_type flat = 0; flat < size; ++flat) {
+                selectedCount += hostSelected(flat) != 0;
+            }
+            points_m.reserve(selectedCount);
+
             point_type global;
-            addSelected(local, extents, hostSelected, global, 0, index_type{0});
+            appendSelected(local, extents, hostSelected, global, 0, index_type{0});
         }
 
         template <typename HostView, typename IndexType>
-        void addSelected(const NDIndex<Dim>& local, const Kokkos::Array<IndexType, Dim>& extents,
-                         const HostView& selected, point_type& global, unsigned d, IndexType flat) {
+        void appendSelected(const NDIndex<Dim>& local, const Kokkos::Array<IndexType, Dim>& extents,
+                            const HostView& selected, point_type& global, unsigned d,
+                            IndexType flat) {
             if (d == Dim) {
                 if (selected(flat)) {
-                    addIndex(global);
+                    points_m.push_back(global);
                 }
                 return;
             }
 
             for (IndexType i = 0; i < extents[d]; ++i) {
                 global[d] = local[d].first() + static_cast<int>(i) * local[d].stride();
-                addSelected(local, extents, selected, global, d + 1, flat * extents[d] + i);
+                appendSelected(local, extents, selected, global, d + 1, flat * extents[d] + i);
             }
         }
 
