@@ -31,6 +31,17 @@ inline std::filesystem::path legacyFileName(const std::string& outputDir, const 
     return std::filesystem::path(outputDir) / os.str();
 }
 
+inline std::filesystem::path csvFileName(const std::string& outputDir, const std::string& name,
+                                         int step) {
+    std::ostringstream os;
+    os << name << "_" << stepString(step);
+    if (ippl::Comm->size() > 1) {
+        os << "_rank" << ippl::Comm->rank();
+    }
+    os << ".csv";
+    return std::filesystem::path(outputDir) / os.str();
+}
+
 inline void ensureOutputDirectory(const std::string& outputDir) {
     if (ippl::Comm->rank() == 0) {
         std::filesystem::create_directories(outputDir);
@@ -79,6 +90,41 @@ void writeScalarField2D(const std::string& outputDir, const std::string& name, F
             const int li = i - local[0].first() + nghost;
             const int lj = j - local[1].first() + nghost;
             vtkout << host(li, lj) << "\n";
+        }
+    }
+}
+
+template <typename FieldType, typename VectorType>
+void writeScalarFieldCsv2D(const std::string& outputDir, const std::string& name, FieldType& field,
+                           const VectorType& origin, const VectorType& spacing, int step) {
+    static_assert(FieldType::dim == 2, "Alvine CSV output expects a 2D field.");
+
+    ensureOutputDirectory(outputDir);
+
+    auto host = field.getHostMirror();
+    Kokkos::deep_copy(host, field.getView());
+
+    const auto& local = field.getLayout().getLocalNDIndex();
+    const int nghost  = field.getNghost();
+
+    const auto file = csvFileName(outputDir, name, step);
+    std::ofstream csvout(file, std::ios::out);
+    if (!csvout) {
+        throw std::runtime_error("Could not open CSV file: " + file.string());
+    }
+
+    csvout.precision(16);
+    csvout.setf(std::ios::scientific, std::ios::floatfield);
+    csvout << "step,i,j,x,y," << name << "\n";
+
+    for (int j = local[1].first(); j <= local[1].last(); ++j) {
+        for (int i = local[0].first(); i <= local[0].last(); ++i) {
+            const int li = i - local[0].first() + nghost;
+            const int lj = j - local[1].first() + nghost;
+            const double x = origin[0] + (i + 0.5) * spacing[0];
+            const double y = origin[1] + (j + 0.5) * spacing[1];
+            csvout << step << "," << i << "," << j << "," << x << "," << y << ","
+                   << host(li, lj) << "\n";
         }
     }
 }

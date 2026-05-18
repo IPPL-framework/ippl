@@ -476,6 +476,25 @@ void logDivergenceDiagnostics() {
       IpplTimings::stopTimer(dumpTimer);
     }
 
+    void logOmegaField() {
+      alvine::vtk::writeScalarFieldCsv2D("data/FSL/omega_csv", "omega",
+                                         this->fcontainer_m->getOmegaField(), this->rmin_m,
+                                         this->hr_m, this->it_m);
+    }
+
+    void post_step() override {
+      Inform m("Step: ");
+      this->time_m += this->dt_m;
+      this->it_m++;
+
+      this->logOmegaField();
+      if (this->it_m % this->dump_freq_m == 0) {
+        this->dump();
+      }
+
+      m << this->it_m << " Done" << endl;
+    }
+
     void advance() override {
       advectForward();     
     }
