@@ -199,6 +199,16 @@ namespace ippl {
          */
         void write(Inform& inf) const;
 
+        void write_as_list(std::ostream& out = std::cout) const;
+
+        void write_as_list(Inform& inf) const;
+
+        friend std::ostream& operator<<(std::ostream& out,
+                                        const BareField<T, Dim, ViewArgs...>& field) {
+            field.write_as_list(out);
+            return out;
+        }
+
         T sum(int nghost = 0) const;
         T max(int nghost = 0) const;
         T min(int nghost = 0) const;
