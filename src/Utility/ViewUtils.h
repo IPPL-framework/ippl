@@ -114,7 +114,7 @@ namespace ippl {
             out << "[";
             for (std::size_t i = 0; i < N; ++i) {
                 if constexpr (Dim == 1) {
-                    out << view[i];
+                    out << view(i);
                 } else {
                     auto make_subview = [&]<std::size_t... Is>(std::index_sequence<Is...>) {
                         return Kokkos::subview(view, i, (static_cast<void>(Is), Kokkos::ALL)...);
