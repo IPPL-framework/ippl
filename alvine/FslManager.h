@@ -301,6 +301,8 @@ void initializeGridVorticity() {
     double y_mid = 0.5 * (rmin[1] + rmax[1]);
     double y_low = y_mid - 1.0;
     double y_high = y_mid + 1.0;
+    int seed = 42;
+    Kokkos::Random_XorShift64_Pool<> rand_pool(seed + 100 * ippl::Comm->rank());
 
     Kokkos::parallel_for(
         "initialize_grid_vorticity",
@@ -308,13 +310,12 @@ void initializeGridVorticity() {
                                                {nghost + i1 - i0 + 1,
                                                 nghost + j1 - j0 + 1}),
         KOKKOS_LAMBDA(const int li, const int lj) {
-            int i = i0 + li - nghost;
             int j = j0 + lj - nghost;
 
             double y = rmin[1] + (j + 0.5) * hr[1];
-            double seed = Kokkos::sin(12.9898 * (i + 1) + 78.233 * (j + 1)) * 43758.5453;
-            double random01 = seed - Kokkos::floor(seed);
-            double perturb = 0.1 * (random01 - 0.5);
+            auto rand_gen = rand_pool.get_state();
+            double perturb = 0.1 * (rand_gen.drand() - 0.5);
+            rand_pool.free_state(rand_gen);
 
             omega_view(li, lj) = (y >= y_low && y <= y_high) ? 1.0 + perturb : 0.0;
         }
