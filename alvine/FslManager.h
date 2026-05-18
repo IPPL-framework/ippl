@@ -490,7 +490,6 @@ void advectForward() {
     static IpplTimings::TimerRef par2gridTimer =
         IpplTimings::getTimer("par2grid");
 
-    double omega_before = computeOmegaL2();
     auto omega_n = this->fcontainer_m->getOmegaField().deepCopy();
 
     // 1. Compute velocity u^n from omega^n
@@ -502,8 +501,11 @@ void advectForward() {
 
     IpplTimings::startTimer(PTimer);
     this->computeVelocityField();
+    logEnergyDiagnostics();
     IpplTimings::stopTimer(PTimer);
     Kokkos::deep_copy(this->fcontainer_m->getOmegaField().getView(), omega_n.getView());
+    logEnstrophyDiagnostics();
+    logDivergenceDiagnostics();
 
     // 2. Create virtual particles from omega^n
     initializeVirtualParticles();
@@ -520,31 +522,6 @@ void advectForward() {
 
     // 5. Delete temporary particles
    // clearVirtualParticles();
-
-    double omega_after = computeOmegaL2();
-
-    if (ippl::Comm->rank() == 0) {
-        Inform m("debug ");
-        m << "omega L2 before = " << omega_before
-          << ", omega L2 after = " << omega_after << endl;
-    }
-
-    // 6. Compute velocity from omega^{n+1} for diagnostics
-    auto omega_np1 = this->fcontainer_m->getOmegaField().deepCopy();
-
-    IpplTimings::startTimer(SolveTimer);
-    this->fsolver_m->runSolver();
-    IpplTimings::stopTimer(SolveTimer);
-
-    IpplTimings::startTimer(PTimer);
-    this->computeVelocityField();
-
-    logEnergyDiagnostics();
-    Kokkos::deep_copy(this->fcontainer_m->getOmegaField().getView(), omega_np1.getView());
-    logEnstrophyDiagnostics();
-    logDivergenceDiagnostics();
-
-    IpplTimings::stopTimer(PTimer);
 }
 };
 #endif
