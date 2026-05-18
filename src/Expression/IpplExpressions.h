@@ -43,7 +43,7 @@ namespace ippl {
          * of the BareField class.
          */
         template <typename E, size_t N = sizeof(E)>
-        struct CapturedExpression {
+        struct alignas(E) CapturedExpression {
             constexpr static unsigned dim = E::dim;
 
             template <typename... Args>
@@ -52,7 +52,7 @@ namespace ippl {
                 return reinterpret_cast<const E&>(*this)(args...);
             }
 
-            char buffer[N];
+            alignas(E) char buffer[N];
         };
 
         /*!
