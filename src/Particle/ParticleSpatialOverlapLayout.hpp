@@ -14,6 +14,8 @@
 //   frequency of load balancing (N), or may supply a function to
 //   determine if load balancing should be done or not.
 //
+#include <Kokkos_MathematicalFunctions.hpp>
+
 #include <numeric>
 #include <vector>
 
@@ -794,7 +796,7 @@ namespace ippl {
         CellIndex_t cellIndex;
         for (unsigned d = 0; d < Dim; ++d) {
             cellIndex[d] = static_cast<size_type>(
-                std::floor((pos[d] - region[d].min()) / cellWidth[d]) + numGhostCellsPerDim_m);
+                Kokkos::floor((pos[d] - region[d].min()) / cellWidth[d]) + numGhostCellsPerDim_m);
         }
         return cellIndex;
     }
