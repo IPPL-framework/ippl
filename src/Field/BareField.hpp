@@ -2,7 +2,16 @@
 // Class BareField
 //   A BareField consists of multple LFields and represents a field.
 //
-#include "Ippl.h"
+
+#ifndef IPPL_BARE_FIELD_HPP
+#define IPPL_BARE_FIELD_HPP
+
+// clang-format off
+#ifndef IPPL_BARE_FIELD_H
+// HACK: cyclic anitpattern, but necessary for proper LSP markup
+#include "Field/BareField.h"
+#endif
+// clang-format on
 
 #include <Kokkos_ReductionIdentity.hpp>
 #include <cstdlib>
@@ -224,3 +233,5 @@ namespace ippl {
     DefineReduction(Prod, prod, valL *= myVal, std::multiplies)
 
 }  // namespace ippl
+
+#endif  // IPPL_BARE_FIELD_HPP

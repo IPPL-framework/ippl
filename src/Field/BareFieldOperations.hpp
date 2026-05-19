@@ -2,6 +2,19 @@
 // File BareFieldOperations
 //   Norms and a scalar product for fields
 //
+#ifndef IPPL_BARE_FIELD_OPERATIONS_HPP
+#define IPPL_BARE_FIELD_OPERATIONS_HPP
+
+// clang-format off
+#ifndef IPPL_BARE_FIELD_H
+// HACK: cyclic anitpattern, but necessary for proper LSP markup
+// FIXME: Use a BareField concept, until then this include is needless
+#include "Field/BareField.h"
+#endif
+// clang-format on
+
+#include "Utility/IpplTimings.h"
+#include "Utility/ParallelDispatch.h"
 
 namespace ippl {
     /*!
@@ -93,3 +106,5 @@ namespace ippl {
         }
     }
 }  // namespace ippl
+
+#endif  // IPPL_BARE_FIELD_OPERATIONS_HPP

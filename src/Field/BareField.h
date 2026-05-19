@@ -227,7 +227,12 @@ namespace ippl {
 
 }  // namespace ippl
 
+#ifndef IPPL_BARE_FIELD_HPP
 #include "Field/BareField.hpp"
-#include "Field/BareFieldOperations.hpp"
+#endif  // IPPL_BARE_FIELD_HPP
 
-#endif
+#ifndef IPPL_BARE_FIELD_OPERATIONS_HPP
+#include "Field/BareFieldOperations.hpp"
+#endif  // IPPL_BARE_FIELD_OPERATIONS_HPP
+
+#endif  // IPPL_BARE_FIELD_H
