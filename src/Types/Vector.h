@@ -2,12 +2,17 @@
 // Class Vector
 //   Vector class used for vector fields and particle attributes like the coordinate.
 //
-#ifndef IPPL_Vector_H
-#define IPPL_Vector_H
+#ifndef IPPL_VECTOR_H
+#define IPPL_VECTOR_H
 
-#include <initializer_list>
+#include <Kokkos_Macros.hpp>  // for KOKKOS_INLINE_FUNCTION
+#include <array>              // for array
+#include <cstdlib>            // for size_t
+#include <initializer_list>   // for initializer_list
+#include <type_traits>        // for enable_if, true_type
+#include <vector>             // for vector
 
-#include "Expression/IpplExpressions.h"
+#include "Expression/IpplExpressions.h"  // for Expression, isExpression...
 
 namespace ippl {
     /*!
@@ -110,6 +115,8 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION Vector<T, Dim> max(const Vector<T, Dim>& a, const Vector<T, Dim>& b);
 }  // namespace ippl
 
+#ifndef IPPL_VECTOR_HPP
 #include "Vector.hpp"
-
 #endif
+
+#endif  // IPPL_VECTOR_H

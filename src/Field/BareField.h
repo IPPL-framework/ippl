@@ -5,21 +5,21 @@
 #ifndef IPPL_BARE_FIELD_H
 #define IPPL_BARE_FIELD_H
 
-#include <Kokkos_Core.hpp>
+#include <cstdlib>  // for size_t
+#include <ostream>  // for std::ostream
 
-#include <cstdlib>
-#include <iostream>
+#include "Types/IpplTypes.h"  // for detail::size_type
+#include "Types/ViewTypes.h"  // for detail::ViewType
 
-#include "Types/IpplTypes.h"
+#include "Utility/Inform.h"            // for Inform
+#include "Utility/PAssert.h"           // for PAssert and PAssert_LE
+#include "Utility/ParallelDispatch.h"  // for RangePolicy
 
-#include "Utility/IpplInfo.h"
-#include "Utility/PAssert.h"
-#include "Utility/ViewUtils.h"
+#include "Expression/IpplExpressions.h"  // for detail::Expression
 
-#include "Expression/IpplExpressions.h"
-
-#include "Field/HaloCells.h"
-#include "FieldLayout/FieldLayout.h"
+#include "Field/HaloCells.h"          // for detail::HaloCells
+#include "FieldLayout/FieldLayout.h"  // for FieldLayout
+#include "Index/NDIndex.h"            // for NDIndex
 
 namespace ippl {
     class Index;
