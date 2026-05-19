@@ -109,7 +109,7 @@ namespace ippl {
 
     protected:
         unsigned degree_m;
-        const ElementType& ref_element_m;
+        ElementType ref_element_m;
         Vector<T, NumNodes1D> integration_nodes_m;
         Vector<T, NumNodes1D> weights_m;
 

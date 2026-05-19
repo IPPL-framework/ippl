@@ -226,7 +226,7 @@ namespace ippl {
 
         UniformCartesian<T, Dim>& mesh_m;
         ElementType ref_element_m;
-        const QuadratureType& quadrature_m;
+        QuadratureType quadrature_m;
         Vector<size_t, Dim> nr_m;
         Vector<double, Dim> hr_m;
         Vector<double, Dim> origin_m;
