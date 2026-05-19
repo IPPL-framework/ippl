@@ -20,6 +20,8 @@
 
 #include "Types/Vector.h"
 
+#include "Utility/IpplTimings.h"
+
 #include "FieldLayout/SubFieldLayout.h"
 #include "Index/Index.h"
 #include "Index/NDIndex.h"
@@ -102,14 +104,23 @@ namespace ippl {
         // --- END OF DEBUGGING ---
 
         Field operator()(Field& b) override {
+            IpplTimings::TimerRef mg = IpplTimings::getTimer("MG-PRECOND");
+            IpplTimings::startTimer(mg);
+
             L_[0].f = b.deepCopy();
             for (size_t level = 0; level < L_.size(); ++level)
                 L_[level].u = 0.0;
             vcycle(0);
+
+            IpplTimings::stopTimer(mg);
+
             return L_[0].u;
         }
 
         void init_fields(Field& b) override {
+            IpplTimings::TimerRef init_fields = IpplTimings::getTimer("init_fields");
+            IpplTimings::startTimer(init_fields);
+
             auto& fine_mesh              = b.get_mesh();
             auto& fine_layout            = b.getLayout();
             auto fine_domain             = fine_layout.getDomain();
@@ -195,9 +206,14 @@ namespace ippl {
             // --- DEBUGGING - To be deleted ---
             debug_print_all_levels("after init_fields");
             // --- END OF DEBUGGING ---
+            //
+            IpplTimings::stopTimer(init_fields);
         }
 
         void restrict_fullweight(const size_t level) {
+            IpplTimings::TimerRef restrict = IpplTimings::getTimer("restrict_fullweight");
+            IpplTimings::startTimer(restrict);
+
             if (level >= L_.size() - 1) {
                 std::cerr << "Trying to restrict at lowest level." << std::endl;
                 return;
@@ -258,9 +274,14 @@ namespace ippl {
 
             ippl::fence();
             lev_coarse.f.fillHalo();
+
+            IpplTimings::stopTimer(restrict);
         }
 
         void prolong_add(const size_t level) {
+            IpplTimings::TimerRef prolong = IpplTimings::getTimer("prolong");
+            IpplTimings::startTimer(prolong);
+
             if (level >= L_.size() - 1) {
                 std::cerr << "Trying to prolong at invalid level" << std::endl;
                 return;
@@ -337,6 +358,8 @@ namespace ippl {
                     apply(uf, args) += interp_val;
                 });
             ippl::fence();
+
+            IpplTimings::stopTimer(prolong);
         }
 
     protected:
@@ -409,8 +432,14 @@ namespace ippl {
         // --- END OF DEBUGGING ---
 
         Field residual(Field& u, const Field& f) {
+            IpplTimings::TimerRef resi = IpplTimings::getTimer("residual");
+            IpplTimings::startTimer(resi);
+
             Field res = f.deepCopy();
             res       = f - op_(u);
+
+            IpplTimings::stopTimer(resi);
+
             return res;
         };
 
@@ -428,6 +457,9 @@ namespace ippl {
         }
 
         void smooth_jacobi(const size_t level, const unsigned iters) {
+            IpplTimings::TimerRef jacobi = IpplTimings::getTimer("smooth_jacobi");
+            IpplTimings::startTimer(jacobi);
+
             auto& lev = L_[level];
             auto& u   = lev.u;
             auto& f   = lev.f;
@@ -439,6 +471,7 @@ namespace ippl {
                 Field res = residual(u, f);
                 u         = u + omega_ * (res / diag);
             }
+            IpplTimings::stopTimer(jacobi);
         }
     };
 }  // namespace ippl
