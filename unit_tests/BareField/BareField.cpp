@@ -171,6 +171,60 @@ TYPED_TEST(BareFieldTest, IndexedSubdomainExpressionAssignment) {
     });
 }
 
+TYPED_TEST(BareFieldTest, IndexedSubdomainDifferentStrideExpressionAssignment) {
+    using T = typename TestFixture::value_type;
+
+    auto& lhs = this->field;
+    lhs->operator=(0);
+
+    typename TestFixture::field_type rhs(this->layout);
+    auto rhsView   = rhs.getView();
+    const auto lDom = rhs.getLayout().getLocalNDIndex();
+    Kokkos::parallel_for("Set rhs field", rhs.getFieldRangePolicy(), FieldVal<TypeParam>{rhsView, lDom});
+    Kokkos::fence();
+
+    ippl::NDIndex<TestFixture::dim> lhsSubdomain = lhs->getOwned();
+    lhsSubdomain[0] = ippl::Index(lhsSubdomain[0].first(), lhsSubdomain[0].last(),
+                                  2 * lhsSubdomain[0].stride());
+
+    ippl::NDIndex<TestFixture::dim> rhsSubdomain = rhs.getOwned();
+    const int rhsLast = rhsSubdomain[0].first()
+                        + (lhsSubdomain[0].length() - 1) * rhsSubdomain[0].stride();
+    rhsSubdomain[0] = ippl::Index(rhsSubdomain[0].first(), rhsLast, rhsSubdomain[0].stride());
+
+    ASSERT_EQ(lhsSubdomain[0].length(), rhsSubdomain[0].length());
+    ASSERT_NE(lhsSubdomain[0].stride(), rhsSubdomain[0].stride());
+
+    (*lhs)[lhsSubdomain] = rhs[rhsSubdomain] + T(2);
+
+    auto lhsMirror = lhs->getHostMirror();
+    auto rhsMirror = rhs.getHostMirror();
+    Kokkos::deep_copy(lhsMirror, lhs->getView());
+    Kokkos::deep_copy(rhsMirror, rhs.getView());
+
+    const auto owned = lhs->getOwned();
+    const int nghost = lhs->getNghost();
+    nestedViewLoop(lhsMirror, nghost, [&]<typename... Idx>(const Idx... args) {
+        std::array<ippl::Index, TestFixture::dim> pointIndices;
+        typename ippl::RangePolicy<TestFixture::dim, typename TestFixture::exec_space>::index_array_type
+            rhsCoords;
+        const std::array<size_t, TestFixture::dim> viewCoords{static_cast<size_t>(args)...};
+        for (unsigned d = 0; d < TestFixture::dim; ++d) {
+            const int global = owned[d].first()
+                               + static_cast<int>(viewCoords[d] - nghost) * owned[d].stride();
+            pointIndices[d] = ippl::Index(global, global);
+
+            const int rel       = (global - lhsSubdomain[d].first()) / lhsSubdomain[d].stride();
+            const int rhsGlobal = rhsSubdomain[d].first() + rel * rhsSubdomain[d].stride();
+            rhsCoords[d] = (rhsGlobal - owned[d].first()) / owned[d].stride() + nghost;
+        }
+        auto point = std::make_from_tuple<ippl::NDIndex<TestFixture::dim>>(pointIndices);
+        const T expected = lhsSubdomain.contains(point) ? ippl::apply(rhsMirror, rhsCoords) + T(2)
+                                                        : T(0);
+        assertEqual<T>(expected, lhsMirror(args...));
+    });
+}
+
 TYPED_TEST(BareFieldTest, ChainedIndexedSubdomainScalarAssignment) {
     using T = typename TestFixture::value_type;
 
