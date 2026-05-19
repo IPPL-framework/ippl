@@ -133,6 +133,15 @@ namespace ippl {
                                 "supported for open BCs");
         }
 
+        // check dimension
+        if ((Dim == 2) && (alg != Algorithm::HOCKNEY)) {
+            throw IpplException("FFTOpenPoissonSolver::initializeFields()",
+                                "Only HOCKNEY supports 2D!");
+        } else if (Dim == 1) {
+            throw IpplException("FFTOpenPoissonSolver::initializeFields()",
+                                "Only 2D and 3D solves supported!");
+        }
+
         // get layout and mesh
         layout_mp              = &(this->rhs_mp->getLayout());
         mesh_mp                = &(this->rhs_mp->get_mesh());
@@ -270,56 +279,31 @@ namespace ippl {
                 const int size = nr_m[d];
 
                 // Kokkos parallel for loop to initialize grnIField[d]
-                switch (d) {
-                    case 0:
-                        Kokkos::parallel_for(
-                            "Helper index Green field initialization",
-                            grnIField_m[d].getFieldRangePolicy(),
-                            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                                // go from local indices to global
-                                const int ig = i + ldom[0].first() - nghost;
-                                const int jg = j + ldom[1].first() - nghost;
-                                const int kg = k + ldom[2].first() - nghost;
+                using index_array_type = typename RangePolicy<Dim>::index_array_type;
+                Kokkos::parallel_for(
+                    "Helper index Green field initialization",
+                    grnIField_m[d].getFieldRangePolicy(),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        scalar_type checkVal = 0.0;
+                                
+                        // go from local indices to global
+                        Vector<int, Dim> igVec = args - nghost;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            igVec[d] += ldom[d].first();
+                            checkVal += igVec[d];
+                        }
 
-                                // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
-                                const bool outsideN = (ig >= size);
-                                view(i, j, k) =
-                                    (2 * size * outsideN - ig) * (2 * size * outsideN - ig);
+                        // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
+                        const bool outsideN = (igVec[d] >= size);
+                        apply(view, args) = (2 * size * outsideN - igVec[d]) 
+                                          * (2 * size * outsideN - igVec[d]);
 
-                                // add 1.0 if at (0,0,0) to avoid singularity
-                                const bool isOrig = ((ig == 0) && (jg == 0) && (kg == 0));
-                                view(i, j, k) += isOrig * 1.0;
-                            });
-                        break;
-                    case 1:
-                        Kokkos::parallel_for(
-                            "Helper index Green field initialization",
-                            grnIField_m[d].getFieldRangePolicy(),
-                            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                                // go from local indices to global
-                                const int jg = j + ldom[1].first() - nghost;
+                        // add 1.0 if at (0,0,0) to avoid singularity
+                        const bool isOrig = (checkVal == 0)
+                        apply(view, args) += isOrig * 1.0;
+                    });
 
-                                // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
-                                const bool outsideN = (jg >= size);
-                                view(i, j, k) =
-                                    (2 * size * outsideN - jg) * (2 * size * outsideN - jg);
-                            });
-                        break;
-                    case 2:
-                        Kokkos::parallel_for(
-                            "Helper index Green field initialization",
-                            grnIField_m[d].getFieldRangePolicy(),
-                            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                                // go from local indices to global
-                                const int kg = k + ldom[2].first() - nghost;
 
-                                // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
-                                const bool outsideN = (kg >= size);
-                                view(i, j, k) =
-                                    (2 * size * outsideN - kg) * (2 * size * outsideN - kg);
-                            });
-                        break;
-                }
             }
             IpplTimings::stopTimer(initialize_hockney);
         }
@@ -411,6 +395,8 @@ namespace ippl {
         const auto& ldom2 = layout2_m->getLocalNDIndex();
         const auto& ldom1 = layout_mp->getLocalNDIndex();
 
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+
         if (ranks > 1) {
             // COMMUNICATION
             const auto& lDomains2 = layout2_m->getHostLocalDomains();
@@ -451,22 +437,28 @@ namespace ippl {
                 MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
             }
             ippl::Comm->freeAllBuffers();
-
         } else {
             Kokkos::parallel_for(
                 "Write rho on the doubled grid", this->rhs_mp->getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
-                    const size_t ig2 = i + ldom2[0].first() - nghost2;
-                    const size_t jg2 = j + ldom2[1].first() - nghost2;
-                    const size_t kg2 = k + ldom2[2].first() - nghost2;
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    scalar_type checkVal = 0;
 
-                    const size_t ig1 = i + ldom1[0].first() - nghost1;
-                    const size_t jg1 = j + ldom1[1].first() - nghost1;
-                    const size_t kg1 = k + ldom1[2].first() - nghost1;
+                    Vector<int, Dim> igVec1 = args - nghost1;
+                    Vector<int, Dim> igVec2 = args - nghost2;
 
-                    // write physical rho on [0,N-1] of doubled field
-                    const bool isQuadrant1 = ((ig1 == ig2) && (jg1 == jg2) && (kg1 == kg2));
-                    view2(i, j, k)         = view1(i, j, k) * isQuadrant1;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        igVec1[d] += ldom1[d].first();
+                        igVec2[d] += ldom2[d].first();
+
+                        checkVal += Kokkos::abs(igVec1[d] - igVec2[d]);
+                    }
+
+                    // Write physical rho on [0,N-1] of doubled field.
+                    // Check whether we are in the 1st quadrant by checking whether
+                    // the global indices for view1 and view2 are equal.
+                    // This is done using checkVal, which should be 0 if ig1 = ig2.
+                    const bool isQuadrant1 = (checkVal == 0);
+                    apply(view2, args)     = apply(view1, args) * isQuadrant1;
                 });
         }
 
@@ -582,18 +574,25 @@ namespace ippl {
                 Kokkos::parallel_for(
                     "Write the solution into the LHS on physical grid",
                     this->rhs_mp->getFieldRangePolicy(),
-                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                        const int ig2 = i + ldom2[0].first() - nghost2;
-                        const int jg2 = j + ldom2[1].first() - nghost2;
-                        const int kg2 = k + ldom2[2].first() - nghost2;
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        scalar_type checkVal = 0;
 
-                        const int ig = i + ldom1[0].first() - nghost1;
-                        const int jg = j + ldom1[1].first() - nghost1;
-                        const int kg = k + ldom1[2].first() - nghost1;
+                        Vector<int, Dim> igVec1 = args - nghost1;
+                        Vector<int, Dim> igVec2 = args - nghost2;
 
-                        // take [0,N-1] as physical solution
-                        const bool isQuadrant1 = ((ig == ig2) && (jg == jg2) && (kg == kg2));
-                        view1(i, j, k)         = view2(i, j, k) * isQuadrant1;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            igVec1[d] += ldom1[d].first();
+                            igVec2[d] += ldom2[d].first();
+
+                            checkVal += Kokkos::abs(igVec1[d] - igVec2[d]);
+                        }
+
+                        // Take [0,N-1] quadrant as physical solution. 
+                        // Check whether we are in the 1st quadrant by checking whether
+                        // the global indices for view1 and view2 are equal.
+                        // This is done using checkVal, which should be 0 if ig1 = ig2.
+                        const bool isQuadrant1 = (checkVal == 0);
+                        apply(view1, args)     = apply(view2, args) * isQuadrant1;
                     });
             }
             IpplTimings::stopTimer(dtos);
@@ -637,22 +636,21 @@ namespace ippl {
                 // loop over rho2tr_m to multiply by -ik (gradient in Fourier space)
                 Kokkos::parallel_for(
                     "Gradient - E field", rho2tr_m.getFieldRangePolicy(),
-                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    KOKKOS_LAMBDA(const index_array_type& args) {
                         // global indices for 2N rhotr_m
-                        const int ig = i + ldomR[0].first() - nghostR;
-                        const int jg = j + ldomR[1].first() - nghostR;
-                        const int kg = k + ldomR[2].first() - nghostR;
-
-                        Vector<int, 3> iVec = {ig, jg, kg};
+                        Vector<int, Dim> igVec = args - nghostR;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            igVec[d] += ldomR[0].first();
+                        }
 
                         scalar_type k_gd;
                         const scalar_type Len = N[gd] * hsize[gd];
                         const bool shift      = (iVec[gd] > N[gd]);
                         const bool notMid     = (iVec[gd] != N[gd]);
 
-                        k_gd = notMid * (pi / Len) * (iVec[gd] - shift * 2 * N[gd]);
+                        k_gd = notMid * (pi / Len) * (igVec[gd] - shift * 2 * N[gd]);
 
-                        view_g(i, j, k) = -(I * k_gd) * viewR(i, j, k);
+                        apply(view_g, args) = -(I * k_gd) * apply(viewR, args);
                     });
 
                 // start a timer
@@ -737,18 +735,25 @@ namespace ippl {
                 } else {
                     Kokkos::parallel_for(
                         "Write the E-field on physical grid", this->lhs_mp->getFieldRangePolicy(),
-                        KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                            const int ig2 = i + ldom2[0].first() - nghost2;
-                            const int jg2 = j + ldom2[1].first() - nghost2;
-                            const int kg2 = k + ldom2[2].first() - nghost2;
+                        KOKKOS_LAMBDA(const index_array_type& args) {
+                            scalar_type checkVal = 0;
 
-                            const int ig = i + ldom1[0].first() - nghostL;
-                            const int jg = j + ldom1[1].first() - nghostL;
-                            const int kg = k + ldom1[2].first() - nghostL;
+                            Vector<int, Dim> igVec1 = args - nghostL;
+                            Vector<int, Dim> igVec2 = args - nghost2;
 
-                            // take [0,N-1] as physical solution
-                            const bool isQuadrant1 = ((ig == ig2) && (jg == jg2) && (kg == kg2));
-                            viewL(i, j, k)[gd]     = view2(i, j, k) * isQuadrant1;
+                            for (unsigned d = 0; d < Dim; ++d) {
+                                igVec1[d] += ldom1[d].first();
+                                igVec2[d] += ldom2[d].first();
+
+                                checkVal += Kokkos::abs(igVec1[d] - igVec2[d]);
+                            }
+
+                            // Take [0,N-1] quadrant as physical solution. 
+                            // Check whether we are in the 1st quadrant by checking whether
+                            // the global indices for view1 and view2 are equal.
+                            // This is done using checkVal, which should be 0 if ig1 = ig2.
+                            const bool isQuadrant1 = (checkVal == 0);
+                            apply(viewL, args)[gd] = view2(i, j, k) * isQuadrant1;
                         });
                 }
                 IpplTimings::stopTimer(edtos);
@@ -790,26 +795,26 @@ namespace ippl {
 
                     Kokkos::parallel_for(
                         "Hessian", rho2tr_m.getFieldRangePolicy(),
-                        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                        KOKKOS_LAMBDA(const index_array_type& args) {
                             // global indices for 2N rhotr_m
-                            const int ig = i + ldomR[0].first() - nghostR;
-                            const int jg = j + ldomR[1].first() - nghostR;
-                            const int kg = k + ldomR[2].first() - nghostR;
+                            Vector<int, Dim> igVec = args - nghostR;
+                            for (unsigned d = 0; d < Dim; ++d) {
+                                igVec[d] += ldomR[d].first();
+                            }
 
-                            Vector<int, 3> iVec = {ig, jg, kg};
+                            // compute wave-vector
                             Vector_t kVec;
-
                             for (size_t d = 0; d < Dim; ++d) {
                                 const scalar_type Len = N[d] * hsize[d];
-                                const bool shift      = (iVec[d] > N[d]);
-                                const bool isMid      = (iVec[d] == N[d]);
+                                const bool shift      = (igVec[d] > N[d]);
+                                const bool isMid      = (igVec[d] == N[d]);
                                 const bool notDiag    = (row != col);
 
                                 kVec[d] = (1 - (notDiag * isMid)) * (pi / Len)
-                                          * (iVec[d] - shift * 2 * N[d]);
+                                          * (igVec[d] - shift * 2 * N[d]);
                             }
 
-                            view_g(i, j, k) = -(kVec[col] * kVec[row]) * viewR(i, j, k);
+                            apply(view_g, args) = -(kVec[col] * kVec[row]) * apply(viewR, args);
                         });
 
                     // start a timer
@@ -894,19 +899,25 @@ namespace ippl {
                     } else {
                         Kokkos::parallel_for(
                             "Write Hessian on physical grid", hess_m.getFieldRangePolicy(),
-                            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                                const int ig2 = i + ldom2[0].first() - nghost2;
-                                const int jg2 = j + ldom2[1].first() - nghost2;
-                                const int kg2 = k + ldom2[2].first() - nghost2;
+                            KOKKOS_LAMBDA(const index_array_type& args) {
+                                scalar_type checkVal = 0;
 
-                                const int ig = i + ldom1[0].first() - nghostH;
-                                const int jg = j + ldom1[1].first() - nghostH;
-                                const int kg = k + ldom1[2].first() - nghostH;
+                                Vector<int, Dim> igVec1 = args - nghostH;
+                                Vector<int, Dim> igVec2 = args - nghost2;
 
-                                // take [0,N-1] as physical solution
-                                const bool isQuadrant1 =
-                                    ((ig == ig2) && (jg == jg2) && (kg == kg2));
-                                viewH(i, j, k)[row][col] = view2(i, j, k) * isQuadrant1;
+                                for (unsigned d = 0; d < Dim; ++d) {
+                                    igVec1[d] += ldom1[d].first();
+                                    igVec2[d] += ldom2[d].first();
+
+                                    checkVal += Kokkos::abs(igVec1[d] - igVec2[d]);
+                                }
+
+                                // Take [0,N-1] quadrant as physical solution. 
+                                // Check whether we are in the 1st quadrant by checking whether
+                                // the global indices for view1 and view2 are equal.
+                                // This is done using checkVal, which should be 0 if ig1 = ig2.
+                                const bool isQuadrant1 = (checkVal == 0);
+                                apply(viewH, args)[row][col] = apply(view2, args) * isQuadrant1;
                             });
                     }
                     IpplTimings::stopTimer(hdtos);
@@ -926,6 +937,8 @@ namespace ippl {
         grn_mr               = 0.0;
 
         const int alg = this->params_m.template get<int>("algorithm");
+
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
 
         if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
             Vector_t l(hr_m * nr_m);
@@ -950,7 +963,7 @@ namespace ippl {
             mesh4_m->setMeshSpacing(hs_m);
 
             // size of truncation window
-            L_sum = std::sqrt(L_sum);
+            L_sum = Kokkos::sqrt(L_sum);
             // we choose a window 10% larger than domain (arbitrary choice)
             L_sum = 1.1 * L_sum;
 
@@ -965,63 +978,65 @@ namespace ippl {
             if (alg == Algorithm::VICO) {
                 Kokkos::parallel_for(
                     "Initialize Green's function ", grnL_m.getFieldRangePolicy(),
-                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        scalar_type checkVal = 0;
+
                         // go from local indices to global
-                        const int ig = i + ldom_g[0].first() - nghost_g;
-                        const int jg = j + ldom_g[1].first() - nghost_g;
-                        const int kg = k + ldom_g[2].first() - nghost_g;
+                        Vector<int, Dim> igVec = args - nghost_g;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            igVec[d] += ldom_g[d].first();
+                            checkVal += igVec[d];
+                        }
 
-                        bool isOutside = (ig > 2 * size[0] - 1);
-                        const Tg t     = ig * hs_m[0] + isOutside * origin[0];
-
-                        isOutside  = (jg > 2 * size[1] - 1);
-                        const Tg u = jg * hs_m[1] + isOutside * origin[1];
-
-                        isOutside  = (kg > 2 * size[2] - 1);
-                        const Tg v = kg * hs_m[2] + isOutside * origin[2];
-
-                        Tg s = (t * t) + (u * u) + (v * v);
-                        s    = Kokkos::sqrt(s);
+                        // compute s
+                        Tg s = 0;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            bool isOutside = (igVec[d] > 2 * size[d] - 1);
+                            const Tg t = igVec[d] * hs_m[d] + isOutside * origin[d];
+                            s += (t*t);
+                        }
+                        s = Kokkos::sqrt(s);
 
                         // assign the green's function value
                         // if (0,0,0), assign L^2/2 (analytical limit of sinc)
-
-                        const bool isOrig    = ((ig == 0 && jg == 0 && kg == 0));
+                        const bool isOrig    = (checkVal == 0);
                         const Tg analyticLim = -L_sum * L_sum * 0.5;
                         const Tg value = -2.0 * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
                                          * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0));
 
-                        view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
+                        apply(view_g, args) = (!isOrig) * value + isOrig * analyticLim;
                     });
             } else if (alg == Algorithm::BIHARMONIC) {
                 Kokkos::parallel_for(
                     "Initialize Green's function ", grnL_m.getFieldRangePolicy(),
-                    KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        scalar_type checkVal = 0;
+
                         // go from local indices to global
-                        const int ig = i + ldom_g[0].first() - nghost_g;
-                        const int jg = j + ldom_g[1].first() - nghost_g;
-                        const int kg = k + ldom_g[2].first() - nghost_g;
+                        Vector<int, Dim> igVec = args - nghost_g;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            igVec[d] += ldom_g[d].first();
+                            checkVal += igVec[d];
+                        }
 
-                        bool isOutside = (ig > 2 * size[0] - 1);
-                        const Tg t     = ig * hs_m[0] + isOutside * origin[0];
+                        // compute s
+                        Tg s = 0;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            bool isOutside = (igVec[d] > 2 * size[d] - 1);
+                            const Tg t = igVec[d] * hs_m[d] + isOutside * origin[d];
+                            s += (t*t);
+                        }
+                        s = Kokkos::sqrt(s);
 
-                        isOutside  = (jg > 2 * size[1] - 1);
-                        const Tg u = jg * hs_m[1] + isOutside * origin[1];
-
-                        isOutside  = (kg > 2 * size[2] - 1);
-                        const Tg v = kg * hs_m[2] + isOutside * origin[2];
-
-                        Tg s = (t * t) + (u * u) + (v * v);
-                        s    = Kokkos::sqrt(s);
-
-                        // assign value and replace with analytic limit at origin (0,0,0)
-                        const bool isOrig    = ((ig == 0 && jg == 0 && kg == 0));
+                        // assign the green's function value
+                        // if (0,0,0), assign L^2/2 (analytical limit of sinc)
+                        const bool isOrig    = (checkVal == 0);
                         const Tg analyticLim = -L_sum * L_sum * L_sum * L_sum / 8.0;
                         const Tg value = -((2 - (L_sum * L_sum * s * s)) * Kokkos::cos(L_sum * s)
                                            + 2 * L_sum * s * Kokkos::sin(L_sum * s) - 2)
                                          / (2 * s * s * s * s + isOrig * 1.0);
 
-                        view_g(i, j, k) = (!isOrig) * value + isOrig * analyticLim;
+                        apply(view_g, args) = (!isOrig) * value + isOrig * analyticLim;
                     });
             }
 
@@ -1119,25 +1134,30 @@ namespace ippl {
 
             Kokkos::parallel_for(
                 "Initialize 2N+1 Green's function ", grn2n1_m.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    scalar_type checkVal = 0;
+
                     // go from local indices to global
-                    const int ig = i + ldom_g2n1[0].first() - nghost_g2n1;
-                    const int jg = j + ldom_g2n1[1].first() - nghost_g2n1;
-                    const int kg = k + ldom_g2n1[2].first() - nghost_g2n1;
+                    Vector<int, Dim> igVec = args - nghost_g2n1;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        igVec[d] += ldom_g2n1[d].first();
+                        checkVal += igVec[d];
+                    }
 
-                    double t = ig * hs_m[0];
-                    double u = jg * hs_m[1];
-                    double v = kg * hs_m[2];
+                    // compute s
+                    Tg s = 0;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        double t = igVec[d] * hs_m[d];
+                        s += (t*t);
+                    }
+                    s = Kokkos::sqrt(s);
 
-                    double s = (t * t) + (u * u) + (v * v);
-                    s        = Kokkos::sqrt(s);
-
-                    const bool isOrig = ((ig == 0 && jg == 0 && kg == 0));
+                    const bool isOrig = (checkVal == 0);
                     const double val  = -2.0 * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
                                        * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0));
                     const double analyticLim = -L_sum * L_sum * 0.5;
 
-                    view_g2n1(i, j, k) = ((!isOrig) * val) + (isOrig * analyticLim);
+                    apply(view_g2n1, args) = ((!isOrig) * val) + (isOrig * analyticLim);
                 });
 
             // start a timer
@@ -1214,7 +1234,12 @@ namespace ippl {
                 grn_mr = grn_mr + grnIField_m[i] * hrsq[i];
             }
 
-            grn_mr = -1.0 / (4.0 * pi * sqrt(grn_mr));
+            // Formula of Green's function (2D and 3D supported for Hockney)
+            if (Dim == 2) {
+                grn_mr = Kokkos::log(Kokkos::sqrt(grn_mr)) / (2 * pi);
+            } else if (Dim == 3) {
+                grn_mr = -1.0 / (4.0 * pi * Kokkos::sqrt(grn_mr));
+            }
 
             typename Field_t::view_type view = grn_mr.getView();
             const int nghost                 = grn_mr.getNghost();
@@ -1223,15 +1248,20 @@ namespace ippl {
             // Kokkos parallel for loop to find (0,0,0) point and regularize
             Kokkos::parallel_for(
                 "Regularize Green's function ", grn_mr.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    scalar_type checkVal = 0;
+
                     // go from local indices to global
-                    const int ig = i + ldom[0].first() - nghost;
-                    const int jg = j + ldom[1].first() - nghost;
-                    const int kg = k + ldom[2].first() - nghost;
+                    Vector<int, Dim> igVec = args - nghost;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        igVec[d] += ldom[d].first();
+                        checkVal += igVec[d];
+                    }
 
                     // if (0,0,0), assign to it 1/(4*pi)
-                    const bool isOrig = (ig == 0 && jg == 0 && kg == 0);
-                    view(i, j, k)     = isOrig * (-1.0 / (4.0 * pi)) + (!isOrig) * view(i, j, k);
+                    const bool isOrig = (checkVal == 0);
+                    apply(view, args) = isOrig * (-1.0 / (4.0 * pi)) 
+                                        + (!isOrig) * apply(view, args);
                 });
         }
 
