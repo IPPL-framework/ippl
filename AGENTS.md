@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Repository purpose
-IPPL is a C++ Particle and fields Framwork. Preserve physical correctness over stylistic cleanup.
+IPPL is a C++ Particle and fields Framework. Preserve physical correctness over stylistic cleanup.
 
 ## Build
 - Configure with CMake using the project’s normal toolchain and dependency prefixes.
