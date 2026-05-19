@@ -22,12 +22,24 @@
 namespace ippl {
 
     template <typename T, class... Properties>
-    void ParticleAttrib<T, Properties...>::create(size_type n) {
+    void ParticleAttrib<T, Properties...>::create(size_type n, bool non_destructive) {
         size_type required = *(this->localNum_mp) + n;
         if (this->size() < required) {
             int overalloc = Comm->getDefaultOverallocation();
-            this->realloc(required * overalloc);
+            if (non_destructive) {
+                // Kokkos::resize preserves existing entries when growing.
+                this->resize(required * overalloc);
+            } else {
+                // Kokkos::realloc is destructive (free + alloc, no copy).
+                this->realloc(required * overalloc);
+            }
         }
+    }
+
+    template <typename T, class... Properties>
+    void ParticleAttrib<T, Properties...>::alloc(size_type n) {
+        int overalloc = Comm->getDefaultOverallocation();
+        this->realloc(n * overalloc);
     }
 
     template <typename T, class... Properties>

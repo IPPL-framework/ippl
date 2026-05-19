@@ -11,9 +11,6 @@
 if(BUILD_TESTING AND IPPL_MARK_FAILING_TESTS)
   set(IPPL_DISABLED_TEST_LIST
       AssembleRHS
-      ParticleSendRecv
-      ORB
-      PIC
       TestSolverDesign
       TestGaussian_convergence
       TestSphere

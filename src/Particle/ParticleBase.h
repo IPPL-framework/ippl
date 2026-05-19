@@ -246,11 +246,24 @@ namespace ippl {
         }
 
         /*!
-         * Create nLocal processor local particles. This is a collective call,
+         * Create nLocal rank local particles. This is a collective call,
          * i.e. all MPI ranks must call this.
-         * @param nLocal number of local particles to be created
+         *
+         * @param nLocal number of local particles to be created (delta, not total).
+         * @param non_destructive if true, preserve existing particle data when the
+         *        underlying views must grow (uses Kokkos::resize). Default false
+         *        keeps the destructive-on-grow behavior.
          */
-        void create(size_type nLocal);
+        void create(size_type nLocal, bool non_destructive = false);
+
+        /*!
+         * Pre-allocate capacity for nLocal particles on every attribute, without
+         * touching the logical particle count or assigning IDs. Caller is
+         * responsible for filling the entries. Overallocation is additionally applied.
+         *
+         * @param nLocal capacity (in particles) to allocate per attribute.
+         */
+        void alloc(size_type nLocal);
 
         /*!
          * Create a new particle with a given ID. This is a collective call. If a process
