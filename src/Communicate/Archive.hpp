@@ -26,8 +26,14 @@ namespace ippl {
             char* src_ptr         = (char*)(view.data());
             assert(writepos_m + (nsends * size) <= buffer_m.size());
             // construct temp views of the src/dst buffers of the correct size (bytes)
-            Kokkos::View<char*, Kokkos::MemoryUnmanaged> src_view(src_ptr, size * nsends);
-            Kokkos::View<char*, Kokkos::MemoryUnmanaged> dst_view(dst_ptr, size * nsends);
+            using src_view_type =
+                Kokkos::View<char*, typename Kokkos::View<T*, ViewArgs...>::memory_space,
+                             Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+            using dst_view_type =
+                Kokkos::View<char*, typename buffer_type::memory_space,
+                             Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+            src_view_type src_view(src_ptr, size * nsends);
+            dst_view_type dst_view(dst_ptr, size * nsends);
             Kokkos::deep_copy(dst_view, src_view);
             Kokkos::fence();
             writepos_m += (nsends * size);
@@ -74,8 +80,14 @@ namespace ippl {
             char* dst_ptr         = (char*)(view.data());
             assert(readpos_m + (nrecvs * size) <= buffer_m.size());
             // construct temp views of the src/dst buffers of the correct size (bytes)
-            Kokkos::View<char*, Kokkos::MemoryUnmanaged> src_view(src_ptr, size * nrecvs);
-            Kokkos::View<char*, Kokkos::MemoryUnmanaged> dst_view(dst_ptr, size * nrecvs);
+            using src_view_type =
+                Kokkos::View<char*, typename buffer_type::memory_space,
+                             Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+            using dst_view_type =
+                Kokkos::View<char*, typename Kokkos::View<T*, ViewArgs...>::memory_space,
+                             Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
+            src_view_type src_view(src_ptr, size * nrecvs);
+            dst_view_type dst_view(dst_ptr, size * nrecvs);
             Kokkos::deep_copy(dst_view, src_view);
             Kokkos::fence();
             readpos_m += (nrecvs * size);
