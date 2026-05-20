@@ -78,12 +78,19 @@ namespace ippl {
                 Kokkos::realloc(buffer, size * overalloc);
             }
 
-            Vector<long int, Dim> first = intersect.first() - ldom.first() + nghost;
-            Vector<long int, Dim> last  = intersect.last() - ldom.first() + nghost + 1;
+            using index_type = typename ippl::RangePolicy<Dim>::index_type;
+            Kokkos::Array<index_type, Dim> first, last;
+            for (unsigned d = 0; d < Dim; ++d) {
+                first[d] = intersect[d].first() - ldom[d].first() + nghost;
+                last[d]  = intersect[d].last() - ldom[d].first() + nghost + 1;
+            }
 
             ippl::parallel_for("ippl::detail::pack()", ippl::createRangePolicy(first, last),
                 KOKKOS_LAMBDA(const index_array_type& args) {
-                    Vector<int, Dim> igVec = args - first;
+                    Vector<int, Dim> igVec = args;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        igVec[d] -= first[d];
+                    }
 
                     int l = igVec[0];
                     for (unsigned d = 1; d < Dim; ++d) {
@@ -118,13 +125,20 @@ namespace ippl {
                 const int overalloc = ippl::Comm->getDefaultOverallocation();
                 Kokkos::realloc(buffer, size * overalloc);
             }
-
-            Vector<long int, Dim> first = intersect.first() - ldom.first() + nghost;
-            Vector<long int, Dim> last  = intersect.last() - ldom.first() + nghost + 1;
+            
+            using index_type = typename ippl::RangePolicy<Dim>::index_type;
+            Kokkos::Array<index_type, Dim> first, last;
+            for (unsigned d = 0; d < Dim; ++d) {
+                first[d] = intersect[d].first() - ldom[d].first() + nghost;
+                last[d]  = intersect[d].last() - ldom[d].first() + nghost + 1;
+            }
 
             ippl::parallel_for("ippl::detail::pack_field()", ippl::createRangePolicy(first, last),
                 KOKKOS_LAMBDA(const index_array_type& args) {
-                    Vector<int, Dim> igVec = args - first;
+                    Vector<int, Dim> igVec = args;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        igVec[d] -= first[d];
+                    }
 
                     int l = igVec[0];
                     for (unsigned d = 1; d < Dim; ++d) {
@@ -155,13 +169,21 @@ namespace ippl {
 
             Kokkos::View<Tb*>& buffer = fd.buffer;
 
-            Vector<long int, Dim> first = intersect.first() - ldom.first() + nghost;
-            Vector<long int, Dim> last  = intersect.last() - ldom.first() + nghost + 1;
+            using index_type = typename ippl::RangePolicy<Dim>::index_type;
+            Kokkos::Array<index_type, Dim> first, last;
+            for (unsigned d = 0; d < Dim; ++d) {
+                first[d] = intersect[d].first() - ldom[d].first() + nghost;
+                last[d]  = intersect[d].last() - ldom[d].first() + nghost + 1;
+            }
 
             ippl::parallel_for("ippl::detail::unpack_impl()",
                 ippl::createRangePolicy(first, last),
                 KOKKOS_LAMBDA(const index_array_type& args) {
-                    Vector<int, Dim> igVec = args - first;
+                    Vector<int, Dim> igVec = args;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        igVec[d] -= first[d];
+                    }
+
 
                     for (unsigned d = 0; d < Dim; ++d) {
                         igVec[d] = coordBool[d] 
@@ -188,7 +210,7 @@ namespace ippl {
         inline void unpack(const ippl::NDIndex<Dim> intersect, const View& view,
                            ippl::detail::FieldBufferData<Tb>& fd, int nghost,
                            const ippl::NDIndex<Dim> ldom,
-                           ippl::Vector<bool, Dim> coordBool) {
+                           ippl::Vector<bool, Dim> coordBool = false) {
             unpack_impl<0, Tb, View, Dim>(intersect, view, fd, nghost, ldom, coordBool);
         }
 
@@ -197,7 +219,7 @@ namespace ippl {
                            const View& view, size_t dim1,
                            ippl::detail::FieldBufferData<Tb>& fd, 
                            int nghost, const ippl::NDIndex<Dim> ldom,
-                           ippl::Vector<bool, Dim> coordBool) {
+                           ippl::Vector<bool, Dim> coordBool = false) {
             unpack_impl<1, Tb, View, Dim>(intersect, view, fd, nghost, ldom, coordBool,
                                           dim1);
         }
@@ -207,7 +229,7 @@ namespace ippl {
                            View& view, ippl::detail::FieldBufferData<Tb>& fd,
                            int nghost, const ippl::NDIndex<Dim> ldom,
                            size_t dim1, size_t dim2, 
-                           ippl::Vector<bool, Dim> coordBool) {
+                           ippl::Vector<bool, Dim> coordBool = false) {
             unpack_impl<2, Tb, View, Dim>(intersect, view, fd, nghost, ldom, coordBool,
                                           dim1, dim2);
         }
@@ -251,7 +273,9 @@ namespace ippl {
 
             int tag = TAG + id;
 
-            ippl::Comm->recv(i, tag, fd, *buf, nrecvs * sizeof(Tf), nrecvs);
+            using view_value_type = typename View::value_type;
+
+            ippl::Comm->recv(i, tag, fd, *buf, nrecvs * sizeof(view_value_type), nrecvs);
             buf->resetReadPos();
 
             unpack(intersection, view, fd, nghost, ldom, coordBool);
