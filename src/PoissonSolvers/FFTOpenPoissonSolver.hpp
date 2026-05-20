@@ -267,22 +267,22 @@ namespace ippl {
                 IpplTimings::getTimer("Initialize: extra Hockney");
             IpplTimings::startTimer(initialize_hockney);
 
-            for (unsigned int d = 0; d < Dim; ++d) {
-                grnIField_m[d].initialize(*mesh2_m, *layout2_m);
+            for (unsigned int gd = 0; gd < Dim; ++gd) {
+                grnIField_m[gd].initialize(*mesh2_m, *layout2_m);
 
                 // get number of ghost points and the Kokkos view to iterate over field
-                auto view        = grnIField_m[d].getView();
-                const int nghost = grnIField_m[d].getNghost();
+                auto view        = grnIField_m[gd].getView();
+                const int nghost = grnIField_m[gd].getNghost();
                 const auto& ldom = layout2_m->getLocalNDIndex();
 
                 // the length of the physical domain
-                const int size = nr_m[d];
+                const int size = nr_m[gd];
 
                 // Kokkos parallel for loop to initialize grnIField[d]
                 using index_array_type = typename RangePolicy<Dim>::index_array_type;
                 ippl::parallel_for(
                     "Helper index Green field initialization",
-                    grnIField_m[d].getFieldRangePolicy(),
+                    grnIField_m[gd].getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args) {
                         scalar_type checkVal = 0.0;
                                 
@@ -294,9 +294,9 @@ namespace ippl {
                         }
 
                         // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
-                        const bool outsideN = (igVec[d] >= size);
-                        apply(view, args) = (2 * size * outsideN - igVec[d]) 
-                                          * (2 * size * outsideN - igVec[d]);
+                        const bool outsideN = (igVec[gd] >= size);
+                        apply(view, args) = (2 * size * outsideN - igVec[gd]) 
+                                          * (2 * size * outsideN - igVec[gd]);
 
                         // add 1.0 if at (0,0,0) to avoid singularity
                         const bool isOrig = (checkVal == 0);

@@ -80,7 +80,7 @@ KOKKOS_INLINE_FUNCTION T exact_fct(T x, T y, T sigma = 0.05, T mu = 0.5) {
 
     T r2 = (x - mu) * (x - mu) + (y - mu) * (y - mu);
 
-    return -(1 / (4.0 * pi)) * (Ei(r2 / (2.0 * sigma * sigma)) + Kokkos::log(r2));
+    return (1 / (4.0 * pi)) * (std::expint(-r2 / (2.0 * sigma * sigma)) + Kokkos::log(r2));
 }
 
 template <typename T>
