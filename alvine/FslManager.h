@@ -88,6 +88,7 @@ void pre_run() override {
       //this->par2grid();
 
       initializeGridVorticity();
+      normalizeInitialGridCirculation();
 
       auto omega0 = this->fcontainer_m->getOmegaField().deepCopy();
       this->fsolver_m->runSolver();
@@ -312,15 +313,33 @@ void initializeGridVorticity() {
             int j = j0 + lj - nghost;
 
             double y = rmin[1] + (j + 0.5) * hr[1];
-            auto rand_gen = rand_pool.get_state();
-            double perturb = 0.1 * (rand_gen.drand() - 0.5);
-            rand_pool.free_state(rand_gen);
 
-            omega_view(li, lj) = (y >= y_low && y <= y_high) ? 1.0 + perturb : 0.0;
+            if (y >= y_low && y <= y_high) {
+                auto rand_gen = rand_pool.get_state();
+                rand_gen.drand(); // Same random draw shape as VIC's x-position jitter.
+                double perturb = 0.1 * (rand_gen.drand() - 0.5);
+                rand_pool.free_state(rand_gen);
+
+                omega_view(li, lj) = 1.0 + perturb;
+            } else {
+                omega_view(li, lj) = 0.0;
+            }
         }
     );
 
     Kokkos::fence();
+}
+
+void normalizeInitialGridCirculation() {
+    double gamma = this->computeGridCirculation();
+    double targetGamma = (this->rmax_m[0] - this->rmin_m[0]) * 2.0;
+
+    if (std::fabs(gamma) < 1e-30) {
+        return;
+    }
+
+    this->fcontainer_m->getOmegaField() =
+        this->fcontainer_m->getOmegaField() * (targetGamma / gamma);
 }
 
 void pushVirtualParticlesForward() {
