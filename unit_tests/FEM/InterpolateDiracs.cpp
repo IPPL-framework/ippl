@@ -64,6 +64,8 @@ public:
   using Centering_t = typename Mesh_t::DefaultCentering;
   using field_t     = ippl::Field<T, dim, Mesh_t, Centering_t>;
   using ElemSel     = ElemSelector<dim, T>;
+  using Elem        = typename ElemSel::Elem;
+  using Quad        = typename ElemSel::Quad;
   using Space       = typename ElemSel::template Space<field_t>;
 
   using playout_t   = ippl::ParticleSpatialLayout<T, dim>;
@@ -105,9 +107,7 @@ public:
     return f;
   }
 
-  static Space make_space(Mesh_t& mesh, ippl::FieldLayout<dim>& layout) {
-    auto elem = ElemSel::make_elem();
-    auto quad = ElemSel::make_quad(elem);
+  static Space make_space(Mesh_t& mesh, Elem& elem, Quad& quad, ippl::FieldLayout<dim>& layout) {
     return Space(mesh, elem, quad, layout);
   }
 
@@ -265,7 +265,9 @@ void InterpolatesAffineExactly() {
 
   auto view  = coeffs.getView();
 
-  auto space = TestFixture::make_space(mesh, layout);
+  typename TestFixture::Elem elem = TestFixture::ElemSel::make_elem();
+  typename TestFixture::Quad quad = TestFixture::ElemSel::make_quad(elem);
+  auto space = TestFixture::make_space(mesh, elem, quad, layout);
 
   playout_t playout(layout, mesh);
   bunch_t   bunch(playout);
