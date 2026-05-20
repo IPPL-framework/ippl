@@ -280,7 +280,7 @@ namespace ippl {
 
                 // Kokkos parallel for loop to initialize grnIField[d]
                 using index_array_type = typename RangePolicy<Dim>::index_array_type;
-                Kokkos::parallel_for(
+                ippl::parallel_for(
                     "Helper index Green field initialization",
                     grnIField_m[d].getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args) {
@@ -438,7 +438,7 @@ namespace ippl {
             }
             ippl::Comm->freeAllBuffers();
         } else {
-            Kokkos::parallel_for(
+            ippl::parallel_for(
                 "Write rho on the doubled grid", this->rhs_mp->getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     scalar_type checkVal = 0;
@@ -571,7 +571,7 @@ namespace ippl {
                 ippl::Comm->freeAllBuffers();
 
             } else {
-                Kokkos::parallel_for(
+                ippl::parallel_for(
                     "Write the solution into the LHS on physical grid",
                     this->rhs_mp->getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args) {
@@ -634,7 +634,7 @@ namespace ippl {
             // loop over each component (E = vector field)
             for (size_t gd = 0; gd < Dim; ++gd) {
                 // loop over rho2tr_m to multiply by -ik (gradient in Fourier space)
-                Kokkos::parallel_for(
+                ippl::parallel_for(
                     "Gradient - E field", rho2tr_m.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args) {
                         // global indices for 2N rhotr_m
@@ -733,7 +733,7 @@ namespace ippl {
                     ippl::Comm->freeAllBuffers();
 
                 } else {
-                    Kokkos::parallel_for(
+                    ippl::parallel_for(
                         "Write the E-field on physical grid", this->lhs_mp->getFieldRangePolicy(),
                         KOKKOS_LAMBDA(const index_array_type& args) {
                             scalar_type checkVal = 0;
@@ -793,7 +793,7 @@ namespace ippl {
                     // if diagonal element (row = col), do not need N/2 term = 0
                     // else, if mixed derivative, need kVec = 0 at N/2
 
-                    Kokkos::parallel_for(
+                    ippl::parallel_for(
                         "Hessian", rho2tr_m.getFieldRangePolicy(),
                         KOKKOS_LAMBDA(const index_array_type& args) {
                             // global indices for 2N rhotr_m
@@ -897,7 +897,7 @@ namespace ippl {
                         ippl::Comm->freeAllBuffers();
 
                     } else {
-                        Kokkos::parallel_for(
+                        ippl::parallel_for(
                             "Write Hessian on physical grid", hess_m.getFieldRangePolicy(),
                             KOKKOS_LAMBDA(const index_array_type& args) {
                                 scalar_type checkVal = 0;
@@ -976,7 +976,7 @@ namespace ippl {
 
             // Kokkos parallel for loop to assign analytic grnL_m
             if (alg == Algorithm::VICO) {
-                Kokkos::parallel_for(
+                ippl::parallel_for(
                     "Initialize Green's function ", grnL_m.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args) {
                         scalar_type checkVal = 0;
@@ -1007,7 +1007,7 @@ namespace ippl {
                         apply(view_g, args) = (!isOrig) * value + isOrig * analyticLim;
                     });
             } else if (alg == Algorithm::BIHARMONIC) {
-                Kokkos::parallel_for(
+                ippl::parallel_for(
                     "Initialize Green's function ", grnL_m.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args) {
                         scalar_type checkVal = 0;
@@ -1132,7 +1132,7 @@ namespace ippl {
             const int nghost_g2n1                 = grn2n1_m.getNghost();
             const auto& ldom_g2n1                 = layout2n1_m->getLocalNDIndex();
 
-            Kokkos::parallel_for(
+            ippl::parallel_for(
                 "Initialize 2N+1 Green's function ", grn2n1_m.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     scalar_type checkVal = 0;
@@ -1246,7 +1246,7 @@ namespace ippl {
             const auto& ldom                 = layout2_m->getLocalNDIndex();
 
             // Kokkos parallel for loop to find (0,0,0) point and regularize
-            Kokkos::parallel_for(
+            ippl::parallel_for(
                 "Regularize Green's function ", grn_mr.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     scalar_type checkVal = 0;
@@ -1508,7 +1508,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain4);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 1, i, intersection, ldom, nghost, view, fd_m,
-                                true, false, false);
+                                {true, false, false});
                 }
             }
 
@@ -1531,7 +1531,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain4);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 2, i, intersection, ldom, nghost, view, fd_m,
-                                false, true, false);
+                                {false, true, false});
                 }
             }
 
@@ -1554,7 +1554,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain4);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 3, i, intersection, ldom, nghost, view, fd_m,
-                                false, false, true);
+                                {false, false, true});
                 }
             }
 
@@ -1581,7 +1581,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain4);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 4, i, intersection, ldom, nghost, view, fd_m,
-                                true, true, false);
+                                {true, true, false});
                 }
             }
 
@@ -1608,7 +1608,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain4);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 5, i, intersection, ldom, nghost, view, fd_m,
-                                false, true, true);
+                                {false, true, true});
                 }
             }
 
@@ -1635,7 +1635,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain4);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 6, i, intersection, ldom, nghost, view, fd_m,
-                                true, false, true);
+                                {true, false, true});
                 }
             }
 
@@ -1666,7 +1666,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain4);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 7, i, intersection, ldom, nghost, view, fd_m,
-                                true, true, true);
+                                {true, true, true});
                 }
             }
         }
@@ -1914,7 +1914,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain2n1);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 1, i, intersection, ldom, nghost, view, fd_m,
-                                true, false, false);
+                                {true, false, false});
                 }
             }
 
@@ -1937,7 +1937,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain2n1);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 2, i, intersection, ldom, nghost, view, fd_m,
-                                false, true, false);
+                                {false, true, false});
                 }
             }
 
@@ -1960,7 +1960,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain2n1);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 3, i, intersection, ldom, nghost, view, fd_m,
-                                false, false, true);
+                                {false, false, true});
                 }
             }
 
@@ -1987,7 +1987,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain2n1);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 4, i, intersection, ldom, nghost, view, fd_m,
-                                true, true, false);
+                                {true, true, false});
                 }
             }
 
@@ -2014,7 +2014,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain2n1);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 5, i, intersection, ldom, nghost, view, fd_m,
-                                false, true, true);
+                                {false, true, true});
                 }
             }
 
@@ -2041,7 +2041,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain2n1);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 6, i, intersection, ldom, nghost, view, fd_m,
-                                true, false, true);
+                                {true, false, true});
                 }
             }
 
@@ -2072,7 +2072,7 @@ namespace ippl {
                     intersection = intersection.intersect(domain2n1);
 
                     solver_recv(mpi::tag::VICO_SOLVER, 7, i, intersection, ldom, nghost, view, fd_m,
-                                true, true, true);
+                                {true, true, true});
                 }
             }
         }
@@ -2134,7 +2134,7 @@ namespace ippl {
         const scalar_type regThresh = 0.25 * hmin2;
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-        Kokkos::parallel_for(
+        ippl::parallel_for(
             "Shifted Green's function", grn_mr.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const index_array_type& args) {
                 // local -> global indices
