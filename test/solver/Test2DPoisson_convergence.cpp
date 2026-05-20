@@ -87,7 +87,7 @@ template <typename T>
 KOKKOS_INLINE_FUNCTION ippl::Vector<T, Dim> exact_E(T x, T y, T sigma = 0.05, T mu = 0.5) {
     T pi     = Kokkos::numbers::pi_v<T>;
     T r2     = (x - mu) * (x - mu) + (y - mu) * (y - mu);
-    T factor = (1.0 / (2.0 * pi)) * (1 + Kokkos::exp(r2 / (2.0 * sigma * sigma))) / r2;
+    T factor = (1.0 / (2.0 * pi)) * (1 - Kokkos::exp(-r2 / (2.0 * sigma * sigma))) / r2;
 
     ippl::Vector<T, Dim> Efield = {(x - mu), (y - mu)};
     return factor * Efield;
