@@ -17,6 +17,8 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 
+#include <limits>
+
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
@@ -39,30 +41,114 @@ using VectorField_t = typename ippl::Field<ippl::Vector<T, Dim>, Dim, Mesh_t<T>,
 template <typename T>
 using Solver_t = ippl::FFTOpenPoissonSolver<VectorField_t<T>, ScalarField_t<T>>;
 
-// Exponential integral Ei(x) = integral_{-inf}^{x} (e^t / t) dt (SciPy expi convention).
+// Exponential integral matching std::expint: Ei(x) = integral_{-inf}^{x} (e^t / t) dt.
+// Ported from libstdc++ exp_integral.tcc (__expint_Ei, __expint_E1, ...).
+
 template <typename T>
-KOKKOS_INLINE_FUNCTION T Ei(T x) {
-    const T gamma = Kokkos::numbers::egamma_v<T>;
-
-    if (x < T(4)) {
-        T sum  = gamma + Kokkos::log(x);
-        T term = x;
-        for (int n = 1; n <= 20; ++n) {
-            sum += term / T(n);
-            term = term * x / T(n + 1);
+KOKKOS_INLINE_FUNCTION T expint_Ei_series(T x) {
+    const T eps  = Kokkos::Experimental::epsilon_v<T>;
+    T       term = T(1);
+    T       sum  = T(0);
+    for (unsigned int i = 1; i < 1000; ++i) {
+        term *= x / T(i);
+        sum += term / T(i);
+        if (Kokkos::fabs(term) < eps * Kokkos::fabs(sum)) {
+            break;
         }
-        return sum;
     }
+    return Kokkos::numbers::egamma_v<T> + sum + Kokkos::log(x);
+}
 
-    T sum  = T(1);
-    T fact = T(1);
-    T xpow = T(1);
-    for (int k = 1; k <= 6; ++k) {
-        fact *= T(k);
-        xpow *= x;
-        sum += fact / xpow;
+template <typename T>
+KOKKOS_INLINE_FUNCTION T expint_Ei_asymp(T x) {
+    const T eps  = Kokkos::Experimental::epsilon_v<T>;
+    T       term = T(1);
+    T       sum  = T(1);
+    for (unsigned int i = 1; i < 1000; ++i) {
+        const T prev = term;
+        term *= T(i) / x;
+        if (term < eps) {
+            break;
+        }
+        if (term >= prev) {
+            break;
+        }
+        sum += term;
     }
     return Kokkos::exp(x) * sum / x;
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T expint_E1_pos(T x) {
+    const T eps    = std::numeric_limits<T>::epsilon();
+    const T fp_min = std::numeric_limits<T>::min();
+
+    if (x < T(1)) {
+        T term = T(1);
+        T esum = T(0);
+        T osum = T(0);
+        for (unsigned int i = 1; i < 1000; ++i) {
+            term *= -x / T(i);
+            if (Kokkos::fabs(term) < eps) {
+                break;
+            }
+            if (term >= T(0)) {
+                esum += term / T(i);
+            } else {
+                osum += term / T(i);
+            }
+        }
+        return -esum - osum - Kokkos::numbers::egamma_v<T> - Kokkos::log(x);
+    }
+    if (x < T(100)) {
+        const unsigned int n    = 1;
+        const int          nm1  = 0;
+        T b = x + T(n);
+        T c = T(1) / fp_min;
+        T d = T(1) / b;
+        T h = d;
+        for (unsigned int i = 1; i < 1000; ++i) {
+            const T a   = -T(i * (nm1 + static_cast<int>(i)));
+            b += T(2);
+            d = T(1) / (a * d + b);
+            c = b + a / c;
+            const T del = c * d;
+            h *= del;
+            if (Kokkos::fabs(del - T(1)) < eps) {
+                return h * Kokkos::exp(-x);
+            }
+        }
+        return h * Kokkos::exp(-x);
+    }
+
+    T term = T(1);
+    T esum = T(1);
+    T osum = T(0);
+    for (unsigned int i = 1; i < 1000; ++i) {
+        const T prev = term;
+        term *= -T(i) / x;
+        if (Kokkos::fabs(term) > Kokkos::fabs(prev)) {
+            break;
+        }
+        if (term >= T(0)) {
+            esum += term;
+        } else {
+            osum += term;
+        }
+    }
+    return Kokkos::exp(-x) * (esum + osum) / x;
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T Ei(T x) {
+    if (x < T(0)) {
+        return -expint_E1_pos(-x);
+    }
+    const T eps = Kokkos::Experimental::epsilon_v<T>;
+    if (x < -Kokkos::log(eps)) {
+        return expint_Ei_series(x);
+    }
+    return expint_Ei_asymp(x);
 }
 
 template <typename T>
@@ -80,7 +166,7 @@ KOKKOS_INLINE_FUNCTION T exact_fct(T x, T y, T sigma = 0.05, T mu = 0.5) {
 
     T r2 = (x - mu) * (x - mu) + (y - mu) * (y - mu);
 
-    return (1 / (4.0 * pi)) * (std::expint(-r2 / (2.0 * sigma * sigma)) - Kokkos::log(r2));
+    return (1 / (4.0 * pi)) * (Ei(-r2 / (2.0 * sigma * sigma)) - Kokkos::log(r2));
 }
 
 template <typename T>
