@@ -640,7 +640,7 @@ namespace ippl {
                         // global indices for 2N rhotr_m
                         Vector<int, Dim> igVec = args - nghostR;
                         for (unsigned d = 0; d < Dim; ++d) {
-                            igVec[d] += ldomR[0].first();
+                            igVec[d] += ldomR[d].first();
                         }
 
                         scalar_type k_gd;
