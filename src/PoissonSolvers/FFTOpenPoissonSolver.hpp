@@ -1236,9 +1236,9 @@ namespace ippl {
 
             // Formula of Green's function (2D and 3D supported for Hockney)
             if (Dim == 2) {
-                grn_mr = Kokkos::log(Kokkos::sqrt(grn_mr)) / (2 * pi);
+                grn_mr = log(sqrt(grn_mr)) / (2 * pi);
             } else if (Dim == 3) {
-                grn_mr = -1.0 / (4.0 * pi * Kokkos::sqrt(grn_mr));
+                grn_mr = -1.0 / (4.0 * pi * sqrt(grn_mr));
             }
 
             typename Field_t::view_type view = grn_mr.getView();
