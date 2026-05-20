@@ -299,7 +299,7 @@ namespace ippl {
                                           * (2 * size * outsideN - igVec[d]);
 
                         // add 1.0 if at (0,0,0) to avoid singularity
-                        const bool isOrig = (checkVal == 0)
+                        const bool isOrig = (checkVal == 0);
                         apply(view, args) += isOrig * 1.0;
                     });
 
@@ -645,8 +645,8 @@ namespace ippl {
 
                         scalar_type k_gd;
                         const scalar_type Len = N[gd] * hsize[gd];
-                        const bool shift      = (iVec[gd] > N[gd]);
-                        const bool notMid     = (iVec[gd] != N[gd]);
+                        const bool shift      = (igVec[gd] > N[gd]);
+                        const bool notMid     = (igVec[gd] != N[gd]);
 
                         k_gd = notMid * (pi / Len) * (igVec[gd] - shift * 2 * N[gd]);
 
@@ -753,7 +753,7 @@ namespace ippl {
                             // the global indices for view1 and view2 are equal.
                             // This is done using checkVal, which should be 0 if ig1 = ig2.
                             const bool isQuadrant1 = (checkVal == 0);
-                            apply(viewL, args)[gd] = view2(i, j, k) * isQuadrant1;
+                            apply(viewL, args)[gd] = apply(view2, args) * isQuadrant1;
                         });
                 }
                 IpplTimings::stopTimer(edtos);
