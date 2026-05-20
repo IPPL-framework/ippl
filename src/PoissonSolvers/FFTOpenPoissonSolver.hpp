@@ -2133,12 +2133,15 @@ namespace ippl {
         }
         const scalar_type regThresh = 0.25 * hmin2;
 
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         Kokkos::parallel_for(
             "Shifted Green's function", grn_mr.getFieldRangePolicy(),
-            KOKKOS_LAMBDA(const int i, const int j, const int k) {
+            KOKKOS_LAMBDA(const index_array_type& args) {
                 // local -> global indices
-                const int ig[3] = {i + ldom[0].first() - nghost, j + ldom[1].first() - nghost,
-                                   k + ldom[2].first() - nghost};
+                Vector<int, Dim> igVec = args - nghost;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    igVec[d] += ldom[d].first();
+                }
 
                 // Hockney convention: map doubled-grid indices.
                 //   ig in [0, N)   -> offset =  ig        * h
@@ -2146,9 +2149,9 @@ namespace ippl {
                 // Subtract the shift to evaluate the shifted Green's function G(r-s).
                 double rsq = 0.0;
                 for (unsigned int d = 0; d < Dim; ++d) {
-                    const double ig_signed = (ig[d] < nr[d])
-                                                 ? static_cast<double>(ig[d])
-                                                 : static_cast<double>(ig[d] - 2 * nr[d]);
+                    const double ig_signed = (igVec[d] < nr[d])
+                                                 ? static_cast<double>(igVec[d])
+                                                 : static_cast<double>(igVec[d] - 2 * nr[d]);
                     const double xoff      = ig_signed * hs[d] - shft[d];
                     rsq += xoff * xoff;
                 }
@@ -2158,7 +2161,7 @@ namespace ippl {
                 // where G0(r) = 1/(4 pi |r|).
                 const bool nearSing = (rsq < regThresh);
                 const scalar_type r = Kokkos::sqrt(rsq + nearSing * regThresh);
-                view(i, j, k)       = -1.0 / (4.0 * pi * r);
+                apply(view, args)       = -1.0 / (4.0 * pi * r);
             });
 
         // Store Fourier transform of shifted Green's function for convolution in solve()
