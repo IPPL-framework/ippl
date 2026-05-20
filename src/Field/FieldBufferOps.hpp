@@ -21,17 +21,16 @@
 
 namespace ippl {
     namespace detail {
-        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-
         // Access a view that either contains a scalar, vector, or matrix field
         // so that the correct element is selected at compile time. Used by
         // unpack_impl to support rank-0 (scalar), rank-1 (vector), and rank-2
         // (matrix) field types with a single kernel.
-        template <int tensorRank, typename>
+        template <int tensorRank, typename View, unsigned Dim>
         struct ViewAccess;
 
-        template <typename View>
-        struct ViewAccess<2, View> {
+        template <typename View, unsigned Dim>
+        struct ViewAccess<2, View, Dim> {
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim1,
                                                               unsigned dim2,
                                                               const index_array_type& args) {
@@ -39,8 +38,9 @@ namespace ippl {
             }
         };
 
-        template <typename View>
-        struct ViewAccess<1, View> {
+        template <typename View, unsigned Dim>
+        struct ViewAccess<1, View, Dim> {
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim1,
                                                               [[maybe_unused]] unsigned dim2,
                                                               const index_array_type& args) {
@@ -48,8 +48,9 @@ namespace ippl {
             }
         };
 
-        template <typename View>
-        struct ViewAccess<0, View> {
+        template <typename View, unsigned Dim>
+        struct ViewAccess<0, View, Dim> {
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
             KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view,
                                                               [[maybe_unused]] unsigned dim1,
                                                               [[maybe_unused]] unsigned dim2,
@@ -66,6 +67,8 @@ namespace ippl {
                          ippl::detail::FieldBufferData<Tb>& fd, int nghost,
                          const ippl::NDIndex<Dim> ldom,
                          ippl::mpi::Communicator::size_type& nsends) {
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+
             Kokkos::View<Tb*>& buffer = fd.buffer;
 
             size_t size = intersect.size();
@@ -105,6 +108,8 @@ namespace ippl {
                                ippl::detail::FieldBufferData<Tb>& fd, int nghost,
                                const ippl::NDIndex<Dim> ldom,
                                ippl::mpi::Communicator::size_type& nsends) {
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+
             Kokkos::View<Tb*>& buffer = fd.buffer;
 
             size_t size = intersect.size();
@@ -143,9 +148,11 @@ namespace ippl {
         inline void unpack_impl(const ippl::NDIndex<Dim> intersect,
                                 const View& view,
                                 ippl::detail::FieldBufferData<Tb>& fd, int nghost,
-                                const ippl::NDIndex<dim> ldom,
+                                const ippl::NDIndex<Dim> ldom,
                                 ippl::Vector<bool, Dim> coordBool,
                                 size_t dim1 = 0, size_t dim2 = 0) {
+            using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+
             Kokkos::View<Tb*>& buffer = fd.buffer;
 
             Vector<long int, Dim> first = intersect.first() - ldom.first() + nghost;
@@ -171,8 +178,8 @@ namespace ippl {
                         l += igVec[d] * factor; 
                     }
 
-                    ippl::detail::ViewAccess<tensorRank, decltype(view)>::get(view, dim1, dim2,
-                                                                              args) = buffer(l);
+                    ippl::detail::ViewAccess<tensorRank, decltype(view), Dim>::get(view,
+                        dim1, dim2, args) = buffer(l);
                 });
             Kokkos::fence();
         }
@@ -189,13 +196,12 @@ namespace ippl {
         inline void unpack(const ippl::NDIndex<Dim> intersect,
                            const View& view, size_t dim1,
                            ippl::detail::FieldBufferData<Tb>& fd, 
-                           int nghost, const ippl::NDIndex<dim> ldom,
+                           int nghost, const ippl::NDIndex<Dim> ldom,
                            ippl::Vector<bool, Dim> coordBool) {
             unpack_impl<1, Tb, View, Dim>(intersect, view, fd, nghost, ldom, coordBool,
                                           dim1);
         }
 
-        template <typename Tb, typename Tf>
         template <typename Tb, typename View, unsigned Dim>
         inline void unpack(const ippl::NDIndex<Dim> intersect,
                            View& view, ippl::detail::FieldBufferData<Tb>& fd,
@@ -222,7 +228,7 @@ namespace ippl {
             pack(intersection, view, fd, nghost, ldom, nsends);
 
             ippl::mpi::Communicator::buffer_type<memory_space> buf =
-                ippl::Comm->getBuffer<memory_space, Tf>(nsends);
+                ippl::Comm->getBuffer<memory_space, Tb>(nsends);
 
             int tag = TAG + id;
 
@@ -241,7 +247,7 @@ namespace ippl {
             nrecvs = intersection.size();
 
             ippl::mpi::Communicator::buffer_type<memory_space> buf =
-                ippl::Comm->getBuffer<memory_space, Tf>(nrecvs);
+                ippl::Comm->getBuffer<memory_space, Tb>(nrecvs);
 
             int tag = TAG + id;
 
@@ -268,7 +274,7 @@ namespace ippl {
             pack_field(intersection, view, fd, nghost, ldom, nsends);
 
             ippl::mpi::Communicator::buffer_type<memory_space> buf =
-                ippl::Comm->getBuffer<memory_space, Tf>(nsends);
+                ippl::Comm->getBuffer<memory_space, Tb>(nsends);
 
             int tag = TAG + id;
 
