@@ -273,9 +273,7 @@ namespace ippl {
 
             int tag = TAG + id;
 
-            using view_value_type = typename View::value_type;
-
-            ippl::Comm->recv(i, tag, fd, *buf, nrecvs * sizeof(view_value_type), nrecvs);
+            ippl::Comm->recv(i, tag, fd, *buf, nrecvs * sizeof(Tb), nrecvs);
             buf->resetReadPos();
 
             unpack(intersection, view, fd, nghost, ldom, coordBool);
