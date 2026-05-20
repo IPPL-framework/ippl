@@ -268,7 +268,7 @@ int main(int argc, char* argv[]) {
         IpplTimings::startTimer(allTimer);
 
         // gridsizes to iterate over
-        std::array<int, 6> N = {4, 8, 16, 32, 64, 128, 256, 512};
+        std::array<int, 8> N = {4, 8, 16, 32, 64, 128, 256, 512};
 
         msg << "Spacing Error ErrorEx ErrorEy" << endl;
 
