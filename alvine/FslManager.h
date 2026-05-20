@@ -83,11 +83,10 @@ void pre_run() override {
 
       //this->setLoadBalancer( std::make_shared<LoadBalancer_t>( this->lbt_m, this->fcontainer_m, this->pcontainer_m, this->fsolver_m) );
 
-      //initializeParticles();
+      initializeParticles();
+      this->par2grid();
+      clearVirtualParticles();
 
-      //this->par2grid();
-
-      initializeGridVorticity();
       auto omega0 = this->fcontainer_m->getOmegaField().deepCopy();
       this->fsolver_m->runSolver();
       this->computeVelocityField();
@@ -105,7 +104,102 @@ if (ippl::Comm->rank() == 0) {
 
     }
 
- 
+void initializeParticles() {
+    auto* mesh = &this->fcontainer_m->getMesh();
+    auto* FL   = &this->fcontainer_m->getFL();
+    std::shared_ptr<ParticleContainer_t> pc = this->pcontainer_m;
+    ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>> rlayout;
+    const bool isFEM = (this->solver_m == "FEM") || (this->solver_m == "FEM_PRECON");
+    rlayout = ippl::detail::RegionLayout<double, Dim, Mesh_t<Dim>>(*FL, *mesh, isFEM);
+    const ippl::NDIndex<Dim>& local = FL->getLocalNDIndex();
+
+    unsigned nxp_global = static_cast<unsigned>(std::sqrt(this->np_m));
+    unsigned nyp_global = this->np_m / nxp_global;
+
+    double xmin_global = this->rmin_m[0];
+    double xmax_global = this->rmax_m[0];
+    double ymin_global = this->rmin_m[1];
+    double ymax_global = this->rmax_m[1];
+    double ymin_band = (ymin_global + ymax_global) / 2.0 - 1.0;
+    double ymax_band = (ymin_global + ymax_global) / 2.0 + 1.0;
+
+    double dxp = (xmax_global - xmin_global) / nxp_global;
+    double dyp = (ymax_band - ymin_band) / nyp_global;
+
+    int local_start_x = local[0].first();
+    int local_end_x   = local[0].last();
+    int local_start_y = local[1].first();
+    int local_end_y   = local[1].last();
+
+    double xmin_local = xmin_global + local_start_x * this->hr_m[0];
+    double xmax_local = xmin_global + (local_end_x + 1) * this->hr_m[0];
+    double ymin_local = ymin_global + local_start_y * this->hr_m[1];
+    double ymax_local = ymin_global + (local_end_y + 1) * this->hr_m[1];
+
+    double y_low  = std::max(ymin_local, ymin_band);
+    double y_high = std::min(ymax_local, ymax_band);
+    if (y_low >= y_high) {
+        pc->create(0);
+        return;
+    }
+
+    int ix_start = static_cast<int>(std::ceil((xmin_local - xmin_global - 0.5 * dxp) / dxp));
+    int ix_end   = static_cast<int>(std::floor((xmax_local - xmin_global - 0.5 * dxp) / dxp));
+    ix_start = std::max(0, ix_start);
+    ix_end   = std::min(static_cast<int>(nxp_global - 1), ix_end);
+
+    int iy_start = static_cast<int>(std::ceil((y_low - ymin_band - 0.5 * dyp) / dyp));
+    int iy_end   = static_cast<int>(std::floor((y_high - ymin_band - 0.5 * dyp) / dyp));
+    iy_start = std::max(0, iy_start);
+    iy_end   = std::min(static_cast<int>(nyp_global - 1), iy_end);
+
+    unsigned nxp_local = ix_end - ix_start + 1;
+    unsigned nyp_local = iy_end - iy_start + 1;
+    size_type nlocal = nxp_local * nyp_local;
+
+    pc->create(nlocal);
+
+    int seed = 42;
+    Kokkos::Random_XorShift64_Pool<> rand_pool(seed + 100 * ippl::Comm->rank());
+
+    auto R_view = pc->R.getView();
+
+    Kokkos::parallel_for(
+        "init_particle_positions",
+        nlocal,
+        KOKKOS_LAMBDA(const int i) {
+            unsigned ix_local = i % nxp_local;
+            unsigned iy_local = i / nxp_local;
+            unsigned ix_global = ix_start + ix_local;
+            unsigned iy_global = iy_start + iy_local;
+
+            auto rand_gen = rand_pool.get_state();
+            double jitter_x = (rand_gen.drand() - 0.5) * dxp * 0.2;
+            double jitter_y = (rand_gen.drand() - 0.5) * dyp * 0.2;
+            rand_pool.free_state(rand_gen);
+
+            double x = xmin_global + (ix_global + 0.5) * dxp + jitter_x;
+            double y = ymin_band + (iy_global + 0.5) * dyp + jitter_y;
+
+            R_view(i)[0] = x;
+            R_view(i)[1] = y;
+        }
+    );
+
+    auto omega_view = pc->omega.getView();
+    double omega0 = 1.0;
+    double Ap = dxp * dyp;
+
+    Kokkos::parallel_for(
+        "init_particle_vorticity",
+        nlocal,
+        KOKKOS_LAMBDA(const int i) {
+            omega_view(i) = omega0 * Ap;
+        }
+    );
+
+    Kokkos::fence();
+}
 
 double computeOmegaL2() {
     auto& omegaField = this->fcontainer_m->getOmegaField();
@@ -489,7 +583,7 @@ void logDivergenceDiagnostics() {
 
       this->logOmegaField();
       if (this->it_m % this->dump_freq_m == 0) {
-        this->dump();
+        // this->dump();
       }
 
       m << this->it_m << " Done" << endl;

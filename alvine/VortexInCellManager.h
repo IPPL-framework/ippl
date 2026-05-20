@@ -453,7 +453,7 @@ void dumpParticleDataPerRank() {
 
       this->logOmegaField();
       if (this->it_m % this->dump_freq_m == 0) {
-        this->dump();
+        // this->dump();
       }
 
       m << this->it_m << " Done" << endl;
