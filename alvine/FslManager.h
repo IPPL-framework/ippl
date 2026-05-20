@@ -257,6 +257,8 @@ void initializeVirtualParticles(){
     Vector_t<double, Dim> rmin = this->rmin_m;
     Vector_t<double, Dim> hr   = this->hr_m;
     double dA = hr[0] * hr[1];
+    int seed = 42;
+    Kokkos::Random_XorShift64_Pool<> rand_pool(seed + 100 * ippl::Comm->rank());
 
     Kokkos::parallel_for(
         "init_virtual_particles_from_grid",
@@ -270,8 +272,13 @@ void initializeVirtualParticles(){
             int li = ii + nghost;
             int lj = jj + nghost;
 
-            R_view(p)[0] = rmin[0] + (i+0.5) * hr[0];
-            R_view(p)[1] = rmin[1] + (j+0.5) * hr[1];
+            auto rand_gen = rand_pool.get_state();
+            double jitter_x = (rand_gen.drand() - 0.5) * hr[0] * 0.2;
+            double jitter_y = (rand_gen.drand() - 0.5) * hr[1] * 0.2;
+            rand_pool.free_state(rand_gen);
+
+            R_view(p)[0] = rmin[0] + (i+0.5) * hr[0] + jitter_x;
+            R_view(p)[1] = rmin[1] + (j+0.5) * hr[1] + jitter_y;
 
             omega_p(p) = omega_g(li, lj) * dA;
             P_view(p) = u_g(li, lj);
@@ -301,8 +308,6 @@ void initializeGridVorticity() {
     double y_mid = 0.5 * (rmin[1] + rmax[1]);
     double y_low = y_mid - 1.0;
     double y_high = y_mid + 1.0;
-    int seed = 42;
-    Kokkos::Random_XorShift64_Pool<> rand_pool(seed + 100 * ippl::Comm->rank());
 
     Kokkos::parallel_for(
         "initialize_grid_vorticity",
@@ -314,16 +319,7 @@ void initializeGridVorticity() {
 
             double y = rmin[1] + (j + 0.5) * hr[1];
 
-            if (y >= y_low && y <= y_high) {
-                auto rand_gen = rand_pool.get_state();
-                rand_gen.drand(); // Same random draw shape as VIC's x-position jitter.
-                double perturb = 0.1 * (rand_gen.drand() - 0.5);
-                rand_pool.free_state(rand_gen);
-
-                omega_view(li, lj) = 1.0 + perturb;
-            } else {
-                omega_view(li, lj) = 0.0;
-            }
+            omega_view(li, lj) = (y >= y_low && y <= y_high) ? 1.0 : 0.0;
         }
     );
 
