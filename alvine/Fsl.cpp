@@ -1,6 +1,6 @@
 // Forward Semi-Lagrangian Test
 // Usage:
-//   srun ./FSL <nx> <ny> <Np> <Nt> <stype> <dump_freq> --overallocate 1.0 --info 5
+//   srun ./FSL <nx> <ny> <Np_unused> <Nt> <stype> <dump_freq> --overallocate 1.0 --info 5
 
 constexpr unsigned Dim = 2;
 using T                = double;
@@ -41,14 +41,13 @@ int main(int argc, char* argv[]) {
             nr[d] = std::atoi(argv[arg++]);
         }
 
-        int np = std::atoi(argv[arg++]);
+        int np = std::atoi(argv[arg++]);   // unused for FSL, but keep argument format
         int nt = std::atoi(argv[arg++]);
 
         std::string solver = argv[arg++];
         int dump_freq = std::atoi(argv[arg++]);
 
         msg << " Grid size: " << nr
-            << " No. of initial VIC particles: " << np
             << " No. of virtual particles per step: " << nr[0] * nr[1]
             << " No. of time steps: " << nt << endl;
 
