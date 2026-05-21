@@ -34,9 +34,6 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     KOKKOS_FUNCTION Vector<T, Dim>::Vector(const std::initializer_list<T>& list) {
-        if (list.size() != Dim) {
-            Kokkos::abort("Vector initializer_list size must match Vector dimension");
-        }
         unsigned int i = 0;
         for (auto& l : list) {
             data_m[i] = l;
