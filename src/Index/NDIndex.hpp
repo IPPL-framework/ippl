@@ -7,20 +7,9 @@
 
 namespace ippl {
     template <unsigned Dim>
-    template <class... Args>
+    template <class... Args, typename std::enable_if<sizeof...(Args) == Dim, bool>::type>
     KOKKOS_FUNCTION NDIndex<Dim>::NDIndex(const Args&... args)
-        : NDIndex({args...}) {
-        static_assert(Dim == sizeof...(args), "Wrong number of arguments.");
-    }
-
-    template <unsigned Dim>
-    KOKKOS_FUNCTION NDIndex<Dim>::NDIndex(std::initializer_list<Index> indices) {
-        unsigned int i = 0;
-        for (auto& index : indices) {
-            indices_m[i] = index;
-            ++i;
-        }
-    }
+        : indices_m{args...} {}
 
     template <unsigned Dim>
     KOKKOS_FUNCTION NDIndex<Dim>::NDIndex(const Vector<unsigned, Dim>& sizes) {
@@ -160,26 +149,29 @@ namespace ippl {
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION Vector<size_t, Dim> NDIndex<Dim>::length() const {
-        auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
-            return Vector<size_t, Dim>{indices_m[Idx].length()...};
-        };
-        return construct(std::make_index_sequence<Dim>{});
+        Vector<size_t, Dim> result;
+        for (unsigned d = 0; d < Dim; ++d) {
+            result[d] = indices_m[d].length();
+        }
+        return result;
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION Vector<int, Dim> NDIndex<Dim>::first() const {
-        auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
-            return Vector<int, Dim>{indices_m[Idx].first()...};
-        };
-        return construct(std::make_index_sequence<Dim>{});
+        Vector<int, Dim> result;
+        for (unsigned d = 0; d < Dim; ++d) {
+            result[d] = indices_m[d].first();
+        }
+        return result;
     }
 
     template <unsigned Dim>
     KOKKOS_INLINE_FUNCTION Vector<int, Dim> NDIndex<Dim>::last() const {
-        auto construct = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
-            return Vector<int, Dim>{indices_m[Idx].last()...};
-        };
-        return construct(std::make_index_sequence<Dim>{});
+        Vector<int, Dim> result;
+        for (unsigned d = 0; d < Dim; ++d) {
+            result[d] = indices_m[d].last();
+        }
+        return result;
     }
 
     template <unsigned Dim>
