@@ -15,7 +15,6 @@
 
 #include <Kokkos_ReductionIdentity.hpp>
 #include <cstdlib>
-#include <limits>
 #include <map>
 #include <utility>
 
@@ -33,10 +32,10 @@ namespace Kokkos {
             return ippl::Vector<T, Dim>(1);
         }
         KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> min() {
-            return ippl::Vector<T, Dim>(std::numeric_limits<T>::infinity());
+            return ippl::Vector<T, Dim>(Kokkos::reduction_identity<T>::min());
         }
         KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> max() {
-            return ippl::Vector<T, Dim>(-std::numeric_limits<T>::infinity());
+            return ippl::Vector<T, Dim>(Kokkos::reduction_identity<T>::max());
         }
     };
 }  // namespace Kokkos

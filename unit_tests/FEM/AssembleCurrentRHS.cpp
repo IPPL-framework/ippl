@@ -85,10 +85,8 @@ public:
     return Mesh_t(owned, h, origin);
   }
 
-  static NedelecType make_space(Mesh_t& mesh, Layout l) {
-    Elem e = ElemSel::make_elem();
-    Quad q = ElemSel::make_quad(e);
-    return NedelecType(mesh, e, q, l);
+  static NedelecType make_space(Mesh_t& mesh, Elem& e, Quad& q, Layout& layout) {
+    return NedelecType(mesh, e, q, layout);
   }
 };
 
@@ -115,7 +113,9 @@ TYPED_TEST(AssembleCurrentTest, SingleParticle_Smoke) {
   auto owned  = TestFixture::make_owned_nd(nx);
   auto layout = TestFixture::make_layout(owned);
   auto mesh   = TestFixture::make_mesh(owned, h, origin);
-  auto space  = TestFixture::make_space(mesh, layout);
+  typename TestFixture::Elem e = TestFixture::ElemSel::make_elem();
+  typename TestFixture::Quad q = TestFixture::ElemSel::make_quad(e);
+  auto space  = TestFixture::make_space(mesh, e, q, layout);
 
   playout_t playout(layout, mesh);
   bunch_t   bunch(playout);
@@ -163,7 +163,9 @@ TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
   auto owned  = TestFixture::make_owned_nd(nx);
   auto layout = TestFixture::make_layout(owned);
   auto mesh   = TestFixture::make_mesh(owned, h, origin);
-  auto space  = TestFixture::make_space(mesh, layout);
+  typename TestFixture::Elem e = TestFixture::ElemSel::make_elem();
+  typename TestFixture::Quad q = TestFixture::ElemSel::make_quad(e);
+  auto space  = TestFixture::make_space(mesh, e, q, layout);
 
 
   //create the two positions used for the test, representing pure x-motion within one cell)
@@ -259,7 +261,9 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_ThreeCells_ExactValues) {
     auto owned  = TestFixture::make_owned_nd(nx);
     auto layout = TestFixture::make_layout(owned);
     auto mesh   = TestFixture::make_mesh(owned, h, origin);
-    auto space  = TestFixture::make_space(mesh, layout);
+    typename TestFixture::Elem e = TestFixture::ElemSel::make_elem();
+    typename TestFixture::Quad q = TestFixture::ElemSel::make_quad(e);
+    auto space  = TestFixture::make_space(mesh, e, q, layout);
 
     playout_t playout(layout, mesh);
     bunch_t bunch(playout);
@@ -362,7 +366,9 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_VertexHit_3D) {
     auto owned  = TestFixture::make_owned_nd(nx);
     auto layout = TestFixture::make_layout(owned);
     auto mesh   = TestFixture::make_mesh(owned, h, origin);
-    auto space  = TestFixture::make_space(mesh, layout);
+    typename TestFixture::Elem e = TestFixture::ElemSel::make_elem();
+    typename TestFixture::Quad q = TestFixture::ElemSel::make_quad(e);
+    auto space  = TestFixture::make_space(mesh, e, q, layout);
 
     playout_t playout(layout, mesh);
     bunch_t bunch(playout);
