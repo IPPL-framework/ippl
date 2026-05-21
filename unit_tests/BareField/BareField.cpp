@@ -259,6 +259,34 @@ TYPED_TEST(BareFieldTest, AllFuncs) {
     });
 }
 
+TYPED_TEST(BareFieldTest, write_as_list) {
+    using T                       = typename TestFixture::value_type;
+    using ExecSpace               = typename TestFixture::exec_space;
+    constexpr static unsigned Dim = TestFixture::dim;
+
+    if constexpr (Dim == 2) {
+        // 2D, 2x2 Field
+        ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD,
+                                      ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(0)),
+                                      std::array<bool, Dim>{true});
+        ippl::BareField<T, Dim, Kokkos::LayoutRight, ExecSpace> field(layout);
+
+        auto view  = field.getView();
+        auto hview = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace(), view);
+        hview(0, 0) = 1;
+        hview(0, 1) = 2;
+        hview(1, 0) = 3;
+        hview(1, 1) = 4;
+        Kokkos::deep_copy(view, hview);
+
+        std::ostringstream ss;
+        field.write_as_list(ss);
+
+        ASSERT_STREQ(ss.str().c_str(), "[[1, 2], [3, 4]]");
+    } else
+        GTEST_SKIP();
+}
+
 int main(int argc, char* argv[]) {
     int success = 1;
     ippl::initialize(argc, argv);
