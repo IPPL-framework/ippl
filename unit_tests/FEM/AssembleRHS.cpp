@@ -108,9 +108,7 @@ public:
     return f;
   }
 
-  static Space make_space(Mesh_t& mesh) {
-    Elem e = ElemSel::make_elem();
-    Quad q = ElemSel::make_quad(e);
+  static Space make_space(Mesh_t& mesh, Elem& e, Quad& q) {
     return Space(mesh, e, q);
   }
 
@@ -203,7 +201,9 @@ TYPED_TEST(AssembleRHSTest, ConservationOfTotalWeight) {
   auto mesh   = TestFixture::make_mesh(owned, h, origin);
 
   auto rhs    = TestFixture::make_zero_field(mesh, layout);
-  auto space  = TestFixture::make_space(mesh);
+  typename TestFixture::Elem e = TestFixture::ElemSel::make_elem();
+  typename TestFixture::Quad q = TestFixture::ElemSel::make_quad(e);
+  auto space  = TestFixture::make_space(mesh, e, q);
 
   playout_t playout(layout, mesh);
   bunch_t   bunch(playout);
