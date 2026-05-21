@@ -8,8 +8,6 @@
 #include <Kokkos_MathematicalFunctions.hpp>
 #include <cstring>
 
-#include "Utility/TypeUtils.h"
-
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
