@@ -276,8 +276,6 @@ TYPED_TEST(BareFieldTest, write_as_list) {
             auto hview =
                 Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace(), view);
 
-            std::cout << layout.comm.size() << "\n";
-            std::cout << layout.comm.rank() << "\n";
             if (layout.comm.size() == 1) {
                 hview(0, 0) = 1;
                 hview(0, 1) = 2;
