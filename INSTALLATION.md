@@ -171,6 +171,17 @@ Submitted batch job 396355
 ## Build Instructions for specific sytems
 Here we compile links to recipies for easy build on various HPC systems. 
 
+## GWENDOLEN (PSI)
+Gwendolen is a small Nvidia A100 cluster at PSI, accessible through Merlin 6. To build on this machine, load the following modules:
+```bash
+module load gcc/14.3.0 openmpi/5.0.10_slurm
+module load cmake/3.26.3
+```
+The Cmake command you can use to build all unit tests, tests, and the alpine mini-apps including all solvers is:
+```bash
+cmake .. -DIPPL_PLATFORMS=CUDA -DCMAKE_BUILD_TYPE=Release -DKokkos_ARCH_AMPERE80=ON -DCMAKE_CXX_STANDARD=20 -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_TESTS=ON -DIPPL_ENABLE_SOLVERS=ON -DIPPL_ENABLE_ALPINE=True -DIPPL_ENABLE_UNIT_TESTS=True
+```
+
 ### MERLIN 7 (PSI)
 [IPPL build for A100 and HG](https://hpce.pages.psi.ch/merlin7/ippl.html)
 

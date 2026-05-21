@@ -52,7 +52,7 @@ CutTimes<Dim,T> compute_axis_cuts_default(
   const T eps1 = (T)1e-12, one = (T)1;
 
   auto axis_cut = [&](auto Ax) {
-    constexpr int a = Ax;
+    constexpr int a = decltype(Ax)::value;
     const T dist = B[a] - A[a];
     const T eps  = eps1 * h[a];
     if (Kokkos::fabs(dist) <= eps) return; // no motion → no crossing
