@@ -399,18 +399,21 @@ void logEnergyDiagnostics() {
 
         if (ippl::Comm->rank() == 0) {
             std::ofstream out("energy.csv", std::ios::out);
-            out << "step,time,energy,rel_error\n";
+            out << "step,time,energy,rel_error,normalized_energy\n";
             out.close();
         }
         ippl::Comm->barrier();
     }
 
     double relErr = this->relativeError(energy, this->energy0_m);
+    double normalizedEnergy =
+        energy / (std::fabs(this->energy0_m) > 1e-30 ? this->energy0_m : 1e-30);
 
     if (ippl::Comm->rank() == 0) {
         Inform m("energy ");
         m << "kinetic energy = " << energy
-          << ", relError = " << relErr << endl;
+          << ", relError = " << relErr
+          << ", normalizedEnergy = " << normalizedEnergy << endl;
 
         std::ofstream out("energy.csv", std::ios::app);
         out.precision(16);
@@ -418,7 +421,8 @@ void logEnergyDiagnostics() {
         out << this->it_m << ","
             << this->time_m << ","
             << energy << ","
-            << relErr << "\n";
+            << relErr << ","
+            << normalizedEnergy << "\n";
         out.close();
     }
 }
