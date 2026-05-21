@@ -83,7 +83,6 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1NDRegion-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::NDRegion Class Reference</div></div>
@@ -106,9 +105,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aae2618a2bd5fbfb8ca4888cf36e2bddc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a34ecd5c2950be22add9a1f67b0c7a0"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDRegion.html#a7a34ecd5c2950be22add9a1f67b0c7a0">~NDRegion</a> ()</td></tr>
 <tr class="separator:a7a34ecd5c2950be22add9a1f67b0c7a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a764f6a5cb8e598e5c293675e10b7eed7"><td class="memTemplParams" colspan="2">template&lt;class... Args&gt; </td></tr>
-<tr class="memitem:a764f6a5cb8e598e5c293675e10b7eed7"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1NDRegion.html#a764f6a5cb8e598e5c293675e10b7eed7">NDRegion</a> (const Args &amp;... args)</td></tr>
-<tr class="separator:a764f6a5cb8e598e5c293675e10b7eed7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f66d47bd4be180a4dee63b40c62f722"><td class="memTemplParams" colspan="2">template&lt;class... Args, typename std::enable_if&lt; sizeof...(Args)==<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &amp;&amp;(std::is_convertible_v&lt; Args, <a class="el" href="classippl_1_1PRegion.html">PRegion</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &gt; &amp;&amp;...), bool &gt;::type  = true&gt; </td></tr>
+<tr class="memitem:a6f66d47bd4be180a4dee63b40c62f722"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1NDRegion.html#a6f66d47bd4be180a4dee63b40c62f722">NDRegion</a> (const Args &amp;... args)</td></tr>
+<tr class="separator:a6f66d47bd4be180a4dee63b40c62f722"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3fc7da5dc53a19d598dc6936d129f59"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDRegion.html#ad3fc7da5dc53a19d598dc6936d129f59">NDRegion</a> (const <a class="el" href="classippl_1_1NDRegion.html">NDRegion</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;nr)</td></tr>
 <tr class="separator:ad3fc7da5dc53a19d598dc6936d129f59"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a919ff005ecc4389f5bac9e2047d5bd49"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDRegion.html">NDRegion</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDRegion.html#a919ff005ecc4389f5bac9e2047d5bd49">operator=</a> (const <a class="el" href="classippl_1_1NDRegion.html">NDRegion</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;nr)</td></tr>
@@ -127,11 +126,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:abcda5843618cead78cebd8a029150b48"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62c44ab33c51334ab12475cc90935e1c"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDRegion.html#a62c44ab33c51334ab12475cc90935e1c">empty</a> () const</td></tr>
 <tr class="separator:a62c44ab33c51334ab12475cc90935e1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
-Private Member Functions</h2></td></tr>
-<tr class="memitem:a41fdfdaeaf0c0ce6af775b3926969a8f"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDRegion.html#a41fdfdaeaf0c0ce6af775b3926969a8f">NDRegion</a> (std::initializer_list&lt; <a class="el" href="classippl_1_1PRegion.html">PRegion</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &gt; regions)</td></tr>
-<tr class="separator:a41fdfdaeaf0c0ce6af775b3926969a8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b99bce55c4ad6aa061cfe0640d054da"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </td></tr>
+<tr class="memitem:a9b99bce55c4ad6aa061cfe0640d054da"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1NDRegion.html#a9b99bce55c4ad6aa061cfe0640d054da">NDRegion</a> (const <a class="el" href="classippl_1_1NDRegion.html">NDRegion</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;nr)</td></tr>
+<tr class="separator:a9b99bce55c4ad6aa061cfe0640d054da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -191,13 +188,13 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a764f6a5cb8e598e5c293675e10b7eed7" name="a764f6a5cb8e598e5c293675e10b7eed7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a764f6a5cb8e598e5c293675e10b7eed7">&#9670;&#160;</a></span>NDRegion() <span class="overload">[2/4]</span></h2>
+<a id="a6f66d47bd4be180a4dee63b40c62f722" name="a6f66d47bd4be180a4dee63b40c62f722"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f66d47bd4be180a4dee63b40c62f722">&#9670;&#160;</a></span>NDRegion() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class... Args&gt; </div>
+template&lt;class... Args, typename std::enable_if&lt; sizeof...(Args)==<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &amp;&amp;(std::is_convertible_v&lt; Args, <a class="el" href="classippl_1_1PRegion.html">PRegion</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &gt; &amp;&amp;...), bool &gt;::type  = true&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">KOKKOS_FUNCTION ippl::NDRegion::NDRegion </td>
@@ -236,28 +233,22 @@ template&lt;class... Args&gt; </div>
 
 </div>
 </div>
-<a id="a41fdfdaeaf0c0ce6af775b3926969a8f" name="a41fdfdaeaf0c0ce6af775b3926969a8f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a41fdfdaeaf0c0ce6af775b3926969a8f">&#9670;&#160;</a></span>NDRegion() <span class="overload">[4/4]</span></h2>
+<a id="a9b99bce55c4ad6aa061cfe0640d054da" name="a9b99bce55c4ad6aa061cfe0640d054da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b99bce55c4ad6aa061cfe0640d054da">&#9670;&#160;</a></span>NDRegion() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_FUNCTION ippl::NDRegion::NDRegion </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION ippl::NDRegion::NDRegion </td>
           <td>(</td>
-          <td class="paramtype">std::initializer_list&lt; <a class="el" href="classippl_1_1PRegion.html">PRegion</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &gt;&#160;</td>
-          <td class="paramname"><em>regions</em></td><td>)</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1NDRegion.html">NDRegion</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>nr</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 </div>
