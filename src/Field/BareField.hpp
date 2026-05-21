@@ -196,7 +196,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::write(std::ostream& out) const {
         Kokkos::fence();
-        detail::write<T, Dim>(dview_m, out);
+        detail::write<T, Dim, ViewArgs...>(dview_m, out);
     }
 
     template <typename T, unsigned Dim, class... ViewArgs>
@@ -207,7 +207,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::write_as_list(std::ostream& out) const {
         Kokkos::fence();
-        detail::write_as_list<T, Dim>(dview_m, out);
+        detail::write_as_list<T, Dim, ViewArgs...>(dview_m, out);
     }
 
     template <typename T, unsigned Dim, class... ViewArgs>
