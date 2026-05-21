@@ -95,7 +95,7 @@ namespace ippl {
                     int l = igVec[0];
                     for (unsigned d = 1; d < Dim; ++d) {
                         int factor = 1;
-                        for (unsigned d1 = 0; d1 < d; ++d) {
+                        for (unsigned d1 = 0; d1 < d; ++d1) {
                             factor *= intersect[d1].length();
                         }
                         l += igVec[d] * factor; 
@@ -143,7 +143,7 @@ namespace ippl {
                     int l = igVec[0];
                     for (unsigned d = 1; d < Dim; ++d) {
                         int factor = 1;
-                        for (unsigned d1 = 0; d1 < d; ++d) {
+                        for (unsigned d1 = 0; d1 < d; ++d1) {
                             factor *= intersect[d1].length();
                         }
                         l += igVec[d] * factor; 
@@ -194,7 +194,7 @@ namespace ippl {
                     int l = igVec[0];
                     for (unsigned d = 1; d < Dim; ++d) {
                         int factor = 1;
-                        for (unsigned d1 = 0; d1 < d; ++d) {
+                        for (unsigned d1 = 0; d1 < d; ++d1) {
                             factor *= intersect[d1].length();
                         }
                         l += igVec[d] * factor; 
