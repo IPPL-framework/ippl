@@ -225,7 +225,7 @@ void logVelocityRatioDebug() {
 }
 
 void initializeVirtualParticles(){
-    //clearVirtualParticles();
+    clearVirtualParticles();
     auto* FL = &this->fcontainer_m->getFL();
     auto local = FL->getLocalNDIndex();
 
@@ -240,10 +240,7 @@ void initializeVirtualParticles(){
     const int nghost = this->fcontainer_m->getOmegaField().getNghost();
 
     auto pc = this->pcontainer_m;
-    int current = pc->getLocalNum();
-    if(nlocal > current) {
-    pc->create(nlocal - current); 
-    }
+    pc->create(nlocal);
     
 
     auto R_view = pc->R.getView();
@@ -558,7 +555,7 @@ void advectForward() {
     IpplTimings::stopTimer(par2gridTimer);
 
     // 5. Delete temporary particles
-   // clearVirtualParticles();
+    clearVirtualParticles();
 }
 };
 #endif
