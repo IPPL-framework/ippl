@@ -7,6 +7,7 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 #include <cstring>
+#include <sstream>
 
 #include "TestUtils.h"
 #include "gtest/gtest.h"
@@ -263,47 +264,52 @@ TYPED_TEST(BareFieldTest, write_as_list) {
     constexpr static unsigned Dim = TestFixture::dim;
 
     if constexpr (Dim == 2) {
-        // 2D, 2x2 Field
-        ippl::FieldLayout<Dim> layout(MPI_COMM_WORLD,
-                                      ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(2)),
-                                      std::array<bool, Dim>{true});
-        ippl::BareField<T, Dim, Kokkos::LayoutRight, ExecSpace> field(layout, 0);
+        // not implemented for MPI Communicators greater than two
+        if (ippl::Comm->size() <= 2) {
+            // 2D, 2x2 Field
+            ippl::FieldLayout<Dim> layout(ippl::Comm->getCommunicator(),
+                                          ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(2)),
+                                          std::array<bool, Dim>{true});
+            ippl::BareField<T, Dim, Kokkos::LayoutRight, ExecSpace> field(layout, 0);
 
-        auto view  = field.getView();
-        auto hview = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace(), view);
+            auto view = field.getView();
+            auto hview =
+                Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace(), view);
 
-        std::cout << layout.comm.size() << "\n";
-        std::cout << layout.comm.rank() << "\n";
-        if (layout.comm.size() == 1) {
-            hview(0, 0) = 1;
-            hview(0, 1) = 2;
-            hview(1, 0) = 3;
-            hview(1, 1) = 4;
-        } else if (layout.comm.size() == 2) {
-            if (layout.comm.rank() == 0) {
+            std::cout << layout.comm.size() << "\n";
+            std::cout << layout.comm.rank() << "\n";
+            if (layout.comm.size() == 1) {
                 hview(0, 0) = 1;
                 hview(0, 1) = 2;
+                hview(1, 0) = 3;
+                hview(1, 1) = 4;
+            } else if (layout.comm.size() == 2) {
+                if (layout.comm.rank() == 0) {
+                    hview(0, 0) = 1;
+                    hview(0, 1) = 2;
+                }
+                if (layout.comm.rank() == 1) {
+                    hview(0, 0) = 3;
+                    hview(0, 1) = 4;
+                }
             }
-            if (layout.comm.rank() == 1) {
-                hview(0, 0) = 3;
-                hview(0, 1) = 4;
-            }
-        }
 
-        Kokkos::deep_copy(view, hview);
+            Kokkos::deep_copy(view, hview);
 
-        std::ostringstream ss;
-        field.write_as_list(ss);
+            std::ostringstream ss;
+            field.write_as_list(ss);
 
-        if (layout.comm.size() == 1) {
-            ASSERT_STREQ(ss.str().c_str(), "[[1, 2], [3, 4]]");
-        } else if (layout.comm.size() == 2) {
-            if (layout.comm.rank() == 0) {
-                ASSERT_STREQ(ss.str().c_str(), "[[1, 2]]");
-            }
-            if (layout.comm.rank() == 1) {
-                ASSERT_STREQ(ss.str().c_str(), "[[3, 4]]");
-            }
+            if (layout.comm.size() == 1) {
+                ASSERT_STREQ(ss.str().c_str(), "[[1, 2], [3, 4]]");
+            } else if (layout.comm.size() == 2) {
+                if (layout.comm.rank() == 0) {
+                    ASSERT_STREQ(ss.str().c_str(), "[[1, 2]]");
+                }
+                if (layout.comm.rank() == 1) {
+                    ASSERT_STREQ(ss.str().c_str(), "[[3, 4]]");
+                }
+            } else
+                GTEST_SKIP();
         } else
             GTEST_SKIP();
     } else
