@@ -5,6 +5,14 @@
 
 #include "LinearSolvers/Multigrid.h"
 
+// 1. Define a named functor outside of main to avoid NVCC lambda-template parsing bugs
+struct LaplaceOperator {
+    template <typename FieldType>
+    auto operator()(FieldType& u) const {
+        return -laplace(u);
+    }
+};
+
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
@@ -68,11 +76,11 @@ int main(int argc, char* argv[]) {
 
         rhs.write(std::cout);
 
-        auto op = [](field_type& u) {
-            return -laplace(u);
-        };
+        // 2. Instantiate the functor instead of using an anonymous lambda
+        LaplaceOperator op;
 
-        ippl::multigrid_preconditioner<field_type, decltype(op)> mg(std::move(op), 1, 1, 0.8);
+        // 3. Pass the named struct type and instance to the preconditioner
+        ippl::multigrid_preconditioner<field_type, LaplaceOperator> mg(std::move(op), 1, 1, 0.8);
 
         mg.setDebugPrint(true);
         mg.init_fields(rhs);
