@@ -6,7 +6,7 @@
 #ifndef IPPL_NDINDEX_H
 #define IPPL_NDINDEX_H
 
-#include <initializer_list>
+#include <type_traits>
 
 #include "Types/Vector.h"
 
@@ -23,7 +23,7 @@ namespace ippl {
         KOKKOS_FUNCTION
         NDIndex() {}
 
-        template <class... Args>
+        template <class... Args, typename std::enable_if<sizeof...(Args) == Dim, bool>::type = true>
         KOKKOS_FUNCTION NDIndex(const Args&... args);
 
         KOKKOS_FUNCTION NDIndex(const Vector<unsigned, Dim>& sizes);
@@ -86,9 +86,6 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION constexpr const_iterator end() const;
 
     private:
-        KOKKOS_FUNCTION
-        NDIndex(std::initializer_list<Index> indices);
-
         //! Array of indices
         Index indices_m[Dim];
     };
