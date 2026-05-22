@@ -363,6 +363,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a372eff27e4294d6466410ea662543a4f"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... Properties&gt; </td></tr>
 <tr class="memitem:a372eff27e4294d6466410ea662543a4f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a372eff27e4294d6466410ea662543a4f">write</a> (const typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Properties... &gt;<a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">::view_type</a> &amp;view, std::ostream &amp;out=std::cout)</td></tr>
 <tr class="separator:a372eff27e4294d6466410ea662543a4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b74b132328127b3f79f49a415399833"><td class="memTemplParams" colspan="2">template&lt;unsigned Dim&gt; </td></tr>
+<tr class="memitem:a3b74b132328127b3f79f49a415399833"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a3b74b132328127b3f79f49a415399833">write_as_list_impl</a> (const auto view, std::ostream &amp;out=std::cout)</td></tr>
+<tr class="separator:a3b74b132328127b3f79f49a415399833"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f380f7e45a6eb784e67688c644a26ab"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... Properties&gt; </td></tr>
+<tr class="memitem:a2f380f7e45a6eb784e67688c644a26ab"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a2f380f7e45a6eb784e67688c644a26ab">write_as_list</a> (const typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Properties... &gt;<a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">::view_type</a> &amp;view, std::ostream &amp;out=std::cout)</td></tr>
+<tr class="separator:a2f380f7e45a6eb784e67688c644a26ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7f9e294e0ebfbb9e55c4f2476fb3fba"><td class="memTemplParams" colspan="2">template&lt;typename View , size_t... Idx&gt; </td></tr>
 <tr class="memitem:ad7f9e294e0ebfbb9e55c4f2476fb3fba"><td class="memTemplItemLeft" align="right" valign="top">decltype(auto)&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#ad7f9e294e0ebfbb9e55c4f2476fb3fba">shrinkView_impl</a> (std::string label, const View &amp;view, int nghost, const std::index_sequence&lt; Idx... &gt; &amp;)</td></tr>
 <tr class="separator:ad7f9e294e0ebfbb9e55c4f2476fb3fba"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2463,6 +2469,94 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">view</td><td>to write </td></tr>
+    <tr><td class="paramname">out</td><td>stream </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a2f380f7e45a6eb784e67688c644a26ab" name="a2f380f7e45a6eb784e67688c644a26ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f380f7e45a6eb784e67688c644a26ab">&#9670;&#160;</a></span>write_as_list()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... Properties&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void ippl::detail::write_as_list </td>
+          <td>(</td>
+          <td class="paramtype">const typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, Properties... &gt;<a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">::view_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::ostream &amp;&#160;</td>
+          <td class="paramname"><em>out</em> = <code>std::cout</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Writes a view to an output stream in folded list format </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">T</td><td>view data type </td></tr>
+    <tr><td class="paramname">Dim</td><td>view dimension </td></tr>
+    <tr><td class="paramname">Properties</td><td>further template parameters of <a class="el" href="namespaceKokkos.html">Kokkos</a></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">view</td><td>to write </td></tr>
+    <tr><td class="paramname">out</td><td>stream </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a3b74b132328127b3f79f49a415399833" name="a3b74b132328127b3f79f49a415399833"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b74b132328127b3f79f49a415399833">&#9670;&#160;</a></span>write_as_list_impl()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned Dim&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void ippl::detail::write_as_list_impl </td>
+          <td>(</td>
+          <td class="paramtype">const auto&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">std::ostream &amp;&#160;</td>
+          <td class="paramname"><em>out</em> = <code>std::cout</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Recursive implementation to write a view in list format to output stream </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">Dim</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">view</td><td></td></tr>
     <tr><td class="paramname">out</td><td>stream </td></tr>
   </table>
   </dd>

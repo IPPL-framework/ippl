@@ -87,6 +87,7 @@ $(function() {
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classippl_1_1BareField-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::BareField&lt; T, Dim, ViewArgs &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -215,6 +216,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9f10943e3b8b8dfeac8cfb7c8f5435c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4265d2558a50aec9753f2c4286c09967"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1BareField.html#a4265d2558a50aec9753f2c4286c09967">write</a> (<a class="el" href="classInform.html">Inform</a> &amp;inf) const</td></tr>
 <tr class="separator:a4265d2558a50aec9753f2c4286c09967"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3f3792bf3fc2a7ca2b21fb9dc044bc4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1BareField.html#af3f3792bf3fc2a7ca2b21fb9dc044bc4">write_as_list</a> (std::ostream &amp;out=std::cout) const</td></tr>
+<tr class="separator:af3f3792bf3fc2a7ca2b21fb9dc044bc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab0503d42ec2a051e472170b697f9827"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1BareField.html#aab0503d42ec2a051e472170b697f9827">write_as_list</a> (<a class="el" href="classInform.html">Inform</a> &amp;inf) const</td></tr>
+<tr class="separator:aab0503d42ec2a051e472170b697f9827"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e2efcc2e51f03203635cfc402a69145"><td class="memItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1BareField.html#a0e2efcc2e51f03203635cfc402a69145">sum</a> (int nghost=0) const</td></tr>
 <tr class="separator:a0e2efcc2e51f03203635cfc402a69145"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa4170e70a495f1851c9ee3deabdd9c05"><td class="memItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1BareField.html#aa4170e70a495f1851c9ee3deabdd9c05">max</a> (int nghost=0) const</td></tr>
@@ -259,6 +264,11 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a33d0de2917691c854dd90db9e9f1d448"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1BareField.html#a65473a60d3fcd5cffd90ad4bb9c6bc23">Layout_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1BareField.html#a33d0de2917691c854dd90db9e9f1d448">layout_m</a> = nullptr</td></tr>
 <tr class="memdesc:a33d0de2917691c854dd90db9e9f1d448"><td class="mdescLeft">&#160;</td><td class="mdescRight">How the arrays are laid out.  <a href="classippl_1_1BareField.html#a33d0de2917691c854dd90db9e9f1d448">More...</a><br /></td></tr>
 <tr class="separator:a33d0de2917691c854dd90db9e9f1d448"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:a1d0e59633a077bd658724c34a414b96c"><td class="memItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1BareField.html#a1d0e59633a077bd658724c34a414b96c">operator&lt;&lt;</a> (std::ostream &amp;out, const <a class="el" href="classippl_1_1BareField.html">BareField</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs... &gt; &amp;field)</td></tr>
+<tr class="separator:a1d0e59633a077bd658724c34a414b96c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, unsigned Dim, class... ViewArgs&gt;<br />
@@ -1348,6 +1358,98 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="aab0503d42ec2a051e472170b697f9827" name="aab0503d42ec2a051e472170b697f9827"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab0503d42ec2a051e472170b697f9827">&#9670;&#160;</a></span>write_as_list() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1BareField.html">ippl::BareField</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::write_as_list </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classInform.html">Inform</a> &amp;&#160;</td>
+          <td class="paramname"><em>inf</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Print the rank local <a class="el" href="classippl_1_1BareField.html">BareField</a>. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">inf</td><td><a class="el" href="classInform.html">Inform</a> object </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="af3f3792bf3fc2a7ca2b21fb9dc044bc4" name="af3f3792bf3fc2a7ca2b21fb9dc044bc4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3f3792bf3fc2a7ca2b21fb9dc044bc4">&#9670;&#160;</a></span>write_as_list() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1BareField.html">ippl::BareField</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::write_as_list </td>
+          <td>(</td>
+          <td class="paramtype">std::ostream &amp;&#160;</td>
+          <td class="paramname"><em>out</em> = <code>std::cout</code></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Print the rank local <a class="el" href="classippl_1_1BareField.html">BareField</a>. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">out</td><td>stream </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Friends And Related Function Documentation</h2>
+<a id="a1d0e59633a077bd658724c34a414b96c" name="a1d0e59633a077bd658724c34a414b96c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1d0e59633a077bd658724c34a414b96c">&#9670;&#160;</a></span>operator&lt;&lt;</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::ostream &amp; operator&lt;&lt; </td>
+          <td>(</td>
+          <td class="paramtype">std::ostream &amp;&#160;</td>
+          <td class="paramname"><em>out</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1BareField.html">BareField</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs... &gt; &amp;&#160;</td>
+          <td class="paramname"><em>field</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">friend</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p >Stream opreator to print the rank local <a class="el" href="classippl_1_1BareField.html">BareField</a>. </p>
 
 </div>
 </div>
