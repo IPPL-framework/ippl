@@ -980,7 +980,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "Skipping all LagrangeSpace tests: " << ippl::Comm->size()
                           << " MPI ranks exceed the maximum (" << kMaxSupportedMpiRanks
                           << ") for this mesh. Use at most " << kMaxSupportedMpiRanks
-                          << " ranks or enlarge the test domain.\n";
+                          << " ranks.\n";
             }
             success = 0;
         } else {
