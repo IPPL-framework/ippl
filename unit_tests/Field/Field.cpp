@@ -14,6 +14,9 @@
 template <typename>
 class FieldTest;
 
+template <typename>
+class Field3DRegressionTest;
+
 template <typename T, typename ExecSpace, unsigned Dim>
 class FieldTest<Parameters<T, ExecSpace, Rank<Dim>>> : public ::testing::Test {
 public:
@@ -62,6 +65,48 @@ public:
     std::array<size_t, Dim> nPoints;
     std::array<T, Dim> domain;
     };
+
+template <typename T, typename ExecSpace>
+class Field3DRegressionTest<Parameters<T, ExecSpace, Rank<3>>> : public ::testing::Test {
+public:
+    using value_type              = T;
+    using exec_space              = ExecSpace;
+    constexpr static unsigned dim = 3;
+    constexpr static size_t initial_size = 16;
+
+    using mesh_type      = ippl::UniformCartesian<T, dim>;
+    using centering_type = typename mesh_type::DefaultCentering;
+    using field_type     = ippl::Field<T, dim, mesh_type, centering_type, ExecSpace>;
+    using layout_type    = ippl::FieldLayout<dim>;
+
+    struct FieldBundle {
+        std::shared_ptr<layout_type> layout;
+        std::shared_ptr<mesh_type> mesh;
+        std::shared_ptr<field_type> field;
+    };
+
+    FieldBundle makeField(size_t n) const {
+        std::array<ippl::Index, dim> indices;
+        indices.fill(ippl::Index(n));
+        auto owned = std::make_from_tuple<ippl::NDIndex<dim>>(indices);
+
+        ippl::Vector<T, dim> hx;
+        ippl::Vector<T, dim> origin;
+        for (unsigned d = 0; d < dim; ++d) {
+            hx[d]     = T(1) / static_cast<T>(n);
+            origin[d] = T(0);
+        }
+
+        std::array<bool, dim> isParallel;
+        isParallel.fill(true);
+
+        FieldBundle bundle;
+        bundle.layout = std::make_shared<layout_type>(MPI_COMM_WORLD, owned, isParallel);
+        bundle.mesh   = std::make_shared<mesh_type>(owned, hx, origin);
+        bundle.field  = std::make_shared<field_type>(*bundle.mesh, *bundle.layout);
+        return bundle;
+    }
+};
 
 template <typename Params>
 struct VFieldVal {
@@ -151,6 +196,9 @@ struct FieldVal {
 using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
 TYPED_TEST_SUITE(FieldTest, Tests);
 
+using Field3DRegressionTests = TestParams::tests<3>;
+TYPED_TEST_SUITE(Field3DRegressionTest, Field3DRegressionTests);
+
 TYPED_TEST(FieldTest, DeepCopy) {
     auto& field = this->field;
 
@@ -182,6 +230,33 @@ TYPED_TEST(FieldTest, Sum) {
     T sum = field->sum();
 
     assertEqual<T>(expected, sum);
+}
+
+TYPED_TEST(Field3DRegressionTest, PowerOfTwoSubfieldSums) {
+    using T = typename TestFixture::value_type;
+    constexpr size_t N = TestFixture::initial_size;
+
+    auto source = this->makeField(N);
+    *source.field = T(1);
+
+    assertEqual<T>(static_cast<T>(N * N * N), source.field->sum());
+
+    for (size_t n = N / 2; n >= 2; n /= 2) {
+        auto target = this->makeField(N);
+        *target.field = T(0);
+
+        std::array<ippl::Index, TestFixture::dim> indices;
+        indices.fill(ippl::Index(n));
+        const auto subdomain = std::make_from_tuple<ippl::NDIndex<TestFixture::dim>>(indices);
+
+        (*target.field)[subdomain] = (*source.field)[subdomain];
+
+        assertEqual<T>(static_cast<T>(n * n * n), target.field->sum());
+
+        if (n == 2) {
+            break;
+        }
+    }
 }
 
 TYPED_TEST(FieldTest, Norm1) {
