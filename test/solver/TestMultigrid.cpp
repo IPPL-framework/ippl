@@ -13,14 +13,83 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 #include <cstdlib>
+#include <iostream>
 #include <string>
+#include <vector>
 
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
 
-// Note: Ensure your PoissonCG solver is configured to recognize the
-// "multigrid" parameter and instantiate your multigrid_preconditioner!
 #include "PoissonSolvers/PoissonCG.h"
+
+template <typename FieldType>
+void printGlobalField(const FieldType& field, const std::string& name) {
+    // 1. Get global dimensions
+    auto& layout = field.getLayout();
+    auto& domain = layout.getDomain();
+
+    int Nx = domain[0].length();
+    int Ny = domain[1].length();
+    int Nz = domain[2].length();
+
+    // 2. Allocate a global-sized buffer initialized to 0.0 on all ranks
+    std::vector<double> local_buffer(Nx * Ny * Nz, 0.0);
+
+    // 3. Get local bounds and ghost information
+    auto& lDom = layout.getLocalNDIndex();
+    int nghost = field.getNghost();
+
+    // 4. Safely pull data from GPU/Device to Host
+    auto view  = field.getView();
+    auto hview = Kokkos::create_mirror_view(view);
+    Kokkos::deep_copy(hview, view);
+
+    // 5. Fill the buffer ONLY with the physical cells owned by this rank
+    for (size_t i = 0; i < lDom[0].length(); ++i) {
+        for (size_t j = 0; j < lDom[1].length(); ++j) {
+            for (size_t k = 0; k < lDom[2].length(); ++k) {
+                // Calculate global indices
+                int ig = lDom[0].first() + i;
+                int jg = lDom[1].first() + j;
+                int kg = lDom[2].first() + k;
+
+                // Flatten to 1D index
+                int flat_idx = ig * (Ny * Nz) + jg * Nz + kg;
+
+                // Read from host view (offset by nghost to skip the boundary halo)
+                local_buffer[flat_idx] = hview(i + nghost, j + nghost, k + nghost);
+            }
+        }
+    }
+
+    // 6. Reduce (sum) all local buffers into a single master buffer on Rank 0
+    std::vector<double> global_buffer;
+    if (ippl::Comm->rank() == 0) {
+        global_buffer.resize(Nx * Ny * Nz, 0.0);
+    }
+
+    MPI_Reduce(local_buffer.data(), ippl::Comm->rank() == 0 ? global_buffer.data() : nullptr,
+               Nx * Ny * Nz, MPI_DOUBLE, MPI_SUM, 0, ippl::Comm->getCommunicator());
+
+    // 7. Rank 0 prints the assembled field in the same loop order IPPL natively uses
+    if (ippl::Comm->rank() == 0) {
+        std::cout << name << ":\n";
+        for (int i = 0; i < Nx; ++i) {
+            for (int j = 0; j < Ny; ++j) {
+                for (int k = 0; k < Nz; ++k) {
+                    int flat_idx = i * (Ny * Nz) + j * Nz + k;
+                    std::cout << global_buffer[flat_idx] << " ";
+                }
+                std::cout << "\n";
+            }
+            std::cout << "\n";
+        }
+    }
+
+    // Synchronize ranks before continuing
+    ippl::fence();
+    ippl::Comm->barrier();
+}
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -177,6 +246,9 @@ int main(int argc, char* argv[]) {
         info << "Rel. Error : " << std::setprecision(8) << relError << endl;
         info << "Residual   : " << std::setprecision(8) << residue << endl;
         info << "---------------------------------------" << endl;
+
+        printGlobalField(solution, "Solution");
+        printGlobalField(lhs, "Approx");
 
         IpplTimings::print();
     }
