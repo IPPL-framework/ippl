@@ -80,8 +80,8 @@ KOKKOS_INLINE_FUNCTION T expint_Ei_asymp(T x) {
 
 template <typename T>
 KOKKOS_INLINE_FUNCTION T expint_E1_pos(T x) {
-    const T eps    = std::numeric_limits<T>::epsilon();
-    const T fp_min = std::numeric_limits<T>::min();
+    const T eps    = Kokkos::Experimental::epsilon_v<T>;
+    const T fp_min = Kokkos::Experimental::norm_min_v<T>;
 
     if (x < T(1)) {
         T term = T(1);
