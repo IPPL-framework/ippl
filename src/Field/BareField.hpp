@@ -2,9 +2,6 @@
 // Class BareField
 //   A BareField consists of multple LFields and represents a field.
 //
-
-#ifndef IPPL_BARE_FIELD_HPP
-#define IPPL_BARE_FIELD_HPP
 #include "Ippl.h"
 
 #include <Kokkos_ReductionIdentity.hpp>
@@ -16,8 +13,6 @@
 
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
-
-#include "BareField.h"
 namespace Kokkos {
     template <typename T, unsigned Dim>
     struct reduction_identity<ippl::Vector<T, Dim>> {
@@ -196,23 +191,12 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::write(std::ostream& out) const {
         Kokkos::fence();
-        detail::write<T, Dim, ViewArgs...>(dview_m, out);
+        detail::write<T, Dim>(dview_m, out);
     }
 
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::write(Inform& inf) const {
         write(inf.getDestination());
-    }
-
-    template <typename T, unsigned Dim, class... ViewArgs>
-    void BareField<T, Dim, ViewArgs...>::write_as_list(std::ostream& out) const {
-        Kokkos::fence();
-        detail::write_as_list<T, Dim, ViewArgs...>(dview_m, out);
-    }
-
-    template <typename T, unsigned Dim, class... ViewArgs>
-    void BareField<T, Dim, ViewArgs...>::write_as_list(Inform& inf) const {
-        write_as_list(inf.getDestination());
     }
 
 #define DefineReduction(fun, name, op, MPI_Op)                                                 \
@@ -239,4 +223,3 @@ namespace ippl {
     DefineReduction(Prod, prod, valL *= myVal, std::multiplies)
 
 }  // namespace ippl
-#endif  // IPPL_BARE_FIELD_HPP
