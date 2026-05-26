@@ -2,8 +2,10 @@
 #define IPPL_LOAD_BALANCER_H
 
 #include <memory>
+#include <sstream>
 
 #include "ParticleContainer.hpp"
+#include "Utility/DebugLog_af3f69.h"
 
 template <typename T, unsigned Dim>
 class LoadBalancer {
@@ -105,6 +107,25 @@ public:
                 std::cout << "Could not repartition!" << std::endl;
                 return;
             }
+            // #region agent log
+            {
+                std::ostringstream d;
+                const auto& ldom = fl->getLocalNDIndex();
+                d << "{\"isFirstRepartition\":" << (isFirstRepartition ? "true" : "false")
+                  << ",\"solverType\":\"" << fs_m->getStype() << "\""
+                  << ",\"ldomFirst\":[";
+                for (unsigned dd = 0; dd < Dim; ++dd) {
+                    d << ldom[dd].first() << (dd + 1 < Dim ? "," : "");
+                }
+                d << "],\"ldomLast\":[";
+                for (unsigned dd = 0; dd < Dim; ++dd) {
+                    d << ldom[dd].last() << (dd + 1 < Dim ? "," : "");
+                }
+                d << "]}";
+                ippl_debug_af3f69::writeLine("H1", "LoadBalancer.hpp:repartition",
+                                             "post-binaryRepartition", d.str());
+            }
+            // #endregion
             // Update
             this->updateLayout(fl, mesh, isFirstRepartition);
             if (fs_m->getStype() == "FEM") {

@@ -1,4 +1,7 @@
 
+#include "Utility/DebugLog_af3f69.h"
+#include <sstream>
+
 namespace ippl {
 
     // LagrangeSpace constructor, which calls the FiniteElementSpace constructor,
@@ -109,6 +112,29 @@ namespace ippl {
                 });
         }
         Kokkos::fence();
+        // #region agent log
+        {
+            std::ostringstream d;
+            d << "{\"npoints\":" << npoints
+              << ",\"upperBoundaryPoints\":" << upperBoundaryPoints
+              << ",\"elementsPerRank\":" << elementsPerRank
+              << ",\"first\":[";
+            for (unsigned dd = 0; dd < Dim; ++dd) {
+                d << first[dd] << (dd + 1 < Dim ? "," : "");
+            }
+            d << "],\"last\":[";
+            for (unsigned dd = 0; dd < Dim; ++dd) {
+                d << last[dd] << (dd + 1 < Dim ? "," : "");
+            }
+            d << "],\"nr_m\":[";
+            for (unsigned dd = 0; dd < Dim; ++dd) {
+                d << this->nr_m[dd] << (dd + 1 < Dim ? "," : "");
+            }
+            d << "]}";
+            ippl_debug_af3f69::writeLine("H2", "LagrangeSpace.hpp:initializeElementIndices",
+                                         "post-init", d.str());
+        }
+        // #endregion
     }
 
     // Update resultField and elementIndices according to changed domain decomposition.

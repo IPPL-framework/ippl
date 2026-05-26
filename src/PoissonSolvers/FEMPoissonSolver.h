@@ -8,6 +8,8 @@
 #include "LinearSolvers/PCG.h"
 #include "Poisson.h"
 #include "EvalFunctor.h"
+#include "Utility/DebugLog_af3f69.h"
+#include <sstream>
 
 namespace ippl {
 
@@ -69,6 +71,24 @@ namespace ippl {
 
             lagrangeSpace_m.initialize(rhs.get_mesh(), rhs.getLayout());
             pcg_algo_m.initializeFields(rhs.get_mesh(), rhs.getLayout());
+            // #region agent log
+            {
+                const auto& ldom = rhs.getLayout().getLocalNDIndex();
+                std::ostringstream d;
+                d << "{\"nghost\":" << rhs.getNghost()
+                  << ",\"ldomFirst\":[";
+                for (unsigned dd = 0; dd < Dim; ++dd) {
+                    d << ldom[dd].first() << (dd + 1 < Dim ? "," : "");
+                }
+                d << "],\"ldomLast\":[";
+                for (unsigned dd = 0; dd < Dim; ++dd) {
+                    d << ldom[dd].last() << (dd + 1 < Dim ? "," : "");
+                }
+                d << "]}";
+                ippl_debug_af3f69::writeLine("H4", "FEMPoissonSolver.h:setRhs",
+                                             "called", d.str());
+            }
+            // #endregion
         }
 
         /**
@@ -83,9 +103,29 @@ namespace ippl {
          * The problem is described by -laplace(lhs) = rhs
          */
         void solve() override {
+            // #region agent log
+            {
+                auto sum_rhs = this->rhs_mp->sum();
+                auto sum_lhs = this->lhs_mp->sum();
+                std::ostringstream d;
+                d << "{\"sumRhsBeforeLoad\":" << sum_rhs
+                  << ",\"sumLhsBeforeSolve\":" << sum_lhs << "}";
+                ippl_debug_af3f69::writeLine("H4", "FEMPoissonSolver.h:solve",
+                                             "entry", d.str());
+            }
+            // #endregion
             // create load vector for the problem
             this->rhs_mp->fillHalo();
             lagrangeSpace_m.evaluateLoadVector(*(this->rhs_mp));
+            // #region agent log
+            {
+                auto sum_rhs_after = this->rhs_mp->sum();
+                std::ostringstream d;
+                d << "{\"sumRhsAfterLoad\":" << sum_rhs_after << "}";
+                ippl_debug_af3f69::writeLine("H3", "FEMPoissonSolver.h:solve",
+                                             "post-evaluateLoadVector", d.str());
+            }
+            // #endregion
 
             const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
 
