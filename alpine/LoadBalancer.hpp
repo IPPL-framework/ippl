@@ -58,8 +58,6 @@ public:
 
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
-        const auto oldPhiDom = phi_m->getLayout().getLocalNDIndex();
-        const auto oldRhoDom = rho_m->getLayout().getLocalNDIndex();
         const auto phiSumBefore = phi_m->sum();
         const auto rhoSumBefore = rho_m->sum();
         (*E_m).updateLayout(*fl);
@@ -70,40 +68,23 @@ public:
             fs_m->getStype() == "FEM_PRECON") {
             phi_m->updateLayout(*fl);
             const auto phiSumAfterUpdate = phi_m->sum();
+            if (fs_m->getStype() == "FEM" || fs_m->getStype() == "FEM_PRECON") {
+                // `updateLayout()` resizes using local indices and preserves the overlapping prefix
+                // of the old view. After a repartition, those preserved values no longer map to
+                // the new subdomain, so reset the FEM initial guess before the next solve.
+                *phi_m = 0.0;
+            }
+            const auto phiSumAfterReset = phi_m->sum();
             phi_m->setFieldBC(phi_m->getFieldBC());
             const auto phiSumAfterBC = phi_m->sum();
             // #region agent log
             {
                 std::ostringstream d;
-                const auto& newPhiDom = phi_m->getLayout().getLocalNDIndex();
                 d << "{\"isFirstRepartition\":" << (isFirstRepartition ? "true" : "false")
                   << ",\"solverType\":\"" << fs_m->getStype() << "\""
-                  << ",\"oldPhiFirst\":[";
-                for (unsigned dd = 0; dd < Dim; ++dd) {
-                    d << oldPhiDom[dd].first() << (dd + 1 < Dim ? "," : "");
-                }
-                d << "],\"oldPhiLast\":[";
-                for (unsigned dd = 0; dd < Dim; ++dd) {
-                    d << oldPhiDom[dd].last() << (dd + 1 < Dim ? "," : "");
-                }
-                d << "],\"oldRhoFirst\":[";
-                for (unsigned dd = 0; dd < Dim; ++dd) {
-                    d << oldRhoDom[dd].first() << (dd + 1 < Dim ? "," : "");
-                }
-                d << "],\"oldRhoLast\":[";
-                for (unsigned dd = 0; dd < Dim; ++dd) {
-                    d << oldRhoDom[dd].last() << (dd + 1 < Dim ? "," : "");
-                }
-                d << "],\"newPhiFirst\":[";
-                for (unsigned dd = 0; dd < Dim; ++dd) {
-                    d << newPhiDom[dd].first() << (dd + 1 < Dim ? "," : "");
-                }
-                d << "],\"newPhiLast\":[";
-                for (unsigned dd = 0; dd < Dim; ++dd) {
-                    d << newPhiDom[dd].last() << (dd + 1 < Dim ? "," : "");
-                }
-                d << "],\"phiSumBefore\":" << phiSumBefore
+                  << ",\"phiSumBefore\":" << phiSumBefore
                   << ",\"phiSumAfterUpdate\":" << phiSumAfterUpdate
+                  << ",\"phiSumAfterReset\":" << phiSumAfterReset
                   << ",\"phiSumAfterBC\":" << phiSumAfterBC
                   << ",\"rhoSumBefore\":" << rhoSumBefore
                   << ",\"rhoSumAfterUpdate\":" << rhoSumAfter << "}";
@@ -153,25 +134,6 @@ public:
                 std::cout << "Could not repartition!" << std::endl;
                 return;
             }
-            // #region agent log
-            {
-                std::ostringstream d;
-                const auto& ldom = fl->getLocalNDIndex();
-                d << "{\"isFirstRepartition\":" << (isFirstRepartition ? "true" : "false")
-                  << ",\"solverType\":\"" << fs_m->getStype() << "\""
-                  << ",\"ldomFirst\":[";
-                for (unsigned dd = 0; dd < Dim; ++dd) {
-                    d << ldom[dd].first() << (dd + 1 < Dim ? "," : "");
-                }
-                d << "],\"ldomLast\":[";
-                for (unsigned dd = 0; dd < Dim; ++dd) {
-                    d << ldom[dd].last() << (dd + 1 < Dim ? "," : "");
-                }
-                d << "]}";
-                ippl_debug_af3f69::writeLine("H1", "LoadBalancer.hpp:repartition",
-                                             "post-binaryRepartition", d.str());
-            }
-            // #endregion
             // Update
             this->updateLayout(fl, mesh, isFirstRepartition);
             if (fs_m->getStype() == "FEM") {
