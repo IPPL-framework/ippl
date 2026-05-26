@@ -724,7 +724,7 @@ $(function() {
 <div class="line"><a id="l00651" name="l00651"></a><span class="lineno">  651</span>                    <span class="keyword">const</span> <span class="keyword">auto</span> rank     = nonNeighborsView(j);</div>
 <div class="line"><a id="l00652" name="l00652"></a><span class="lineno">  652</span> </div>
 <div class="line"><a id="l00654" name="l00654"></a><span class="lineno">  654</span>                    <span class="keywordflow">if</span> (positionInRegion(is, positions(pId), regions(rank), overlap)) {</div>
-<div class="line"><a id="l00655" name="l00655"></a><span class="lineno">  655</span>                        Kokkos::atomic_increment(&amp;outsideCounts(i));</div>
+<div class="line"><a id="l00655" name="l00655"></a><span class="lineno">  655</span>                        Kokkos::atomic_inc(&amp;outsideCounts(i));</div>
 <div class="line"><a id="l00656" name="l00656"></a><span class="lineno">  656</span>                    }</div>
 <div class="line"><a id="l00657" name="l00657"></a><span class="lineno">  657</span>                });</div>
 <div class="line"><a id="l00658" name="l00658"></a><span class="lineno">  658</span>            Kokkos::fence();</div>
@@ -803,7 +803,7 @@ $(function() {
 <div class="line"><a id="l00732" name="l00732"></a><span class="lineno">  732</span>            <span class="stringliteral">&quot;Calculate nSends&quot;</span>, policy_type(0, ranks.extent(0)),</div>
 <div class="line"><a id="l00733" name="l00733"></a><span class="lineno">  733</span>            KOKKOS_LAMBDA(<span class="keyword">const</span> <span class="keywordtype">size_t</span> i) {</div>
 <div class="line"><a id="l00734" name="l00734"></a><span class="lineno">  734</span>                <a class="code hl_typedef" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a> rank = ranks(i);</div>
-<div class="line"><a id="l00735" name="l00735"></a><span class="lineno">  735</span>                Kokkos::atomic_increment(&amp;nSends_dview(rank));</div>
+<div class="line"><a id="l00735" name="l00735"></a><span class="lineno">  735</span>                Kokkos::atomic_inc(&amp;nSends_dview(rank));</div>
 <div class="line"><a id="l00736" name="l00736"></a><span class="lineno">  736</span>            });</div>
 <div class="line"><a id="l00737" name="l00737"></a><span class="lineno">  737</span>        Kokkos::fence();</div>
 <div class="line"><a id="l00738" name="l00738"></a><span class="lineno">  738</span> </div>
@@ -939,7 +939,7 @@ $(function() {
 <div class="line"><a id="l00868" name="l00868"></a><span class="lineno">  868</span>                <span class="keyword">const</span> <span class="keyword">auto</span> locCellIndex = getCellIndex(positions(i), localRegion, cellWidth);</div>
 <div class="line"><a id="l00869" name="l00869"></a><span class="lineno">  869</span>                <span class="keyword">const</span> <span class="keyword">auto</span> locCellIndexFlat =</div>
 <div class="line"><a id="l00870" name="l00870"></a><span class="lineno">  870</span>                    toFlatCellIndex(locCellIndex, cellStrides, cellPermutationForward);</div>
-<div class="line"><a id="l00871" name="l00871"></a><span class="lineno">  871</span>                Kokkos::atomic_increment(&amp;cellParticleCount(locCellIndexFlat));</div>
+<div class="line"><a id="l00871" name="l00871"></a><span class="lineno">  871</span>                Kokkos::atomic_inc(&amp;cellParticleCount(locCellIndexFlat));</div>
 <div class="line"><a id="l00872" name="l00872"></a><span class="lineno">  872</span>                cellIndex(i) = locCellIndexFlat;</div>
 <div class="line"><a id="l00873" name="l00873"></a><span class="lineno">  873</span>            });</div>
 <div class="line"><a id="l00874" name="l00874"></a><span class="lineno">  874</span>        Kokkos::fence();</div>
