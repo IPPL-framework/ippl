@@ -168,7 +168,7 @@ endfunction()
 # ------------------------------------------------------------------------------
 # set the default version of kokkos we will ask for if not already set
 if(NOT Kokkos_VERSION_DEFAULT)
-  set(Kokkos_VERSION_DEFAULT 5.1.1)
+  set(Kokkos_VERSION_DEFAULT 5.0.0)
 endif()
 # if the user has not asked for a specific version, we will use a default
 if(NOT Kokkos_VERSION)
