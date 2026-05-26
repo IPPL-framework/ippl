@@ -652,7 +652,7 @@ namespace ippl {
 
                     /// inRegion: Checks whether particle pID is inside region j.
                     if (positionInRegion(is, positions(pId), regions(rank), overlap)) {
-                        Kokkos::atomic_increment(&outsideCounts(i));
+                        Kokkos::atomic_inc(&outsideCounts(i));
                     }
                 });
             Kokkos::fence();
@@ -732,7 +732,7 @@ namespace ippl {
             "Calculate nSends", policy_type(0, ranks.extent(0)),
             KOKKOS_LAMBDA(const size_t i) {
                 size_type rank = ranks(i);
-                Kokkos::atomic_increment(&nSends_dview(rank));
+                Kokkos::atomic_inc(&nSends_dview(rank));
             });
         Kokkos::fence();
 
@@ -868,7 +868,7 @@ namespace ippl {
                 const auto locCellIndex = getCellIndex(positions(i), localRegion, cellWidth);
                 const auto locCellIndexFlat =
                     toFlatCellIndex(locCellIndex, cellStrides, cellPermutationForward);
-                Kokkos::atomic_increment(&cellParticleCount(locCellIndexFlat));
+                Kokkos::atomic_inc(&cellParticleCount(locCellIndexFlat));
                 cellIndex(i) = locCellIndexFlat;
             });
         Kokkos::fence();
