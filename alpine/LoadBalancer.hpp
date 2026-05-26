@@ -58,13 +58,59 @@ public:
 
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
+        const auto oldPhiDom = phi_m->getLayout().getLocalNDIndex();
+        const auto oldRhoDom = rho_m->getLayout().getLocalNDIndex();
+        const auto phiSumBefore = phi_m->sum();
+        const auto rhoSumBefore = rho_m->sum();
         (*E_m).updateLayout(*fl);
         (*rho_m).updateLayout(*fl);
+        const auto rhoSumAfter = rho_m->sum();
 
         if (fs_m->getStype() == "CG" || fs_m->getStype() == "PCG" || fs_m->getStype() == "FEM" ||
             fs_m->getStype() == "FEM_PRECON") {
             phi_m->updateLayout(*fl);
+            const auto phiSumAfterUpdate = phi_m->sum();
             phi_m->setFieldBC(phi_m->getFieldBC());
+            const auto phiSumAfterBC = phi_m->sum();
+            // #region agent log
+            {
+                std::ostringstream d;
+                const auto& newPhiDom = phi_m->getLayout().getLocalNDIndex();
+                d << "{\"isFirstRepartition\":" << (isFirstRepartition ? "true" : "false")
+                  << ",\"solverType\":\"" << fs_m->getStype() << "\""
+                  << ",\"oldPhiFirst\":[";
+                for (unsigned dd = 0; dd < Dim; ++dd) {
+                    d << oldPhiDom[dd].first() << (dd + 1 < Dim ? "," : "");
+                }
+                d << "],\"oldPhiLast\":[";
+                for (unsigned dd = 0; dd < Dim; ++dd) {
+                    d << oldPhiDom[dd].last() << (dd + 1 < Dim ? "," : "");
+                }
+                d << "],\"oldRhoFirst\":[";
+                for (unsigned dd = 0; dd < Dim; ++dd) {
+                    d << oldRhoDom[dd].first() << (dd + 1 < Dim ? "," : "");
+                }
+                d << "],\"oldRhoLast\":[";
+                for (unsigned dd = 0; dd < Dim; ++dd) {
+                    d << oldRhoDom[dd].last() << (dd + 1 < Dim ? "," : "");
+                }
+                d << "],\"newPhiFirst\":[";
+                for (unsigned dd = 0; dd < Dim; ++dd) {
+                    d << newPhiDom[dd].first() << (dd + 1 < Dim ? "," : "");
+                }
+                d << "],\"newPhiLast\":[";
+                for (unsigned dd = 0; dd < Dim; ++dd) {
+                    d << newPhiDom[dd].last() << (dd + 1 < Dim ? "," : "");
+                }
+                d << "],\"phiSumBefore\":" << phiSumBefore
+                  << ",\"phiSumAfterUpdate\":" << phiSumAfterUpdate
+                  << ",\"phiSumAfterBC\":" << phiSumAfterBC
+                  << ",\"rhoSumBefore\":" << rhoSumBefore
+                  << ",\"rhoSumAfterUpdate\":" << rhoSumAfter << "}";
+                ippl_debug_af3f69::writeLine("H6", "LoadBalancer.hpp:updateLayout",
+                                             "field-state-around-updateLayout", d.str());
+            }
+            // #endregion
 
             if (fs_m->getStype() == "FEM") {
                 // also update the layout in the FEM space

@@ -71,24 +71,6 @@ namespace ippl {
 
             lagrangeSpace_m.initialize(rhs.get_mesh(), rhs.getLayout());
             pcg_algo_m.initializeFields(rhs.get_mesh(), rhs.getLayout());
-            // #region agent log
-            {
-                const auto& ldom = rhs.getLayout().getLocalNDIndex();
-                std::ostringstream d;
-                d << "{\"nghost\":" << rhs.getNghost()
-                  << ",\"ldomFirst\":[";
-                for (unsigned dd = 0; dd < Dim; ++dd) {
-                    d << ldom[dd].first() << (dd + 1 < Dim ? "," : "");
-                }
-                d << "],\"ldomLast\":[";
-                for (unsigned dd = 0; dd < Dim; ++dd) {
-                    d << ldom[dd].last() << (dd + 1 < Dim ? "," : "");
-                }
-                d << "]}";
-                ippl_debug_af3f69::writeLine("H4", "FEMPoissonSolver.h:setRhs",
-                                             "called", d.str());
-            }
-            // #endregion
         }
 
         /**
@@ -110,22 +92,13 @@ namespace ippl {
                 std::ostringstream d;
                 d << "{\"sumRhsBeforeLoad\":" << sum_rhs
                   << ",\"sumLhsBeforeSolve\":" << sum_lhs << "}";
-                ippl_debug_af3f69::writeLine("H4", "FEMPoissonSolver.h:solve",
+                ippl_debug_af3f69::writeLine("H6", "FEMPoissonSolver.h:solve",
                                              "entry", d.str());
             }
             // #endregion
             // create load vector for the problem
             this->rhs_mp->fillHalo();
             lagrangeSpace_m.evaluateLoadVector(*(this->rhs_mp));
-            // #region agent log
-            {
-                auto sum_rhs_after = this->rhs_mp->sum();
-                std::ostringstream d;
-                d << "{\"sumRhsAfterLoad\":" << sum_rhs_after << "}";
-                ippl_debug_af3f69::writeLine("H3", "FEMPoissonSolver.h:solve",
-                                             "post-evaluateLoadVector", d.str());
-            }
-            // #endregion
 
             const Vector<size_t, Dim> zeroNdIndex = Vector<size_t, Dim>(0);
 
@@ -174,6 +147,16 @@ namespace ippl {
             IpplTimings::startTimer(pcgTimer);
 
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
+            // #region agent log
+            {
+                std::ostringstream d;
+                d << "{\"iterationCount\":" << pcg_algo_m.getIterationCount()
+                  << ",\"residue\":" << pcg_algo_m.getResidue()
+                  << ",\"sumLhsAfterSolve\":" << this->lhs_mp->sum() << "}";
+                ippl_debug_af3f69::writeLine("H8", "FEMPoissonSolver.h:solve",
+                                             "post-pcg", d.str());
+            }
+            // #endregion
 
             (this->lhs_mp)->fillHalo();
 
