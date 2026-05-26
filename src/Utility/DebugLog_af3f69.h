@@ -1,5 +1,5 @@
 // Temporary debug instrumentation for session af3f69.
-// Writes NDJSON entries to /Users/sona/Desktop/IPPL/.cursor/debug-af3f69.log
+// Writes NDJSON entries to one file per MPI rank in the current working directory.
 // This file is intended to be removed once the debug session is complete.
 #ifndef IPPL_DEBUG_LOG_AF3F69_H
 #define IPPL_DEBUG_LOG_AF3F69_H
@@ -15,7 +15,10 @@
 namespace ippl_debug_af3f69 {
 
     inline std::string logPath() {
-        return (std::filesystem::current_path() / "debug-af3f69.log").string();
+        int rank = (ippl::Comm) ? ippl::Comm->rank() : -1;
+        std::ostringstream name;
+        name << "debug-af3f69-rank" << rank << ".log";
+        return (std::filesystem::current_path() / name.str()).string();
     }
 
     inline void writeLine(const std::string& hypothesisId,
