@@ -61,13 +61,12 @@ public:
 
         if (fs_m->getStype() == "CG" || fs_m->getStype() == "PCG" || fs_m->getStype() == "FEM" ||
             fs_m->getStype() == "FEM_PRECON") {
+            // The phi field needs to be updated and set to 0 in this case.
+            // This is because updateLayout() does NOT redistribute field values, 
+            // and the CG solver uses phi (lhs) as the initial guess.
+            // If phi_m is not set to 0, a stale phi_m will be used.
             phi_m->updateLayout(*fl);
-            if (fs_m->getStype() == "FEM" || fs_m->getStype() == "FEM_PRECON") {
-                // `updateLayout()` resizes using local indices and preserves the overlapping prefix
-                // of the old view. After a repartition, those preserved values no longer map to
-                // the new subdomain, so reset the FEM initial guess before the next solve.
-                *phi_m = 0.0;
-            }
+            *(phi_m) = 0.0;
             phi_m->setFieldBC(phi_m->getFieldBC());
 
             if (fs_m->getStype() == "FEM") {
