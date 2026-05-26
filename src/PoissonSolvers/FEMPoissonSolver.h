@@ -8,8 +8,6 @@
 #include "LinearSolvers/PCG.h"
 #include "Poisson.h"
 #include "EvalFunctor.h"
-#include "Utility/DebugLog_af3f69.h"
-#include <sstream>
 
 namespace ippl {
 
@@ -85,17 +83,6 @@ namespace ippl {
          * The problem is described by -laplace(lhs) = rhs
          */
         void solve() override {
-            // #region agent log
-            {
-                auto sum_rhs = this->rhs_mp->sum();
-                auto sum_lhs = this->lhs_mp->sum();
-                std::ostringstream d;
-                d << "{\"sumRhsBeforeLoad\":" << sum_rhs
-                  << ",\"sumLhsBeforeSolve\":" << sum_lhs << "}";
-                ippl_debug_af3f69::writeLine("H6", "FEMPoissonSolver.h:solve",
-                                             "entry", d.str());
-            }
-            // #endregion
             // create load vector for the problem
             this->rhs_mp->fillHalo();
             lagrangeSpace_m.evaluateLoadVector(*(this->rhs_mp));
@@ -147,16 +134,6 @@ namespace ippl {
             IpplTimings::startTimer(pcgTimer);
 
             pcg_algo_m(*(this->lhs_mp), *(this->rhs_mp), this->params_m);
-            // #region agent log
-            {
-                std::ostringstream d;
-                d << "{\"iterationCount\":" << pcg_algo_m.getIterationCount()
-                  << ",\"residue\":" << pcg_algo_m.getResidue()
-                  << ",\"sumLhsAfterSolve\":" << this->lhs_mp->sum() << "}";
-                ippl_debug_af3f69::writeLine("H8", "FEMPoissonSolver.h:solve",
-                                             "post-pcg", d.str());
-            }
-            // #endregion
 
             (this->lhs_mp)->fillHalo();
 

@@ -2,10 +2,8 @@
 #define IPPL_LOAD_BALANCER_H
 
 #include <memory>
-#include <sstream>
 
 #include "ParticleContainer.hpp"
-#include "Utility/DebugLog_af3f69.h"
 
 template <typename T, unsigned Dim>
 class LoadBalancer {
@@ -58,40 +56,19 @@ public:
 
         static IpplTimings::TimerRef tupdateLayout = IpplTimings::getTimer("updateLayout");
         IpplTimings::startTimer(tupdateLayout);
-        const auto phiSumBefore = phi_m->sum();
-        const auto rhoSumBefore = rho_m->sum();
         (*E_m).updateLayout(*fl);
         (*rho_m).updateLayout(*fl);
-        const auto rhoSumAfter = rho_m->sum();
 
         if (fs_m->getStype() == "CG" || fs_m->getStype() == "PCG" || fs_m->getStype() == "FEM" ||
             fs_m->getStype() == "FEM_PRECON") {
             phi_m->updateLayout(*fl);
-            const auto phiSumAfterUpdate = phi_m->sum();
             if (fs_m->getStype() == "FEM" || fs_m->getStype() == "FEM_PRECON") {
                 // `updateLayout()` resizes using local indices and preserves the overlapping prefix
                 // of the old view. After a repartition, those preserved values no longer map to
                 // the new subdomain, so reset the FEM initial guess before the next solve.
                 *phi_m = 0.0;
             }
-            const auto phiSumAfterReset = phi_m->sum();
             phi_m->setFieldBC(phi_m->getFieldBC());
-            const auto phiSumAfterBC = phi_m->sum();
-            // #region agent log
-            {
-                std::ostringstream d;
-                d << "{\"isFirstRepartition\":" << (isFirstRepartition ? "true" : "false")
-                  << ",\"solverType\":\"" << fs_m->getStype() << "\""
-                  << ",\"phiSumBefore\":" << phiSumBefore
-                  << ",\"phiSumAfterUpdate\":" << phiSumAfterUpdate
-                  << ",\"phiSumAfterReset\":" << phiSumAfterReset
-                  << ",\"phiSumAfterBC\":" << phiSumAfterBC
-                  << ",\"rhoSumBefore\":" << rhoSumBefore
-                  << ",\"rhoSumAfterUpdate\":" << rhoSumAfter << "}";
-                ippl_debug_af3f69::writeLine("H6", "LoadBalancer.hpp:updateLayout",
-                                             "field-state-around-updateLayout", d.str());
-            }
-            // #endregion
 
             if (fs_m->getStype() == "FEM") {
                 // also update the layout in the FEM space
