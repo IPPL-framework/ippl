@@ -991,7 +991,7 @@ namespace ippl {
         for (size_type neighborIdx = 0; neighborIdx < numNeighbors; ++neighborIdx) {
             auto n = particleNeighborData.cellParticleCount(neighbors[neighborIdx]);
             neighborSizes[neighborIdx]   = n;
-            maxParticleInNeighbors       = std::max<size_type>(n, maxParticleInNeighbors);
+            maxParticleInNeighbors       = n > maxParticleInNeighbors ? n : maxParticleInNeighbors;
             neighborOffsets[neighborIdx] = totalParticleInNeighbors;
             totalParticleInNeighbors += n;
         }
@@ -1041,7 +1041,7 @@ namespace ippl {
         // #pragma unroll
         for (size_type neighborIdx = 0; neighborIdx < numNeighbors; ++neighborIdx) {
             auto n                 = particleNeighborData.cellParticleCount(neighbors[neighborIdx]);
-            maxParticleInNeighbors = std::max<size_type>(n, maxParticleInNeighbors);
+            maxParticleInNeighbors = n > maxParticleInNeighbors ? n : maxParticleInNeighbors;
             neighborOffsets[neighborIdx] = totalParticleInNeighbors;
             totalParticleInNeighbors += n;
         }
