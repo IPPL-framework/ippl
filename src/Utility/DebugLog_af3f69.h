@@ -5,6 +5,7 @@
 #define IPPL_DEBUG_LOG_AF3F69_H
 
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -13,8 +14,8 @@
 
 namespace ippl_debug_af3f69 {
 
-    inline const char* logPath() {
-        return "/Users/sona/Desktop/IPPL/.cursor/debug-af3f69.log";
+    inline std::string logPath() {
+        return (std::filesystem::current_path() / "debug-af3f69.log").string();
     }
 
     inline void writeLine(const std::string& hypothesisId,
