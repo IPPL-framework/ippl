@@ -14,17 +14,20 @@
 
 #include "Ippl.h"
 
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
+
 #include <array>
 #include <iostream>
 #include <typeinfo>
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 1.0,
                                        double mu = 0.5) {
-    double pi        = std::acos(-1.0);
-    double prefactor = (1 / std::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
+    double pi        = Kokkos::numbers::pi_v<double>;
+    double prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return -prefactor * std::exp(-r2 / (2 * sigma * sigma));
+    return -prefactor * Kokkos::exp(-r2 / (2 * sigma * sigma));
 }
 
 int main(int argc, char* argv[]) {

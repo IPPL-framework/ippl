@@ -2,12 +2,15 @@
 // Class Archive
 //   Class to (de-)serialize in MPI communication.
 //
-#include <cstring>
-
 #include "Archive.h"
 
 namespace ippl {
     namespace detail {
+        KOKKOS_INLINE_FUNCTION void copyBytes(char* dst, const char* src, size_t size) {
+            for (size_t i = 0; i < size; ++i) {
+                dst[i] = src[i];
+            }
+        }
 
         template <class... Properties>
         Archive<Properties...>::Archive(size_type size)
@@ -57,7 +60,9 @@ namespace ippl {
             Kokkos::parallel_for(
                 "Archive::serialize()", mdrange_t({0, 0}, {(long int)nsends, Dim}),
                 KOKKOS_LAMBDA(const size_type i, const size_t d) {
-                    std::memcpy(dst_ptr + (Dim * i + d) * size + wp, &(*(src_ptr + i))[d], size);
+                    const char* src = reinterpret_cast<const char*>(&src_ptr[i][d]);
+                    char* dst       = dst_ptr + (Dim * i + d) * size + wp;
+                    copyBytes(dst, src, size);
                 });
 
             Kokkos::fence();
@@ -115,7 +120,9 @@ namespace ippl {
             Kokkos::parallel_for(
                 "Archive::deserialize()", mdrange_t({0, 0}, {(long int)nrecvs, Dim}),
                 KOKKOS_LAMBDA(const size_type i, const size_t d) {
-                    std::memcpy(&(*(dst_ptr + i))[d], src_ptr + (Dim * i + d) * size + rp, size);
+                    const char* src = src_ptr + (Dim * i + d) * size + rp;
+                    char* dst       = reinterpret_cast<char*>(&dst_ptr[i][d]);
+                    copyBytes(dst, src, size);
                 });
             Kokkos::fence();
             readpos_m += Dim * size * nrecvs;
