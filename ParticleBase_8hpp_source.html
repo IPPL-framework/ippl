@@ -399,8 +399,8 @@ $(function() {
 <div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span> </div>
 <div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>            <span class="keyword">auto</span> buf = <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">Comm</a>-&gt;getBuffer&lt;MemorySpace&gt;(bufSize);</div>
 <div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span> </div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>            <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">Comm</a>-&gt;recv(rank, tag++, *<span class="keyword">this</span>, *buf, bufSize, nRecvs);</div>
-<div class="line"><a id="l00317" name="l00317"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#ad3d4126c982bb9ee4fe1812b6c67b2ef">  317</a></span>            buf-&gt;resetReadPos();</div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#ad3d4126c982bb9ee4fe1812b6c67b2ef">  316</a></span>            <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">Comm</a>-&gt;recv(rank, tag++, *<span class="keyword">this</span>, *buf, bufSize, nRecvs);</div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>            buf-&gt;resetReadPos();</div>
 <div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>        });</div>
 <div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>        unpack(nRecvs);</div>
 <div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>    }</div>
@@ -408,16 +408,16 @@ $(function() {
 <div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>    <span class="keyword">template</span> &lt;<span class="keyword">class </span>PLayout, <span class="keyword">typename</span>... IP&gt;</div>
 <div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Archive&gt;</div>
 <div class="line"><a id="l00324" name="l00324"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a18a1fd153895545b58cf20bc4a1fa027">  324</a></span>    <span class="keywordtype">void</span> <a class="code hl_class" href="classippl_1_1ParticleBase.html">ParticleBase&lt;PLayout, IP...&gt;::serialize</a>(Archive&amp; ar, <a class="code hl_typedef" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> nsends) {</div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>        <span class="keyword">using </span>memory_space = <span class="keyword">typename</span> Archive::buffer_type::memory_space;</div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#aaf5d24d53d37df58854baeb8ad3ec5f3">  325</a></span>        <span class="keyword">using </span>memory_space = <span class="keyword">typename</span> Archive::buffer_type::memory_space;</div>
 <div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>        forAllAttributes&lt;memory_space&gt;([&amp;]&lt;<span class="keyword">typename</span> Attribute&gt;(Attribute&amp; att) {</div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#aaf5d24d53d37df58854baeb8ad3ec5f3">  327</a></span>            att-&gt;serialize(ar, nsends);</div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>            att-&gt;serialize(ar, nsends);</div>
 <div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>        });</div>
 <div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>    }</div>
 <div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span> </div>
 <div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>    <span class="keyword">template</span> &lt;<span class="keyword">class </span>PLayout, <span class="keyword">typename</span>... IP&gt;</div>
 <div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Archive&gt;</div>
 <div class="line"><a id="l00333" name="l00333"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#af79e1c75308033ee316306f6d066fcf6">  333</a></span>    <span class="keywordtype">void</span> <a class="code hl_class" href="classippl_1_1ParticleBase.html">ParticleBase&lt;PLayout, IP...&gt;::deserialize</a>(Archive&amp; ar, <a class="code hl_typedef" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> nrecvs) {</div>
-<div class="line"><a id="l00334" name="l00334"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a18a1fd153895545b58cf20bc4a1fa027">  334</a></span>        <span class="keyword">using </span>memory_space = <span class="keyword">typename</span> Archive::buffer_type::memory_space;</div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>        <span class="keyword">using </span>memory_space = <span class="keyword">typename</span> Archive::buffer_type::memory_space;</div>
 <div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>        forAllAttributes&lt;memory_space&gt;([&amp;]&lt;<span class="keyword">typename</span> Attribute&gt;(Attribute&amp; att) {</div>
 <div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>            att-&gt;deserialize(ar, nrecvs);</div>
 <div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>        });</div>
@@ -440,14 +440,14 @@ $(function() {
 <div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>            <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> j = 0; j &lt; att.size(); j++) {</div>
 <div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>                att[j]-&gt;pack(hash.template get&lt;MemorySpace&gt;());</div>
 <div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>            }</div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>        });</div>
-<div class="line"><a id="l00358" name="l00358"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a10bccce6658ee94552afc07cd93e1976">  358</a></span>    }</div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a10bccce6658ee94552afc07cd93e1976">  357</a></span>        });</div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>    }</div>
 <div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span> </div>
 <div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>    <span class="keyword">template</span> &lt;<span class="keyword">class </span>PLayout, <span class="keyword">typename</span>... IP&gt;</div>
 <div class="line"><a id="l00361" name="l00361"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a68817eb516a698bce3a0fd30171d5204">  361</a></span>    <span class="keywordtype">void</span> <a class="code hl_class" href="classippl_1_1ParticleBase.html">ParticleBase&lt;PLayout, IP...&gt;::unpack</a>(<a class="code hl_typedef" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> nrecvs) {</div>
 <div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>        detail::runForAllSpaces([&amp;]&lt;<span class="keyword">typename</span> MemorySpace&gt;() {</div>
-<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>            <span class="keyword">auto</span>&amp; att = attributes_m.template get&lt;MemorySpace&gt;();</div>
-<div class="line"><a id="l00364" name="l00364"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a68817eb516a698bce3a0fd30171d5204">  364</a></span>            <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> j = 0; j &lt; att.size(); j++) {</div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a68817eb516a698bce3a0fd30171d5204">  363</a></span>            <span class="keyword">auto</span>&amp; att = attributes_m.template get&lt;MemorySpace&gt;();</div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>            <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> j = 0; j &lt; att.size(); j++) {</div>
 <div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>                att[j]-&gt;unpack(nrecvs);</div>
 <div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>            }</div>
 <div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>        });</div>

@@ -682,6 +682,7 @@ template&lt;typename Archive &gt; </div>
 <p >Deserialize to do MPI calls. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">ar</td><td>archive </td></tr>
+    <tr><td class="paramname">nrecvs</td><td>number of particles to deserialize </td></tr>
   </table>
   </dd>
 </dl>
@@ -1083,7 +1084,6 @@ template&lt;class PLayout , typename... IP&gt; </div>
 </div><div class="memdoc">
 <p >Fill attributes of buffer. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">buffer</td><td>to send </td></tr>
     <tr><td class="paramname">hash</td><td>function to access index. </td></tr>
   </table>
   </dd>
@@ -1185,7 +1185,6 @@ template&lt;class PLayout , typename... IP&gt; </div>
   <table class="params">
     <tr><td class="paramname">rank</td><td>the source rank </td></tr>
     <tr><td class="paramname">tag</td><td>the MPI tag </td></tr>
-    <tr><td class="paramname">recvNum</td><td>the number of messages already received (to distinguish the buffers) </td></tr>
     <tr><td class="paramname">nRecvs</td><td>the number of particles to receive </td></tr>
   </table>
   </dd>
@@ -1244,7 +1243,6 @@ template&lt;typename HashType &gt; </div>
   <table class="params">
     <tr><td class="paramname">rank</td><td>the destination rank </td></tr>
     <tr><td class="paramname">tag</td><td>the MPI tag </td></tr>
-    <tr><td class="paramname">sendNum</td><td>the number of messages already sent (to distinguish the buffers) </td></tr>
     <tr><td class="paramname">requests</td><td>destination vector in which to store the MPI requests for polling purposes </td></tr>
     <tr><td class="paramname">hash</td><td>a hash view indicating which particles need to be sent to which rank </td></tr>
   </table>
@@ -1285,6 +1283,7 @@ template&lt;typename Archive &gt; </div>
 <p >Serialize to do MPI calls. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">ar</td><td>archive </td></tr>
+    <tr><td class="paramname">nsends</td><td>number of particles to serialize </td></tr>
   </table>
   </dd>
 </dl>
@@ -1380,7 +1379,7 @@ template&lt;class PLayout , typename... IDProperties&gt; </div>
 </div><div class="memdoc">
 <p >Set all boundary conditions </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">bc</td><td>the boundary conditions </td></tr>
+    <tr><td class="paramname">bcs</td><td>the boundary conditions </td></tr>
   </table>
   </dd>
 </dl>
@@ -1414,7 +1413,7 @@ template&lt;class PLayout , typename... IP&gt; </div>
 </div><div class="memdoc">
 <p >Fill my attributes. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">buffer</td><td>received </td></tr>
+    <tr><td class="paramname">nrecvs</td><td>number of particles to unpack </td></tr>
   </table>
   </dd>
 </dl>

@@ -343,16 +343,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
         </tr>
       </table>
 </div><div class="memdoc">
-<p >Apply the given boundary conditions to the current particle positions. </p><dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">R</td><td>is the particle position attribute </td></tr>
-    <tr><td class="paramname">nr</td><td>is the <a class="el" href="classippl_1_1NDRegion.html">NDRegion</a> </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
+<p >Apply the given boundary conditions to the current particle positions. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname"></td><td></td></tr>
+    <tr><td class="paramname">R</td><td>is the particle position attribute </td></tr>
+    <tr><td class="paramname">nr</td><td>is the particle domain </td></tr>
   </table>
   </dd>
 </dl>
@@ -383,12 +377,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </tr>
 </table>
 </div><div class="memdoc">
-<p >Copy over the given boundary conditions. </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">bcs</td><td>are the boundary conditions </td></tr>
-  </table>
-  </dd>
-</dl>
+<p >Return the current boundary conditions. </p>
 
 </div>
 </div>
@@ -419,7 +408,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </div><div class="memdoc">
 <p >Use the same boundary condition on each face </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">bcs</td><td>are the boundary conditions </td></tr>
+    <tr><td class="paramname">bc</td><td>is the boundary condition to apply on all faces </td></tr>
   </table>
   </dd>
 </dl>

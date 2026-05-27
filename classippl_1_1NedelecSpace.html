@@ -691,7 +691,8 @@ template&lt;typename F &gt; </div>
 <p >Assemble the left stiffness matrix A of the system Ax = b</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">x</td><td>The vector which we want to multiply</td></tr>
+    <tr><td class="paramname">x</td><td>The vector which we want to multiply </td></tr>
+    <tr><td class="paramname">evalFunction</td><td>The element-wise operator evaluation functor</td></tr>
   </table>
   </dd>
 </dl>
@@ -907,7 +908,8 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <p>Get the DOF indices (vector of indices) corresponding to the position inside the <a class="el" href="classippl_1_1FEMVector.html" title="1D vector used in the context of FEM.">FEMVector</a> of an element. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">elementIndex</td><td>size_t - The index of the element</td></tr>
+    <tr><td class="paramname">elementIndex</td><td>size_t - The index of the element </td></tr>
+    <tr><td class="paramname">ldom</td><td>local domain used for <a class="el" href="classippl_1_1FEMVector.html" title="1D vector used in the context of FEM.">FEMVector</a> indexing</td></tr>
   </table>
   </dd>
 </dl>
@@ -946,7 +948,8 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <p>Get the DOF indices (vector of indices) corresponding to the position inside the <a class="el" href="classippl_1_1FEMVector.html" title="1D vector used in the context of FEM.">FEMVector</a> of an element. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">elementIndex</td><td>indices_t - The index of the element</td></tr>
+    <tr><td class="paramname">elementIndex</td><td>indices_t - The index of the element </td></tr>
+    <tr><td class="paramname">ldom</td><td>local domain used for <a class="el" href="classippl_1_1FEMVector.html" title="1D vector used in the context of FEM.">FEMVector</a> indexing</td></tr>
   </table>
   </dd>
 </dl>
@@ -1391,13 +1394,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </tr>
 </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">= <a class="code hl_function" href="classippl_1_1FiniteElementSpace.html#a22431704078c7819295ae0d912e3cd90">FiniteElementSpace</a>&lt;<a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="code hl_variable" href="classippl_1_1NedelecSpace.html#ad4713b5b85ef51ac80b6075b3411ce09">numElementDOFs</a>, ElementType,</div>
-<div class="line">                                            QuadratureType, FEMVector&lt;T&gt;, FEMVector&lt;T&gt;&gt;<a class="code hl_variable" href="classippl_1_1NedelecSpace.html#a5c2ab9fe3f1ec101c202c0f6111f8a68">::dim</a></div>
-<div class="ttc" id="aBumponTailInstability_8cpp_html_a6b2d038ea9c8d2651eecffe0e28b7ebb"><div class="ttname"><a href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a></div><div class="ttdeci">double T</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:23</div></div>
-<div class="ttc" id="aBumponTailInstability_8cpp_html_afef54e0ebfe65da0a396b342dcbe30f5"><div class="ttname"><a href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a></div><div class="ttdeci">constexpr unsigned Dim</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:22</div></div>
-<div class="ttc" id="aclassippl_1_1FiniteElementSpace_html_a22431704078c7819295ae0d912e3cd90"><div class="ttname"><a href="classippl_1_1FiniteElementSpace.html#a22431704078c7819295ae0d912e3cd90">ippl::FiniteElementSpace&lt; T, Dim, getNedelecNumElementDOFs(Dim, Order), ElementType, QuadratureType, FEMVector&lt; T &gt;, FEMVector&lt; T &gt; &gt;::FiniteElementSpace</a></div><div class="ttdeci">FiniteElementSpace(UniformCartesian&lt; T, Dim &gt; &amp;mesh, ElementType &amp;ref_element, const QuadratureType &amp;quadrature)</div><div class="ttdoc">Construct a new FiniteElementSpace object.</div><div class="ttdef"><b>Definition:</b> FiniteElementSpace.hpp:6</div></div>
-<div class="ttc" id="aclassippl_1_1NedelecSpace_html_a5c2ab9fe3f1ec101c202c0f6111f8a68"><div class="ttname"><a href="classippl_1_1NedelecSpace.html#a5c2ab9fe3f1ec101c202c0f6111f8a68">ippl::NedelecSpace::dim</a></div><div class="ttdeci">static constexpr unsigned dim</div><div class="ttdef"><b>Definition:</b> NedelecSpace.h:41</div></div>
-<div class="ttc" id="aclassippl_1_1NedelecSpace_html_ad4713b5b85ef51ac80b6075b3411ce09"><div class="ttname"><a href="classippl_1_1NedelecSpace.html#ad4713b5b85ef51ac80b6075b3411ce09">ippl::NedelecSpace::numElementDOFs</a></div><div class="ttdeci">static constexpr unsigned numElementDOFs</div><div class="ttdef"><b>Definition:</b> NedelecSpace.h:38</div></div>
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">            FiniteElementSpace&lt;T, Dim, numElementDOFs, ElementType, QuadratureType, FEMVector&lt;T&gt;,</div>
+<div class="line">                               FEMVector&lt;T&gt;&gt;<a class="code hl_variable" href="classippl_1_1NedelecSpace.html#a5c2ab9fe3f1ec101c202c0f6111f8a68">::dim</a></div>
+<div class="ttc" id="aclassippl_1_1NedelecSpace_html_a5c2ab9fe3f1ec101c202c0f6111f8a68"><div class="ttname"><a href="classippl_1_1NedelecSpace.html#a5c2ab9fe3f1ec101c202c0f6111f8a68">ippl::NedelecSpace::dim</a></div><div class="ttdeci">static constexpr unsigned dim</div><div class="ttdef"><b>Definition:</b> NedelecSpace.h:42</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -1526,9 +1526,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </tr>
 </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">= <a class="code hl_function" href="classippl_1_1FiniteElementSpace.html#a22431704078c7819295ae0d912e3cd90">FiniteElementSpace</a>&lt;<a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="code hl_variable" href="classippl_1_1NedelecSpace.html#ad4713b5b85ef51ac80b6075b3411ce09">numElementDOFs</a>,</div>
-<div class="line">                        ElementType, QuadratureType, FEMVector&lt;T&gt;, FEMVector&lt;T&gt;&gt;<a class="code hl_variable" href="classippl_1_1NedelecSpace.html#a18a1ed804ad922256f68655c0bae8425">::numElementVertices</a></div>
-<div class="ttc" id="aclassippl_1_1NedelecSpace_html_a18a1ed804ad922256f68655c0bae8425"><div class="ttname"><a href="classippl_1_1NedelecSpace.html#a18a1ed804ad922256f68655c0bae8425">ippl::NedelecSpace::numElementVertices</a></div><div class="ttdeci">static constexpr unsigned numElementVertices</div><div class="ttdef"><b>Definition:</b> NedelecSpace.h:48</div></div>
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">            FiniteElementSpace&lt;T, Dim, numElementDOFs, ElementType, QuadratureType, FEMVector&lt;T&gt;,</div>
+<div class="line">                               FEMVector&lt;T&gt;&gt;<a class="code hl_variable" href="classippl_1_1NedelecSpace.html#a18a1ed804ad922256f68655c0bae8425">::numElementVertices</a></div>
+<div class="ttc" id="aclassippl_1_1NedelecSpace_html_a18a1ed804ad922256f68655c0bae8425"><div class="ttname"><a href="classippl_1_1NedelecSpace.html#a18a1ed804ad922256f68655c0bae8425">ippl::NedelecSpace::numElementVertices</a></div><div class="ttdeci">static constexpr unsigned numElementVertices</div><div class="ttdef"><b>Definition:</b> NedelecSpace.h:50</div></div>
 </div><!-- fragment -->
 </div>
 </div>

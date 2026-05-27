@@ -336,6 +336,7 @@ Static Protected Member Functions</h2></td></tr>
 <tr class="memdesc:a591482ea68b87ebcd39cb4a1d971a25a"><td class="mdescLeft">&#160;</td><td class="mdescRight">convert a nd-cell-index to flat cell index  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a591482ea68b87ebcd39cb4a1d971a25a">More...</a><br /></td></tr>
 <tr class="separator:a591482ea68b87ebcd39cb4a1d971a25a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3926101594f88ebd8e2188916a284d1c"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION static constexpr <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a93b7a26cf719e2798cabde914d8970d0">CellIndex_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a3926101594f88ebd8e2188916a284d1c">toCellIndex</a> (<a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#abea3536dd57d34a05f3eba77dfb0acf6">FlatCellIndex_t</a> nonPermutedIndex, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;numCells)</td></tr>
+<tr class="memdesc:a3926101594f88ebd8e2188916a284d1c"><td class="mdescLeft">&#160;</td><td class="mdescRight">compute the nd-cell-index from a flattened (non-permuted) index  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a3926101594f88ebd8e2188916a284d1c">More...</a><br /></td></tr>
 <tr class="separator:a3926101594f88ebd8e2188916a284d1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a538c84b6b6890434ad917061abc5a310"><td class="memTemplParams" colspan="2">template&lt;std::size_t... Idx&gt; </td></tr>
 <tr class="memitem:a538c84b6b6890434ad917061abc5a310"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION static constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a538c84b6b6890434ad917061abc5a310">isLocalCellIndex</a> (const std::index_sequence&lt; Idx... &gt; &amp;, const <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a93b7a26cf719e2798cabde914d8970d0">CellIndex_t</a> &amp;index, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;numCells)</td></tr>
@@ -1808,7 +1809,9 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
   </tr>
 </table>
 </div><div class="memdoc">
-<p >@brieg compute the nd-cell-index from a flattened (non-permuted) index </p><dl class="params"><dt>Parameters</dt><dd>
+
+<p>compute the nd-cell-index from a flattened (non-permuted) index </p>
+<dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">nonPermutedIndex</td><td>the flat index to transform </td></tr>
     <tr><td class="paramname">numCells</td><td>in each dimension </td></tr>
