@@ -308,11 +308,13 @@ void initializeGridVorticity() {
                                                {nghost + i1 - i0 + 1,
                                                 nghost + j1 - j0 + 1}),
         KOKKOS_LAMBDA(const int li, const int lj) {
+            int i = i0 + li - nghost;
             int j = j0 + lj - nghost;
 
             double y = rmin[1] + (j + 0.5) * hr[1];
+            double perturb = alvine::sinusoidalVorticityPerturbation(i, j);
 
-            omega_view(li, lj) = (y >= y_low && y <= y_high) ? 1.0 : 0.0;
+            omega_view(li, lj) = (y >= y_low && y <= y_high) ? 1.0 + perturb : 0.0;
         }
     );
 
