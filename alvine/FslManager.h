@@ -267,11 +267,8 @@ void initializeVirtualParticles(){
             int li = ii + nghost;
             int lj = jj + nghost;
 
-            double jitter_x = alvine::sinusoidalJitter(hr[0], i, j, 0);
-            double jitter_y = alvine::sinusoidalJitter(hr[1], i, j, 1);
-
-            R_view(p)[0] = rmin[0] + (i+0.5) * hr[0] + jitter_x;
-            R_view(p)[1] = rmin[1] + (j+0.5) * hr[1] + jitter_y;
+            R_view(p)[0] = rmin[0] + (i+0.5) * hr[0];
+            R_view(p)[1] = rmin[1] + (j+0.5) * hr[1];
 
             omega_p(p) = omega_g(li, lj) * dA;
             P_view(p) = u_g(li, lj);

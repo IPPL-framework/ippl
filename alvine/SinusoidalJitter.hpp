@@ -6,20 +6,10 @@
 namespace alvine {
 
 KOKKOS_INLINE_FUNCTION
-double sinusoidalPerturbation(double xIndex, double yIndex, double phase = 0.0) {
-    constexpr double kx        = 12.9898;
-    constexpr double ky        = 78.233;
-
-    return Kokkos::sin(kx * (xIndex + 0.5) + ky * (yIndex + 0.5) + phase);
-}
-
-KOKKOS_INLINE_FUNCTION
-double sinusoidalJitter(double spacing, double xIndex, double yIndex, int component) {
-    constexpr double componentPhase = 37.719;
-
+double sinusoidalPositionJitter(double spacing, double xIndex, double yIndex, int component) {
     double seed = Kokkos::sin(12.9898 * (xIndex + 1.0)
                               + 78.233 * (yIndex + 1.0)
-                              + component * componentPhase)
+                              + 37.719 * component)
                   * 43758.5453;
     double random01 = seed - Kokkos::floor(seed);
 

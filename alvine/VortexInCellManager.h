@@ -193,8 +193,8 @@ void initializeParticles() {
             unsigned ix_global = ix_start + ix_local;
             unsigned iy_global = iy_start + iy_local;
 
-            double jitter_x = alvine::sinusoidalJitter(dxp, ix_global, iy_global, 0);
-            double jitter_y = alvine::sinusoidalJitter(dyp, ix_global, iy_global, 1);
+            double jitter_x = alvine::sinusoidalPositionJitter(dxp, ix_global, iy_global, 0);
+            double jitter_y = alvine::sinusoidalPositionJitter(dyp, ix_global, iy_global, 1);
 
             double x = xmin_global + (ix_global + 0.5) * dxp + jitter_x;
             double y = ymin_band + (iy_global + 0.5) * dyp + jitter_y;
