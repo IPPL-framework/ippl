@@ -13,6 +13,7 @@
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
 #include "Random/Randu.h"
+#include "SinusoidalJitter.hpp"
 #include "VortexDistributions.h"
 #include "VtkDump.hpp"
 
@@ -180,11 +181,7 @@ void initializeParticles() {
     // 6. Create particles
     pc->create(nlocal);
 
-    // 7. Random number generator for jitter
-    int seed = 42;
-    Kokkos::Random_XorShift64_Pool<> rand_pool(seed + 100 * ippl::Comm->rank());
-
-    // 8. Fill positions on the lattice (device side)
+    // 7. Fill positions on the lattice (device side)
     auto R_view = pc->R.getView();
 
     Kokkos::parallel_for(
@@ -196,10 +193,8 @@ void initializeParticles() {
             unsigned ix_global = ix_start + ix_local;
             unsigned iy_global = iy_start + iy_local;
 
-            auto rand_gen = rand_pool.get_state();
-            double jitter_x = (rand_gen.drand() - 0.5) * dxp * 0.2;
-            double jitter_y = (rand_gen.drand() - 0.5) * dyp * 0.2;
-            rand_pool.free_state(rand_gen);
+            double jitter_x = alvine::sinusoidalJitter(dxp, ix_global, iy_global, 0);
+            double jitter_y = alvine::sinusoidalJitter(dyp, ix_global, iy_global, 1);
 
             double x = xmin_global + (ix_global + 0.5) * dxp + jitter_x;
             double y = ymin_band + (iy_global + 0.5) * dyp + jitter_y;

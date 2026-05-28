@@ -13,6 +13,7 @@
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
 #include "Random/Randu.h"
+#include "SinusoidalJitter.hpp"
 #include "VortexDistributions.h"
 #include "VtkDump.hpp"
 
@@ -254,9 +255,6 @@ void initializeVirtualParticles(){
     Vector_t<double, Dim> rmin = this->rmin_m;
     Vector_t<double, Dim> hr   = this->hr_m;
     double dA = hr[0] * hr[1];
-    int seed = 42;
-    Kokkos::Random_XorShift64_Pool<> rand_pool(seed + 100 * ippl::Comm->rank());
-
     Kokkos::parallel_for(
         "init_virtual_particles_from_grid",
         nlocal,
@@ -269,10 +267,8 @@ void initializeVirtualParticles(){
             int li = ii + nghost;
             int lj = jj + nghost;
 
-            auto rand_gen = rand_pool.get_state();
-            double jitter_x = (rand_gen.drand() - 0.5) * hr[0] * 0.2;
-            double jitter_y = (rand_gen.drand() - 0.5) * hr[1] * 0.2;
-            rand_pool.free_state(rand_gen);
+            double jitter_x = alvine::sinusoidalJitter(hr[0], i, j, 0);
+            double jitter_y = alvine::sinusoidalJitter(hr[1], i, j, 1);
 
             R_view(p)[0] = rmin[0] + (i+0.5) * hr[0] + jitter_x;
             R_view(p)[1] = rmin[1] + (j+0.5) * hr[1] + jitter_y;
