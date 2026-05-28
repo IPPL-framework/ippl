@@ -15,11 +15,15 @@ double sinusoidalPerturbation(double xIndex, double yIndex, double phase = 0.0) 
 
 KOKKOS_INLINE_FUNCTION
 double sinusoidalJitter(double spacing, double xIndex, double yIndex, int component) {
-    constexpr double amplitude      = 0.1;
-    constexpr double componentPhase = 1.5707963267948966;
+    constexpr double componentPhase = 37.719;
 
-    return amplitude * spacing
-           * sinusoidalPerturbation(xIndex, yIndex, component * componentPhase);
+    double seed = Kokkos::sin(12.9898 * (xIndex + 1.0)
+                              + 78.233 * (yIndex + 1.0)
+                              + component * componentPhase)
+                  * 43758.5453;
+    double random01 = seed - Kokkos::floor(seed);
+
+    return spacing * 0.2 * (random01 - 0.5);
 }
 
 KOKKOS_INLINE_FUNCTION
