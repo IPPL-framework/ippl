@@ -34,12 +34,9 @@ if(IPPL_ENABLE_FINUFFT)
     target_link_libraries(PenningTrapPIF PRIVATE cufinufft finufft)
 endif()
 
-add_executable (LandauDampingPIFPruned LandauDampingPIFPruned.cpp)
-target_link_libraries (LandauDampingPIFPruned PRIVATE ${IPPL_LIBS})
-
-if(IPPL_ENABLE_FINUFFT)
-    target_link_libraries(LandauDampingPIFPruned PRIVATE cufinufft finufft)
-endif()
+# LandauDampingPIF supports both the upsampled (default) and the pruned NUFFT
+# pipelines via an optional 10th positional argument ("pruned"); no separate
+# executable is required.
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

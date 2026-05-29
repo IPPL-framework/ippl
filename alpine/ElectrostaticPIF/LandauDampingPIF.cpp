@@ -146,6 +146,15 @@ int main(int argc, char* argv[]) {
         Inform msg("LandauDampingPIF");
         Inform msg2all("LandauDampingPIF", INFORM_ALL_NODES);
 
+        // Optional 10th positional argument selects the NUFFT pipeline:
+        //   "pruned"     -> only the lowest n_modes per axis are transformed
+        //                   on the original grid (cheaper, slightly less
+        //                   accurate).
+        //   anything else / absent -> upsampled pipeline on a 2x grid
+        //                             (default, matches the original example).
+        const bool useUpsampledInputs =
+            !(argc > 10 && std::string(argv[10]) == "pruned");
+
         ippl::Vector<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
         ippl::Vector<int, Dim> nrOrig;
 
@@ -175,13 +184,19 @@ int main(int argc, char* argv[]) {
 
         std::unique_ptr<bunch_type> P;
 
+        // Upsampled mode runs all transforms on a 2x grid (nr doubled);
+        // pruned mode keeps the original grid. nrOrig is the user-supplied
+        // resolution and is what the particle layout / NUFFT plans get bound
+        // to in either mode, but in upsampled mode the field storage and
+        // FieldLayout use the doubled nr to give the FFT room to upsample.
         ippl::NDIndex<Dim> domain;
         ippl::NDIndex<Dim> domainOrig;
         for (unsigned i = 0; i < Dim; i++) {
-            //For upsampling the grid
             nrOrig[i] = nr[i];
-            nr[i] = 2 * nr[i];
-            domain[i] = ippl::Index(nr[i]);
+            if (useUpsampledInputs) {
+                nr[i] = 2 * nr[i];
+            }
+            domain[i]     = ippl::Index(nr[i]);
             domainOrig[i] = ippl::Index(nrOrig[i]);
         }
 
@@ -199,22 +214,25 @@ int main(int argc, char* argv[]) {
         double dz       = length[2] / nr[2];
 
         Vector_t hr     = {dx, dy, dz};
-        Vector_t hrOrig     = 2.0 *  hr;
+        Vector_t hrOrig = useUpsampledInputs ? Vector_t{2.0 * hr} : hr;
         Vector_t origin = {rmin[0], rmin[1], rmin[2]};
 
         const bool isAllPeriodic = true;
         Mesh_t mesh(domain, hr, origin);
         Mesh_t meshOrig(domainOrig, hrOrig, origin);
 
-
         FieldLayout_t FL(*ippl::Comm, domain, isParallel, isAllPeriodic);
         FieldLayout_t FLOrig(*ippl::Comm, domainOrig, isParallel, isAllPeriodic);
 
+        // Particle layout binds to the original (un-upsampled) field layout so
+        // particle positions and the NUFFT plan see the same resolution; the
+        // upsampled FL is only used for the rho/Sk field storage.
         PLayout_t PL(FLOrig, meshOrig);
 
         // Q = -\int\int f dx dv
         double Q = -length[0] * length[1] * length[2];
-        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, isParallel, Q, Total_particles);
+        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, isParallel, Q,
+                                                Total_particles, useUpsampledInputs);
 
         P->nr_m = nr;
 
@@ -328,7 +346,7 @@ int main(int argc, char* argv[]) {
         IpplTimings::print();
         IpplTimings::print(std::string("timing.dat"));
 
-        std::string res_file  = "LandauDampingPIF";
+        std::string res_file  = useUpsampledInputs ? "LandauDampingPIF" : "LandauDampingPIFPruned";
         res_file += std::to_string(ippl::Comm->size());
         res_file += ".csv";
         IpplTimings::dumpToCSV(res_file);

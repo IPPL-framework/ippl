@@ -95,6 +95,12 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration, double dx, dou
  * velocity, and the gathered electric field. Used by LandauDampingPIF /
  * BumponTailInstabilityPIF / PenningTrapPIF.
  *
+ * Supports two NUFFT pipelines, selected via @c useUpsampledInputs (default
+ * @c true): the upsampled pipeline transforms a 2x grid for accuracy; the
+ * "pruned" pipeline (false) transforms only the lowest n_modes per axis on
+ * the original grid for speed. Construct with @c useUpsampledInputs=false
+ * for the pruned variant.
+ *
  * @tparam PLayout Particle spatial layout type (typically
  *                 ippl::ParticleSpatialLayout<double, 3>).
  */
@@ -129,6 +135,10 @@ public:
     int shapedegree_m;
     //std::shared_ptr<FFT_t> fft_mp;
 
+    // NUFFT pipeline selector: true -> 2x-upsampled grid (default);
+    // false -> "pruned" mode (only the lowest n_modes per axis transformed).
+    bool useUpsampledInputs_m = true;
+
     std::shared_ptr<ippl::FFT<ippl::NUFFTransform, Field_t>> nufftType1_mp, nufftType2_mp;
 
 public:
@@ -150,13 +160,15 @@ public:
     }
 
     ChargedParticlesPIF(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
-                        std::array<bool, Dim> decomp, double Q, size_type Np)
+                        std::array<bool, Dim> decomp, double Q, size_type Np,
+                        bool useUpsampledInputs = true)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
         , Q_m(Q)
-        , Np_m(Np) {
+        , Np_m(Np)
+        , useUpsampledInputs_m(useUpsampledInputs) {
         // register the particle attributes
         this->addAttribute(q);
         this->addAttribute(P);
@@ -206,8 +218,8 @@ public:
         fftParams2.add("use_finufft_defaults", false);
         fftParams1.add("use_kokkos_nufft", false);
         fftParams2.add("use_kokkos_nufft", false);
-        fftParams1.add("use_upsampled_inputs", true);
-        fftParams2.add("use_upsampled_inputs", true);
+        fftParams1.add("use_upsampled_inputs", useUpsampledInputs_m);
+        fftParams2.add("use_upsampled_inputs", useUpsampledInputs_m);
         // fftParams.add("use_cufinufft_defaults", true);
 
         nufftType1_mp = std::make_shared<ippl::FFT<ippl::NUFFTransform, Field_t>>(
