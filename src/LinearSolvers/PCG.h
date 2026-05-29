@@ -188,7 +188,10 @@ namespace ippl {
         T residueNorm    = 0;
         int iterations_m = 0;
 
-    private:
+        // Workspaces, allocated once via initializeFields() and reused across
+        // solves. Protected so derived solvers (e.g. PCG) can extend the
+        // workspace set without redeclaring r, d, q as locals on every
+        // operator() call.
         lhs_type r;
         lhs_type d;
         lhs_type q;
@@ -334,10 +337,29 @@ namespace ippl {
         using InverseDiagF = std::function<InverseDiagRet(lhs_type)>;
         using DiagF        = std::function<DiagRet(lhs_type)>;
 
+        using mesh_type   = typename lhs_type::Mesh_t;
+        using layout_type = typename lhs_type::Layout_t;
+
         PCG()
             : CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS,
                  FieldRHS>()
             , preconditioner_m(nullptr){};
+
+        /*
+         * Extends the CG workspace with the preconditioner result buffers s and
+         * pcond_out so operator() does not allocate per solve. pcond_out keeps
+         * its default NoBcFace BCs: the preconditioner's internal operator
+         * chain therefore never triggers PeriodicFace::apply MPI calls -- if it
+         * did, the global MPI sequence would diverge from the master code path
+         * (where the preconditioner returned a fresh NoBcFace field) and
+         * intermittent multi-rank halo deadlocks would follow.
+         */
+        void initializeFields(mesh_type& mesh, layout_type& layout) override {
+            CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS,
+               FieldRHS>::initializeFields(mesh, layout);
+            s.initialize(mesh, layout);
+            pcond_out.initialize(mesh, layout);
+        }
 
         /*!
          * Sets the differential operator for the conjugate gradient algorithm
@@ -422,19 +444,26 @@ namespace ippl {
                                     "Preconditioner has not been set for PCG solver");
             }
 
-            typename lhs_type::Mesh_t& mesh     = lhs.get_mesh();
-            typename lhs_type::Layout_t& layout = lhs.getLayout();
-
             this->iterations_m      = 0;
             const int maxIterations = params.get<int>("max_iterations");
 
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
-            lhs_type r(mesh, layout);
-            lhs_type d(mesh, layout);
-            lhs_type s(mesh, layout);
-            lhs_type q(mesh, layout);
+            // r, d, q come from the CG base class; s and pcond_out are PCG
+            // members. All are pre-allocated via initializeFields(); operator()
+            // only refreshes their layout so a load-balance repartition is
+            // tracked. The preconditioner scratch must follow the lhs layout
+            // too, otherwise its halo-exchange neighbor list goes out of sync
+            // with r/d/s/q after a repartition and halo MPI calls deadlock.
+            this->r.updateLayout(lhs.getLayout());
+            this->d.updateLayout(lhs.getLayout());
+            s.updateLayout(lhs.getLayout());
+            pcond_out.updateLayout(lhs.getLayout());
+            this->q.updateLayout(lhs.getLayout());
 
+            // Each preconditioner's init_fields() is responsible for being
+            // cheap on the steady-state path (refreshing layout in-place, not
+            // reallocating).
             preconditioner_m->init_fields(lhs);
 
             using bc_type  = BConds<lhs_type, Dim>;
@@ -459,20 +488,26 @@ namespace ippl {
                 }
             }
 
-            r = rhs - this->op_m(lhs);
-            d = preconditioner_m->operator()(r).deepCopy();
-            d.setFieldBC(bc);
+            this->r = rhs - this->op_m(lhs);
+            // pcond_out keeps its default NoBcFace BCs so the preconditioner's
+            // internal operator chain does not trigger PeriodicFace::apply MPI;
+            // the expression assignment then folds it into d (which gets the
+            // periodic BCs via setFieldBC below).
+            (*preconditioner_m)(this->r, pcond_out);
+            this->d = T(1) * pcond_out;
+            this->d.setFieldBC(bc);
 
-            T delta1          = innerProduct(r, d);
+            T delta1          = innerProduct(this->r, this->d);
             T delta0          = delta1;
             this->residueNorm = Kokkos::sqrt(Kokkos::abs(delta1));
             const T tolerance = params.get<T>("tolerance") * this->residueNorm;
 
             while (this->iterations_m < maxIterations && this->residueNorm > tolerance) {
-                q       = this->op_m(d);
-                q       = q.deepCopy();
-                T alpha = delta1 / innerProduct(d, q);
-                lhs     = lhs + alpha * d;
+                // op_m(d) writes its expression into q's existing storage; no
+                // allocation, no per-iteration deep copy.
+                this->q = this->op_m(this->d);
+                T alpha = delta1 / innerProduct(this->d, this->q);
+                lhs     = lhs + alpha * this->d;
 
                 // The exact residue is given by
                 // r = rhs - BaseCG::op_m(lhs);
@@ -481,16 +516,17 @@ namespace ippl {
                 // the correction does not have a significant effect on accuracy;
                 // in some implementations, the correction may be applied every few
                 // iterations to offset accumulated floating point errors
-                r = r - alpha * q;
-                s = preconditioner_m->operator()(r).deepCopy();
+                this->r = this->r - alpha * this->q;
+                // s := M^{-1} r; preconditioner writes into s (NoBcFace).
+                (*preconditioner_m)(this->r, s);
 
                 delta0 = delta1;
-                delta1 = innerProduct(r, s);
+                delta1 = innerProduct(this->r, s);
 
                 T beta            = delta1 / delta0;
                 this->residueNorm = Kokkos::sqrt(Kokkos::abs(delta1));
 
-                d = s + beta * d;
+                this->d = s + beta * this->d;
                 ++this->iterations_m;
             }
 
@@ -502,6 +538,13 @@ namespace ippl {
 
     protected:
         std::unique_ptr<preconditioner<FieldLHS>> preconditioner_m;
+
+        // Preconditioner result buffers, allocated once via initializeFields()
+        // and reused across solves. Both deliberately keep their default
+        // NoBcFace BCs so the preconditioner's internal operator chain does
+        // NOT trigger PeriodicFace::apply MPI calls.
+        lhs_type s;
+        lhs_type pcond_out;
     };
 
 };  // namespace ippl
