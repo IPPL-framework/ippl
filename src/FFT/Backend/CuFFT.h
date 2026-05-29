@@ -18,6 +18,11 @@ namespace ippl {
 namespace fft {
 
     namespace detail {
+        /*!
+         * @brief Throw IpplException if @p result is not CUFFT_SUCCESS.
+         * @param result  cuFFT API return code.
+         * @param context Human-readable label for the failing call.
+         */
         inline void checkCufftResult(cufftResult result, const char* context) {
             if (result != CUFFT_SUCCESS) {
                 std::string msg =
@@ -26,6 +31,11 @@ namespace fft {
             }
         }
 
+        /*!
+         * @brief Throw IpplException if @p err is not cudaSuccess.
+         * @param err     CUDA runtime error code.
+         * @param context Human-readable label for the failing call.
+         */
         inline void checkCudaError(cudaError_t err, const char* context) {
             if (err != cudaSuccess) {
                 std::string msg = std::string(context) + ": " + cudaGetErrorString(err);
@@ -35,6 +45,14 @@ namespace fft {
     }  // namespace detail
 
     namespace detail {
+        /*!
+         * @brief CUDA kernel that scales each complex element of @p data by @p scale.
+         *
+         * @tparam T cuFFT complex type (cufftComplex or cufftDoubleComplex).
+         * @param data  Device pointer to the buffer to scale.
+         * @param n     Number of complex elements in @p data.
+         * @param scale Scalar multiplier applied to both .x and .y components.
+         */
         template <typename T>
         __global__ void cufftScaleKernel(T* data, size_t n, double scale) {
             size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -49,6 +67,21 @@ namespace fft {
     // CuFFTC2C - Single-node cuFFT with Batched Support
     //=========================================================================
 
+    /*!
+     * @class CuFFTC2C
+     * @brief Single-node cuFFT C2C wrapper with batched-transform support.
+     *
+     * Mirrors the public interface of HeffteC2C / CuFFTMpC2C so transforms
+     * can be swapped at compile time. Maintains an internal CUDA stream and
+     * an additional plan for partial batches (when @c maxBatchSize > 1).
+     *
+     * Forward transforms are normalized by 1 / globalElements via a scaling
+     * kernel; backward transforms are unscaled.
+     *
+     * @tparam T        Real precision (float / double).
+     * @tparam Dim      Spatial dimension (only 3D is supported).
+     * @tparam MemSpace Must be Kokkos::CudaSpace.
+     */
     template <typename T, unsigned Dim, typename MemSpace>
     class CuFFTC2C {
     public:
@@ -65,7 +98,18 @@ namespace fft {
 
         static constexpr cufftType fft_type = std::is_same_v<T, float> ? CUFFT_C2C : CUFFT_Z2Z;
 
-        // Constructor matching HeFFTe/cuFFTMp interface
+        /*!
+         * @brief Build the cuFFT plans for the given local box decomposition.
+         *
+         * Mirrors the heFFTe / cuFFTMp constructor signature. @p comm is used
+         * only to MPI_Allreduce the global FFT size; the actual transforms are
+         * single-node (one plan per rank).
+         *
+         * @param inbox        Local input box (inclusive corner indices).
+         * @param outbox       Local output box (inclusive corner indices).
+         * @param comm         MPI communicator (used only for global-size reduction).
+         * @param maxBatchSize Maximum number of transforms in a single batched call.
+         */
         CuFFTC2C(const heffte::box3d<long long>& inbox,
                  const heffte::box3d<long long>& outbox,
                  MPI_Comm comm,
@@ -199,19 +243,29 @@ namespace fft {
             return *this;
         }
 
-        // Single transform
+        //! Forward C2C transform of a single buffer; output is normalized by 1 / globalElements.
         void forward(complex_t* in, complex_t* out) {
             execute(planSingle_, in, out, CUFFT_FORWARD);
             applyScaling(out, localElements_, T(1) / static_cast<T>(globalElements_));
             detail::checkCudaError(cudaStreamSynchronize(stream_), "Stream sync failed");
         }
 
+        //! Backward C2C transform of a single buffer (unscaled).
         void backward(complex_t* in, complex_t* out) {
             execute(planSingle_, in, out, CUFFT_INVERSE);
             detail::checkCudaError(cudaStreamSynchronize(stream_), "Stream sync failed");
         }
 
-        // Batched transform
+        /*!
+         * @brief Batched forward C2C transform.
+         *
+         * Uses the batched plan when @p batchSize equals the configured maximum,
+         * otherwise loops over individual transforms with the single-shot plan.
+         *
+         * @param batchSize Number of contiguous transforms to perform.
+         * @param in        Device pointer to the input batch.
+         * @param out       Device pointer to the output batch.
+         */
         void forward(int batchSize, complex_t* in, complex_t* out) {
             if (batchSize > maxBatchSize_) {
                 throw IpplException("CuFFTC2C", "Batch size exceeds plan capacity");
@@ -232,6 +286,12 @@ namespace fft {
             detail::checkCudaError(cudaStreamSynchronize(stream_), "Stream sync failed");
         }
 
+        /*!
+         * @brief Batched backward C2C transform (unscaled).
+         * @param batchSize Number of contiguous transforms to perform.
+         * @param in        Device pointer to the input batch.
+         * @param out       Device pointer to the output batch.
+         */
         void backward(int batchSize, complex_t* in, complex_t* out) {
             if (batchSize > maxBatchSize_) {
                 throw IpplException("CuFFTC2C", "Batch size exceeds plan capacity");
@@ -250,7 +310,10 @@ namespace fft {
             detail::checkCudaError(cudaStreamSynchronize(stream_), "Stream sync failed");
         }
 
-        // Set external stream
+        /*!
+         * @brief Replace the internal CUDA stream used by both plans.
+         * @param stream User-managed stream that outlives this object.
+         */
         void setStream(cudaStream_t stream) {
             stream_ = stream;
             detail::checkCufftResult(cufftSetStream(planBatched_, stream_),
@@ -261,15 +324,23 @@ namespace fft {
             }
         }
 
-        // Accessors
-        size_t workspace_size() const { return 0; }  // cuFFT manages internally
+        //! cuFFT manages its workspace internally, so this always returns 0.
+        size_t workspace_size() const { return 0; }
+        //! @return Number of complex elements in the local box.
         size_t local_size() const { return localElements_; }
+        //! @return Total number of complex elements in the global FFT.
         size_t global_size() const { return globalElements_; }
+        //! @return Local input box size in elements.
         size_t size_inbox() const { return localElements_; }
+        //! @return Local output box size in elements.
         size_t size_outbox() const { return localElements_; }
+        //! @return Maximum batch size the plans were created for.
         int max_batch_size() const { return maxBatchSize_; }
+        //! @return Internal CUDA stream used for plan execution.
         cudaStream_t stream() const { return stream_; }
+        //! @return Local box extent along each axis (i, j, k).
         const std::array<long long, 3>& local_dims() const { return localSize_; }
+        //! @return Global FFT extent along each axis (i, j, k).
         const std::array<long long, 3>& global_dims() const { return globalSize_; }
 
     private:

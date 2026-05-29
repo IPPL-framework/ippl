@@ -11,20 +11,20 @@
 // The recommended launch is  mpirun -n 4  (or 8 for the higher-coverage tests).
 //
 // Test inventory
-// ──────────────
-//  1.  ORB layout created with uniform density  →  baseline count conservation
-//  2.  ORB layout created with a Gaussian density bump  →  asymmetric widths
-//  3.  Particles displaced uniformly after ORB  →  all migrate to correct owner
-//  4.  Particles displaced toward the heavy region  →  burst migration into narrow rank
-//  5.  Repeated ORB repartition between steps  →  counts conserved at each step
-//  6.  All particles on rank 0, ORB applied, then update  →  full redistribution
+// --------------
+//  1.  ORB layout created with uniform density  ->  baseline count conservation
+//  2.  ORB layout created with a Gaussian density bump  ->  asymmetric widths
+//  3.  Particles displaced uniformly after ORB  ->  all migrate to correct owner
+//  4.  Particles displaced toward the heavy region  ->  burst migration into narrow rank
+//  5.  Repeated ORB repartition between steps  ->  counts conserved at each step
+//  6.  All particles on rank 0, ORB applied, then update  ->  full redistribution
 //  7.  Charge conservation through ORB + update cycle
 //  8.  Tags (IDs) survive ORB + update
 //  9.  Zero-particle ranks after ORB do not deadlock
 // 10.  Large-count stress test with ORB decomposition
 // 11.  Periodic wrap across ORB boundaries
 // 12.  Multiple ORB repartitions with particle injection between steps
-// 13.  ORB with a step-function density  →  one rank gets 1 cell, another N-1
+// 13.  ORB with a step-function density  ->  one rank gets 1 cell, another N-1
 // 14.  Successive displacements across ORB boundaries
 // 15.  ORB repartition in 3-D with diagonal displacement
 //
@@ -347,14 +347,14 @@ TYPED_TEST_SUITE(TestParticleUpdateORB, Tests);
         (void)0
 
 // ============================================================
-//  1. ORB with uniform density – baseline conservation
+//  1. ORB with uniform density - baseline conservation
 // ============================================================
 TYPED_TEST(TestParticleUpdateORB, UniformOrbBaselineConservation) {
     REQUIRE_RANKS(MIN_RANKS);
 
     bool ok = this->orbUniform();
     if (!ok)
-        GTEST_SKIP() << "ORB returned planar decomposition – skipping";
+        GTEST_SKIP() << "ORB returned planar decomposition - skipping";
 
     this->rebuildPlayout();
     auto bunch = this->makeBunch();
@@ -368,7 +368,7 @@ TYPED_TEST(TestParticleUpdateORB, UniformOrbBaselineConservation) {
 }
 
 // ============================================================
-//  2. ORB with Gaussian density – verify non-uniform decomposition
+//  2. ORB with Gaussian density - verify non-uniform decomposition
 //     and that particles still migrate correctly
 // ============================================================
 TYPED_TEST(TestParticleUpdateORB, GaussianOrbCreatesNonUniformLayout) {
@@ -376,7 +376,7 @@ TYPED_TEST(TestParticleUpdateORB, GaussianOrbCreatesNonUniformLayout) {
 
     bool ok = this->orbGaussian();
     if (!ok)
-        GTEST_SKIP() << "ORB returned planar decomposition – skipping";
+        GTEST_SKIP() << "ORB returned planar decomposition - skipping";
 
     // With 4+ ranks and a Gaussian bump the domains should be unequal
     if (ippl::Comm->size() >= PREF_RANKS) {
@@ -395,7 +395,7 @@ TYPED_TEST(TestParticleUpdateORB, GaussianOrbCreatesNonUniformLayout) {
 }
 
 // ============================================================
-//  3. Uniform displacement after ORB – all particles cross at least
+//  3. Uniform displacement after ORB - all particles cross at least
 //     one ORB boundary and reach the correct owner
 // ============================================================
 TYPED_TEST(TestParticleUpdateORB, UniformDisplacementAfterOrb) {
@@ -742,7 +742,7 @@ TYPED_TEST(TestParticleUpdateORB, PeriodicWrapAcrossOrbBoundaries) {
 
 // ============================================================
 // 12. Particle injection between ORB repartitions
-//     Simulates a typical PIC workflow: inject → ORB → move → update → repeat
+//     Simulates a typical PIC workflow: inject -> ORB -> move -> update -> repeat
 // ============================================================
 TYPED_TEST(TestParticleUpdateORB, ParticleInjectionBetweenOrbRepartitions) {
     REQUIRE_RANKS(MIN_RANKS);

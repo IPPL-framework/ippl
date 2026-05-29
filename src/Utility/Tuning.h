@@ -1,3 +1,13 @@
+/*!
+ * @file Tuning.h
+ * @brief Wrapper around the Kokkos Profiling tuning interface.
+ *
+ * Exposes @c TileSizeTuner: register a candidate set of tile sizes per
+ * dimension, request a tuned configuration from a connected tuning tool
+ * (e.g., Apollo) at the start of each iteration, scale the suggested tile
+ * down if it would overflow the kernel's scratch budget, and report the
+ * iteration's measurement back at the end.
+ */
 #ifndef IPPL_TUNING_H
 #define IPPL_TUNING_H
 
@@ -14,6 +24,19 @@
 
 namespace ippl {
 
+/*!
+ * @class TileSizeTuner
+ * @brief Per-dimension tile-size tuner driven by Kokkos::Tools.
+ *
+ * The candidate set is mapped onto a normalized [0, 1] range that the
+ * Kokkos tuning interface can sample over. begin() requests a tile
+ * configuration for the next iteration; end() closes the tuning context.
+ * If no tuning tool is connected, the default tile is returned unchanged.
+ *
+ * @tparam Dim      Number of independent tile-size dimensions.
+ * @tparam TileType Indexable type with N==Dim integer entries (e.g.,
+ *                  Vector<int, Dim> or std::array<int, Dim>).
+ */
 template <unsigned Dim, typename TileType>
 class TileSizeTuner {
 public:
@@ -38,6 +61,18 @@ private:
 public:
     TileSizeTuner() = default;
 
+    /*!
+     * @brief Register the per-dimension candidate set with the tuning tool.
+     *
+     * @tparam ScratchCalculator Callable @c size_t(TileConfig) returning the
+     *                           bytes of LDS scratch the kernel would need
+     *                           for a given tile.
+     * @param kernel_name   Label used to register tunable variables.
+     * @param candidates    Sorted-or-unsorted list of acceptable tile values.
+     * @param max_scratch   Hard upper bound on per-team scratch bytes.
+     * @param calc          Scratch-size estimator for a given TileConfig.
+     * @param default_tile  Tile used when no tuning tool is connected.
+     */
     template <typename ScratchCalculator>
     void initialize(const std::string& kernel_name,
                     const std::vector<int>& candidates,
@@ -73,6 +108,7 @@ public:
         initialized_ = true;
     }
 
+    //! @return Whether initialize() has been called.
     bool is_initialized() const { return initialized_; }
 
     // Map normalized value [0,1] to candidate index. With no candidates the
@@ -101,6 +137,13 @@ public:
         return static_cast<double>(idx) / (candidates_.size() - 1);
     }
 
+    /*!
+     * @brief Open a new tuning context and request a tile suggestion.
+     *
+     * If no tuning tool is connected, returns the default tile unchanged.
+     * Otherwise asks the tool for normalized values, maps them back to
+     * candidates, and scales down to fit @c max_scratch if necessary.
+     */
     TileConfig begin() {
         if (!initialized_) {
             return default_tile_;
@@ -136,6 +179,7 @@ public:
         return result;
     }
 
+    //! Close the current tuning context (no-op when no tuning tool is connected).
     void end() {
         if (context_active_ && Kokkos::Tools::Experimental::have_tuning_tool()) {
             Kokkos::Tools::Experimental::end_context(context_id_);

@@ -1,3 +1,12 @@
+/*!
+ * @file AtomicGather.h
+ * @brief Per-particle gather kernel.
+ *
+ * Each particle reads its W^Dim stencil from the field. The "Atomic" name is
+ * kept for symmetry with the scatter side; gather is read-only and never
+ * actually issues atomic operations. With @c UseSorting=true a permutation
+ * is applied so particles in the same tile read contiguous memory.
+ */
 #ifndef IPPL_ATOMIC_GATHER_H
 #define IPPL_ATOMIC_GATHER_H
 
@@ -8,6 +17,13 @@
 #include "Interpolation/WidthDispatcher.h"
 
 namespace ippl::Interpolation::detail {
+    /*!
+     * @struct AtomicGather
+     * @brief Compile-time-width gather functor.
+     * @tparam W          Compile-time kernel width.
+     * @tparam Types      GatherTypes bundle.
+     * @tparam UseSorting When true, particles are pre-binned for better locality.
+     */
     template <int W, class Types, bool UseSorting = false>
     struct AtomicGather {
         static constexpr bool requires_binning = UseSorting;
@@ -19,7 +35,7 @@ namespace ippl::Interpolation::detail {
         using execution_space = typename Types::execution_space;
 
         struct Arguments : GatherArgumentsBase<Arguments, Types> {
-            using PermuteView = Kokkos::View<uint64_t*, memory_space>;
+            using PermuteView = Kokkos::View<ippl::detail::size_type*, memory_space>;
             PermuteView permute;  // Only used when UseSorting = true
 
             template <class Field, class Positions, class Values, class Kernel>

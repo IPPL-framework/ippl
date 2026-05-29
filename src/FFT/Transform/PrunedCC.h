@@ -1,3 +1,12 @@
+/*!
+ * @file PrunedCC.h
+ * @brief Pruned complex-to-complex FFT (PrunedCCTransform tag).
+ *
+ * Pruned FFTs keep only the lowest @c n_modes modes per axis. The
+ * implementation runs @c 2^Dim sub-FFTs corresponding to all subsets of the
+ * pruned axes, with optional concurrent execution on independent streams /
+ * MPI communicator duplicates.
+ */
 #ifndef IPPL_FFT_TRANSFORM_PRUNEDCC_H
 #define IPPL_FFT_TRANSFORM_PRUNEDCC_H
 
@@ -16,8 +25,17 @@
 namespace ippl {
 
     namespace detail {
-        // Wrapper to safely evaluate OpenMP at compile-time to prevent nested
-        // parallelism errors when Kokkos is using the OpenMP execution space.
+        /*!
+         * @brief Run @p func(local) for @c local in [0, count) with optional
+         *        OpenMP outer parallelism.
+         *
+         * On CPU execution spaces the loop is serial (Kokkos already
+         * parallelizes the inner loops); on GPU execution spaces an OpenMP
+         * outer loop is used so independent stream launches can overlap.
+         *
+         * @tparam IsCPU True when Kokkos is configured with an OpenMP-capable
+         *               host execution space; false otherwise.
+         */
         template <bool IsCPU, typename Func>
         inline void runConcurrentBatch(int count, Func&& func) {
             if constexpr (IsCPU) {
@@ -41,6 +59,17 @@ namespace ippl {
     // Pruned Complex-to-Complex Transform
     //=========================================================================
 
+    /*!
+     * @class FFT<PrunedCCTransform, ComplexField>
+     * @brief Pruned C2C FFT keeping only the lowest n_modes per axis.
+     *
+     * Maintains @c 2^Dim heFFTe plans (one per subset of axes) and one
+     * MPI communicator duplicate per concurrent sub-FFT. The number of
+     * concurrent sub-FFTs is taken from the @c "num_concurrent_ffts"
+     * parameter, clamped to [1, 2^Dim].
+     *
+     * @tparam ComplexField IPPL Field of Kokkos::complex elements.
+     */
     template <typename ComplexField>
     class FFT<PrunedCCTransform, ComplexField> {
     public:
@@ -60,6 +89,13 @@ namespace ippl {
         using TempView_t = typename Kokkos::View<typename ComplexField::view_type::data_type,
                                                  Kokkos::LayoutLeft, MemSpace>::uniform_type;
 
+        /*!
+         * @brief Build the pruned plan over the smaller of the two layouts.
+         * @param layoutIn  Pre-pruning input layout.
+         * @param layoutOut Post-pruning output layout.
+         * @param pruning   Per-axis number of modes to retain.
+         * @param params    Backend parameters; reads @c "num_concurrent_ffts".
+         */
         FFT(const Layout_t& layoutIn, const Layout_t& layoutOut, const PruningParams<Dim>& pruning,
             const ParameterList& params)
             : pruning_(pruning)
@@ -88,6 +124,13 @@ namespace ippl {
             }
         }
 
+        /*!
+         * @brief Pruned forward / backward C2C transform.
+         * @param direction FORWARD or BACKWARD.
+         * @param input     Pre-pruning input field.
+         * @param output    Post-pruning output field.
+         * @param dir       +1 / -1 swap-direction flag forwarded to the kernels.
+         */
         void transform(TransformDirection direction, ComplexField& input, ComplexField& output,
                        int dir = 1) {
             if (direction == FORWARD) {
@@ -97,7 +140,9 @@ namespace ippl {
             }
         }
 
+        //! Forward pruned C2C kernel implementation (defined out-of-class below).
         void forwardPruned(int dir, ComplexField& input, ComplexField& output);
+        //! Backward pruned C2C kernel implementation (defined out-of-class below).
         void backwardPruned(int dir, ComplexField& input, ComplexField& output);
 
     private:

@@ -1,3 +1,11 @@
+/*!
+ * @file Binning.h
+ * @brief Particle-to-tile binning for tiled scatter / gather.
+ *
+ * Provides the per-particle bin computer, a counting-sort-based grouping
+ * (`bin_sort`) and the high-level `bin_particles` entry point used by the
+ * tiled scatter/gather paths.
+ */
 #ifndef IPPL_INTERPOLATION_BINNING_H
 #define IPPL_INTERPOLATION_BINNING_H
 
@@ -13,11 +21,18 @@ namespace ippl {
     namespace Interpolation {
         namespace detail {
 
+            /*!
+             * @struct BinningResult
+             * @brief Output of bin_particles: permutation + per-bin offsets + tile counts.
+             *
+             * @tparam Dim         Spatial dimension.
+             * @tparam MemorySpace Kokkos memory space the views live in.
+             */
             template <int Dim, typename MemorySpace>
             struct BinningResult {
-                Kokkos::View<size_type*, MemorySpace> permute;
-                Kokkos::View<size_type*, MemorySpace> bin_offsets;
-                Vector<int, Dim> num_tiles;
+                Kokkos::View<size_type*, MemorySpace> permute;     //!< particle ids grouped by bin.
+                Kokkos::View<size_type*, MemorySpace> bin_offsets; //!< exclusive scan of bin counts.
+                Vector<int, Dim> num_tiles;                        //!< tile-grid extent per axis.
             };
 
             /**
@@ -75,7 +90,7 @@ namespace ippl {
              *
              * The downstream consumer (TiledScatter / GridParallelScatter) only
              * needs particles *grouped* per bin, not sorted. A radix sort over
-             * the keys is the wrong primitive for that — it does ~8 N bytes of
+             * the keys is the wrong primitive for that -- it does ~8 N bytes of
              * key/perm traffic and ~5 N bytes of scratch. The counting sort
              * implemented here is the textbook bucket-sort and runs in three
              * memory-bandwidth-bounded kernels:
@@ -92,8 +107,8 @@ namespace ippl {
              *            offset and is incremented once per particle landing
              *            in that bin.
              *
-             * For 268 M particles on H100 this is ~50× faster than the CUB
-             * radix-sort path it replaces (~120 ms → ~3-5 ms), because the
+             * For 268 M particles on H100 this is ~50x faster than the CUB
+             * radix-sort path it replaces (~120 ms -> ~3-5 ms), because the
              * total memory traffic shrinks from ~64 N bytes to ~24 N bytes
              * and the out-of-place sort scratch + deep_copy round-trip is
              * gone.

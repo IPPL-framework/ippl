@@ -16,7 +16,6 @@
 // along with IPPL. If not, see <https://www.gnu.org/licenses/>.
 //
 
-
 #include "Ippl.h"
 
 // dimension of our positions
@@ -87,6 +86,18 @@ void dumpVTK(Field_t& rho, int nx, int ny, int nz, int iteration, double dx, dou
     }
 }
 
+/*!
+ * @class ChargedParticlesPIF
+ * @brief Particle bunch used by the Particle-in-Fourier example apps.
+ *
+ * Holds Fourier-mode density fields (@c rho_m, @c rhoDFT_m, ...), the
+ * forward / inverse NUFFT plans, and per-particle attributes for charge,
+ * velocity, and the gathered electric field. Used by LandauDampingPIF /
+ * BumponTailInstabilityPIF / PenningTrapPIF.
+ *
+ * @tparam PLayout Particle spatial layout type (typically
+ *                 ippl::ParticleSpatialLayout<double, 3>).
+ */
 template <class PLayout>
 class ChargedParticlesPIF : public ippl::ParticleBase<PLayout> {
 public:
@@ -358,8 +369,8 @@ public:
             Kokkos::Sum<double>(fieldEnergy), Kokkos::Max<double>(EzAmp));
 
         Kokkos::fence();
-	double globalfieldEnergy = 0.0;
-	double globalEzAmp = 0.0;
+        double globalfieldEnergy = 0.0;
+        double globalEzAmp = 0.0;
         ippl::Comm->reduce(fieldEnergy, globalfieldEnergy, 1, std::plus<double>());
         ippl::Comm->reduce(EzAmp, globalEzAmp, 1, std::greater<double>());
         double volume = (rmax_m[0] - rmin_m[0]) * (rmax_m[1] - rmin_m[1]) * (rmax_m[2] - rmin_m[2]);
@@ -532,12 +543,10 @@ public:
 
         } else if (shapetype_m == "B-spline") {
             Kokkos::parallel_for(
-                "B-spline shape functions", mdrange_type({nghost, 
-			                                  nghost, 
-							  nghost}, 
-							  {Skview.extent(0) - nghost, 
-							  Skview.extent(1) - nghost, 
-							  Skview.extent(2) - nghost}),
+                "B-spline shape functions",
+                mdrange_type({nghost, nghost, nghost},
+                             {Skview.extent(0) - nghost, Skview.extent(1) - nghost,
+                              Skview.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     Vector<int, 3> iVec = {i, j, k};
                     for (unsigned d = 0; d < Dim; ++d) {
@@ -550,7 +559,7 @@ public:
                         bool shift            = (iVec[d] > (N[d] / 2));
                         kVec[d]               = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
                         //Actual mesh spacing is twice the upsampled one
-			double khbytwo = (kVec[d] * dx[d] / 2) * 2;
+                        double khbytwo = (kVec[d] * dx[d] / 2) * 2;
                         bool isNotZero = (khbytwo != 0.0);
                         double factor  = (1.0 / (khbytwo + ((!isNotZero) * 1.0)));
                         double arg =

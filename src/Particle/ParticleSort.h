@@ -1,3 +1,13 @@
+/*!
+ * @file ParticleSort.h
+ * @brief Morton-code (Z-order) particle sort.
+ *
+ * Computes a per-particle Morton code from grid-clamped positions and
+ * radix-sorts the particles to improve cache locality of subsequent
+ * scatter / gather kernels. Uses CUB on CUDA, rocPRIM on HIP, and
+ * @c Kokkos::sort_by_key elsewhere. Persistent scratch lives in
+ * @c BinSortBuffers (SortBuffer.h).
+ */
 #ifndef IPPL_PARTICLE_SORT_H
 #define IPPL_PARTICLE_SORT_H
 
@@ -238,7 +248,7 @@ namespace ippl {
 #endif
 
         /**
-         * @brief Generic sort dispatcher — selects CUDA/HIP/host implementation
+         * @brief Generic sort dispatcher -- selects CUDA/HIP/host implementation
          */
         template <unsigned Dim, typename ExecSpace, typename T>
         Kokkos::View<size_t*, typename ExecSpace::memory_space> sortParticles(
@@ -314,7 +324,7 @@ namespace ippl {
         }
 
         /**
-         * @brief Scatter src → dst using inverse permutation (dst[permute[i]] = src[i])
+         * @brief Scatter src -> dst using inverse permutation (dst[permute[i]] = src[i])
          */
         template <typename ExecSpace, typename DataView, typename IndexView>
         void applyInversePermutation(const DataView& src, DataView& dst, const IndexView& permute,

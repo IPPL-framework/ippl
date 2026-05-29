@@ -1,3 +1,11 @@
+/*!
+ * @file PrunedRC.h
+ * @brief Pruned real-to-complex FFT (PrunedRCTransform tag).
+ *
+ * The outbox layout is chosen so the mapping from pruned-global index to
+ * local index is communication-free; see the comment above the class
+ * declaration for the index-arithmetic details.
+ */
 #ifndef IPPL_FFT_TRANSFORM_PRUNEDRC_H
 #define IPPL_FFT_TRANSFORM_PRUNEDRC_H
 
@@ -35,6 +43,16 @@ namespace ippl {
     // pruned global index with no inter-rank communication.
     //=========================================================================
 
+    /*!
+     * @class FFT<PrunedRCTransform, RealField>
+     * @brief Pruned R2C FFT keeping only the lowest n_modes per axis.
+     *
+     * Currently 3D-only. Forward maps a real field to a pruned complex field;
+     * backward goes the other way. Internally uses a full-size complex
+     * scratch view so the index arithmetic stays local.
+     *
+     * @tparam RealField IPPL Field of real values.
+     */
     template <typename RealField>
     class FFT<PrunedRCTransform, RealField> {
     public:
@@ -58,11 +76,27 @@ namespace ippl {
         using TempReal_t    = Kokkos::View<T***, Kokkos::LayoutLeft, MemSpace>;
         using TempComplex_t = Kokkos::View<Complex_t***, Kokkos::LayoutLeft, MemSpace>;
 
+        /*!
+         * @brief Build the pruned R2C plan.
+         * @param layoutReal          Real-input field layout.
+         * @param layoutComplexFull   Kept for API compatibility; the outbox is
+         *                            actually recomputed internally.
+         * @param layoutComplexPruned Pruned complex-output layout.
+         * @param pruning             Per-axis number of modes to retain.
+         * @param params              Backend parameters; reads
+         *                            @c "r2c_direction" (default 0).
+         */
         FFT(const Layout_t& layoutReal,
             const Layout_t& layoutComplexFull,  // kept for API compatibility; outbox is recomputed
             const Layout_t& layoutComplexPruned, const PruningParams<Dim>& pruning,
             const ParameterList& params);
 
+        /*!
+         * @brief Forward (real->pruned complex) or backward transform.
+         * @param direction FORWARD or BACKWARD.
+         * @param f         Real field (input on FORWARD, output on BACKWARD).
+         * @param g         Pruned complex field (output on FORWARD, input on BACKWARD).
+         */
         void transform(TransformDirection direction, RealField& f, ComplexField& g);
 
     private:
@@ -108,7 +142,7 @@ namespace ippl {
         std::array<long long, 3> lowReal, highReal;
         fft::domainToBounds<Dim>(layoutReal.getLocalNDIndex(), lowReal, highReal);
 
-        // Outbox: custom — aligned to pruned in r2c_dir, full extent everywhere else
+        // Outbox: custom -- aligned to pruned in r2c_dir, full extent everywhere else
         //
         // In r2c_dir d_r:
         //   outbox lo = pruned lo   (so fi = gi_p is always within this rank's buffer)
@@ -186,7 +220,7 @@ namespace ippl {
         const long long N1 = globalRealDims_[1];
         const long long N2 = globalRealDims_[2];
 
-        // outbox origins — only non-zero in r2c_dir
+        // outbox origins -- only non-zero in r2c_dir
         const long long lcf0 = lowComplexFull_[0];
         const long long lcf1 = lowComplexFull_[1];
         const long long lcf2 = lowComplexFull_[2];
@@ -195,7 +229,7 @@ namespace ippl {
         auto owned = g.getOwned();  // ghost-free extent of pruned field
 
         if (direction == FORWARD) {
-            // 1. Strip ghosts → tempReal_
+            // 1. Strip ghosts -> tempReal_
             auto tempreal = tempReal_;
             Kokkos::parallel_for(
                 "r2c_copy_real_fwd",
@@ -207,10 +241,10 @@ namespace ippl {
                 });
             Kokkos::fence();
 
-            // 2. Distributed R2C FFT → tempComplexFull_
+            // 2. Distributed R2C FFT -> tempComplexFull_
             backend_->forward(tempReal_.data(), tempComplexFull_.data());
 
-            // 3. Extract pruned modes from tempComplexFull_ → pruned output field
+            // 3. Extract pruned modes from tempComplexFull_ -> pruned output field
             //
             //    Every access is local by construction of the outbox:
             //      fi0_l = gi0 - lcf0  (R2C dim 0 assumed here; generalises below)

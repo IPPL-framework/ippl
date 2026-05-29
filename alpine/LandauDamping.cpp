@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
             manager.run(n_warmup);
 
             // Reset simulation state so the measured run starts from t = 0,
-            // step 0 — comparable across branches.
+            // step 0 -- comparable across branches.
             manager.setTime(0.0);
             manager.setIt(0);
 

@@ -1,3 +1,7 @@
+/*!
+ * @file CC.h
+ * @brief Complex-to-complex FFT specialization (CCTransform tag).
+ */
 #ifndef IPPL_FFT_TRANSFORM_CC_H
 #define IPPL_FFT_TRANSFORM_CC_H
 
@@ -10,6 +14,17 @@
 
 namespace ippl {
 
+    /*!
+     * @class FFT<CCTransform, ComplexField>
+     * @brief In-place complex-to-complex FFT over a complex IPPL Field.
+     *
+     * Selects cuFFTMp when @c IPPL_ENABLE_CUFFTMP is defined, otherwise the
+     * heFFTe C2C backend. The transform is performed on a contiguous
+     * LayoutLeft scratch view; ghost cells are stripped on the way in and
+     * restored on the way out.
+     *
+     * @tparam ComplexField Field whose value_type is a Kokkos::complex.
+     */
     template <typename ComplexField>
     class FFT<CCTransform, ComplexField> {
     public:
@@ -29,6 +44,11 @@ namespace ippl {
         using TempView_t = typename Kokkos::View<typename ComplexField::view_type::data_type,
                                                  Kokkos::LayoutLeft, MemSpace>::uniform_type;
 
+        /*!
+         * @brief Build the FFT plan for the local subdomain described by @p layout.
+         * @param layout Field layout giving the local NDIndex and MPI partition.
+         * @param params FFT-tuning parameters forwarded to the backend.
+         */
         FFT(const Layout_t& layout, const ParameterList& params) {
             static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
@@ -39,11 +59,17 @@ namespace ippl {
             backend_ = std::make_unique<Backend_t>(box, box, Comm->getCommunicator(), params);
         }
 
+        //! Run a forward + backward pair on @p f to JIT compile / cache backend kernels.
         void warmup(ComplexField& f) {
             transform(FORWARD, f);
             transform(BACKWARD, f);
         }
 
+        /*!
+         * @brief In-place FFT of @p f.
+         * @param direction FORWARD or BACKWARD.
+         * @param f         Field to transform; modified in place.
+         */
         void transform(TransformDirection direction, ComplexField& f) {
             auto view    = f.getView();
             const int ng = f.getNghost();

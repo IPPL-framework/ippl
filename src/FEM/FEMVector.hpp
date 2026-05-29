@@ -312,8 +312,8 @@ namespace ippl{
         auto& bufferData = boundaryInfo_m->commBuffer_m.buffer;
 
         if (bufferData.size() < nIdxs) {
-            int overalloc = Comm->getDefaultOverallocation();
-            Kokkos::realloc(bufferData, nIdxs * overalloc);
+            double overalloc = Comm->getDefaultOverallocation();
+            Kokkos::realloc(bufferData, static_cast<size_t>(nIdxs * overalloc));
         }
 
         Kokkos::parallel_for("FEMVector::pack()", nIdxs,
@@ -339,8 +339,8 @@ namespace ippl{
         size_t nIdxs = idxStore.extent(0);
         auto& bufferData = boundaryInfo_m->commBuffer_m.buffer;        
         if (bufferData.size() < nIdxs) {
-            int overalloc = Comm->getDefaultOverallocation();
-            Kokkos::realloc(bufferData, nIdxs * overalloc);
+            double overalloc = Comm->getDefaultOverallocation();
+            Kokkos::realloc(bufferData, static_cast<size_t>(nIdxs * overalloc));
         }
 
         Op op;

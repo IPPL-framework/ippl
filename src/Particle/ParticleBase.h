@@ -299,9 +299,19 @@ namespace ippl {
         /* This function does not alter the totalNum_m member function. It should only be called
          * during the update function where we know the number of particles remains the same.
          */
+        /*!
+         * @brief Compact-out the @p destroyNum entries flagged by @p invalid_functor.
+         * @tparam memory_space    Memory space the functor reads from.
+         * @tparam execution_space Execution space used to dispatch the compaction.
+         * @tparam F               Callable @c bool(size_t).
+         * @param  invalid_functor Returns true for particles to remove.
+         * @param  destroyNum      Number of @c true entries (precomputed).
+         */
         template <typename memory_space, typename execution_space, typename F,
                   typename... Properties>
         void internalDestroy(const F& invalid_functor, const size_type destroyNum);
+
+        //! Convenience overload that takes a Kokkos View<bool*> instead of a functor.
         template <typename... Properties>
         void internalDestroy(const Kokkos::View<bool*, Properties...>& invalid,
                              const size_type destroyNum) {
@@ -326,6 +336,18 @@ namespace ippl {
         void sendToRank(int rank, int tag, std::vector<MPI_Request>& requests,
                         const HashType& hash);
 
+        /*!
+         * @brief Send particles to another rank using a single MPI_Request handle.
+         *
+         * Variant of sendToRank that returns the request directly rather than
+         * pushing it onto a caller-managed vector.
+         *
+         * @tparam HashType View type indexing the particles to pack.
+         * @param  rank Destination rank.
+         * @param  tag  MPI tag for matching the receive.
+         * @param  hash Mapping from packed-buffer slot to particle index.
+         * @return The MPI_Request the caller must wait on.
+         */
         template <typename HashType>
         MPI_Request sendToRank(int rank, int tag, const HashType& hash);
 
@@ -338,6 +360,18 @@ namespace ippl {
          */
         void recvFromRank(int rank, int tag, size_type nRecvs);
 
+        /*!
+         * @brief Post a non-blocking receive that defers unpacking to a callback.
+         *
+         * Returns the MPI_Request for the in-flight transfer plus a finalizer
+         * callable. After waiting on the request the caller invokes the
+         * callable with the @c offset at which to deserialize the payload
+         * into the particle attributes.
+         *
+         * @param rank   Source rank.
+         * @param tag    MPI tag.
+         * @param nRecvs Number of particles being received.
+         */
         std::pair<MPI_Request, std::function<void(size_type)>> postRecvFromRank(int rank, int tag,
                                                                                 size_type nRecvs);
 

@@ -200,12 +200,13 @@ namespace ippl {
         // lambda, leaving every other space's del/keep buffers undersized.
         detail::runForAllSpaces([&]<typename MemorySpace>() {
             if (attributes_m.template get<MemorySpace>().size() > 0) {
-                int overalloc = Comm->getDefaultOverallocation();
+                double overalloc = Comm->getDefaultOverallocation();
                 auto& del     = deleteIndex_m.template get<MemorySpace>();
                 auto& keep    = keepIndex_m.template get<MemorySpace>();
                 if (del.size() < destroyNum) {
-                    Kokkos::realloc(del, destroyNum * overalloc);
-                    Kokkos::realloc(keep, destroyNum * overalloc);
+                    const size_type target = static_cast<size_type>(destroyNum * overalloc);
+                    Kokkos::realloc(del, target);
+                    Kokkos::realloc(keep, target);
                 }
             }
         });

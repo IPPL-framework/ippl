@@ -178,9 +178,9 @@ int main(int argc, char* argv[]) {
         ippl::NDIndex<Dim> domain;
         ippl::NDIndex<Dim> domainOrig;
         for (unsigned i = 0; i < Dim; i++) {
-	    //For upsampling the grid
-	    nrOrig[i] = nr[i];
-	    nr[i] = 2 * nr[i];
+            //For upsampling the grid
+            nrOrig[i] = nr[i];
+            nr[i] = 2 * nr[i];
             domain[i] = ippl::Index(nr[i]);
             domainOrig[i] = ippl::Index(nrOrig[i]);
         }
@@ -262,7 +262,7 @@ int main(int argc, char* argv[]) {
         P->initNUFFT(FLOrig, tol);
         msg << "After init NUFFT " << endl;
 
-	P->update();
+        P->update();
         msg << "After update " << endl;
         P->scatter();
         msg << "After scatter " << endl;
@@ -303,7 +303,7 @@ int main(int argc, char* argv[]) {
             //PL.applyBC(P->R, PL.getRegionLayout().getDomain());
             //IpplTimings::stopTimer(BCTimer);
 
-	    P->update();
+            P->update();
             // scatter the charge onto the underlying grid
             P->scatter();
 

@@ -1,3 +1,11 @@
+/*!
+ * @file CuFFTMp.h
+ * @brief Multi-node cuFFTMp wrappers for IPPL FFT transforms.
+ *
+ * Provides C2C, R2C and pruned variants on top of cuFFTMp. Includes small
+ * CUDA helpers for layout transposes (LayoutLeft <-> LayoutRight) since
+ * cuFFTMp expects row-major data while IPPL uses Kokkos LayoutLeft views.
+ */
 #ifndef IPPL_FFT_BACKEND_CUFFTMP_H
 #define IPPL_FFT_BACKEND_CUFFTMP_H
 
@@ -15,6 +23,11 @@ namespace ippl {
     namespace fft {
 
         namespace detail {
+            /*!
+             * @brief Throw IpplException if @p result is not CUFFT_SUCCESS.
+             * @param result  cuFFT API return code.
+             * @param context Human-readable label for the failing call.
+             */
             inline void checkCufftResult(cufftResult result, const char* context) {
                 if (result != CUFFT_SUCCESS) {
                     std::string msg =
@@ -23,6 +36,11 @@ namespace ippl {
                 }
             }
 
+            /*!
+             * @brief Throw IpplException if @p err is not cudaSuccess.
+             * @param err     CUDA runtime error code.
+             * @param context Human-readable label for the failing call.
+             */
             inline void checkCudaError(cudaError_t err, const char* context) {
                 if (err != cudaSuccess) {
                     std::string msg = std::string(context) + ": " + cudaGetErrorString(err);
@@ -30,9 +48,15 @@ namespace ippl {
                 }
             }
 
-            // Transpose kernel: LayoutLeft -> LayoutRight
-            // LayoutLeft:  src[i + j*n0 + k*n0*n1]  (i is fastest)
-            // LayoutRight: dst[k + j*n2 + i*n1*n2]  (k is fastest)
+            /*!
+             * @brief CUDA kernel that transposes a 3D buffer from LayoutLeft
+             *        to LayoutRight indexing.
+             *
+             * LayoutLeft:  src[i + j*n0 + k*n0*n1]  (i is fastest-varying).
+             * LayoutRight: dst[k + j*n2 + i*n1*n2]  (k is fastest-varying).
+             *
+             * @tparam T Element type (cufftComplex / cufftDoubleComplex / real).
+             */
             template <typename T>
             __global__ void transposeL2R(T* __restrict__ dst, const T* __restrict__ src, int n0,
                                          int n1, int n2) {
@@ -47,7 +71,9 @@ namespace ippl {
                 }
             }
 
-            // Transpose kernel: LayoutRight -> LayoutLeft
+            /*!
+             * @brief CUDA kernel inverse of transposeL2R (LayoutRight -> LayoutLeft).
+             */
             template <typename T>
             __global__ void transposeR2L(T* __restrict__ dst, const T* __restrict__ src, int n0,
                                          int n1, int n2) {
@@ -64,6 +90,11 @@ namespace ippl {
         }  // namespace detail
 
         namespace detail {
+            /*!
+             * @brief CUDA kernel that scales each complex element by @p scale in-place.
+             *
+             * @tparam T cuFFT complex type.
+             */
             template <typename T>
             __global__ void cufftMpScaleKernel(T* data, size_t n, double scale) {
                 size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -78,6 +109,19 @@ namespace ippl {
         // cuFFTMp C2C Backend
         //=============================================================================
 
+        /*!
+         * @class CuFFTMpC2C
+         * @brief Distributed-memory complex-to-complex FFT via cuFFTMp.
+         *
+         * Configures a cuFFTMp 3D plan over the supplied MPI communicator,
+         * allocates an internal CUDA stream, and exposes the IPPL-uniform
+         * forward()/backward() interface. Only 3D float / double precision
+         * is supported (compile-time enforced via static_assert).
+         *
+         * @tparam T        Real precision (float / double).
+         * @tparam Dim      Spatial dimension (only 3D).
+         * @tparam MemSpace Kokkos memory space holding the buffers.
+         */
         template <typename T, unsigned Dim, typename MemSpace>
         class CuFFTMpC2C {
         public:
@@ -90,6 +134,13 @@ namespace ippl {
             static_assert(Dim == 3, "cuFFTMp backend currently only supports 3D transforms");
             static_assert(is_available_v<CuFFTMp>, "cuFFTMp not available");
 
+            /*!
+             * @brief Create the cuFFTMp plan and CUDA stream.
+             *
+             * @param inbox  Local input box (inclusive corner indices).
+             * @param outbox Local output box (inclusive corner indices).
+             * @param comm   MPI communicator that participates in the transform.
+             */
             CuFFTMpC2C(const heffte::box3d<long long>& inbox,
                        const heffte::box3d<long long>& outbox, MPI_Comm comm,
                        const ParameterList& /*params*/)
@@ -204,6 +255,8 @@ namespace ippl {
                 return *this;
             }
 
+            //! Forward C2C transform (LayoutLeft -> LayoutRight transpose,
+            //! cuFFTMp forward, transpose back, normalize by 1/N).
             void forward(complex_t* in, complex_t* out) {
                 using detail::checkCudaError;
                 using detail::checkCufftResult;
@@ -228,6 +281,7 @@ namespace ippl {
                 checkCudaError(cudaStreamSynchronize(stream_), "Stream sync failed");
             }
 
+            //! Backward C2C transform (unscaled), with the same layout transpose dance.
             void backward(complex_t* in, complex_t* out) {
                 using detail::checkCudaError;
                 using detail::checkCufftResult;
@@ -248,6 +302,7 @@ namespace ippl {
                 checkCudaError(cudaStreamSynchronize(stream_), "Stream sync failed");
             }
 
+            //! @return Per-rank cuFFTMp workspace size in bytes.
             std::size_t workspace_size() const { return worksize_; }
 
         private:
@@ -296,6 +351,18 @@ namespace ippl {
         // cuFFTMp R2C Backend
         //=============================================================================
 
+        /*!
+         * @class CuFFTMpR2C
+         * @brief Distributed real-to-complex FFT via cuFFTMp.
+         *
+         * Holds two cuFFTMp plans (R2C and C2R) plus a CUDA stream. Mirrors
+         * the IPPL R2C backend interface. Forward = real -> half-complex
+         * (normalized by 1/N); backward = half-complex -> real (unscaled).
+         *
+         * @tparam T        Real precision (float / double).
+         * @tparam Dim      Spatial dimension (only 3D).
+         * @tparam MemSpace Kokkos memory space.
+         */
         template <typename T, unsigned Dim, typename MemSpace>
         class CuFFTMpR2C {
         public:
@@ -308,6 +375,12 @@ namespace ippl {
             static_assert(Dim == 3, "cuFFTMp backend currently only supports 3D transforms");
             static_assert(is_available_v<CuFFTMp>, "cuFFTMp not available");
 
+            /*!
+             * @brief Build the R2C and C2R cuFFTMp plans.
+             * @param inbox  Local real-input box.
+             * @param outbox Local complex-output box (Hermitian-symmetric).
+             * @param comm   MPI communicator participating in the transform.
+             */
             CuFFTMpR2C(const heffte::box3d<long long>& inbox,
                        const heffte::box3d<long long>& outbox, int /*r2c_direction*/,
                        MPI_Comm comm, const ParameterList& /*params*/)
@@ -452,6 +525,7 @@ namespace ippl {
                 return *this;
             }
 
+            //! Forward R2C transform (real -> half-complex), normalized by 1/N.
             void forward(T* in, complex_t* out) {
                 using detail::checkCudaError;
                 using detail::checkCufftResult;
@@ -476,6 +550,7 @@ namespace ippl {
                 checkCudaError(cudaStreamSynchronize(stream_), "Stream sync failed");
             }
 
+            //! Backward C2R transform (half-complex -> real), unscaled.
             void backward(complex_t* in, T* out) {
                 using detail::checkCudaError;
                 using detail::checkCufftResult;
@@ -496,6 +571,7 @@ namespace ippl {
                 checkCudaError(cudaStreamSynchronize(stream_), "Stream sync failed");
             }
 
+            //! @return Per-rank cuFFTMp workspace size in bytes (max of R2C/C2R).
             std::size_t workspace_size() const { return worksize_; }
 
         private:

@@ -43,6 +43,10 @@ namespace ippl {
             template <typename T, class... ViewArgs>
             void serialize(const Kokkos::View<T*, ViewArgs...>& view, size_type nsends);
 
+            /*!
+             * @brief Hash-indexed serialize: pack the @p nsends entries
+             *        @p view(hash(i)) into the buffer.
+             */
             template <typename T, class... ViewArgs, typename HashView>
             void serialize(const Kokkos::View<T*, ViewArgs...>& view, const HashView& hash,
                            size_type nsends);
@@ -59,6 +63,9 @@ namespace ippl {
             void serialize(const Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view,
                            size_type nsends);
 
+            /*!
+             * @brief Hash-indexed serialize for Vector views (see scalar overload).
+             */
             template <typename T, unsigned Dim, class... ViewArgs, typename HashView>
             void serialize(const Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view,
                            const HashView& hash, size_type nsends);
@@ -70,10 +77,17 @@ namespace ippl {
             template <typename T, class... ViewArgs>
             void deserialize(Kokkos::View<T*, ViewArgs...>& view, size_type nrecvs);
 
+            /*!
+             * @brief Offset-aware deserialize: write @p nrecvs entries into
+             *        @p view starting at index @p offset.
+             */
             template <typename T, class... ViewArgs>
             void deserialize(Kokkos::View<T*, ViewArgs...>& view, size_type offset,
                              size_type nrecvs);
 
+            /*!
+             * @brief Offset-aware deserialize for Vector views.
+             */
             template <typename T, unsigned Dim, class... ViewArgs>
             void deserialize(Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view, size_type offset,
                              size_type nrecvs);
@@ -105,16 +119,20 @@ namespace ippl {
              */
             size_type getBufferSize() const { return bufferSize(); }
 
+            //! Resize the buffer, preserving existing bytes when growing.
             void resizeBuffer(size_type size);
+            //! Reallocate the buffer, discarding existing bytes.
             void reallocBuffer(size_type size);
 
+            //! Reset the serialize write cursor to 0 (buffer contents preserved).
             void resetWritePos() { writepos_m = 0; }
+            //! Reset the deserialize read cursor to 0.
             void resetReadPos() { readpos_m = 0; }
 
             using memory_space = typename buffer_type::memory_space;
 
             //! True iff this Archive's memory space is host-inaccessible
-            //! (CUDA device or HIP device). UVM is excluded — it works with
+            //! (CUDA device or HIP device). UVM is excluded -- it works with
             //! the regular Kokkos::View path because the host can address
             //! the memory directly. For a HostSpace archive the host-side
             //! memcpy in serialize() requires a host-accessible buffer, so

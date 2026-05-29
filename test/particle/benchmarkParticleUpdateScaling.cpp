@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
         int warmupSteps         = 5;
         std::string exchangeStr = "alltoall";
         int infoEvery           = 0;
-        int ranksPerNode        = 0;  // 0 → fill in from comm size below
+        int ranksPerNode        = 0;  // 0 -> fill in from comm size below
 
         for (int i = 6; i < argc; ++i) {
             std::string flag = argv[i];

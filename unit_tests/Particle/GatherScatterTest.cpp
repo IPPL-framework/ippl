@@ -272,7 +272,7 @@ TYPED_TEST(GatherScatterTest, ScatterCustomRangeTest) {
 // ScatterCustomHashTest: 
 // Assign random charges (in [0.5, 1.5]), create and shuffle an index array,
 // use it as a custom hash, scatter the first NScattered particles accordingly,
-// and compare the field’s total charge to the expected total.
+// and compare the field's total charge to the expected total.
 //
 TYPED_TEST(GatherScatterTest, ScatterCustomHashTest) {
     const size_t n = this->nScatter / ippl::Comm->size();

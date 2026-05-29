@@ -1,3 +1,7 @@
+/*!
+ * @file ScatterArgumentsBase.h
+ * @brief Common type bundle and shared argument struct for scatter functors.
+ */
 #ifndef IPPL_SCATTER_ARGUMENTS_BASE_H
 #define IPPL_SCATTER_ARGUMENTS_BASE_H
 
@@ -5,6 +9,14 @@
 
 namespace ippl::Interpolation::detail {
 
+    /*!
+     * @struct ScatterTypes
+     * @brief Type bundle propagated through every scatter implementation.
+     *
+     * Centralizes the dimension, real precision, kernel, and view types so
+     * each individual scatter functor can be parameterized on a single
+     * @c Types parameter.
+     */
     template <unsigned Dim_, typename RealType_, typename KernelType_, typename GridViewType_,
               typename PositionViewType_, typename ValuesViewType_>
     struct ScatterTypes {
@@ -28,6 +40,15 @@ namespace ippl::Interpolation::detail {
                       "memory space");
     };
 
+    /*!
+     * @struct ScatterArgumentsBase
+     * @brief CRTP base bundling per-call inputs (views, mesh info, kernel)
+     *        consumed by the scatter functors.
+     *
+     * Concrete derived structs add algorithm-specific tuning fields
+     * (tile sizes, team layouts, ...) and forward shared initialization to
+     * @c initBase.
+     */
     template <typename Derived, typename Types>
     struct ScatterArgumentsBase {
         static constexpr unsigned Dim = Types::Dim;

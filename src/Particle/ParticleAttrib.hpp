@@ -39,21 +39,22 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::create(size_type n, bool non_destructive) {
         size_type required = *(this->localNum_mp) + n;
         if (this->size() < required) {
-            int overalloc = Comm->getDefaultOverallocation();
+            double overalloc = Comm->getDefaultOverallocation();
+            const size_type target = static_cast<size_type>(required * overalloc);
             if (non_destructive) {
                 // Kokkos::resize preserves existing entries when growing.
-                this->resize(required * overalloc);
+                this->resize(target);
             } else {
                 // Kokkos::realloc is destructive (free + alloc, no copy).
-                this->realloc(required * overalloc);
+                this->realloc(target);
             }
         }
     }
 
     template <typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::alloc(size_type n) {
-        int overalloc = Comm->getDefaultOverallocation();
-        this->realloc(n * overalloc);
+        double overalloc = Comm->getDefaultOverallocation();
+        this->realloc(static_cast<size_type>(n * overalloc));
     }
 
     template <typename T, class... Properties>
@@ -75,8 +76,8 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::pack(const hash_type& hash) {
         auto size = hash.extent(0);
         if (buf_m.extent(0) < size) {
-            int overalloc = Comm->getDefaultOverallocation();
-            Kokkos::realloc(buf_m, size * overalloc);
+            double overalloc = Comm->getDefaultOverallocation();
+            Kokkos::realloc(buf_m, static_cast<size_type>(size * overalloc));
         }
 
         auto buf = buf_m;

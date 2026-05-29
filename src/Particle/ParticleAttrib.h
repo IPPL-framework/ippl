@@ -121,7 +121,7 @@ namespace ippl {
          * @brief Reallocate the underlying view, discarding existing entries.
          *
          * Capacity-only operation. Does not apply the default overallocation
-         * factor — call `alloc()` instead from the outside.
+         * factor -- call `alloc()` instead from the outside.
          */
         void realloc(size_type n) { Kokkos::realloc(dview_m, n); }
 
@@ -276,12 +276,23 @@ namespace ippl {
                         Interpolation::GatherConfig<Field::dim>());
 
 #ifdef IPPL_ENABLE_FFT
+        /*!
+         * @brief Scatter charges to Fourier modes via a Type-1 NUFFT.
+         *
+         * Used by the Particle-in-Fourier examples. The shape field @p Sk
+         * multiplies the spectrum to apply the chosen particle-shape factor.
+         */
         template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void scatterPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
                              const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp,
                              FFT<NUFFTransform, Field<P3, Dim, M, C>>* nufft,
                              const MPI_Comm& spaceComm) const;
 
+        /*!
+         * @brief Gather Fourier modes back to particles via a Type-2 NUFFT.
+         *
+         * Inverse of scatterPIFNUFFT; @p q receives one scalar per particle.
+         */
         template <unsigned Dim, class M, class C, typename P2, typename P3, typename P4>
         void gatherPIFNUFFT(Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
                             const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp,
@@ -322,6 +333,13 @@ namespace ippl {
     };
 
     namespace detail {
+        /*!
+         * @struct AttribTraits
+         * @brief Compile-time accessor for ParticleAttrib's value and view types.
+         *
+         * Used by Scatter/Gather to deduce types without depending on the
+         * full ParticleAttrib interface in template signatures.
+         */
         template <typename Attrib>
         struct AttribTraits;
 

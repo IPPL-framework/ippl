@@ -165,8 +165,8 @@ namespace ippl {
             size_t size = subview.size();
             nsends      = size;
             if (buffer.size() < size) {
-                int overalloc = Comm->getDefaultOverallocation();
-                Kokkos::realloc(buffer, size * overalloc);
+                double overalloc = Comm->getDefaultOverallocation();
+                Kokkos::realloc(buffer, static_cast<size_t>(size * overalloc));
             }
 
             using index_array_type =

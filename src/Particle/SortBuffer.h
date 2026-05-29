@@ -1,3 +1,8 @@
+/*!
+ * @file SortBuffer.h
+ * @brief Persistent device-resident scratch buffers shared by particle
+ *        binning (counting sort) and Morton-code radix sort.
+ */
 #ifndef IPPL_SORT_BUFFER_H
 #define IPPL_SORT_BUFFER_H
 

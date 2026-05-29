@@ -251,7 +251,7 @@ int main(int argc, char* argv[]) {
         double tol = std::atof(argv[9]);
         P->initNUFFT(FL, tol);
         msg << "After init NUFFT " << endl;
-	P->update();
+        P->update();
         msg << "After update " << endl;
         IpplTimings::startTimer(dumpDataTimer);
         P->dumpBumponTail();
@@ -300,7 +300,7 @@ int main(int argc, char* argv[]) {
             //PL.applyBC(P->R, PL.getRegionLayout().getDomain());
             //IpplTimings::stopTimer(BCTimer);
 
-	    P->update();
+            P->update();
             // scatter the charge onto the underlying grid
             P->scatter();
 

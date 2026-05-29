@@ -1,3 +1,8 @@
+/*!
+ * @file Scatter.h
+ * @brief Public Scatter facade dispatching to atomic / tiled / output-tile-parallel
+ *        backends based on the runtime ScatterConfig.
+ */
 #ifndef IPPL_SCATTER_H
 #define IPPL_SCATTER_H
 
@@ -17,23 +22,30 @@ namespace ippl {
 
     namespace Interpolation::detail {
 
+        //! Tag policy: particles are scattered in their natural order (no sort).
         struct UnsortedPolicy {
             static constexpr bool use_sorting      = false;
             static constexpr bool requires_binning = false;
         };
 
+        //! Tag policy: particles are first bin-sorted, then scattered tile-by-tile.
         struct SortedPolicy {
             static constexpr bool use_sorting      = true;
             static constexpr bool requires_binning = true;
         };
 
+        /*!
+         * @struct DeduceScatterTypes
+         * @brief Resolve a ScatterTypes bundle from the user-facing field /
+         *        positions / values views and the kernel.
+         */
         template <typename Kernel, typename FieldType, typename PositionsType, typename ValuesType>
         struct DeduceScatterTypes {
             using FieldTr = ippl::detail::FieldTraits<std::decay_t<FieldType>>;
             using PosTr   = ippl::detail::AttribTraits<std::decay_t<PositionsType>>;
             using ValTr   = ippl::detail::AttribTraits<std::decay_t<ValuesType>>;
 
-            // RealType from the kernel's value_type — see Gather.h for the
+            // RealType from the kernel's value_type -- see Gather.h for the
             // rationale (avoids float-position downcasting the mesh spacing).
             using RealType = typename std::decay_t<Kernel>::value_type;
 
@@ -65,9 +77,25 @@ namespace ippl {
         struct is_kokkos_complex<Kokkos::complex<T>> : std::true_type {};
     }  // namespace detail
 
+    /*!
+     * @class Scatter
+     * @brief Public functor that scatters particle values onto a Field.
+     *
+     * Constructed with a kernel and a (possibly default) ScatterConfig; the
+     * call operator dispatches to AtomicScatter, TiledScatter or
+     * GridParallelScatter at runtime, optionally re-selecting the method
+     * via TileSizeCache when @c enable_tuning is on.
+     *
+     * @tparam Kernel Interpolation kernel (NGPKernel, LinearKernel, ESKernel, ...).
+     * @tparam Dim    Spatial dimension.
+     */
     template <typename Kernel, unsigned Dim>
     class Scatter {
     public:
+        /*!
+         * @param kernel Kernel instance used for stencil evaluation.
+         * @param config Tile sizes / team / method overrides (optional).
+         */
         Scatter(const Kernel& kernel, const Interpolation::ScatterConfig<Dim>& config = {})
             : kernel_m(kernel)
             , config_m(config) {}
@@ -94,7 +122,7 @@ namespace ippl {
 
             constexpr bool is_complex_field = ippl::detail::is_kokkos_complex<FieldT>::value;
 
-            // ── Estimate particle density (rho = local particles / local grid pts) ──
+            // -- Estimate particle density (rho = local particles / local grid pts) --
             const size_t n_particles = positions.getParticleCount();
             const double rho_est     = estimate_rho(field, n_particles);
 
@@ -214,9 +242,9 @@ namespace ippl {
         // when locked, or switched by get_best() in operator()).
         //
         // Priority:
-        //   1. enable_tuning → return config_m unchanged (runtime tuner)
-        //   2. cache hit     → apply tile, team_size, osub, z_batches
-        //   3. no hit        → return config_m unchanged
+        //   1. enable_tuning -> return config_m unchanged (runtime tuner)
+        //   2. cache hit     -> apply tile, team_size, osub, z_batches
+        //   3. no hit        -> return config_m unchanged
         // ------------------------------------------------------------------
         template <template <int, class, class> class Impl, int W, class Types, class Policy,
                   bool IsComplex>
@@ -319,7 +347,7 @@ namespace ippl {
             const size_t n_particles = positions.getParticleCount();
 
             Interpolation::WidthDispatcher<1, std::decay_t<decltype(kernel_m)>::max_width>::dispatch(width, [&]<int W>() {
-                // ── Step 1: Resolve config from cache (density-aware) ──────────
+                // -- Step 1: Resolve config from cache (density-aware) ----------
                 auto tuned_config = resolve_config<Impl, W, Types, Policy, is_complex>(rho_est);
 
                 if constexpr (Impl<W, Types, Policy>::requires_binning) {
@@ -331,12 +359,12 @@ namespace ippl {
                     }
                 }
 
-                // ── Step 1b: Safety clamp (asymmetric, dimension-aware) ────────
+                // -- Step 1b: Safety clamp (asymmetric, dimension-aware) --------
                 clamp_tile_to_shmem<Impl, W, Types, Policy, is_complex>(tuned_config);
 
                 const Vector<int, Dim> tile_size = tuned_config.get_tile_size();
 
-                // ── Step 2: Binning ────────────────────────────────────────────
+                // -- Step 2: Binning --------------------------------------------
                 Interpolation::detail::BinningResult<Dim, memory_space> binning;
                 if constexpr (Impl<W, Types, Policy>::requires_binning) {
                     binning = performBinning<Types>(positions, field, tile_size);
@@ -344,7 +372,7 @@ namespace ippl {
                     binning = performBinning<Types>(positions, field, tile_size);
                 }
 
-                // ── Step 3: Run functor ────────────────────────────────────────
+                // -- Step 3: Run functor ----------------------------------------
                 auto args = Impl<W, Types, Policy>::Arguments::create(
                     field, positions, values, kernel_m, tuned_config, binning);
                 Impl<W, Types, Policy> functor{std::move(args)};
@@ -354,7 +382,7 @@ namespace ippl {
                 functor.run(n_particles);
                 Kokkos::fence();
 
-                // ── Step 4: End tuning context ─────────────────────────────────
+                // -- Step 4: End tuning context ---------------------------------
                 if constexpr (Impl<W, Types, Policy>::requires_binning) {
                     if (config_m.enable_tuning) {
                         auto& tuner = Interpolation::detail::get_scatter_tuner<Impl, Dim, RealType,

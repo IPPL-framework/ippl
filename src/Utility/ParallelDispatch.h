@@ -99,21 +99,42 @@ namespace ippl {
         __builtin_unreachable();
     }
 
+    /*!
+     * @brief Compile-time loop: invoke @c f.template operator()<Is>() for each Is.
+     *
+     * Equivalent to a hand-unrolled @c for loop where the index is a non-type
+     * template parameter, useful for generating per-axis specialized code.
+     */
     template <int... Is, typename F>
     KOKKOS_FORCEINLINE_FUNCTION void for_constexpr(std::integer_sequence<int, Is...>, F&& f) {
         (f.template operator()<Is>(), ...);
     }
 
+    /*!
+     * @brief Compile-time fold over a product:
+     *        returns @c (f<I0>() * f<I1>() * ... * f<IN>()).
+     */
     template <int... Is, typename F>
     KOKKOS_FORCEINLINE_FUNCTION auto product_over(std::integer_sequence<int, Is...>, F&& f) {
         return (f.template operator()<Is>() * ...);
     }
 
+    /*!
+     * @brief Convenience wrapper that calls product_over over [0, N).
+     */
     template <int N, typename F>
     KOKKOS_FORCEINLINE_FUNCTION auto product_over(F&& f) {
         return product_over(std::make_integer_sequence<int, N>{}, std::forward<F>(f));
     }
 
+    /*!
+     * @brief Multi-dimensional ThreadVectorRange parallel-for inside a Kokkos team.
+     *
+     * @tparam Dim     Number of dimensions to range over.
+     * @tparam Team    Kokkos team policy member type.
+     * @tparam Extents Indexable type with @p Dim integer entries.
+     * @tparam F       Callable @c void(int, int, ..., int) (Dim ints).
+     */
     template <int Dim, typename Team, typename Extents, typename F>
     KOKKOS_FORCEINLINE_FUNCTION void thread_vector_md_for(const Team& team, const Extents& extents,
                                                           F&& f) {
@@ -124,6 +145,12 @@ namespace ippl {
         }(std::make_integer_sequence<int, Dim>{});
     }
 
+    /*!
+     * @brief Iterate a W^Dim stencil with one ThreadVectorRange element per cell.
+     *
+     * @tparam Dim Spatial dimension.
+     * @tparam W   Compile-time per-axis stencil width.
+     */
     template <int Dim, int W, typename Team, typename F>
     KOKKOS_FORCEINLINE_FUNCTION void thread_vector_stencil_for(const Team& team, F&& f) {
         constexpr int TotalCells = [] {
@@ -192,7 +219,7 @@ namespace ippl {
 
         // Dispatches F(i) for i in [0, n) either in parallel (OpenMP host)
         // when MPI_THREAD_MULTIPLE is available, or serially otherwise.
-        // `f(i)` must be synchronous w.r.t. its own work — this dispatcher
+        // `f(i)` must be synchronous w.r.t. its own work -- this dispatcher
         // fences after the parallel_for so the caller's next operation sees
         // a consistent state.
         template <typename F>

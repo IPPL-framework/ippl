@@ -1,3 +1,17 @@
+/*!
+ * @file Traits.h
+ * @brief Compile-time traits, tags and dispatch helpers for IPPL's FFT layer.
+ *
+ * Provides:
+ *   - Transform tag types (CCTransform, RCTransform, ...) used to select an
+ *     FFT specialization.
+ *   - Backend feature tags (FFTW, MKL, CuFFT, RocFFT, HeffteGPU, CuFFTMp,
+ *     Finufft, GPUFinufft) along with @c is_available_v<Feature> compile-time
+ *     queries.
+ *   - HeffteBackend selects the heFFTe backend type for a given Kokkos
+ *     memory space (host vs CUDA vs HIP vs SYCL).
+ *   - Stream provides minimal RAII-style helpers for execution-space streams.
+ */
 #ifndef IPPL_FFT_TRAITS_H
 #define IPPL_FFT_TRAITS_H
 
@@ -12,31 +26,38 @@
 #include <type_traits>
 
 namespace ippl {
-    // Transform tags
-    struct CCTransform {};
-    struct RCTransform {};
-    struct SineTransform {};
-    struct CosTransform {};
-    struct Cos1Transform {};
-    struct NUFFTransform {};
-    struct PrunedCCTransform {};
-    struct PrunedRCTransform {};
+    //! @name FFT transform tag types
+    //! Empty tag types selecting an FFT specialization at compile time.
+    //! @{
+    struct CCTransform {};         //!< Complex-to-complex.
+    struct RCTransform {};         //!< Real-to-complex (and inverse).
+    struct SineTransform {};       //!< Discrete sine transform.
+    struct CosTransform {};        //!< Discrete cosine transform (Type II).
+    struct Cos1Transform {};       //!< Discrete cosine transform variant (Type I).
+    struct NUFFTransform {};       //!< Non-uniform FFT (Type 1 / Type 2).
+    struct PrunedCCTransform {};   //!< Pruned C2C (low-mode Fourier truncation).
+    struct PrunedRCTransform {};   //!< Pruned R2C.
+    //! @}
 
-    // Direction
+    //! Direction of a forward / backward transform.
     enum TransformDirection {
         FORWARD,
         BACKWARD
     };
 
-    // Communication strategy
+    //! Communication algorithm for distributed transforms (used by makeHeffteOptions).
     enum FFTComm {
-        a2a    = 0,
-        a2av   = 1,
-        p2p    = 2,
-        p2p_pl = 3
+        a2a    = 0, //!< MPI_Alltoall.
+        a2av   = 1, //!< MPI_Alltoallv.
+        p2p    = 2, //!< Point-to-point.
+        p2p_pl = 3  //!< Point-to-point pipelined.
     };
 
-    // Pruning parameters
+    /*!
+     * @struct PruningParams
+     * @brief Per-axis kept-mode counts for pruned FFTs.
+     * @tparam Dim Spatial dimension.
+     */
     template <unsigned Dim>
     struct PruningParams {
         Vector<std::size_t, Dim> n_modes{};
@@ -51,7 +72,7 @@ namespace ippl {
         }
     };
 
-    // Primary template - specialized per transform type
+    //! Primary FFT template; specialized per transform tag in FFT/Transform/*.
     template <typename Transform, typename Field>
     class FFT;
 
@@ -61,19 +82,26 @@ namespace ippl {
         // Feature Tags
         //=============================================================================
 
-        struct FFTW {};
-        struct MKL {};
-        struct CuFFT {};
-        struct RocFFT {};
-        struct HeffteGPU {};
-        struct CuFFTMp {};
-        struct Finufft {};
-        struct GPUFinufft {};
+        //! @name FFT backend / library feature tags.
+        //! Used as template arguments to is_available to compile-time test for
+        //! optional FFT libraries.
+        //! @{
+        struct FFTW {};        //!< FFTW host library.
+        struct MKL {};         //!< Intel MKL host FFT.
+        struct CuFFT {};       //!< NVIDIA cuFFT (single-GPU).
+        struct RocFFT {};      //!< AMD rocFFT.
+        struct HeffteGPU {};   //!< heFFTe with any GPU backend enabled.
+        struct CuFFTMp {};     //!< NVIDIA cuFFTMp (multi-GPU/-node).
+        struct Finufft {};     //!< Host finufft library.
+        struct GPUFinufft {};  //!< GPU finufft library.
+        //! @}
 
         //=============================================================================
         // Unified Feature Detection: is_available<Feature>
         //=============================================================================
 
+        //! Generic `false_type`; specializations below set `value = true` when
+        //! the corresponding feature is enabled at configure time.
         template <typename Feature>
         struct is_available : std::false_type {};
 
@@ -117,6 +145,7 @@ namespace ippl {
         struct is_available<GPUFinufft> : std::true_type {};
 #endif
 
+        //! Convenience alias: `is_available_v<F>` is true iff `F` is enabled.
         template <typename Feature>
         inline constexpr bool is_available_v = is_available<Feature>::value;
 
@@ -124,6 +153,17 @@ namespace ippl {
         // heFFTe Backend Selection by Memory Space
         //=============================================================================
 
+        /*!
+         * @struct HeffteBackend
+         * @brief Pick the appropriate heFFTe backend types for a memory space.
+         *
+         * Provides nested aliases @c c2c, @c sin, @c cos, @c cos1 for the
+         * complex / sine / cosine / cosine-Type-I transforms. Specializations
+         * select FFTW / MKL on the host, cuFFT on CUDA, rocFFT on HIP, and
+         * fall back to the heFFTe stock backend everywhere else.
+         *
+         * @tparam MemSpace Kokkos memory space.
+         */
         template <typename MemSpace>
         struct HeffteBackend {
             // Default: stock backend
@@ -198,9 +238,18 @@ namespace ippl {
         // GPU Stream Support
         //=============================================================================
 
+        /*!
+         * @struct Stream
+         * @brief Minimal stream wrapper used to launch FFT-related kernels.
+         *
+         * The primary template is a no-op for memory spaces without a native
+         * stream concept; specializations below provide CUDA and HIP streams.
+         *
+         * @tparam MemSpace Kokkos memory space.
+         */
         template <typename MemSpace>
         struct Stream {
-            using stream_type = int;  // Dummy
+            using stream_type = int;  //!< Dummy handle for backends without streams.
             using exec_space  = Kokkos::DefaultExecutionSpace;
 
             static void create(stream_type&) {}
@@ -239,6 +288,13 @@ namespace ippl {
         // FFTW Trig Scaling
         //=============================================================================
 
+        /*!
+         * @brief Extra normalization factor applied by FFTW's trig transforms.
+         *
+         * FFTW's sine / cosine transforms include an implicit factor of 8 in
+         * 3D (2 per axis); other backends do not. The trig wrappers multiply
+         * by this to keep the normalization consistent across backends.
+         */
         inline constexpr double fftw_trig_scale() {
             return is_available_v<FFTW> ? 8.0 : 1.0;
         }

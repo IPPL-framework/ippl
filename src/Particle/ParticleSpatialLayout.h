@@ -35,14 +35,15 @@
 
 namespace ippl {
 
-    // Controls how the send-count exchange is performed before the particle data transfer.
+    /*!
+     * @enum CountExchange
+     * @brief Strategy used to exchange per-rank send counts before the
+     *        particle update transfers payloads.
+     */
     enum class CountExchange {
-        // One-sided RMA: each sender writes its count directly into the receiver's window.
-        RMA,
-        // Two-sided GPU-direct P2P: Isend/Irecv over device pointers
-        P2P_GPU,
-        // AlltoALl GPU
-        Alltoall_GPU
+        RMA,           //!< One-sided RMA: senders write into the receiver window.
+        P2P_GPU,       //!< Two-sided GPU-direct P2P (Isend/Irecv over device pointers).
+        Alltoall_GPU   //!< MPI_Alltoall over device buffers.
     };
 
     /*!
@@ -177,12 +178,18 @@ namespace ippl {
         size_t sendIds_capacity_ = 0;
         int nRanks_              = 0;
 
+        //! Allocate fixed-size per-rank scratch (counts, offsets, cursors).
         void initScratch(int nRanks);
+        //! Grow @c sendIds_d_ to fit at least @p nInvalid entries (1.2x growth).
         void ensureSendCapacity(size_t nInvalid);
+        //! (Re-)materialize the cached neighbor list onto device when dirty.
         void ensureNeighborsCached();
 
+        //! Send-count exchange via one-sided RMA.
         void countExchangeRMA();
+        //! Send-count exchange via point-to-point GPU-direct Isend/Irecv.
         void countExchangeP2P();
+        //! Send-count exchange via MPI_Alltoall over device buffers.
         void countExchangeAlltoall();
     };
 }  // namespace ippl

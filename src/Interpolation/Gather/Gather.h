@@ -1,3 +1,7 @@
+/*!
+ * @file Gather.h
+ * @brief Public Gather facade dispatching to AtomicGather (sorted/unsorted).
+ */
 #ifndef IPPL_GATHER_H
 #define IPPL_GATHER_H
 
@@ -13,6 +17,11 @@
 namespace ippl {
 
     namespace Interpolation::detail {
+        /*!
+         * @struct DeduceGatherTypes
+         * @brief Resolve a GatherTypes bundle from the user-facing field /
+         *        positions / values views and the kernel.
+         */
         template <typename Kernel, typename FieldType, typename PositionsType, typename ValuesType>
         struct DeduceGatherTypes {
             using FieldTr = ippl::detail::FieldTraits<std::decay_t<FieldType>>;
@@ -38,13 +47,35 @@ namespace ippl {
 
     }  // namespace Interpolation::detail
 
+    /*!
+     * @class Gather
+     * @brief Public functor that interpolates a Field at particle positions.
+     *
+     * Constructed with a kernel and an optional GatherConfig. The call
+     * operator invokes the configured backend (Atomic / AtomicSort) via
+     * WidthDispatcher so the kernel width is known at compile time inside
+     * the inner loop.
+     *
+     * @tparam Kernel Interpolation kernel type.
+     * @tparam Dim    Spatial dimension.
+     */
     template <typename Kernel, unsigned Dim>
     class Gather {
     public:
+        /*!
+         * @param kernel Kernel instance used for stencil evaluation.
+         * @param config Method / tile-size / sort overrides (optional).
+         */
         Gather(const Kernel& kernel, const Interpolation::GatherConfig<Dim>& config = {})
             : kernel_m(kernel)
             , config_m(config) {}
 
+        /*!
+         * @brief Gather field values at particle positions into @p values.
+         * @param field     Input field (read-only; halo is filled before reads).
+         * @param positions Particle positions.
+         * @param values    Output values (overwritten).
+         */
         template <typename ValueT, typename FieldT, class Mesh, class Centering,
                   class... ViewArgs, typename ParticleT, class... PosProps, class... ValProps>
         void operator()(Field<FieldT, Dim, Mesh, Centering, ViewArgs...>& field,
@@ -85,7 +116,7 @@ namespace ippl {
             const size_t n_particles = positions.getParticleCount();
 
             // The halo must be valid before any stencil reads it, and is
-            // independent of the runtime kernel width — fill once outside
+            // independent of the runtime kernel width -- fill once outside
             // the WidthDispatcher.
             field.fillHalo();
 

@@ -5,7 +5,7 @@
 //   selection via gradient ascent on the log-marginal-likelihood.
 //
 //   Designed for low-dimensional Bayesian optimization of discrete kernel
-//   configurations: a small number of inputs (<200), 1–10 dimensions, and
+//   configurations: a small number of inputs (<200), 1-10 dimensions, and
 //   per-observation noise variance derived from benchmark run-to-run
 //   variance (heteroscedastic).
 //
@@ -37,6 +37,15 @@
 namespace ippl {
     namespace detail {
 
+        /*!
+         * @class GPModel
+         * @brief ARD Gaussian-process regressor with gradient-ascent hyperparameter fit.
+         *
+         * Used by the auto-tune sweep for low-dim Bayesian optimization over
+         * tile / team / oversubscription configurations.
+         *
+         * @tparam D Number of input dimensions (small: 1..10).
+         */
         template <int D>
         class GPModel {
         public:

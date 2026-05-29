@@ -1,6 +1,12 @@
-// ============================================================================
-// Width-2 scatter auto-tuner — see AutoTune.h for the user-visible contract.
-// ============================================================================
+/*!
+ * @file AutoTune.cpp
+ * @brief Width-2 (CIC) scatter / gather auto-tuner implementation.
+ *
+ * See AutoTune.h for the user-visible contract. Internally builds candidate
+ * (tile, team_size, oversubscription, z_batch) configurations, measures each
+ * via short benchmark runs, fits a Gaussian-process surrogate when running
+ * the @c full sweep, and writes the optimal rows to the tile-sweep CSV.
+ */
 
 #include "Ippl.h"
 
@@ -465,7 +471,7 @@ namespace ippl::Interpolation::AutoTune {
             const int tiled_team  = host_backend ? 1 : std::min(64, tiled_cap);
             const int of_team     = host_backend ? 1 : std::min(128, of_cap);
 
-            // Atomic — tile is irrelevant to the dispatcher; fix to (1,1,1).
+            // Atomic -- tile is irrelevant to the dispatcher; fix to (1,1,1).
             {
                 Vector<int, 3> tile{1, 1, 1};
                 const double tp =
@@ -474,7 +480,7 @@ namespace ippl::Interpolation::AutoTune {
                                      1, 1, 1, atomic_team, 1, 1, tp, 0.0});
             }
 
-            // Tiled — small candidate set over (tile, team, osub).
+            // Tiled -- small candidate set over (tile, team, osub).
             {
                 Sample best{ScatterMethod::Tiled, "real", 2, 0.0, 4, 4, 4,
                             tiled_team, 1, 1, 0.0, 0.0};
@@ -490,7 +496,7 @@ namespace ippl::Interpolation::AutoTune {
                 out.push_back(best);
             }
 
-            // OutputFocused — tile + z_batches.
+            // OutputFocused -- tile + z_batches.
             {
                 Sample best{ScatterMethod::OutputFocused, "real", 2, 0.0, 2, 2, 2,
                             of_team, 1, 1, 0.0, 0.0};
@@ -508,7 +514,7 @@ namespace ippl::Interpolation::AutoTune {
                 out.push_back(best);
             }
 
-            // Mirror real → complex.
+            // Mirror real -> complex.
             const size_t base = out.size();
             for (size_t i = 0; i < base; ++i) {
                 Sample s     = out[i];
@@ -519,7 +525,7 @@ namespace ippl::Interpolation::AutoTune {
         }
 
         // ====================================================================
-        // FULL sweep — broader candidate set across grid sizes, particle
+        // FULL sweep -- broader candidate set across grid sizes, particle
         // densities, tile/team/osub/z_batches.  Substantially more
         // expensive than sweep() (tens of seconds to a few minutes on a
         // GPU); intended for opt-in via IPPL_AUTO_TUNE=full when the user
@@ -541,7 +547,7 @@ namespace ippl::Interpolation::AutoTune {
 #endif
                 ;
 
-            // Grid sizes to probe — small / medium / large fits typical PIC
+            // Grid sizes to probe -- small / medium / large fits typical PIC
             // working sets without turning the sweep into a benchmark suite.
             const std::vector<unsigned> grids =
                 host_backend ? std::vector<unsigned>{32, 64}
@@ -558,7 +564,7 @@ namespace ippl::Interpolation::AutoTune {
                           {2, 2, 2}, {3, 3, 3}, {4, 4, 4}, {5, 5, 5}, {6, 6, 6}, {8, 8, 8}};
             // Filter team-size candidates against per-backend caps. On HIP,
             // Atomic's vlen=64 caps team_size at 15 (1023/64), which would
-            // discard every Tiled candidate above 15 if reused as-is — but
+            // discard every Tiled candidate above 15 if reused as-is -- but
             // Tiled/OutputFocused use vlen=1, so they have a much higher cap.
             const int tiled_cap = max_team_size_for<ExecSpace>(ScatterMethod::Tiled);
             const int of_cap    = max_team_size_for<ExecSpace>(ScatterMethod::OutputFocused);
@@ -619,7 +625,7 @@ namespace ippl::Interpolation::AutoTune {
                         1, static_cast<size_t>(rho * double(N) * double(N) * double(N)));
 
                     for (int w : widths) {
-                        // Atomic — only team_size matters; tile is irrelevant.
+                        // Atomic -- only team_size matters; tile is irrelevant.
                         {
                             Vector<int, 3> tile{1, 1, 1};
                             const double tp = time_config<ExecSpace>(
@@ -631,7 +637,7 @@ namespace ippl::Interpolation::AutoTune {
                             progress("Atomic");
                         }
 
-                        // Tiled — sweep tile × team × osub.
+                        // Tiled -- sweep tile x team x osub.
                         Sample best_tiled{ScatterMethod::Tiled, "real", w, rho, 4, 4, 4,
                                           host_backend ? 1 : std::min(64, tiled_cap),
                                           1, 1, 0.0, 0.0};
@@ -653,7 +659,7 @@ namespace ippl::Interpolation::AutoTune {
                         }
                         out.push_back(best_tiled);
 
-                        // OutputFocused — sweep tile × team × osub × z_batches.
+                        // OutputFocused -- sweep tile x team x osub x z_batches.
                         Sample best_of{ScatterMethod::OutputFocused, "real", w, rho, 2, 2, 2,
                                        host_backend ? 1 : std::min(128, of_cap),
                                        1, 1, 0.0, 0.0};
@@ -680,7 +686,7 @@ namespace ippl::Interpolation::AutoTune {
                 }
             }
 
-            // Mirror real → complex (complex scatter has the same access
+            // Mirror real -> complex (complex scatter has the same access
             // pattern, only the value type differs; tuning is overwhelmingly
             // dominated by memory bandwidth which is the same).
             const size_t base = out.size();
@@ -1090,7 +1096,7 @@ namespace ippl::Interpolation::AutoTune {
                     }
                 }
             }
-            // Mirror real → complex (same memory access pattern).
+            // Mirror real -> complex (same memory access pattern).
             const size_t base = out.size();
             for (size_t i = 0; i < base; ++i) {
                 Sample s     = out[i];
@@ -1144,7 +1150,7 @@ namespace ippl::Interpolation::AutoTune {
         if constexpr (std::is_same_v<Kokkos::DefaultExecutionSpace, Kokkos::HIP>) {
             backend        = "Kokkos::HIP";
             // CDNA wavefronts are 64-wide. AtomicScatter uses vector_length=64
-            // on HIP, so atomic_team * 64 must be < 1024 → atomic_team ≤ 15.
+            // on HIP, so atomic_team * 64 must be < 1024 -> atomic_team <= 15.
             // Tiled and OutputFocused construct their TeamPolicy with
             // vector_length=1, so the per-team thread cap is 1024 there.
             atomic_team    = 8;
@@ -1229,15 +1235,15 @@ namespace ippl::Interpolation::AutoTune {
         // built-in defaults seeded into TileSizeCache / GatherCache by
         // ippl::initialize.
         //
-        //   IPPL_AUTO_TUNE=1     → quick sweep (~seconds)
-        //   IPPL_AUTO_TUNE=full  → full grid sweep (tens of seconds to minutes;
+        //   IPPL_AUTO_TUNE=1     -> quick sweep (~seconds)
+        //   IPPL_AUTO_TUNE=full  -> full grid sweep (tens of seconds to minutes;
         //                          much broader candidate set, multiple grid
         //                          sizes and densities, longer measurement)
-        //   IPPL_AUTO_TUNE=bo    → Bayesian-optimization-driven sweep with
+        //   IPPL_AUTO_TUNE=bo    -> Bayesian-optimization-driven sweep with
         //                          ARD-RBF GP, multi-fidelity warm-up, and
         //                          rectangular tile search. Per-bucket budget
         //                          via IPPL_BO_BUDGET (default 60).
-        //   anything else / unset → no-op
+        //   anything else / unset -> no-op
         const char* enable = std::getenv("IPPL_AUTO_TUNE");
         if (enable == nullptr) {
             return false;
@@ -1276,14 +1282,14 @@ namespace ippl::Interpolation::AutoTune {
                                : "(this can take a few seconds; set IPPL_AUTO_TUNE=full or "
                                  "IPPL_AUTO_TUNE=bo for a deeper search)");
             *ippl::Info << ::level1
-                        << "[AutoTune] IPPL_AUTO_TUNE=" << mode << " — running "
+                        << "[AutoTune] IPPL_AUTO_TUNE=" << mode << " -- running "
                         << mode_label << " width-2 scatter/gather sweep " << descr << endl;
         }
 
         [[maybe_unused]] auto run_scatter = [&](auto&& sweep_fn, const char* label) {
             if (ippl::Info) {
                 *ippl::Info << ::level1
-                            << "[AutoTune]   sweeping scatter on " << label << " → "
+                            << "[AutoTune]   sweeping scatter on " << label << " -> "
                             << output_path << endl;
             }
             write_csv(output_path, sweep_fn());
@@ -1291,7 +1297,7 @@ namespace ippl::Interpolation::AutoTune {
         [[maybe_unused]] auto run_gather = [&](auto&& sweep_fn, const char* label) {
             if (ippl::Info) {
                 *ippl::Info << ::level1
-                            << "[AutoTune]   sweeping gather on " << label << " → "
+                            << "[AutoTune]   sweeping gather on " << label << " -> "
                             << gather_path << endl;
             }
             write_gather_csv(gather_path, sweep_fn());

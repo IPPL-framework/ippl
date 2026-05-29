@@ -196,7 +196,7 @@ namespace ippl {
         }
 
         // =================================================================
-        // Serialize — scalar
+        // Serialize -- scalar
         // =================================================================
 
         template <class... Properties>
@@ -218,7 +218,7 @@ namespace ippl {
         }
 
         // =================================================================
-        // Serialize — scalar with hash
+        // Serialize -- scalar with hash
         // =================================================================
 
         template <class... Properties>
@@ -238,7 +238,7 @@ namespace ippl {
         }
 
         // =================================================================
-        // Serialize — vector
+        // Serialize -- vector
         // =================================================================
 
         template <class... Properties>
@@ -271,7 +271,7 @@ namespace ippl {
         }
 
         // =================================================================
-        // Serialize — vector with hash
+        // Serialize -- vector with hash
         // =================================================================
 
         template <class... Properties>
@@ -295,7 +295,7 @@ namespace ippl {
         }
 
         // =================================================================
-        // Deserialize — scalar
+        // Deserialize -- scalar
         // =================================================================
 
         template <class... Properties>
@@ -322,7 +322,7 @@ namespace ippl {
         }
 
         // =================================================================
-        // Deserialize — vector
+        // Deserialize -- vector
         // =================================================================
 
         template <class... Properties>
@@ -351,7 +351,7 @@ namespace ippl {
         }
 
         // =================================================================
-        // Deserialize — scalar with offset
+        // Deserialize -- scalar with offset
         // =================================================================
 
         template <class... Properties>
@@ -376,7 +376,7 @@ namespace ippl {
         }
 
         // =================================================================
-        // Deserialize — vector with offset
+        // Deserialize -- vector with offset
         // =================================================================
 
         template <class... Properties>

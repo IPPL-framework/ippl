@@ -1,3 +1,7 @@
+/*!
+ * @file BufferView.h
+ * @brief Single-buffer / multi-view scratch helpers for IPPL utilities.
+ */
 #ifndef IPPL_BUFFERVIEW_H
 #define IPPL_BUFFERVIEW_H
 
@@ -15,7 +19,13 @@ namespace ippl {
         return (offset + alignment - 1) & ~(alignment - 1);
     }
 
-    /**
+    /*!
+     * @class BufferView
+     * @brief Owning wrapper around a single 1-D Kokkos View<T*>.
+     *
+     * Provides a lightweight non-copyable / movable owner around a typed
+     * device buffer with size and raw-data accessors. Use MultiViewBuffer
+     * when several typed views must share a single allocation.
      *
      * @tparam T Element type
      * @tparam MemorySpace Kokkos memory space
@@ -25,6 +35,7 @@ namespace ippl {
     public:
         using view_type = Kokkos::View<T*, MemorySpace>;
 
+        //! Allocate a freshly-named buffer of @p count elements.
         explicit BufferView(size_t count)
             : view_m("BufferView", count) {}
 
@@ -38,11 +49,15 @@ namespace ippl {
         BufferView(BufferView&&) = default;
         BufferView& operator=(BufferView&&) = default;
 
+        //! @return Mutable reference to the underlying Kokkos view.
         view_type& getView() { return view_m; }
+        //! @return Const reference to the underlying Kokkos view.
         const view_type& getView() const { return view_m; }
 
+        //! @return Raw device-resident pointer.
         T* data() { return view_m.data(); }
         const T* data() const { return view_m.data(); }
+        //! @return Number of elements in the buffer.
         size_t size() const { return view_m.extent(0); }
 
     private:
@@ -181,8 +196,10 @@ namespace ippl {
         size_t currentOffset_m = 0;
     };
 
-    /**
-     * @brief Helper struct for recursive buffer size computation
+    /*!
+     * @struct BufferSizeComputer
+     * @brief Recursive helper for computing the total bytes needed to hold
+     *        a sequence of typed sub-views with default alignment.
      */
     template <typename... Ts>
     struct BufferSizeComputer;

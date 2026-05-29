@@ -1,7 +1,17 @@
-//
-// NUFFT ES Kernel
-//   Exponential-of-Semicircle spreading kernel for NUFFT.
-//
+/*!
+ * @file ESKernel.h
+ * @brief Exponential-of-Semicircle (ES) spreading kernel for NUFFT.
+ *
+ * The header exposes:
+ *   - @c es_kernel_eval_wN<T> device-friendly polynomial evaluators for
+ *     each precomputed kernel half-width N (3..15).
+ *   - @c ESKernel<T> a runtime selector that picks the smallest width
+ *     achieving the requested tolerance and dispatches to the matching
+ *     polynomial.
+ *
+ * Coefficients are minimax polynomials in t=x^2 with magic literals encoded
+ * as hex floating-point so they are exact across compilers.
+ */
 #ifndef IPPL_NUFFT_ES_KERNEL_H
 #define IPPL_NUFFT_ES_KERNEL_H
 
@@ -17,7 +27,14 @@ namespace ippl {
         // Coefficients are inlined to work in device code
         // ============================================================
 
-        // w = 4, beta = 9.2, degree = 5, error < 3.53e-4
+        /*!
+         * @brief Polynomial evaluator for the ES kernel at width @c w=4
+         *        (beta = 9.2, degree = 5, max error < 3.53e-4).
+         *
+         * @tparam T Floating-point precision (float / double).
+         * @param  x Argument in [0, 1] (the kernel is even, so callers pass |x|).
+         * @return Polynomial approximation of @c exp(beta*(sqrt(1-x^2)-1)).
+         */
         template <typename T>
         KOKKOS_INLINE_FUNCTION T es_kernel_eval_w4(T x) {
             const T t = x * x;
@@ -336,6 +353,16 @@ namespace ippl {
         // Compile-time width dispatch (template version)
         // ============================================================
 
+        /*!
+         * @brief Compile-time width dispatch for ES kernel evaluation.
+         *
+         * The compiler can fold a single branch when @p W is known, removing
+         * the runtime switch in @c es_kernel_eval(T,int).
+         *
+         * @tparam T Floating-point precision.
+         * @tparam W Kernel width (4..15); other values fall back to exact eval.
+         * @param  x Argument in [0, 1].
+         */
         template <typename T, int W>
         KOKKOS_INLINE_FUNCTION T es_kernel_eval(T x) {
             if constexpr (W == 4) {
@@ -424,13 +451,20 @@ namespace ippl {
                 return x >= T(1.0) ? T(0.0) : es_kernel_eval(x, w_);
             }
 
+            /*!
+             * @brief Evaluate the ES kernel using compile-time width @c W.
+             * @tparam W Kernel width matching one of the precomputed polynomials.
+             */
             template<int W>
             KOKKOS_INLINE_FUNCTION T eval(T x) const {
                 return x >= T(1.0) ? T(0.0) : es_kernel_eval<T, W>(x);
             }
 
+            //! @return Runtime kernel half-width @c w (in grid points).
             KOKKOS_INLINE_FUNCTION int width() const { return w_; }
+            //! @return Decay parameter @c beta = beta_factor * w.
             KOKKOS_INLINE_FUNCTION T beta() const { return beta_; }
+            //! @return Target relative error tolerance.
             KOKKOS_INLINE_FUNCTION T tol() const { return tol_; }
 
         private:

@@ -73,10 +73,14 @@ namespace ippl {
 
             virtual void unpack(size_type) = 0;
 
+            //! Pack the first @p nsends entries into @p ar.
             virtual void serialize(Archive<memory_space>& ar, size_type nsends)   = 0;
+            //! Pack the @p nsends entries indexed by @p hash into @p ar.
             virtual void serialize(detail::Archive<memory_space>& ar, const hash_type& hash,
                                    size_type nsends)                              = 0;
+            //! Unpack the first @p nrecvs entries from @p ar (legacy interface).
             virtual void deserialize(Archive<memory_space>& ar, size_type nrecvs) = 0;
+            //! Unpack @p nrecvs entries from @p ar starting at attribute @p offset.
             virtual void deserialize(detail::Archive<memory_space>& ar, size_type offset,
                                      size_type nrecvs)                            = 0;
 

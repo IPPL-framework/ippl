@@ -62,18 +62,26 @@ namespace ippl {
                 Field<complex_type, Dim, Mesh_t, Centering_t, ExecSpace>::uniform_type;
             using Layout_t = FieldLayout<Dim>;
 
+            /*!
+             * @struct Config
+             * @brief NUFFT engine configuration knobs.
+             */
             struct Config {
-                T tol   = T(1e-6);  // Error tolerance
-                T sigma = T(2.0);   // Upsampling factor
-                Interpolation::ScatterConfig<Dim> scatter_config;
-                Interpolation::GatherConfig<Dim> gather_config;
+                T tol   = T(1e-6);                                //!< Target relative error of the kernel.
+                T sigma = T(2.0);                                 //!< Oversampling factor for the upsampled grid.
+                Interpolation::ScatterConfig<Dim> scatter_config; //!< Scatter (Type 1) tuning.
+                Interpolation::GatherConfig<Dim> gather_config;   //!< Gather (Type 2) tuning.
             };
 
+            /*!
+             * @struct TimingInfo
+             * @brief Per-stage cumulative timings (seconds), populated by the engine.
+             */
             struct TimingInfo {
-                T spread  = 0;
-                T fft     = 0;
-                T correct = 0;
-                T total   = 0;
+                T spread  = 0; //!< Time spent in the scatter step.
+                T fft     = 0; //!< Time spent in the FFT step.
+                T correct = 0; //!< Time spent in the deconvolution / pre-correction step.
+                T total   = 0; //!< Sum of the above.
             };
 
         private:
@@ -266,6 +274,20 @@ namespace ippl {
             }
 
 
+            /*!
+             * @brief Type 2 NUFFT: Interpolate uniform Fourier modes at non-uniform points.
+             *
+             * Computes c_j = sum_k f_k * exp(-i k x_j) for non-uniform x_j.
+             * Pipeline: pre-correction -> inverse FFT (or pruned FFT) -> gather.
+             *
+             * @tparam InField    Field type holding the input Fourier modes.
+             * @param  f          Input Fourier-mode field.
+             * @param  R          Particle positions in [0, 2*pi)^Dim.
+             * @param  Q          Output particle values.
+             * @param  upsampled_output Use the full upsampled grid (true) or the
+             *                          pruned-FFT path (false; required on
+             *                          distributed runs).
+             */
             template <typename InField, class... Properties>
             void type2(InField& f, const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
                        ParticleAttrib<T, Properties...>& Q, bool upsampled_output = false) {
@@ -317,21 +339,34 @@ namespace ippl {
                 IpplTimings::stopTimer(NativeNUFFT2Timer);
             }
 
-            // Accessors
+            //! @return Last-recorded per-stage timings.
             const TimingInfo& timing() const { return timing_; }
+            //! @return The ES spreading kernel used internally.
             const ESKernel<T>& kernel() const { return kernel_; }
+            //! @return Size of the upsampled grid actually transformed.
             Vector<size_t, Dim> gridSize() const { return n_grid_; }
+            //! @return Number of Fourier modes the engine retains per axis.
             Vector<size_t, Dim> numModes() const { return n_modes_; }
 
+            //! Reset accumulated timings back to zero.
             void resetTimings() {
                 timing_ = TimingInfo{};
             }
 
+            /*!
+             * @brief Perform the upsampled-grid FFT in place on @c grid_field_.
+             * @param sign +1 for forward, -1 for backward.
+             */
             void performFFT(int sign) {
                 TransformDirection direction = (sign < 0) ? BACKWARD : FORWARD;
                 heffte_fft_->transform(direction, *grid_field_);
             }
 
+            /*!
+             * @brief Perform the pruned FFT between @c grid_field_ and @p output_field.
+             * @param sign         +1 (forward, grid -> modes) or -1 (backward, modes -> grid).
+             * @param output_field Pruned-modes field on the output side.
+             */
             void performPrunedFFT(int sign, auto& output_field) {
                 TransformDirection direction = (sign < 0) ? BACKWARD : FORWARD;
                 if (sign < 0) {

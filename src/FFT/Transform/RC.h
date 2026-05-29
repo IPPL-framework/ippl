@@ -1,3 +1,7 @@
+/*!
+ * @file RC.h
+ * @brief Real-to-complex FFT specialization (RCTransform tag).
+ */
 #ifndef IPPL_FFT_TRANSFORM_RC_H
 #define IPPL_FFT_TRANSFORM_RC_H
 
@@ -10,6 +14,16 @@
 
 namespace ippl {
 
+    /*!
+     * @class FFT<RCTransform, RealField>
+     * @brief Real-to-complex / complex-to-real FFT over IPPL Fields.
+     *
+     * Forward transforms a real field into its half-complex spectrum, the
+     * backward transforms back. Selects cuFFTMp on CUDA-MP builds, otherwise
+     * the heFFTe R2C backend.
+     *
+     * @tparam RealField IPPL Field of real-valued elements.
+     */
     template <typename RealField>
     class FFT<RCTransform, RealField> {
     public:
@@ -35,6 +49,13 @@ namespace ippl {
         using TempComplex_t = typename Kokkos::View<typename ComplexField::view_type::data_type,
                                                     Kokkos::LayoutLeft, MemSpace>::uniform_type;
 
+        /*!
+         * @brief Build the R2C plan for the given layouts.
+         * @param layoutIn  Real-input field layout.
+         * @param layoutOut Complex-output field layout (Hermitian-symmetric).
+         * @param params    Backend parameter list (R2C axis taken from key
+         *                  `r2c_direction`, default 0).
+         */
         FFT(const Layout_t& layoutIn, const Layout_t& layoutOut, const ParameterList& params) {
             static_assert(Dim == 2 || Dim == 3, "heFFTe only supports 2D and 3D");
 
@@ -48,11 +69,18 @@ namespace ippl {
                                                      r2c_dir, Comm->getCommunicator(), params);
         }
 
+        //! Execute one forward + one backward to JIT-compile / warm caches.
         void warmup(RealField& f, ComplexField& g) {
             transform(FORWARD, f, g);
             transform(BACKWARD, f, g);
         }
 
+        /*!
+         * @brief Forward (real -> complex) or backward (complex -> real) transform.
+         * @param direction FORWARD or BACKWARD.
+         * @param f         Real field (input on FORWARD, output on BACKWARD).
+         * @param g         Complex field (output on FORWARD, input on BACKWARD).
+         */
         void transform(TransformDirection direction, RealField& f, ComplexField& g) {
             auto fview    = f.getView();
             auto gview    = g.getView();

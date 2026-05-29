@@ -144,18 +144,26 @@ struct Timing {
     // print the results to a file
     void print(const std::string& fn, const std::map<std::string, unsigned int>& problemSize);
 
+    //! Clear all timers' wall-time totals and per-iteration measurements.
+    //! Use after warmup iterations to start with clean statistics.
     void resetAllTimers();
 
-    // Format: timer_name,rank,measurement_id,duration
+    //! Dump all per-iteration measurements as CSV
+    //! (`timer_name,rank,measurement_id,duration` rows).
     void dumpToCSV(const std::string& filename);
 
+    //! CSV dump with custom delimiter / optional header row.
     void dumpToCSV(const std::string& filename, const std::string& delimiter, bool includeHeader);
 
+    //! @return Per-iteration measurements for timer @p t (empty if unknown).
     const std::vector<double>& getMeasurements(TimerRef t) const;
+    //! @return Per-iteration measurements for the timer with that @p name.
     const std::vector<double>& getMeasurements(const std::string& name) const;
 
+    //! @return Number of recorded start/stop pairs for timer @p t.
     size_t getMeasurementCount(TimerRef t) const;
 
+    //! @return Names of every registered timer.
     std::vector<std::string> getTimerNames() const;
 
     // type of storage for list of TimerInfo

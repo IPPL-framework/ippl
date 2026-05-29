@@ -57,6 +57,10 @@ namespace ippl::Interpolation {
             return (physical_pos - origin_[dim]) * invdx_[dim];
         }
 
+        /*!
+         * @brief Compile-time dimension variant of toGridCoordinate.
+         * @tparam D Compile-time dimension index.
+         */
         template <int D>
         KOKKOS_FORCEINLINE_FUNCTION T toGridCoordinate(T physical_pos) const {
             return (physical_pos - origin_[D]) * invdx_[D];
@@ -82,6 +86,10 @@ namespace ippl::Interpolation {
                        : static_cast<int>(Kokkos::floor(grid_pos));
         }
 
+        /*!
+         * @brief Compile-time width variant of getStencilCenter.
+         * @tparam Width Compile-time kernel width.
+         */
         template <int Width>
         KOKKOS_FORCEINLINE_FUNCTION int getStencilCenter(T grid_pos) const {
             if constexpr (Width & 1)
@@ -115,6 +123,10 @@ namespace ippl::Interpolation {
             return getStencilCenter(grid_pos, width) - (width - 1) / 2;
         }
 
+        /*!
+         * @brief Compile-time width variant of getStencilBase.
+         * @tparam Width Compile-time kernel width.
+         */
         template <int Width>
         KOKKOS_FORCEINLINE_FUNCTION int getStencilBase(T grid_pos) const {
             return getStencilCenter<Width>(grid_pos) - (Width - 1) / 2;

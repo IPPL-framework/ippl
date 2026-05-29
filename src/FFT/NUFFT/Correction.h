@@ -1,3 +1,20 @@
+/*!
+ * @file Correction.h
+ * @brief Deconvolution / pre-correction kernels for the native NUFFT engine.
+ *
+ * Provides:
+ *   - @c compute_deconvolution_factors: precomputes the per-mode complex
+ *     factor combining the kernel Fourier transform with the cell-centered
+ *     phase shift.
+ *   - @c applyDeconvolutionType1: post-FFT correction for Type 1 NUFFT
+ *     (nonuniform -> uniform).
+ *   - @c applyPreCorrectionType2: pre-IFFT correction for Type 2 NUFFT
+ *     (uniform -> nonuniform).
+ *   - Pruned-FFT variants of the above for the low-mode pipeline.
+ *
+ * See the `Cell-centered phase convention` section below for the derivation
+ * of the phase factor.
+ */
 #ifndef IPPL_NUFFT_CORRECTION_H
 #define IPPL_NUFFT_CORRECTION_H
 

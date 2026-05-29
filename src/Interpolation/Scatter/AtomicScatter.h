@@ -1,3 +1,11 @@
+/*!
+ * @file AtomicScatter.h
+ * @brief Per-particle atomic-scatter implementation used by Scatter::dispatch.
+ *
+ * Each particle independently writes its W^Dim stencil into the grid using
+ * Kokkos::atomic_add. No binning required; contention-bound at high
+ * particles-per-cell on GPU.
+ */
 #ifndef IPPL_TEAM_ATOMIC_SCATTER_H
 #define IPPL_TEAM_ATOMIC_SCATTER_H
 
@@ -7,6 +15,13 @@
 #include "Interpolation/Scatter/ScatterArgumentsBase.h"
 
 namespace ippl::Interpolation::detail {
+    /*!
+     * @struct AtomicScatter
+     * @brief Compile-time-width atomic-scatter functor.
+     * @tparam W      Compile-time kernel width.
+     * @tparam Types  ScatterTypes bundle (Dim, RealType, ValueType, views).
+     * @tparam Policy Sort policy tag (Unsorted/Sorted).
+     */
     template <int W, class Types, class Policy>
     struct AtomicScatter {
         static constexpr bool requires_binning = false;
@@ -61,7 +76,7 @@ namespace ippl::Interpolation::detail {
         using G0View             = Kokkos::View<RealType**, scratch_space, unmanaged>;
 
         struct Arguments : ScatterArgumentsBase<Arguments, Types> {
-            using PermuteView = Kokkos::View<uint64_t*, memory_space>;
+            using PermuteView = Kokkos::View<ippl::detail::size_type*, memory_space>;
             PermuteView permute;
             int particles_per_team = 1;
 
@@ -223,7 +238,7 @@ namespace ippl::Interpolation::detail {
 
             // -------------------------
             // Dimension-specialized paths (LayoutLeft only)
-            // Compute (base, g0) only where they’re needed and keep live ranges tight.
+            // Compute (base, g0) only where they're needed and keep live ranges tight.
             // -------------------------
             if constexpr (Dim == 1) {
                 // compute dim0 and immediately fill weights

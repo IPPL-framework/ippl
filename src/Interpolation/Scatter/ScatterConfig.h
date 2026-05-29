@@ -1,3 +1,11 @@
+/*!
+ * @file ScatterConfig.h
+ * @brief User-facing configuration knobs for scatter operations.
+ *
+ * Exposes the @c ScatterMethod enum, the @c ScatterConfig<Dim> struct
+ * (tile sizes / team / oversubscription / z-batches), and per-execution-space
+ * defaults selected by @c ScatterConfig::get_default().
+ */
 #ifndef IPPL_SCATTER_CONFIG_H
 #define IPPL_SCATTER_CONFIG_H
 
@@ -11,7 +19,7 @@ namespace ippl {
     namespace Interpolation {
 
         /**
-         * @brief Scatter algorithm for particle → grid interpolation.
+         * @brief Scatter algorithm for particle -> grid interpolation.
          *
          * - Atomic:        per-particle stencil scatter with `Kokkos::atomic_add`.
          * - Tiled:         bin particles into tiles, scatter each tile's
@@ -63,8 +71,8 @@ namespace ippl {
              * footprint of the scatter histogram grows as
              *   (tile + W + 1)^3  *  sizeof(RealType)  *  (2 if complex)
              * For the largest supported kernel width (W = 14) and complex<double>:
-             *   (2 + 14 + 1)^3 * 8 * 2 = 17^3 * 16 ≈ 78 KB  — fits in 96 KB L1.
-             *   (3 + 14 + 1)^3 * 8 * 2 = 18^3 * 16 ≈ 93 KB  — marginal.
+             *   (2 + 14 + 1)^3 * 8 * 2 = 17^3 * 16 ~= 78 KB  -- fits in 96 KB L1.
+             *   (3 + 14 + 1)^3 * 8 * 2 = 18^3 * 16 ~= 93 KB  -- marginal.
              * Tile = 2 is therefore the safe 3-D default.  Scatter::dispatch()
              * further reduces the tile at runtime if the resolved config would
              * still exceed the device's available shared memory.

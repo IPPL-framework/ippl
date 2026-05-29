@@ -5,7 +5,7 @@
 // particles to the rank that owns the region containing the particle's
 // position.  The suite covers:
 //
-//   1.  Baseline sanity – random particles already on correct rank.
+//   1.  Baseline sanity - random particles already on correct rank.
 //   2.  Single deliberate out-of-bounds displacement (each axis / direction).
 //   3.  Corner / edge displacement (multi-axis simultaneous crossing).
 //   4.  Periodic wrap-around: particles placed just outside the global domain
@@ -271,7 +271,7 @@ TYPED_TEST(TestParticleUpdate, TotalChargeConserved) {
 }
 
 // ============================================================
-//  4.  Single-axis displacement – particles must migrate to neighbour
+//  4.  Single-axis displacement - particles must migrate to neighbour
 // ============================================================
 TYPED_TEST(TestParticleUpdate, SingleAxisDisplacementMigratesCorrectly) {
     using T = typename TestFixture::T;
@@ -349,7 +349,7 @@ TYPED_TEST(TestParticleUpdate, PeriodicWrapAroundRightBoundary) {
     {
         auto R_host = bunch->R.getHostMirror();
         auto Q_host = bunch->Q.getHostMirror();
-        // Place at domain[0] + small epsilon → wraps to near 0
+        // Place at domain[0] + small epsilon -> wraps to near 0
         T eps        = this->domain[0] * T(1e-4);
         R_host(0)[0] = this->domain[0] + eps;
         for (unsigned d = 1; d < TestFixture::Dim; d++)
@@ -393,7 +393,7 @@ TYPED_TEST(TestParticleUpdate, PeriodicWrapAroundLeftBoundary) {
 }
 
 // ============================================================
-//  8.  All particles seeded on rank 0 → global redistribution
+//  8.  All particles seeded on rank 0 -> global redistribution
 // ============================================================
 TYPED_TEST(TestParticleUpdate, AllParticlesOnRank0Redistributed) {
     using T = typename TestFixture::T;
@@ -426,7 +426,7 @@ TYPED_TEST(TestParticleUpdate, AllParticlesOnRank0Redistributed) {
 }
 
 // ============================================================
-//  9.  All particles seeded on last rank → global redistribution
+//  9.  All particles seeded on last rank -> global redistribution
 // ============================================================
 TYPED_TEST(TestParticleUpdate, AllParticlesOnLastRankRedistributed) {
     using T      = typename TestFixture::T;

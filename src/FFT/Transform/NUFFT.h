@@ -1,3 +1,11 @@
+/*!
+ * @file NUFFT.h
+ * @brief Non-uniform FFT specialization (NUFFTransform tag).
+ *
+ * Provides a single FFT class that can dispatch to the native IPPL NUFFT
+ * (Kokkos-based ES kernel + heFFTe) or to FINUFFT / cuFINUFFT when those
+ * libraries are enabled at configure time.
+ */
 #ifndef IPPL_FFT_TRANSFORM_NUFFT_H
 #define IPPL_FFT_TRANSFORM_NUFFT_H
 
@@ -29,10 +37,16 @@ namespace ippl {
     namespace detail {
 
 #ifdef ENABLE_FINUFFT
-        /**
-         * @brief Type traits for FINUFFT backend selection
+        /*!
+         * @struct FinufftTraits
+         * @brief Type traits for FINUFFT backend selection.
          *
-         * Provides unified interface for CPU (finufft) and GPU (cufinufft) backends
+         * Provides a unified surface (ComplexType, PlanType, OptsType,
+         * CountType, plus static makeplan/setpts/execute/destroy wrappers)
+         * over the CPU @c finufft library and the GPU @c cufinufft library
+         * so the rest of the code can be written backend-agnostic.
+         *
+         * @tparam T Real precision (float or double).
          */
         template <typename T>
         struct FinufftTraits;
@@ -149,12 +163,19 @@ namespace ippl {
 
     }  // namespace detail
 
-    /**
-     * @brief Non-Uniform FFT implementation
+    /*!
+     * @class FFT<NUFFTransform, RealField>
+     * @brief Non-uniform FFT for IPPL particles + uniform Fourier modes.
      *
-     * Supports both native implementation and FINUFFT backend (CPU/GPU).
-     * Type 1: Non-uniform points -> uniform grid (spreading/adjoint)
-     * Type 2: Uniform grid -> non-uniform points (interpolation)
+     * Supports both the native IPPL implementation and the FINUFFT
+     * (CPU / GPU) backend. The runtime backend choice is controlled by the
+     * @c "useFinufft" / @c "lockMethod" parameter keys plus the configure
+     * macros @c ENABLE_FINUFFT and @c ENABLE_GPU_NUFFT.
+     *
+     * Type 1: non-uniform points -> uniform grid (spreading / adjoint).
+     * Type 2: uniform grid -> non-uniform points (interpolation).
+     *
+     * @tparam RealField IPPL Field of real values used for grid sizing.
      */
     template <typename RealField>
     class FFT<NUFFTransform, RealField> {
@@ -219,7 +240,8 @@ namespace ippl {
          * @param type Transform type (1 or 2)
          * @param params Configuration parameters
          */
-        FFT(const Layout_t& layout, std::size_t localNp, int type, const ParameterList& params);
+        FFT(const Layout_t& layout, detail::size_type localNp, int type,
+            const ParameterList& params);
 
         ~FFT();
 
@@ -229,31 +251,43 @@ namespace ippl {
         FFT(FFT&&)                 = delete;
         FFT& operator=(FFT&&)      = delete;
 
-        /**
-         * @brief Execute NUFFT transform
+        /*!
+         * @brief Execute NUFFT transform.
          *
-         * Type 1: Spreads particle data Q at positions R onto field f
-         * Type 2: Interpolates field f to positions R, storing results in Q
+         * Type 1: Spreads particle data @p Q at positions @p R onto field @p f.
+         * Type 2: Interpolates field @p f to positions @p R, storing results in @p Q.
+         *
+         * @param R Particle positions.
+         * @param Q Particle scalar values (input on Type 1, output on Type 2).
+         * @param f Complex field on a uniform grid (output on Type 1, input on Type 2).
          */
         template <class... Properties>
         void transform(const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
                        ParticleAttrib<T, Properties...>& Q, ComplexField& f);
 
-        // These must be public due to NVCC extended lambda restrictions
+        //! Native (Kokkos / heFFTe) NUFFT path.
+        //! @note Public because NVCC's extended lambda support disallows
+        //!       lambdas inside private templated member functions.
         template <class... Properties>
         void transformNative(const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
                              ParticleAttrib<T, Properties...>& Q, ComplexField& f);
 
+        //! FINUFFT / cuFINUFFT NUFFT path. Same NVCC public-visibility caveat.
         template <class... Properties>
         void transformFinufft(const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
                               ParticleAttrib<T, Properties...>& Q, ComplexField& f);
     private:
+        //! Pick a backend (native vs. finufft) based on @p params and lock_method.
         void initBackend(const Layout_t& layout, const ParameterList& params);
+        //! Build the native NUFFT engine.
         void initNative(const Layout_t& layout, const ParameterList& params);
+        //! Tear down whichever backend is currently allocated.
         void cleanupBackend();
 
+        //! Build the FINUFFT plan and configure tolerances/options.
         void initFinufft(const ParameterList& params);
-        void allocateFinufftBuffers(const Layout_t& layout, std::size_t localNp);
+        //! Allocate the LayoutLeft scratch views FINUFFT consumes.
+        void allocateFinufftBuffers(const Layout_t& layout, detail::size_type localNp);
     };
 
 }  // namespace ippl

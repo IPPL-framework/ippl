@@ -17,7 +17,7 @@ namespace {
 
     template <unsigned Dim>
     ippl::Vector<int, Dim> makeStandardTestMode(int N) {
-        // 0.18*N, 0.13*N, 0.10*N — well inside the centered band for any N >= 16.
+        // 0.18*N, 0.13*N, 0.10*N -- well inside the centered band for any N >= 16.
         ippl::Vector<int, Dim> k;
         if constexpr (Dim >= 1)
             k[0] = std::max(1, int(0.18 * N));
