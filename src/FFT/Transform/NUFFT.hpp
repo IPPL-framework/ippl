@@ -204,7 +204,17 @@ namespace ippl {
         }
 
 #ifdef ENABLE_FINUFFT
-        allocateFinufftBuffers(layout, localNp);
+        // allocateFinufftBuffers and the rest of the FINUFFT/cuFINUFFT
+        // pipeline are hardcoded for 3D (lDom[2], Rank<3> MDRangePolicy, ...).
+        // For Dim != 3 we never call into them -- the native path handles
+        // 2D NUFFT -- so we also skip the buffer allocation here, which
+        // would otherwise read past the local NDIndex for Dim < 3.
+        if constexpr (Dim == 3) {
+            allocateFinufftBuffers(layout, localNp);
+        } else {
+            (void)layout;
+            (void)localNp;
+        }
 #else
         (void)localNp;
 #endif
@@ -224,7 +234,10 @@ namespace ippl {
     template <typename RealField>
     void FFT<NUFFTransform, RealField>::initBackend(const Layout_t& layout,
                                                     const ParameterList& params) {
-        if constexpr (fft::is_available_v<fft::Finufft>) {
+        // FINUFFT path is 3D-only (see FFT::transform()); fall back to the
+        // native backend for any other Dim so the FINUFFT-enabled 2D unit
+        // tests don't tear down on the plan setup.
+        if constexpr (Dim == 3 && fft::is_available_v<fft::Finufft>) {
             if (useFinufft_m) {
                 initFinufft(params);
                 return;
