@@ -357,7 +357,13 @@ namespace ippl {
     void FFT<NUFFTransform, RealField>::transform(
         const ParticleAttrib<Vector<T, Dim>, Properties...>& R, ParticleAttrib<T, Properties...>& Q,
         ComplexField& f) {
-        if constexpr (fft::is_available_v<fft::Finufft>) {
+        // The FINUFFT/cuFINUFFT path is hardcoded for Dim == 3 (3D mode-grid
+        // scratch + Rank<3> MDRangePolicy in transformFinufft). For Dim != 3
+        // we skip the constexpr branch entirely so the 3D-only template body
+        // is never instantiated -- otherwise the unit tests that exercise the
+        // 2D type instantiations of FFT<NUFFTransform, ...> fail to compile
+        // under a FINUFFT-enabled build.
+        if constexpr (Dim == 3 && fft::is_available_v<fft::Finufft>) {
             if (useFinufft_m) {
                 transformFinufft(R, Q, f);
                 return;
