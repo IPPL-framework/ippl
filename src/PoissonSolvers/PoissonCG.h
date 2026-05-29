@@ -11,13 +11,12 @@
 #include "Poisson.h"
 namespace ippl {
 
-// Expands to a lambda that acts as a wrapper for a differential operator
-// fun: the function for which to create the wrapper, such as ippl::laplace
-// type: the argument type, which should match the LHS type for the solver
-#define IPPL_SOLVER_OPERATOR_WRAPPER(fun, type) \
-    [](type arg) {                              \
-        return fun(arg);                        \
-    }
+// IPPL_SOLVER_OPERATOR_WRAPPER is defined once in LinearSolvers/Preconditioner.h
+// (re-exported through this header via PCG.h). Defining it again here used to
+// silently shadow that definition with a by-value lambda, which copies the
+// Field on every op_m() call and reintroduces the per-iteration cudaMalloc
+// in the halo exchange (the realloc never propagates back to the original
+// Field). Keep a single by-reference definition.
 
     template <typename FieldLHS, typename FieldRHS = FieldLHS>
     class PoissonCG : public Poisson<FieldLHS, FieldRHS> {

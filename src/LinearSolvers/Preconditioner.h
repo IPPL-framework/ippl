@@ -14,8 +14,16 @@
 // Expands to a lambda that acts as a wrapper for a differential operator
 // fun: the function for which to create the wrapper, such as ippl::laplace
 // type: the argument type, which should match the LHS type for the solver
+//
+// IMPORTANT: takes the field by *reference*, not by value. A by-value
+// signature would copy the Field on every call -- BareField has shared-
+// ownership Kokkos::View members, so the data isn't actually copied, but
+// the embedded HaloCells::haloData_m buffer that the halo exchange grows
+// via Kokkos::realloc only grows on the copy and never propagates back to
+// the original. The result was a fresh cudaMalloc per op_m() call in
+// multi-rank runs (see nsys profile in ~/prof/pif-pr-verify).
 #define IPPL_SOLVER_OPERATOR_WRAPPER(fun, type) \
-    [](type arg) {                              \
+    [](type& arg) {                             \
         return fun(arg);                        \
     }
 
@@ -79,7 +87,7 @@ namespace ippl {
             //   - returns a Field / expression equal to D^{-1} * u
             //     (e.g. matrix-free FEM operators):
             //       result = w * inverse_diagonal_m(u)
-            if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
+            if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
                 const double scale = w_m * inverse_diagonal_m(u);
                 result = scale * u;
             } else {
@@ -433,7 +441,7 @@ namespace ippl {
                 // due to the matrix-free evaluation.
                 // Therefore, we need this if to differentiate
                 // the two cases.
-                if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
+                if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
                     result = inverse_diagonal_m(result) * result;
                 } else {
                     result = inverse_diagonal_m(result).deepCopy();
@@ -502,7 +510,7 @@ namespace ippl {
                 // due to the matrix-free evaluation.
                 // Therefore, we need this if to differentiate
                 // the two cases.
-                if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
+                if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
                     result = g_old_m + inverse_diagonal_m(result) * result;
                 } else {
                     result = g_old_m + inverse_diagonal_m(result);
@@ -568,7 +576,7 @@ namespace ippl {
                     UL_m = lower_m(result);
                     UL_m = UL_m.deepCopy();
                     result = r_m - UL_m;
-                    if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
+                    if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
                         result = inverse_diagonal_m(result) * result;
                     } else {
                         result = inverse_diagonal_m(result).deepCopy();
@@ -581,7 +589,7 @@ namespace ippl {
                     UL_m = upper_m(result);
                     UL_m = UL_m.deepCopy();
                     result = r_m - UL_m;
-                    if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
+                    if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
                         result = inverse_diagonal_m(result) * result;
                     } else {
                         result = inverse_diagonal_m(result).deepCopy();
@@ -653,7 +661,7 @@ namespace ippl {
             IpplTimings::startTimer(loopTimer);
 
             for (unsigned int k = 0; k < outerloops_m; ++k) {
-                if constexpr (std::is_same_v<InvDiagF, std::function<double(Field)>>) {
+                if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
                     UL_m = upper_m(result);
                     D    = diagonal_m(result);
                     r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * result;
