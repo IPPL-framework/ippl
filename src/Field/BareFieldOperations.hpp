@@ -4,6 +4,7 @@
 //
 
 #include "Utility/TypeUtils.h"
+#include <Kokkos_MathematicalFunctions.hpp>
 
 namespace ippl {
     /*!
@@ -84,7 +85,7 @@ namespace ippl {
                 ippl::parallel_reduce(
                     "Field::norm(int) general", field.getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args, T& val) {
-                        val += std::pow(Kokkos::abs(apply(view, args)), p);
+                        val += Kokkos::pow(Kokkos::abs(apply(view, args)), p);
                     },
                     Kokkos::Sum<T>(local));
                 T globalSum = 0;

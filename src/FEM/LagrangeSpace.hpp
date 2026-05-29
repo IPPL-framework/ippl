@@ -68,9 +68,10 @@ namespace ippl {
 
         int upperBoundaryPoints = -1;
 
-        // We iterate over the local domain points, getting the corresponding elements, 
+        // We iterate over the local domain points, getting the corresponding elements,
         // while tagging upper boundary points such that they can be removed after.
         Kokkos::View<size_t*> points("npoints", npoints);
+        Kokkos::View<bool*> is_boundary("is_boundary", npoints);
         Kokkos::parallel_reduce(
             "ComputePoints", npoints,
             KOKKOS_CLASS_LAMBDA(const int i, int& local) {
@@ -85,7 +86,8 @@ namespace ippl {
                         isBoundary = true;
                     }
                 }
-                points(i) = (!isBoundary) * (this->getElementIndex(val));
+                is_boundary(i) = isBoundary;
+                points(i)      = this->getElementIndex(val);
                 local += isBoundary;
             },
             Kokkos::Sum<int>(upperBoundaryPoints));
@@ -97,13 +99,16 @@ namespace ippl {
         elementIndices      = Kokkos::View<size_t*>("i", elementsPerRank);
         Kokkos::View<size_t> index("index");
 
-        Kokkos::parallel_for(
-            "RemoveNaNs", npoints, KOKKOS_CLASS_LAMBDA(const int i) {
-                if ((points(i) != 0) || (i == 0)) {
-                    const size_t idx    = Kokkos::atomic_fetch_add(&index(), 1);
-                    elementIndices(idx) = points(i);
-                }
-            });
+        if (elementsPerRank > 0) {
+            Kokkos::parallel_for(
+                "CompactElementIndices", npoints, KOKKOS_CLASS_LAMBDA(const int i) {
+                    if (!is_boundary(i)) {
+                        const size_t idx    = Kokkos::atomic_fetch_add(&index(), 1);
+                        elementIndices(idx) = points(i);
+                    }
+                });
+        }
+        Kokkos::fence();
     }
 
     // Update resultField and elementIndices according to changed domain decomposition.

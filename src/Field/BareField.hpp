@@ -2,11 +2,13 @@
 // Class BareField
 //   A BareField consists of multple LFields and represents a field.
 //
+#ifndef IPPL_BARE_FIELD_HPP
+#define IPPL_BARE_FIELD_HPP
+
 #include "Ippl.h"
 
 #include <Kokkos_ReductionIdentity.hpp>
 #include <cstdlib>
-#include <limits>
 #include <map>
 #include <utility>
 
@@ -15,6 +17,8 @@
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
 #include "Types/IpplTypes.h"
+
+#include "BareField.h"
 namespace Kokkos {
     template <typename T, unsigned Dim>
     struct reduction_identity<ippl::Vector<T, Dim>> {
@@ -25,10 +29,16 @@ namespace Kokkos {
             return ippl::Vector<T, Dim>(1);
         }
         KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> min() {
-            return ippl::Vector<T, Dim>(ippl::detail::infinity<T>());
+            // Kokkos::reduction_identity<T>::min/max already do the right
+            // thing for primitive T (-inf for float / numeric_limits::max for
+            // int, etc.) and stay device-callable; this matches the upstream
+            // change introduced via PR #532 while still allowing the
+            // ippl::detail::infinity helper from IpplTypes.h to be reused
+            // elsewhere in the branch.
+            return ippl::Vector<T, Dim>(Kokkos::reduction_identity<T>::min());
         }
         KOKKOS_FORCEINLINE_FUNCTION static ippl::Vector<T, Dim> max() {
-            return ippl::Vector<T, Dim>(-ippl::detail::infinity<T>());
+            return ippl::Vector<T, Dim>(Kokkos::reduction_identity<T>::max());
         }
     };
 }  // namespace Kokkos
@@ -195,12 +205,23 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::write(std::ostream& out) const {
         Kokkos::fence();
-        detail::write<T, Dim>(dview_m, out);
+        detail::write<T, Dim, ViewArgs...>(dview_m, out);
     }
 
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::write(Inform& inf) const {
         write(inf.getDestination());
+    }
+
+    template <typename T, unsigned Dim, class... ViewArgs>
+    void BareField<T, Dim, ViewArgs...>::write_as_list(std::ostream& out) const {
+        Kokkos::fence();
+        detail::write_as_list<T, Dim, ViewArgs...>(dview_m, out);
+    }
+
+    template <typename T, unsigned Dim, class... ViewArgs>
+    void BareField<T, Dim, ViewArgs...>::write_as_list(Inform& inf) const {
+        write_as_list(inf.getDestination());
     }
 
 #define DefineReduction(fun, name, op, MPI_Op)                                                 \
@@ -228,3 +249,4 @@ namespace ippl {
     DefineReduction(Prod, prod, valL *= myVal, std::multiplies)
 
 }  // namespace ippl
+#endif  // IPPL_BARE_FIELD_HPP

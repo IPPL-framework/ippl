@@ -141,6 +141,13 @@ namespace ippl {
          * `sendIds_d_`, `destRanks_d_`, `nDest_d_`) so the caller can drive
          * sends/receives without rescanning the particle array. Returns the
          * number of particles that need to leave this rank.
+         *
+         * Keep the pif-pr packed-locate API rather than main/master's
+         * locateParticles(ranks, invalid, nSends, sends) overload: the entire
+         * ParticleSpatialLayout was rewritten on the pif-pr Particle refactor
+         * (2878b90b) to operate on rankSendCount_d_/sendOffsets_d_/sendIds_d_
+         * scratch, and locateParticles' multi-output signature is no longer
+         * referenced anywhere on this branch.
          */
         template <typename ParticleContainer>
         size_t locateParticlesPacked(const ParticleContainer& pc);

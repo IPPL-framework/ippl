@@ -338,6 +338,11 @@ namespace ippl {
         region_view_type Regions = rlayout_m->getdLocalRegions();
         const auto is            = std::make_index_sequence<Dim>{};
 
+        // Keep the pif-pr typed RangePolicy<size_t, exec_space>: the
+        // locateParticlesPacked body uses it with size_t bounds. The
+        // mdrange_type alias main/master added belonged to its
+        // locateParticles overload, which this branch has dropped in favour
+        // of the packed locate path.
         using exec_space  = position_execution_space;
         using policy_type = Kokkos::RangePolicy<size_t, exec_space>;
 
@@ -503,6 +508,13 @@ namespace ippl {
             Kokkos::subview(neighbors_d_, std::make_pair(size_t(0), size_t(neighborSize))),
             Kokkos::subview(neighbors_h, std::make_pair(size_t(0), size_t(neighborSize))));
 
+        // The old locateParticles / fillHash / numberOfSends method bodies
+        // main/master kept here are no longer declared on this class: the
+        // pif-pr Particle refactor replaced them with the packed scratch
+        // (rankSendCount_d_ / sendOffsets_d_ / sendIds_d_) consumed by
+        // locateParticlesPacked above. Drop the orphaned bodies; the
+        // sibling ParticleSpatialOverlapLayout keeps its own copies of the
+        // old API for the overlap path.
         neighbors_dirty_ = false;
     }
 

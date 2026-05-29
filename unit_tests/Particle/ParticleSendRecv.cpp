@@ -33,7 +33,7 @@ public:
 
         ~Bunch() = default;
 
-        using charge_container_type = ippl::ParticleAttrib<T>;
+        using charge_container_type = ippl::ParticleAttrib<T, ExecSpace>;
 
         rank_type expectedRank;
         charge_container_type Q;

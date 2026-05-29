@@ -183,6 +183,8 @@ extract_git_label(Kokkos_VERSION KOKKOS_VERSION_GIT)
 set(Kokkos_REPOSITORY "https://github.com/kokkos/kokkos.git")
 if(NOT KOKKOS_VERSION_GIT)
   find_package(Kokkos ${Kokkos_VERSION} QUIET COMPONENTS ${IPPL_PLATFORMS})
+  # Plain Kokkos versions are also release tags; use them for the source fallback.
+  set(KOKKOS_VERSION_GIT "${Kokkos_VERSION}")
 endif()
 
 # If Kokkos found on system, Check that it has the platform backends that we need

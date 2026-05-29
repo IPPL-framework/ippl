@@ -1,14 +1,14 @@
 //
-// TestGaussian_convergence
-// This programs tests the FFTOpenPoissonSolver for a Gaussian source.
+// Test2DPoisson_convergence
+// This programs tests the FFTOpenPoissonSolver for a 2D Gaussian source.
 // Different problem sizes are used for the purpose of convergence tests.
 //   Usage:
-//     srun ./TestGaussian_convergence <algorithm> <precision> --info 5
-//     algorithm = "HOCKNEY", "VICO", or "DCT_VICO" types of open BC algorithms
+//     srun ./Test2DPoisson_convergence <algorithm> <precision> --info 5
+//     algorithm = "HOCKNEY" (only one supported in 2D currently)
 //     precision = "DOUBLE" or "SINGLE", precision of the fields
 //
 //     Example:
-//       srun ./TestGaussian_convergence HOCKNEY DOUBLE --info 5
+//       srun ./Test2DPoisson_convergence HOCKNEY DOUBLE --info 5
 //
 //
 
@@ -17,100 +17,166 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 
+#include <limits>
+
 #include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
 #include "PoissonSolvers/FFTOpenPoissonSolver.h"
 
+constexpr unsigned int Dim = 2;
+
 template <typename T>
-using Mesh_t = typename ippl::UniformCartesian<T, 3>;
+using Mesh_t = typename ippl::UniformCartesian<T, Dim>;
 
 template <typename T>
 using Centering_t = typename Mesh_t<T>::DefaultCentering;
 
 template <typename T>
-using ScalarField_t = typename ippl::Field<T, 3, Mesh_t<T>, Centering_t<T>>;
+using ScalarField_t = typename ippl::Field<T, Dim, Mesh_t<T>, Centering_t<T>>;
 
 template <typename T>
-using VectorField_t = typename ippl::Field<ippl::Vector<T, 3>, 3, Mesh_t<T>, Centering_t<T>>;
+using VectorField_t = typename ippl::Field<ippl::Vector<T, Dim>, Dim, Mesh_t<T>, Centering_t<T>>;
 
 template <typename T>
 using Solver_t = ippl::FFTOpenPoissonSolver<VectorField_t<T>, ScalarField_t<T>>;
 
+// Exponential integral matching std::expint: Ei(x) = integral_{-inf}^{x} (e^t / t) dt.
+// Ported from libstdc++ exp_integral.tcc (__expint_Ei, __expint_E1, ...).
+
 template <typename T>
-KOKKOS_INLINE_FUNCTION T gaussian(T x, T y, T z, T sigma = 0.05, T mu = 0.5) {
+KOKKOS_INLINE_FUNCTION T expint_Ei_series(T x) {
+    const T eps  = Kokkos::Experimental::epsilon_v<T>;
+    T       term = T(1);
+    T       sum  = T(0);
+    for (unsigned int i = 1; i < 1000; ++i) {
+        term *= x / T(i);
+        sum += term / T(i);
+        if (Kokkos::fabs(term) < eps * Kokkos::fabs(sum)) {
+            break;
+        }
+    }
+    return Kokkos::numbers::egamma_v<T> + sum + Kokkos::log(x);
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T expint_Ei_asymp(T x) {
+    const T eps  = Kokkos::Experimental::epsilon_v<T>;
+    T       term = T(1);
+    T       sum  = T(1);
+    for (unsigned int i = 1; i < 1000; ++i) {
+        const T prev = term;
+        term *= T(i) / x;
+        if (term < eps) {
+            break;
+        }
+        if (term >= prev) {
+            break;
+        }
+        sum += term;
+    }
+    return Kokkos::exp(x) * sum / x;
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T expint_E1_pos(T x) {
+    const T eps    = Kokkos::Experimental::epsilon_v<T>;
+    const T fp_min = Kokkos::Experimental::norm_min_v<T>;
+
+    if (x < T(1)) {
+        T term = T(1);
+        T esum = T(0);
+        T osum = T(0);
+        for (unsigned int i = 1; i < 1000; ++i) {
+            term *= -x / T(i);
+            if (Kokkos::fabs(term) < eps) {
+                break;
+            }
+            if (term >= T(0)) {
+                esum += term / T(i);
+            } else {
+                osum += term / T(i);
+            }
+        }
+        return -esum - osum - Kokkos::numbers::egamma_v<T> - Kokkos::log(x);
+    }
+    if (x < T(100)) {
+        const unsigned int n    = 1;
+        const int          nm1  = 0;
+        T b = x + T(n);
+        T c = T(1) / fp_min;
+        T d = T(1) / b;
+        T h = d;
+        for (unsigned int i = 1; i < 1000; ++i) {
+            const T a   = -T(i * (nm1 + static_cast<int>(i)));
+            b += T(2);
+            d = T(1) / (a * d + b);
+            c = b + a / c;
+            const T del = c * d;
+            h *= del;
+            if (Kokkos::fabs(del - T(1)) < eps) {
+                return h * Kokkos::exp(-x);
+            }
+        }
+        return h * Kokkos::exp(-x);
+    }
+
+    T term = T(1);
+    T esum = T(1);
+    T osum = T(0);
+    for (unsigned int i = 1; i < 1000; ++i) {
+        const T prev = term;
+        term *= -T(i) / x;
+        if (Kokkos::fabs(term) > Kokkos::fabs(prev)) {
+            break;
+        }
+        if (term >= T(0)) {
+            esum += term;
+        } else {
+            osum += term;
+        }
+    }
+    return Kokkos::exp(-x) * (esum + osum) / x;
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T Ei(T x) {
+    if (x < T(0)) {
+        return -expint_E1_pos(-x);
+    }
+    const T eps = Kokkos::Experimental::epsilon_v<T>;
+    if (x < -Kokkos::log(eps)) {
+        return expint_Ei_series(x);
+    }
+    return expint_Ei_asymp(x);
+}
+
+template <typename T>
+KOKKOS_INLINE_FUNCTION T gaussian(T x, T y, T sigma = 0.05, T mu = 0.5) {
     T pi        = Kokkos::numbers::pi_v<T>;
-    T prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
-    T r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
+    T prefactor = (1 / (2 * pi * sigma * sigma));
+    T r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu);
 
     return prefactor * Kokkos::exp(-r2 / (2 * sigma * sigma));
 }
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION T exact_fct(T x, T y, T z, T sigma = 0.05, T mu = 0.5) {
+KOKKOS_INLINE_FUNCTION T exact_fct(T x, T y, T sigma = 0.05, T mu = 0.5) {
     T pi = Kokkos::numbers::pi_v<T>;
 
-    T r = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
+    T r2 = (x - mu) * (x - mu) + (y - mu) * (y - mu);
 
-    return (1 / (4.0 * pi * r)) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma));
+    return (1 / (4.0 * pi)) * (Ei(-r2 / (2.0 * sigma * sigma)) - Kokkos::log(r2));
 }
 
 template <typename T>
-KOKKOS_INLINE_FUNCTION ippl::Vector<T, 3> exact_E(T x, T y, T z, T sigma = 0.05, T mu = 0.5) {
+KOKKOS_INLINE_FUNCTION ippl::Vector<T, Dim> exact_E(T x, T y, T sigma = 0.05, T mu = 0.5) {
     T pi     = Kokkos::numbers::pi_v<T>;
-    T r      = Kokkos::sqrt((x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu));
-    T factor = (1.0 / (4.0 * pi * r * r))
-               * ((1.0 / r) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma))
-                  - Kokkos::sqrt(2.0 / pi) * (1.0 / sigma)
-                        * Kokkos::exp(-r * r / (2 * sigma * sigma)));
+    T r2     = (x - mu) * (x - mu) + (y - mu) * (y - mu);
+    T factor = (1.0 / (2.0 * pi)) * (1 - Kokkos::exp(-r2 / (2.0 * sigma * sigma))) / r2;
 
-    ippl::Vector<T, 3> Efield = {(x - mu), (y - mu), (z - mu)};
+    ippl::Vector<T, Dim> Efield = {(x - mu), (y - mu)};
     return factor * Efield;
-}
-
-// Define vtk dump function for plotting the fields
-template <typename T>
-void dumpVTK(std::string path, ScalarField_t<T>& rho, int nx, int ny, int nz, int iteration, T dx,
-             T dy, T dz) {
-    typename ScalarField_t<T>::view_type::host_mirror_type host_view = rho.getHostMirror();
-    Kokkos::deep_copy(host_view, rho.getView());
-    std::ofstream vtkout;
-    vtkout.precision(10);
-    vtkout.setf(std::ios::scientific, std::ios::floatfield);
-
-    std::stringstream fname;
-    fname << path;
-    fname << "/scalar_";
-    fname << std::setw(4) << std::setfill('0') << iteration;
-    fname << ".vtk";
-
-    // open a new data file for this iteration
-    // and start with header
-    vtkout.open(fname.str().c_str(), std::ios::out);
-    if (!vtkout) {
-        std::cout << "couldn't open" << std::endl;
-    }
-    vtkout << "# vtk DataFile Version 2.0" << std::endl;
-    vtkout << "GaussianSource" << std::endl;
-    vtkout << "ASCII" << std::endl;
-    vtkout << "DATASET STRUCTURED_POINTS" << std::endl;
-    vtkout << "DIMENSIONS " << nx + 1 << " " << ny + 1 << " " << nz + 1 << std::endl;
-    vtkout << "ORIGIN " << 0.0 << " " << 0.0 << " " << 0.0 << std::endl;
-    vtkout << "SPACING " << dx << " " << dy << " " << dz << std::endl;
-    vtkout << "CELL_DATA " << (nx) * (ny) * (nz) << std::endl;
-
-    vtkout << "SCALARS Phi float" << std::endl;
-    vtkout << "LOOKUP_TABLE default" << std::endl;
-    for (int z = 1; z < nz + 1; z++) {
-        for (int y = 1; y < ny + 1; y++) {
-            for (int x = 1; x < nx + 1; x++) {
-                vtkout << host_view(x, y, z) << std::endl;
-            }
-        }
-    }
-
-    // close the output file for this iteration:
-    vtkout.close();
 }
 
 template <typename T>
@@ -119,20 +185,20 @@ void compute_convergence(std::string algorithm, int pt) {
     Inform errorMsg2all("", INFORM_ALL_NODES);
 
     ippl::Index I(pt);
-    ippl::NDIndex<3> owned(I, I, I);
+    ippl::NDIndex<Dim> owned(I, I);
 
     // specifies decomposition; here all dimensions are parallel
-    std::array<bool, 3> isParallel;
+    std::array<bool, 2> isParallel;
     isParallel.fill(true);
 
     // unit box
     T dx                      = 1.0 / pt;
-    ippl::Vector<T, 3> hx     = {dx, dx, dx};
-    ippl::Vector<T, 3> origin = {0.0, 0.0, 0.0};
+    ippl::Vector<T, 2> hx     = {dx, dx};
+    ippl::Vector<T, 2> origin = {0.0, 0.0};
     Mesh_t<T> mesh(owned, hx, origin);
 
     // all parallel layout, standard domain, normal axis order
-    ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
+    ippl::FieldLayout<2> layout(MPI_COMM_WORLD, owned, isParallel);
 
     // define the R (rho) field
     ScalarField_t<T> rho;
@@ -154,35 +220,31 @@ void compute_convergence(std::string algorithm, int pt) {
 
     Kokkos::parallel_for(
         "Assign rho field", rho.getFieldRangePolicy(),
-        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+        KOKKOS_LAMBDA(const int i, const int j) {
             // go from local to global indices
             const int ig = i + ldom[0].first() - nghost;
             const int jg = j + ldom[1].first() - nghost;
-            const int kg = k + ldom[2].first() - nghost;
 
             // define the physical points (cell-centered)
             T x = (ig + 0.5) * hx[0] + origin[0];
             T y = (jg + 0.5) * hx[1] + origin[1];
-            T z = (kg + 0.5) * hx[2] + origin[2];
 
-            view_rho(i, j, k) = gaussian(x, y, z);
+            view_rho(i, j) = gaussian(x, y);
         });
 
-    // assign the exact field with its values (erf function)
+    // assign the exact field with its values (Ei function)
     auto view_exact = exact.getView();
 
     Kokkos::parallel_for(
         "Assign exact field", exact.getFieldRangePolicy(),
-        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+        KOKKOS_LAMBDA(const int i, const int j) {
             const int ig = i + ldom[0].first() - nghost;
             const int jg = j + ldom[1].first() - nghost;
-            const int kg = k + ldom[2].first() - nghost;
 
             T x = (ig + 0.5) * hx[0] + origin[0];
             T y = (jg + 0.5) * hx[1] + origin[1];
-            T z = (kg + 0.5) * hx[2] + origin[2];
 
-            view_exact(i, j, k) = exact_fct(x, y, z);
+            view_exact(i, j) = exact_fct(x, y);
         });
 
     // assign the exact E field
@@ -190,16 +252,14 @@ void compute_convergence(std::string algorithm, int pt) {
 
     Kokkos::parallel_for(
         "Assign exact E-field", exactE.getFieldRangePolicy(),
-        KOKKOS_LAMBDA(const int i, const int j, const int k) {
+        KOKKOS_LAMBDA(const int i, const int j) {
             const int ig = i + ldom[0].first() - nghost;
             const int jg = j + ldom[1].first() - nghost;
-            const int kg = k + ldom[2].first() - nghost;
 
             T x = (ig + 0.5) * hx[0] + origin[0];
             T y = (jg + 0.5) * hx[1] + origin[1];
-            T z = (kg + 0.5) * hx[2] + origin[2];
 
-            view_exactE(i, j, k) = exact_E(x, y, z);
+            view_exactE(i, j) = exact_E(x, y);
         });
 
     // set the solver parameters
@@ -215,12 +275,9 @@ void compute_convergence(std::string algorithm, int pt) {
     // set the algorithm
     if (algorithm == "HOCKNEY") {
         params.add("algorithm", Solver_t<T>::HOCKNEY);
-    } else if (algorithm == "VICO") {
-        params.add("algorithm", Solver_t<T>::VICO);
-    } else if (algorithm == "DCT_VICO") {
-        params.add("algorithm", Solver_t<T>::DCT_VICO);
     } else {
-        throw IpplException("TestGaussian_convergence.cpp main()", "Unrecognized algorithm type");
+        throw IpplException("Test2DPoisson_convergence.cpp main()",
+                            "Only HOCKNEY supported for 2D test!");
     }
 
     // add output type
@@ -237,16 +294,16 @@ void compute_convergence(std::string algorithm, int pt) {
     T err = norm(rho) / norm(exact);
 
     // compute relative error norm for the E-field components
-    ippl::Vector<T, 3> errE{0.0, 0.0, 0.0};
+    ippl::Vector<T, Dim> errE{0.0, 0.0};
     fieldE           = fieldE - exactE;
     auto view_fieldE = fieldE.getView();
 
-    for (size_t d = 0; d < 3; ++d) {
+    for (size_t d = 0; d < Dim; ++d) {
         T temp = 0.0;
         Kokkos::parallel_reduce(
             "Vector errorNr reduce", fieldE.getFieldRangePolicy(),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) {
-                T myVal = Kokkos::pow(view_fieldE(i, j, k)[d], 2);
+            KOKKOS_LAMBDA(const size_t i, const size_t j, T& valL) {
+                T myVal = Kokkos::pow(view_fieldE(i, j)[d], 2);
                 valL += myVal;
             },
             Kokkos::Sum<T>(temp));
@@ -259,8 +316,8 @@ void compute_convergence(std::string algorithm, int pt) {
         temp = 0.0;
         Kokkos::parallel_reduce(
             "Vector errorDr reduce", exactE.getFieldRangePolicy(),
-            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, T& valL) {
-                T myVal = Kokkos::pow(view_exactE(i, j, k)[d], 2);
+            KOKKOS_LAMBDA(const size_t i, const size_t j, T& valL) {
+                T myVal = Kokkos::pow(view_exactE(i, j)[d], 2);
                 valL += myVal;
             },
             Kokkos::Sum<T>(temp));
@@ -272,8 +329,8 @@ void compute_convergence(std::string algorithm, int pt) {
         errE[d] = errorNr / errorDr;
     }
 
-    errorMsg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " " << errE[1] << " "
-             << errE[2] << endl;
+    errorMsg << std::setprecision(16) << dx << " " << err << " " << errE[0] << " "
+             << errE[1] << endl;
 
     return;
 }
@@ -288,7 +345,7 @@ int main(int argc, char* argv[]) {
         std::string precision = argv[2];
 
         if (precision != "DOUBLE" && precision != "SINGLE") {
-            throw IpplException("TestGaussian_convergence",
+            throw IpplException("Test2DPoisson_convergence",
                                 "Precision argument must be DOUBLE or SINGLE.");
         }
 
@@ -297,9 +354,9 @@ int main(int argc, char* argv[]) {
         IpplTimings::startTimer(allTimer);
 
         // gridsizes to iterate over
-        std::array<int, 6> N = {4, 8, 16, 32, 64, 128};
+        std::array<int, 8> N = {4, 8, 16, 32, 64, 128, 256, 512};
 
-        msg << "Spacing Error ErrorEx ErrorEy ErrorEz" << endl;
+        msg << "Spacing Error ErrorEx ErrorEy" << endl;
 
         for (int pt : N) {
             if (precision == "DOUBLE") {

@@ -91,14 +91,9 @@ namespace ippl {
                 constexpr binaryOperationKind opKind = extractBinaryOperationKind<Op>::value;
                 MPI_Op ret;
                 MPI_Op_create(
-                    /**
-                     * @brief Construct a new lambda object without captures, therefore convertible
-                     * to a function pointer
-                     *
-                     * @param inputBuffer pointing to a Type object
-                     * @param outputBuffer pointing to a Type object
-                     * @param len Amount of _Type objects_! NOT amount of bytes!
-                     */
+                    // Captureless lambda, therefore convertible to a function pointer.
+                    // inputBuffer and outputBuffer point to Type objects; len is the number of
+                    // Type objects, not bytes.
                     [](void* inputBuffer, void* outputBuffer, int* len, MPI_Datatype*) {
                         Type* input = (Type*)inputBuffer;
 
