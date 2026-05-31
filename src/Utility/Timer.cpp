@@ -8,7 +8,16 @@
 
 #include "Timer.h"
 
+#include <chrono>
+
 bool Timer::enableFences = IPPL_ENABLE_TIMER_FENCES;
+
+namespace {
+    using clock_type = std::chrono::high_resolution_clock;
+    inline std::int64_t now_ticks() {
+        return clock_type::now().time_since_epoch().count();
+    }
+}  // namespace
 
 Timer::Timer() {
     this->clear();
@@ -19,16 +28,22 @@ void Timer::clear() {
 }
 
 void Timer::start() {
-    start_m = std::chrono::high_resolution_clock::now();
+    // Fence on start as well: any in-flight kernel from before the timer was
+    // armed otherwise leaks its tail latency into the measured interval.
+    if (enableFences) {
+        Kokkos::fence("Timer Fence (start)");
+    }
+    start_m = now_ticks();
 }
 
 void Timer::stop() {
     if (enableFences) {
-        Kokkos::fence();
+        Kokkos::fence("Timer Fence (stop)");
     }
-    stop_m = std::chrono::high_resolution_clock::now();
+    stop_m = now_ticks();
 
-    duration_type elapsed = stop_m - start_m;
+    std::chrono::duration<double> elapsed =
+        clock_type::duration(stop_m) - clock_type::duration(start_m);
 
     elapsed_m += elapsed.count();
 }

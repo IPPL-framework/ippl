@@ -8,17 +8,14 @@
 #define IPPL_TIMER_H
 
 #ifndef IPPL_ENABLE_TIMER_FENCES
-#warning "IPPL timer fences were not set via CMake! Defaulting to no fences."
+#pragma message("IPPL_ENABLE_TIMER_FENCES not set by CMake; defaulting to false.")
 #define IPPL_ENABLE_TIMER_FENCES false
 #endif
 
-#include <chrono>
+#include <cstdint>
 
 class Timer {
 public:
-    using timer_type    = std::chrono::time_point<std::chrono::high_resolution_clock>;
-    using duration_type = std::chrono::duration<double>;
-
     static bool enableFences;
 
     Timer();
@@ -31,7 +28,7 @@ public:
 
 private:
     double elapsed_m;
-    timer_type start_m, stop_m;
+    std::int64_t start_m = 0, stop_m = 0;
 };
 
 #endif
