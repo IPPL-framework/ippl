@@ -20,8 +20,12 @@
 
 #include "Expression/IpplExpressions.h"
 
+#ifdef IPPL_ENABLE_FFT
+#include "FFT/FFT.h"
+#endif
 #include "Interpolation/CIC.h"
 #include "Particle/ParticleAttribBase.h"
+#include "Particle/SortBuffer.h"
 
 namespace ippl {
 
@@ -73,32 +77,46 @@ namespace ippl {
         void unpack(size_type) override;
 
         void serialize(detail::Archive<memory_space>& ar, size_type nsends) override {
-            ar.serialize(buf_m, nsends);
+            ar.serialize(dview_m, nsends);
+        }
+
+        void serialize(detail::Archive<memory_space>& ar, const hash_type& hash,
+                       size_type nsends) override {
+            ar.serialize(dview_m, hash, nsends);
         }
 
         void deserialize(detail::Archive<memory_space>& ar, size_type nrecvs) override {
             ar.deserialize(buf_m, nrecvs);
         }
 
-        virtual ~ParticleAttrib() = default;
-        
+        void deserialize(detail::Archive<memory_space>& ar, size_type offset,
+                         size_type nrecvs) override {
+            this->resize(offset + nrecvs);
+            ar.deserialize(dview_m, offset, nrecvs);
+        }
+
+        KOKKOS_INLINE_FUNCTION virtual ~ParticleAttrib() = default;
+
         size_type size() const override { return dview_m.extent(0); }
-        
+
         size_type packedSize(const size_type count) const override {
             return count * sizeof(value_type);
         }
-        
+
+        /*!
+         * @brief Resize the underlying view, preserving existing entries on grow.
+         *
+         * Capacity-only operation; does not change the live particle count.
+         * Overallocation is the caller's responsibility (`alloc()` / `create()`
+         * apply it when sizing this view).
+         */
         void resize(size_type n) { Kokkos::resize(dview_m, n); }
 
         /*!
-         * @brief Reallocate the underlying view with a new size.
+         * @brief Reallocate the underlying view, discarding existing entries.
          *
-         * This function reallocates the device view to a new size. Existing data is
-         * discarded and should not be relied upon after this call. Note that this function does not
-         * apply overallocation. For use from outside, call `ParticleAttrib::alloc(size_type)`
-         * instead.
-         *
-         * @param n The new size to allocate in the internal view.
+         * Capacity-only operation. Does not apply the default overallocation
+         * factor — call `alloc()` instead from the outside.
          */
         void realloc(size_type n) { Kokkos::realloc(dview_m, n); }
 
@@ -112,11 +130,22 @@ namespace ippl {
 
         KOKKOS_INLINE_FUNCTION T& operator()(const size_t i) const { return dview_m(i); }
 
-        view_type& getView() { return dview_m; }
+        /*!
+         * Returns a subview of the underlying storage covering only the live
+         * particle range [0, size()).
+         */
+        view_type getView() {
+            return Kokkos::subview(dview_m,
+                                   Kokkos::make_pair(size_type(0),
+                                                     static_cast<size_type>(*(this->localNum_mp))));
+        }
+        const view_type getView() const {
+            return Kokkos::subview(dview_m,
+                                   Kokkos::make_pair(size_type(0),
+                                                     static_cast<size_type>(*(this->localNum_mp))));
+        }
 
-        const view_type& getView() const { return dview_m; }
-
-        host_mirror_type getHostMirror() const { return Kokkos::create_mirror(dview_m); }
+        host_mirror_type getHostMirror() const { return Kokkos::create_mirror(getView()); }
 
         void set_name(const std::string& name_) override {
             size_t len = name_.size();
@@ -227,9 +256,21 @@ namespace ippl {
         void internalCopy(const hash_type& indices) override;
 
     private:
-        view_type dview_m;
-        view_type buf_m;
+        view_type dview_m{"ParticleAttrib::dview", 0};
+        view_type buf_m{"ParticleAttrib::buf", 0};
     };
+
+    namespace detail {
+        template <typename Attrib>
+        struct AttribTraits;
+
+        template <typename T, class... Props>
+        struct AttribTraits<ParticleAttrib<T, Props...>> {
+            using value_type = T;
+            using view_type =
+                std::decay_t<decltype(std::declval<ParticleAttrib<T, Props...>>().getView())>;
+        };
+    }  // namespace detail
 }  // namespace ippl
 
 #include "Particle/ParticleAttrib.hpp"

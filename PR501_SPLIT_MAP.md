@@ -363,3 +363,54 @@ Assessment:
 - This is a good standalone first PR.
 - It has a narrow file set and clear motivation: remove repeated allocation work from the PCG/preconditioner loop.
 - Recommended next validation before opening: run the relevant solver integration tests or CSCS GPU tests that originally showed PCG allocation/slowdown symptoms.
+
+### 2026-05-31: PR 2 Prototype - Communication And Particle Update Infrastructure
+
+Status: extracted on top of `pr501-pcg`.
+
+Branch:
+
+```text
+pr501-communication-particle-update
+```
+
+Included PR501 areas:
+
+- Communication buffer/archive updates from `9507a796` and `f2820064`
+- Particle layout rewrite and sort buffers from `2878b90b`
+- Particle update regression tests from the particle portion of `f0560f76`
+- Local integration fixes needed to keep this split independent from the later interpolation/FFT/NUFFT PRs
+
+Deliberately excluded:
+
+- Higher-order interpolation/gather/scatter APIs
+- FFT backend and NUFFT transform integration
+- PIF example/application changes
+
+Validation:
+
+```text
+cmake -S . -B build-pr501-communication-debug -DCMAKE_BUILD_TYPE=Debug -DIPPL_ENABLE_UNIT_TESTS=ON -DIPPL_ENABLE_FFT=ON -DIPPL_DEFAULT_TEST_PROCS=1
+cmake --build build-pr501-communication-debug --parallel 8
+ctest --test-dir build-pr501-communication-debug --output-on-failure
+/opt/homebrew/Cellar/open-mpi/5.0.8/bin/mpiexec -n 2 build-pr501-communication-debug/unit_tests/Particle/ParticleSendRecv
+/opt/homebrew/Cellar/open-mpi/5.0.8/bin/mpiexec -n 2 build-pr501-communication-debug/unit_tests/Particle/ParticleUpdate
+/opt/homebrew/Cellar/open-mpi/5.0.8/bin/mpiexec -n 2 build-pr501-communication-debug/unit_tests/Particle/ParticleUpdateNonuniform
+```
+
+Result:
+
+```text
+100% tests passed, 0 tests failed out of 36
+Total Test time (real) = 38.64 sec
+
+2-rank ParticleSendRecv: passed
+2-rank ParticleUpdate: passed
+2-rank ParticleUpdateNonuniform: passed
+```
+
+Assessment:
+
+- This is a coherent second PR after `pr501-pcg`.
+- It is still larger than the PCG split, but it avoids the major algorithmic dependencies from interpolation, FFT, NUFFT, and PIF.
+- Recommended next validation before opening: run the same particle tests on CUDA/HIP builds and larger MPI rank counts, especially the original `ParticleSendRecv` failure configurations.
