@@ -36,8 +36,10 @@ namespace ippl {
         using ExecSpace  = typename ComplexField::execution_space;
         using Layout_t   = FieldLayout<Dim>;
 
-#ifdef IPPL_ENABLE_CUFFTMP
-        using Backend_t = fft::CuFFTMpC2C<T, Dim, MemSpace>;
+#if defined(IPPL_ENABLE_CUFFTMP) && defined(KOKKOS_ENABLE_CUDA)
+        using Backend_t = std::conditional_t<fft::use_cufftmp_v<MemSpace>,
+                                             fft::CuFFTMpC2C<T, Dim, MemSpace>,
+                                             fft::HeffteC2C<T, Dim, MemSpace>>;
 #else
         using Backend_t  = fft::HeffteC2C<T, Dim, MemSpace>;
 #endif

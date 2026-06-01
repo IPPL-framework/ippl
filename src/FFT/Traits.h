@@ -17,7 +17,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#ifdef IPPL_ENABLE_CUFFTMP
+#if defined(IPPL_ENABLE_CUFFTMP) && defined(KOKKOS_ENABLE_CUDA)
 #include <cufftMp.h>
 #endif
 
@@ -130,7 +130,7 @@ namespace ippl {
         struct is_available<HeffteGPU> : std::true_type {};
 #endif
 
-#ifdef IPPL_ENABLE_CUFFTMP
+#if defined(IPPL_ENABLE_CUFFTMP) && defined(KOKKOS_ENABLE_CUDA)
         template <>
         struct is_available<CuFFTMp> : std::true_type {};
 #endif
@@ -148,6 +148,16 @@ namespace ippl {
         //! Convenience alias: `is_available_v<F>` is true iff `F` is enabled.
         template <typename Feature>
         inline constexpr bool is_available_v = is_available<Feature>::value;
+
+#ifdef KOKKOS_ENABLE_CUDA
+        //! True when cuFFTMp can be used for this memory space.
+        template <typename MemSpace>
+        inline constexpr bool use_cufftmp_v =
+            is_available_v<CuFFTMp> && std::is_same_v<MemSpace, Kokkos::CudaSpace>;
+#else
+        template <typename MemSpace>
+        inline constexpr bool use_cufftmp_v = false;
+#endif
 
         //=============================================================================
         // heFFTe Backend Selection by Memory Space

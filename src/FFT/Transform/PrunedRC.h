@@ -68,8 +68,10 @@ namespace ippl {
             typename Field<Complex_t, Dim, typename RealField::Mesh_t,
                            typename RealField::Centering_t, ExecSpace>::uniform_type;
 
-#ifdef IPPL_ENABLE_CUFFTMP
-        using Backend_t = fft::CuFFTMpR2C<T, Dim, MemSpace>;
+#if defined(IPPL_ENABLE_CUFFTMP) && defined(KOKKOS_ENABLE_CUDA)
+        using Backend_t = std::conditional_t<fft::use_cufftmp_v<MemSpace>,
+                                             fft::CuFFTMpR2C<T, Dim, MemSpace>,
+                                             fft::HeffteR2C<T, Dim, MemSpace>>;
 #else
         using Backend_t = fft::HeffteR2C<T, Dim, MemSpace>;
 #endif
