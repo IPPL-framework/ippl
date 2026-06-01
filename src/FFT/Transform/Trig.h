@@ -112,16 +112,25 @@ namespace ippl {
     //! @{
     template <typename Field>
     class FFT<SineTransform, Field> : public fft::TrigBase<Field, SineTransform> {
+    public:
+        using MemSpace      = typename Field::memory_space;
+        using heffteBackend = typename fft::HeffteBackend<MemSpace>::sin;
         using fft::TrigBase<Field, SineTransform>::TrigBase;
     };
 
     template <typename Field>
     class FFT<CosTransform, Field> : public fft::TrigBase<Field, CosTransform> {
+    public:
+        using MemSpace      = typename Field::memory_space;
+        using heffteBackend = typename fft::HeffteBackend<MemSpace>::cos;
         using fft::TrigBase<Field, CosTransform>::TrigBase;
     };
 
     template <typename Field>
     class FFT<Cos1Transform, Field> : public fft::TrigBase<Field, Cos1Transform> {
+    public:
+        using MemSpace      = typename Field::memory_space;
+        using heffteBackend = typename fft::HeffteBackend<MemSpace>::cos1;
         using fft::TrigBase<Field, Cos1Transform>::TrigBase;
     };
     //! @}

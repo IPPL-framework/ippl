@@ -41,6 +41,7 @@ namespace ippl {
 #else
         using Backend_t  = fft::HeffteC2C<T, Dim, MemSpace>;
 #endif
+        using heffteBackend = typename fft::HeffteBackend<MemSpace>::c2c;
         using TempView_t = typename Kokkos::View<typename ComplexField::view_type::data_type,
                                                  Kokkos::LayoutLeft, MemSpace>::uniform_type;
 

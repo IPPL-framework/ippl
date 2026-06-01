@@ -73,6 +73,7 @@ namespace ippl {
 #else
         using Backend_t = fft::HeffteR2C<T, Dim, MemSpace>;
 #endif
+        using heffteBackend = typename fft::HeffteBackend<MemSpace>::c2c;
         using TempReal_t    = Kokkos::View<T***, Kokkos::LayoutLeft, MemSpace>;
         using TempComplex_t = Kokkos::View<Complex_t***, Kokkos::LayoutLeft, MemSpace>;
 

@@ -83,6 +83,7 @@ namespace ippl {
         using Layout_t  = FieldLayout<Dim>;
 
         using Backend_t  = fft::HeffteC2C<T, Dim, MemSpace>;
+        using heffteBackend = typename fft::HeffteBackend<MemSpace>::c2c;
         using GPUOps     = fft::Stream<MemSpace>;
         using Stream_t   = typename GPUOps::stream_type;
         using DeviceExec = typename GPUOps::exec_space;
