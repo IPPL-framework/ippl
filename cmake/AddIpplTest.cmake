@@ -203,4 +203,8 @@ function(add_ippl_test TEST_NAME)
       set_tests_properties(${_ctest_name} PROPERTIES ${TEST_PROPERTIES})
     endif()
   endif()
+
+  if(TEST_LINK_LIBS AND NOT TEST_INTEGRATION)
+    target_link_libraries(${TEST_NAME} PRIVATE ${TEST_LINK_LIBS})
+  endif()
 endfunction()

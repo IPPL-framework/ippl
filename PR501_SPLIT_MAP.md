@@ -292,6 +292,33 @@ Risk:
 - Native NUFFT depends on new scatter/gather.
 - FINUFFT path has Dim-guard complexity and external dependency complexity.
 
+Status: extracted on local branch `pr501-nufft` from `pr501-fft`.
+
+Included:
+
+- native NUFFT implementation under `src/FFT/NUFFT/`
+- `FFT<NUFFTransform, Field>` specialization under `src/FFT/Transform/NUFFT.*`
+- aggregate transform include updated to expose `NUFFTransform`
+- NUFFT and NUFFT accuracy unit tests
+- `IPPL_ENABLE_FINUFFT` and `IPPL_ENABLE_CUFFTMP` configure options and dependency wiring
+- adapted the native NUFFT implementation to the PR 3 `Scatter`/`Gather` facades
+
+Validation with FINUFFT disabled:
+
+- Configure:
+  `cmake -S . -B build-pr501-nufft-debug -DCMAKE_BUILD_TYPE=Debug -DIPPL_PLATFORMS=SERIAL -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_UNIT_TESTS=ON`
+- Build:
+  `cmake --build build-pr501-nufft-debug --target ippl NUFFT NUFFTAccuracy -j 8`
+- Test:
+  `ctest --test-dir build-pr501-nufft-debug -R '^NUFFT$|^NUFFTAccuracy$' --output-on-failure`
+- Result: `2/2` NUFFT tests passed, total `19.19 sec`.
+
+Still to validate separately:
+
+- `IPPL_ENABLE_FINUFFT=ON` CPU path
+- CUDA/cuFINUFFT path
+- optional cuFFTMp path with NVSHMEM available
+
 ### PR 6: PIF / Alpine Examples
 
 Scope:

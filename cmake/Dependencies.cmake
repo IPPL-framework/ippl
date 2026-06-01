@@ -319,3 +319,91 @@ if(IPPL_ENABLE_TESTS)
        "${DOWNLOADED_HEADERS_DIR}/stb_image_write.h")
   message(STATUS "✅ stb_image_write loaded for testing FDTD solver.")
 endif()
+
+# ------------------------------------------------------------------------------
+# (CU)FINUFFT
+# ------------------------------------------------------------------------------
+if(IPPL_ENABLE_FFT AND IPPL_ENABLE_FINUFFT)
+  message(STATUS "Fetching (CU)FINUFFT")
+  FetchContent_Declare(finufft GIT_REPOSITORY https://github.com/flatironinstitute/finufft.git
+                       GIT_SHALLOW TRUE)
+
+  if("CUDA" IN_LIST IPPL_PLATFORMS)
+    set(FINUFFT_USE_CUDA ON CACHE BOOL "")
+    add_compile_definitions(ENABLE_GPU_NUFFT)
+    add_compile_definitions(FINUFFT_USE_CUDA)
+  endif()
+  set(FINUFFT_USE_CPU ON CACHE BOOL "")
+
+  # cuFINUFFT's CUDA RDC fatbin registration can fail at startup when its
+  # device code is wrapped in a shared library. Force static for this
+  # FetchContent build regardless of the global BUILD_SHARED_LIBS setting.
+  set(_ippl_saved_bsl ${BUILD_SHARED_LIBS})
+  set(BUILD_SHARED_LIBS OFF)
+
+  if("CUDA" IN_LIST IPPL_PLATFORMS)
+    set(_ippl_arch_map
+        "KEPLER30:30"
+        "KEPLER32:32"
+        "KEPLER35:35"
+        "KEPLER37:37"
+        "MAXWELL50:50"
+        "MAXWELL52:52"
+        "MAXWELL53:53"
+        "PASCAL60:60"
+        "PASCAL61:61"
+        "VOLTA70:70"
+        "VOLTA72:72"
+        "TURING75:75"
+        "AMPERE80:80"
+        "AMPERE86:86"
+        "AMPERE87:87"
+        "ADA89:89"
+        "HOPPER90:90"
+        "BLACKWELL100:100"
+        "BLACKWELL120:120")
+    foreach(_entry ${_ippl_arch_map})
+      string(REPLACE ":" ";" _pair ${_entry})
+      list(GET _pair 0 _name)
+      list(GET _pair 1 _sm)
+      if(Kokkos_ARCH_${_name})
+        set(CMAKE_CUDA_ARCHITECTURES ${_sm} CACHE STRING "" FORCE)
+        break()
+      endif()
+    endforeach()
+  endif()
+
+  FetchContent_MakeAvailable(finufft)
+
+  set(BUILD_SHARED_LIBS ${_ippl_saved_bsl})
+
+  add_compile_definitions(ENABLE_FINUFFT)
+endif()
+
+# ------------------------------------------------------------------------------
+# CuFFTMp
+# ------------------------------------------------------------------------------
+if(IPPL_ENABLE_FFT AND IPPL_ENABLE_CUFFTMP)
+  if(NOT "CUDA" IN_LIST IPPL_PLATFORMS)
+    message(FATAL_ERROR "IPPL_ENABLE_CUFFTMP requires IPPL_PLATFORMS to include CUDA")
+  endif()
+
+  set(NVSHMEM_HOME $ENV{NVSHMEM_HOME})
+
+  find_library(NVSHMEM_HOST_LIBRARY NAMES nvshmem_host HINTS ${NVSHMEM_HOME} PATH_SUFFIXES lib)
+  find_library(CUFFTMP_LIBRARY NAMES cufftMp)
+
+  if(NVSHMEM_HOST_LIBRARY)
+    message(STATUS "Found NVSHMEM host library: ${NVSHMEM_HOST_LIBRARY}")
+    set(NVSHMEM_FOUND TRUE)
+  else()
+    message(FATAL_ERROR "NVSHMEM not found. Set NVSHMEM_HOME to your installation directory.")
+  endif()
+
+  if(NOT CUFFTMP_LIBRARY)
+    message(FATAL_ERROR
+            "cuFFTMp library not found. Add it to CMAKE_PREFIX_PATH or library search paths.")
+  endif()
+
+  add_compile_definitions(IPPL_ENABLE_CUFFTMP)
+endif()
