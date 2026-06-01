@@ -31,4 +31,8 @@ endif()
 add_alpine_example(PenningTrap)
 add_alpine_example(BumponTailInstability)
 
+if(IPPL_ENABLE_FFT)
+  add_subdirectory(ElectrostaticPIF)
+endif()
+
 add_subdirectory(validation)

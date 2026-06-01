@@ -341,6 +341,35 @@ Risk:
 
 - PIF examples currently depend on the full stack: particle update, scatter/gather, FFT transform refactor, NUFFT.
 
+Status: extracted on local branch `pr501-pif` from `pr501-nufft`.
+
+Included:
+
+- Alpine ElectrostaticPIF examples:
+  - `LandauDampingPIF`
+  - `BumponTailInstabilityPIF`
+  - `PenningTrapPIF`
+- Alpine CMake wiring guarded by `IPPL_ENABLE_FFT`
+- minimal `ParticleAttrib` PIF helper APIs:
+  - `scatterPIFNUFFT`
+  - `gatherPIFNUFFT`
+
+Intentionally kept out:
+
+- unrelated particle update/capacity/reduction changes from the full PR501 map
+- unrelated Alpine timing/warmup changes
+- FINUFFT-enabled validation
+
+Validation with FINUFFT disabled:
+
+- Configure:
+  `cmake -S . -B build-pr501-pif-debug -DCMAKE_BUILD_TYPE=Debug -DIPPL_PLATFORMS=SERIAL -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_FINUFFT=OFF -DIPPL_ENABLE_ALPINE=ON -DIPPL_ENABLE_UNIT_TESTS=ON`
+- Build:
+  `cmake --build build-pr501-pif-debug --target LandauDampingPIF BumponTailInstabilityPIF PenningTrapPIF NUFFT NUFFTAccuracy -j 8`
+- Test:
+  `ctest --test-dir build-pr501-pif-debug -R '^NUFFT$|^NUFFTAccuracy$' --output-on-failure`
+- Result: PIF examples built; `2/2` NUFFT tests passed, total `19.07 sec`.
+
 ## Minimal Split Alternative
 
 If six PRs is too much process overhead, a practical minimum is:

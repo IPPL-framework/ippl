@@ -15,6 +15,8 @@
 //
 #include "Ippl.h"
 
+#include <cmath>
+
 #include "Communicate/DataTypes.h"
 
 #include "Utility/BufferView.h"
@@ -344,6 +346,157 @@ namespace ippl {
                        const bool addToAttribute = false) {
         attrib.gather(f, pp, addToAttribute);
     }
+
+#ifdef IPPL_ENABLE_FFT
+    template <typename T, class... Properties>
+    template <unsigned Dim, class M, class C, class FT, class ST, class PT>
+    void ParticleAttrib<T, Properties...>::scatterPIFNUFFT(
+        Field<FT, Dim, M, C>& f, Field<ST, Dim, M, C>& Sk,
+        const ParticleAttrib<Vector<PT, Dim>, Properties...>& pp,
+        FFT<NUFFTransform, Field<ST, Dim, M, C>>* nufft, const MPI_Comm&) const {
+        static IpplTimings::TimerRef scatterPIFNUFFTTimer =
+            IpplTimings::getTimer("ScatterPIFNUFFT");
+        IpplTimings::startTimer(scatterPIFNUFFTTimer);
+
+        auto q = *this;
+
+        typename Field<FT, Dim, M, C>::uniform_type tempField;
+
+        FieldLayout<Dim>& layout = f.getLayout();
+        M& mesh                  = f.get_mesh();
+
+        tempField.initialize(mesh, layout);
+        tempField = 0.0;
+
+        nufft->transform(pp, q, tempField);
+
+        using view_type                                 = typename Field<FT, Dim, M, C>::view_type;
+        view_type fview                                 = f.getView();
+        view_type viewLocal                             = tempField.getView();
+        typename Field<ST, Dim, M, C>::view_type Skview = Sk.getView();
+        const int nghost                                = f.getNghost();
+
+        IpplTimings::stopTimer(scatterPIFNUFFTTimer);
+
+        Kokkos::deep_copy(execution_space{}, fview, viewLocal);
+
+        IpplTimings::startTimer(scatterPIFNUFFTTimer);
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+        Kokkos::parallel_for(
+            "Multiply with shape functions",
+            mdrange_type(
+                {nghost, nghost, nghost},
+                {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
+            KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k) {
+                fview(i, j, k) *= Skview(i, j, k);
+            });
+
+        IpplTimings::stopTimer(scatterPIFNUFFTTimer);
+    }
+
+    template <typename T, class... Properties>
+    template <unsigned Dim, class M, class C, class FT, class ST, class PT>
+    void ParticleAttrib<T, Properties...>::gatherPIFNUFFT(
+        Field<FT, Dim, M, C>& f, Field<ST, Dim, M, C>& Sk,
+        const ParticleAttrib<Vector<PT, Dim>, Properties...>& pp,
+        FFT<NUFFTransform, Field<ST, Dim, M, C>>* nufft, ParticleAttrib<PT, Properties...>& q) {
+        static IpplTimings::TimerRef gatherPIFNUFFTTimer =
+            IpplTimings::getTimer("GatherPIFNUFFT");
+        IpplTimings::startTimer(gatherPIFNUFFTTimer);
+
+        typename Field<FT, Dim, M, C>::uniform_type tempField;
+
+        FieldLayout<Dim>& layout = f.getLayout();
+        M& mesh                  = f.get_mesh();
+        const auto& lDom         = layout.getLocalNDIndex();
+
+        tempField.initialize(mesh, layout);
+
+        using view_type                                 = typename Field<FT, Dim, M, C>::view_type;
+        using vector_type                               = typename M::vector_type;
+        view_type fview                                 = f.getView();
+        view_type tempview                              = tempField.getView();
+        auto qview                                      = q.getView();
+        typename Field<ST, Dim, M, C>::view_type Skview = Sk.getView();
+        const int nghost                                = f.getNghost();
+        const vector_type& dx                           = mesh.getMeshSpacing();
+        const auto& domain                              = layout.getDomain();
+        vector_type Len;
+        Vector<int, Dim> N;
+
+        for (unsigned d = 0; d < Dim; ++d) {
+            N[d]   = domain[d].length();
+            Len[d] = dx[d] * N[d];
+        }
+
+        double pi                    = std::acos(-1.0);
+        Kokkos::complex<double> imag = {0.0, 1.0};
+        size_t Np                    = *(this->localNum_mp);
+
+        using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<3>>;
+
+        auto dview = dview_m;
+
+        for (size_t gd = 0; gd < Dim; ++gd) {
+            Kokkos::parallel_for(
+                "Gather NUFFT",
+                mdrange_type(
+                    {nghost, nghost, nghost},
+                    {fview.extent(0) - nghost, fview.extent(1) - nghost,
+                     fview.extent(2) - nghost}),
+                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    Vector<int, 3> iVec = {i, j, k};
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        iVec[d] = iVec[d] - nghost + lDom[d].first();
+                    }
+                    Vector<double, 3> kVec;
+
+                    double Dr = 0.0;
+                    for (size_t d = 0; d < Dim; ++d) {
+                        bool shift = (iVec[d] > (N[d] / 2));
+                        kVec[d]    = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
+                        Dr += kVec[d] * kVec[d];
+                    }
+
+                    tempview(i, j, k) = fview(i, j, k);
+
+                    bool isNotZero = (Dr != 0.0);
+                    double factor  = isNotZero * (1.0 / (Dr + ((!isNotZero) * 1.0)));
+
+                    tempview(i, j, k) *= -Skview(i, j, k) * (imag * kVec[gd] * factor);
+                });
+
+            nufft->transform(pp, q, tempField);
+
+            Kokkos::parallel_for(
+                "Assign E gather NUFFT", Np,
+                KOKKOS_LAMBDA(const size_t i) { dview(i)[gd] = qview(i); });
+        }
+
+        IpplTimings::stopTimer(gatherPIFNUFFTTimer);
+    }
+
+    template <typename P1, unsigned Dim, class M, class C, typename P2, typename P3, typename P4,
+              class... Properties>
+    inline void gatherPIFNUFFT(ParticleAttrib<P1, Properties...>& attrib, Field<P2, Dim, M, C>& f,
+                               Field<P3, Dim, M, C>& Sk,
+                               const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp,
+                               ippl::FFT<ippl::NUFFTransform, Field<P3, Dim, M, C>>* nufft,
+                               ParticleAttrib<P4, Properties...>& q) {
+        attrib.gatherPIFNUFFT(f, Sk, pp, nufft, q);
+    }
+
+    template <typename P1, unsigned Dim, class M, class C, typename P2, typename P3, typename P4,
+              class... Properties>
+    inline void scatterPIFNUFFT(const ParticleAttrib<P1, Properties...>& attrib,
+                                Field<P2, Dim, M, C>& f, Field<P3, Dim, M, C>& Sk,
+                                const ParticleAttrib<Vector<P4, Dim>, Properties...>& pp,
+                                FFT<NUFFTransform, Field<P3, Dim, M, C>>* nufft,
+                                const MPI_Comm& spaceComm = MPI_COMM_WORLD) {
+        attrib.scatterPIFNUFFT(f, Sk, pp, nufft, spaceComm);
+    }
+#endif  // IPPL_ENABLE_FFT
 
 #define DefineParticleReduction(fun, name, op, MPI_Op)            \
     template <typename T, class... Properties>                    \
