@@ -87,6 +87,8 @@ include(Messages)
 include(CompilerOptions)
 include(Platforms)
 include(Dependencies)
+include(AutoTunePresets)
+ippl_configure_autotune_presets()
 include(FailingTests)
 
 # ------------------------------------------------------------------------------

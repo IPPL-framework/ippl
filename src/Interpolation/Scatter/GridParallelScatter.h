@@ -1,3 +1,12 @@
+/*!
+ * @file GridParallelScatter.h
+ * @brief Output-tile-parallel scatter (one team per output tile).
+ *
+ * Particles must be pre-binned by output tile. Each Kokkos team owns one
+ * output tile, walks its bin and accumulates into team scratch, then
+ * flushes to global memory once. Lower atomics traffic than AtomicScatter
+ * at high ppc; higher launch cost than TiledScatter for tiny tiles.
+ */
 #ifndef IPPL_GRID_PARALLEL_SCATTER_H
 #define IPPL_GRID_PARALLEL_SCATTER_H
 
@@ -5,6 +14,7 @@
 
 namespace ippl::Interpolation::detail {
 
+    //! Compile-time integer power: @c int_pow(base, exp) == @c base^exp.
     constexpr int int_pow(int base, int exp) {
         int result = 1;
         for (int i = 0; i < exp; ++i)
@@ -12,6 +22,11 @@ namespace ippl::Interpolation::detail {
         return result;
     }
 
+    /*!
+     * @struct GridParallelScatterTuning
+     * @brief SFINAE-based detector for an optional Policy::fixed_oversubscription
+     *        flag; defaults to true when the policy doesn't expose one.
+     */
     template <class Policy, class = void>
     struct GridParallelScatterTuning {
         static constexpr bool fixed_oversubscription = true;
@@ -22,10 +37,17 @@ namespace ippl::Interpolation::detail {
         static constexpr bool fixed_oversubscription = Policy::fixed_oversubscription;
     };
 
-    // ─────────────────────────────────────────────────────────────────────────────
+    // -----------------------------------------------------------------------------
     // 3D optimized implementation
-    // ─────────────────────────────────────────────────────────────────────────────
+    // -----------------------------------------------------------------------------
 
+    /*!
+     * @struct GridParallelScatterImpl3D
+     * @brief 3D-only output-tile-parallel scatter functor.
+     * @tparam W      Compile-time kernel width.
+     * @tparam Types  ScatterTypes bundle.
+     * @tparam Policy Sort policy (must enable @c use_sorting).
+     */
     template <int W, class Types, class Policy>
     struct GridParallelScatterImpl3D {
         static_assert(Policy::use_sorting,
@@ -98,7 +120,7 @@ namespace ippl::Interpolation::detail {
         size_t sub_teams_per_tile_ = 1;
 
         // binning flattens with dimension 2 fastest:
-        //   bin = tx*(ny*nz) + ty*nz + tz → decode in order z, y, x.
+        //   bin = tx*(ny*nz) + ty*nz + tz -> decode in order z, y, x.
         KOKKOS_INLINE_FUNCTION void decode_tile_base(const size_t tile_id_in, int& tx, int& ty,
                                                      int& tz) const {
             size_t t         = tile_id_in;
@@ -401,10 +423,14 @@ namespace ippl::Interpolation::detail {
         }
     };
 
-    // ─────────────────────────────────────────────────────────────────────────────
+    // -----------------------------------------------------------------------------
     // Generic Dim != 3 fallback
-    // ─────────────────────────────────────────────────────────────────────────────
+    // -----------------------------------------------------------------------------
 
+    /*!
+     * @struct GridParallelScatterImplND
+     * @brief Generic-dimension fallback used when @c Types::Dim != 3.
+     */
     template <int W, class Types, class Policy>
     struct GridParallelScatterImplND {
         static_assert(Policy::use_sorting,
@@ -736,9 +762,9 @@ namespace ippl::Interpolation::detail {
         }
     };
 
-    // ─────────────────────────────────────────────────────────────────────────────
+    // -----------------------------------------------------------------------------
     // Public selector
-    // ─────────────────────────────────────────────────────────────────────────────
+    // -----------------------------------------------------------------------------
 
     template <int W, class Types, class Policy>
     using GridParallelScatter =

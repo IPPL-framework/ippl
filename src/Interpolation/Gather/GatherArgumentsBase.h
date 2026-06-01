@@ -1,10 +1,19 @@
+/*!
+ * @file GatherArgumentsBase.h
+ * @brief Common type bundle and shared argument struct for gather functors.
+ */
 #ifndef IPPL_GATHER_ARGUMENTS_BASE_H
 #define IPPL_GATHER_ARGUMENTS_BASE_H
 
+#include "Types/IpplTypes.h"
 #include "Types/Vector.h"
 
 namespace ippl::Interpolation::detail {
 
+    /*!
+     * @struct GatherTypes
+     * @brief Type bundle propagated through every gather implementation.
+     */
     template <unsigned Dim_, typename RealType_, typename KernelType_, typename GridViewType_,
               typename PositionViewType_, typename ValuesViewType_>
     struct GatherTypes {
@@ -19,6 +28,11 @@ namespace ippl::Interpolation::detail {
         using execution_space  = typename PositionViewType_::execution_space;
     };
 
+    /*!
+     * @struct GatherArgumentsBase
+     * @brief CRTP base bundling per-call inputs (views, mesh info, kernel)
+     *        consumed by the gather functors.
+     */
     template <typename Derived, typename Types>
     struct GatherArgumentsBase {
         static constexpr unsigned Dim = Types::Dim;
@@ -73,8 +87,13 @@ namespace ippl::Interpolation::detail {
     // Reuse BinningResult from scatter
     template <typename MemorySpace>
     struct GatherBinningResult {
-        Kokkos::View<uint64_t*, MemorySpace> permute;
-        Kokkos::View<uint64_t*, MemorySpace> bin_offsets;
+        // Particle counts can exceed INT_MAX in 3D, so the per-particle id
+        // and per-bin offset views use ippl::detail::size_type (== size_t).
+        // Keeping them as size_type also avoids a Kokkos View value-type
+        // mismatch with SortBuffer / Binning, where std::size_t and
+        // uint64_t are different types on platforms like macOS.
+        Kokkos::View<ippl::detail::size_type*, MemorySpace> permute;
+        Kokkos::View<ippl::detail::size_type*, MemorySpace> bin_offsets;
         Vector<int, 3> num_tiles;
 
         operator bool() const { return permute.data() != nullptr; }

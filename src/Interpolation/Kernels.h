@@ -1,3 +1,13 @@
+/*!
+ * @file Kernels.h
+ * @brief Built-in interpolation kernels (NGP through Quartic).
+ *
+ * Each kernel exposes a uniform interface used by the tiled scatter / gather
+ * code: a callable @c operator()(T) returning the kernel value, a static
+ * @c width() giving the stencil span, and a @c has_width_template flag
+ * indicating whether the kernel supports compile-time width dispatch
+ * (currently only ESKernel does).
+ */
 #ifndef IPPL_INTERPOLATION_KERNELS_H
 #define IPPL_INTERPOLATION_KERNELS_H
 

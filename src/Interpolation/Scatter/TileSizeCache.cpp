@@ -1,7 +1,10 @@
-// ============================================================================
-// TileSizeCache — IO and CSV parsing implementation.
-// Header-only API surface lives in TileSizeCache.h.
-// ============================================================================
+/*!
+ * @file TileSizeCache.cpp
+ * @brief CSV parsing and file IO for the singleton tile-size cache.
+ *
+ * Header-only API lives in TileSizeCache.h; this TU keeps everything that
+ * pulls in @c <fstream> / @c <sstream>.
+ */
 
 #include "Interpolation/Scatter/TileSizeCache.h"
 
@@ -171,7 +174,7 @@ bool TileSizeCache::parse_uniform_row(const std::string& line, bool has_rho) {
     if (width <= 0 || tile <= 0)
         return false;
 
-    // Uniform has no value_type column → insert for both
+    // Uniform has no value_type column -> insert for both
     for (bool cx : {false, true}) {
         TileCacheEntry e;
         e.tile.fill(tile);

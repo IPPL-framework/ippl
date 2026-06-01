@@ -1,6 +1,12 @@
-// ============================================================================
-// Width-2 scatter auto-tuner — see AutoTune.h for the user-visible contract.
-// ============================================================================
+/*!
+ * @file AutoTune.cpp
+ * @brief Width-2 (CIC) scatter / gather auto-tuner implementation.
+ *
+ * See AutoTune.h for the user-visible contract. Internally builds candidate
+ * (tile, team_size, oversubscription, z_batch) configurations, measures each
+ * via short benchmark runs, fits a Gaussian-process surrogate when running
+ * the @c full sweep, and writes the optimal rows to the tile-sweep CSV.
+ */
 
 #include "Ippl.h"
 
@@ -16,6 +22,9 @@
 #include <vector>
 
 #include <Kokkos_Core.hpp>
+#include <Kokkos_Random.hpp>
+
+#include "Utility/GPModel.h"
 
 #include "Field/Field.h"
 #include "FieldLayout/FieldLayout.h"
@@ -71,6 +80,34 @@ namespace ippl::Interpolation::AutoTune {
                 << gather_method_name(s.method) << ",2,"
                 << s.tile_x << "," << s.tile_y << "," << s.tile_z << ","
                 << s.throughput_Mpts_s << "\n";
+        }
+
+        // Per-method per-backend cap on team_size, accounting for the inner
+        // vector_length each scatter functor uses. GPUs limit a single team to
+        // 1024 hardware threads (HIP enforces strictly less-than 1024); blowing
+        // this cap during a sweep aborts the whole run, so we filter out
+        // infeasible candidates before timing them.
+        template <typename ExecSpace>
+        int max_team_size_for(ScatterMethod m) {
+            constexpr bool is_cuda =
+#ifdef KOKKOS_ENABLE_CUDA
+                std::is_same_v<ExecSpace, Kokkos::Cuda>;
+#else
+                false;
+#endif
+            constexpr bool is_hip =
+#ifdef KOKKOS_ENABLE_HIP
+                std::is_same_v<ExecSpace, Kokkos::HIP>;
+#else
+                false;
+#endif
+            if (!is_cuda && !is_hip) return 1;
+
+            // Mirrors AtomicScatter::vector_length; Tiled and OutputFocused
+            // construct their TeamPolicy with vector_length=1.
+            const int vlen = (m == ScatterMethod::Atomic) ? (is_hip ? 64 : 32) : 1;
+            const int hw   = is_hip ? 1023 : 1024;
+            return std::max(1, hw / vlen);
         }
 
         const char* method_name(ScatterMethod m) {
@@ -150,15 +187,23 @@ namespace ippl::Interpolation::AutoTune {
             const size_t nLoc = nParticle / std::max(1, ippl::Comm->size());
             bunch.create(nLoc);
 
-            auto R_host = bunch.R.getHostMirror();
-            std::mt19937_64 eng(42 + ippl::Comm->rank());
-            std::uniform_real_distribution<value_t> u(0.01, 0.99);
-            for (size_t i = 0; i < nLoc; ++i) {
-                R_host(i)[0] = u(eng);
-                R_host(i)[1] = u(eng);
-                R_host(i)[2] = u(eng);
+            // Device-side RNG
+            {
+                using PoolType = Kokkos::Random_XorShift64_Pool<ExecSpace>;
+                PoolType pool(static_cast<uint64_t>(42 + ippl::Comm->rank()));
+                auto Rview = bunch.R.getView();
+                Kokkos::parallel_for(
+                    "AutoTune::initR",
+                    Kokkos::RangePolicy<ExecSpace>(0, nLoc),
+                    KOKKOS_LAMBDA(const size_t i) {
+                        auto gen = pool.get_state();
+                        Rview(i)[0] = gen.drand(0.01, 0.99);
+                        Rview(i)[1] = gen.drand(0.01, 0.99);
+                        Rview(i)[2] = gen.drand(0.01, 0.99);
+                        pool.free_state(gen);
+                    });
+                Kokkos::fence();
             }
-            Kokkos::deep_copy(bunch.R.getView(), R_host);
             bunch.Q = 1.0;
             bunch.update();
 
@@ -190,6 +235,125 @@ namespace ippl::Interpolation::AutoTune {
                 if (ms < best_ms) best_ms = ms;
             }
             return (best_ms > 0) ? double(nLoc) / 1e6 / (best_ms * 1e-3) : 0.0;
+        }
+
+
+        struct ThroughputStats {
+            double mean         = 0.0;  // Mpts/s
+            double stddev       = 0.0;  // Mpts/s
+            double mean_time_ms = 0.0;
+            int    n_runs       = 0;
+        };
+
+        template <typename ExecSpace>
+        ThroughputStats time_config_stats(ScatterMethod method,
+                                          const Vector<int, 3>& tile_size, int team_size,
+                                          int osub, int z_batches, unsigned N = 32,
+                                          size_t nParticle = 100000, int runs = 5) {
+            using value_t   = double;
+            using mesh_t    = ippl::UniformCartesian<value_t, 3>;
+            using center_t  = typename mesh_t::DefaultCentering;
+            using field_t   = ippl::Field<value_t, 3, mesh_t, center_t, ExecSpace>;
+            using flayout_t = ippl::FieldLayout<3>;
+            using playout_t = ippl::ParticleSpatialLayout<value_t, 3, mesh_t, ExecSpace>;
+
+            ippl::Index Ix(N), Iy(N), Iz(N);
+            ippl::NDIndex<3> dom(Ix, Iy, Iz);
+            std::array<bool, 3> isParallel = {true, true, true};
+            ippl::Vector<value_t, 3> hx{1.0 / value_t(N), 1.0 / value_t(N), 1.0 / value_t(N)};
+            ippl::Vector<value_t, 3> origin{0, 0, 0};
+
+            flayout_t layout(MPI_COMM_WORLD, dom, isParallel);
+            mesh_t    mesh(dom, hx, origin);
+            field_t   field(mesh, layout);
+            field = 0.0;
+
+            playout_t playout(layout, mesh);
+            struct Bunch : ippl::ParticleBase<playout_t> {
+                explicit Bunch(playout_t& pl) : ippl::ParticleBase<playout_t>(pl) {
+                    this->addAttribute(Q);
+                }
+                ippl::ParticleAttrib<value_t, ExecSpace> Q;
+            };
+            Bunch bunch(playout);
+            const size_t nLoc = nParticle / std::max(1, ippl::Comm->size());
+            bunch.create(nLoc);
+
+            {
+                using PoolType = Kokkos::Random_XorShift64_Pool<ExecSpace>;
+                PoolType pool(static_cast<uint64_t>(42 + ippl::Comm->rank()));
+                auto Rview = bunch.R.getView();
+                Kokkos::parallel_for(
+                    "AutoTune::initR",
+                    Kokkos::RangePolicy<ExecSpace>(0, nLoc),
+                    KOKKOS_LAMBDA(const size_t i) {
+                        auto gen = pool.get_state();
+                        Rview(i)[0] = gen.drand(0.01, 0.99);
+                        Rview(i)[1] = gen.drand(0.01, 0.99);
+                        Rview(i)[2] = gen.drand(0.01, 0.99);
+                        pool.free_state(gen);
+                    });
+                Kokkos::fence();
+            }
+            bunch.Q = 1.0;
+            bunch.update();
+
+            ScatterConfig<3> cfg = ScatterConfig<3>::template get_default<ExecSpace>();
+            cfg.method           = method;
+            cfg.set_tile_size(tile_size);
+            if (team_size > 0) cfg.team_size = team_size;
+            if (osub > 0) cfg.oversubscription_factor = osub;
+            if (z_batches > 0) cfg.z_batches = z_batches;
+            cfg.lock_method   = true;
+            cfg.enable_tuning = false;
+
+            ippl::Interpolation::LinearKernel<value_t> cic;
+
+            // Warm up.
+            field = 0.0;
+            try {
+                bunch.Q.scatter_kernel(field, bunch.R, cic, cfg);
+            } catch (...) {
+                return {};
+            }
+            Kokkos::fence();
+
+            std::vector<double> times_ms;
+            times_ms.reserve(runs);
+            for (int r = 0; r < runs; ++r) {
+                field = 0.0;
+                Kokkos::fence();
+                auto t0 = std::chrono::steady_clock::now();
+                try {
+                    bunch.Q.scatter_kernel(field, bunch.R, cic, cfg);
+                } catch (...) {
+                    return {};
+                }
+                Kokkos::fence();
+                auto t1 = std::chrono::steady_clock::now();
+                times_ms.push_back(
+                    std::chrono::duration<double, std::milli>(t1 - t0).count());
+            }
+            ThroughputStats out;
+            out.n_runs       = runs;
+            double sum_ms    = 0.0;
+            for (double t : times_ms) sum_ms += t;
+            out.mean_time_ms = sum_ms / std::max(1, runs);
+            // Throughput per run, then mean+stddev so noise lives in throughput units.
+            std::vector<double> tps;
+            tps.reserve(runs);
+            for (double t : times_ms) {
+                tps.push_back(t > 0 ? double(nLoc) / 1e6 / (t * 1e-3) : 0.0);
+            }
+            double mean = 0;
+            for (double v : tps) mean += v;
+            mean /= std::max<int>(1, runs);
+            double var = 0;
+            for (double v : tps) var += (v - mean) * (v - mean);
+            var /= std::max<int>(1, runs);
+            out.mean   = mean;
+            out.stddev = std::sqrt(var);
+            return out;
         }
 
         template <typename ExecSpace>
@@ -224,15 +388,22 @@ namespace ippl::Interpolation::AutoTune {
             const size_t nLoc = nParticle / std::max(1, ippl::Comm->size());
             bunch.create(nLoc);
 
-            auto R_host = bunch.R.getHostMirror();
-            std::mt19937_64 eng(42 + ippl::Comm->rank());
-            std::uniform_real_distribution<value_t> u(0.01, 0.99);
-            for (size_t i = 0; i < nLoc; ++i) {
-                R_host(i)[0] = u(eng);
-                R_host(i)[1] = u(eng);
-                R_host(i)[2] = u(eng);
+            {
+                using PoolType = Kokkos::Random_XorShift64_Pool<ExecSpace>;
+                PoolType pool(static_cast<uint64_t>(42 + ippl::Comm->rank()));
+                auto Rview = bunch.R.getView();
+                Kokkos::parallel_for(
+                    "AutoTune::initR",
+                    Kokkos::RangePolicy<ExecSpace>(0, nLoc),
+                    KOKKOS_LAMBDA(const size_t i) {
+                        auto gen = pool.get_state();
+                        Rview(i)[0] = gen.drand(0.01, 0.99);
+                        Rview(i)[1] = gen.drand(0.01, 0.99);
+                        Rview(i)[2] = gen.drand(0.01, 0.99);
+                        pool.free_state(gen);
+                    });
+                Kokkos::fence();
             }
-            Kokkos::deep_copy(bunch.R.getView(), R_host);
             bunch.Q = 0.0;
             bunch.update();
 
@@ -289,52 +460,61 @@ namespace ippl::Interpolation::AutoTune {
                 false
 #endif
                 ;
-            const int default_team = host_backend ? 1 : 32;
+            // Cap each method's team size at what the backend actually
+            // supports (HIP rejects team_size*vector_length >= 1024; on AMD
+            // with Atomic's vlen=64 this bites hard).
+            const int atomic_cap = max_team_size_for<ExecSpace>(ScatterMethod::Atomic);
+            const int tiled_cap  = max_team_size_for<ExecSpace>(ScatterMethod::Tiled);
+            const int of_cap     = max_team_size_for<ExecSpace>(ScatterMethod::OutputFocused);
 
-            // Atomic — tile is irrelevant to the dispatcher; fix to (1,1,1).
+            const int atomic_team = host_backend ? 1 : std::min(32, atomic_cap);
+            const int tiled_team  = host_backend ? 1 : std::min(64, tiled_cap);
+            const int of_team     = host_backend ? 1 : std::min(128, of_cap);
+
+            // Atomic -- tile is irrelevant to the dispatcher; fix to (1,1,1).
             {
                 Vector<int, 3> tile{1, 1, 1};
                 const double tp =
-                    time_config<ExecSpace>(ScatterMethod::Atomic, tile, default_team, 1, 1);
+                    time_config<ExecSpace>(ScatterMethod::Atomic, tile, atomic_team, 1, 1);
                 out.push_back(Sample{ScatterMethod::Atomic, "real", 2, 0.0,
-                                     1, 1, 1, default_team, 1, 1, tp, 0.0});
+                                     1, 1, 1, atomic_team, 1, 1, tp, 0.0});
             }
 
-            // Tiled — small candidate set over (tile, team, osub).
+            // Tiled -- small candidate set over (tile, team, osub).
             {
                 Sample best{ScatterMethod::Tiled, "real", 2, 0.0, 4, 4, 4,
-                            host_backend ? 1 : 64, 1, 1, 0.0, 0.0};
+                            tiled_team, 1, 1, 0.0, 0.0};
                 for (const auto& t :
                      std::vector<Vector<int, 3>>{{2, 2, 2}, {4, 4, 4}, {8, 8, 8}}) {
                     const double tp = time_config<ExecSpace>(ScatterMethod::Tiled, t,
-                                                             host_backend ? 1 : 64, 1, 1);
+                                                             tiled_team, 1, 1);
                     if (tp > best.throughput_Mpts_s) {
                         best = Sample{ScatterMethod::Tiled, "real", 2, 0.0, t[0], t[1], t[2],
-                                      host_backend ? 1 : 64, 1, 1, tp, 0.0};
+                                      tiled_team, 1, 1, tp, 0.0};
                     }
                 }
                 out.push_back(best);
             }
 
-            // OutputFocused — tile + z_batches.
+            // OutputFocused -- tile + z_batches.
             {
                 Sample best{ScatterMethod::OutputFocused, "real", 2, 0.0, 2, 2, 2,
-                            host_backend ? 1 : 128, 1, 1, 0.0, 0.0};
+                            of_team, 1, 1, 0.0, 0.0};
                 for (const auto& t : std::vector<Vector<int, 3>>{{2, 2, 2}, {4, 4, 4}}) {
                     for (int zb : {1, 4}) {
                         const double tp = time_config<ExecSpace>(
-                            ScatterMethod::OutputFocused, t, host_backend ? 1 : 128, 1, zb);
+                            ScatterMethod::OutputFocused, t, of_team, 1, zb);
                         if (tp > best.throughput_Mpts_s) {
                             best = Sample{ScatterMethod::OutputFocused, "real", 2, 0.0,
                                           t[0], t[1], t[2],
-                                          host_backend ? 1 : 128, 1, zb, tp, 0.0};
+                                          of_team, 1, zb, tp, 0.0};
                         }
                     }
                 }
                 out.push_back(best);
             }
 
-            // Mirror real → complex.
+            // Mirror real -> complex.
             const size_t base = out.size();
             for (size_t i = 0; i < base; ++i) {
                 Sample s     = out[i];
@@ -345,7 +525,7 @@ namespace ippl::Interpolation::AutoTune {
         }
 
         // ====================================================================
-        // FULL sweep — broader candidate set across grid sizes, particle
+        // FULL sweep -- broader candidate set across grid sizes, particle
         // densities, tile/team/osub/z_batches.  Substantially more
         // expensive than sweep() (tens of seconds to a few minutes on a
         // GPU); intended for opt-in via IPPL_AUTO_TUNE=full when the user
@@ -367,7 +547,7 @@ namespace ippl::Interpolation::AutoTune {
 #endif
                 ;
 
-            // Grid sizes to probe — small / medium / large fits typical PIC
+            // Grid sizes to probe -- small / medium / large fits typical PIC
             // working sets without turning the sweep into a benchmark suite.
             const std::vector<unsigned> grids =
                 host_backend ? std::vector<unsigned>{32, 64}
@@ -382,8 +562,24 @@ namespace ippl::Interpolation::AutoTune {
                     ? std::vector<Vector<int, 3>>{{2, 2, 2}, {4, 4, 4}, {8, 8, 8}}
                     : std::vector<Vector<int, 3>>{
                           {2, 2, 2}, {3, 3, 3}, {4, 4, 4}, {5, 5, 5}, {6, 6, 6}, {8, 8, 8}};
-            const std::vector<int> tiled_teams =
-                host_backend ? std::vector<int>{1} : std::vector<int>{32, 64, 128, 256};
+            // Filter team-size candidates against per-backend caps. On HIP,
+            // Atomic's vlen=64 caps team_size at 15 (1023/64), which would
+            // discard every Tiled candidate above 15 if reused as-is -- but
+            // Tiled/OutputFocused use vlen=1, so they have a much higher cap.
+            const int tiled_cap = max_team_size_for<ExecSpace>(ScatterMethod::Tiled);
+            const int of_cap    = max_team_size_for<ExecSpace>(ScatterMethod::OutputFocused);
+            const int atomic_cap = max_team_size_for<ExecSpace>(ScatterMethod::Atomic);
+
+            auto filter_teams = [](std::vector<int> teams, int cap) {
+                std::vector<int> out;
+                for (int t : teams) if (t <= cap) out.push_back(t);
+                if (out.empty()) out.push_back(std::max(1, cap));
+                return out;
+            };
+
+            const std::vector<int> tiled_teams = filter_teams(
+                host_backend ? std::vector<int>{1} : std::vector<int>{32, 64, 128, 256},
+                tiled_cap);
             const std::vector<int> tiled_osubs =
                 host_backend ? std::vector<int>{1} : std::vector<int>{1, 2, 4};
 
@@ -392,8 +588,9 @@ namespace ippl::Interpolation::AutoTune {
                     ? std::vector<Vector<int, 3>>{{2, 2, 2}, {4, 4, 4}}
                     : std::vector<Vector<int, 3>>{
                           {2, 2, 2}, {3, 3, 3}, {4, 4, 4}, {5, 5, 5}, {6, 6, 6}};
-            const std::vector<int> of_teams =
-                host_backend ? std::vector<int>{1} : std::vector<int>{64, 128, 256, 512};
+            const std::vector<int> of_teams = filter_teams(
+                host_backend ? std::vector<int>{1} : std::vector<int>{64, 128, 256, 512},
+                of_cap);
             const std::vector<int> of_zbs    = {1, 2, 4, 8};
             const std::vector<int> of_osubs  =
                 host_backend ? std::vector<int>{1} : std::vector<int>{1, 2, 4};
@@ -401,7 +598,7 @@ namespace ippl::Interpolation::AutoTune {
             // Kernel widths covered by the runtime cache (CIC + NGP).
             const std::vector<int> widths = {1, 2};
 
-            const int default_team = host_backend ? 1 : 32;
+            const int default_team = host_backend ? 1 : std::min(32, atomic_cap);
             const int meas_runs    = host_backend ? 5 : 7;
 
             const bool is_rank_zero = (ippl::Comm == nullptr) || (ippl::Comm->rank() == 0);
@@ -428,7 +625,7 @@ namespace ippl::Interpolation::AutoTune {
                         1, static_cast<size_t>(rho * double(N) * double(N) * double(N)));
 
                     for (int w : widths) {
-                        // Atomic — only team_size matters; tile is irrelevant.
+                        // Atomic -- only team_size matters; tile is irrelevant.
                         {
                             Vector<int, 3> tile{1, 1, 1};
                             const double tp = time_config<ExecSpace>(
@@ -440,9 +637,10 @@ namespace ippl::Interpolation::AutoTune {
                             progress("Atomic");
                         }
 
-                        // Tiled — sweep tile × team × osub.
+                        // Tiled -- sweep tile x team x osub.
                         Sample best_tiled{ScatterMethod::Tiled, "real", w, rho, 4, 4, 4,
-                                          host_backend ? 1 : 64, 1, 1, 0.0, 0.0};
+                                          host_backend ? 1 : std::min(64, tiled_cap),
+                                          1, 1, 0.0, 0.0};
                         for (const auto& t : tiled_tiles) {
                             for (int team : tiled_teams) {
                                 for (int osub : tiled_osubs) {
@@ -461,9 +659,10 @@ namespace ippl::Interpolation::AutoTune {
                         }
                         out.push_back(best_tiled);
 
-                        // OutputFocused — sweep tile × team × osub × z_batches.
+                        // OutputFocused -- sweep tile x team x osub x z_batches.
                         Sample best_of{ScatterMethod::OutputFocused, "real", w, rho, 2, 2, 2,
-                                       host_backend ? 1 : 128, 1, 1, 0.0, 0.0};
+                                       host_backend ? 1 : std::min(128, of_cap),
+                                       1, 1, 0.0, 0.0};
                         for (const auto& t : of_tiles) {
                             for (int team : of_teams) {
                                 for (int zb : of_zbs) {
@@ -487,7 +686,7 @@ namespace ippl::Interpolation::AutoTune {
                 }
             }
 
-            // Mirror real → complex (complex scatter has the same access
+            // Mirror real -> complex (complex scatter has the same access
             // pattern, only the value type differs; tuning is overwhelmingly
             // dominated by memory bandwidth which is the same).
             const size_t base = out.size();
@@ -544,6 +743,369 @@ namespace ippl::Interpolation::AutoTune {
             return best;
         }
 
+        // ====================================================================
+        // Bayesian-Optimization-driven scatter sweep (IPPL_AUTO_TUNE=bo).
+        //
+        // For each (method, kernel_width, density) bucket we run a 5D BO over
+        //   [tile_x, tile_y, tile_z, ts_idx, osub|z_batches]
+        // using the heteroscedastic ARD-RBF GP in src/Utility/GPModel.h.
+        //
+        // Budget per bucket is controlled by IPPL_BO_BUDGET (default 60).
+        // ====================================================================
+
+        struct BOSearchPoint {
+            // [0..2] = tile_x/y/z, [3] = ts_idx, [4] = osub or z_batches
+            std::array<int, 5> v{};
+            bool operator==(const BOSearchPoint& o) const noexcept { return v == o.v; }
+        };
+
+        struct BOSearchPointHash {
+            std::size_t operator()(const BOSearchPoint& p) const noexcept {
+                std::size_t h = 1469598103934665603ull;
+                for (int x : p.v) {
+                    h ^= static_cast<std::size_t>(x + 1000);
+                    h *= 1099511628211ull;
+                }
+                return h;
+            }
+        };
+
+        // Cap team_size given vector_length used by each method's TeamPolicy
+        template <typename ExecSpace>
+        std::vector<int> bo_team_size_candidates(ScatterMethod m, bool host_backend) {
+            const int cap = max_team_size_for<ExecSpace>(m);
+            std::vector<int> raw;
+            if (host_backend) {
+                raw = {1};
+            } else if (m == ScatterMethod::Atomic) {
+                raw = {1, 2, 4, 8, 16, 32, 64};
+            } else if (m == ScatterMethod::Tiled) {
+                raw = {16, 32, 64, 128, 256};
+            } else {  // OutputFocused
+                raw = {64, 128, 256, 512};
+            }
+            std::vector<int> out;
+            for (int t : raw) {
+                if (t <= cap) out.push_back(t);
+            }
+            if (out.empty()) out.push_back(std::max(1, cap));
+            return out;
+        }
+
+        // Per-bucket BO. Returns the best-config sample (throughput in Mpts/s)
+        // for (method, width, rho) at value_type=="real"
+        template <typename ExecSpace>
+        Sample sweep_bo_bucket(ScatterMethod method, int width, double rho,
+                               unsigned N, size_t /*nParticle_outer*/, int budget,
+                               bool host_backend) {
+            const auto ts_cands = bo_team_size_candidates<ExecSpace>(method, host_backend);
+            const int  hi_ts    = static_cast<int>(ts_cands.size()) - 1;
+            const int  lo_tile = 1;
+            const int  hi_tile = host_backend ? 8 : 8;
+            const bool uses_zb = (method == ScatterMethod::OutputFocused);
+            const int  lo4     = host_backend ? 1 : (uses_zb ? 1 : 1);
+            const int  hi4     = host_backend ? 1 : (uses_zb ? 8 : 4);
+
+            using GP = ippl::detail::GPModel<5>;
+            GP gp;
+            GP::Point lo_gp{static_cast<double>(lo_tile), static_cast<double>(lo_tile),
+                            static_cast<double>(lo_tile), 0.0,
+                            static_cast<double>(lo4)};
+            GP::Point hi_gp{static_cast<double>(hi_tile), static_cast<double>(hi_tile),
+                            static_cast<double>(hi_tile), static_cast<double>(hi_ts),
+                            static_cast<double>(hi4)};
+            gp.set_bounds(lo_gp, hi_gp);
+
+            std::unordered_map<BOSearchPoint, double, BOSearchPointHash> tp_cache;
+            std::unordered_map<BOSearchPoint, double, BOSearchPointHash> tpvar_cache;
+
+            // Atomic only varies team_size; collapse the search dims so the GP
+            // sees only ts_idx as informative (other dims pinned to 1).
+            const bool atomic = (method == ScatterMethod::Atomic);
+
+            auto build_cfg_args = [&](const BOSearchPoint& p) {
+                Vector<int, 3> tile;
+                if (atomic) {
+                    tile = {1, 1, 1};
+                } else {
+                    tile = {p.v[0], p.v[1], p.v[2]};
+                }
+                int team = ts_cands[std::clamp(p.v[3], 0, hi_ts)];
+                int osub = uses_zb ? 1 : p.v[4];
+                int zb   = uses_zb ? p.v[4] : 1;
+                return std::tuple<Vector<int, 3>, int, int, int>{tile, team, osub, zb};
+            };
+
+            auto evaluate = [&](const BOSearchPoint& pt, unsigned grid_N,
+                                int runs) -> ThroughputStats {
+                auto it = tp_cache.find(pt);
+                if (it != tp_cache.end()) {
+                    ThroughputStats s;
+                    s.mean   = it->second;
+                    s.stddev = std::sqrt(tpvar_cache[pt]);
+                    s.n_runs = runs;
+                    return s;
+                }
+                auto [tile, team, osub, zb] = build_cfg_args(pt);
+                const size_t np_eff =
+                    std::max<size_t>(1, static_cast<size_t>(rho * double(grid_N)
+                                                            * double(grid_N) * double(grid_N)));
+                ThroughputStats s = time_config_stats<ExecSpace>(
+                    method, tile, team, osub, zb, grid_N, np_eff, runs);
+                tp_cache[pt]    = s.mean;
+                tpvar_cache[pt] = s.stddev * s.stddev;
+                return s;
+            };
+
+            std::mt19937 rng(0x9e3779b9u + width * 0x100 + static_cast<unsigned>(method));
+            std::uniform_real_distribution<double> u01(0.0, 1.0);
+            auto rand_int = [&](int lo, int hi) {
+                if (lo >= hi) return lo;
+                return lo + static_cast<int>(u01(rng) * (hi - lo + 1));
+            };
+
+            BOSearchPoint best_pt{};
+            best_pt.v   = {lo_tile, lo_tile, lo_tile, 0, std::max(lo4, 1)};
+            double best = 0.0;
+
+            const int meas_runs = host_backend ? 5 : 6;
+
+            auto eval_and_record = [&](const BOSearchPoint& pt) {
+                ThroughputStats s = evaluate(pt, N, meas_runs);
+                if (s.mean > 0) {
+                    GP::Point xp;
+                    for (int d = 0; d < 5; ++d) {
+                        xp[d] = static_cast<double>(pt.v[d]);
+                    }
+                    gp.add(xp, s.mean, s.stddev * s.stddev);
+                }
+                if (s.mean > best) {
+                    best    = s.mean;
+                    best_pt = pt;
+                }
+                return s;
+            };
+
+            // Phase 0: structured anchors. Always include the cube tiles the
+            // grid sweep enumerated, paired with sensible team-size defaults,
+            // so the BO never returns worse than the structured optimum and
+            // the GP starts with informative observations along the cube line.
+            const std::vector<int> anchor_cubes = {2, 3, 4, 5, 6, 8};
+            // Pick a per-method default team-size index that lands near the
+            // grid sweep's seed (atomic_team=32, tiled_team=64, of_team=128).
+            auto closest_ts_idx = [&](int target) {
+                int best_i = 0, best_d = INT_MAX;
+                for (int i = 0; i <= hi_ts; ++i) {
+                    int d = std::abs(ts_cands[i] - target);
+                    if (d < best_d) { best_d = d; best_i = i; }
+                }
+                return best_i;
+            };
+            const int default_ts =
+                atomic ? closest_ts_idx(32)
+                       : (method == ScatterMethod::Tiled ? closest_ts_idx(64)
+                                                         : closest_ts_idx(128));
+            if (atomic) {
+                // Atomic anchor: just sweep the team_size candidates with osub=1.
+                for (int i = 0; i <= hi_ts; ++i) {
+                    BOSearchPoint pt;
+                    pt.v = {1, 1, 1, i, std::max(lo4, 1)};
+                    eval_and_record(pt);
+                }
+            } else {
+                for (int t : anchor_cubes) {
+                    if (t < lo_tile || t > hi_tile) continue;
+                    BOSearchPoint pt;
+                    pt.v = {t, t, t, default_ts, std::max(lo4, 1)};
+                    eval_and_record(pt);
+                }
+            }
+
+            // Phase 1: LHS over the full 5D box (rectangular tiles, varied
+            // team & osub/zb). Smaller now because Phase 0 already provides
+            // structured coverage along the cube axis.
+            const int n_init = std::max(6, std::min(budget / 4, 4 * (hi_ts + 1)));
+            for (int i = 0; i < n_init; ++i) {
+                BOSearchPoint pt;
+                pt.v[0] = atomic ? 1 : rand_int(lo_tile, hi_tile);
+                pt.v[1] = atomic ? 1 : rand_int(lo_tile, hi_tile);
+                pt.v[2] = atomic ? 1 : rand_int(lo_tile, hi_tile);
+                pt.v[3] = rand_int(0, hi_ts);
+                pt.v[4] = rand_int(lo4, hi4);
+                eval_and_record(pt);
+            }
+            if (gp.size() >= 4) {
+                gp.fit();
+            }
+
+            // Phase 2: full-fidelity acquisition loop.
+            const int n_phase0 = atomic ? (hi_ts + 1)
+                                        : static_cast<int>(anchor_cubes.size());
+            const int n_acq    = std::max(0, budget - n_phase0 - n_init);
+            for (int it = 0; it < n_acq; ++it) {
+                if (gp.size() >= 4 && (it % 5) == 0) {
+                    gp.fit();
+                }
+
+                const double progress = double(it) / std::max(1, n_acq);
+                const bool   use_ucb  = (u01(rng) < 0.3 * (1.0 - 0.9 * progress));
+                const double beta_ucb = 2.0 * std::sqrt(1.0 - progress) + 0.5;
+
+                BOSearchPoint next  = best_pt;
+                double        bestA = -1e300;
+                auto score = [&](const BOSearchPoint& c) {
+                    if (tp_cache.count(c)) return;
+                    GP::Point xp;
+                    for (int d = 0; d < 5; ++d) {
+                        xp[d] = static_cast<double>(c.v[d]);
+                    }
+                    const double acq = use_ucb ? gp.upper_confidence_bound(xp, beta_ucb)
+                                               : gp.expected_improvement(xp, best);
+                    if (acq > bestA) {
+                        bestA = acq;
+                        next  = c;
+                    }
+                };
+                // Random candidates over the full feasible box.
+                for (int s = 0; s < 1500; ++s) {
+                    BOSearchPoint c;
+                    c.v[0] = atomic ? 1 : rand_int(lo_tile, hi_tile);
+                    c.v[1] = atomic ? 1 : rand_int(lo_tile, hi_tile);
+                    c.v[2] = atomic ? 1 : rand_int(lo_tile, hi_tile);
+                    c.v[3] = rand_int(0, hi_ts);
+                    c.v[4] = rand_int(lo4, hi4);
+                    score(c);
+                }
+                // Local neighbourhood along each axis.
+                static const int kDeltas[] = {-2, -1, 1, 2};
+                for (int d = 0; d < 5; ++d) {
+                    if (atomic && d < 3) continue;
+                    for (int delta : kDeltas) {
+                        BOSearchPoint c = best_pt;
+                        const int lo = (d < 3) ? lo_tile : (d == 3 ? 0 : lo4);
+                        const int hi = (d < 3) ? hi_tile : (d == 3 ? hi_ts : hi4);
+                        c.v[d]       = std::clamp(best_pt.v[d] + delta, lo, hi);
+                        score(c);
+                    }
+                }
+                if (bestA <= -1e200) break;
+
+                ThroughputStats s = evaluate(next, N, meas_runs);
+                if (s.mean > 0) {
+                    GP::Point xp;
+                    for (int d = 0; d < 5; ++d) {
+                        xp[d] = static_cast<double>(next.v[d]);
+                    }
+                    gp.add(xp, s.mean, s.stddev * s.stddev);
+                }
+                if (s.mean > best) {
+                    best    = s.mean;
+                    best_pt = next;
+                }
+            }
+
+            // Phase 3: hill-climb polish around the best so far.
+            for (int polish = 0; polish < 2; ++polish) {
+                bool improved = false;
+                for (int d = 0; d < 5; ++d) {
+                    if (atomic && d < 3) continue;
+                    for (int delta : {-1, 1}) {
+                        BOSearchPoint c = best_pt;
+                        const int lo = (d < 3) ? lo_tile : (d == 3 ? 0 : lo4);
+                        const int hi = (d < 3) ? hi_tile : (d == 3 ? hi_ts : hi4);
+                        c.v[d]       = std::clamp(best_pt.v[d] + delta, lo, hi);
+                        if (c == best_pt || tp_cache.count(c)) continue;
+                        ThroughputStats s = evaluate(c, N, meas_runs);
+                        if (s.mean > best) {
+                            best     = s.mean;
+                            best_pt  = c;
+                            improved = true;
+                        }
+                    }
+                }
+                if (!improved) break;
+            }
+
+            // Final full-fidelity remeasurement of the chosen config.
+            ThroughputStats final_s = evaluate(best_pt, N,
+                                               host_backend ? 7 : 9);
+            if (final_s.mean > best) best = final_s.mean;
+
+            const auto [tile, team, osub, zb] = build_cfg_args(best_pt);
+            return Sample{method,
+                          "real",
+                          width,
+                          rho,
+                          tile[0], tile[1], tile[2],
+                          team,
+                          osub,
+                          zb,
+                          best,
+                          final_s.mean_time_ms};
+        }
+
+        template <typename ExecSpace>
+        std::vector<Sample> sweep_bo() {
+            std::vector<Sample> out;
+            const bool host_backend =
+#ifdef KOKKOS_ENABLE_OPENMP
+                std::is_same_v<ExecSpace, Kokkos::OpenMP>
+#else
+                false
+#endif
+                ;
+
+            const unsigned N = host_backend ? 64u : 128u;
+
+            const std::vector<double> rhos   = {0.5, 2.0, 4.0, 8.0};
+            const std::vector<int>    widths = {1, 2};
+            const std::vector<ScatterMethod> methods = {ScatterMethod::Atomic,
+                                                        ScatterMethod::Tiled,
+                                                        ScatterMethod::OutputFocused};
+
+            // Per-bucket budget. Tuned so total wall time is comparable to the
+            // FULL grid sweep (a few minutes on GPU). User override via env.
+            const char* budget_env = std::getenv("IPPL_BO_BUDGET");
+            const int   per_bucket =
+                budget_env ? std::max(20, std::atoi(budget_env)) : 60;
+
+            const bool is_rank_zero =
+                (ippl::Comm == nullptr) || (ippl::Comm->rank() == 0);
+
+            const size_t total_buckets =
+                rhos.size() * widths.size() * methods.size();
+            size_t done = 0;
+
+            for (double rho : rhos) {
+                const size_t nParticle = std::max<size_t>(
+                    1, static_cast<size_t>(rho * double(N) * double(N) * double(N)));
+                for (int w : widths) {
+                    for (ScatterMethod m : methods) {
+                        ++done;
+                        if (is_rank_zero && ippl::Info) {
+                            *ippl::Info << ::level1 << "[AutoTune-bo] " << done
+                                        << " / " << total_buckets << "  N=" << N
+                                        << " rho=" << rho
+                                        << " (nP=" << nParticle << ")"
+                                        << " w=" << w << " "
+                                        << method_name(m) << endl;
+                        }
+                        Sample s = sweep_bo_bucket<ExecSpace>(
+                            m, w, rho, N, nParticle, per_bucket, host_backend);
+                        out.push_back(s);
+                    }
+                }
+            }
+            // Mirror real -> complex (same memory access pattern).
+            const size_t base = out.size();
+            for (size_t i = 0; i < base; ++i) {
+                Sample s     = out[i];
+                s.value_type = "complex";
+                out.push_back(s);
+            }
+            return out;
+        }
+
     }  // namespace
 
     void seedBuiltinDefaults() {
@@ -587,11 +1149,11 @@ namespace ippl::Interpolation::AutoTune {
 #ifdef KOKKOS_ENABLE_HIP
         if constexpr (std::is_same_v<Kokkos::DefaultExecutionSpace, Kokkos::HIP>) {
             backend        = "Kokkos::HIP";
-            // CDNA wavefronts are 64-wide; favour larger team sizes than
-            // CUDA's warp-32. Numbers are conservative starting points;
-            // run IPPL_AUTO_TUNE=full and commit the resulting CSV to
-            // cmake/auto_tune/<gfx*>/ for true machine-tuned values.
-            atomic_team    = 64;
+            // CDNA wavefronts are 64-wide. AtomicScatter uses vector_length=64
+            // on HIP, so atomic_team * 64 must be < 1024 -> atomic_team <= 15.
+            // Tiled and OutputFocused construct their TeamPolicy with
+            // vector_length=1, so the per-team thread cap is 1024 there.
+            atomic_team    = 8;
             tiled_team     = 128; tiled_tile = 4;
             of_team        = 256; of_tile    = 4;  of_zb = 1;
             seed_tiled_of  = true;
@@ -673,11 +1235,15 @@ namespace ippl::Interpolation::AutoTune {
         // built-in defaults seeded into TileSizeCache / GatherCache by
         // ippl::initialize.
         //
-        //   IPPL_AUTO_TUNE=1     → quick sweep (~seconds)
-        //   IPPL_AUTO_TUNE=full  → full sweep (tens of seconds to minutes;
+        //   IPPL_AUTO_TUNE=1     -> quick sweep (~seconds)
+        //   IPPL_AUTO_TUNE=full  -> full grid sweep (tens of seconds to minutes;
         //                          much broader candidate set, multiple grid
         //                          sizes and densities, longer measurement)
-        //   anything else / unset → no-op
+        //   IPPL_AUTO_TUNE=bo    -> Bayesian-optimization-driven sweep with
+        //                          ARD-RBF GP, multi-fidelity warm-up, and
+        //                          rectangular tile search. Per-bucket budget
+        //                          via IPPL_BO_BUDGET (default 60).
+        //   anything else / unset -> no-op
         const char* enable = std::getenv("IPPL_AUTO_TUNE");
         if (enable == nullptr) {
             return false;
@@ -685,7 +1251,8 @@ namespace ippl::Interpolation::AutoTune {
         const std::string mode(enable);
         const bool quick_mode = (mode == "1" || mode == "quick");
         const bool full_mode  = (mode == "full" || mode == "2");
-        if (!quick_mode && !full_mode) {
+        const bool bo_mode    = (mode == "bo" || mode == "BO");
+        if (!quick_mode && !full_mode && !bo_mode) {
             return false;
         }
 
@@ -705,21 +1272,24 @@ namespace ippl::Interpolation::AutoTune {
         const bool is_rank_zero = (ippl::Comm == nullptr) || (ippl::Comm->rank() == 0);
 
         if (is_rank_zero && ippl::Info) {
+            const char* mode_label = bo_mode ? "BO" : (full_mode ? "FULL" : "quick");
+            const char* descr =
+                bo_mode ? "(Bayesian optimization with ARD-RBF GP; per-bucket budget via "
+                          "IPPL_BO_BUDGET, default 60)"
+                        : (full_mode
+                               ? "(can take minutes; broader candidate set across grids "
+                                 "and densities)"
+                               : "(this can take a few seconds; set IPPL_AUTO_TUNE=full or "
+                                 "IPPL_AUTO_TUNE=bo for a deeper search)");
             *ippl::Info << ::level1
-                        << "[AutoTune] IPPL_AUTO_TUNE=" << mode
-                        << " — running " << (full_mode ? "FULL" : "quick")
-                        << " width-2 scatter/gather sweep "
-                        << (full_mode ? "(can take minutes; broader candidate set across grids "
-                                        "and densities)"
-                                      : "(this can take a few seconds; "
-                                        "set IPPL_AUTO_TUNE=full for a deeper search)")
-                        << endl;
+                        << "[AutoTune] IPPL_AUTO_TUNE=" << mode << " -- running "
+                        << mode_label << " width-2 scatter/gather sweep " << descr << endl;
         }
 
         [[maybe_unused]] auto run_scatter = [&](auto&& sweep_fn, const char* label) {
             if (ippl::Info) {
                 *ippl::Info << ::level1
-                            << "[AutoTune]   sweeping scatter on " << label << " → "
+                            << "[AutoTune]   sweeping scatter on " << label << " -> "
                             << output_path << endl;
             }
             write_csv(output_path, sweep_fn());
@@ -727,7 +1297,7 @@ namespace ippl::Interpolation::AutoTune {
         [[maybe_unused]] auto run_gather = [&](auto&& sweep_fn, const char* label) {
             if (ippl::Info) {
                 *ippl::Info << ::level1
-                            << "[AutoTune]   sweeping gather on " << label << " → "
+                            << "[AutoTune]   sweeping gather on " << label << " -> "
                             << gather_path << endl;
             }
             write_gather_csv(gather_path, sweep_fn());
@@ -737,48 +1307,60 @@ namespace ippl::Interpolation::AutoTune {
 #ifdef KOKKOS_ENABLE_CUDA
             if constexpr (std::is_same_v<Kokkos::DefaultExecutionSpace, Kokkos::Cuda>) {
                 if (!scatter_done) {
-                    if (full_mode) run_scatter([] { return sweep_full<Kokkos::Cuda>(); },
-                                               "Kokkos::Cuda (full)");
-                    else           run_scatter([] { return sweep<Kokkos::Cuda>(); },
-                                               "Kokkos::Cuda");
+                    if (bo_mode)        run_scatter([] { return sweep_bo<Kokkos::Cuda>(); },
+                                                    "Kokkos::Cuda (BO)");
+                    else if (full_mode) run_scatter([] { return sweep_full<Kokkos::Cuda>(); },
+                                                    "Kokkos::Cuda (full)");
+                    else                run_scatter([] { return sweep<Kokkos::Cuda>(); },
+                                                    "Kokkos::Cuda");
                 }
                 if (!gather_done) {
-                    if (full_mode) run_gather([] { return sweep_gather_full<Kokkos::Cuda>(); },
-                                              "Kokkos::Cuda (full)");
-                    else           run_gather([] { return sweep_gather<Kokkos::Cuda>(); },
-                                              "Kokkos::Cuda");
+                    if (full_mode || bo_mode)
+                        run_gather([] { return sweep_gather_full<Kokkos::Cuda>(); },
+                                   bo_mode ? "Kokkos::Cuda (BO)" : "Kokkos::Cuda (full)");
+                    else
+                        run_gather([] { return sweep_gather<Kokkos::Cuda>(); },
+                                   "Kokkos::Cuda");
                 }
             }
 #endif
 #ifdef KOKKOS_ENABLE_HIP
             if constexpr (std::is_same_v<Kokkos::DefaultExecutionSpace, Kokkos::HIP>) {
                 if (!scatter_done) {
-                    if (full_mode) run_scatter([] { return sweep_full<Kokkos::HIP>(); },
-                                               "Kokkos::HIP (full)");
-                    else           run_scatter([] { return sweep<Kokkos::HIP>(); },
-                                               "Kokkos::HIP");
+                    if (bo_mode)        run_scatter([] { return sweep_bo<Kokkos::HIP>(); },
+                                                    "Kokkos::HIP (BO)");
+                    else if (full_mode) run_scatter([] { return sweep_full<Kokkos::HIP>(); },
+                                                    "Kokkos::HIP (full)");
+                    else                run_scatter([] { return sweep<Kokkos::HIP>(); },
+                                                    "Kokkos::HIP");
                 }
                 if (!gather_done) {
-                    if (full_mode) run_gather([] { return sweep_gather_full<Kokkos::HIP>(); },
-                                              "Kokkos::HIP (full)");
-                    else           run_gather([] { return sweep_gather<Kokkos::HIP>(); },
-                                              "Kokkos::HIP");
+                    if (full_mode || bo_mode)
+                        run_gather([] { return sweep_gather_full<Kokkos::HIP>(); },
+                                   bo_mode ? "Kokkos::HIP (BO)" : "Kokkos::HIP (full)");
+                    else
+                        run_gather([] { return sweep_gather<Kokkos::HIP>(); },
+                                   "Kokkos::HIP");
                 }
             }
 #endif
 #ifdef KOKKOS_ENABLE_OPENMP
             if constexpr (std::is_same_v<Kokkos::DefaultExecutionSpace, Kokkos::OpenMP>) {
                 if (!scatter_done) {
-                    if (full_mode) run_scatter([] { return sweep_full<Kokkos::OpenMP>(); },
-                                               "Kokkos::OpenMP (full)");
-                    else           run_scatter([] { return sweep<Kokkos::OpenMP>(); },
-                                               "Kokkos::OpenMP");
+                    if (bo_mode)        run_scatter([] { return sweep_bo<Kokkos::OpenMP>(); },
+                                                    "Kokkos::OpenMP (BO)");
+                    else if (full_mode) run_scatter([] { return sweep_full<Kokkos::OpenMP>(); },
+                                                    "Kokkos::OpenMP (full)");
+                    else                run_scatter([] { return sweep<Kokkos::OpenMP>(); },
+                                                    "Kokkos::OpenMP");
                 }
                 if (!gather_done) {
-                    if (full_mode) run_gather([] { return sweep_gather_full<Kokkos::OpenMP>(); },
-                                              "Kokkos::OpenMP (full)");
-                    else           run_gather([] { return sweep_gather<Kokkos::OpenMP>(); },
-                                              "Kokkos::OpenMP");
+                    if (full_mode || bo_mode)
+                        run_gather([] { return sweep_gather_full<Kokkos::OpenMP>(); },
+                                   bo_mode ? "Kokkos::OpenMP (BO)" : "Kokkos::OpenMP (full)");
+                    else
+                        run_gather([] { return sweep_gather<Kokkos::OpenMP>(); },
+                                   "Kokkos::OpenMP");
                 }
             }
 #endif

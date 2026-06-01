@@ -180,6 +180,12 @@ Risk:
 
 ### PR 3: Higher-Order Scatter/Gather And Autotune
 
+Status: extracted on local branch `pr501-hosg` from `pr501-communication-particle-update`.
+
+Current validation:
+
+- Serial Debug build: `Binning`, `KernelGatherScatterTest`, and `TestCurrentDeposition` pass through ctest.
+
 Scope:
 
 - `src/Interpolation/*`

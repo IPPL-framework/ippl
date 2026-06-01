@@ -1,3 +1,8 @@
+/*!
+ * @file GatherConfig.h
+ * @brief User-facing configuration knobs for gather operations and the
+ *        density-aware GatherCache singleton.
+ */
 #ifndef IPPL_GATHER_CONFIG_H
 #define IPPL_GATHER_CONFIG_H
 
@@ -16,7 +21,7 @@ namespace ippl {
          * @brief Gather method for grid-to-particle interpolation.
          *
          * - Atomic: read-only field gather, no sorting (no atomic ops actually
-         *   needed since gather only reads — name kept for symmetry with the
+         *   needed since gather only reads -- name kept for symmetry with the
          *   Scatter API).
          * - AtomicSort: same gather kernel, with a binning pre-pass that
          *   improves cache locality for clustered particle distributions.

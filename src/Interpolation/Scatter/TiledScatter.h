@@ -1,4 +1,13 @@
 // Interpolation/Scatter/TiledScatter.h
+/*!
+ * @file TiledScatter.h
+ * @brief Particle-tile scatter: bin -> per-team scratch histogram -> flush.
+ *
+ * Each team owns one tile of the output grid; particles assigned to that
+ * tile are walked once, scattering into LDS scratch, which is then flushed
+ * back to global memory. Drastically reduces atomics traffic at high
+ * particles-per-cell on GPU.
+ */
 #ifndef IPPL_TILED_SCATTER_H
 #define IPPL_TILED_SCATTER_H
 
@@ -9,6 +18,13 @@
 
 namespace ippl::Interpolation::detail {
 
+    /*!
+     * @struct TiledScatter
+     * @brief Compile-time-width tiled scatter functor used by Scatter::dispatch.
+     * @tparam W      Compile-time kernel width.
+     * @tparam Types  ScatterTypes bundle.
+     * @tparam Policy Sort policy (must enable @c use_sorting).
+     */
     template <int W, class Types, class Policy>
     struct TiledScatter {
         static_assert(Policy::use_sorting,
@@ -32,8 +48,8 @@ namespace ippl::Interpolation::detail {
             Kokkos::View<RealType*, scratch_space, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
 
         struct Arguments : ScatterArgumentsBase<Arguments, Types> {
-            Kokkos::View<uint64_t*, memory_space> permute;
-            Kokkos::View<uint64_t*, memory_space> bin_offsets;
+            Kokkos::View<ippl::detail::size_type*, memory_space> permute;
+            Kokkos::View<ippl::detail::size_type*, memory_space> bin_offsets;
             Vector<int, Dim> num_tiles;
             Vector<int, Dim> tile_size;
             int team_size;
@@ -206,7 +222,7 @@ namespace ippl::Interpolation::detail {
 
                 Stencil stencil{};
 
-                for_constexpr(std::make_integer_sequence<int, Dim>{}, [&]<int d> {
+                for_constexpr(std::make_integer_sequence<int, Dim>{}, [&]<int d>() {
                     const RealType g = transform.toGridCoordinate(args.x(p)[d], d);
                     const int idx0   = transform.getStencilBase(g - RealType(0.5), W);
 

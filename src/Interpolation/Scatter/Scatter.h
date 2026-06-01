@@ -1,13 +1,18 @@
+/*!
+ * @file Scatter.h
+ * @brief Public Scatter facade dispatching to atomic / tiled / output-tile-parallel
+ *        backends based on the runtime ScatterConfig.
+ */
 #ifndef IPPL_SCATTER_H
 #define IPPL_SCATTER_H
 
 #include "Utility/Tuning.h"
 
 #include "Interpolation/Binning.h"
-#include "Interpolation/Scatter/AtomicScatter.h"
-#include "Interpolation/Scatter/GridParallelScatter.h"
 #include "Interpolation/Scatter/ScatterArgumentsBase.h"
 #include "Interpolation/Scatter/ScatterConfig.h"
+#include "Interpolation/Scatter/AtomicScatter.h"
+#include "Interpolation/Scatter/GridParallelScatter.h"
 #include "Interpolation/Scatter/TileSizeCache.h"
 #include "Interpolation/Scatter/TiledScatter.h"
 #include "Interpolation/WidthDispatcher.h"
@@ -17,24 +22,34 @@ namespace ippl {
 
     namespace Interpolation::detail {
 
+        //! Tag policy: particles are scattered in their natural order (no sort).
         struct UnsortedPolicy {
             static constexpr bool use_sorting      = false;
             static constexpr bool requires_binning = false;
         };
 
+        //! Tag policy: particles are first bin-sorted, then scattered tile-by-tile.
         struct SortedPolicy {
             static constexpr bool use_sorting      = true;
             static constexpr bool requires_binning = true;
         };
 
+        /*!
+         * @struct DeduceScatterTypes
+         * @brief Resolve a ScatterTypes bundle from the user-facing field /
+         *        positions / values views and the kernel.
+         */
         template <typename Kernel, typename FieldType, typename PositionsType, typename ValuesType>
         struct DeduceScatterTypes {
             using FieldTr = ippl::detail::FieldTraits<std::decay_t<FieldType>>;
             using PosTr   = ippl::detail::AttribTraits<std::decay_t<PositionsType>>;
             using ValTr   = ippl::detail::AttribTraits<std::decay_t<ValuesType>>;
-            using VecTr   = ippl::detail::VectorTraits<typename PosTr::value_type>;
 
-            using type = ScatterTypes<FieldTr::dim, typename VecTr::real_type, std::decay_t<Kernel>,
+            // RealType from the kernel's value_type -- see Gather.h for the
+            // rationale (avoids float-position downcasting the mesh spacing).
+            using RealType = typename std::decay_t<Kernel>::value_type;
+
+            using type = ScatterTypes<FieldTr::dim, RealType, std::decay_t<Kernel>,
                                       typename FieldTr::view_type, typename PosTr::view_type,
                                       typename ValTr::view_type>;
         };
@@ -44,8 +59,11 @@ namespace ippl {
             typename DeduceScatterTypes<Kernel, FieldType, PositionsType, ValuesType>::type;
 
         template <template <int, class, class> class Impl, unsigned Dim, typename RealType,
-                  bool IsComplex>
+                   bool IsComplex>
         TileSizeTuner<Dim, Vector<int, Dim>>& get_scatter_tuner() {
+            // The IsComplex template parameter is only used as part of the
+            // function template's mangled name, ensuring real and complex
+            // tuners stay separate without sharing a static-local instance.
             static TileSizeTuner<Dim, Vector<int, Dim>> tuner;
             return tuner;
         }
@@ -59,13 +77,40 @@ namespace ippl {
         struct is_kokkos_complex<Kokkos::complex<T>> : std::true_type {};
     }  // namespace detail
 
+    /*!
+     * @class Scatter
+     * @brief Public functor that scatters particle values onto a Field.
+     *
+     * Constructed with a kernel and a (possibly default) ScatterConfig; the
+     * call operator dispatches to AtomicScatter, TiledScatter or
+     * GridParallelScatter at runtime, optionally re-selecting the method
+     * via TileSizeCache when @c enable_tuning is on.
+     *
+     * @tparam Kernel Interpolation kernel (NGPKernel, LinearKernel, ESKernel, ...).
+     * @tparam Dim    Spatial dimension.
+     */
     template <typename Kernel, unsigned Dim>
     class Scatter {
     public:
+        /*!
+         * @param kernel Kernel instance used for stencil evaluation.
+         * @param config Tile sizes / team / method overrides (optional).
+         */
         Scatter(const Kernel& kernel, const Interpolation::ScatterConfig<Dim>& config = {})
             : kernel_m(kernel)
             , config_m(config) {}
 
+        /**
+         * @brief Scatter `values` from `positions` into `field`.
+         *
+         * Side effects:
+         *  - `field` is overwritten (zeroed and refilled with the scatter sum).
+         *    Callers wanting to accumulate must keep their own running buffer.
+         *  - `field.accumulateHalo()` is invoked at the end (one MPI exchange).
+         *  - When `enable_tuning=false` and `lock_method=false`, the resolved
+         *    method may be re-selected from `TileSizeCache::get_best(...)`,
+         *    which mutates `config_m.method` for subsequent calls.
+         */
         template <typename ValueT, typename FieldT, class Mesh, class Centering, class... ViewArgs,
                   typename ParticleT, class... PosProps, class... ValProps>
         void operator()(Field<FieldT, Dim, Mesh, Centering, ViewArgs...>& field,
@@ -77,7 +122,7 @@ namespace ippl {
 
             constexpr bool is_complex_field = ippl::detail::is_kokkos_complex<FieldT>::value;
 
-            // ── Estimate particle density (rho = local particles / local grid pts) ──
+            // -- Estimate particle density (rho = local particles / local grid pts) --
             const size_t n_particles = positions.getParticleCount();
             const double rho_est     = estimate_rho(field, n_particles);
 
@@ -94,11 +139,55 @@ namespace ippl {
                 }
             }
 
+            // Small-grid override: the cache is keyed only by (method, width,
+            // value_type, rho), so a sweep recorded at a large grid (e.g.
+            // 256^3, the size at which Tiled/OutputFocused start beating
+            // Atomic because the grid spills L2) gets returned for runtime
+            // calls whose local grid is far smaller. In that regime the
+            // tile-blocked methods pay binning + radix-sort overhead with
+            // nothing to amortise it against, and Atomic wins easily. Force
+            // Atomic when the local grid has fewer cells than 256^3, i.e.
+            // what was benchmarked. Could definiitely be improved.
+            if (!config_m.lock_method) {
+                const auto& local_dom = field.getLayout().getLocalNDIndex();
+                std::size_t local_cells = 1;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    local_cells *= static_cast<std::size_t>(local_dom[d].length());
+                }
+                constexpr std::size_t kSmallGridThreshold =
+                    static_cast<std::size_t>(256) * 256 * 256;
+                if (local_cells < kSmallGridThreshold) {
+                    config_m.method = Interpolation::ScatterMethod::Atomic;
+                    config_m.sort = false;
+                }
+            }
+
+            // Backend-feasibility clamp. CSV presets are tagged by GPU arch but
+            // a runtime mismatch (e.g. an sm_90 CSV being read by a Serial
+            // build) leaves the cache holding Tiled/OutputFocused configs with
+            // team_size > 1 - those abort inside their TeamPolicy construction
+            // on a host backend. Force Atomic on backends where teams are not
+            // a meaningful parallelism (Serial today; extend the trait below
+            // if more host-only backends ever land).
+#ifdef KOKKOS_ENABLE_SERIAL
+            using exec_space_ = typename Types::execution_space;
+#endif
+            constexpr bool host_only_backend =
+#ifdef KOKKOS_ENABLE_SERIAL
+                std::is_same_v<exec_space_, Kokkos::Serial>
+#else
+                false
+#endif
+                ;
+            if constexpr (host_only_backend) {
+                if (config_m.method != Interpolation::ScatterMethod::Atomic) {
+                    config_m.method = Interpolation::ScatterMethod::Atomic;
+                }
+            }
+
             const auto method = config_m.method;
 
-            const bool run_atomic =
-                (method == Interpolation::ScatterMethod::Atomic)
-                || (method == Interpolation::ScatterMethod::OutputFocusedZBatch);
+            const bool run_atomic = (method == Interpolation::ScatterMethod::Atomic);
 
             if (run_atomic) {
                 if (config_m.sort) {
@@ -153,9 +242,9 @@ namespace ippl {
         // when locked, or switched by get_best() in operator()).
         //
         // Priority:
-        //   1. enable_tuning → return config_m unchanged (runtime tuner)
-        //   2. cache hit     → apply tile, team_size, osub, z_batches
-        //   3. no hit        → return config_m unchanged
+        //   1. enable_tuning -> return config_m unchanged (runtime tuner)
+        //   2. cache hit     -> apply tile, team_size, osub, z_batches
+        //   3. no hit        -> return config_m unchanged
         // ------------------------------------------------------------------
         template <template <int, class, class> class Impl, int W, class Types, class Policy,
                   bool IsComplex>
@@ -199,10 +288,12 @@ namespace ippl {
 
             Vector<int, Dim> tile = cfg.get_tile_size();
 
+            // Per-team scratch capacity is invariant across the loop iterations
+            // for a fixed team_size. Hoist the query.
+            const size_t avail = team_policy(1, cfg.team_size).scratch_size_max(0);
+
             const int max_iter = static_cast<int>(Dim) * 64 + 8;
             for (int itr = 0; itr < max_iter; ++itr) {
-                const size_t avail = team_policy(1, cfg.team_size).scratch_size_max(0);
-
                 const size_t req = Impl<W, Types, Policy>::template compute_scratch_size<IsComplex>(
                     tile, cfg.team_size, cfg.z_batches);
                 if (req <= avail)
@@ -255,8 +346,8 @@ namespace ippl {
             const int width          = kernel_m.width();
             const size_t n_particles = positions.getParticleCount();
 
-            Interpolation::WidthDispatcher<1, 14>::dispatch(width, [&]<int W>() {
-                // ── Step 1: Resolve config from cache (density-aware) ──────────
+            Interpolation::WidthDispatcher<1, std::decay_t<decltype(kernel_m)>::max_width>::dispatch(width, [&]<int W>() {
+                // -- Step 1: Resolve config from cache (density-aware) ----------
                 auto tuned_config = resolve_config<Impl, W, Types, Policy, is_complex>(rho_est);
 
                 if constexpr (Impl<W, Types, Policy>::requires_binning) {
@@ -268,12 +359,12 @@ namespace ippl {
                     }
                 }
 
-                // ── Step 1b: Safety clamp (asymmetric, dimension-aware) ────────
+                // -- Step 1b: Safety clamp (asymmetric, dimension-aware) --------
                 clamp_tile_to_shmem<Impl, W, Types, Policy, is_complex>(tuned_config);
 
                 const Vector<int, Dim> tile_size = tuned_config.get_tile_size();
 
-                // ── Step 2: Binning ────────────────────────────────────────────
+                // -- Step 2: Binning --------------------------------------------
                 Interpolation::detail::BinningResult<Dim, memory_space> binning;
                 if constexpr (Impl<W, Types, Policy>::requires_binning) {
                     binning = performBinning<Types>(positions, field, tile_size);
@@ -281,7 +372,7 @@ namespace ippl {
                     binning = performBinning<Types>(positions, field, tile_size);
                 }
 
-                // ── Step 3: Run functor ────────────────────────────────────────
+                // -- Step 3: Run functor ----------------------------------------
                 auto args = Impl<W, Types, Policy>::Arguments::create(
                     field, positions, values, kernel_m, tuned_config, binning);
                 Impl<W, Types, Policy> functor{std::move(args)};
@@ -291,7 +382,7 @@ namespace ippl {
                 functor.run(n_particles);
                 Kokkos::fence();
 
-                // ── Step 4: End tuning context ─────────────────────────────────
+                // -- Step 4: End tuning context ---------------------------------
                 if constexpr (Impl<W, Types, Policy>::requires_binning) {
                     if (config_m.enable_tuning) {
                         auto& tuner = Interpolation::detail::get_scatter_tuner<Impl, Dim, RealType,
