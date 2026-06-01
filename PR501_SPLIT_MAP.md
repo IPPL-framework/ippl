@@ -238,6 +238,34 @@ Risk:
 
 - Current commit `13950c4f` mixes backend refactor with native NUFFT files. This split likely requires path-based extraction or commit surgery.
 
+Status: extracted on local branch `pr501-fft` from `pr501-hosg`.
+
+Included:
+
+- FFT backend facade headers under `src/FFT/Backend/`
+- transform specializations for CC, RC, pruned CC/RC, and trigonometric transforms
+- shared transform helpers in `src/FFT/Transform/Common.h`
+- public FFT traits/tags in `src/FFT/Traits.h`
+- `src/FFT/FFT.h` converted to the aggregate include for the split transform layer
+- removed stale monolithic `src/FFT/FFT.hpp`
+
+Intentionally left out for PR 5:
+
+- `src/FFT/NUFFT/*`
+- `src/FFT/Transform/NUFFT.*`
+- NUFFT-specific unit tests
+- FINUFFT/cuFINUFFT dependency and configure plumbing beyond harmless dormant tags already present in `Traits.h`
+
+Validation:
+
+- Serial Debug configure with FFT/unit tests enabled:
+  `cmake -S . -B build-pr501-fft-debug -DCMAKE_BUILD_TYPE=Debug -DIPPL_PLATFORMS=SERIAL -DIPPL_ENABLE_FFT=ON -DIPPL_ENABLE_UNIT_TESTS=ON`
+- Build:
+  `cmake --build build-pr501-fft-debug --target ippl FFT -j 8`
+- Test:
+  `ctest --test-dir build-pr501-fft-debug -R '^FFT$' --output-on-failure`
+- Result: `1/1` FFT tests passed, `0.81 sec`.
+
 ### PR 5: Native NUFFT And FINUFFT/cuFINUFFT Integration
 
 Scope:
