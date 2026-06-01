@@ -69,9 +69,9 @@ namespace ippl {
 #endif
             void* ptr = nullptr;
 #if defined(KOKKOS_ENABLE_CUDA)
-            cudaMalloc(&ptr, size);
+            (void)cudaMalloc(&ptr, size);
 #else
-            hipMalloc(&ptr, size);
+            (void)hipMalloc(&ptr, size);
 #endif
             buffer_ptr_m  = static_cast<pointer_type>(ptr);
             buffer_size_m = size;
@@ -81,9 +81,9 @@ namespace ippl {
         void Archive<Properties...>::gpuFree() {
             if (buffer_ptr_m) {
 #if defined(KOKKOS_ENABLE_CUDA)
-                cudaFree(buffer_ptr_m);
+                (void)cudaFree(buffer_ptr_m);
 #else
-                hipFree(buffer_ptr_m);
+                (void)hipFree(buffer_ptr_m);
 #endif
                 buffer_ptr_m  = nullptr;
                 buffer_size_m = 0;
@@ -113,19 +113,19 @@ namespace ippl {
             pointer_type new_ptr = nullptr;
             void* vptr           = nullptr;
 #if defined(KOKKOS_ENABLE_CUDA)
-            cudaMalloc(&vptr, size);
+            (void)cudaMalloc(&vptr, size);
 #else
-            hipMalloc(&vptr, size);
+            (void)hipMalloc(&vptr, size);
 #endif
             new_ptr = static_cast<pointer_type>(vptr);
 
             if (buffer_ptr_m && buffer_size_m > 0) {
 #if defined(KOKKOS_ENABLE_CUDA)
-                cudaMemcpy(new_ptr, buffer_ptr_m, buffer_size_m, cudaMemcpyDeviceToDevice);
-                cudaFree(buffer_ptr_m);
+                (void)cudaMemcpy(new_ptr, buffer_ptr_m, buffer_size_m, cudaMemcpyDeviceToDevice);
+                (void)cudaFree(buffer_ptr_m);
 #else
-                hipMemcpy(new_ptr, buffer_ptr_m, buffer_size_m, hipMemcpyDeviceToDevice);
-                hipFree(buffer_ptr_m);
+                (void)hipMemcpy(new_ptr, buffer_ptr_m, buffer_size_m, hipMemcpyDeviceToDevice);
+                (void)hipFree(buffer_ptr_m);
 #endif
             }
 

@@ -94,7 +94,7 @@ public:
     void dumpData(int iteration) {
         double Energy = 0.0;
 
-        ParticleAttrib<Vector_t>::view_type& view = P.getView();
+        auto view = P.getView();
         Inform csvout(NULL, "data/energy.csv", Inform::APPEND);
         csvout.precision(10);
         csvout.setf(std::ios::scientific, std::ios::floatfield);

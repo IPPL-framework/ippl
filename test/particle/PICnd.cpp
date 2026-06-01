@@ -265,7 +265,7 @@ public:
     }
 
     void dumpData(int iteration) {
-        ParticleAttrib<Vector_t>::view_type& view = P.getView();
+        auto view = P.getView();
 
         double Energy = 0.0;
 
