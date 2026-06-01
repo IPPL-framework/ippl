@@ -25,7 +25,7 @@ namespace ippl::mpi {
         return *this;
     }
 
-    Communicator Communicator::Communicator::split(int color, int key) const {
+    Communicator Communicator::split(int color, int key) const {
         MPI_Comm newcomm;
         MPI_Comm_split(*comm_m, color, key, &newcomm);
         return Communicator(newcomm);

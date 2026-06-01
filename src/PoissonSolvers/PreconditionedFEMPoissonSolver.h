@@ -6,10 +6,10 @@
 #define IPPL_PRECONFEMPOISSONSOLVER_H
 
 // #include "FEM/FiniteElementSpace.h"
+#include "EvalFunctor.h"
 #include "LaplaceHelpers.h"
 #include "LinearSolvers/PCG.h"
 #include "Poisson.h"
-#include "EvalFunctor.h"
 
 namespace ippl {
     /**
@@ -41,16 +41,17 @@ namespace ippl {
 
         using QuadratureType = GaussJacobiQuadrature<Tlhs, 5, ElementType>;
 
-        using LagrangeType = LagrangeSpace<Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldRHS>;
+        using LagrangeType =
+            LagrangeSpace<Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldRHS>;
 
         // default constructor (compatibility with Alpine)
-        PreconditionedFEMPoissonSolver() 
+        PreconditionedFEMPoissonSolver()
             : Base()
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
-            , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)), Vector<Tlhs, Dim>(0),
-                                Vector<Tlhs, Dim>(0))), refElement_m, quadrature_m)
-        {
+            , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)),
+                                             Vector<Tlhs, Dim>(0), Vector<Tlhs, Dim>(0))),
+                              refElement_m, quadrature_m) {
             setDefaultParameters();
         }
 
@@ -58,8 +59,7 @@ namespace ippl {
             : Base(lhs, rhs)
             , refElement_m()
             , quadrature_m(refElement_m, 0.0, 0.0)
-            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout())
-        {
+            , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout()) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();
         }
@@ -73,9 +73,7 @@ namespace ippl {
         /**
          * @brief Return the LagrangeSpace object.
          */
-        LagrangeType& getSpace() {
-            return lagrangeSpace_m;
-        }
+        LagrangeType& getSpace() { return lagrangeSpace_m; }
 
         /**
          * @brief Solve the poisson equation using finite element methods.
@@ -102,14 +100,15 @@ namespace ippl {
             const Tlhs absDetDPhi = Kokkos::abs(
                 refElement_m.getDeterminantOfTransformationJacobian(firstElementVertexPoints));
 
-            EvalFunctor<Tlhs, Dim, LagrangeType::numElementDOFs> poissonEquationEval(
-                DPhiInvT, absDetDPhi);
+            EvalFunctor<Tlhs, Dim, LagrangeType::numElementDOFs> poissonEquationEval(DPhiInvT,
+                                                                                     absDetDPhi);
 
             // get BC type of our RHS
             BConds<FieldRHS, Dim>& bcField = (this->rhs_mp)->getFieldBC();
-            FieldBC bcType = bcField[0]->getBCType();
+            FieldBC bcType                 = bcField[0]->getBCType();
 
-            const auto algoOperator = [poissonEquationEval, &bcField, this](rhs_type field) -> lhs_type {
+            const auto algoOperator = [poissonEquationEval, &bcField,
+                                       this](rhs_type field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
@@ -120,7 +119,8 @@ namespace ippl {
                 return return_field;
             };
 
-            const auto algoOperatorL = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+            const auto algoOperatorL = [poissonEquationEval, &bcField,
+                                        this](lhs_type field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
@@ -131,7 +131,8 @@ namespace ippl {
                 return return_field;
             };
 
-            const auto algoOperatorU = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+            const auto algoOperatorU = [poissonEquationEval, &bcField,
+                                        this](lhs_type field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
@@ -142,29 +143,34 @@ namespace ippl {
                 return return_field;
             };
 
-            const auto algoOperatorUL = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+            const auto algoOperatorUL = [poissonEquationEval, &bcField,
+                                         this](lhs_type field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
                 field.fillHalo();
 
-                auto return_field = lagrangeSpace_m.evaluateAx_upperlower(field, poissonEquationEval);
+                auto return_field =
+                    lagrangeSpace_m.evaluateAx_upperlower(field, poissonEquationEval);
 
                 return return_field;
             };
 
-            const auto algoOperatorInvD = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+            const auto algoOperatorInvD = [poissonEquationEval, &bcField,
+                                           this](lhs_type field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
                 field.fillHalo();
 
-                auto return_field = lagrangeSpace_m.evaluateAx_inversediag(field, poissonEquationEval);
+                auto return_field =
+                    lagrangeSpace_m.evaluateAx_inversediag(field, poissonEquationEval);
 
                 return return_field;
             };
 
-            const auto algoOperatorD = [poissonEquationEval, &bcField, this](lhs_type field) -> lhs_type {
+            const auto algoOperatorD = [poissonEquationEval, &bcField,
+                                        this](lhs_type field) -> lhs_type {
                 // set appropriate BCs for the field as the info gets lost in the CG iteration
                 field.setFieldBC(bcField);
 
@@ -183,19 +189,19 @@ namespace ippl {
             int inner    = this->params_m.template get<int>("gauss_seidel_inner_iterations");
             int outer    = this->params_m.template get<int>("gauss_seidel_outer_iterations");
             double omega = this->params_m.template get<double>("ssor_omega");
-            int richardson_iterations =
-                this->params_m.template get<int>("richardson_iterations");
+            int richardson_iterations = this->params_m.template get<int>("richardson_iterations");
 
             pcg_algo_m.setPreconditioner(algoOperator, algoOperatorL, algoOperatorU, algoOperatorUL,
-                                     algoOperatorInvD, algoOperatorD, 0, 0, preconditioner_type,
-                                     level, degree, richardson_iterations, inner, outer, omega);
+                                         algoOperatorInvD, algoOperatorD, 0, 0, preconditioner_type,
+                                         level, degree, richardson_iterations, inner, outer, omega);
 
             pcg_algo_m.setOperator(algoOperator);
 
             // send boundary values to RHS (load vector) i.e. lifting (Dirichlet BCs)
             if (bcType == CONSTANT_FACE) {
-                *(this->rhs_mp) = *(this->rhs_mp) -
-                    lagrangeSpace_m.evaluateAx_lift(*(this->rhs_mp), poissonEquationEval);
+                *(this->rhs_mp) =
+                    *(this->rhs_mp)
+                    - lagrangeSpace_m.evaluateAx_lift(*(this->rhs_mp), poissonEquationEval);
             }
 
             // start a timer
@@ -240,16 +246,16 @@ namespace ippl {
 
         /**
          * Query the average of the solution
-         * @param vol Boolean indicating whether we divide by volume or not
+         * @param Vol Boolean indicating whether we divide by volume or not
          * @return avg (offset for null space test cases if divided by volume)
          */
         Tlhs getAvg(bool Vol = false) {
             Tlhs avg = this->lagrangeSpace_m.computeAvg(*(this->lhs_mp));
             if (Vol) {
                 lhs_type unit((this->lhs_mp)->get_mesh(), (this->lhs_mp)->getLayout());
-                unit = 1.0;
+                unit     = 1.0;
                 Tlhs vol = this->lagrangeSpace_m.computeAvg(unit);
-                return avg/vol;
+                return avg / vol;
             } else {
                 return avg;
             }

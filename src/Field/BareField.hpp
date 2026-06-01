@@ -22,6 +22,8 @@
 
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
+#include "Utility/ViewUtils.h"
+
 namespace Kokkos {
     template <typename T, unsigned Dim>
     struct reduction_identity<ippl::Vector<T, Dim>> {
@@ -200,12 +202,23 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::write(std::ostream& out) const {
         Kokkos::fence();
-        detail::write<T, Dim>(dview_m, out);
+        detail::write<T, Dim, ViewArgs...>(dview_m, out);
     }
 
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::write(Inform& inf) const {
         write(inf.getDestination());
+    }
+
+    template <typename T, unsigned Dim, class... ViewArgs>
+    void BareField<T, Dim, ViewArgs...>::write_as_list(std::ostream& out) const {
+        Kokkos::fence();
+        detail::write_as_list<T, Dim, ViewArgs...>(dview_m, out);
+    }
+
+    template <typename T, unsigned Dim, class... ViewArgs>
+    void BareField<T, Dim, ViewArgs...>::write_as_list(Inform& inf) const {
+        write_as_list(inf.getDestination());
     }
 
 #define DefineReduction(fun, name, op, MPI_Op)                                                 \

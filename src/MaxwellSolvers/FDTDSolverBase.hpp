@@ -5,15 +5,6 @@
 
 namespace ippl {
 
-    /**
-     * @brief Constructor for the FDTDSolverBase class.
-     *
-     * Initializes the solver by setting the source and electromagnetic fields.
-     *
-     * @param source Reference to the source field.
-     * @param E Reference to the electric field.
-     * @param B Reference to the magnetic field.
-     */
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
     FDTDSolverBase<EMField, SourceField, boundary_conditions>::FDTDSolverBase(SourceField& source,
                                                                               EMField& E,

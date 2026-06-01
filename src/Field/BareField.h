@@ -199,6 +199,27 @@ namespace ippl {
          */
         void write(Inform& inf) const;
 
+        /*!
+         * Print the rank local BareField.
+         * @param out stream
+         */
+        void write_as_list(std::ostream& out = std::cout) const;
+
+        /*!
+         * Print the rank local BareField.
+         * @param inf Inform object
+         */
+        void write_as_list(Inform& inf) const;
+
+        /*!
+         * Stream opreator to print the rank local BareField.
+         */
+        friend std::ostream& operator<<(std::ostream& out,
+                                        const BareField<T, Dim, ViewArgs...>& field) {
+            field.write_as_list(out);
+            return out;
+        }
+
         T sum(int nghost = 0) const;
         T max(int nghost = 0) const;
         T min(int nghost = 0) const;
