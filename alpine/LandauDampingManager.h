@@ -226,10 +226,10 @@ public:
 
         this->pcontainer_m->create(nlocal);
 
-        view_type* R = &(this->pcontainer_m->R.getView());
-        samplingR.generate(*R, rand_pool64);
+        view_type R = this->pcontainer_m->R.getView();
+        samplingR.generate(R, rand_pool64);
 
-        view_type* P = &(this->pcontainer_m->P.getView());
+        view_type P = this->pcontainer_m->P.getView();
 
         double mu[Dim];
         double sd[Dim];
@@ -237,7 +237,7 @@ public:
             mu[i] = 0.0;
             sd[i] = 1.0;
         }
-        Kokkos::parallel_for(nlocal, ippl::random::randn<double, Dim>(*P, rand_pool64, mu, sd));
+        Kokkos::parallel_for(nlocal, ippl::random::randn<double, Dim>(P, rand_pool64, mu, sd));
         Kokkos::fence();
         ippl::Comm->barrier();
 
