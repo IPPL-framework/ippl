@@ -217,9 +217,10 @@ namespace ippl::Interpolation::AutoTune {
             cfg.enable_tuning = false;
 
             ippl::Interpolation::LinearKernel<value_t> cic;
+            auto scatter = ippl::Scatter(cic, cfg);
 
             field = 0.0;
-            bunch.Q.scatter_kernel(field, bunch.R, cic, cfg);
+            scatter(field, bunch.R, bunch.Q);
             Kokkos::fence();
 
             double best_ms = 1e18;
@@ -227,7 +228,7 @@ namespace ippl::Interpolation::AutoTune {
                 field = 0.0;
                 Kokkos::fence();
                 auto t0 = std::chrono::steady_clock::now();
-                bunch.Q.scatter_kernel(field, bunch.R, cic, cfg);
+                scatter(field, bunch.R, bunch.Q);
                 Kokkos::fence();
                 auto t1 = std::chrono::steady_clock::now();
                 const double ms =
@@ -308,11 +309,12 @@ namespace ippl::Interpolation::AutoTune {
             cfg.enable_tuning = false;
 
             ippl::Interpolation::LinearKernel<value_t> cic;
+            auto scatter = ippl::Scatter(cic, cfg);
 
             // Warm up.
             field = 0.0;
             try {
-                bunch.Q.scatter_kernel(field, bunch.R, cic, cfg);
+                scatter(field, bunch.R, bunch.Q);
             } catch (...) {
                 return {};
             }
@@ -325,7 +327,7 @@ namespace ippl::Interpolation::AutoTune {
                 Kokkos::fence();
                 auto t0 = std::chrono::steady_clock::now();
                 try {
-                    bunch.Q.scatter_kernel(field, bunch.R, cic, cfg);
+                    scatter(field, bunch.R, bunch.Q);
                 } catch (...) {
                     return {};
                 }
