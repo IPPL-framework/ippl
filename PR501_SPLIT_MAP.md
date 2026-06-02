@@ -280,137 +280,92 @@ Risk:
 
 - PIF examples currently depend on the full stack: particle update, scatter/gather, FFT transform refactor, NUFFT.
 
-## Minimal Split Alternative
+# LUMI Results 
 
-If six PRs is too much process overhead, a practical minimum is:
+| Benchmark | Problem size | Nodes | Ranks | master | pr501-pcg | pr501-com | pr501-fft | pr501-hosg | pr501-nufft |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| FEM | `513_10` | 8 | 64 | 28.23 | 27.77 (-2%) | 27.71 (-2%) | 27.88 (-1%) | 28.23 (0%) | 27.95 (-1%) |
+| FFT | `512_10` | 4 | 32 | 4.39 | 4.41 (0%) | 11.54 (+163%) | 11.53 (+162%) | 11.59 (+164%) | 11.53 (+162%) |
+| FFT | `512_10` | 16 | 128 | 1.65 | 1.65 (0%) | 2.88 (+74%) | 2.88 (+75%) | 2.93 (+78%) | 2.93 (+78%) |
+| PCG | `512_10` | 1 | 8 | 72.31 | 70.01 (-3%) |  | 76.99 (+6%) |  | 76.75 (+6%) |
+| PCG | `512_10` | 4 | 32 | 34.60 | 32.93 (-5%) | 43.71 (+26%) | 33.62 (-3%) | 36.32 (+5%) | 33.55 (-3%) |
+| PCG | `512_10` | 64 | 512 | 25.00 | 23.85 (-5%) | 22.89 (-8%) | 22.40 (-10%) | 22.74 (-9%) | 22.58 (-10%) |
 
-1. PCG allocation fix.
-2. Particle communication/update infrastructure.
-3. Scatter/gather + FFT backend + NUFFT core.
-4. Alpine PIF examples and benchmarks.
 
-This is less clean, but still much better than one 23k-line PR.
+## Update Timer Investigation
 
-## Next Mapping Step
+Observed issue:
 
-Prototype extraction order:
+- On LUMI, the `update` / `updateParticle` timer can increase strongly when moving from `pr501-pcg` to `pr501-communication-particle-update` / `pr501-com`.
+- A first code inspection did not find an FFT solver change in this branch step: `pr501-pcg..pr501-communication-particle-update` has no changes under `src/FFT` or `src/PoissonSolvers`.
+- The branch step does change particle migration, communication archives, field layout / halo `nghost` plumbing, and timing infrastructure.
 
-1. Create a branch from `origin/master` for PCG.
-2. Cherry-pick `40438d17` and `be5f794c`.
-3. Build and run solver tests.
-4. If clean, this becomes the first small PR.
+Most likely immediate explanation:
 
-Then try the particle/communication split because it is probably the most valuable non-PIF improvement and has direct tests:
+- In the communication branch, `ParticleSpatialLayout::update()` posts sends and receives, then performs `MPI_Waitall` plus deferred receive finalization/deserialization inside the outer `updateParticle` timer, but outside the child timers `particleSend`, `particleRecv`, and `sendPreprocess`.
+- This can make `updateParticle` look much larger while the child timers look artificially small.
+- On the LUMI timing data this pattern is visible: for `PCG_strong_scaling/512_10/nodes_64`, `locateParticles`, `particleSend`, and `particleRecv` are small in `pr501-com`, while the unexplained part of `updateParticle` is large.
 
-- `unit_tests/Particle/ParticleUpdate.cpp`
-- `unit_tests/Particle/ParticleUpdateNonuniform.cpp`
-- existing `ParticleSendRecv`
-- existing `GatherScatterTest`
+Secondary suspect:
 
-## Progress
+- `Archive` contiguous scalar serialization/deserialization changed from `Kokkos::deep_copy` on unmanaged byte views to custom byte-copy kernels plus fences.
+- On GPU, especially with GPU-aware MPI, that may be slower or introduce extra synchronization compared with the previous optimized device copy path.
+- This would affect particle migration directly, because `ParticleBase::sendToRank()` serializes every active particle attribute before `MPI_Isend`, and receive finalizers deserialize after the wait.
 
-### 2026-05-31: PR 1 Prototype - PCG Allocation / Solver Performance
+Local Mac OpenMP check:
 
-Status: extracted cleanly.
+- Built clean comparison worktrees for:
+  - `pr501-pcg`
+  - `pr501-communication-particle-update`
+- Configuration:
+  - `IPPL_PLATFORMS=OPENMP`
+  - `IPPL_ENABLE_ALPINE=ON`
+  - `IPPL_ENABLE_UNIT_TESTS=ON`
+  - `IPPL_ENABLE_FFT=ON`
+  - Kokkos `5.0.0`
+  - Homebrew LLVM `clang++` and `libomp`
+- AppleClang did not find OpenMP automatically; explicit `libomp` include/library paths were required.
 
-Worktree:
+Mac OpenMP miniapp runs:
 
-```text
-/private/tmp/ippl-pr501-pcg
+```bash
+mpiexec -x OMP_NUM_THREADS=4 -x OMP_PROC_BIND=false -n 2 \
+  ./LandauDamping 32 32 32 20000 5 FFT 0.01 LeapFrog --overallocate 2.0 --info 5
+
+mpiexec -x OMP_NUM_THREADS=2 -x OMP_PROC_BIND=false -n 4 \
+  ./LandauDamping 32 32 32 20000 5 FFT 0.01 LeapFrog --overallocate 2.0 --info 5
 ```
 
-Branch:
+Mac OpenMP wall-max timings:
 
-```text
-pr501-pcg-split
-```
+| Ranks | Branch | `update` | `updateParticle` | `locateParticles` | `sendPreprocess` | `particleSend` | `particleRecv` |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 2 | `pr501-pcg` | 0.0911 | 0.1090 | 0.0906 | 0.0187 | 0.00431 | 0.00451 |
+| 2 | `pr501-com` | 0.0250 | 0.0266 | 0.00577 | 0.000863 | 0.00150 | 0.000064 |
+| 4 | `pr501-pcg` | 0.1550 | 0.1923 | 0.1303 | 0.0391 | 0.0180 | 0.00923 |
+| 4 | `pr501-com` | 0.0495 | 0.0534 | 0.00872 | 0.00677 | 0.00291 | 0.000131 |
 
-Base:
+Conclusion so far:
 
-```text
-origin/master @ da43fd66a18848b65dcd82af90001f5b64a798ab
-```
+- The Mac OpenMP run does not reproduce the LUMI slowdown. The communication branch is faster locally for this small CPU/OpenMP test.
+- That points away from a generic algorithmic slowdown in the particle update rewrite.
+- The remaining likely causes are GPU/MPI-specific behavior on LUMI: GPU-aware MPI wait behavior, archive device-buffer serialization/deserialization, or timer attribution around deferred receive finalization.
 
-Cherry-picked commits:
+Recommended next diagnostic patch:
 
-- `40438d17` -> `a76097f0` (`PCG/Preconditioner: hoist per-iteration allocations out of solve loop`)
-- `be5f794c` -> `092a04e5` (`PCG: pass Field by reference through OperatorF`)
+- Add or move timers around:
+  - `MPI_Waitall` as `particleWait`, or charge it back into `particleSend`.
+  - deferred receive finalizers as `particleDeserialize`, or charge them into `particleRecv`.
+  - optionally `Archive::serialize(hash)` and `Archive::deserialize(offset)` if the wait/deserialization split is still unclear.
+- Re-run the LUMI cases before changing algorithms, so the slowdown is attributed to wait time, packing/unpacking, or actual communication.
 
-Resulting diff:
+Diagnostic patch applied locally:
 
-- `src/LinearSolvers/PCG.h`
-- `src/LinearSolvers/Preconditioner.h`
-- `src/PoissonSolvers/PoissonCG.h`
-- 3 files changed, 388 insertions, 250 deletions
-
-Validation:
-
-```text
-cmake -S . -B build-pcg-debug -DCMAKE_BUILD_TYPE=Debug -DIPPL_ENABLE_UNIT_TESTS=ON -DIPPL_ENABLE_FFT=ON -DIPPL_DEFAULT_TEST_PROCS=1
-cmake --build build-pcg-debug
-ctest --test-dir build-pcg-debug --output-on-failure -O build-pcg-debug/ctest-rank1.log
-```
-
-Result:
-
-```text
-100% tests passed, 0 tests failed out of 34
-Total Test time (real) = 54.17 sec
-```
-
-Assessment:
-
-- This is a good standalone first PR.
-- It has a narrow file set and clear motivation: remove repeated allocation work from the PCG/preconditioner loop.
-- Recommended next validation before opening: run the relevant solver integration tests or CSCS GPU tests that originally showed PCG allocation/slowdown symptoms.
-
-### 2026-05-31: PR 2 Prototype - Communication And Particle Update Infrastructure
-
-Status: extracted on top of `pr501-pcg`.
-
-Branch:
-
-```text
-pr501-communication-particle-update
-```
-
-Included PR501 areas:
-
-- Communication buffer/archive updates from `9507a796` and `f2820064`
-- Particle layout rewrite and sort buffers from `2878b90b`
-- Particle update regression tests from the particle portion of `f0560f76`
-- Local integration fixes needed to keep this split independent from the later interpolation/FFT/NUFFT PRs
-
-Deliberately excluded:
-
-- Higher-order interpolation/gather/scatter APIs
-- FFT backend and NUFFT transform integration
-- PIF example/application changes
-
-Validation:
-
-```text
-cmake -S . -B build-pr501-communication-debug -DCMAKE_BUILD_TYPE=Debug -DIPPL_ENABLE_UNIT_TESTS=ON -DIPPL_ENABLE_FFT=ON -DIPPL_DEFAULT_TEST_PROCS=1
-cmake --build build-pr501-communication-debug --parallel 8
-ctest --test-dir build-pr501-communication-debug --output-on-failure
-/opt/homebrew/Cellar/open-mpi/5.0.8/bin/mpiexec -n 2 build-pr501-communication-debug/unit_tests/Particle/ParticleSendRecv
-/opt/homebrew/Cellar/open-mpi/5.0.8/bin/mpiexec -n 2 build-pr501-communication-debug/unit_tests/Particle/ParticleUpdate
-/opt/homebrew/Cellar/open-mpi/5.0.8/bin/mpiexec -n 2 build-pr501-communication-debug/unit_tests/Particle/ParticleUpdateNonuniform
-```
-
-Result:
-
-```text
-100% tests passed, 0 tests failed out of 36
-Total Test time (real) = 38.64 sec
-
-2-rank ParticleSendRecv: passed
-2-rank ParticleUpdate: passed
-2-rank ParticleUpdateNonuniform: passed
-```
-
-Assessment:
-
-- This is a coherent second PR after `pr501-pcg`.
-- It is still larger than the PCG split, but it avoids the major algorithmic dependencies from interpolation, FFT, NUFFT, and PIF.
-- Recommended next validation before opening: run the same particle tests on CUDA/HIP builds and larger MPI rank counts, especially the original `ParticleSendRecv` failure configurations.
+- `ParticleSpatialLayout::update()` now splits the previously hidden tail of `updateParticle` into:
+  - `particleWait`: combined send/receive `MPI_Waitall`
+  - `particleFreeBuffers`: communicator buffer release
+  - `particleDeserialize`: deferred receive finalizers / unpacking into particle attributes
+- Expected interpretation on LUMI:
+  - If `particleWait` dominates, the issue is likely GPU-aware MPI progress / synchronization or a load imbalance exposed by the nonblocking exchange.
+  - If `particleDeserialize` dominates, inspect `Archive::deserialize(offset)` and the custom byte-copy kernels.
+  - If neither dominates but `updateParticle` remains high, there is still another untimed section in the particle update path.
