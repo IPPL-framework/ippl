@@ -23,6 +23,8 @@
 #include <numeric>
 #include <vector>
 
+#include "Ippl.h"
+
 #include "Utility/IpplTimings.h"
 #include "Utility/ParallelDispatch.h"
 
@@ -128,6 +130,7 @@ namespace ippl {
         }
 
         ensureNeighborsCached();
+        const size_type localBefore = pc.getLocalNum();
 
         /* particle MPI exchange:
          *   1. figure out which particles need to go where -> locateParticles(...)
@@ -213,11 +216,15 @@ namespace ippl {
         IpplTimings::startTimer(recvTimer);
 
         std::vector<std::pair<int, size_type>> recvList;
+        size_type totalRecvs = 0;
+        size_type maxRecv    = 0;
 
         if (countExchangeMode_ == CountExchange::RMA) {
             for (int rank = 0; rank < nRanks_; ++rank) {
                 if (nRecvs_m[rank] > 0) {
                     recvList.push_back({rank, nRecvs_m[rank]});
+                    totalRecvs += nRecvs_m[rank];
+                    maxRecv = std::max(maxRecv, nRecvs_m[rank]);
                 }
             }
         } else {
@@ -226,6 +233,8 @@ namespace ippl {
             for (int rank = 0; rank < nRanks_; ++rank) {
                 if (recvCounts_h(rank) > 0) {
                     recvList.push_back({rank, recvCounts_h(rank)});
+                    totalRecvs += static_cast<size_type>(recvCounts_h(rank));
+                    maxRecv = std::max(maxRecv, static_cast<size_type>(recvCounts_h(rank)));
                 }
             }
         }
@@ -254,6 +263,7 @@ namespace ippl {
         pc.template internalDestroy<position_memory_space, position_execution_space>(
             KOKKOS_LAMBDA(size_t i) { return leaving(i); }, nInvalid);
         Kokkos::fence();
+        const size_type localAfterDestroy = pc.getLocalNum();
 
         IpplTimings::stopTimer(destroyTimer);
 
@@ -275,6 +285,51 @@ namespace ippl {
         IpplTimings::stopTimer(freeBufferTimer);
 
         // 5. Deserialize
+        if (Info && Info->getOutputLevel() >= 5) {
+            const size_type recvSources = static_cast<size_type>(recvList.size());
+            size_type minRecvs          = totalRecvs;
+            size_type maxRecvs          = totalRecvs;
+            size_type sumRecvs          = totalRecvs;
+            size_type minSources        = recvSources;
+            size_type maxSources        = recvSources;
+            size_type sumSources        = recvSources;
+            size_type minMaxRecv        = maxRecv;
+            size_type maxMaxRecv        = maxRecv;
+            size_type minInvalid        = nInvalid;
+            size_type maxInvalid        = nInvalid;
+            size_type sumInvalid        = nInvalid;
+
+            Comm->allreduce(minRecvs, 1, std::less<size_type>());
+            Comm->allreduce(maxRecvs, 1, std::greater<size_type>());
+            Comm->allreduce(sumRecvs, 1, std::plus<size_type>());
+            Comm->allreduce(minSources, 1, std::less<size_type>());
+            Comm->allreduce(maxSources, 1, std::greater<size_type>());
+            Comm->allreduce(sumSources, 1, std::plus<size_type>());
+            Comm->allreduce(minMaxRecv, 1, std::less<size_type>());
+            Comm->allreduce(maxMaxRecv, 1, std::greater<size_type>());
+            Comm->allreduce(minInvalid, 1, std::less<size_type>());
+            Comm->allreduce(maxInvalid, 1, std::greater<size_type>());
+            Comm->allreduce(sumInvalid, 1, std::plus<size_type>());
+
+            Inform localDiag("ParticleUpdateDiag", INFORM_ALL_NODES);
+            localDiag << level5 << "rank=" << Comm->rank() << " localBefore=" << localBefore
+                      << " nInvalid=" << nInvalid << " localAfterDestroy=" << localAfterDestroy
+                      << " recvSources=" << recvSources << " totalRecvs=" << totalRecvs
+                      << " maxRecv=" << maxRecv
+                      << " localAfterRecv=" << localAfterDestroy + totalRecvs << endl;
+
+            Inform summaryDiag("ParticleUpdateDiag");
+            const double ranks = static_cast<double>(nRanks_);
+            summaryDiag << level5 << "summary"
+                        << " recvs[min,max,avg]=" << minRecvs << "," << maxRecvs << ","
+                        << static_cast<double>(sumRecvs) / ranks
+                        << " recvSources[min,max,avg]=" << minSources << "," << maxSources << ","
+                        << static_cast<double>(sumSources) / ranks
+                        << " maxRecv[min,max]=" << minMaxRecv << "," << maxMaxRecv
+                        << " invalid[min,max,avg]=" << minInvalid << "," << maxInvalid << ","
+                        << static_cast<double>(sumInvalid) / ranks << endl;
+        }
+
         static IpplTimings::TimerRef deserializeTimer =
             IpplTimings::getTimer("particleDeserialize");
         IpplTimings::startTimer(deserializeTimer);
