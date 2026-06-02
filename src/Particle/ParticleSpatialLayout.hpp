@@ -257,15 +257,33 @@ namespace ippl {
 
         IpplTimings::stopTimer(destroyTimer);
 
+        static IpplTimings::TimerRef waitTimer = IpplTimings::getTimer("particleWait");
+        IpplTimings::startTimer(waitTimer);
+
         requests.insert(requests.end(), recvRequests.begin(), recvRequests.end());
         if (!requests.empty()) {
             MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUSES_IGNORE);
         }
+
+        IpplTimings::stopTimer(waitTimer);
+
+        static IpplTimings::TimerRef freeBufferTimer = IpplTimings::getTimer("particleFreeBuffers");
+        IpplTimings::startTimer(freeBufferTimer);
+
         Comm->freeAllBuffers();
 
+        IpplTimings::stopTimer(freeBufferTimer);
+
         // 5. Deserialize
-        for (auto& finalize : finalizers)
+        static IpplTimings::TimerRef deserializeTimer =
+            IpplTimings::getTimer("particleDeserialize");
+        IpplTimings::startTimer(deserializeTimer);
+
+        for (auto& finalize : finalizers) {
             finalize(pc.getLocalNum());
+        }
+
+        IpplTimings::stopTimer(deserializeTimer);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);
     }
