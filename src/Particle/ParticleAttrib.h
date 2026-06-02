@@ -62,6 +62,8 @@ namespace ippl {
         // discarded.
         void alloc(size_type) override;
 
+        void reserve(size_type) override;
+
         /*!
          * Particle deletion function. Partition the particles into a valid region
          * and an invalid region.
@@ -91,7 +93,7 @@ namespace ippl {
 
         void deserialize(detail::Archive<memory_space>& ar, size_type offset,
                          size_type nrecvs) override {
-            this->resize(offset + nrecvs);
+            this->reserve(offset + nrecvs);
             ar.deserialize(dview_m, offset, nrecvs);
         }
 

@@ -19,6 +19,7 @@
 //   frequency of load balancing (N), or may supply a function to
 //   determine if load balancing should be done or not.
 //
+#include <algorithm>
 #include <memory>
 #include <numeric>
 #include <vector>
@@ -213,11 +214,13 @@ namespace ippl {
         IpplTimings::startTimer(recvTimer);
 
         std::vector<std::pair<int, size_type>> recvList;
+        size_type totalRecvs = 0;
 
         if (countExchangeMode_ == CountExchange::RMA) {
             for (int rank = 0; rank < nRanks_; ++rank) {
                 if (nRecvs_m[rank] > 0) {
                     recvList.push_back({rank, nRecvs_m[rank]});
+                    totalRecvs += nRecvs_m[rank];
                 }
             }
         } else {
@@ -226,6 +229,7 @@ namespace ippl {
             for (int rank = 0; rank < nRanks_; ++rank) {
                 if (recvCounts_h(rank) > 0) {
                     recvList.push_back({rank, recvCounts_h(rank)});
+                    totalRecvs += static_cast<size_type>(recvCounts_h(rank));
                 }
             }
         }
@@ -254,18 +258,55 @@ namespace ippl {
         pc.template internalDestroy<position_memory_space, position_execution_space>(
             KOKKOS_LAMBDA(size_t i) { return leaving(i); }, nInvalid);
         Kokkos::fence();
+        const size_type localAfterDestroy = pc.getLocalNum();
 
         IpplTimings::stopTimer(destroyTimer);
+
+        static IpplTimings::TimerRef waitTimer = IpplTimings::getTimer("particleWait");
+        IpplTimings::startTimer(waitTimer);
 
         requests.insert(requests.end(), recvRequests.begin(), recvRequests.end());
         if (!requests.empty()) {
             MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUSES_IGNORE);
         }
+
+        IpplTimings::stopTimer(waitTimer);
+
+        static IpplTimings::TimerRef freeBufferTimer = IpplTimings::getTimer("particleFreeBuffers");
+        IpplTimings::startTimer(freeBufferTimer);
+
         Comm->freeAllBuffers();
 
+        IpplTimings::stopTimer(freeBufferTimer);
+
         // 5. Deserialize
-        for (auto& finalize : finalizers)
+        static IpplTimings::TimerRef deserializeTimer =
+            IpplTimings::getTimer("particleDeserialize");
+        IpplTimings::startTimer(deserializeTimer);
+
+        static IpplTimings::TimerRef deserializeResizeTimer =
+            IpplTimings::getTimer("particleDeserResize");
+        IpplTimings::startTimer(deserializeResizeTimer);
+
+        if (totalRecvs > 0) {
+            const size_type receiveCapacity = localAfterDestroy + totalRecvs;
+            pc.forAllAttributes([&]<typename Attribute>(Attribute*& attribute) {
+                attribute->reserve(receiveCapacity);
+            });
+        }
+
+        IpplTimings::stopTimer(deserializeResizeTimer);
+
+        static IpplTimings::TimerRef deserializeCopyTimer =
+            IpplTimings::getTimer("particleDeserCopy");
+        IpplTimings::startTimer(deserializeCopyTimer);
+
+        for (auto& finalize : finalizers) {
             finalize(pc.getLocalNum());
+        }
+
+        IpplTimings::stopTimer(deserializeCopyTimer);
+        IpplTimings::stopTimer(deserializeTimer);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);
     }
