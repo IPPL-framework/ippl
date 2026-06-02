@@ -52,6 +52,13 @@ namespace ippl {
     }
 
     template <typename T, class... Properties>
+    void ParticleAttrib<T, Properties...>::reserve(size_type n) {
+        if (this->size() < n) {
+            this->resize(n);
+        }
+    }
+
+    template <typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::destroy(const hash_type& deleteIndex,
                                                    const hash_type& keepIndex,
                                                    size_type invalidCount) {
