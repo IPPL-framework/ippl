@@ -66,6 +66,10 @@ namespace ippl {
             // prior entries survive a capacity grow.
             virtual void create(size_type, bool non_destructive = false) = 0;
 
+            // Grow internal capacity to at least N particles while preserving existing
+            // entries. Does not shrink and does not touch the logical particle count.
+            virtual void reserve(size_type) = 0;
+
             virtual void destroy(const hash_type&, const hash_type&, size_type) = 0;
             virtual size_type packedSize(const size_type) const                 = 0;
 
