@@ -57,7 +57,14 @@ namespace ippl {
 
             virtual std::string get_name() const = 0;
 
-            virtual void create(size_type) = 0;
+            // Allocate internal capacity for N particles. Does NOT touch the logical
+            // particle count (localNum_m on ParticleBase). Existing data is not preserved.
+            virtual void alloc(size_type) = 0;
+
+            // non_destructive=false (default) keeps the historical destructive-on-grow
+            // behavior (Kokkos::realloc). non_destructive=true uses Kokkos::resize so
+            // prior entries survive a capacity grow.
+            virtual void create(size_type, bool non_destructive = false) = 0;
 
             virtual void destroy(const hash_type&, const hash_type&, size_type) = 0;
             virtual size_type packedSize(const size_type) const                 = 0;

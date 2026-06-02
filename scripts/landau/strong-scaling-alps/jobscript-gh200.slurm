@@ -12,8 +12,8 @@
 #SBATCH --cpus-per-task=72
 #SBATCH --exclusive
 
-#SBATCH --uenv=/capstor/store/cscs/cscs/public/uenvs/opal-x-gh200-mpich-gcc-2025-09-28.squashfs
-#SBATCH --view=develop
+#SBATCH --uenv=@IPPL_SCRIPTS_UENV@
+#SBATCH --view=@IPPL_SCRIPTS_UENV_VIEW@
 
 #SBATCH --output=landau__n_.out
 #SBATCH --error=landau__n_.error
@@ -41,10 +41,9 @@ export JOB_DIR=job_dir
 export EXE=@LANDAU_BINARY@
 export WRAPPER=@PROJECT_BINARY_DIR@/@JOB_SCRIPTS_PATH@/@JOB_WRAPPER_SCRIPT@
 
-mkdir -p data
 export OMP_PROC_BIND=spread
 export OMP_PLACES=threads
-export OMP_NUM_THREADS=72
+export OMP_NUM_THREADS=2
 
 # --------------------
 # cray-mpich debug putput
@@ -62,4 +61,14 @@ echo "N Particles: $nparticles"
 echo "Iterations: $iterations"
 # --------------------
 
-srun $WRAPPER $EXE $cubesize $cubesize $cubesize $nparticles $iterations FFT 1.0 LeapFrog --overallocate 2.0 --info 10
+mkdir -p ipc1
+pushd ipc1
+mkdir -p data
+IPC_ON=1 srun $WRAPPER $EXE $cubesize $cubesize $cubesize $nparticles $iterations FFT 1.0 LeapFrog --overallocate 2.0 --info 10
+popd
+
+mkdir -p ipc0
+pushd ipc0
+mkdir -p data
+IPC_ON=0 srun $WRAPPER $EXE $cubesize $cubesize $cubesize $nparticles $iterations FFT 1.0 LeapFrog --overallocate 2.0 --info 10
+popd

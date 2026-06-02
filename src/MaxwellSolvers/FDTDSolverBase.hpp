@@ -5,15 +5,6 @@
 
 namespace ippl {
 
-    /**
-     * @brief Constructor for the FDTDSolverBase class.
-     *
-     * Initializes the solver by setting the source and electromagnetic fields.
-     *
-     * @param source Reference to the source field.
-     * @param E Reference to the electric field.
-     * @param B Reference to the magnetic field.
-     */
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
     FDTDSolverBase<EMField, SourceField, boundary_conditions>::FDTDSolverBase(SourceField& source,
                                                                               EMField& E,
@@ -115,9 +106,9 @@ namespace ippl {
         Kokkos::parallel_for(
             this->A_n.getFieldRangePolicy(), KOKKOS_LAMBDA(size_t i, size_t j, size_t k) {
                 ippl::Vector<scalar, 3> dAdt;
-                dAdt[0] = (A_np1(i, j, k)[1] - A_n(i, j, k)[1]) * idt;
-                dAdt[1] = (A_np1(i, j, k)[2] - A_n(i, j, k)[2]) * idt;
-                dAdt[2] = (A_np1(i, j, k)[3] - A_n(i, j, k)[3]) * idt;
+                dAdt[0] = (A_n(i, j, k)[1] - A_nm1(i, j, k)[1]) * idt;
+                dAdt[1] = (A_n(i, j, k)[2] - A_nm1(i, j, k)[2]) * idt;
+                dAdt[2] = (A_n(i, j, k)[3] - A_nm1(i, j, k)[3]) * idt;
 
                 ippl::Vector<scalar, 4> dAdx =
                     (A_n(i + 1, j, k) - A_n(i - 1, j, k)) * inverse_2_spacing[0];

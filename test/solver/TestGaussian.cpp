@@ -38,7 +38,7 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
     double prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return prefactor * exp(-r2 / (2 * sigma * sigma));
+    return prefactor * Kokkos::exp(-r2 / (2 * sigma * sigma));
 }
 
 KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sigma = 0.05,
@@ -56,7 +56,7 @@ KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_E(double x, double y, doubl
     double factor =
         (1.0 / (4.0 * pi * r * r))
         * ((1.0 / r) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma))
-           - Kokkos::sqrt(2.0 / pi) * (1.0 / sigma) * exp(-r * r / (2 * sigma * sigma)));
+           - Kokkos::sqrt(2.0 / pi) * (1.0 / sigma) * Kokkos::exp(-r * r / (2 * sigma * sigma)));
 
     ippl::Vector<double, 3> Efield = {(x - mu), (y - mu), (z - mu)};
     return factor * Efield;

@@ -1,4 +1,5 @@
 # Build directories
+ippl-IPPL-1.0.0
 build/
 build_*/
 notebooks/

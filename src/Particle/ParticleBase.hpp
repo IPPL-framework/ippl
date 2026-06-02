@@ -88,25 +88,30 @@ namespace ippl {
     }
 
     template <class PLayout, typename... IP>
-    void ParticleBase<PLayout, IP...>::create(size_type nLocal) {
+    void ParticleBase<PLayout, IP...>::create(size_type nLocal, bool non_destructive) {
         PAssert(layout_m != nullptr);
 
         if (nLocal > 0) {
             forAllAttributes([&]<typename Attribute>(Attribute& attribute) {
-                attribute->create(nLocal);
+                attribute->create(nLocal, non_destructive);
             });
 
             if constexpr (EnableIDs) {
-                // set the unique ID value for these new particles
+                // Set the unique ID value for these new particles. The new entries
+                // live at indices [localNum_m, localNum_m + nLocal); the k-th new
+                // particle on this rank gets ID nextID + numNodes * k.
                 using policy_type =
                     Kokkos::RangePolicy<size_type, typename particle_index_type::execution_space>;
                 auto pIDs     = ID.getView();
                 auto nextID   = this->nextID_m;
                 auto numNodes = this->numNodes_m;
+                auto offset   = localNum_m;
                 Kokkos::parallel_for(
-                    "ParticleBase<...>::create(size_t)", policy_type(localNum_m, nLocal),
-                    KOKKOS_LAMBDA(const std::int64_t i) { pIDs(i) = nextID + numNodes * i; });
-                // nextID_m += numNodes_m * (nLocal - localNum_m);
+                    "ParticleBase<...>::create(size_t,bool)",
+                    policy_type(localNum_m, localNum_m + nLocal),
+                    KOKKOS_LAMBDA(const std::int64_t i) {
+                        pIDs(i) = nextID + numNodes * (i - offset);
+                    });
                 nextID_m += numNodes_m * nLocal;
             }
 
@@ -115,6 +120,15 @@ namespace ippl {
         }
 
         Comm->allreduce(localNum_m, totalNum_m, 1, std::plus<size_type>());
+    }
+
+    template <class PLayout, typename... IP>
+    void ParticleBase<PLayout, IP...>::alloc(size_type nLocal) {
+        PAssert(layout_m != nullptr);
+        forAllAttributes([&]<typename Attribute>(Attribute& attribute) {
+            attribute->alloc(nLocal);
+        });
+        // Intentionally does NOT touch localNum_m, totalNum_m, nextID_m.
     }
 
     template <class PLayout, typename... IP>

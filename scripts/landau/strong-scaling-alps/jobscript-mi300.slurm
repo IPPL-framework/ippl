@@ -13,8 +13,8 @@
 #SBATCH --cpus-per-task=48
 #SBATCH --exclusive
 
-#SBATCH --uenv=/capstor/scratch/cscs/biddisco/opal-x-mi300-mpich-gcc-2025-10-27.squashfs
-#SBATCH --view=default
+#SBATCH --uenv=@IPPL_SCRIPTS_UENV@
+#SBATCH --view=@IPPL_SCRIPTS_UENV_VIEW@
 
 #SBATCH --output=landau__n_.out
 #SBATCH --error=landau__n_.error

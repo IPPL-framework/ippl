@@ -20,53 +20,13 @@
 
 #include "Communicate/Archive.h"
 #include "FFT/FFT.h"
+#include "Field/FieldBufferOps.hpp"
 #include "Field/HaloCells.h"
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
 #include "Poisson.h"
 
 namespace ippl {
-    namespace detail {
-
-        /*!
-         * Access a view that either contains a vector field or a scalar field
-         * in such a way that the correct element access is determined at compile
-         * time, reducing the number of functions needed to achieve the same
-         * behavior for both kinds of fields
-         * @tparam tensorRank indicates whether scalar, vector, or matrix field
-         * @tparam - the view type
-         */
-        template <int tensorRank, typename>
-        struct ViewAccess;
-
-        template <typename View>
-        struct ViewAccess<2, View> {
-            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim1,
-                                                              unsigned dim2, size_t i, size_t j,
-                                                              size_t k) {
-                return view(i, j, k)[dim1][dim2];
-            }
-        };
-
-        template <typename View>
-        struct ViewAccess<1, View> {
-            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view, unsigned dim1,
-                                                              [[maybe_unused]] unsigned dim2,
-                                                              size_t i, size_t j, size_t k) {
-                return view(i, j, k)[dim1];
-            }
-        };
-
-        template <typename View>
-        struct ViewAccess<0, View> {
-            KOKKOS_INLINE_FUNCTION constexpr static auto& get(View&& view,
-                                                              [[maybe_unused]] unsigned dim1,
-                                                              [[maybe_unused]] unsigned dim2,
-                                                              size_t i, size_t j, size_t k) {
-                return view(i, j, k);
-            }
-        };
-    }  // namespace detail
 
     template <typename FieldLHS, typename FieldRHS>
     class FFTOpenPoissonSolver : public Poisson<FieldLHS, FieldRHS> {
@@ -149,6 +109,28 @@ namespace ippl {
 
         // compute standard Green's function
         void greensFunction();
+
+        // Replace the cached FFT Green's function (grntr_m) with the FFT of a
+        // free-space Green's function translated by `shift` in real space, i.e.
+        //   G(r) = -1 / (4 pi |r - shift|)
+        // using the same sign convention as greensFunction() (HOCKNEY). After
+        // this call, solve() will convolve rho with the shifted kernel instead
+        // of the standard one, up to the usual caveat that solve() recomputes
+        // greensFunction() if it detects a change in mesh spacing, so the
+        // caller should keep the mesh fixed between setup and solve().
+        //
+        // To restore the standard kernel, call greensFunction() explicitly.
+        //
+        // Intended use for Dirichlet boundary conditions via the method of
+        // images: pick `shift[d] = 2 * (plane[d] - domain_center[d])` for each
+        // axis with a Dirichlet plane, then call solve() and axis-flip the
+        // resulting potential in the active axes to obtain the image-charge
+        // contribution. The caller composes open-BC and image contributions
+        // additively. See test/solver/TestShiftedGreensFunction.cpp for the
+        // reference orchestration.
+        //
+        // Preconditions: algorithm = HOCKNEY (throws otherwise).
+        void shiftedGreensFunction(const Vector<double, Dim>& shift);
 
         // function called in the constructor to initialize the fields
         void initializeFields();

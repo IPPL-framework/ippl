@@ -177,6 +177,38 @@ int main(int argc, char* argv[]) {
             if (s % 4 == 0)
                 stbi_write_bmp(output, img_width, img_height, 3, imagedata_final);
 
+            // Create images for the electric field E
+            std::fill(imagedata, imagedata + img_width * img_height * 3, 0.0f);
+            auto Eh = E.getHostMirror();
+            Kokkos::deep_copy(Eh, E.getView());
+            for (int i = 1; i < img_width; i++) {
+                for (int j = 1; j < img_height; j++) {
+                    int i_remap = (double(i) / (img_width - 1)) * (nr[2] - 4) + 2;
+                    int j_remap = (double(j) / (img_height - 1)) * (nr[0] - 4) + 2;
+                    if (i_remap >= lDom.first()[2] && i_remap <= lDom.last()[2]) {
+                        if (j_remap >= lDom.first()[0] && j_remap <= lDom.last()[0]) {
+                            ippl::Vector<scalar, 3> acc =
+                                Eh(j_remap + 1 - lDom.first()[0], nr[1] / 2,
+                                   i_remap + 1 - lDom.first()[2]);
+                            float normalized_colorscale_value = acc.Pnorm();
+                            imagedata[(j * img_width + i) * 3 + 0] =
+                                normalized_colorscale_value * 255.0f;
+                            imagedata[(j * img_width + i) * 3 + 1] =
+                                normalized_colorscale_value * 255.0f;
+                            imagedata[(j * img_width + i) * 3 + 2] =
+                                normalized_colorscale_value * 255.0f;
+                        }
+                    }
+                }
+            }
+            std::transform(imagedata, imagedata + img_height * img_width * 3, imagedata_final,
+                           [](float x) {
+                               return (unsigned char)std::min(255.0f, std::max(0.0f, x));
+                           });
+            snprintf(output, 1023, "%sE_outimage%.05lu.bmp", "renderdataStandard/", s);
+            if (s % 4 == 0)
+                stbi_write_bmp(output, img_width, img_height, 3, imagedata_final);
+
             // Solve the FDTD equations
             sfdsolver.solve();
         }

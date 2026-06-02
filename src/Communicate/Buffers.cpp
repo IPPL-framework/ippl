@@ -32,13 +32,13 @@ namespace ippl {
         }
 
         void Communicator::deleteAllBuffers() {
-            buffer_handlers_m.forAll([]<typename BufferHandler>(BufferHandler&& bh) {
+            buffer_handlers_m->forAll([]<typename BufferHandler>(BufferHandler&& bh) {
                 bh.deleteAllBuffers();
             });
         }
 
         void Communicator::freeAllBuffers() {
-            buffer_handlers_m.forAll([]<typename BufferHandler>(BufferHandler&& bh) {
+            buffer_handlers_m->forAll([]<typename BufferHandler>(BufferHandler&& bh) {
                 bh.freeAllBuffers();
             });
         }
