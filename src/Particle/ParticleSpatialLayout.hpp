@@ -19,6 +19,7 @@
 //   frequency of load balancing (N), or may supply a function to
 //   determine if load balancing should be done or not.
 //
+#include <algorithm>
 #include <memory>
 #include <numeric>
 #include <vector>
@@ -334,10 +335,28 @@ namespace ippl {
             IpplTimings::getTimer("particleDeserialize");
         IpplTimings::startTimer(deserializeTimer);
 
+        static IpplTimings::TimerRef deserializeResizeTimer =
+            IpplTimings::getTimer("particleDeserializeResize");
+        IpplTimings::startTimer(deserializeResizeTimer);
+
+        if (totalRecvs > 0) {
+            const size_type receiveCapacity = localAfterDestroy + totalRecvs;
+            pc.forAllAttributes([&]<typename Attribute>(Attribute*& attribute) {
+                attribute->reserve(receiveCapacity);
+            });
+        }
+
+        IpplTimings::stopTimer(deserializeResizeTimer);
+
+        static IpplTimings::TimerRef deserializeCopyTimer =
+            IpplTimings::getTimer("particleDeserializeCopy");
+        IpplTimings::startTimer(deserializeCopyTimer);
+
         for (auto& finalize : finalizers) {
             finalize(pc.getLocalNum());
         }
 
+        IpplTimings::stopTimer(deserializeCopyTimer);
         IpplTimings::stopTimer(deserializeTimer);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);
