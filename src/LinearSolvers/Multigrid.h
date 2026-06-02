@@ -210,7 +210,7 @@ namespace ippl {
             IpplTimings::stopTimer(init_fields);
         }
 
-        void restrict_fullweight(const size_t level) {
+        void restrict_average(const size_t level) {
             IpplTimings::TimerRef restrict = IpplTimings::getTimer("restrict_fullweight");
             IpplTimings::startTimer(restrict);
 
@@ -450,7 +450,7 @@ namespace ippl {
                 return;
             }
             smooth_jacobi(level, nu1_);  // Pre-smoothing
-            restrict_fullweight(level);  // Pass level
+            restrict_average(level);     // Pass level
             vcycle(level + 1);           // Recursively go down one level
             prolong_add(level);          // Pass level
             smooth_jacobi(level, nu2_);  // Post-smoothing
