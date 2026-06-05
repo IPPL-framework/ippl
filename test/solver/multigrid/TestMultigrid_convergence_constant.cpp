@@ -40,9 +40,7 @@
 #include <iomanip>
 
 #include "Utility/Inform.h"
-#include "Utility/IpplTimings.h"
 
-#include "MaxwellSolvers/FDTDSolverBase.h"
 #include "PoissonSolvers/PoissonCG.h"
 
 int main(int argc, char* argv[]) {

@@ -38,9 +38,7 @@
 #include <iomanip>
 
 #include "Utility/Inform.h"
-#include "Utility/IpplTimings.h"
 
-#include "MaxwellSolvers/FDTDSolverBase.h"
 #include "PoissonSolvers/PoissonCG.h"
 
 int main(int argc, char* argv[]) {
@@ -55,7 +53,7 @@ int main(int argc, char* argv[]) {
 
         int maxPow        = 7;
         double tolerance  = 1e-13;
-        int maxIterations = 4000;
+        int maxIterations = 2000;
 
         if (argc > 1 && argv[1][0] != '-') {
             maxPow = std::atoi(argv[1]);
