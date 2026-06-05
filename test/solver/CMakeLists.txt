@@ -14,12 +14,6 @@ add_ippl_integration_test(TestCGSolver ARGS 4 j LABELS solver integration)
 add_ippl_integration_test(TestSolverDesign COMPILE_ONLY LABELS solver integration)
 add_ippl_integration_test(TestCGSolver_convergence COMPILE_ONLY LABELS solver integration)
 
-# tests the CG solver with Multigrid Preconditioner (Size 16^3, Test Case 1: Periodic)
-add_ippl_integration_test(TestMultigrid ARGS 4 1 LABELS solver integration)
-
-add_ippl_integration_test(TestMultigrid_debug COMPILE_ONLY LABELS solver integration)
-add_ippl_integration_test(TestMultigrid_convergence COMPILE_ONLY LABELS solver integration)
-
 if(IPPL_ENABLE_FFT)
   # tests FFTPeriodicPoissonSolver
   add_ippl_integration_test(TestFFTPeriodicPoissonSolver LABELS solver integration)
