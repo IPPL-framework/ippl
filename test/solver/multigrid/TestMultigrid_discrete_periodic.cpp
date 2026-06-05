@@ -204,8 +204,6 @@ int main(int argc, char* argv[]) {
                   << solveTime << endl;
             }
         }
-
-        IpplTimings::print("timings_multigrid_discrete_periodic.dat");
     }
     ippl::finalize();
 

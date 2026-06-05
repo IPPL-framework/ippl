@@ -38,10 +38,11 @@
 #include <cstdlib>
 #include <iomanip>
 
-#include "MaxwellSolvers/FDTDSolverBase.h"
-#include "PoissonSolvers/PoissonCG.h"
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
+
+#include "MaxwellSolvers/FDTDSolverBase.h"
+#include "PoissonSolvers/PoissonCG.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -110,7 +111,7 @@ int main(int argc, char* argv[]) {
                     const double y = origin[1] + (static_cast<double>(jg) + 1.0) * hx[1];
                     const double z = origin[2] + (static_cast<double>(kg) + 1.0) * hx[2];
 
-                    const double u = x * (1.0 - x) * y * (1.0 - y) * z * (1.0 - z);
+                    const double u   = x * (1.0 - x) * y * (1.0 - y) * z * (1.0 - z);
                     viewSol(i, j, k) = u;
                 });
 
@@ -181,8 +182,6 @@ int main(int argc, char* argv[]) {
                   << solveTime << endl;
             }
         }
-
-        IpplTimings::print("timings_multigrid_discrete_constant.dat");
     }
     ippl::finalize();
 

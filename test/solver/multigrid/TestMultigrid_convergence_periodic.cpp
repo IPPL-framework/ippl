@@ -35,10 +35,11 @@
 #include <cstdlib>
 #include <iomanip>
 
-#include "MaxwellSolvers/FDTDSolverBase.h"
-#include "PoissonSolvers/PoissonCG.h"
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
+
+#include "MaxwellSolvers/FDTDSolverBase.h"
+#include "PoissonSolvers/PoissonCG.h"
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
@@ -136,10 +137,9 @@ int main(int argc, char* argv[]) {
 
                     const double u = sx * sy * sz;
 
-                    const double f = a * a *
-                                     (cx * sax * sy * sz + sx * cy * say * sz
-                                      + sx * sy * cz * saz
-                                      + sx * sy * sz * (cax * cax + cay * cay + caz * caz));
+                    const double f = a * a
+                                     * (cx * sax * sy * sz + sx * cy * say * sz + sx * sy * cz * saz
+                                        + sx * sy * sz * (cax * cax + cay * cay + caz * caz));
 
                     viewSol(i, j, k) = u;
                     viewRHS(i, j, k) = f;
@@ -223,8 +223,6 @@ int main(int argc, char* argv[]) {
                   << solveTime << endl;
             }
         }
-
-        IpplTimings::print("timings_multigrid_convergence_periodic.dat");
     }
     ippl::finalize();
 
