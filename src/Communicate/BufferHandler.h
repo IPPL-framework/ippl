@@ -121,22 +121,22 @@ namespace ippl {
         void freeBuffer(buffer_type buffer) override;
 
         /**
-         * @copydoc BufferHandler::freeBuffer
+         * @copydoc BufferHandler::freeAllBuffers
          */
         void freeAllBuffers() override;
 
         /**
-         * @copydoc BufferHandler::freeBuffer
+         * @copydoc BufferHandler::deleteAllBuffers
          */
         void deleteAllBuffers() override;
 
         /**
-         * @copydoc BufferHandler::freeBuffer
+         * @copydoc BufferHandler::getUsedSize
          */
         size_type getUsedSize() const override;
 
         /**
-         * @copydoc BufferHandler::freeBuffer
+         * @copydoc BufferHandler::getFreeSize
          */
         size_type getFreeSize() const override;
 

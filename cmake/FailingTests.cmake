@@ -10,19 +10,7 @@
 
 if(BUILD_TESTING AND IPPL_MARK_FAILING_TESTS)
   set(IPPL_DISABLED_TEST_LIST
-      AssembleRHS
-      ParticleSendRecv
-      ORB
-      PIC
-      TestSolverDesign
-      TestGaussian_convergence
-      TestSphere
-      Budiardja_plot
-      TestGaussian
-      TestGaussian_hessian
-      TestGaussian_biharmonic
-      TestFFTTruncatedGreenPeriodicPoissonSolver
-      TestNonStandardFDTDSolver_convergence)
+  )
 
   set(IPPL_DISABLED_TEST_LIST_RELEASE ${IPPL_DISABLED_TEST_LIST})
   set(IPPL_DISABLED_TEST_LIST_DEBUG ${IPPL_DISABLED_TEST_LIST})

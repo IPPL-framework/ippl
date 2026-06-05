@@ -315,7 +315,7 @@ namespace ippl {
             hash_type cellPermutationForward);
 
         /*!
-         * @brieg compute the nd-cell-index from a flattened (non-permuted) index
+         * @brief compute the nd-cell-index from a flattened (non-permuted) index
          * @param nonPermutedIndex the flat index to transform
          * @param numCells in each dimension
          */

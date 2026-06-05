@@ -168,7 +168,7 @@ endfunction()
 # ------------------------------------------------------------------------------
 # set the default version of kokkos we will ask for if not already set
 if(NOT Kokkos_VERSION_DEFAULT)
-  set(Kokkos_VERSION_DEFAULT 4.7.01)
+  set(Kokkos_VERSION_DEFAULT 5.0.0)
 endif()
 # if the user has not asked for a specific version, we will use a default
 if(NOT Kokkos_VERSION)
@@ -180,6 +180,8 @@ extract_git_label(Kokkos_VERSION KOKKOS_VERSION_GIT)
 set(Kokkos_REPOSITORY "https://github.com/kokkos/kokkos.git")
 if(NOT KOKKOS_VERSION_GIT)
   find_package(Kokkos ${Kokkos_VERSION} QUIET COMPONENTS ${IPPL_PLATFORMS})
+  # Plain Kokkos versions are also release tags; use them for the source fallback.
+  set(KOKKOS_VERSION_GIT "${Kokkos_VERSION}")
 endif()
 
 # If Kokkos found on system, Check that it has the platform backends that we need

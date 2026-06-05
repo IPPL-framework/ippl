@@ -8,6 +8,8 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <iostream>
+
 #include "Types/ViewTypes.h"
 
 namespace ippl {
@@ -97,6 +99,52 @@ namespace ippl {
                         out << std::endl;
                     }
                 });
+        }
+
+        /*!
+         * Recursive implementation to write a view in list format to output stream
+         * @tparam Dim
+         *
+         * @param view
+         * @param out stream
+         */
+        template <unsigned Dim, typename View>
+        void write_as_list_impl(const View& view, std::ostream& out = std::cout) {
+            auto N = view.extent(0);
+            out << "[";
+            for (std::size_t i = 0; i < N; ++i) {
+                if constexpr (Dim == 1) {
+                    out << view(i);
+                } else {
+                    auto make_subview = [&]<std::size_t... Is>(std::index_sequence<Is...>) {
+                        return Kokkos::subview(view, i, (static_cast<void>(Is), Kokkos::ALL)...);
+                    };
+
+                    auto subview = make_subview(std::make_index_sequence<Dim - 1>());
+                    write_as_list_impl<Dim - 1>(subview, out);
+                }
+                if (i != N - 1)
+                    out << ", ";
+            }
+            out << "]";
+        };
+
+        /*!
+         * Writes a view to an output stream in folded list format
+         * @tparam T view data type
+         * @tparam Dim view dimension
+         * @tparam Properties further template parameters of Kokkos
+         *
+         * @param view to write
+         * @param out stream
+         */
+        template <typename T, unsigned Dim, class... Properties>
+        void write_as_list(const typename ViewType<T, Dim, Properties...>::view_type& view,
+                           std::ostream& out = std::cout) {
+            auto hview =
+                Kokkos::create_mirror_view_and_copy(Kokkos::DefaultHostExecutionSpace(), view);
+
+            write_as_list_impl<Dim>(hview, out);
         }
 
         /*!
