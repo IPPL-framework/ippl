@@ -460,9 +460,9 @@ namespace ippl {
             IpplTimings::TimerRef jacobi = IpplTimings::getTimer("smooth_jacobi");
             IpplTimings::startTimer(jacobi);
 
-            auto& lev = L_[level];
-            auto& u   = lev.u;
-            auto& f   = lev.f;
+            auto& lev     = L_[level];
+            auto& u       = lev.u;
+            const auto& f = lev.f;
 
             const auto diag = multigrid::compute_diag(lev);
 
