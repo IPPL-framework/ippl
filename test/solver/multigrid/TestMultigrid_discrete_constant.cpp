@@ -30,7 +30,7 @@
 // Optional first positional argument:
 //     maxPow
 //
-// Default maxPow = 6, i.e. sizes 4^3, 8^3, ..., 64^3.
+// Default maxPow = 6, i.e. sizes 4^3, 8^3, ..., 128^3.
 
 #include "Ippl.h"
 
@@ -54,8 +54,8 @@ int main(int argc, char* argv[]) {
         using Field_t     = ippl::Field<double, dim, Mesh_t, Centering_t>;
         using BConds_t    = ippl::BConds<Field_t, dim>;
 
-        int maxPow        = 6;
-        double tolerance  = 1e-12;
+        int maxPow        = 7;
+        double tolerance  = 1e-13;
         int maxIterations = 4000;
 
         if (argc > 1 && argv[1][0] != '-') {
