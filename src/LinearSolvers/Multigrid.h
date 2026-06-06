@@ -129,27 +129,73 @@ namespace ippl {
             auto bcs = b.getFieldBC();
 
             // 1. Calculate number of levels
-            const auto& localFine = fine_layout.getLocalNDIndex();  // this rank's slab
-            int min_local         = std::numeric_limits<int>::max();
+            // ------------------------------------------------------------------
+            // Decide how many multigrid levels we can build.
+            //
+            // Idea: base the decision purely on the GLOBAL problem size and the
+            // shape of the rank decomposition, not on each rank's local slab.
+            // That way every rank computes the same nlevels by construction, and
+            // the V-cycle is identical for a given (global N, rank layout) pair
+            // regardless of how the domain happens to be sliced unevenly.
+            // ------------------------------------------------------------------
 
+            const auto& gDom         = fine_layout.getDomain();        // global index space
+            const auto& localFineDom = fine_layout.getLocalNDIndex();  // this rank's slab
+
+            // For each dimension, figure out how many ranks slice it.
+            // A serial dim has localLen == globalLen, so ranks_per_dim[d] == 1.
+            // A dim split across P ranks has globalLen / localLen == P (assuming
+            // a roughly even split, which IPPL guarantees up to +-1 cell).
+            ippl::Vector<int, Dim> ranks_per_dim;
             for (unsigned d = 0; d < Dim; ++d) {
-                // For serial dims, every rank's local extent == global extent, so this naturally
-                // covers them too. We do not have to check if dim is parallel or not.
-                min_local = std::min(min_local, static_cast<int>(localFine[d].length()));
+                const int globalLen = static_cast<int>(gDom[d].length());
+                const int localLen  = static_cast<int>(localFineDom[d].length());
+                ranks_per_dim[d]    = (localLen > 0) ? (globalLen / localLen) : 1;
             }
 
-            // reduce over all ranks to find smallest dimensional extent
-            int min_local_global = min_local;
-            ippl::Comm->allreduce(min_local, min_local_global, 1, std::less<int>{});
+            // Safety net: in case ranks disagree (uneven splits, empty slabs, ...)
+            // take the max across ranks so everyone uses the same divisor below.
+            // In a healthy run this is a no-op.
+            for (unsigned d = 0; d < Dim; ++d) {
+                int local = ranks_per_dim[d], global = local;
+                ippl::Comm->allreduce(local, global, 1, std::greater<int>{});
+                ranks_per_dim[d] = global;
+            }
 
-            constexpr int min_cells_on_coarsest = 4;
-            int nlevels                         = 1;
-            int at_level                        = min_local_global;
-            while (at_level / 2 >= min_cells_on_coarsest) {
-                at_level /= 2;
+            // Minimum number of coarse cells each rank must still own in every
+            // parallel dimension on the coarsest level. Two cells is the bare
+            // minimum for a well-defined halo exchange and a meaningful smoother
+            // sweep; bump this to 4 if you want extra safety margin (e.g. for
+            // wider stencils or periodic BCs that can alias on tiny slabs).
+            constexpr int min_cells_per_rank_per_dim = 2;
+
+            // Walk down the hierarchy: start at level 1 (just the fine grid) and
+            // keep adding a coarser level as long as EVERY dimension still has
+            // enough cells per rank after one more halving.
+            int nlevels = 1;
+            while (true) {
+                bool can_coarsen = true;
+
+                for (unsigned d = 0; d < Dim; ++d) {
+                    // Global extent on the candidate coarser level: N_d / 2^nlevels.
+                    const int coarseGlobal = static_cast<int>(gDom[d].length()) >> nlevels;
+
+                    // How many of those cells each rank would own in dim d.
+                    // For serial dims ranks_per_dim[d] == 1, so this equals
+                    // coarseGlobal and is essentially unconstrained.
+                    const int coarsePerRank = coarseGlobal / ranks_per_dim[d];
+
+                    if (coarsePerRank < min_cells_per_rank_per_dim) {
+                        can_coarsen = false;
+                        break;
+                    }
+                }
+
+                if (!can_coarsen) {
+                    break;  // adding another level would starve at least one rank
+                }
                 ++nlevels;
             }
-
             // reserve full vector to avoid implicit copying when adding new elements
             L_.clear();
             L_.reserve(nlevels);
@@ -455,6 +501,33 @@ namespace ippl {
             prolong_add(level);          // Pass level
             smooth_jacobi(level, nu2_);  // Post-smoothing
         }
+
+        // void vcycle(size_t level) {
+        //     auto dbg = [&](const char* tag) {
+        //         const double nu = norm(L_[level].u);
+        //         const double nf = norm(L_[level].f);
+        //         Inform m("");
+        //         m << "L" << level << " " << tag << "  ||u||=" << std::setprecision(15) << nu
+        //           << "  ||f||=" << nf << endl;
+        //     };
+        //
+        //     if (level == L_.size() - 1) {
+        //         dbg("coarse-in");
+        //         smooth_jacobi(level, 50);
+        //         dbg("coarse-out");
+        //         return;
+        //     }
+        //     dbg("pre-in");
+        //     smooth_jacobi(level, nu1_);
+        //     dbg("after-presmooth");
+        //     restrict_average(level);
+        //     dbg("after-restrict");
+        //     vcycle(level + 1);
+        //     prolong_add(level);
+        //     dbg("after-prolong");
+        //     smooth_jacobi(level, nu2_);
+        //     dbg("after-postsmooth");
+        // }
 
         void smooth_jacobi(const size_t level, const unsigned iters) {
             IpplTimings::TimerRef jacobi = IpplTimings::getTimer("smooth_jacobi");
