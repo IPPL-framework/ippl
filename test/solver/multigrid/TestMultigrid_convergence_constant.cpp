@@ -29,7 +29,7 @@
 // Optional first positional argument:
 //     maxPow
 //
-// Default maxPow = 6, i.e. sizes 4^3, 8^3, ..., 128^3.
+// Default maxPow = 6, i.e. sizes 8^3, ..., 128^3.
 
 #include "Ippl.h"
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
 
         int maxPow        = 7;
         double tolerance  = 1e-13;
-        int maxIterations = 4000;
+        int maxIterations = 2000;
 
         if (argc > 1 && argv[1][0] != '-') {
             maxPow = std::atoi(argv[1]);
@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
         Inform m("");
         m << "solver,size,h,relError,trueResidual,solverResidual,itCount,solveTime" << endl;
 
-        for (unsigned pt = 1u << 2; pt <= (1u << maxPow); pt = pt << 1) {
+        for (unsigned pt = 1u << 3; pt <= (1u << maxPow); pt = pt << 1) {
             ippl::Vector<unsigned, dim> I(pt);
             ippl::NDIndex<dim> domain(I);
 
