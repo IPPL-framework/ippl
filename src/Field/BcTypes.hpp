@@ -45,8 +45,14 @@ namespace ippl {
             const auto& domain     = layout.getDomain();
             int myRank             = field.getCommunicator().rank();
 
-            bool isBoundary = (lDomains[myRank][d].max() == domain[d].max())
-                              || (lDomains[myRank][d].min() == domain[d].min());
+            // Only apply the BC if this rank actually owns this face's global boundary.
+            // Lower face -> local min must match global min; upper face -> local max
+            // must match global max. Otherwise this side is an internal MPI interface
+            // and must be filled by halo exchange, not by the boundary update.
+            const bool isLowerFace = !(face & 1);
+
+            const bool isBoundary = isLowerFace ? (lDomains[myRank][d].min() == domain[d].min())
+                                                : (lDomains[myRank][d].max() == domain[d].max());
 
             if (!isBoundary) {
                 return;
