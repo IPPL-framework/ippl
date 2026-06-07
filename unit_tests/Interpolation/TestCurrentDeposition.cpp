@@ -16,21 +16,22 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
 };
 
 template <typename>
-class AssembleCurrentYeeTest;
+class AssembleCurrentTest;
 
 template <typename T, unsigned Dim>
-class AssembleCurrentYeeTest<Parameters<T, Rank<Dim>>> : public ::testing::Test {
+class AssembleCurrentTest<Parameters<T, Rank<Dim>>> : public ::testing::Test {
 public:
-    using value_type   = T;
+    using value_type  = T;
     static constexpr unsigned dim = Dim;
 
-    using Mesh_t       = ippl::UniformCartesian<T, Dim>;
-    using Centering_t  = typename Mesh_t::DefaultCentering;
-    using JField_t     = ippl::Field<ippl::Vector<T, Dim>, Dim, Mesh_t, Centering_t>;
-    using Layout_t     = ippl::FieldLayout<Dim>;
+    using Mesh_t      = ippl::UniformCartesian<T, Dim>;
+    using Centering_t = typename Mesh_t::DefaultCentering;
+    // Dim+1 components: [0] = scalar potential / charge density, [1..Dim] = Jx, Jy, Jz.
+    using JField_t    = ippl::Field<ippl::Vector<T, Dim + 1>, Dim, Mesh_t, Centering_t>;
+    using Layout_t    = ippl::FieldLayout<Dim>;
 
-    using playout_t    = ippl::ParticleSpatialLayout<T, Dim>;
-    using bunch_t      = Bunch<playout_t>;
+    using playout_t   = ippl::ParticleSpatialLayout<T, Dim>;
+    using bunch_t     = Bunch<playout_t>;
 
     static ippl::NDIndex<Dim> make_owned_nd(int nx) {
         ippl::Index I0(nx);
@@ -55,95 +56,14 @@ using Precisions = TestParams::Precisions;
 using Ranks      = TestParams::Ranks<2, 3>;
 using Tests      = TestForTypes<CreateCombinations<Precisions, Ranks>::type>::type;
 
-TYPED_TEST_SUITE(AssembleCurrentYeeTest, Tests);
+TYPED_TEST_SUITE(AssembleCurrentTest, Tests);
 
-TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_ThreeCells_ExactValues) {
-    using T = typename TestFixture::value_type;
-    constexpr unsigned Dim = TestFixture::dim;
-
-    if constexpr (Dim != 2) {
-        GTEST_SKIP() << "Exact value check only implemented for 2D";
-    } else {
-        using bunch_t   = typename TestFixture::bunch_t;
-        using playout_t = typename TestFixture::playout_t;
-        using JField_t  = typename TestFixture::JField_t;
-
-        int nx = 4;
-        ippl::Vector<T, Dim> origin(0.0);
-        ippl::Vector<T, Dim> h(1.0);
-
-        auto owned  = TestFixture::make_owned_nd(nx);
-        auto layout = TestFixture::make_layout(owned);
-        auto mesh   = TestFixture::make_mesh(owned, h, origin);
-
-        JField_t J_field(mesh, layout);
-        
-        J_field = T(0);
-
-        // path: (0.75, 0.50) -> (1.50, 1.25), same as FEM test
-        playout_t playout(layout, mesh);
-        bunch_t bunch(playout);
-        bunch.create(ippl::Comm->rank() == 0 ? 1 : 0);
-        if (ippl::Comm->rank() == 0) {
-            auto R_host  = bunch.R.getHostMirror();
-            auto Rn_host = bunch.R_next.getHostMirror();
-            auto Q_host  = bunch.Q.getHostMirror();
-            R_host(0)[0]  = T(0.75);
-            R_host(0)[1]  = T(0.50);
-            Rn_host(0)[0] = T(1.50);
-            Rn_host(0)[1] = T(1.25);
-            Q_host(0) = T(1.0);
-            Kokkos::deep_copy(bunch.R.getView(), R_host);
-            Kokkos::deep_copy(bunch.R_next.getView(), Rn_host);
-            Kokkos::deep_copy(bunch.Q.getView(), Q_host);
-        }
-        bunch.update();
-
-        auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
-        T dt = T(1.0);
-        ippl::assemble_current_yee(mesh, bunch.Q, bunch.R, bunch.R_next,
-                                   J_field, policy, dt);
-        J_field.accumulateHalo();
-
-        auto ldom  = J_field.getLayout().getLocalNDIndex();
-        int nghost = J_field.getNghost();
-
-        auto view      = J_field.getView();
-        auto view_host = Kokkos::create_mirror_view(view);
-        Kokkos::deep_copy(view_host, view);
-        Kokkos::fence();
-
-        const T tol = std::numeric_limits<T>::epsilon() * T(100);
-
-        // Extract value on owning rank, broadcast to all via SUM so every rank asserts.
-        auto check = [&](int gi, int gj, unsigned c, double expected) {
-            double local_val = 0.0;
-            if (gi >= ldom.first()[0] && gi <= ldom.last()[0] &&
-                gj >= ldom.first()[1] && gj <= ldom.last()[1]) {
-                int li = gi - ldom.first()[0] + nghost;
-                int lj = gj - ldom.first()[1] + nghost;
-                local_val = static_cast<double>(view_host(li, lj)[c]);
-            }
-            double global_val = 0.0;
-            MPI_Allreduce(&local_val, &global_val, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-            EXPECT_NEAR(global_val, expected, static_cast<double>(tol));
-        };
-
-        check(0, 0, 0, 0.09375);
-        check(0, 0, 1, 0.03125);
-        check(0, 1, 0, 0.15625);
-        check(1, 0, 0, 0.03125);
-        check(1, 0, 1, 0.4375);   
-        check(1, 1, 0, 0.4375);  
-        check(1, 1, 1, 0.15625);
-        check(1, 2, 0, 0.03125);
-        check(2, 0, 1, 0.03125);
-        check(2, 1, 1, 0.09375);
-        
-    }
-}
-
-TYPED_TEST(AssembleCurrentYeeTest, SingleAxis_X_SameCell_ExactValues) {
+// Pure x-motion inside a single cell. All 2^Dim corners receive equal weight
+// (midpoint lies exactly at cell centre). Verifies:
+//   - Jx is distributed uniformly over all 2^Dim nodes.
+//   - Jy (and Jz in 3D) remain exactly zero.
+//   - The scalar slot field[0] is untouched (remains zero).
+TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
     using T = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
 
@@ -151,7 +71,7 @@ TYPED_TEST(AssembleCurrentYeeTest, SingleAxis_X_SameCell_ExactValues) {
     using playout_t = typename TestFixture::playout_t;
     using JField_t  = typename TestFixture::JField_t;
 
-    int nx = 4;
+    int nx = 32;
     ippl::Vector<T, Dim> origin(0.0);
     ippl::Vector<T, Dim> h(1.0);
 
@@ -181,7 +101,8 @@ TYPED_TEST(AssembleCurrentYeeTest, SingleAxis_X_SameCell_ExactValues) {
 
     auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
     T dt = T(1.0);
-    ippl::assemble_current_yee(mesh, bunch.Q, bunch.R, bunch.R_next, J_field, policy, dt);
+    ippl::assemble_current_collocated(mesh, bunch.Q, bunch.R, bunch.R_next,
+                                      J_field, policy, dt);
     J_field.accumulateHalo();
 
     auto ldom      = J_field.getLayout().getLocalNDIndex();
@@ -199,44 +120,79 @@ TYPED_TEST(AssembleCurrentYeeTest, SingleAxis_X_SameCell_ExactValues) {
         return true;
     };
 
+    // c is the 0-indexed spatial component (Jx=0, Jy=1, Jz=2).
+    // Field component is c+1 because index 0 is the scalar slot.
     auto check = [&](const Kokkos::Array<int, Dim>& cell, unsigned c, double expected) {
         double local_val = 0.0;
         if (in_ldom(cell)) {
             size_t idx[Dim];
             for (unsigned d = 0; d < Dim; ++d)
                 idx[d] = static_cast<size_t>(cell[d] - ldom.first()[d] + nghost);
-            local_val = static_cast<double>(ippl::apply(view_host, idx)[c]);
+            local_val = static_cast<double>(ippl::apply(view_host, idx)[c + 1]);
         }
         double global_val = 0.0;
         MPI_Allreduce(&local_val, &global_val, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         EXPECT_NEAR(global_val, expected, static_cast<double>(tol));
     };
 
-    // Pure x-motion in cell (0,...,0): mid=(0.5,0.5,...), xi=(0.5,0.5,...)
-    // x-component scatters evenly to 2^(Dim-1) transverse neighbours.
+    auto check_scalar = [&](const Kokkos::Array<int, Dim>& cell) {
+        double local_val = 0.0;
+        if (in_ldom(cell)) {
+            size_t idx[Dim];
+            for (unsigned d = 0; d < Dim; ++d)
+                idx[d] = static_cast<size_t>(cell[d] - ldom.first()[d] + nghost);
+            local_val = static_cast<double>(ippl::apply(view_host, idx)[0]);
+        }
+        double global_val = 0.0;
+        MPI_Allreduce(&local_val, &global_val, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+        EXPECT_NEAR(global_val, 0.0, static_cast<double>(tol));
+    };
+
+    // One segment in cell (0,...,0). Mid=(0.5,0.5,...), xi=(0.5,0.5,...),
+    // dp=(0.5,0,...). All 2^Dim corners share weight (0.5)^Dim.
+    // Jx = dp[0] * (0.5)^Dim per corner; Jy = Jz = 0.
     if constexpr (Dim == 2) {
-        check({0, 0}, 0, 0.25);
-        check({0, 1}, 0, 0.25);
+        // weight=0.25, Jx=0.5*0.25=0.125 at each of 4 corners.
+        check({0, 0}, 0, 0.125); check({1, 0}, 0, 0.125);
+        check({0, 1}, 0, 0.125); check({1, 1}, 0, 0.125);
+        check({0, 0}, 1, 0.0);   check({1, 0}, 1, 0.0);
+        check({0, 1}, 1, 0.0);   check({1, 1}, 1, 0.0);
+        check_scalar({0, 0}); check_scalar({1, 0});
+        check_scalar({0, 1}); check_scalar({1, 1});
     } else if constexpr (Dim == 3) {
-        check({0, 0, 0}, 0, 0.125);
-        check({0, 1, 0}, 0, 0.125);
-        check({0, 0, 1}, 0, 0.125);
-        check({0, 1, 1}, 0, 0.125);
+        // weight=0.125, Jx=0.5*0.125=0.0625 at each of 8 corners.
+        for (int i = 0; i <= 1; ++i)
+            for (int j = 0; j <= 1; ++j)
+                for (int k = 0; k <= 1; ++k) {
+                    check({i, j, k}, 0, 0.0625);
+                    check({i, j, k}, 1, 0.0);
+                    check({i, j, k}, 2, 0.0);
+                    check_scalar({i, j, k});
+                }
     }
 }
 
-TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_VertexHit_3D) {
+// Diagonal path crossing two cell boundaries (three segments). 2D only.
+//
+// Segments (GridPathSegmenter: x-cut t=1/3, y-cut t=2/3):
+//   seg0: cell(0,0) xi=(0.875,0.625) dp=(0.25,0.25)
+//   seg1: cell(1,0) xi=(0.125,0.875) dp=(0.25,0.25)
+//   seg2: cell(1,1) xi=(0.375,0.125) dp=(0.25,0.25)
+//
+// Because dp_x == dp_y for every segment, Jx == Jy at every node.
+// With h=1 (volume=1), q_over_dt_vol = 1.
+TYPED_TEST(AssembleCurrentTest, DiagonalPath_ThreeCells_ExactValues) {
     using T = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
 
-    if constexpr (Dim != 3) {
-        GTEST_SKIP() << "Vertex-hit crossing test only implemented for 3D";
+    if constexpr (Dim != 2) {
+        GTEST_SKIP() << "Exact value check only implemented for 2D";
     } else {
         using bunch_t   = typename TestFixture::bunch_t;
         using playout_t = typename TestFixture::playout_t;
         using JField_t  = typename TestFixture::JField_t;
 
-        int nx = 4;
+        int nx = 32;
         ippl::Vector<T, Dim> origin(0.0);
         ippl::Vector<T, Dim> h(1.0);
 
@@ -249,8 +205,98 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_VertexHit_3D) {
 
         playout_t playout(layout, mesh);
         bunch_t bunch(playout);
-        // path: (0.9,0.9,0.8)->(1.1,1.1,1.2), all three axis crossings at t=0.5 (vertex hit)
-        // seg0 in cell (0,0,0), seg1 in cell (1,1,1)
+        // Three identical particles — exercises atomic accumulation; all nodal
+        // values must scale by 3 relative to the single-particle baseline.
+        bunch.create(ippl::Comm->rank() == 0 ? 3 : 0);
+        if (ippl::Comm->rank() == 0) {
+            auto R_host  = bunch.R.getHostMirror();
+            auto Rn_host = bunch.R_next.getHostMirror();
+            auto Q_host  = bunch.Q.getHostMirror();
+            for (int p = 0; p < 3; ++p) {
+                R_host(p)[0]  = T(0.75); R_host(p)[1]  = T(0.50);
+                Rn_host(p)[0] = T(1.50); Rn_host(p)[1] = T(1.25);
+                Q_host(p) = T(1.0);
+            }
+            Kokkos::deep_copy(bunch.R.getView(), R_host);
+            Kokkos::deep_copy(bunch.R_next.getView(), Rn_host);
+            Kokkos::deep_copy(bunch.Q.getView(), Q_host);
+        }
+        bunch.update();
+
+        auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
+        T dt = T(1.0);
+        ippl::assemble_current_collocated(mesh, bunch.Q, bunch.R, bunch.R_next,
+                                          J_field, policy, dt);
+        J_field.accumulateHalo();
+
+        auto ldom      = J_field.getLayout().getLocalNDIndex();
+        int  nghost    = J_field.getNghost();
+        auto view      = J_field.getView();
+        auto view_host = Kokkos::create_mirror_view(view);
+        Kokkos::deep_copy(view_host, view);
+        Kokkos::fence();
+
+        const T tol = std::numeric_limits<T>::epsilon() * T(100);
+
+        // Checks field[c+1] at global node (gi, gj). Broadcasts via SUM so
+        // every MPI rank asserts regardless of domain decomposition.
+        auto check = [&](int gi, int gj, unsigned c, double expected) {
+            double local_val = 0.0;
+            if (gi >= ldom.first()[0] && gi <= ldom.last()[0] &&
+                gj >= ldom.first()[1] && gj <= ldom.last()[1]) {
+                int li = gi - ldom.first()[0] + nghost;
+                int lj = gj - ldom.first()[1] + nghost;
+                local_val = static_cast<double>(view_host(li, lj)[c + 1]);
+            }
+            double global_val = 0.0;
+            MPI_Allreduce(&local_val, &global_val, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+            EXPECT_NEAR(global_val, expected, static_cast<double>(tol));
+        };
+
+        // All single-particle values scaled by 3 (three identical particles).
+        check(0, 0, 0, 0.03515625);  check(0, 0, 1, 0.03515625);
+        check(1, 0, 0, 0.328125);    check(1, 0, 1, 0.328125);
+        check(0, 1, 0, 0.05859375);  check(0, 1, 1, 0.05859375);
+        check(1, 1, 0, 1.39453125);  check(1, 1, 1, 1.39453125);
+        check(2, 0, 0, 0.01171875);  check(2, 0, 1, 0.01171875);
+        check(2, 1, 0, 0.328125);    check(2, 1, 1, 0.328125);
+        check(1, 2, 0, 0.05859375);  check(1, 2, 1, 0.05859375);
+        check(2, 2, 0, 0.03515625);  check(2, 2, 1, 0.03515625);
+    }
+}
+
+// 3D path where all three axes are crossed simultaneously at t=0.5 (vertex hit).
+// Active segments after degenerate zero-length segments are skipped:
+//   seg0: cell(0,0,0) xi=(0.95,0.95,0.9) dp=(0.1,0.1,0.2)
+//   seg3: cell(1,1,1) xi=(0.05,0.05,0.1) dp=(0.1,0.1,0.2)
+//
+// Symmetry used to reduce the number of assertions:
+//   Jy == Jx everywhere (dp_y == dp_x)
+//   Jz == 2*Jx everywhere (dp_z == 2*dp_x)
+TYPED_TEST(AssembleCurrentTest, DiagonalPath_VertexHit_3D) {
+    using T = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
+
+    if constexpr (Dim != 3) {
+        GTEST_SKIP() << "Vertex-hit crossing test only implemented for 3D";
+    } else {
+        using bunch_t   = typename TestFixture::bunch_t;
+        using playout_t = typename TestFixture::playout_t;
+        using JField_t  = typename TestFixture::JField_t;
+
+        int nx = 32;
+        ippl::Vector<T, Dim> origin(0.0);
+        ippl::Vector<T, Dim> h(1.0);
+
+        auto owned  = TestFixture::make_owned_nd(nx);
+        auto layout = TestFixture::make_layout(owned);
+        auto mesh   = TestFixture::make_mesh(owned, h, origin);
+
+        JField_t J_field(mesh, layout);
+        J_field = T(0);
+
+        playout_t playout(layout, mesh);
+        bunch_t bunch(playout);
         bunch.create(ippl::Comm->rank() == 0 ? 1 : 0);
         if (ippl::Comm->rank() == 0) {
             auto R_host  = bunch.R.getHostMirror();
@@ -267,7 +313,8 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_VertexHit_3D) {
 
         auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
         T dt = T(1.0);
-        ippl::assemble_current_yee(mesh, bunch.Q, bunch.R, bunch.R_next, J_field, policy, dt);
+        ippl::assemble_current_collocated(mesh, bunch.Q, bunch.R, bunch.R_next,
+                                          J_field, policy, dt);
         J_field.accumulateHalo();
 
         auto ldom      = J_field.getLayout().getLocalNDIndex();
@@ -291,45 +338,53 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_VertexHit_3D) {
                 size_t idx[Dim];
                 for (unsigned d = 0; d < Dim; ++d)
                     idx[d] = static_cast<size_t>(cell[d] - ldom.first()[d] + nghost);
-                local_val = static_cast<double>(ippl::apply(view_host, idx)[c]);
+                local_val = static_cast<double>(ippl::apply(view_host, idx)[c + 1]);
             }
             double global_val = 0.0;
             MPI_Allreduce(&local_val, &global_val, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
             EXPECT_NEAR(global_val, expected, static_cast<double>(tol));
         };
 
-        // seg0: mid=(0.95,0.95,0.9), cell=(0,0,0), xi=(0.95,0.95,0.9), dp=(0.1,0.1,0.2)
-        // seg1: mid=(1.05,1.05,1.1), cell=(1,1,1), xi=(0.05,0.05,0.1), dp=(0.1,0.1,0.2)
+        // Jx (c=0): dp[0]=0.1 per segment, weights from full trilinear CIC.
+        check({0, 0, 0}, 0, 0.000025);
+        check({1, 0, 0}, 0, 0.000475);
+        check({0, 1, 0}, 0, 0.000475);
+        check({1, 1, 0}, 0, 0.009025);
+        check({0, 0, 1}, 0, 0.000225);
+        check({1, 0, 1}, 0, 0.004275);
+        check({0, 1, 1}, 0, 0.004275);
+        check({1, 1, 1}, 0, 0.16245);
+        check({2, 1, 1}, 0, 0.004275);
+        check({1, 2, 1}, 0, 0.004275);
+        check({2, 2, 1}, 0, 0.000225);
+        check({1, 1, 2}, 0, 0.009025);
+        check({2, 1, 2}, 0, 0.000475);
+        check({1, 2, 2}, 0, 0.000475);
+        check({2, 2, 2}, 0, 0.000025);
 
-        // Component 0 (x):
-        check({0, 0, 0}, 0, 0.0005);
-        check({0, 1, 0}, 0, 0.0095);
-        check({0, 0, 1}, 0, 0.0045);
-        check({0, 1, 1}, 0, 0.0855);
-        check({1, 1, 1}, 0, 0.0855);
-        check({1, 2, 1}, 0, 0.0045);
-        check({1, 1, 2}, 0, 0.0095);
-        check({1, 2, 2}, 0, 0.0005);
+        // Jy == Jx (dp_y == dp_x): spot-check a subset of nodes.
+        check({0, 0, 0}, 1, 0.000025);
+        check({1, 1, 0}, 1, 0.009025);
+        check({1, 1, 1}, 1, 0.16245);
+        check({1, 1, 2}, 1, 0.009025);
+        check({2, 2, 2}, 1, 0.000025);
 
-        // Component 1 (y):
-        check({0, 0, 0}, 1, 0.0005);
-        check({1, 0, 0}, 1, 0.0095);
-        check({0, 0, 1}, 1, 0.0045);
-        check({1, 0, 1}, 1, 0.0855);
-        check({1, 1, 1}, 1, 0.0855);
-        check({2, 1, 1}, 1, 0.0045);
-        check({1, 1, 2}, 1, 0.0095);
-        check({2, 1, 2}, 1, 0.0005);
-
-        // Component 2 (z):
-        check({0, 0, 0}, 2, 0.0005);
-        check({1, 0, 0}, 2, 0.0095);
-        check({0, 1, 0}, 2, 0.0095);
-        check({1, 1, 0}, 2, 0.1805);
-        check({1, 1, 1}, 2, 0.1805);
-        check({2, 1, 1}, 2, 0.0095);
-        check({1, 2, 1}, 2, 0.0095);
-        check({2, 2, 1}, 2, 0.0005);
+        // Jz (c=2): dp[2]=0.2 == 2*dp[0], so Jz == 2*Jx at every node.
+        check({0, 0, 0}, 2, 0.00005);
+        check({1, 0, 0}, 2, 0.00095);
+        check({0, 1, 0}, 2, 0.00095);
+        check({1, 1, 0}, 2, 0.01805);
+        check({0, 0, 1}, 2, 0.00045);
+        check({1, 0, 1}, 2, 0.00855);
+        check({0, 1, 1}, 2, 0.00855);
+        check({1, 1, 1}, 2, 0.3249);
+        check({2, 1, 1}, 2, 0.00855);
+        check({1, 2, 1}, 2, 0.00855);
+        check({2, 2, 1}, 2, 0.00045);
+        check({1, 1, 2}, 2, 0.01805);
+        check({2, 1, 2}, 2, 0.00095);
+        check({1, 2, 2}, 2, 0.00095);
+        check({2, 2, 2}, 2, 0.00005);
     }
 }
 
