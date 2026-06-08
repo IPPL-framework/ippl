@@ -191,6 +191,7 @@ int main(int argc, char* argv[]) {
                     params.add("richardson_iterations", 4);
                     params.add("communication", 1);
 
+                    // Multigrid-specific parameters.
                     params.add("mg_pre_smooth_iters", 2);
                     params.add("mg_post_smooth_iters", 2);
                     params.add("mg_omega", 0.8);
