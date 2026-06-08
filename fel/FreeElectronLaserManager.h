@@ -169,6 +169,7 @@ public:
 
     void dump() override {
         dumpRadiation();
+        dumpFELDiagnostics();
 
         // Emit a video frame on the configured rhythm. writeFrame is collective,
         // so every rank must reach it under the same condition.
@@ -227,6 +228,125 @@ public:
                 csvout << "labframe_z, radiated_power_W" << endl;
             }
             csvout << pos[2] * unit_length_in_meters << " " << power_global << endl;
+        }
+        ippl::Comm->barrier();
+    }
+
+    // FEL gain diagnostics, written against the same lab-frame distance axis as
+    // the radiation curve so they can be overlaid:
+    //   * bunching   : micro-bunching factor |<exp(i k* z)>| at the resonant
+    //                  wavelength lambda* = undulator_period / (2 gamma_frame).
+    //                  Exponential growth of this is the signature of FEL gain;
+    //                  if it stays at the ~1% seed there is no gain.
+    //   * max|E|     : peak electric-field magnitude in the domain.
+    //   * fieldEnergy: total EM field energy (0.5 * sum(E.E + B.B) * cellVolume).
+    //   * N          : live particle count (catches runaway out-of-bounds loss).
+    void dumpFELDiagnostics() {
+        auto pc = this->pcontainer_m;
+        auto fc = this->fcontainer_m;
+
+        // --- micro-bunching factor at the resonant wavelength ---
+        const double lambda_star = this->m_config.undulator_period / (2.0 * frame_gamma_m);
+        const double kstar       = 2.0 * M_PI / lambda_star;
+        auto rview               = pc->R.getView();
+        double sumcos = 0.0, sumsin = 0.0;
+        Kokkos::parallel_reduce(
+            "FEL bunching", pc->getLocalNum(),
+            KOKKOS_LAMBDA(const size_t i, double& c, double& s) {
+                const double phase = kstar * rview(i)[2];
+                c += Kokkos::cos(phase);
+                s += Kokkos::sin(phase);
+            },
+            sumcos, sumsin);
+
+        double gsumcos = 0.0, gsumsin = 0.0;
+        ippl::Comm->reduce(sumcos, gsumcos, 1, std::plus<double>());
+        ippl::Comm->reduce(sumsin, gsumsin, 1, std::plus<double>());
+        size_type nLocal = pc->getLocalNum(), nGlobal = 0;
+        ippl::Comm->reduce(nLocal, nGlobal, 1, std::plus<size_type>());
+        double bunching = (nGlobal > 0)
+                              ? std::sqrt(gsumcos * gsumcos + gsumsin * gsumsin) / (double)nGlobal
+                              : 0.0;
+
+        // --- peak |E| and total EM field energy over the domain ---
+        const int nghost = fc->getE().getNghost();
+        auto Eview       = fc->getE().getView();
+        auto Bview       = fc->getB().getView();
+        using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
+        double localE2 = 0.0, localEmax = 0.0;
+        ippl::parallel_reduce(
+            "FEL field stats", ippl::getRangePolicy(Eview, nghost),
+            KOKKOS_LAMBDA(const index_array_type& args, double& E2, double& Emax) {
+                ippl::Vector<T, 3> E = ippl::apply(Eview, args);
+                ippl::Vector<T, 3> B = ippl::apply(Bview, args);
+                E2 += E.dot(E) + B.dot(B);
+                double en = Kokkos::sqrt(E.dot(E));
+                if (en > Emax) {
+                    Emax = en;
+                }
+            },
+            Kokkos::Sum<double>(localE2), Kokkos::Max<double>(localEmax));
+
+        double globalE2 = 0.0, globalEmax = 0.0;
+        ippl::Comm->reduce(localE2, globalE2, 1, std::plus<double>());
+        ippl::Comm->reduce(localEmax, globalEmax, 1, std::greater<double>());
+        double cellVolume = 1.0;
+        for (unsigned d = 0; d < Dim; ++d) {
+            cellVolume *= this->hr_m[d];
+        }
+        double fieldEnergy = 0.5 * globalE2 * cellVolume;
+
+        // --- bunch centroid, RMS size, and mean longitudinal momentum, to see
+        //     HOW particles leave the domain (all in the co-moving frame, units
+        //     of unit_length). Box half-widths: z in [origin_z, origin_z+L_z],
+        //     transverse +-extents/2. ---
+        auto gbview = pc->gamma_beta.getView();
+        double sz = 0.0, sz2 = 0.0, sperp2 = 0.0, sgbz = 0.0;
+        Kokkos::parallel_reduce(
+            "FEL bunch shape", pc->getLocalNum(),
+            KOKKOS_LAMBDA(const size_t i, double& az, double& az2, double& aperp2, double& agbz) {
+                const double x = rview(i)[0], y = rview(i)[1], z = rview(i)[2];
+                az += z;
+                az2 += z * z;
+                aperp2 += x * x + y * y;
+                agbz += gbview(i)[2];
+            },
+            sz, sz2, sperp2, sgbz);
+        double gsz = 0.0, gsz2 = 0.0, gsperp2 = 0.0, gsgbz = 0.0;
+        ippl::Comm->reduce(sz, gsz, 1, std::plus<double>());
+        ippl::Comm->reduce(sz2, gsz2, 1, std::plus<double>());
+        ippl::Comm->reduce(sperp2, gsperp2, 1, std::plus<double>());
+        ippl::Comm->reduce(sgbz, gsgbz, 1, std::plus<double>());
+        double cz = 0.0, rmsz = 0.0, rmsperp = 0.0, meangbz = 0.0;
+        if (nGlobal > 0) {
+            cz      = gsz / nGlobal;
+            rmsz    = std::sqrt(std::max(0.0, gsz2 / nGlobal - cz * cz));
+            rmsperp = std::sqrt(gsperp2 / nGlobal);
+            meangbz = gsgbz / nGlobal;
+        }
+
+        Inform m("FELDiag");
+        m << "t=" << this->time_m << " bunching=" << bunching << " max|E|=" << globalEmax
+          << " fieldEnergy=" << fieldEnergy << " Np=" << nGlobal << " cz=" << cz
+          << " rms_z=" << rmsz << " rms_perp=" << rmsperp << " mean_gbz=" << meangbz << endl;
+
+        if (ippl::Comm->rank() == 0) {
+            ippl::Vector<T, 3> pos{0, 0, (T)this->m_config.extents[2]};
+            frame_m.primedToUnprimed(pos, (T)this->time_m);
+
+            std::stringstream fname;
+            fname << this->m_config.output_path << "feldiag_" << ippl::Comm->size() << ".csv";
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+            if (std::fabs(this->time_m) < 1e-14) {
+                csvout << "labframe_z, bunching, max_E, field_energy, num_particles, "
+                          "centroid_z, rms_z, rms_perp, mean_gbz"
+                       << endl;
+            }
+            csvout << pos[2] * unit_length_in_meters << " " << bunching << " " << globalEmax << " "
+                   << fieldEnergy << " " << nGlobal << " " << cz << " " << rmsz << " " << rmsperp
+                   << " " << meangbz << endl;
         }
         ippl::Comm->barrier();
     }

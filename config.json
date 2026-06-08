@@ -19,7 +19,7 @@
       "_mass": 1,
       "charge": 1.846e8,
       "mass": 1.846e8,
-      "number-of-particles": 1000000,
+      "number-of-particles": 200000,
       "gamma": 100.41,
       "_gamma": 1.0,
       "direction (ignored)": [0.0, 0.0, 1.0],

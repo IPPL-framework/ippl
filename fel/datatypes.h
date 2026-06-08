@@ -2,6 +2,7 @@
 #define IPPL_FEL_DATATYPES_H
 
 #include "MaxwellSolvers/StandardFDTDSolver.h"
+#include "MaxwellSolvers/NonStandardFDTDSolver.h"
 
 // Type aliases for the FEL module, mirroring alpine/datatypes.h.
 //
@@ -43,9 +44,15 @@ using SourceField_t = Field<Vector_t<T, Dim + 1>, Dim, ViewArgs...>;
 
 // The Maxwell FDTD solver used by the FEL simulation. Boundary conditions are
 // absorbing (second-order Mur) so radiation leaves the domain cleanly.
+//
+// The non-standard (NSFD) scheme is used to match MITHRA's reference: it is
+// dispersion-free along the beam axis (magic timestep dt = h_z, plus modified
+// stencil coefficients), which keeps the radiation phase-locked to the bunch
+// micro-bunching over the full undulator. The pre_run dispersion guard
+// (h_z/h_x)^2 + (h_z/h_y)^2 < 1 is exactly this scheme's stability condition.
 template <typename T, unsigned Dim>
 using FDTDSolver_t =
-    ippl::StandardFDTDSolver<VField_t<T, Dim>, SourceField_t<T, Dim>, ippl::absorbing>;
+    ippl::NonStandardFDTDSolver<VField_t<T, Dim>, SourceField_t<T, Dim>, ippl::absorbing>;
 
 // Component-wise cast of a Vector to another scalar type. ippl::Vector has no
 // cast<> member on this branch, so the FEL code uses this small helper.

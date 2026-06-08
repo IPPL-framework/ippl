@@ -123,8 +123,15 @@ namespace ippl {
             ret.second =
                 ippl::Vector<T, 3>(unprimedEB.second - cross(betavec, unprimedEB.first)) * gamma_m
                 - (vnorm * (gamma_m - 1) * (unprimedEB.second.dot(vnorm)));
-            ret.first[axis] -= (gamma_m - 1) * unprimedEB.first[axis];
-            ret.second[axis] -= (gamma_m - 1) * unprimedEB.second[axis];
+            // NOTE: the two assignments above are already the complete boost: the
+            // -vnorm*(gamma-1)*(field.vnorm) term leaves the boost-axis (parallel)
+            // component invariant (gamma*B_z - (gamma-1)*B_z = B_z). The original
+            // code additionally subtracted (gamma-1)*field[axis] here, which
+            // double-corrects the parallel component to (2-gamma)*field[axis] --
+            // a large, wrong-sign spurious longitudinal field that blows the beam
+            // up once the undulator (which has B_z != 0 off-axis) turns on. That
+            // erroneous correction is removed; this now matches the general
+            // LorentzFrame::transform_EB form.
             return ret;
         }
 
