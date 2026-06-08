@@ -210,6 +210,9 @@ public:
         int richardson_iterations;
         int communication = 0;
         double ssor_omega;
+        int mg_pre;
+        int mg_post;
+        double mg_omega;
         std::string preconditioner_type = "";
 
         preconditioner_type = preconditioner_params_m[arg++];
@@ -228,6 +231,10 @@ public:
             gauss_seidel_inner_iterations = std::stoi(preconditioner_params_m[arg++]);
             gauss_seidel_outer_iterations = std::stoi(preconditioner_params_m[arg++]);
             ssor_omega                    = std::stod(preconditioner_params_m[arg++]);
+        } else if (preconditioner_type == "multigrid") {
+            mg_pre   = std::stoi(preconditioner_params_m[arg++]);
+            mg_post  = std::stoi(preconditioner_params_m[arg++]);
+            mg_omega = std::stod(preconditioner_params_m[arg++]);
         }
 
         sp.add("preconditioner_type", preconditioner_type);
@@ -238,6 +245,9 @@ public:
         sp.add("richardson_iterations", richardson_iterations);
         sp.add("communication", communication);
         sp.add("ssor_omega", ssor_omega);
+        sp.add("mg_pre_smooth_iters", mg_pre);
+        sp.add("mg_post_smooth_iters", mg_post);
+        sp.add("mg_omega", mg_omega);
 
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
