@@ -51,8 +51,11 @@ using SourceField_t = Field<Vector_t<T, Dim + 1>, Dim, ViewArgs...>;
 // micro-bunching over the full undulator. The pre_run dispersion guard
 // (h_z/h_x)^2 + (h_z/h_y)^2 < 1 is exactly this scheme's stability condition.
 template <typename T, unsigned Dim>
+//using FDTDSolver_t =
+//    ippl::NonStandardFDTDSolver<VField_t<T, Dim>, SourceField_t<T, Dim>, ippl::absorbing>;
+
 using FDTDSolver_t =
-    ippl::NonStandardFDTDSolver<VField_t<T, Dim>, SourceField_t<T, Dim>, ippl::absorbing>;
+    ippl::StandardFDTDSolver<VField_t<T, Dim>, SourceField_t<T, Dim>, ippl::absorbing>;
 
 // Component-wise cast of a Vector to another scalar type. ippl::Vector has no
 // cast<> member on this branch, so the FEL code uses this small helper.
