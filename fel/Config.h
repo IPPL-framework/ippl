@@ -5,7 +5,7 @@
 //
 // Reads a MITHRA-style JSON job file and converts all physical quantities into
 // the natural unit system defined in units.h. Ported from the original
-// FreeElectronLaser.cpp; behaviour is unchanged.
+// FreeElectronLaser.cpp.
 
 #include <algorithm>
 #include <cstdint>
@@ -18,7 +18,7 @@
 
 #include "units.h"
 
-#define JSON_HAS_RANGES 0  // Merlin compilation
+#define JSON_HAS_RANGES 0  
 #include <json.hpp>
 
 struct config {

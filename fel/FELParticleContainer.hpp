@@ -18,7 +18,7 @@
 //                       deposition (X0 -> X1 = R_nm1 -> R).
 //   * E_gather, B_gather : E and B interpolated to the particle positions.
 //
-// Boundary conditions are NO (open): particles leaving the domain are removed
+// Boundary conditions: particles leaving the domain are removed
 // explicitly by the manager rather than wrapped or reflected.
 template <typename T, unsigned Dim = 3>
 class FELParticleContainer : public ippl::ParticleBase<PLayout_t<T, Dim>> {

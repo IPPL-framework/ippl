@@ -130,8 +130,7 @@ namespace ippl {
             // double-corrects the parallel component to (2-gamma)*field[axis] --
             // a large, wrong-sign spurious longitudinal field that blows the beam
             // up once the undulator (which has B_z != 0 off-axis) turns on. That
-            // erroneous correction is removed; this now matches the general
-            // LorentzFrame::transform_EB form.
+            // erroneous correction is removed.
             return ret;
         }
 

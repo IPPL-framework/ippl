@@ -9,8 +9,7 @@
 // The FEL simulation solves Maxwell's equations with an FDTD solver coupled to
 // a relativistic electron bunch. Two field flavours are needed:
 //   * VField_t      : E and B, three-component vector fields.
-//   * SourceField_t : the four-current source (rho/phi, Jx, Jy, Jz) consumed by
-//                     the FDTD solver and produced by the current deposition.
+//   * SourceField_t : the four-current source (rho, Jx, Jy, Jz)
 
 template <unsigned Dim>
 using Mesh_t = ippl::UniformCartesian<double, Dim>;
@@ -36,29 +35,24 @@ using Field = ippl::Field<T, Dim, Mesh_t<Dim>, Centering_t<Dim>, ViewArgs...>;
 template <typename T, unsigned Dim, class... ViewArgs>
 using VField_t = Field<Vector_t<T, 3>, Dim, ViewArgs...>;
 
-// Four-current source field: [0] = charge density / scalar potential source,
-// [1..Dim] = current density. This is the layout expected by both the FDTD
-// solver (4-potential formulation) and ippl::assemble_current_collocated.
+// Four-current source field: [0] = charge density
+// [1..Dim] = current density.
 template <typename T, unsigned Dim, class... ViewArgs>
 using SourceField_t = Field<Vector_t<T, Dim + 1>, Dim, ViewArgs...>;
 
 // The Maxwell FDTD solver used by the FEL simulation. Boundary conditions are
 // absorbing (second-order Mur) so radiation leaves the domain cleanly.
 //
-// The non-standard (NSFD) scheme is used to match MITHRA's reference: it is
-// dispersion-free along the beam axis (magic timestep dt = h_z, plus modified
-// stencil coefficients), which keeps the radiation phase-locked to the bunch
-// micro-bunching over the full undulator. The pre_run dispersion guard
-// (h_z/h_x)^2 + (h_z/h_y)^2 < 1 is exactly this scheme's stability condition.
+// Both standard finite difference and the mithra-style non-standard finite difference 
+// are available.
 template <typename T, unsigned Dim>
-//using FDTDSolver_t =
-//    ippl::NonStandardFDTDSolver<VField_t<T, Dim>, SourceField_t<T, Dim>, ippl::absorbing>;
-
 using FDTDSolver_t =
-    ippl::StandardFDTDSolver<VField_t<T, Dim>, SourceField_t<T, Dim>, ippl::absorbing>;
+    ippl::NonStandardFDTDSolver<VField_t<T, Dim>, SourceField_t<T, Dim>, ippl::absorbing>;
 
-// Component-wise cast of a Vector to another scalar type. ippl::Vector has no
-// cast<> member on this branch, so the FEL code uses this small helper.
+//using FDTDSolver_t =
+//    ippl::StandardFDTDSolver<VField_t<T, Dim>, SourceField_t<T, Dim>, ippl::absorbing>;
+
+// Component-wise cast of a Vector to another scalar type.
 template <typename U, typename T, unsigned D>
 KOKKOS_INLINE_FUNCTION ippl::Vector<U, D> vector_cast(const ippl::Vector<T, D>& v) {
     ippl::Vector<U, D> ret;

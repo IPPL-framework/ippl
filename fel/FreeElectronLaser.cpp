@@ -1,15 +1,17 @@
 // Free Electron Laser simulation.
 //
 //   Usage:
-//     srun ./FreeElectronLaser [<config.json>] --info 5
+//     srun ./FreeElectronLaser [<config.json>] --info [0-5]
+//    or
+//    mpirun -np [N] ./FreeElectronLaser  [<config.json>] --info [0-5]
 //
 //   Reads a MITHRA-style JSON job file (default: ../config.json) describing the
 //   grid, the relativistic electron bunch, and the undulator. The simulation
 //   runs in a Lorentz frame co-moving with the bunch: a charge-conserving
 //   current is deposited onto the grid, Maxwell's equations are advanced with a
 //   standard FDTD solver (absorbing boundaries), and the particles are pushed
-//   with a relativistic Boris integrator that also feels the (frame-transformed)
-//   undulator field. Radiated power is written to a CSV and, optionally, a
+//   with a relativistic Boris pusher that also feels the (frame-transformed)
+//   undulator field. Radiated power is written to a CSV and a
 //   Poynting-flux video is produced via ffmpeg.
 
 constexpr unsigned Dim = 3;

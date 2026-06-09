@@ -90,6 +90,25 @@ namespace ippl {
                 ret.second[2] = uparams.B_magnitude * sinh(k_u * position_in_lab_frame[1])
                                 * cos(k_u * z_in_undulator);  // z-component.
             }
+            // If the position is past the undulator exit, ramp the field down with
+            // the same Gaussian-damped linear profile as the entrance fringe (mirror
+            // of MITHRA's staticUndulator exit branch, beam.cc). Without this the
+            // field terminates abruptly at the end of the undulator, leaving each
+            // electron with its residual transverse wiggle momentum (~K). That
+            // uncompensated transverse kick ejects the beam from the domain.
+            else if (position_in_lab_frame[2] >= distance_to_entry + uparams.length) {
+                scalar z_past_exit =
+                    position_in_lab_frame[2] - (distance_to_entry + uparams.length);
+                assert(z_past_exit >= 0);  // Ensure we are in the correct region.
+                scalar scal = exp(-((k_u * z_past_exit) * (k_u * z_past_exit)
+                                    * 0.5));  // Gaussian decay factor.
+
+                ret.second[0] = 0;  // No x-component.
+                ret.second[1] = uparams.B_magnitude * cosh(k_u * position_in_lab_frame[1])
+                                * z_past_exit * k_u * scal;  // y-component.
+                ret.second[2] = uparams.B_magnitude * sinh(k_u * position_in_lab_frame[1])
+                                * scal;  // z-component.
+            }
             return ret;
         }
     };
