@@ -4,9 +4,6 @@ include:
 variables:
   ROCM6_3_UENV: "prgenv-gnu/25.07-6.3.3:v12"
   WITH_UENV_VIEW: "default"
-  F7T_CLIENT_ID: $F7T_TDS_CONSUMER_KEY
-  F7T_CLIENT_SECRET: $F7T_TDS_CONSUMER_SECRET
-  WRAPPER: "/capstor/store/cscs/cscs/public/uenvs/wrapper-mi300.sh"
   SCRATCH: "/capstor/scratch/cscs/biddisco"
   SRUN_ARGS: "--uenv=${ROCM6_3_UENV} --view=${WITH_UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-beverin $WRAPPER"
   BUILD_ARCH: "mi300"
@@ -33,6 +30,7 @@ variables:
     - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" $BUILD_PATH/CMakeCache.txt | cut -d'=' -f2)
     - echo "Replacing cache_dir $CACHE_DIR with build_dir $BUILD_PATH"
     - export LD_LIBRARY_PATH=$BUILD_PATH/lib:$LD_LIBRARY_PATH
+    - export HSA_XNACK=1
     - find $BUILD_PATH -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$BUILD_PATH|g" {} \;
     - find $BUILD_PATH -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$BUILD_PATH|g" {} \;
     # reset custom build name for cdash
