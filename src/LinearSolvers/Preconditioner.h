@@ -645,9 +645,6 @@ namespace ippl {
         }
 
         void operator()(Field& b, Field& result) override {
-            static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("SSOR Init");
-            IpplTimings::startTimer(initTimer);
-
             double D;
 
             // The running iterate lives in result; UL_m, r_m are scratch
@@ -655,29 +652,36 @@ namespace ippl {
             // inverse, diagonal) may return aliasing Field-valued expressions.
             result = 0;  // Initial guess
 
-            IpplTimings::stopTimer(initTimer);
-
-            static IpplTimings::TimerRef loopTimer = IpplTimings::getTimer("SSOR loop");
-            IpplTimings::startTimer(loopTimer);
-
             for (unsigned int k = 0; k < outerloops_m; ++k) {
                 if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
-                    UL_m = upper_m(result);
-                    D    = diagonal_m(result);
-                    r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * result;
+                    const double inverseD = inverse_diagonal_m(result);
 
-                    for (unsigned int j = 0; j < innerloops_m; ++j) {
+                    unsigned int lower_start = 0;
+                    if (k == 0) {
+                        // With the zero initial guess, upper(result), D * result,
+                        // and the first lower(result) are exactly zero.
+                        r_m = omega_m * b;
+
+                        if (innerloops_m > 0) {
+                            result = inverseD * r_m;
+                            lower_start = 1;
+                        }
+                    } else {
+                        UL_m = upper_m(result);
+                        D    = diagonal_m(result);
+                        r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * result;
+                    }
+
+                    for (unsigned int j = lower_start; j < innerloops_m; ++j) {
                         UL_m   = lower_m(result);
-                        result = r_m - omega_m * UL_m;
-                        result = inverse_diagonal_m(result) * result;
+                        result = inverseD * (r_m - omega_m * UL_m);
                     }
                     UL_m = lower_m(result);
                     D    = diagonal_m(result);
                     r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * result;
                     for (unsigned int j = 0; j < innerloops_m; ++j) {
                         UL_m   = upper_m(result);
-                        result = r_m - omega_m * UL_m;
-                        result = inverse_diagonal_m(result) * result;
+                        result = inverseD * (r_m - omega_m * UL_m);
                     }
                 } else {
                     UL_m = upper_m(result).deepCopy();
@@ -697,7 +701,6 @@ namespace ippl {
                     }
                 }
             }
-            IpplTimings::stopTimer(loopTimer);
         }
 
         void init_fields(Field& b) override {
