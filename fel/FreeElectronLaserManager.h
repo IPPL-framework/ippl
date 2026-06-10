@@ -86,6 +86,17 @@ protected:
     ippl::Undulator<T> undulator_m;             ///< Static undulator field model.
     FELVideoWriter<T, Dim> video_m;             ///< Optional ffmpeg Poynting-flux video.
 
+    // --- narrow-band (resonant) radiation power diagnostic state ---
+    // MITHRA reports the FEL output power as a sliding-window single-frequency
+    // DFT of the exit-plane fields at the resonant wavelength, not the total
+    // broadband Poynting flux that dumpRadiation() integrates. These hold the
+    // rolling time-domain sample buffer and the derived window length / angular
+    // frequency; they are allocated lazily on the first diagnostic call.
+    bool rp_init_m    = false;     ///< whether rp_fdt_m has been allocated yet
+    int rp_Nf_m       = 0;         ///< DFT window length [time steps] (~3 resonant cycles)
+    double rp_omega_m = 0.0;       ///< resonant angular frequency [1/unit_time], c = 1
+    Kokkos::View<T****> rp_fdt_m;  ///< ring buffer [Nf][nx][ny][4] = (Ex,Ey,Bx,By)_lab
+
 public:
     size_type getTotalP() const { return totalP_m; }
     void setTotalP(size_type totalP_) { totalP_m = totalP_; }
@@ -356,6 +367,7 @@ public:
 
     void dump() {
         dumpRadiation();
+        dumpRadiationBanded();
         dumpFELDiagnostics();
 
         // Emit a video frame on the configured rhythm. writeFrame is collective,
@@ -413,6 +425,109 @@ public:
             csvout.setf(std::ios::scientific, std::ios::floatfield);
             if (std::fabs(this->time_m) < 1e-14) {
                 csvout << "labframe_z, radiated_power_W" << endl;
+            }
+            csvout << pos[2] * unit_length_in_meters << " " << power_global << endl;
+        }
+        ippl::Comm->barrier();
+    }
+
+    // Narrow-band radiated power at the FEL resonance, computed the way MITHRA's
+    // powerSample() does.
+    void dumpRadiationBanded() {
+        auto fc    = this->fcontainer_m;
+        auto eview = fc->getE().getView();
+        auto bview = fc->getB().getView();
+        auto ldom  = fc->getFL().getLocalNDIndex();
+        auto lb    = frame_m;
+
+        const uint32_t nz = (uint32_t)this->nr_m[Dim - 1];
+        const int extx    = (int)eview.extent(0);
+        const int exty    = (int)eview.extent(1);
+        const int extz    = (int)eview.extent(2);
+
+        if (!rp_init_m) {
+            const double lambda_rad = this->m_config.undulator_period / frame_gamma_m;
+            rp_omega_m = 2.0 * M_PI / lambda_rad;  // [1/unit_time], c = 1
+            rp_Nf_m    = std::max(1, (int)std::lround(3.0 * lambda_rad / this->dt_m));
+            rp_fdt_m   = Kokkos::View<T****>("FEL banded field buffer", rp_Nf_m, extx, exty, 4);
+            rp_init_m  = true;
+        }
+
+        const int Nf = rp_Nf_m;
+        const int m  = ((this->it_m % Nf) + Nf) % Nf;  // ring slot for this step
+
+        const int kview = (int)(nz - 3) - ldom.first()[2];
+        const bool owns = (kview >= 1 && kview < extz - 1);
+
+        auto fdt = rp_fdt_m;
+
+        // 1. Store this step's lab-frame transverse fields into ring slot m.
+        if (owns) {
+            Kokkos::parallel_for(
+                "FEL banded store",
+                Kokkos::MDRangePolicy<Kokkos::Rank<2>>({1, 1}, {extx - 1, exty - 1}),
+                KOKKOS_LAMBDA(const int i, const int j) {
+                    Kokkos::pair<ippl::Vector<T, 3>, ippl::Vector<T, 3>> buncheb{
+                        eview(i, j, kview), bview(i, j, kview)};
+                    auto eblab    = lb.inverse_transform_EB(buncheb);
+                    fdt(m, i, j, 0) = eblab.first[0];   // Ex_lab
+                    fdt(m, i, j, 1) = eblab.first[1];   // Ey_lab
+                    fdt(m, i, j, 2) = eblab.second[0];  // Bx_lab
+                    fdt(m, i, j, 3) = eblab.second[1];  // By_lab
+                });
+        }
+
+        // 2. Single-frequency DFT over the window, summed over the exit plane.
+        double power_local = 0.0;
+        if (owns) {
+            const double omega = rp_omega_m;
+            const double dt    = this->dt_m;
+            Kokkos::parallel_reduce(
+                "FEL banded DFT",
+                Kokkos::MDRangePolicy<Kokkos::Rank<2>>({1, 1}, {extx - 1, exty - 1}),
+                KOKKOS_LAMBDA(const int i, const int j, double& ref) {
+                    double ex_r = 0, ex_i = 0, ey_r = 0, ey_i = 0;
+                    double bx_r = 0, bx_i = 0, by_r = 0, by_i = 0;
+                    for (int mm = 0; mm < Nf; ++mm) {
+                        const double ph = omega * mm * dt;
+                        const double cp = Kokkos::cos(ph);
+                        const double sp = Kokkos::sin(ph);
+                        const double ex = fdt(mm, i, j, 0);
+                        const double ey = fdt(mm, i, j, 1);
+                        const double bx = fdt(mm, i, j, 2);
+                        const double by = fdt(mm, i, j, 3);
+                        ex_r += ex * cp;  ex_i += ex * sp;
+                        ey_r += ey * cp;  ey_i += ey * sp;
+                        bx_r += bx * cp;  bx_i -= bx * sp;
+                        by_r += by * cp;  by_i -= by * sp;
+                    }
+                    ref += (ex_r * by_r - ex_i * by_i) - (ey_r * bx_r - ey_i * bx_i);
+                },
+                power_local);
+        }
+
+        // Convert the windowed sum to a cycle-averaged power in Watts.
+        power_local *= (2.0 / (double(Nf) * double(Nf)))
+                       * double(unit_powerdensity_in_watt_per_square_meter * unit_length_in_meters
+                                * unit_length_in_meters)
+                       * this->hr_m[0] * this->hr_m[1];
+
+        double power_global = 0.0;
+        MPI_Reduce(&power_local, &power_global, 1, MPI_DOUBLE, MPI_SUM, 0,
+                   ippl::Comm->getCommunicator());
+
+        if (ippl::Comm->rank() == 0) {
+            ippl::Vector<T, 3> pos{0, 0, (T)this->m_config.extents[2]};
+            lb.primedToUnprimed(pos, (T)this->time_m);
+
+            std::stringstream fname;
+            fname << this->m_config.output_path << "radiation_band_" << ippl::Comm->size()
+                  << ".csv";
+            Inform csvout(NULL, fname.str().c_str(), Inform::APPEND);
+            csvout.precision(10);
+            csvout.setf(std::ios::scientific, std::ios::floatfield);
+            if (std::fabs(this->time_m) < 1e-14) {
+                csvout << "labframe_z, banded_power_W" << endl;
             }
             csvout << pos[2] * unit_length_in_meters << " " << power_global << endl;
         }
