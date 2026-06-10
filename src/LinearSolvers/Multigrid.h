@@ -167,7 +167,7 @@ namespace ippl {
             // minimum for a well-defined halo exchange and a meaningful smoother
             // sweep; bump this to 4 if you want extra safety margin (e.g. for
             // wider stencils or periodic BCs that can alias on tiny slabs).
-            constexpr int min_cells_per_rank_per_dim = 2;
+            constexpr int min_cells_per_rank_per_dim = 4;
 
             // Walk down the hierarchy: start at level 1 (just the fine grid) and
             // keep adding a coarser level as long as EVERY dimension still has
