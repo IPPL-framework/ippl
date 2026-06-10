@@ -108,10 +108,24 @@ namespace ippl {
             IpplTimings::startTimer(mg);
 
             L_[0].f = b.deepCopy();
+
+            // Remove Volume average if periodic
+            if (is_all_periodic_) {
+                auto avg = L_[0].f.getVolumeAverage();
+                L_[0].f  = L_[0].f - avg;
+                L_[0].f.fillHalo();
+            }
+
             for (size_t level = 0; level < L_.size(); ++level)
                 L_[level].u = 0.0;
             vcycle(0);
 
+            // Remove Volume average if periodic
+            if (is_all_periodic_) {
+                auto avg = L_[0].u.getVolumeAverage();
+                L_[0].u  = L_[0].u - avg;
+                L_[0].u.fillHalo();
+            }
             IpplTimings::stopTimer(mg);
 
             return L_[0].u;
@@ -321,6 +335,13 @@ namespace ippl {
             ippl::fence();
             lev_coarse.f.fillHalo();
 
+            // Remove Volume average if periodic
+            if (is_all_periodic_) {
+                auto avg     = lev_coarse.f.getVolumeAverage();
+                lev_coarse.f = lev_coarse.f - avg;
+                lev_coarse.f.fillHalo();
+            }
+
             IpplTimings::stopTimer(restrict);
         }
 
@@ -413,6 +434,7 @@ namespace ippl {
         OperatorF op_;
         unsigned nu1_, nu2_;
         double omega_;
+        bool is_all_periodic_ = false;
 
         // --- DEBUGGING - To be deleted ---
 
