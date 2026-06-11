@@ -91,55 +91,53 @@ int main(int argc, char* argv[]) {
             auto viewRHS = rhs.getView();
             auto viewSol = solution.getView();
 
-            const auto lDom = layout.getLocalNDIndex();
-            const double pi = Kokkos::numbers::pi_v<double>;
-            const double a  = 2.0 * pi;
+            const auto lDom    = layout.getLocalNDIndex();
+            const double twopi = 2.0 * Kokkos::numbers::pi_v<double>;
 
             using Kokkos::cos;
             using Kokkos::sin;
 
-            const int shift = solution.getNghost();
-            auto policy     = solution.getFieldRangePolicy();
+            int shift1     = solution.getNghost();
+            auto policySol = solution.getFieldRangePolicy();
 
             Kokkos::parallel_for(
-                "Assign analytical solution and rhs", policy,
-                KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                    const int ig = i + lDom[0].first() - shift;
-                    const int jg = j + lDom[1].first() - shift;
-                    const int kg = k + lDom[2].first() - shift;
+                "Assign solution", policySol, KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    const int ig = i + lDom[0].first() - shift1;
+                    const int jg = j + lDom[1].first() - shift1;
+                    const int kg = k + lDom[2].first() - shift1;
 
                     const double x = origin[0] + (static_cast<double>(ig) + 0.5) * hx[0];
                     const double y = origin[1] + (static_cast<double>(jg) + 0.5) * hx[1];
                     const double z = origin[2] + (static_cast<double>(kg) + 0.5) * hx[2];
 
-                    const double ax = a * x;
-                    const double ay = a * y;
-                    const double az = a * z;
+                    viewSol(i, j, k) =
+                        sin(sin(twopi * x)) * sin(sin(twopi * y)) * sin(sin(twopi * z));
+                });
 
-                    const double sx = sin(sin(ax));
-                    const double sy = sin(sin(ay));
-                    const double sz = sin(sin(az));
+            const int shift2 = rhs.getNghost();
+            auto policyRHS   = rhs.getFieldRangePolicy();
 
-                    const double cx = cos(sin(ax));
-                    const double cy = cos(sin(ay));
-                    const double cz = cos(sin(az));
+            Kokkos::parallel_for(
+                "Assign rhs", policyRHS, KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    const int ig = i + lDom[0].first() - shift2;
+                    const int jg = j + lDom[1].first() - shift2;
+                    const int kg = k + lDom[2].first() - shift2;
 
-                    const double sax = sin(ax);
-                    const double say = sin(ay);
-                    const double saz = sin(az);
+                    const double x = origin[0] + (static_cast<double>(ig) + 0.5) * hx[0];
+                    const double y = origin[1] + (static_cast<double>(jg) + 0.5) * hx[1];
+                    const double z = origin[2] + (static_cast<double>(kg) + 0.5) * hx[2];
 
-                    const double cax = cos(ax);
-                    const double cay = cos(ay);
-                    const double caz = cos(az);
-
-                    const double u = sx * sy * sz;
-
-                    const double f = a * a
-                                     * (cx * sax * sy * sz + sx * cy * say * sz + sx * sy * cz * saz
-                                        + sx * sy * sz * (cax * cax + cay * cay + caz * caz));
-
-                    viewSol(i, j, k) = u;
-                    viewRHS(i, j, k) = f;
+                    viewRHS(i, j, k) =
+                        pow(twopi, 2)
+                        * (cos(sin(twopi * z)) * sin(twopi * z) * sin(sin(twopi * x))
+                               * sin(sin(twopi * y))
+                           + (cos(sin(twopi * y)) * sin(twopi * y) * sin(sin(twopi * x))
+                              + (cos(sin(twopi * x)) * sin(twopi * x)
+                                 + (pow(cos(twopi * x), 2) + pow(cos(twopi * y), 2)
+                                    + pow(cos(twopi * z), 2))
+                                       * sin(sin(twopi * x)))
+                                    * sin(sin(twopi * y)))
+                                 * sin(sin(twopi * z)));
                 });
 
             solution.fillHalo();
