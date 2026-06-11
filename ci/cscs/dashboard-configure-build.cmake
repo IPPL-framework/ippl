@@ -24,39 +24,71 @@ set(CTEST_BUILD_NAME "${CDASH_LABEL}-${BUILD_ARCH}-${BUILD_TYPE}-${TEST_INFO}")
 set(CTEST_SOURCE_DIRECTORY "$ENV{CI_PROJECT_DIR}")
 set(CTEST_BINARY_DIRECTORY "${BUILD_DIR}")
 set(CTEST_CMAKE_GENERATOR "Ninja")
-set(CTEST_GROUP "Pull_Requests")
-set(CTEST_GROUP "Experimental")
+set(CTEST_GROUP "Experimental") # Note: This overrides your previous duplicate "Pull_Requests" line
 
 # --- start a new build in CDash ---
 ctest_start(Experimental GROUP "${CTEST_GROUP}")
 
+# --- Initialize base configure command as a CMake LIST ---
+# cmake-format: off
+
+
+# --- Initialize base configure command as a flat string ---
 set(CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND}")
-set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -S${CTEST_SOURCE_DIRECTORY}")
-set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -B${CTEST_BINARY_DIRECTORY}")
-set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -G${CTEST_CMAKE_GENERATOR}")
-set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} --preset=${PRESET}")
-set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DCMAKE_BUILD_TYPE=${BUILD_TYPE}")
-set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON")
-if(DEFINED IPPL_PLATFORMS)
-  set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DIPPL_PLATFORMS=${IPPL_PLATFORMS}")
+string(APPEND CTEST_CONFIGURE_COMMAND " -S${CTEST_SOURCE_DIRECTORY}")
+string(APPEND CTEST_CONFIGURE_COMMAND " -B${CTEST_BINARY_DIRECTORY}")
+string(APPEND CTEST_CONFIGURE_COMMAND " -G${CTEST_CMAKE_GENERATOR}")
+string(APPEND CTEST_CONFIGURE_COMMAND " --preset=${PRESET}")
+string(APPEND CTEST_CONFIGURE_COMMAND " -DCMAKE_BUILD_TYPE=${BUILD_TYPE}")
+
+
+# --- Forward variables cleanly ---
+set(VARS_TO_FORWARD
+  IPPL_PLATFORMS
+  IPPL_OPENMP_THREADS
+  IPPL_ENABLE_SCRIPTS
+  Heffte_VERSION
+  Kokkos_VERSION
+  MPIEXEC_EXECUTABLE
+  MPIEXEC_MAX_NUMPROCS
+  # Note: MPIEXEC_PREFLAGS is removed from this list so it doesn't get string-quoted
+)
+
+foreach(VAR IN LISTS VARS_TO_FORWARD)
+  if(DEFINED ${VAR})
+    set(VAL "${${VAR}}")
+    string(APPEND CTEST_CONFIGURE_COMMAND " -D${VAR}=${VAL}")
+  endif()
+endforeach()
+
+# --- HANDLE MPIEXEC_PREFLAGS SAFELY FOR CTEST ---
+if(DEFINED MPIEXEC_PREFLAGS)
+  # 1. Propagate it to the underlying CMake configure process via a specialized cache variable syntax
+  # This avoids the command-line quoting bugs entirely.
+  string(APPEND CTEST_CONFIGURE_COMMAND " -DMPIEXEC_PREFLAGS:STRING=${MPIEXEC_PREFLAGS}")
+
+  # 2. Make it a true CMake list in the current CTest script scope so CTest's 
+  # test launcher knows how to separate the arguments properly.
+  set(MPIEXEC_PREFLAGS "${MPIEXEC_PREFLAGS}") 
 endif()
-if(DEFINED IPPL_OPENMP_THREADS)
-  set(CTEST_CONFIGURE_COMMAND
-      "${CTEST_CONFIGURE_COMMAND} -DIPPL_OPENMP_THREADS=${IPPL_OPENMP_THREADS}")
+
+# --- Append remaining static flags ---
+string(APPEND CTEST_CONFIGURE_COMMAND " -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON")
+string(APPEND CTEST_CONFIGURE_COMMAND " -DIPPL_ENABLE_SOLVERS=ON")
+string(APPEND CTEST_CONFIGURE_COMMAND " -DIPPL_MARK_FAILING_TESTS=ON")
+
+if(DEFINED Kokkos_ARCH_FLAG)
+  string(APPEND CTEST_CONFIGURE_COMMAND " -D${Kokkos_ARCH_FLAG}=ON")
 endif()
-set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DIPPL_ENABLE_SOLVERS=ON")
-set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DIPPL_MARK_FAILING_TESTS=ON")
-set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DMPIEXEC_EXECUTABLE=${MPIEXEC_EXECUTABLE}")
-set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DMPIEXEC_PREFLAGS=${MPIEXEC_PREFLAGS}")
-set(CTEST_CONFIGURE_COMMAND
-    "${CTEST_CONFIGURE_COMMAND} -DMPIEXEC_MAX_NUMPROCS=${MPIEXEC_MAX_NUMPROCS}")
-if(DEFINED Heffte_VERSION)
-  set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DHeffte_VERSION=${Heffte_VERSION}")
-endif()
-if(DEFINED Kokkos_VERSION)
-  set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -DKokkos_VERSION=${Kokkos_VERSION}")
-endif()
-set(CTEST_CONFIGURE_COMMAND "${CTEST_CONFIGURE_COMMAND} -D${Kokkos_ARCH_FLAG}=ON")
+
+# cmake-format: on
+
+# --- Convert the list into the final spaced string CTest needs ---
+# Safely convert the list back into a space-separated string, properly escaping semicolons in
+# arguments that are lists.
+message("")
+message("Final CTest configure command: ${CTEST_CONFIGURE_COMMAND}")
+message("")
 
 # --- configure & build ---
 ctest_configure(RETURN_VALUE configure_result)
