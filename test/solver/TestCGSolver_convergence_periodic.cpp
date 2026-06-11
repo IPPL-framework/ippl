@@ -58,8 +58,7 @@ int main(int argc, char* argv[]) {
         }
 
         Inform m("");
-        m << "size,h,relError,trueResidual,solverResidual,itCount,solveTime" << endl;
-
+        m << "size, relError, residue, itCount, h" << endl;
         for (unsigned pt = 1u << 2; pt <= (1u << maxPow); pt = pt << 1) {
             ippl::Vector<unsigned, dim> I(pt);
             ippl::NDIndex<dim> domain(I);
@@ -169,13 +168,7 @@ int main(int argc, char* argv[]) {
             solver.setRhs(rhs);
             solver.setLhs(lhs);
 
-            ippl::Comm->barrier();
-            const double t0 = MPI_Wtime();
-
             solver.solve();
-
-            ippl::Comm->barrier();
-            const double t1 = MPI_Wtime();
 
             lhs.fillHalo();
 
@@ -188,15 +181,14 @@ int main(int argc, char* argv[]) {
             error                 = lhs - solution;
             const double relError = norm(error) / norm(solution);
 
-            error                     = -laplace(lhs) - rhs;
-            const double trueResidual = norm(error) / norm(rhs);
+            error                = -laplace(lhs) - rhs;
+            const double residue = norm(error) / norm(rhs);
 
-            const double solverResidual = solver.getResidue();
-            const int itCount           = solver.getIterationCount();
-            const double solveTime      = t1 - t0;
+            const int itCount = solver.getIterationCount();
 
-            m << pt << "," << std::setprecision(16) << dx << "," << relError << "," << trueResidual
-              << "," << solverResidual << "," << itCount << "," << solveTime << endl;
+            // m << "size, relError, residue, itCount, h, solveTime" << endl;
+            m << pt << ", " << std::setprecision(16) << relError << ", " << residue << ", "
+              << itCount << ", " << dx << endl;
         }
     }
     ippl::finalize();
