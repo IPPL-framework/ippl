@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
         using BConds_t    = ippl::BConds<Field_t, dim>;
 
         int maxPow        = 7;
-        double tolerance  = 1e-10;
+        double tolerance  = 1e-13;
         int maxIterations = 4000;
 
         if (argc > 1 && argv[1][0] != '-') {
