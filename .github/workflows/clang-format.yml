@@ -30,7 +30,7 @@ jobs:
         run: |
           git fetch origin ${{ github.base_ref }}
 
-          FILES=$(git diff --name-only \
+          FILES=$(git diff --name-only --diff-filter=ACMR \
             origin/${{ github.base_ref }}...HEAD \
             | grep -E '\.(c|cc|cpp|cxx|h|hpp)$' || true)
 
