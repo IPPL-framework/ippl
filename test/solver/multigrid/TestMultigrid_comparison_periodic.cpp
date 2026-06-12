@@ -189,7 +189,7 @@ int main(int argc, char* argv[]) {
                     params.add("gauss_seidel_outer_iterations", 2);
                     params.add("ssor_omega", 1.57079632679);
                     params.add("richardson_iterations", 4);
-                    params.add("communication", 1);
+                    params.add("communication", 0);
 
                     // Multigrid-specific parameters.
                     params.add("mg_pre_smooth_iters", 2);
