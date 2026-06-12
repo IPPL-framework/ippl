@@ -17,6 +17,7 @@ add_ippl_integration_test(TestMultigrid_discrete_constant COMPILE_ONLY LABELS so
 add_ippl_integration_test(TestMultigrid_discrete_periodic COMPILE_ONLY LABELS solver integration)
 add_ippl_integration_test(TestMultigrid_convergence_constant COMPILE_ONLY LABELS solver integration)
 add_ippl_integration_test(TestMultigrid_convergence_periodic COMPILE_ONLY LABELS solver integration)
+add_ippl_integration_test(TestMultigrid_convergence_periodic_anisotropic COMPILE_ONLY LABELS solver integration)
 
 # Comparison Multigrid to other Preconditioners
 add_ippl_integration_test(TestMultigrid_comparison_constant COMPILE_ONLY LABELS solver integration)
