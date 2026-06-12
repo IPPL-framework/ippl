@@ -148,23 +148,18 @@ namespace ippl {
             auto bcs = b.getFieldBC();
 
             // 1. Calculate number of levels
-            // ------------------------------------------------------------------
-            // Decide how many multigrid levels we can build.
-            //
             // Idea: base the decision purely on the GLOBAL problem size and the
             // shape of the rank decomposition, not on each rank's local slab.
             // That way every rank computes the same nlevels by construction, and
             // the V-cycle is identical for a given (global N, rank layout) pair
             // regardless of how the domain happens to be sliced unevenly.
-            // ------------------------------------------------------------------
 
             const auto& gDom         = fine_layout.getDomain();        // global index space
             const auto& localFineDom = fine_layout.getLocalNDIndex();  // this rank's slab
 
             // For each dimension, figure out how many ranks slice it.
             // A serial dim has localLen == globalLen, so ranks_per_dim[d] == 1.
-            // A dim split across P ranks has globalLen / localLen == P (assuming
-            // a roughly even split, which IPPL guarantees up to +-1 cell).
+            // A dim split across P ranks has globalLen / localLen == P
             ippl::Vector<int, Dim> ranks_per_dim;
             for (unsigned d = 0; d < Dim; ++d) {
                 const int globalLen = static_cast<int>(gDom[d].length());
@@ -174,7 +169,6 @@ namespace ippl {
 
             // Safety net: in case ranks disagree (uneven splits, empty slabs, ...)
             // take the max across ranks so everyone uses the same divisor below.
-            // In a healthy run this is a no-op.
             for (unsigned d = 0; d < Dim; ++d) {
                 int local = ranks_per_dim[d], global = local;
                 ippl::Comm->allreduce(local, global, 1, std::greater<int>{});
