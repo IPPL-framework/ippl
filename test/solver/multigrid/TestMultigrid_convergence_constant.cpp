@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
 
         int maxPow        = 7;
         double tolerance  = 1e-13;
-        int maxIterations = 2000;
+        int maxIterations = 4000;
 
         if (argc > 1 && argv[1][0] != '-') {
             maxPow = std::atoi(argv[1]);
