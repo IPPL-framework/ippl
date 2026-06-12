@@ -24,16 +24,12 @@ set(CTEST_BUILD_NAME "${CDASH_LABEL}-${BUILD_ARCH}-${BUILD_TYPE}-${TEST_INFO}")
 set(CTEST_SOURCE_DIRECTORY "$ENV{CI_PROJECT_DIR}")
 set(CTEST_BINARY_DIRECTORY "${BUILD_DIR}")
 set(CTEST_CMAKE_GENERATOR "Ninja")
-set(CTEST_GROUP "Experimental") # Note: This overrides your previous duplicate "Pull_Requests" line
+set(CTEST_GROUP "Experimental")
 
 # --- start a new build in CDash ---
 ctest_start(Experimental GROUP "${CTEST_GROUP}")
 
 # --- Initialize base configure command as a CMake LIST ---
-# cmake-format: off
-
-
-# --- Initialize base configure command as a flat string ---
 set(CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND}")
 string(APPEND CTEST_CONFIGURE_COMMAND " -S${CTEST_SOURCE_DIRECTORY}")
 string(APPEND CTEST_CONFIGURE_COMMAND " -B${CTEST_BINARY_DIRECTORY}")
@@ -41,7 +37,9 @@ string(APPEND CTEST_CONFIGURE_COMMAND " -G${CTEST_CMAKE_GENERATOR}")
 string(APPEND CTEST_CONFIGURE_COMMAND " --preset=${PRESET}")
 string(APPEND CTEST_CONFIGURE_COMMAND " -DCMAKE_BUILD_TYPE=${BUILD_TYPE}")
 
-
+# ---------------------------------
+# cmake-format: off
+# ---------------------------------
 # --- Forward variables cleanly ---
 set(VARS_TO_FORWARD
   IPPL_PLATFORMS
@@ -50,27 +48,30 @@ set(VARS_TO_FORWARD
   Heffte_VERSION
   Kokkos_VERSION
   MPIEXEC_EXECUTABLE
+  MPIEXEC_PREFLAGS      
   MPIEXEC_MAX_NUMPROCS
-  # Note: MPIEXEC_PREFLAGS is removed from this list so it doesn't get string-quoted
 )
 
 foreach(VAR IN LISTS VARS_TO_FORWARD)
   if(DEFINED ${VAR})
     set(VAL "${${VAR}}")
-    string(APPEND CTEST_CONFIGURE_COMMAND " -D${VAR}=${VAL}")
+    
+    if("${VAL}" MATCHES ";")
+      # 1. Force CMake to treat it as a literal string cache entry to preserve semicolons
+      string(APPEND CTEST_CONFIGURE_COMMAND " -D${VAR}:STRING=${VAL}")
+      
+      # 2. Expose it to the local CTest script scope so CTest's test launcher 
+      # can parse it as a native list during the execution phase.
+      set(${VAR} "${VAL}")
+    else()
+      # Standard scalar variable (no semicolons)
+      string(APPEND CTEST_CONFIGURE_COMMAND " -D${VAR}=${VAL}")
+    endif()
   endif()
 endforeach()
-
-# --- HANDLE MPIEXEC_PREFLAGS SAFELY FOR CTEST ---
-if(DEFINED MPIEXEC_PREFLAGS)
-  # 1. Propagate it to the underlying CMake configure process via a specialized cache variable syntax
-  # This avoids the command-line quoting bugs entirely.
-  string(APPEND CTEST_CONFIGURE_COMMAND " -DMPIEXEC_PREFLAGS:STRING=${MPIEXEC_PREFLAGS}")
-
-  # 2. Make it a true CMake list in the current CTest script scope so CTest's 
-  # test launcher knows how to separate the arguments properly.
-  set(MPIEXEC_PREFLAGS "${MPIEXEC_PREFLAGS}") 
-endif()
+# ---------------------------------
+# cmake-format: on
+# ---------------------------------
 
 # --- Append remaining static flags ---
 string(APPEND CTEST_CONFIGURE_COMMAND " -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON")
@@ -81,14 +82,8 @@ if(DEFINED Kokkos_ARCH_FLAG)
   string(APPEND CTEST_CONFIGURE_COMMAND " -D${Kokkos_ARCH_FLAG}=ON")
 endif()
 
-# cmake-format: on
-
-# --- Convert the list into the final spaced string CTest needs ---
-# Safely convert the list back into a space-separated string, properly escaping semicolons in
-# arguments that are lists.
-message("")
+# --- Output our configure command for debug purposes---
 message("Final CTest configure command: ${CTEST_CONFIGURE_COMMAND}")
-message("")
 
 # --- configure & build ---
 ctest_configure(RETURN_VALUE configure_result)
