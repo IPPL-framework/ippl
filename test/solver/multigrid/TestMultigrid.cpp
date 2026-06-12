@@ -103,26 +103,34 @@ int main(int argc, char* argv[]) {
         Inform info("MultigridTest");
 
         // Default parameters
-        int pt        = 32;  // 32^3 grid
-        int test_case = 1;   // 1 = Periodic, 2 = Mixed BCs
+        int Nx        = 32;
+        int Ny        = 32;
+        int Nz        = 32;
+        int test_case = 1;  // 1 = Periodic, 2 = Mixed BCs, 3 or more = constant
 
-        if (argc >= 2) {
-            double N = std::strtol(argv[1], NULL, 10);
-            pt       = 1 << static_cast<int>(N);
+        if (argc >= 4) {
+            Nx = std::atoi(argv[1]);
+            Ny = std::atoi(argv[2]);
+            Nz = std::atoi(argv[3]);
+        } else if (argc >= 2) {
+            // Fallback: single argument interpreted as log2 size (legacy)
+            int N = static_cast<int>(std::strtol(argv[1], NULL, 10));
+            Nx = Ny = Nz = 1 << N;
+            info << "Warning: single argument interpreted as log2 size -> " << Nx << "^3" << endl;
         }
-        if (argc >= 3) {
-            test_case = std::atoi(argv[2]);
+        if (argc >= 5) {
+            test_case = std::atoi(argv[4]);
         }
         const char* tc_name = (test_case == 1)   ? " (All Periodic)"
                               : (test_case == 2) ? " (Mixed Periodic/Dirichlet)"
                                                  : " (All ConstantFace)";
 
-        info << "Grid Size: " << pt << "^3" << endl;
+        info << "Grid Size: " << Nx << " x " << Ny << " x " << Nz << endl;
         info << "Test Case: " << test_case << tc_name << endl;
 
         // 1. Setup Domain and Layout
-        ippl::Index I(pt);
-        ippl::NDIndex<dim> owned(I, I, I);
+        ippl::Index Ix(Nx), Iy(Ny), Iz(Nz);
+        ippl::NDIndex<dim> owned(Ix, Iy, Iz);
         std::array<bool, dim> isParallel = {true, true, true};
         ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
 
@@ -132,14 +140,16 @@ int main(int argc, char* argv[]) {
         bc_type bcField;
 
         if (test_case == 1) {
-            dx = dy = dz = 2.0 / double(pt);
+            dx = 2.0 / double(Nx);
+            dy = 2.0 / double(Ny);
+            dz = 2.0 / double(Nz);
             for (unsigned int i = 0; i < 2 * dim; ++i) {
                 bcField[i] = std::make_shared<ippl::PeriodicFace<field_type>>(i);
             }
         } else if (test_case == 2) {
-            dx = 2.0 / double(pt);
-            dy = 1.0 / double(pt);
-            dz = 1.0 / double(pt);
+            dx = 2.0 / double(Nx);
+            dy = 1.0 / double(Ny);
+            dz = 1.0 / double(Nz);
 
             bcField[0] = std::make_shared<ippl::PeriodicFace<field_type>>(0);
             bcField[1] = std::make_shared<ippl::PeriodicFace<field_type>>(1);
@@ -148,8 +158,9 @@ int main(int argc, char* argv[]) {
             bcField[4] = std::make_shared<ippl::ZeroFace<field_type>>(4);
             bcField[5] = std::make_shared<ippl::ZeroFace<field_type>>(5);
         } else {
-            // Test 3: All ConstantFace on [0,1]^3 with value bc_const
-            dx = dy = dz = 1.0 / double(pt);
+            dx = 1.0 / double(Nx);
+            dy = 1.0 / double(Ny);
+            dz = 1.0 / double(Nz);
             for (unsigned int i = 0; i < 2 * dim; ++i) {
                 bcField[i] = std::make_shared<ippl::ConstantFace<field_type>>(i, 0.0);
             }
@@ -197,7 +208,7 @@ int main(int argc, char* argv[]) {
         ippl::ParameterList params;
         params.add("max_iterations", 500);
         params.add("solver", "preconditioned");
-        params.add("preconditioner_type", "multigrid");  // Hooks into your new class
+        params.add("preconditioner_type", "multigrid");
 
         // --- Required by PoissonCG generic setup to prevent IpplException ---
         params.add("newton_level", 5);
@@ -248,8 +259,8 @@ int main(int argc, char* argv[]) {
         info << "Residual   : " << std::setprecision(8) << residue << endl;
         info << "---------------------------------------" << endl;
 
-        printGlobalField(solution, "Solution");
-        printGlobalField(lhs, "Approx");
+        // printGlobalField(solution, "Solution");
+        // printGlobalField(lhs, "Approx");
 
         IpplTimings::print();
     }
