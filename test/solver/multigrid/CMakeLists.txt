@@ -23,7 +23,9 @@ add_ippl_integration_test(TestMultigrid_convergence_periodic_anisotropic COMPILE
 # Tolerance studies for multigrid method
 
 add_ippl_integration_test(TestMultigrid_tolerance_constant COMPILE_ONLY LABELS solver integration)
+add_ippl_integration_test(TestMultigrid_tolerance_constant_anisotropic COMPILE_ONLY LABELS solver integration)
 add_ippl_integration_test(TestMultigrid_tolerance_periodic COMPILE_ONLY LABELS solver integration)
+add_ippl_integration_test(TestMultigrid_tolerance_periodic_anisotropic COMPILE_ONLY LABELS solver integration)
 
 # Comparison Multigrid to other Preconditioners
 add_ippl_integration_test(TestMultigrid_comparison_constant COMPILE_ONLY LABELS solver integration)
