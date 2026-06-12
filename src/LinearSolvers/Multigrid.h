@@ -161,9 +161,9 @@ namespace ippl {
             int min_local_global = min_local;
             ippl::Comm->allreduce(min_local, min_local_global, 1, std::less<int>{});
 
-            constexpr int min_cells_on_coarsest = 4;
-            int nlevels                         = 1;
-            int at_level                        = min_local_global;
+            int min_cells_on_coarsest = min_cells_per_rank_per_dim_;
+            int nlevels               = 1;
+            int at_level              = min_local_global;
             while (at_level / 2 >= min_cells_on_coarsest) {
                 at_level /= 2;
                 ++nlevels;
