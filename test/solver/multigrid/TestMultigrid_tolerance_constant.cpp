@@ -199,9 +199,10 @@ int main(int argc, char* argv[]) {
                 const int itCount           = solver.getIterationCount();
                 const double solveTime      = t1 - t0;
 
-                m << std::scientific << tolerance << "," << std::defaultfloat << pt << ","
-                  << std::setprecision(16) << dx << "," << relError << "," << trueResidual << ","
-                  << solverResidual << "," << itCount << "," << solveTime << endl;
+                m << std::scientific << std::setprecision(1) << tolerance << ","
+                  << std::defaultfloat << pt << "," << std::setprecision(16) << dx << ","
+                  << relError << "," << trueResidual << "," << solverResidual << "," << itCount
+                  << "," << solveTime << endl;
             }
         }
     }
