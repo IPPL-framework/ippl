@@ -182,7 +182,7 @@ int main(int argc, char* argv[]) {
                     params.add("mg_pre_smooth_iters", 2);
                     params.add("mg_post_smooth_iters", 2);
                     params.add("mg_omega", 0.8);
-                    params.add("min_cells_per_rank_per_dim", 4);
+                    params.add("min_cells_per_rank_per_dim", 2);
                 } else {
                     params.add("solver", "non-preconditioned");
                 }
