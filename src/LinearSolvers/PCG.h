@@ -84,9 +84,10 @@ namespace ippl {
                                                 // parameter should be set in main
             [[maybe_unused]] int mg_post = 2,   // This is a dummy default parameter, actual default
                                                 // parameter should be set in main
-            [[maybe_unused]] double mg_omega = 0.8  // This is a dummy default parameter, actual
-                                                    // default parameter should be set in main
-        ) {}
+            [[maybe_unused]] double mg_omega = 0.8,  // This is a dummy default parameter, actual
+                                                     // default parameter should be set in main
+            [[maybe_unused]] unsigned mg_min_cells_per_rank_per_dim = 4,
+            [[maybe_unused]] bool mg_communication                  = true) {}
         /*!
          * Query how many iterations were required to obtain the solution
          * the last time this solver was used
@@ -372,8 +373,9 @@ namespace ippl {
                               // be set in main
             int mg_post = 2,  // This is a dummy default parameter, actual default parameter should
                               // be set in main
-            double mg_omega = 0.8  // This is a dummy default parameter, actual default parameter
-                                   // should be set in main
+            double mg_omega = 0.8,  // This is a dummy default parameter, actual default parameter
+                                    // should be set in main
+            unsigned mg_min_cells_per_rank_per_dim = 4, bool mg_communication = true
 
             ) override {
             if (preconditioner_type == "jacobi") {
@@ -419,7 +421,8 @@ namespace ippl {
             } else if (preconditioner_type == "multigrid") {
                 preconditioner_m =
                     std::move(std::make_unique<multigrid_preconditioner<FieldLHS, OperatorF>>(
-                        std::move(op), mg_pre, mg_post, mg_omega));
+                        std::move(op), mg_pre, mg_post, mg_omega, mg_min_cells_per_rank_per_dim,
+                        mg_communication));
             } else {
                 preconditioner_m = std::move(std::make_unique<preconditioner<FieldLHS>>());
             }

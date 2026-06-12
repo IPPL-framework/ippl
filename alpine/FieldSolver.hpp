@@ -213,6 +213,7 @@ public:
         int mg_pre;
         int mg_post;
         double mg_omega;
+        int mg_min_cells;
         std::string preconditioner_type = "";
 
         preconditioner_type = preconditioner_params_m[arg++];
@@ -232,9 +233,10 @@ public:
             gauss_seidel_outer_iterations = std::stoi(preconditioner_params_m[arg++]);
             ssor_omega                    = std::stod(preconditioner_params_m[arg++]);
         } else if (preconditioner_type == "multigrid") {
-            mg_pre   = std::stoi(preconditioner_params_m[arg++]);
-            mg_post  = std::stoi(preconditioner_params_m[arg++]);
-            mg_omega = std::stod(preconditioner_params_m[arg++]);
+            mg_pre       = std::stoi(preconditioner_params_m[arg++]);
+            mg_post      = std::stoi(preconditioner_params_m[arg++]);
+            mg_omega     = std::stod(preconditioner_params_m[arg++]);
+            mg_min_cells = std::stoi(preconditioner_params_m[arg++]);
         }
 
         sp.add("preconditioner_type", preconditioner_type);
@@ -248,6 +250,7 @@ public:
         sp.add("mg_pre_smooth_iters", mg_pre);
         sp.add("mg_post_smooth_iters", mg_post);
         sp.add("mg_omega", mg_omega);
+        sp.add("min_cells_per_rank_per_dim", mg_min_cells);
 
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }

@@ -88,12 +88,15 @@ namespace ippl {
 
     public:
         multigrid_preconditioner(OperatorF&& op, unsigned pre_smooth_iters = 2,
-                                 unsigned post_smooth_iters = 2, double omega_jacobi = 0.8)
+                                 unsigned post_smooth_iters = 2, double omega_jacobi = 0.8,
+                                 unsigned min_cells_per_rank_per_dim = 4, bool communication = true)
             : preconditioner<Field>("Multigrid")
             , op_(std::forward<OperatorF>(op))
             , nu1_(pre_smooth_iters)
             , nu2_(post_smooth_iters)
-            , omega_(omega_jacobi) {}
+            , omega_(omega_jacobi)
+            , min_cells_per_rank_per_dim_(min_cells_per_rank_per_dim)
+            , communication_(communication) {}
 
         // --- DEBUGGING - To be deleted ---
 
@@ -113,7 +116,8 @@ namespace ippl {
             if (is_all_periodic_) {
                 auto avg = L_[0].f.getVolumeAverage();
                 L_[0].f  = L_[0].f - avg;
-                L_[0].f.fillHalo();
+                if (communication_)
+                    L_[0].f.fillHalo();
             }
 
             for (size_t level = 0; level < L_.size(); ++level)
@@ -124,7 +128,8 @@ namespace ippl {
             if (is_all_periodic_) {
                 auto avg = L_[0].u.getVolumeAverage();
                 L_[0].u  = L_[0].u - avg;
-                L_[0].u.fillHalo();
+                if (communication_)
+                    L_[0].u.fillHalo();
             }
             IpplTimings::stopTimer(mg);
 
@@ -181,7 +186,7 @@ namespace ippl {
             // minimum for a well-defined halo exchange and a meaningful smoother
             // sweep; bump this to 4 if you want extra safety margin (e.g. for
             // wider stencils or periodic BCs that can alias on tiny slabs).
-            constexpr int min_cells_per_rank_per_dim = 4;
+            int min_cells_per_rank_per_dim = min_cells_per_rank_per_dim_;
 
             // Walk down the hierarchy: start at level 1 (just the fine grid) and
             // keep adding a coarser level as long as EVERY dimension still has
@@ -263,10 +268,6 @@ namespace ippl {
                 L_.emplace_back(level_mesh, level_layout, level_bcs);
             }
 
-            // --- DEBUGGING - To be deleted ---
-            debug_print_all_levels("after init_fields");
-            // --- END OF DEBUGGING ---
-            //
             IpplTimings::stopTimer(init_fields);
         }
 
@@ -333,14 +334,15 @@ namespace ippl {
                 });
 
             ippl::fence();
-            lev_coarse.f.fillHalo();
 
             // Remove Volume average if periodic
             if (is_all_periodic_) {
                 auto avg     = lev_coarse.f.getVolumeAverage();
                 lev_coarse.f = lev_coarse.f - avg;
-                lev_coarse.f.fillHalo();
             }
+
+            if (communication_)
+                lev_coarse.f.fillHalo();
 
             IpplTimings::stopTimer(restrict);
         }
@@ -359,7 +361,8 @@ namespace ippl {
 
             // 1. Sync coarse grid ghost cells (crucial because interpolation reads adjacent coarse
             // nodes)
-            lev_coarse.u.fillHalo();
+            if (communication_)
+                lev_coarse.u.fillHalo();
 
             // 2. Setup domains and views
             const auto lDomF = lev_fine.u.getLayout().getLocalNDIndex();
@@ -434,6 +437,8 @@ namespace ippl {
         OperatorF op_;
         unsigned nu1_, nu2_;
         double omega_;
+        unsigned min_cells_per_rank_per_dim_;
+        bool communication_;
         bool is_all_periodic_ = false;
 
         // --- DEBUGGING - To be deleted ---
@@ -562,7 +567,9 @@ namespace ippl {
             const auto diag = multigrid::compute_diag(lev);
 
             for (unsigned it = 0; it < iters; ++it) {
-                u.fillHalo();
+                if (communication_)
+                    u.fillHalo();
+
                 Field res = residual(u, f);
                 u         = u + omega_ * (res / diag);
             }

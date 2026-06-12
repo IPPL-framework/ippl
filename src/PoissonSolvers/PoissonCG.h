@@ -79,10 +79,13 @@ namespace ippl {
                 int mg_pre      = this->params_m.template get<int>("mg_pre_smooth_iters");
                 int mg_post     = this->params_m.template get<int>("mg_post_smooth_iters");
                 double mg_omega = this->params_m.template get<double>("mg_omega");
+                unsigned mg_min_cells =
+                    this->params_m.template get<int>("min_cells_per_rank_per_dim");
+                bool mg_communication = communication;
 
-                // Analytical eigenvalues for the d dimensional laplace operator
-                // Going brute force through all possible eigenvalues seems to be the only way to
-                // find max and min
+                // Analytical eigenvalues for the d dimensional laplace
+                // operator Going brute force through all possible eigenvalues
+                // seems to be the only way to find max and min
 
                 unsigned long n;
                 double h;
@@ -113,7 +116,7 @@ namespace ippl {
                         IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(diagonal_laplace, lhs_type), alpha, beta,
                         preconditioner_type, level, degree, richardson_iterations, inner, outer,
-                        omega, mg_pre, mg_post, mg_omega);
+                        omega, mg_pre, mg_post, mg_omega, mg_min_cells, mg_communication);
                 } else {
                     algo_m->setPreconditioner(
                         IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type),
@@ -123,7 +126,7 @@ namespace ippl {
                         IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(diagonal_laplace, lhs_type), alpha, beta,
                         preconditioner_type, level, degree, richardson_iterations, inner, outer,
-                        omega, mg_pre, mg_post, mg_omega);
+                        omega, mg_pre, mg_post, mg_omega, mg_min_cells, mg_communication);
                 }
             } else {
                 algo_m = std::move(
