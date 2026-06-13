@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
         using BConds_t    = ippl::BConds<Field_t, dim>;
 
         int maxPow        = 7;
-        double tolerance  = 1e-13;
+        double tolerance  = 1e-10;
         int maxIterations = 4000;
 
         if (argc > 1 && argv[1][0] != '-') {
@@ -189,7 +189,7 @@ int main(int argc, char* argv[]) {
                     params.add("mg_pre_smooth_iters", 2);
                     params.add("mg_post_smooth_iters", 2);
                     params.add("mg_omega", 0.8);
-                    params.add("min_cells_per_rank_per_dim", 4);
+                    params.add("min_cells_per_rank_per_dim", 2);
                 }
 
                 solver.mergeParameters(params);
