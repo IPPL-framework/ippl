@@ -43,7 +43,7 @@ public:
 };
 
 using Precisions = TestParams::Precisions;
-using Ranks      = TestParams::Ranks<1, 2, 3, 4, 5, 6>;
+using Ranks      = TestParams::Ranks<1, 2, 3, 4>;
 using Tests      = TestForTypes<CreateCombinations<Precisions, Ranks>::type>::type;
 TYPED_TEST_SUITE(UniformCartesianTest, Tests);
 

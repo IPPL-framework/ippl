@@ -31,7 +31,7 @@ public:
     void setPL(std::shared_ptr<PLayout_t<T, Dim>>& pl) { pl_m = pl; }
 
     void registerAttributes() {
-        //only needed for vis
+        // only needed for vis
         P.set_name("velocity");
         q.set_name("charge");
         E.set_name("electric_field");

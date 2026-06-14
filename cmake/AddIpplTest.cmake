@@ -31,6 +31,8 @@
 
 set(IPPL_DEFAULT_TEST_PROCS "2" CACHE STRING "Default MPI ranks per unit test")
 set(IPPL_DEFAULT_TEST_TIMEOUT "60" CACHE STRING "Default timeout (seconds) per unit test")
+set(IPPL_DEFAULT_INTEGRATION_TIMEOUT "300"
+    CACHE STRING "Default timeout (seconds) per integration test")
 
 function(add_ippl_test TEST_NAME)
   set(options NO_MPI REQUIRE_MPI RUN_SERIAL USE_GTEST_MAIN INTEGRATION COMPILE_ONLY)
@@ -73,10 +75,6 @@ function(add_ippl_test TEST_NAME)
     target_link_libraries(${TEST_NAME} PRIVATE IPPL::ippl ${TEST_LINK_LIBS})
   endif()
 
-  if(TARGET ippl_build_flags)
-    target_link_libraries(${TEST_NAME} PRIVATE ippl_build_flags)
-  endif()
-
   if(TARGET ippl::test_support)
     target_link_libraries(${TEST_NAME} PRIVATE ippl::test_support)
   endif()
@@ -92,6 +90,8 @@ function(add_ippl_test TEST_NAME)
 
   if(TEST_TIMEOUT)
     set(_timeout "${TEST_TIMEOUT}")
+  elseif(TEST_INTEGRATION)
+    set(_timeout "${IPPL_DEFAULT_INTEGRATION_TIMEOUT}")
   else()
     set(_timeout "${IPPL_DEFAULT_TEST_TIMEOUT}")
   endif()
@@ -169,7 +169,7 @@ function(add_ippl_test TEST_NAME)
         ENV_VARS
         "OMP_PROC_BIND=spread"
         "OMP_PLACES=threads"
-        "OMP_NUM_THREADS=${_threads} "
+        "OMP_NUM_THREADS=${_threads}"
         "KOKKOS_NUM_THREADS=${_threads}"
         "MKL_NUM_THREADS=${_threads}"
         "OPENBLAS_NUM_THREADS=${_threads}"
@@ -202,5 +202,9 @@ function(add_ippl_test TEST_NAME)
     if(TEST_PROPERTIES)
       set_tests_properties(${_ctest_name} PROPERTIES ${TEST_PROPERTIES})
     endif()
+  endif()
+
+  if(TEST_LINK_LIBS AND NOT TEST_INTEGRATION)
+    target_link_libraries(${TEST_NAME} PRIVATE ${TEST_LINK_LIBS})
   endif()
 endfunction()

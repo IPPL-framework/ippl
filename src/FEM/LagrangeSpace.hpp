@@ -278,8 +278,7 @@ namespace ippl {
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
         evaluateRefElementShapeFunction(
             const size_t& localDOF,
-            const LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
-                                FieldRHS>::point_t& localPoint) const {
+            const point_t& localPoint) const {
         static_assert(Order == 1, "Only order 1 is supported at the moment");
         // Assert that the local vertex index is valid.
         assert(localDOF < numElementDOFs

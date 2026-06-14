@@ -2,3 +2,10 @@ file(RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}
 message(STATUS "Adding unit tests found in ${_relPath}")
 
 add_ippl_test(FFT)
+if(IPPL_ENABLE_FINUFFT)
+    add_ippl_test(NUFFT TIMEOUT 300 LINK_LIBS finufft cufinufft)
+    add_ippl_test(NUFFTAccuracy TIMEOUT 1800 LINK_LIBS finufft cufinufft)
+else()
+    add_ippl_test(NUFFT TIMEOUT 300 LINK_LIBS)
+    add_ippl_test(NUFFTAccuracy TIMEOUT 1800 LINK_LIBS)
+endif()

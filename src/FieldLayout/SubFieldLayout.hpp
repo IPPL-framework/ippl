@@ -102,7 +102,7 @@ namespace ippl {
             }
         }
 
-        this->findNeighbors();
+        this->findNeighbors(this->nghost_m);
 
         Kokkos::deep_copy(this->dLocalDomains_m, this->hLocalDomains_m);
 

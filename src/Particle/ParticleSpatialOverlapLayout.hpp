@@ -25,6 +25,32 @@
 #include "Communicate/Window.h"
 
 namespace ippl {
+
+    /*!
+     * Helper for Kokkos::parallel_scan, which only allows a single reduction
+     * value. Used to count invalid and outside particles in one scan.
+     */
+    struct increment_type {
+        size_t count[2];
+
+        KOKKOS_FUNCTION void init() {
+            count[0] = 0;
+            count[1] = 0;
+        }
+
+        KOKKOS_INLINE_FUNCTION increment_type& operator+=(bool* values) {
+            count[0] += values[0];
+            count[1] += values[1];
+            return *this;
+        }
+
+        KOKKOS_INLINE_FUNCTION increment_type& operator+=(increment_type values) {
+            count[0] += values.count[0];
+            count[1] += values.count[1];
+            return *this;
+        }
+    };
+
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::ParticleSpatialOverlapLayout(
         FieldLayout<Dim>& fl, Mesh& mesh, const T& rcutoff)
@@ -44,7 +70,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::initializeCells() {
         const auto rank          = Comm->rank();
-        const auto hLocalRegions = this->rlayout_m.gethLocalRegions();
+        const auto hLocalRegions = this->rlayout_m->gethLocalRegions();
         for (unsigned d = 0; d < Dim; ++d) {
             PAssert(rcutoff_m <= hLocalRegions(rank)[d].length() / 2 &&
                 "Cutoff is too big with respect to region. "
@@ -192,7 +218,7 @@ namespace ippl {
         }
         if (!anyPeriodic) return;
 
-        const auto& globalRegion = this->rlayout_m.getDomain();
+        const auto& globalRegion = this->rlayout_m->getDomain();
         const auto overlap       = rcutoff_m;
         const auto numLoc        = pc.getLocalNum();
         const auto positions     = pc.R.getView();
@@ -259,7 +285,7 @@ namespace ippl {
         /* Apply Boundary Conditions */
         static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
         IpplTimings::startTimer(ParticleBCTimer);
-        this->applyBC(pc.R, this->rlayout_m.getDomain());
+        this->applyBC(pc.R, this->rlayout_m->getDomain());
         createPeriodicGhostParticles(pc);
         IpplTimings::stopTimer(ParticleBCTimer);
 
@@ -549,7 +575,7 @@ namespace ippl {
         const ParticleContainer& pc, locate_type& ranks, locate_type& rankOffsets,
         bool_type& invalid, locate_type& nSends_dview, locate_type& sends_dview) const {
         const auto positions = pc.R.getView();
-        const auto regions   = this->rlayout_m.getdLocalRegions();
+        const auto regions   = this->rlayout_m->getdLocalRegions();
         const auto myRank    = Comm->rank();
         const auto localNum  = pc.getLocalNum();
         const T overlap      = rcutoff_m;
@@ -844,7 +870,7 @@ namespace ippl {
         const auto positions              = pc.R.getView();
         const auto totalCells             = totalCells_m;
         const auto numLocalCells          = numLocalCells_m;
-        const auto localRegion            = this->rlayout_m.gethLocalRegions()(rank);
+        const auto localRegion            = this->rlayout_m->gethLocalRegions()(rank);
         const auto& cellWidth             = cellWidth_m;
         const auto cellStrides            = cellStrides_m;
         const auto cellPermutationForward = cellPermutationForward_m;
@@ -960,7 +986,7 @@ namespace ippl {
     typename ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::ParticleNeighborData
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::getParticleNeighborData() const {
         return ParticleNeighborData(numLocalParticles_m, cellStrides_m, numCells_m, cellWidth_m,
-                                    this->rlayout_m.gethLocalRegions()(Comm->rank()),
+                                    this->rlayout_m->gethLocalRegions()(Comm->rank()),
                                     cellStartingIdx_m, cellIndex_m, cellParticleCount_m,
                                     cellPermutationForward_m, cellPermutationBackward_m);
     }

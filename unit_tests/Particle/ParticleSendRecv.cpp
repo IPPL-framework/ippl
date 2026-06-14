@@ -64,10 +64,10 @@ public:
             origin[d] = 0;
         }
 
-        layout  = flayout_type(MPI_COMM_WORLD, owned, isParallel);
-        mesh    = mesh_type(owned, hx, origin);
+        layout      = flayout_type(MPI_COMM_WORLD, owned, isParallel);
+        mesh        = mesh_type(owned, hx, origin);
         playout_ptr = std::make_shared<playout_type>(layout, mesh);
-        bunch = std::make_shared<bunch_type>(*playout_ptr);
+        bunch       = std::make_shared<bunch_type>(*playout_ptr);
 
         using BC = ippl::BC;
 
@@ -109,7 +109,7 @@ public:
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecSpace>;
 
         RegionLayout_t RLayout           = playout_ptr->getRegionLayout();
-        auto& positions                  = bunch->R.getView();
+        auto positions                   = bunch->R.getView();
         region_view Regions              = RLayout.getdLocalRegions();
         typename rank_type::view_type ER = bunch->expectedRank.getView();
 
@@ -146,10 +146,12 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     auto& bunch           = this->bunch;
 
     bunch->update();
+    // getHostMirror() returns a mirror sized to getView(), i.e. the live
+    // particle range [0, localNum_m). The underlying dview_m has at least
+    // that capacity (and after the overallocated pre-grow in update() may
+    // have more), so do NOT resize to dview_m.extent(0) here.
     typename TestFixture::rank_type::view_type::host_mirror_type ER_host =
         bunch->expectedRank.getHostMirror();
-
-    Kokkos::resize(ER_host, bunch->expectedRank.size());
     Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());
 
     for (size_t i = 0; i < bunch->getLocalNum(); ++i) {

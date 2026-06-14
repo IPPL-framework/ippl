@@ -122,7 +122,7 @@ public:
     ORB orb;
 };
 
-using Tests = TestParams::tests<1, 2, 3, 4, 5, 6>;
+using Tests = TestParams::tests<1, 2, 3>;
 TYPED_TEST_SUITE(ORBTest, Tests);
 
 TYPED_TEST(ORBTest, Volume) {

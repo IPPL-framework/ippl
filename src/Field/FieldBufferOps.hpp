@@ -74,8 +74,8 @@ namespace ippl {
             size_t size = intersect.size();
             nsends      = size;
             if (buffer.size() < size) {
-                const int overalloc = ippl::Comm->getDefaultOverallocation();
-                Kokkos::realloc(buffer, size * overalloc);
+                const double overalloc = ippl::Comm->getDefaultOverallocation();
+                Kokkos::realloc(buffer, static_cast<size_t>(size * overalloc));
             }
 
             using index_type = typename ippl::RangePolicy<Dim>::index_type;
@@ -122,8 +122,8 @@ namespace ippl {
             size_t size = intersect.size();
             nsends      = size;
             if (buffer.size() < size) {
-                const int overalloc = ippl::Comm->getDefaultOverallocation();
-                Kokkos::realloc(buffer, size * overalloc);
+                const double overalloc = ippl::Comm->getDefaultOverallocation();
+                Kokkos::realloc(buffer, static_cast<size_t>(size * overalloc));
             }
             
             using index_type = typename ippl::RangePolicy<Dim>::index_type;
@@ -155,9 +155,12 @@ namespace ippl {
 
         // Unpack a linear buffer into a view region, with per-axis conditional
         // reflection of the buffer index. Setting a dimension to true via the
-        // coordBool list reverses the buffer ordering along that axis as it is 
+        // coordBool list reverses the buffer ordering along that axis as it is
         // placed into the view — the primitive operation behind `mirrorField`
-        // and behind the Vico solver's reflected-quadrant assembly.
+        // and behind the Vico solver's reflected-quadrant assembly. Take
+        // main/master's generalised-over-Dim signature (PR #532) so the body
+        // below (which already references Dim / coordBool) compiles; the
+        // hardcoded-3D pif-pr variant has been superseded.
         template <int tensorRank, typename Tb, typename View, unsigned Dim>
         inline void unpack_impl(const ippl::NDIndex<Dim> intersect,
                                 const View& view,

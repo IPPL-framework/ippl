@@ -73,19 +73,26 @@ namespace ippl {
 
             virtual void unpack(size_type) = 0;
 
-            virtual void serialize(Archive<memory_space>& ar, size_type nsends) = 0;
-
+            //! Pack the first @p nsends entries into @p ar.
+            virtual void serialize(Archive<memory_space>& ar, size_type nsends)   = 0;
+            //! Pack the @p nsends entries indexed by @p hash into @p ar.
+            virtual void serialize(detail::Archive<memory_space>& ar, const hash_type& hash,
+                                   size_type nsends)                              = 0;
+            //! Unpack the first @p nrecvs entries from @p ar (legacy interface).
             virtual void deserialize(Archive<memory_space>& ar, size_type nrecvs) = 0;
+            //! Unpack @p nrecvs entries from @p ar starting at attribute @p offset.
+            virtual void deserialize(detail::Archive<memory_space>& ar, size_type offset,
+                                     size_type nrecvs)                            = 0;
 
             virtual size_type size() const = 0;
 
-            virtual ~ParticleAttribBase() = default;
+            KOKKOS_INLINE_FUNCTION virtual ~ParticleAttribBase() = default;
 
             void setParticleCount(size_type& num) { localNum_mp = &num; }
             size_type getParticleCount() const { return *localNum_mp; }
 
             virtual void applyPermutation(const hash_type&) = 0;
-            virtual void internalCopy(const hash_type&) = 0;
+            virtual void internalCopy(const hash_type&)     = 0;
 
         protected:
             const size_type* localNum_mp;

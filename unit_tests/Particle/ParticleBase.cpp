@@ -77,14 +77,18 @@ TYPED_TEST(ParticleBaseTest, CreateAndDestroy) {
     Kokkos::deep_copy(invalid, mirror2);
     pbase->destroy(invalid, 500);
 
-    // Verify remaining indices
-    Kokkos::deep_copy(mirror, pbase->ID.getView());
+    // ParticleAttrib::getView() returns a subview restricted to the live
+    // particle range, so after destroy() the view is the new (smaller) size
+    // and we must re-acquire the host mirror to match the new extent.
+    auto liveMirror = pbase->ID.getHostMirror();
+    Kokkos::deep_copy(liveMirror, pbase->ID.getView());
+    ASSERT_EQ(liveMirror.extent(0), 500u);
     for (int i = 0; i < 500; ++i) {
         // The even indices contain the original particles
         // The particles with odd indices are deleted and replaced
         // with particles with even indices (in ascending order w.r.t. index)
         int index = i % 2 == 0 ? i : 500 + (i - 1);
-        EXPECT_EQ(mirror[i], index);
+        EXPECT_EQ(liveMirror[i], index);
     }
 }
 

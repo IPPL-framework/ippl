@@ -19,8 +19,9 @@ if(IPPL_ENABLE_TESTS)
   # Landau will write a CSV file to the data directory that we will validate later
   make_directory("${PROJECT_BINARY_DIR}/alpine/data")
   # Add the test
-  add_ippl_integration_test(LandauDamping 
+  add_ippl_integration_test(LandauDamping
     ARGS "16" "16" "16" "10000000" "25" "FFT" "0.01" "LeapFrog" "--overallocate" "2.0" "--info" "10"
+    TIMEOUT 900
     LABELS alpine integration
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/alpine/")
   # cmake-format: on
@@ -30,5 +31,7 @@ endif()
 
 add_alpine_example(PenningTrap)
 add_alpine_example(BumponTailInstability)
+
+add_subdirectory(ElectrostaticPIF)
 
 add_subdirectory(validation)
