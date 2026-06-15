@@ -89,7 +89,7 @@ namespace ippl {
             //       result = w * inverse_diagonal_m(u)
             if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
                 const double scale = w_m * inverse_diagonal_m(u);
-                result = scale * u;
+                result             = scale * u;
             } else {
                 result = inverse_diagonal_m(u);
                 result = w_m * result;
@@ -160,17 +160,8 @@ namespace ippl {
             // Counts include every call at every level (so the call-count
             // column equals 2^(level_m+1)-1, not the number of operator()
             // invocations).
-            static IpplTimings::TimerRef t_total = IpplTimings::getTimer("newton/total");
-            static IpplTimings::TimerRef t_leaf  = IpplTimings::getTimer("newton/leaf_assign");
-            static IpplTimings::TimerRef t_op    = IpplTimings::getTimer("newton/op_m");
-            static IpplTimings::TimerRef t_comb  = IpplTimings::getTimer("newton/combine");
-
-            IpplTimings::startTimer(t_total);
             if (level == 0) {
-                IpplTimings::startTimer(t_leaf);
                 out = eta_m[0] * u;
-                IpplTimings::stopTimer(t_leaf);
-                IpplTimings::stopTimer(t_total);
                 return;
             }
             Field& Pr   = Pr_scratch_m[level];
@@ -180,24 +171,16 @@ namespace ippl {
             // Inner recursive call owns its own timing; we don't double-count
             // it here.
             recursive_preconditioner(u, level - 1, Pr);
-            IpplTimings::startTimer(t_op);
             PA = op_m(Pr);
-            IpplTimings::stopTimer(t_op);
             recursive_preconditioner(PA, level - 1, PAPr);
-            IpplTimings::startTimer(t_comb);
             out = eta_m[level] * (2.0 * Pr - PAPr);
-            IpplTimings::stopTimer(t_comb);
-            IpplTimings::stopTimer(t_total);
         }
 
         void operator()(Field& u, Field& result) override {
             // One outer timer per polynomial_newton apply, complementing the
             // per-call recursion timers. Lets us see how many outer pcond
             // calls a solve does vs. the time inside each.
-            static IpplTimings::TimerRef t_apply = IpplTimings::getTimer("newton/apply");
-            IpplTimings::startTimer(t_apply);
             recursive_preconditioner(u, level_m, result);
-            IpplTimings::stopTimer(t_apply);
         }
 
         void init_fields(Field& b) override {
@@ -304,57 +287,29 @@ namespace ippl {
         void operator()(Field& r, Field& result) override {
             // x_m, x_old_m, A_m, z_m are pre-allocated scratch (init_fields).
             // Coefficients in rho_m are also computed once.
-            static IpplTimings::TimerRef t_apply = IpplTimings::getTimer("chebyshev/apply");
-            static IpplTimings::TimerRef t_init  = IpplTimings::getTimer("chebyshev/init_step");
-            static IpplTimings::TimerRef t_op    = IpplTimings::getTimer("chebyshev/op_m");
-            static IpplTimings::TimerRef t_combo = IpplTimings::getTimer("chebyshev/combine");
-            static IpplTimings::TimerRef t_copy  = IpplTimings::getTimer("chebyshev/deep_copy");
-
-            IpplTimings::startTimer(t_apply);
-
-            IpplTimings::startTimer(t_init);
             x_old_m = r / theta_m;
-            IpplTimings::stopTimer(t_init);
-            IpplTimings::startTimer(t_op);
             A_m     = op_m(r);
-            IpplTimings::stopTimer(t_op);
-            IpplTimings::startTimer(t_combo);
             x_m     = 2.0 * rho_m[1] / delta_m * (2.0 * r - A_m / theta_m);
-            IpplTimings::stopTimer(t_combo);
-
             if (degree_m == 0) {
                 // result = x_old
-                IpplTimings::startTimer(t_copy);
                 Kokkos::deep_copy(result.getView(), x_old_m.getView());
-                IpplTimings::stopTimer(t_copy);
-                IpplTimings::stopTimer(t_apply);
                 return;
             }
 
             if (degree_m == 1) {
                 // result = x
-                IpplTimings::startTimer(t_copy);
                 Kokkos::deep_copy(result.getView(), x_m.getView());
-                IpplTimings::stopTimer(t_copy);
-                IpplTimings::stopTimer(t_apply);
                 return;
             }
             for (unsigned int i = 2; i < degree_m + 1; ++i) {
-                IpplTimings::startTimer(t_op);
-                A_m   = op_m(x_m);
-                IpplTimings::stopTimer(t_op);
-                IpplTimings::startTimer(t_combo);
-                z_m   = 2.0 / delta_m * (r - A_m);
+                A_m = op_m(x_m);
+                z_m = 2.0 / delta_m * (r - A_m);
                 // Write the new x value into result (the caller's buffer);
                 // x_old gets a deep copy of the previous x.
                 result = rho_m[i] * (2 * sigma_m * x_m - rho_m[i - 1] * x_old_m + z_m);
-                IpplTimings::stopTimer(t_combo);
-                IpplTimings::startTimer(t_copy);
                 Kokkos::deep_copy(x_old_m.getView(), x_m.getView());
                 Kokkos::deep_copy(x_m.getView(), result.getView());
-                IpplTimings::stopTimer(t_copy);
             }
-            IpplTimings::stopTimer(t_apply);
         }
 
         void init_fields(Field& b) override {
@@ -375,10 +330,10 @@ namespace ippl {
             // First call allocates; subsequent calls refresh the layout so a
             // repartition is tracked without throwing the storage away.
             if (!fields_initialized_m) {
-                x_m     = Field(mesh, layout);
-                x_old_m = Field(mesh, layout);
-                A_m     = Field(mesh, layout);
-                z_m     = Field(mesh, layout);
+                x_m                  = Field(mesh, layout);
+                x_old_m              = Field(mesh, layout);
+                A_m                  = Field(mesh, layout);
+                z_m                  = Field(mesh, layout);
                 fields_initialized_m = true;
             } else {
                 x_m.updateLayout(layout);
@@ -430,8 +385,8 @@ namespace ippl {
 
             result = 0;
             for (unsigned int j = 0; j < innerloops_m; ++j) {
-                ULg_m = upper_and_lower_m(result);
-                ULg_m = ULg_m.deepCopy();
+                ULg_m  = upper_and_lower_m(result);
+                ULg_m  = ULg_m.deepCopy();
                 result = r - ULg_m;
 
                 // The inverse diagonal is applied to the
@@ -482,10 +437,10 @@ namespace ippl {
         using layout_type             = typename Field::Layout_t;
 
         richardson_preconditioner_alt(OperatorF&& op, InvDiagF&& inverse_diagonal,
-                                  unsigned innerloops = 5)
+                                      unsigned innerloops = 5)
             : preconditioner<Field>("Richardson_alt")
             , innerloops_m(innerloops) {
-            op_m  = std::move(op);
+            op_m               = std::move(op);
             inverse_diagonal_m = std::move(inverse_diagonal);
         }
 
@@ -499,8 +454,8 @@ namespace ippl {
             g_old_m = 0;
 
             for (unsigned int j = 0; j < innerloops_m; ++j) {
-                Ag_m = op_m(result);
-                Ag_m = Ag_m.deepCopy();
+                Ag_m   = op_m(result);
+                Ag_m   = Ag_m.deepCopy();
                 result = r - Ag_m;
 
                 // The inverse diagonal is applied to the
@@ -573,27 +528,41 @@ namespace ippl {
                 UL_m = UL_m.deepCopy();
                 r_m  = b - UL_m;
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    UL_m = lower_m(result);
-                    UL_m = UL_m.deepCopy();
+                    UL_m   = lower_m(result);
+                    UL_m   = UL_m.deepCopy();
                     result = r_m - UL_m;
                     if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
                         result = inverse_diagonal_m(result) * result;
                     } else {
                         result = inverse_diagonal_m(result).deepCopy();
                     }
+                    // The inverse diagonal is applied to the
+                    // vector itself to return the result usually.
+                    // However, the operator for FEM already
+                    // returns the result of inv_diag * itself
+                    // due to the matrix-free evaluation.
+                    // Therefore, we need this if to differentiate
+                    // the two cases.
                 }
                 UL_m = lower_m(result);
                 UL_m = UL_m.deepCopy();
                 r_m  = b - UL_m;
                 for (unsigned int j = 0; j < innerloops_m; ++j) {
-                    UL_m = upper_m(result);
-                    UL_m = UL_m.deepCopy();
+                    UL_m   = upper_m(result);
+                    UL_m   = UL_m.deepCopy();
                     result = r_m - UL_m;
                     if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
                         result = inverse_diagonal_m(result) * result;
                     } else {
                         result = inverse_diagonal_m(result).deepCopy();
                     }
+                    // The inverse diagonal is applied to the
+                    // vector itself to return the result usually.
+                    // However, the operator for FEM already
+                    // returns the result of inv_diag * itself
+                    // due to the matrix-free evaluation.
+                    // Therefore, we need this if to differentiate
+                    // the two cases.
                 }
             }
         }
@@ -645,20 +614,29 @@ namespace ippl {
         }
 
         void operator()(Field& b, Field& result) override {
-            static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("SSOR Init");
-            IpplTimings::startTimer(initTimer);
+            // In the FEM solver, which uses the preconditioner,
+            // we re-use a resultField to avoid allocating new
+            // memory at every iteration.
+            // In order for the operator calls to not rewrite
+            // on this same field over and over when calling
+            // the operators (upper, diag, inverse, lower, etc)
+            // we need deep copies to the preconditioner fields.
+
+            // The inverse diagonal is applied to the
+            // vector itself to return the result usually.
+            // However, the operator for FEM already
+            // returns the result of inv_diag * itself
+            // due to the matrix-free evaluation.
+            // Therefore, we need this if to differentiate
+            // the two cases.
 
             double D;
 
-            // The running iterate lives in result; UL_m, r_m are scratch
-            // members. The inner deep copies remain because (upper, lower,
-            // inverse, diagonal) may return aliasing Field-valued expressions.
+            // In order for the operator calls to not rewrite on this same field
+            // over and over when calling the operators (upper, diag, inverse,
+            // lower, etc) we need deep copies to the preconditioner fields."
+
             result = 0;  // Initial guess
-
-            IpplTimings::stopTimer(initTimer);
-
-            static IpplTimings::TimerRef loopTimer = IpplTimings::getTimer("SSOR loop");
-            IpplTimings::startTimer(loopTimer);
 
             for (unsigned int k = 0; k < outerloops_m; ++k) {
                 if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
@@ -697,7 +675,6 @@ namespace ippl {
                     }
                 }
             }
-            IpplTimings::stopTimer(loopTimer);
         }
 
         void init_fields(Field& b) override {

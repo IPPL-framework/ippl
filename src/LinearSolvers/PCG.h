@@ -6,9 +6,9 @@
 #ifndef IPPL_PCG_H
 #define IPPL_PCG_H
 
+#include "FEM/FEMVector.h"
 #include "Preconditioner.h"
 #include "SolverAlgorithm.h"
-#include "FEM/FEMVector.h"
 
 namespace ippl {
     template <typename OperatorRet, typename LowerRet, typename UpperRet, typename UpperLowerRet,
@@ -75,9 +75,8 @@ namespace ippl {
             // set in main
             [[maybe_unused]] int outer =
                 1,  // This is a dummy default parameter, actual default parameter should be
-            [[maybe_unused]] double omega =
-                1  // This is a dummy default parameter, actual default parameter should be
-                   // set in main
+            [[maybe_unused]] double omega = 1  // This is a dummy default parameter, actual default
+                                               // parameter should be set in main
         ) {}
         /*!
          * Query how many iterations were required to obtain the solution
@@ -90,10 +89,10 @@ namespace ippl {
                                 const ParameterList& params) override {
             constexpr unsigned Dim = lhs_type::dim;
 
-            static IpplTimings::TimerRef cg_ops = IpplTimings::getTimer("CG");
+            static IpplTimings::TimerRef cg_ops    = IpplTimings::getTimer("CG");
             static IpplTimings::TimerRef up_layout = IpplTimings::getTimer("updateLayout");
-            static IpplTimings::TimerRef apply = IpplTimings::getTimer("applyOp");
-            static IpplTimings::TimerRef inner = IpplTimings::getTimer("innerProduct");
+            static IpplTimings::TimerRef apply     = IpplTimings::getTimer("applyOp");
+            static IpplTimings::TimerRef inner     = IpplTimings::getTimer("innerProduct");
 
             IpplTimings::startTimer(cg_ops);
 
@@ -138,14 +137,13 @@ namespace ippl {
             d.setFieldBC(bc);
 
             IpplTimings::startTimer(inner);
-            T delta1          = innerProduct(r, d);
+            T delta1 = innerProduct(r, d);
             IpplTimings::stopTimer(inner);
             T delta0          = delta1;
             residueNorm       = Kokkos::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
             while (iterations_m < maxIterations && residueNorm > tolerance) {
-
                 IpplTimings::startTimer(apply);
                 q = op_m(d);
                 IpplTimings::stopTimer(apply);
@@ -153,7 +151,7 @@ namespace ippl {
                 IpplTimings::startTimer(inner);
                 T alpha = delta1 / innerProduct(d, q);
                 IpplTimings::stopTimer(inner);
-                lhs     = lhs + alpha * d;
+                lhs = lhs + alpha * d;
 
                 // The exact residue is given by
                 // r = rhs - op_m(lhs);
@@ -197,11 +195,10 @@ namespace ippl {
         lhs_type q;
     };
 
-
     template <typename OperatorRet, typename LowerRet, typename UpperRet, typename UpperLowerRet,
               typename InverseDiagRet, typename T>
-    class CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FEMVector<T>, FEMVector<T> >
-            : public SolverAlgorithm<FEMVector<T>, FEMVector<T>> {
+    class CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FEMVector<T>,
+             FEMVector<T>> : public SolverAlgorithm<FEMVector<T>, FEMVector<T>> {
         using Base = SolverAlgorithm<FEMVector<T>, FEMVector<T>>;
 
     public:
@@ -252,13 +249,12 @@ namespace ippl {
          * @return Iteration count of last solve
          */
         virtual int getIterationCount() { return iterations_m; }
-        
+
         virtual void operator()(lhs_type& lhs, rhs_type& rhs,
                                 const ParameterList& params) override {
-            
-            //constexpr unsigned Dim             = lhs_type::dim;
-            //typename lhs_type::Mesh_t& mesh     = lhs.get_mesh();
-            //typename lhs_type::Layout_t& layout = lhs.getLayout();
+            // constexpr unsigned Dim             = lhs_type::dim;
+            // typename lhs_type::Mesh_t& mesh     = lhs.get_mesh();
+            // typename lhs_type::Layout_t& layout = lhs.getLayout();
 
             iterations_m            = 0;
             const int maxIterations = params.get<int>("max_iterations");
@@ -266,23 +262,21 @@ namespace ippl {
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
             lhs_type r = lhs.deepCopy();
-            r = 0;
+            r          = 0;
             lhs_type d = lhs.deepCopy();
-            d = 0;
-            
-           
+            d          = 0;
+
             r = rhs - op_m(lhs);
             r.setHalo(0);
-            d = r; //.deepCopy();
-            //d.setFieldBC(bc);
+            d = r;  //.deepCopy();
+            // d.setFieldBC(bc);
             T delta1          = innerProduct(r, d);
             T delta0          = delta1;
             residueNorm       = Kokkos::sqrt(delta1);
             const T tolerance = params.get<T>("tolerance") * norm(rhs);
 
             lhs_type q = lhs.deepCopy();
-            q = 0;
-            
+            q          = 0;
 
             while (iterations_m < maxIterations && residueNorm > tolerance) {
                 q = op_m(d);
@@ -306,8 +300,6 @@ namespace ippl {
                 residueNorm = Kokkos::sqrt(delta1);
                 d           = r + beta * d;
                 ++iterations_m;
-
-                
             }
         }
 
@@ -318,7 +310,6 @@ namespace ippl {
         T residueNorm    = 0;
         int iterations_m = 0;
     };
-
 
     template <typename OperatorRet, typename LowerRet, typename UpperRet, typename UpperLowerRet,
               typename InverseDiagRet, typename DiagRet, typename FieldLHS,
@@ -343,17 +334,8 @@ namespace ippl {
         PCG()
             : CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS,
                  FieldRHS>()
-            , preconditioner_m(nullptr){};
+            , preconditioner_m(nullptr) {};
 
-        /*
-         * Extends the CG workspace with the preconditioner result buffers s and
-         * pcond_out so operator() does not allocate per solve. pcond_out keeps
-         * its default NoBcFace BCs: the preconditioner's internal operator
-         * chain therefore never triggers PeriodicFace::apply MPI calls -- if it
-         * did, the global MPI sequence would diverge from the master code path
-         * (where the preconditioner returned a fresh NoBcFace field) and
-         * intermittent multi-rank halo deadlocks would follow.
-         */
         void initializeFields(mesh_type& mesh, layout_type& layout) override {
             CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS,
                FieldRHS>::initializeFields(mesh, layout);
@@ -387,8 +369,9 @@ namespace ippl {
             // set in main
             double omega = 1.57079632679  // This is a dummy default parameter, actual default
             // parameter should be set in main
-            // default = pi/2 as this was found optimal during hyperparameter scan for test case 
-            // (see https://amas.web.psi.ch/people/aadelmann/ETH-Accel-Lecture-1/projectscompleted/cse/BSc-mbolliger.pdf)
+            // default = pi/2 as this was found optimal during hyperparameter scan for test case
+            // (see
+            // https://amas.web.psi.ch/people/aadelmann/ETH-Accel-Lecture-1/projectscompleted/cse/BSc-mbolliger.pdf)
             ) override {
             if (preconditioner_type == "jacobi") {
                 // Turn on damping parameter
@@ -418,8 +401,7 @@ namespace ippl {
                 preconditioner_m =
                     std::move(std::make_unique<
                               richardson_preconditioner_alt<FieldLHS, OperatorF, InverseDiagF>>(
-                        std::move(op), std::move(inverse_diagonal),
-                        richardson_iterations));
+                        std::move(op), std::move(inverse_diagonal), richardson_iterations));
             } else if (preconditioner_type == "gauss-seidel") {
                 preconditioner_m = std::move(
                     std::make_unique<gs_preconditioner<FieldLHS, LowerF, UpperF, InverseDiagF>>(
@@ -449,12 +431,9 @@ namespace ippl {
 
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
-            // r, d, q come from the CG base class; s and pcond_out are PCG
-            // members. All are pre-allocated via initializeFields(); operator()
-            // only refreshes their layout so a load-balance repartition is
-            // tracked. The preconditioner scratch must follow the lhs layout
-            // too, otherwise its halo-exchange neighbor list goes out of sync
-            // with r/d/s/q after a repartition and halo MPI calls deadlock.
+            // Field layouts are updated such that we don't keep a stale domain decomposition
+            // if the lhs layout has been changed during the simulation, for example by the load
+            // balancer.
             this->r.updateLayout(lhs.getLayout());
             this->d.updateLayout(lhs.getLayout());
             s.updateLayout(lhs.getLayout());
@@ -489,10 +468,6 @@ namespace ippl {
             }
 
             this->r = rhs - this->op_m(lhs);
-            // pcond_out keeps its default NoBcFace BCs so the preconditioner's
-            // internal operator chain does not trigger PeriodicFace::apply MPI;
-            // the expression assignment then folds it into d (which gets the
-            // periodic BCs via setFieldBC below).
             (*preconditioner_m)(this->r, pcond_out);
             this->d = T(1) * pcond_out;
             this->d.setFieldBC(bc);
@@ -502,7 +477,7 @@ namespace ippl {
             this->residueNorm = Kokkos::sqrt(Kokkos::abs(delta1));
             const T tolerance = params.get<T>("tolerance") * this->residueNorm;
 
-            while (this->iterations_m < maxIterations && this->residueNorm > tolerance) {
+            while (this->iterations_m<maxIterations&& this->residueNorm> tolerance) {
                 // op_m(d) writes its expression into q's existing storage; no
                 // allocation, no per-iteration deep copy.
                 this->q = this->op_m(this->d);
@@ -539,10 +514,17 @@ namespace ippl {
     protected:
         std::unique_ptr<preconditioner<FieldLHS>> preconditioner_m;
 
-        // Preconditioner result buffers, allocated once via initializeFields()
-        // and reused across solves. Both deliberately keep their default
-        // NoBcFace BCs so the preconditioner's internal operator chain does
-        // NOT trigger PeriodicFace::apply MPI calls.
+        /*
+         * Extends the CG workspace with the preconditioner result buffers s and
+         * pcond_out so operator() does not allocate per solve.
+         * Preconditioner result buffers, allocated once via initializeFields()
+         * pcond_out keeps its default NoBcFace BCs: the preconditioner's internal operator
+         * chain therefore never triggers PeriodicFace::apply MPI calls -- if it
+         * did, the global MPI sequence would diverge from the master code path
+         * (where the preconditioner returned a fresh NoBcFace field) and
+         * intermittent multi-rank halo deadlocks would follow.
+         */
+
         lhs_type s;
         lhs_type pcond_out;
     };
