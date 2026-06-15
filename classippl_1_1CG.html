@@ -86,7 +86,6 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="#pri-types">Private Types</a> &#124;
-<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1CG-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::CG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -99,8 +98,8 @@ Inheritance diagram for ippl::CG&lt; OperatorRet, LowerRet, UpperRet, UpperLower
 <div class="center"><img src="classippl_1_1CG__inherit__graph.png" border="0" usemap="#aippl_1_1CG_3_01OperatorRet_00_01LowerRet_00_01UpperRet_00_01UpperLowerRet_00_01InverseDiagRet_00_01DiagRet_00_01FieldLHS_00_01FieldRHS_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1CG_3_01OperatorRet_00_01LowerRet_00_01UpperRet_00_01UpperLowerRet_00_01InverseDiagRet_00_01DiagRet_00_01FieldLHS_00_01FieldRHS_01_4_inherit__map" id="aippl_1_1CG_3_01OperatorRet_00_01LowerRet_00_01UpperRet_00_01UpperLowerRet_00_01InverseDiagRet_00_01DiagRet_00_01FieldLHS_00_01FieldRHS_01_4_inherit__map">
 <area shape="rect" title=" " alt="" coords="79,123,295,397"/>
-<area shape="rect" href="classippl_1_1PCG.html" title=" " alt="" coords="5,445,159,588"/>
-<area shape="rect" href="classippl_1_1PCG.html" title=" " alt="" coords="183,445,405,588"/>
+<area shape="rect" href="classippl_1_1PCG.html" title=" " alt="" coords="5,445,159,632"/>
+<area shape="rect" href="classippl_1_1PCG.html" title=" " alt="" coords="183,445,405,632"/>
 <area shape="rect" href="classippl_1_1SolverAlgorithm.html" title=" " alt="" coords="106,5,269,75"/>
 </map>
 </div>
@@ -116,18 +115,18 @@ Collaboration diagram for ippl::CG&lt; OperatorRet, LowerRet, UpperRet, UpperLow
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a579f51454acb569d7abc2a3e746d8fee"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a579f51454acb569d7abc2a3e746d8fee">OperatorF</a> = std::function&lt; OperatorRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>)&gt;</td></tr>
-<tr class="separator:a579f51454acb569d7abc2a3e746d8fee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20149384fac2b4a10215892b386918dc"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a20149384fac2b4a10215892b386918dc">LowerF</a> = std::function&lt; LowerRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>)&gt;</td></tr>
-<tr class="separator:a20149384fac2b4a10215892b386918dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac50656156ba9625caeba89301e20d223"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#ac50656156ba9625caeba89301e20d223">UpperF</a> = std::function&lt; UpperRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>)&gt;</td></tr>
-<tr class="separator:ac50656156ba9625caeba89301e20d223"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac12093404fb86cd0f6432019e91925d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#aac12093404fb86cd0f6432019e91925d">UpperLowerF</a> = std::function&lt; UpperLowerRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>)&gt;</td></tr>
-<tr class="separator:aac12093404fb86cd0f6432019e91925d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a73760a7a7d3fbb930773f632411fddbc"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a73760a7a7d3fbb930773f632411fddbc">InverseDiagF</a> = std::function&lt; InverseDiagRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>)&gt;</td></tr>
-<tr class="separator:a73760a7a7d3fbb930773f632411fddbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae4535ec01c61270bf9e85f12e2312a4b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#ae4535ec01c61270bf9e85f12e2312a4b">DiagF</a> = std::function&lt; DiagRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>)&gt;</td></tr>
-<tr class="separator:ae4535ec01c61270bf9e85f12e2312a4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54c5b35414a7fc3ca57cc2712f6b71f7"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a54c5b35414a7fc3ca57cc2712f6b71f7">OperatorF</a> = std::function&lt; OperatorRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> &amp;)&gt;</td></tr>
+<tr class="separator:a54c5b35414a7fc3ca57cc2712f6b71f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ef81cc45f15613efeea4e186c6e730a"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a8ef81cc45f15613efeea4e186c6e730a">LowerF</a> = std::function&lt; LowerRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> &amp;)&gt;</td></tr>
+<tr class="separator:a8ef81cc45f15613efeea4e186c6e730a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5b460066423846b20a854a504c2c2d4"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#ae5b460066423846b20a854a504c2c2d4">UpperF</a> = std::function&lt; UpperRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> &amp;)&gt;</td></tr>
+<tr class="separator:ae5b460066423846b20a854a504c2c2d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a367621d1afc64dea0537f7fb7500beec"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a367621d1afc64dea0537f7fb7500beec">UpperLowerF</a> = std::function&lt; UpperLowerRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> &amp;)&gt;</td></tr>
+<tr class="separator:a367621d1afc64dea0537f7fb7500beec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6093c993dfca9ac61689f1bfd635cc6"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#aa6093c993dfca9ac61689f1bfd635cc6">InverseDiagF</a> = std::function&lt; InverseDiagRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> &amp;)&gt;</td></tr>
+<tr class="separator:aa6093c993dfca9ac61689f1bfd635cc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af83d0f04ff353950295bd1cd9db73810"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#af83d0f04ff353950295bd1cd9db73810">DiagF</a> = std::function&lt; DiagRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> &amp;)&gt;</td></tr>
+<tr class="separator:af83d0f04ff353950295bd1cd9db73810"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a865f4f0b7429a281212b4be6df91e00f"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a865f4f0b7429a281212b4be6df91e00f">mesh_type</a> = typename lhs_type::Mesh_t</td></tr>
 <tr class="separator:a865f4f0b7429a281212b4be6df91e00f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32281ab78b92d9c4dc3c7ee86cd3aa5b"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a32281ab78b92d9c4dc3c7ee86cd3aa5b">layout_type</a> = typename lhs_type::Layout_t</td></tr>
@@ -148,9 +147,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6240387216ee4bbe18277edfaa22bb7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9eb66f6194b15fb2deb17ffee38a5d73"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a9eb66f6194b15fb2deb17ffee38a5d73">initializeFields</a> (<a class="el" href="classippl_1_1CG.html#a865f4f0b7429a281212b4be6df91e00f">mesh_type</a> &amp;mesh, <a class="el" href="classippl_1_1CG.html#a32281ab78b92d9c4dc3c7ee86cd3aa5b">layout_type</a> &amp;layout)</td></tr>
 <tr class="separator:a9eb66f6194b15fb2deb17ffee38a5d73"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa65e606247caac11f3be23a51172926e"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#aa65e606247caac11f3be23a51172926e">setOperator</a> (<a class="el" href="classippl_1_1CG.html#a579f51454acb569d7abc2a3e746d8fee">OperatorF</a> op)</td></tr>
+<tr class="memitem:aa65e606247caac11f3be23a51172926e"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#aa65e606247caac11f3be23a51172926e">setOperator</a> (<a class="el" href="classippl_1_1CG.html#a54c5b35414a7fc3ca57cc2712f6b71f7">OperatorF</a> op)</td></tr>
 <tr class="separator:aa65e606247caac11f3be23a51172926e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abec3025df27b0c0a77bfc061eeea02a7"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#abec3025df27b0c0a77bfc061eeea02a7">setPreconditioner</a> (<a class="el" href="classippl_1_1CG.html#a579f51454acb569d7abc2a3e746d8fee">OperatorF</a> &amp;&amp;op, <a class="el" href="classippl_1_1CG.html#a20149384fac2b4a10215892b386918dc">LowerF</a> &amp;&amp;lower, <a class="el" href="classippl_1_1CG.html#ac50656156ba9625caeba89301e20d223">UpperF</a> &amp;&amp;upper, <a class="el" href="classippl_1_1CG.html#aac12093404fb86cd0f6432019e91925d">UpperLowerF</a> &amp;&amp;upper_and_lower, <a class="el" href="classippl_1_1CG.html#a73760a7a7d3fbb930773f632411fddbc">InverseDiagF</a> &amp;&amp;inverse_diagonal, <a class="el" href="classippl_1_1CG.html#ae4535ec01c61270bf9e85f12e2312a4b">DiagF</a> &amp;&amp;diagonal, double alpha, double beta, std::string preconditioner_type=&quot;&quot;, int level=5, int degree=31, int richardson_iterations=1, int inner=5, int outer=1, double omega=1)</td></tr>
+<tr class="memitem:abec3025df27b0c0a77bfc061eeea02a7"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#abec3025df27b0c0a77bfc061eeea02a7">setPreconditioner</a> (<a class="el" href="classippl_1_1CG.html#a54c5b35414a7fc3ca57cc2712f6b71f7">OperatorF</a> &amp;&amp;op, <a class="el" href="classippl_1_1CG.html#a8ef81cc45f15613efeea4e186c6e730a">LowerF</a> &amp;&amp;lower, <a class="el" href="classippl_1_1CG.html#ae5b460066423846b20a854a504c2c2d4">UpperF</a> &amp;&amp;upper, <a class="el" href="classippl_1_1CG.html#a367621d1afc64dea0537f7fb7500beec">UpperLowerF</a> &amp;&amp;upper_and_lower, <a class="el" href="classippl_1_1CG.html#aa6093c993dfca9ac61689f1bfd635cc6">InverseDiagF</a> &amp;&amp;inverse_diagonal, <a class="el" href="classippl_1_1CG.html#af83d0f04ff353950295bd1cd9db73810">DiagF</a> &amp;&amp;diagonal, double alpha, double beta, std::string preconditioner_type=&quot;&quot;, int level=5, int degree=31, int richardson_iterations=1, int inner=5, int outer=1, double omega=1)</td></tr>
 <tr class="separator:abec3025df27b0c0a77bfc061eeea02a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ae462348543f4d25627eb170e32ac99"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a9ae462348543f4d25627eb170e32ac99">getIterationCount</a> ()</td></tr>
 <tr class="separator:a9ae462348543f4d25627eb170e32ac99"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -163,12 +162,18 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a1e701df28e9f1e3a139995f11fcb0c8e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1CG.html#a579f51454acb569d7abc2a3e746d8fee">OperatorF</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a1e701df28e9f1e3a139995f11fcb0c8e">op_m</a></td></tr>
+<tr class="memitem:a1e701df28e9f1e3a139995f11fcb0c8e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1CG.html#a54c5b35414a7fc3ca57cc2712f6b71f7">OperatorF</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a1e701df28e9f1e3a139995f11fcb0c8e">op_m</a></td></tr>
 <tr class="separator:a1e701df28e9f1e3a139995f11fcb0c8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02d0a0ded3e939a6d49e2330f4732085"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1CG.html#af50461812c5406eff7a5b12d0d50375d">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a02d0a0ded3e939a6d49e2330f4732085">residueNorm</a> = 0</td></tr>
 <tr class="separator:a02d0a0ded3e939a6d49e2330f4732085"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ecb18123a087339856d1ecbf62c4459"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a9ecb18123a087339856d1ecbf62c4459">iterations_m</a> = 0</td></tr>
 <tr class="separator:a9ecb18123a087339856d1ecbf62c4459"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac38e371539660a4b63fa6026bc31ca2a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#ac38e371539660a4b63fa6026bc31ca2a">r</a></td></tr>
+<tr class="separator:ac38e371539660a4b63fa6026bc31ca2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4c7c13839a13983ccae69e098f41d5e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#ab4c7c13839a13983ccae69e098f41d5e">d</a></td></tr>
+<tr class="separator:ab4c7c13839a13983ccae69e098f41d5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a615387ae4f1700754120473e7bc64db5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a615387ae4f1700754120473e7bc64db5">q</a></td></tr>
+<tr class="separator:a615387ae4f1700754120473e7bc64db5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
 Private Types</h2></td></tr>
@@ -176,15 +181,6 @@ Private Types</h2></td></tr>
 <tr class="separator:af5af019142ffcf9a9d1caeea84f82362"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af50461812c5406eff7a5b12d0d50375d"><td class="memItemLeft" align="right" valign="top">typedef Base::lhs_type::value_type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#af50461812c5406eff7a5b12d0d50375d">T</a></td></tr>
 <tr class="separator:af50461812c5406eff7a5b12d0d50375d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
-Private Attributes</h2></td></tr>
-<tr class="memitem:ac38e371539660a4b63fa6026bc31ca2a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#ac38e371539660a4b63fa6026bc31ca2a">r</a></td></tr>
-<tr class="separator:ac38e371539660a4b63fa6026bc31ca2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab4c7c13839a13983ccae69e098f41d5e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#ab4c7c13839a13983ccae69e098f41d5e">d</a></td></tr>
-<tr class="separator:ab4c7c13839a13983ccae69e098f41d5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a615387ae4f1700754120473e7bc64db5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a615387ae4f1700754120473e7bc64db5">q</a></td></tr>
-<tr class="separator:a615387ae4f1700754120473e7bc64db5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="af5af019142ffcf9a9d1caeea84f82362" name="af5af019142ffcf9a9d1caeea84f82362"></a>
@@ -211,8 +207,8 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
 
 </div>
 </div>
-<a id="ae4535ec01c61270bf9e85f12e2312a4b" name="ae4535ec01c61270bf9e85f12e2312a4b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae4535ec01c61270bf9e85f12e2312a4b">&#9670;&#160;</a></span>DiagF</h2>
+<a id="af83d0f04ff353950295bd1cd9db73810" name="af83d0f04ff353950295bd1cd9db73810"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af83d0f04ff353950295bd1cd9db73810">&#9670;&#160;</a></span>DiagF</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -220,15 +216,15 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
 template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typename UpperLowerRet , typename InverseDiagRet , typename DiagRet , typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::DiagF =  std::function&lt;DiagRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>)&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::DiagF =  std::function&lt;DiagRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&amp;)&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a73760a7a7d3fbb930773f632411fddbc" name="a73760a7a7d3fbb930773f632411fddbc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a73760a7a7d3fbb930773f632411fddbc">&#9670;&#160;</a></span>InverseDiagF</h2>
+<a id="aa6093c993dfca9ac61689f1bfd635cc6" name="aa6093c993dfca9ac61689f1bfd635cc6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6093c993dfca9ac61689f1bfd635cc6">&#9670;&#160;</a></span>InverseDiagF</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -236,7 +232,7 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
 template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typename UpperLowerRet , typename InverseDiagRet , typename DiagRet , typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::InverseDiagF =  std::function&lt;InverseDiagRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>)&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::InverseDiagF =  std::function&lt;InverseDiagRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&amp;)&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -275,8 +271,8 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
 
 </div>
 </div>
-<a id="a20149384fac2b4a10215892b386918dc" name="a20149384fac2b4a10215892b386918dc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a20149384fac2b4a10215892b386918dc">&#9670;&#160;</a></span>LowerF</h2>
+<a id="a8ef81cc45f15613efeea4e186c6e730a" name="a8ef81cc45f15613efeea4e186c6e730a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ef81cc45f15613efeea4e186c6e730a">&#9670;&#160;</a></span>LowerF</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -284,7 +280,7 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
 template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typename UpperLowerRet , typename InverseDiagRet , typename DiagRet , typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::LowerF =  std::function&lt;LowerRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>)&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::LowerF =  std::function&lt;LowerRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&amp;)&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -307,8 +303,8 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
 
 </div>
 </div>
-<a id="a579f51454acb569d7abc2a3e746d8fee" name="a579f51454acb569d7abc2a3e746d8fee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a579f51454acb569d7abc2a3e746d8fee">&#9670;&#160;</a></span>OperatorF</h2>
+<a id="a54c5b35414a7fc3ca57cc2712f6b71f7" name="a54c5b35414a7fc3ca57cc2712f6b71f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a54c5b35414a7fc3ca57cc2712f6b71f7">&#9670;&#160;</a></span>OperatorF</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -316,7 +312,7 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
 template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typename UpperLowerRet , typename InverseDiagRet , typename DiagRet , typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::OperatorF =  std::function&lt;OperatorRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>)&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::OperatorF =  std::function&lt;OperatorRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&amp;)&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -363,8 +359,8 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
 
 </div>
 </div>
-<a id="ac50656156ba9625caeba89301e20d223" name="ac50656156ba9625caeba89301e20d223"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac50656156ba9625caeba89301e20d223">&#9670;&#160;</a></span>UpperF</h2>
+<a id="ae5b460066423846b20a854a504c2c2d4" name="ae5b460066423846b20a854a504c2c2d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5b460066423846b20a854a504c2c2d4">&#9670;&#160;</a></span>UpperF</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -372,15 +368,15 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
 template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typename UpperLowerRet , typename InverseDiagRet , typename DiagRet , typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::UpperF =  std::function&lt;UpperRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>)&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::UpperF =  std::function&lt;UpperRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&amp;)&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="aac12093404fb86cd0f6432019e91925d" name="aac12093404fb86cd0f6432019e91925d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aac12093404fb86cd0f6432019e91925d">&#9670;&#160;</a></span>UpperLowerF</h2>
+<a id="a367621d1afc64dea0537f7fb7500beec" name="a367621d1afc64dea0537f7fb7500beec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a367621d1afc64dea0537f7fb7500beec">&#9670;&#160;</a></span>UpperLowerF</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -388,7 +384,7 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
 template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typename UpperLowerRet , typename InverseDiagRet , typename DiagRet , typename FieldLHS , typename FieldRHS  = FieldLHS&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::UpperLowerF =  std::function&lt;UpperLowerRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>)&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::UpperLowerF =  std::function&lt;UpperLowerRet(<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a>&amp;)&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -515,6 +511,8 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
 </table>
 </div><div class="memdoc">
 
+<p>Reimplemented in <a class="el" href="classippl_1_1PCG.html#aeafdc6c64c4dc1501b900456d5115546">ippl::PCG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;</a>, and <a class="el" href="classippl_1_1PCG.html#aeafdc6c64c4dc1501b900456d5115546">ippl::PCG&lt; lhs_type, lhs_type, lhs_type, lhs_type, lhs_type, FieldLHS, FieldLHS &gt;</a>.</p>
+
 </div>
 </div>
 <a id="ae1e9e0c2b13462fe56b14cb02a796871" name="ae1e9e0c2b13462fe56b14cb02a796871"></a>
@@ -587,7 +585,7 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
         <tr>
           <td class="memname">virtual void <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::setOperator </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#a579f51454acb569d7abc2a3e746d8fee">OperatorF</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#a54c5b35414a7fc3ca57cc2712f6b71f7">OperatorF</a>&#160;</td>
           <td class="paramname"><em>op</em></td><td>)</td>
           <td></td>
         </tr>
@@ -621,37 +619,37 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
         <tr>
           <td class="memname">virtual void <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::setPreconditioner </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#a579f51454acb569d7abc2a3e746d8fee">OperatorF</a> &amp;&amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#a54c5b35414a7fc3ca57cc2712f6b71f7">OperatorF</a> &amp;&amp;&#160;</td>
           <td class="paramname"><em>op</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#a20149384fac2b4a10215892b386918dc">LowerF</a> &amp;&amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#a8ef81cc45f15613efeea4e186c6e730a">LowerF</a> &amp;&amp;&#160;</td>
           <td class="paramname"><em>lower</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#ac50656156ba9625caeba89301e20d223">UpperF</a> &amp;&amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#ae5b460066423846b20a854a504c2c2d4">UpperF</a> &amp;&amp;&#160;</td>
           <td class="paramname"><em>upper</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#aac12093404fb86cd0f6432019e91925d">UpperLowerF</a> &amp;&amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#a367621d1afc64dea0537f7fb7500beec">UpperLowerF</a> &amp;&amp;&#160;</td>
           <td class="paramname"><em>upper_and_lower</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#a73760a7a7d3fbb930773f632411fddbc">InverseDiagF</a> &amp;&amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#aa6093c993dfca9ac61689f1bfd635cc6">InverseDiagF</a> &amp;&amp;&#160;</td>
           <td class="paramname"><em>inverse_diagonal</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#ae4535ec01c61270bf9e85f12e2312a4b">DiagF</a> &amp;&amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1CG.html#af83d0f04ff353950295bd1cd9db73810">DiagF</a> &amp;&amp;&#160;</td>
           <td class="paramname"><em>diagonal</em>, </td>
         </tr>
         <tr>
@@ -743,7 +741,7 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -786,7 +784,7 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1CG.html#a579f51454acb569d7abc2a3e746d8fee">OperatorF</a> <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::op_m</td>
+          <td class="memname"><a class="el" href="classippl_1_1CG.html#a54c5b35414a7fc3ca57cc2712f6b71f7">OperatorF</a> <a class="el" href="classippl_1_1CG.html">ippl::CG</a>&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;::op_m</td>
         </tr>
       </table>
   </td>
@@ -815,7 +813,7 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -839,7 +837,7 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">

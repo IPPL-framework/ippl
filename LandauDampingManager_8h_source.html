@@ -312,10 +312,10 @@ $(function() {
 <div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span> </div>
 <div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>        this-&gt;<a class="code hl_variable" href="classippl_1_1PicManager.html#a162bca7531cc11944f9969c4bd74ada6">pcontainer_m</a>-&gt;create(nlocal);</div>
 <div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span> </div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>        <a class="code hl_typedef" href="LandauDampingManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a>* R = &amp;(this-&gt;<a class="code hl_variable" href="classippl_1_1PicManager.html#a162bca7531cc11944f9969c4bd74ada6">pcontainer_m</a>-&gt;R.getView());</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>        samplingR.generate(*R, rand_pool64);</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>        <a class="code hl_typedef" href="LandauDampingManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> R = this-&gt;<a class="code hl_variable" href="classippl_1_1PicManager.html#a162bca7531cc11944f9969c4bd74ada6">pcontainer_m</a>-&gt;R.getView();</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>        samplingR.generate(R, rand_pool64);</div>
 <div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span> </div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>        <a class="code hl_typedef" href="LandauDampingManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a>* P = &amp;(this-&gt;<a class="code hl_variable" href="classippl_1_1PicManager.html#a162bca7531cc11944f9969c4bd74ada6">pcontainer_m</a>-&gt;P.getView());</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>        <a class="code hl_typedef" href="LandauDampingManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> P = this-&gt;<a class="code hl_variable" href="classippl_1_1PicManager.html#a162bca7531cc11944f9969c4bd74ada6">pcontainer_m</a>-&gt;P.getView();</div>
 <div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span> </div>
 <div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>        <span class="keywordtype">double</span> mu[<a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>];</div>
 <div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>        <span class="keywordtype">double</span> sd[<a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>];</div>
@@ -323,7 +323,7 @@ $(function() {
 <div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>            mu[i] = 0.0;</div>
 <div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>            sd[i] = 1.0;</div>
 <div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>        }</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>        Kokkos::parallel_for(nlocal, <a class="code hl_struct" href="structippl_1_1random_1_1randn.html">ippl::random::randn&lt;double, Dim&gt;</a>(*P, rand_pool64, mu, sd));</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>        Kokkos::parallel_for(nlocal, <a class="code hl_struct" href="structippl_1_1random_1_1randn.html">ippl::random::randn&lt;double, Dim&gt;</a>(P, rand_pool64, mu, sd));</div>
 <div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>        Kokkos::fence();</div>
 <div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>        <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">ippl::Comm</a>-&gt;barrier();</div>
 <div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span> </div>

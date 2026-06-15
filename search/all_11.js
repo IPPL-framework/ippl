@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['r_0',['R',['../classippl_1_1ParticleBase.html#af28b1c693f7fb69f12ccd65e507ef22a',1,'ippl::ParticleBase']]],
-  ['r_1',['r',['../classippl_1_1CG.html#ac38e371539660a4b63fa6026bc31ca2a',1,'ippl::CG']]],
+  ['r_0',['r',['../classippl_1_1CG.html#ac38e371539660a4b63fa6026bc31ca2a',1,'ippl::CG']]],
+  ['r_1',['R',['../classippl_1_1ParticleBase.html#af28b1c693f7fb69f12ccd65e507ef22a',1,'ippl::ParticleBase']]],
   ['r_5fm_2',['r_m',['../structippl_1_1ssor__preconditioner.html#a024bded42725402ea1b313494116d396',1,'ippl::ssor_preconditioner::r_m()'],['../structippl_1_1gs__preconditioner.html#ad9940470290eeb588083c2bf48ca61ea',1,'ippl::gs_preconditioner::r_m()']]],
   ['r_5fm_3',['R_m',['../classippl_1_1TruncatedGreenParticleInteraction.html#a999a5df169104fe31813cbb4562b6b37',1,'ippl::TruncatedGreenParticleInteraction']]],
   ['rand_5fpool_4',['rand_pool',['../structgenerate__random.html#a99c5ce762539da3fabbbb189cd214ae6',1,'generate_random::rand_pool()'],['../structippl_1_1random_1_1randu.html#a6eaf433f7513a6bebb72b09cb8f8e886',1,'ippl::random::randu::rand_pool()'],['../structippl_1_1random_1_1randn.html#a55d072fee6d6c3a5850fd1da89c919c8',1,'ippl::random::randn::rand_pool()']]],
@@ -23,7 +23,7 @@ var searchData=
   ['reallocatelargestfreebuffer_20',['reallocateLargestFreeBuffer',['../classippl_1_1DefaultBufferHandler.html#a19b09c9c6b1303c3049ac1a104ea1bd8',1,'ippl::DefaultBufferHandler']]],
   ['reallocbuffer_21',['reallocBuffer',['../classippl_1_1detail_1_1Archive.html#ac7423282d62093d13d8d709c8a310912',1,'ippl::detail::Archive']]],
   ['reconstructtopoints_22',['reconstructToPoints',['../classippl_1_1NedelecSpace.html#ae6887abed860330731922ab76541f1e9',1,'ippl::NedelecSpace::reconstructToPoints()'],['../classippl_1_1FEMMaxwellDiffusionSolver.html#a409bc61cc23471b41843469600d0ef98',1,'ippl::FEMMaxwellDiffusionSolver::reconstructToPoints()']]],
-  ['recursive_5fpreconditioner_23',['recursive_preconditioner',['../structippl_1_1polynomial__newton__preconditioner.html#a015215450fb2c1c1fe859dda207aa4f0',1,'ippl::polynomial_newton_preconditioner']]],
+  ['recursive_5fpreconditioner_23',['recursive_preconditioner',['../structippl_1_1polynomial__newton__preconditioner.html#a77eae60708123fa67015a4658564e38e',1,'ippl::polynomial_newton_preconditioner']]],
   ['recv_24',['recv',['../classippl_1_1mpi_1_1Communicator.html#af382580572d05ff0047b43921f11c9dd',1,'ippl::mpi::Communicator::recv(int src, int tag, Buffer &amp;buffer, Archive &amp;ar, size_type msize, size_type nrecvs)'],['../classippl_1_1mpi_1_1Communicator.html#a6b75419e63192367f6721ec98d59d48d',1,'ippl::mpi::Communicator::recv(T &amp;output, int count, int source, int tag, Status &amp;status)'],['../classippl_1_1mpi_1_1Communicator.html#af104973e57ef6012c5607282acda2da7',1,'ippl::mpi::Communicator::recv(T *output, int count, int source, int tag, Status &amp;status)']]],
   ['recvfromrank_25',['recvFromRank',['../classippl_1_1ParticleBase.html#aaf5d24d53d37df58854baeb8ad3ec5f3',1,'ippl::ParticleBase']]],
   ['recvidxs_5fm_26',['recvIdxs_m',['../structippl_1_1FEMVector_1_1BoundaryInfo.html#a6a0dc0229d82274f3a42b63d0c6fd028',1,'ippl::FEMVector::BoundaryInfo']]],
