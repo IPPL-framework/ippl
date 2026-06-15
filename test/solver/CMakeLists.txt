@@ -12,7 +12,8 @@ add_ippl_integration_test(TestCGSolver ARGS 4 j LABELS solver integration)
 
 # compile only
 add_ippl_integration_test(TestSolverDesign COMPILE_ONLY LABELS solver integration)
-add_ippl_integration_test(TestCGSolver_convergence COMPILE_ONLY LABELS solver integration)
+add_ippl_integration_test(TestCGSolver_convergence_constant COMPILE_ONLY LABELS solver integration)
+add_ippl_integration_test(TestCGSolver_convergence_periodic COMPILE_ONLY LABELS solver integration)
 
 if(IPPL_ENABLE_FFT)
   # tests FFTPeriodicPoissonSolver
