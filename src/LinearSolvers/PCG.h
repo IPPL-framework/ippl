@@ -356,6 +356,15 @@ namespace ippl {
                  FieldRHS>()
             , preconditioner_m(nullptr) {};
 
+        /*
+         * Extends the CG workspace with the preconditioner result buffers s and
+         * pcond_out so operator() does not allocate per solve. pcond_out keeps
+         * its default NoBcFace BCs: the preconditioner's internal operator
+         * chain therefore never triggers PeriodicFace::apply MPI calls -- if it
+         * did, the global MPI sequence would diverge from the master code path
+         * (where the preconditioner returned a fresh NoBcFace field) and
+         * intermittent multi-rank halo deadlocks would follow.
+         */
         void initializeFields(mesh_type& mesh, layout_type& layout) override {
             CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS,
                FieldRHS>::initializeFields(mesh, layout);
