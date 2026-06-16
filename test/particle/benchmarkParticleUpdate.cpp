@@ -223,9 +223,9 @@ int main(int argc, char* argv[]) {
             IpplTimings::startTimer(RandPTimer);
             std::mt19937_64 engP;
             engP.seed(42 + 10 * it + 100 * ippl::Comm->rank());
-            Kokkos::resize(P_host, P->P.size());
+            Kokkos::resize(P_host, P->getLocalNum());
             double sum_coord = 0.0;
-            Kokkos::resize(R_host, P->R.size());
+            Kokkos::resize(R_host, P->getLocalNum());
             Kokkos::deep_copy(R_host, P->R.getView());
             for (unsigned long int i = 0; i < P->getLocalNum(); i++) {
                 for (int d = 0; d < 3; d++) {
