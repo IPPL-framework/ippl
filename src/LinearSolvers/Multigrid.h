@@ -30,6 +30,13 @@
 namespace ippl {
 
     namespace multigrid {
+        /**
+         * @brief Represents a single level in the multigrid hierarchy.
+         *
+         * Each level contains its own mesh, layout, and fields for the solution and the source.
+         *
+         * @tparam Field The type of field used on this level.
+         */
         template <typename Field>
         struct Level {
             constexpr static unsigned Dim = Field::dim;
@@ -45,6 +52,14 @@ namespace ippl {
 
             Field u, f;
 
+            /**
+             * @brief Construct a new Level object.
+             *
+             * @tparam BCType The type of boundary conditions.
+             * @param m Shared pointer to the mesh.
+             * @param l Shared pointer to the layout.
+             * @param bcs Reference to the boundary conditions to apply.
+             */
             template <typename BCType>
             Level(std::shared_ptr<mesh_type> m, std::shared_ptr<layout_type> l, BCType& bcs)
                 : mesh_ptr(m)
@@ -64,6 +79,14 @@ namespace ippl {
                 }
             }
         };
+
+        /**
+         * @brief Computes the diagonal element of the Laplacian operator for a given level.
+         *
+         * @tparam LevelType The type of the Level object.
+         * @param lev The level for which to compute the diagonal.
+         * @return The computed diagonal value.
+         */
         template <typename LevelType>
         double compute_diag(const LevelType& lev) {
             double diag = 0.0;
@@ -80,6 +103,15 @@ namespace ippl {
         }
     }  // namespace multigrid
 
+    /**
+     * @brief Multigrid preconditioner for linear solvers.
+     *
+     * This preconditioner uses a V-cycle multigrid approach to accelerate the convergence
+     * of iterative solvers like PCG.
+     *
+     * @tparam Field The type of field used for the solution and source.
+     * @tparam OperatorF The type of the operator (e.g., a Laplacian).
+     */
     template <typename Field, typename OperatorF>
     struct multigrid_preconditioner : public preconditioner<Field> {
         constexpr static unsigned Dim = Field::dim;
@@ -87,6 +119,17 @@ namespace ippl {
         using layout_type             = typename Field::Layout_t;
 
     public:
+        /**
+         * @brief Construct a new multigrid_preconditioner object.
+         *
+         * @param op The operator to be preconditioned.
+         * @param pre_smooth_iters Number of pre-smoothing iterations (default: 2).
+         * @param post_smooth_iters Number of post-smoothing iterations (default: 2).
+         * @param omega_jacobi Jacobi relaxation parameter (default: 0.8).
+         * @param min_cells_per_rank_per_dim Minimum number of cells per rank per dimension on the
+         * coarsest level (default: 4).
+         * @param communication Whether to perform halo communication (default: true).
+         */
         multigrid_preconditioner(OperatorF&& op, unsigned pre_smooth_iters = 2,
                                  unsigned post_smooth_iters = 2, double omega_jacobi = 0.8,
                                  unsigned min_cells_per_rank_per_dim = 4, bool communication = true)
@@ -100,12 +143,28 @@ namespace ippl {
 
         // --- DEBUGGING - To be deleted ---
 
+        /**
+         * @brief Enables or disables debug printing of the multigrid state.
+         *
+         * @param enabled True to enable, false to disable.
+         */
         void setDebugPrint(bool enabled) { debug_print_ = enabled; }
 
+        /**
+         * @brief Prints the current state of all multigrid levels for debugging.
+         *
+         * @param label A label to identify the current state.
+         */
         void printDebugState(const std::string& label) const { debug_print_all_levels(label); }
 
         // --- END OF DEBUGGING ---
 
+        /**
+         * @brief Applies the multigrid preconditioner to the input field.
+         *
+         * @param b The input field (right-hand side).
+         * @return The preconditioned field.
+         */
         Field operator()(Field& b) override {
             IpplTimings::TimerRef mg = IpplTimings::getTimer("MG-PRECOND");
             IpplTimings::startTimer(mg);
@@ -136,6 +195,14 @@ namespace ippl {
             return L_[0].u;
         }
 
+        /**
+         * @brief Initializes the multigrid hierarchy of fields based on the input field.
+         *
+         * This function calculates the number of levels and creates the corresponding
+         * meshes and layouts for each level.
+         *
+         * @param b The input field used to initialize the hierarchy.
+         */
         void init_fields(Field& b) override {
             IpplTimings::TimerRef init_fields = IpplTimings::getTimer("init_fields");
             IpplTimings::startTimer(init_fields);
@@ -225,6 +292,14 @@ namespace ippl {
             IpplTimings::stopTimer(init_fields);
         }
 
+        /**
+         * @brief Restricts the residual from a fine level to the next coarser level.
+         *
+         * This function calculates the residual on the fine grid and then
+         * averages it to obtain the source term on the coarser grid.
+         *
+         * @param level The index of the fine level.
+         */
         void restrict_average(const size_t level) {
             IpplTimings::TimerRef restrict = IpplTimings::getTimer("restrict_fullweight");
             IpplTimings::startTimer(restrict);
@@ -301,6 +376,14 @@ namespace ippl {
             IpplTimings::stopTimer(restrict);
         }
 
+        /**
+         * @brief Prolongs the correction from a coarse level and adds it to the fine level.
+         *
+         * This function interpolates the solution from the coarser grid back to the
+         * finer grid and adds the correction to the existing solution.
+         *
+         * @param level The index of the fine level to be corrected.
+         */
         void prolong_add(const size_t level) {
             IpplTimings::TimerRef prolong = IpplTimings::getTimer("prolong");
             IpplTimings::startTimer(prolong);
@@ -399,6 +482,13 @@ namespace ippl {
 
         bool debug_print_ = false;
 
+        /**
+         * @brief Debug function to print the information and content of a field.
+         *
+         * @param field The field to print.
+         * @param name The name of the field for the label.
+         * @param level The level index of the field.
+         */
         void debug_print_field(const Field& field, const std::string& name, size_t level) const {
             if (!debug_print_) {
                 return;
@@ -431,6 +521,12 @@ namespace ippl {
             }
         }
 
+        /**
+         * @brief Debug function to print the state of a specific multigrid level.
+         *
+         * @param level The level index to print.
+         * @param label A label for the state being printed.
+         */
         void debug_print_level(size_t level, const std::string& label) const {
             if (!debug_print_) {
                 return;
@@ -447,6 +543,11 @@ namespace ippl {
             debug_print_field(lev.f, "f", level);
         }
 
+        /**
+         * @brief Debug function to print the state of all multigrid levels.
+         *
+         * @param label A label for the state being printed.
+         */
         void debug_print_all_levels(const std::string& label) const {
             if (!debug_print_) {
                 return;
@@ -458,6 +559,15 @@ namespace ippl {
         }
         // --- END OF DEBUGGING ---
 
+        /**
+         * @brief Computes the residual of the current solution.
+         *
+         * The residual is computed as r = f - A*u, where A is the operator.
+         *
+         * @param u The current solution field.
+         * @param f The source field.
+         * @return The computed residual field.
+         */
         Field residual(Field& u, const Field& f) {
             IpplTimings::TimerRef resi = IpplTimings::getTimer("residual");
             IpplTimings::startTimer(resi);
@@ -470,6 +580,14 @@ namespace ippl {
             return res;
         };
 
+        /**
+         * @brief Performs a multigrid V-cycle.
+         *
+         * This function recursively implements the V-cycle: pre-smoothing, restriction,
+         * coarse-grid solve (or recursion), prolongation, and post-smoothing.
+         *
+         * @param level The current level index in the V-cycle.
+         */
         void vcycle(size_t level) {
             if (level == L_.size() - 1) {
                 // Coarsest grid: just smooth a lot (or use a direct solver)
@@ -510,6 +628,12 @@ namespace ippl {
         //     dbg("after-postsmooth");
         // }
 
+        /**
+         * @brief Performs Jacobi smoothing on a given level.
+         *
+         * @param level The level index to be smoothed.
+         * @param iters The number of smoothing iterations to perform.
+         */
         void smooth_jacobi(const size_t level, const unsigned iters) {
             IpplTimings::TimerRef jacobi = IpplTimings::getTimer("smooth_jacobi");
             IpplTimings::startTimer(jacobi);
