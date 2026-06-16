@@ -18,6 +18,14 @@ namespace ippl {
             }
         }
 
+        /*
+         * Packs a sparse selection of scalar particle-attribute entries into
+         * the archive buffer. `hash(i)` gives the source index in `view_data`
+         * for the i-th item being sent; the functor copies that value as raw
+         * bytes to `buf + wpos + i * sizeof(T)`. This is used by
+         * Archive::serialize(view, hash, nsends) during particle migration,
+         * where only particles listed in the send hash are serialized.
+         */
         template <typename T, typename HashView, typename BufferPtr>
         struct SerializeHashFunctor {
             const T* view_data;
