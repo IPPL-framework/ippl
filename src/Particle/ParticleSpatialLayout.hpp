@@ -24,8 +24,6 @@
 #include <numeric>
 #include <vector>
 
-#include "Ippl.h"
-
 #include "Utility/IpplTimings.h"
 #include "Utility/ParallelDispatch.h"
 
