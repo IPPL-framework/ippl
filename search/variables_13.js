@@ -19,5 +19,6 @@ var searchData=
   ['totalnum_5fm_16',['totalNum_m',['../classippl_1_1ParticleBase.html#adcda50307d359619f8a5e296455e2883',1,'ippl::ParticleBase']]],
   ['totalp_5fm_17',['totalP_m',['../classAlpineManager.html#ae30749f6c0fc99167e35ae2c58038891',1,'AlpineManager']]],
   ['tupleimpl_5fm_18',['tupleImpl_m',['../structippl_1_1Tuple.html#ac9084695b70c330dd4a85aaa203d7233',1,'ippl::Tuple']]],
-  ['type_5fm_19',['type_m',['../structippl_1_1preconditioner.html#a5539cc2d97e30473afcbc9e55e175503',1,'ippl::preconditioner']]]
+  ['type_19',['type',['../structFieldSolver_1_1ParsedPreconditionerParams.html#a542e8ecb7d5e8147ea768522a3653ed6',1,'FieldSolver::ParsedPreconditionerParams']]],
+  ['type_5fm_20',['type_m',['../structippl_1_1preconditioner.html#a5539cc2d97e30473afcbc9e55e175503',1,'ippl::preconditioner']]]
 ];

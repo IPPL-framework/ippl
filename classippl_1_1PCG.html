@@ -168,8 +168,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a1e4a0c164e4d55e765135b9c44e444eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeafdc6c64c4dc1501b900456d5115546"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PCG.html#aeafdc6c64c4dc1501b900456d5115546">initializeFields</a> (<a class="el" href="classippl_1_1PCG.html#aeee73de1433aedeb8cb07d4f07348337">mesh_type</a> &amp;mesh, <a class="el" href="classippl_1_1PCG.html#a1fb12e20153776d52b40a94f6f3531f3">layout_type</a> &amp;layout) override</td></tr>
 <tr class="separator:aeafdc6c64c4dc1501b900456d5115546"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a250974579114f54f6510f0e39169c016"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PCG.html#a250974579114f54f6510f0e39169c016">setPreconditioner</a> (<a class="el" href="classippl_1_1PCG.html#a5f79a91f575b2f33e1005afd7af83a24">OperatorF</a> &amp;&amp;op, <a class="el" href="classippl_1_1PCG.html#ac7b59c661ef8402c330681b58ca9f7cf">LowerF</a> &amp;&amp;lower, <a class="el" href="classippl_1_1PCG.html#a42c01a42d9b0e37bcbd299507d630c8d">UpperF</a> &amp;&amp;upper, <a class="el" href="classippl_1_1PCG.html#a896662aa513aa18cf08883f1701326b1">UpperLowerF</a> &amp;&amp;upper_and_lower, <a class="el" href="classippl_1_1PCG.html#a576fb925a074cc56a60adff828bbc73c">InverseDiagF</a> &amp;&amp;inverse_diagonal, <a class="el" href="classippl_1_1PCG.html#a0d762130508fdcf4ca6122d3a17a4398">DiagF</a> &amp;&amp;diagonal, double alpha, double beta, std::string preconditioner_type=&quot;&quot;, int level=5, int degree=31, int richardson_iterations=4, int inner=2, int outer=2, double omega=1.57079632679) override</td></tr>
-<tr class="separator:a250974579114f54f6510f0e39169c016"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a250decf103e68d4e246c9ae463f06d25"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PCG.html#a250decf103e68d4e246c9ae463f06d25">setPreconditioner</a> (<a class="el" href="classippl_1_1PCG.html#a5f79a91f575b2f33e1005afd7af83a24">OperatorF</a> &amp;&amp;op, <a class="el" href="classippl_1_1PCG.html#ac7b59c661ef8402c330681b58ca9f7cf">LowerF</a> &amp;&amp;lower, <a class="el" href="classippl_1_1PCG.html#a42c01a42d9b0e37bcbd299507d630c8d">UpperF</a> &amp;&amp;upper, <a class="el" href="classippl_1_1PCG.html#a896662aa513aa18cf08883f1701326b1">UpperLowerF</a> &amp;&amp;upper_and_lower, <a class="el" href="classippl_1_1PCG.html#a576fb925a074cc56a60adff828bbc73c">InverseDiagF</a> &amp;&amp;inverse_diagonal, <a class="el" href="classippl_1_1PCG.html#a0d762130508fdcf4ca6122d3a17a4398">DiagF</a> &amp;&amp;diagonal, double alpha, double beta, std::string preconditioner_type=&quot;&quot;, int level=<a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a9c512f54a3a4d72e6e26cb59f92a32fd">pcg_preconditioner_defaults::newton_level</a>, int degree=<a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#ae6278b874fe5d6bf5a188f90ec24cabc">pcg_preconditioner_defaults::chebyshev_degree</a>, int richardson_iterations=<a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#af172331ade721eb4e8f57a2b642126b9">pcg_preconditioner_defaults::richardson_iterations</a>, int inner=<a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a776b04396ed40d80410e6d18762d73e0">pcg_preconditioner_defaults::gauss_seidel_inner</a>, int outer=<a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a13568259569cc9f888b6fb61b38b5299">pcg_preconditioner_defaults::gauss_seidel_outer</a>, double omega=<a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a24c962d05d3a224017dd3ae84b215630">pcg_preconditioner_defaults::ssor_omega</a>) override</td></tr>
+<tr class="separator:a250decf103e68d4e246c9ae463f06d25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69724443d9116bd85d6659372a703402"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1PCG.html#a69724443d9116bd85d6659372a703402">operator()</a> (<a class="el" href="classippl_1_1PCG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> &amp;lhs, <a class="el" href="classippl_1_1PCG.html#ac028d323dc2a9e7f1be744e6abd67d98">rhs_type</a> &amp;rhs, const <a class="el" href="classippl_1_1ParameterList.html">ParameterList</a> &amp;params) override</td></tr>
 <tr class="separator:a69724443d9116bd85d6659372a703402"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classippl_1_1CG"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classippl_1_1CG')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classippl_1_1CG.html">ippl::CG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;</a></td></tr>
@@ -179,8 +179,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9eb66f6194b15fb2deb17ffee38a5d73 inherit pub_methods_classippl_1_1CG"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa65e606247caac11f3be23a51172926e inherit pub_methods_classippl_1_1CG"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#aa65e606247caac11f3be23a51172926e">setOperator</a> (<a class="el" href="classippl_1_1CG.html#a54c5b35414a7fc3ca57cc2712f6b71f7">OperatorF</a> op)</td></tr>
 <tr class="separator:aa65e606247caac11f3be23a51172926e inherit pub_methods_classippl_1_1CG"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abec3025df27b0c0a77bfc061eeea02a7 inherit pub_methods_classippl_1_1CG"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#abec3025df27b0c0a77bfc061eeea02a7">setPreconditioner</a> (<a class="el" href="classippl_1_1CG.html#a54c5b35414a7fc3ca57cc2712f6b71f7">OperatorF</a> &amp;&amp;op, <a class="el" href="classippl_1_1CG.html#a8ef81cc45f15613efeea4e186c6e730a">LowerF</a> &amp;&amp;lower, <a class="el" href="classippl_1_1CG.html#ae5b460066423846b20a854a504c2c2d4">UpperF</a> &amp;&amp;upper, <a class="el" href="classippl_1_1CG.html#a367621d1afc64dea0537f7fb7500beec">UpperLowerF</a> &amp;&amp;upper_and_lower, <a class="el" href="classippl_1_1CG.html#aa6093c993dfca9ac61689f1bfd635cc6">InverseDiagF</a> &amp;&amp;inverse_diagonal, <a class="el" href="classippl_1_1CG.html#af83d0f04ff353950295bd1cd9db73810">DiagF</a> &amp;&amp;diagonal, double alpha, double beta, std::string preconditioner_type=&quot;&quot;, int level=5, int degree=31, int richardson_iterations=1, int inner=5, int outer=1, double omega=1)</td></tr>
-<tr class="separator:abec3025df27b0c0a77bfc061eeea02a7 inherit pub_methods_classippl_1_1CG"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a20783ac5b1f78cbd32b5b08421a5db6c inherit pub_methods_classippl_1_1CG"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a20783ac5b1f78cbd32b5b08421a5db6c">setPreconditioner</a> (<a class="el" href="classippl_1_1CG.html#a54c5b35414a7fc3ca57cc2712f6b71f7">OperatorF</a> &amp;&amp;op, <a class="el" href="classippl_1_1CG.html#a8ef81cc45f15613efeea4e186c6e730a">LowerF</a> &amp;&amp;lower, <a class="el" href="classippl_1_1CG.html#ae5b460066423846b20a854a504c2c2d4">UpperF</a> &amp;&amp;upper, <a class="el" href="classippl_1_1CG.html#a367621d1afc64dea0537f7fb7500beec">UpperLowerF</a> &amp;&amp;upper_and_lower, <a class="el" href="classippl_1_1CG.html#aa6093c993dfca9ac61689f1bfd635cc6">InverseDiagF</a> &amp;&amp;inverse_diagonal, <a class="el" href="classippl_1_1CG.html#af83d0f04ff353950295bd1cd9db73810">DiagF</a> &amp;&amp;diagonal, double alpha, double beta, std::string preconditioner_type=&quot;&quot;, int level=<a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a9c512f54a3a4d72e6e26cb59f92a32fd">pcg_preconditioner_defaults::newton_level</a>, int degree=<a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#ae6278b874fe5d6bf5a188f90ec24cabc">pcg_preconditioner_defaults::chebyshev_degree</a>, int richardson_iterations=<a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#af172331ade721eb4e8f57a2b642126b9">pcg_preconditioner_defaults::richardson_iterations</a>, int inner=<a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a776b04396ed40d80410e6d18762d73e0">pcg_preconditioner_defaults::gauss_seidel_inner</a>, int outer=<a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a13568259569cc9f888b6fb61b38b5299">pcg_preconditioner_defaults::gauss_seidel_outer</a>, double omega=<a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a24c962d05d3a224017dd3ae84b215630">pcg_preconditioner_defaults::ssor_omega</a>)</td></tr>
+<tr class="separator:a20783ac5b1f78cbd32b5b08421a5db6c inherit pub_methods_classippl_1_1CG"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ae462348543f4d25627eb170e32ac99 inherit pub_methods_classippl_1_1CG"><td class="memItemLeft" align="right" valign="top">virtual int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#a9ae462348543f4d25627eb170e32ac99">getIterationCount</a> ()</td></tr>
 <tr class="separator:a9ae462348543f4d25627eb170e32ac99 inherit pub_methods_classippl_1_1CG"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1e9e0c2b13462fe56b14cb02a796871 inherit pub_methods_classippl_1_1CG"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html#ae1e9e0c2b13462fe56b14cb02a796871">operator()</a> (<a class="el" href="classippl_1_1CG.html#acf54b2a10cc616069575cae1d33d8dcc">lhs_type</a> &amp;lhs, <a class="el" href="classippl_1_1CG.html#ac028d323dc2a9e7f1be744e6abd67d98">rhs_type</a> &amp;rhs, const <a class="el" href="classippl_1_1ParameterList.html">ParameterList</a> &amp;params) override</td></tr>
@@ -551,8 +551,8 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
 
 </div>
 </div>
-<a id="a250974579114f54f6510f0e39169c016" name="a250974579114f54f6510f0e39169c016"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a250974579114f54f6510f0e39169c016">&#9670;&#160;</a></span>setPreconditioner()</h2>
+<a id="a250decf103e68d4e246c9ae463f06d25" name="a250decf103e68d4e246c9ae463f06d25"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a250decf103e68d4e246c9ae463f06d25">&#9670;&#160;</a></span>setPreconditioner()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -620,37 +620,37 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>level</em> = <code>5</code>, </td>
+          <td class="paramname"><em>level</em> = <code><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a9c512f54a3a4d72e6e26cb59f92a32fd">pcg_preconditioner_defaults::newton_level</a></code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>degree</em> = <code>31</code>, </td>
+          <td class="paramname"><em>degree</em> = <code><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#ae6278b874fe5d6bf5a188f90ec24cabc">pcg_preconditioner_defaults::chebyshev_degree</a></code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>richardson_iterations</em> = <code>4</code>, </td>
+          <td class="paramname"><em>richardson_iterations</em> = <code><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#af172331ade721eb4e8f57a2b642126b9">pcg_preconditioner_defaults::richardson_iterations</a></code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>inner</em> = <code>2</code>, </td>
+          <td class="paramname"><em>inner</em> = <code><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a776b04396ed40d80410e6d18762d73e0">pcg_preconditioner_defaults::gauss_seidel_inner</a></code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>outer</em> = <code>2</code>, </td>
+          <td class="paramname"><em>outer</em> = <code><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a13568259569cc9f888b6fb61b38b5299">pcg_preconditioner_defaults::gauss_seidel_outer</a></code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>omega</em> = <code>1.57079632679</code>&#160;</td>
+          <td class="paramname"><em>omega</em> = <code><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a24c962d05d3a224017dd3ae84b215630">pcg_preconditioner_defaults::ssor_omega</a></code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -671,7 +671,7 @@ template&lt;typename OperatorRet , typename LowerRet , typename UpperRet , typen
   </dd>
 </dl>
 
-<p>Reimplemented from <a class="el" href="classippl_1_1CG.html#abec3025df27b0c0a77bfc061eeea02a7">ippl::CG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;</a>.</p>
+<p>Reimplemented from <a class="el" href="classippl_1_1CG.html#a20783ac5b1f78cbd32b5b08421a5db6c">ippl::CG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS, FieldRHS &gt;</a>.</p>
 
 </div>
 </div>
