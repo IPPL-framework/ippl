@@ -357,13 +357,16 @@ namespace ippl {
             , preconditioner_m(nullptr) {};
 
         /*
-         * Extends the CG workspace with the preconditioner result buffers s and
-         * pcond_out so operator() does not allocate per solve. pcond_out keeps
-         * its default NoBcFace BCs: the preconditioner's internal operator
-         * chain therefore never triggers PeriodicFace::apply MPI calls -- if it
-         * did, the global MPI sequence would diverge from the master code path
-         * (where the preconditioner returned a fresh NoBcFace field) and
-         * intermittent multi-rank halo deadlocks would follow.
+         * Allocate the extra PCG work fields once, together with the CG
+         * work fields r, d, and q.
+         *
+         * s and pcond_out are scratch buffers for M^{-1} r. They intentionally
+         * keep the default NoBcFace boundary conditions. Only the search
+         * direction d gets the physical BCs after the preconditioner result has
+         * been copied into it. If these scratch fields inherited periodic BCs,
+         * assignments inside the preconditioner would call PeriodicFace::apply
+         * and add halo MPI exchanges that did not exist when the preconditioner
+         * returned fresh temporary NoBcFace fields.
          */
         void initializeFields(mesh_type& mesh, layout_type& layout) override {
             CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS,
@@ -544,14 +547,13 @@ namespace ippl {
         std::unique_ptr<preconditioner<FieldLHS>> preconditioner_m;
 
         /*
-         * Extends the CG workspace with the preconditioner result buffers s and
-         * pcond_out so operator() does not allocate per solve.
-         * Preconditioner result buffers, allocated once via initializeFields()
-         * pcond_out keeps its default NoBcFace BCs: the preconditioner's internal operator
-         * chain therefore never triggers PeriodicFace::apply MPI calls -- if it
-         * did, the global MPI sequence would diverge from the master code path
-         * (where the preconditioner returned a fresh NoBcFace field) and
-         * intermittent multi-rank halo deadlocks would follow.
+         * Persistent preconditioner output buffers. They are allocated in
+         * initializeFields() and reused on every solve to avoid per-iteration
+         * Field allocation.
+         *
+         * These buffers are scratch storage, not physical solution fields, so
+         * they must keep NoBcFace BCs. The physically meaningful BCs are applied
+         * only to d after copying pcond_out into it.
          */
 
         lhs_type s;
