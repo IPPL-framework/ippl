@@ -394,11 +394,12 @@ namespace ippl {
         const Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
-        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
-        // Gradients of the basis functions for the DOF at the quadrature nodes
+        // Basis function values and gradients at the quadrature nodes
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> b_q;
         Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (size_t i = 0; i < numElementDOFs; ++i) {
+                b_q[k][i]      = this->evaluateRefElementShapeFunction(i, q[k]);
                 grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
             }
         }
@@ -412,7 +413,8 @@ namespace ippl {
             for (size_t j = 0; j < numElementDOFs; ++j) {
                 A_K[i][j] = 0.0;
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                    A_K[i][j] += w[k] * evalFunction(
+                        i, j, QuadratureData<T, point_t, numElementDOFs>{b_q[k], grad_b_q[k]});
                 }
             }
         }
@@ -544,11 +546,12 @@ namespace ippl {
         const Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
-        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
-        // Gradients of the basis functions for the DOF at the quadrature nodes
+        // Basis function values and gradients at the quadrature nodes
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> b_q;
         Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (size_t i = 0; i < numElementDOFs; ++i) {
+                b_q[k][i]      = this->evaluateRefElementShapeFunction(i, q[k]);
                 grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
             }
         }
@@ -562,7 +565,8 @@ namespace ippl {
             for (size_t j = 0; j < numElementDOFs; ++j) {
                 A_K[i][j] = 0.0;
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                    A_K[i][j] += w[k] * evalFunction(
+                        i, j, QuadratureData<T, point_t, numElementDOFs>{b_q[k], grad_b_q[k]});
                 }
             }
         }
@@ -686,11 +690,12 @@ namespace ippl {
         const Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
-        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
-        // Gradients of the basis functions for the DOF at the quadrature nodes
+        // Basis function values and gradients at the quadrature nodes
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> b_q;
         Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (size_t i = 0; i < numElementDOFs; ++i) {
+                b_q[k][i]      = this->evaluateRefElementShapeFunction(i, q[k]);
                 grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
             }
         }
@@ -704,7 +709,8 @@ namespace ippl {
             for (size_t j = 0; j < numElementDOFs; ++j) {
                 A_K[i][j] = 0.0;
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                    A_K[i][j] += w[k] * evalFunction(
+                        i, j, QuadratureData<T, point_t, numElementDOFs>{b_q[k], grad_b_q[k]});
                 }
             }
         }
@@ -829,10 +835,12 @@ namespace ippl {
             this->quadrature_m.getIntegrationNodesForRefElement();
 
         // TODO move outside of evaluateAx (I think it is possible for other problems as well)
-        // Gradients of the basis functions for the DOF at the quadrature nodes
+        // Basis function values and gradients at the quadrature nodes
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> b_q;
         Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (size_t i = 0; i < numElementDOFs; ++i) {
+                b_q[k][i]      = this->evaluateRefElementShapeFunction(i, q[k]);
                 grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
             }
         }
@@ -846,7 +854,8 @@ namespace ippl {
             for (size_t j = 0; j < numElementDOFs; ++j) {
                 A_K[i][j] = 0.0;
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                    A_K[i][j] += w[k] * evalFunction(
+                        i, j, QuadratureData<T, point_t, numElementDOFs>{b_q[k], grad_b_q[k]});
                 }
             }
         }
@@ -967,11 +976,12 @@ namespace ippl {
         const Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
-        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
-        // Gradients of the basis functions for the DOF at the quadrature nodes
+        // Basis function values and gradients at the quadrature nodes
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> b_q;
         Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (size_t i = 0; i < numElementDOFs; ++i) {
+                b_q[k][i]      = this->evaluateRefElementShapeFunction(i, q[k]);
                 grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
             }
         }
@@ -984,7 +994,8 @@ namespace ippl {
         for (size_t i = 0; i < numElementDOFs; ++i) {
             A_K_diag[i] = 0.0;
             for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                A_K_diag[i] += w[k] * evalFunction(i, i, grad_b_q[k]);
+                A_K_diag[i] += w[k] * evalFunction(
+                    i, i, QuadratureData<T, point_t, numElementDOFs>{b_q[k], grad_b_q[k]});
             }
         }
 
@@ -1096,11 +1107,12 @@ namespace ippl {
         const Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
-        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
-        // Gradients of the basis functions for the DOF at the quadrature nodes
+        // Basis function values and gradients at the quadrature nodes
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> b_q;
         Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (size_t i = 0; i < numElementDOFs; ++i) {
+                b_q[k][i]      = this->evaluateRefElementShapeFunction(i, q[k]);
                 grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
             }
         }
@@ -1113,7 +1125,8 @@ namespace ippl {
         for (size_t i = 0; i < numElementDOFs; ++i) {
             A_K_diag[i] = 0.0;
             for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                A_K_diag[i] += w[k] * evalFunction(i, i, grad_b_q[k]);
+                A_K_diag[i] += w[k] * evalFunction(
+                    i, i, QuadratureData<T, point_t, numElementDOFs>{b_q[k], grad_b_q[k]});
             }
         }
 
@@ -1216,11 +1229,12 @@ namespace ippl {
         const Vector<point_t, QuadratureType::numElementNodes> q =
             this->quadrature_m.getIntegrationNodesForRefElement();
 
-        // TODO move outside of evaluateAx (I think it is possible for other problems as well)
-        // Gradients of the basis functions for the DOF at the quadrature nodes
+        // Basis function values and gradients at the quadrature nodes
+        Vector<Vector<T, numElementDOFs>, QuadratureType::numElementNodes> b_q;
         Vector<Vector<point_t, numElementDOFs>, QuadratureType::numElementNodes> grad_b_q;
         for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
             for (size_t i = 0; i < numElementDOFs; ++i) {
+                b_q[k][i]      = this->evaluateRefElementShapeFunction(i, q[k]);
                 grad_b_q[k][i] = this->evaluateRefElementShapeFunctionGradient(i, q[k]);
             }
         }
@@ -1234,7 +1248,8 @@ namespace ippl {
             for (size_t j = 0; j < numElementDOFs; ++j) {
                 A_K[i][j] = 0.0;
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    A_K[i][j] += w[k] * evalFunction(i, j, grad_b_q[k]);
+                    A_K[i][j] += w[k] * evalFunction(
+                        i, j, QuadratureData<T, point_t, numElementDOFs>{b_q[k], grad_b_q[k]});
                 }
             }
         }
