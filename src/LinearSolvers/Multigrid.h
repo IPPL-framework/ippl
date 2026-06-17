@@ -335,7 +335,7 @@ namespace ippl {
 
             // 4. N-Dimensional Kokkos Loop
             ippl::parallel_for(
-                "restrict_fullweight", lev_coarse.f.getFieldRangePolicy(),
+                "restrict_average", lev_coarse.f.getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     // Local coarse index -> local fine "lower corner" of the contained block
                     ippl::Vector<int, Dim> idxF_base;
