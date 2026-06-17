@@ -9,6 +9,7 @@
 #include "EvalFunctor.h"
 #include "LaplaceHelpers.h"
 #include "LinearSolvers/PCG.h"
+#include "LinearSolvers/PreconditionerValidation.h"
 #include "Poisson.h"
 
 namespace ippl {
@@ -184,12 +185,18 @@ namespace ippl {
             // set preconditioner for PCG
             std::string preconditioner_type =
                 this->params_m.template get<std::string>("preconditioner_type");
+            preconditioner_validation::throwIfUnknownType(preconditioner_type,
+                                                          "PreconditionedFEMPoissonSolver::solve");
+
+            Inform warn("PreconditionedFEMPoissonSolver");
             int level    = this->params_m.template get<int>("newton_level");
             int degree   = this->params_m.template get<int>("chebyshev_degree");
             int inner    = this->params_m.template get<int>("gauss_seidel_inner_iterations");
             int outer    = this->params_m.template get<int>("gauss_seidel_outer_iterations");
             double omega = this->params_m.template get<double>("ssor_omega");
             int richardson_iterations = this->params_m.template get<int>("richardson_iterations");
+            preconditioner_validation::sanitizeParams(preconditioner_type, warn, level, degree,
+                                                     richardson_iterations, inner, outer, omega);
 
             pcg_algo_m.setPreconditioner(algoOperator, algoOperatorL, algoOperatorU, algoOperatorUL,
                                          algoOperatorInvD, algoOperatorD, 0, 0, preconditioner_type,
