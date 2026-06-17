@@ -20,8 +20,8 @@ struct EvalFunctor {
         , absDetDPhi(absDetDPhi) {}
 
     KOKKOS_FUNCTION auto operator()(const size_t& i, const size_t& j,
-                    const ippl::Vector<ippl::Vector<Tlhs, Dim>, numElemDOFs>& grad_b_q_k) const {
-        return dot((DPhiInvT * grad_b_q_k[j]), (DPhiInvT * grad_b_q_k[i])).apply() * absDetDPhi;
+                    const QuadratureData<Tlhs, Vector<Tlhs, Dim>, numElemDOFs>& qd) const {
+        return dot((DPhiInvT * qd.deriv_q[j]), (DPhiInvT * qd.deriv_q[i])).apply() * absDetDPhi;
     }
 };
 

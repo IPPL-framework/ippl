@@ -12,8 +12,7 @@ class NedelecSpaceTest;
 template <typename T, unsigned Dim, unsigned numElementDOFs>
 struct DummyFunctor {
     KOKKOS_FUNCTION const T operator()(size_t i, size_t j,
-        [[maybe_unused]] const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& curl_b_q_k,
-        [[maybe_unused]] const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& val_b_q_k) const {
+        const QuadratureData<Tlhs, Vector<Tlhs, Dim>, numElemDOFs>& qd) const {
         return i==j; //val_b_q_k<:i:>.dot(val_b_q_k<:j:>);
     }
 };
