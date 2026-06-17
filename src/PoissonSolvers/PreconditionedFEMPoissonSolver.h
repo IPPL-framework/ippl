@@ -199,6 +199,11 @@ namespace ippl {
 
             // send boundary values to RHS (load vector) i.e. lifting (Dirichlet BCs)
             if (bcType == CONSTANT_FACE) {
+                // Set per-face Dirichlet values on physical boundary nodes before halo exchange;
+                // fillHalo must see the correct boundary state after load vector assembly.
+                bcField.apply(*(this->rhs_mp));
+                bcField.assignGhostToPhysical(*(this->rhs_mp));
+                this->rhs_mp->fillHalo();
                 *(this->rhs_mp) =
                     *(this->rhs_mp)
                     - lagrangeSpace_m.evaluateAx_lift(*(this->rhs_mp), poissonEquationEval);
