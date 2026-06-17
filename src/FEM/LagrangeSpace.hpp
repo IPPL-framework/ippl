@@ -1417,7 +1417,7 @@ namespace ippl {
             });
         temp_field.accumulateHalo();
 
-        if ((bcType == PERIODIC_FACE) || (bcType == CONSTANT_FACE)) {
+        if (bcType == PERIODIC_FACE) {
             bcField.apply(temp_field);
             bcField.assignGhostToPhysical(temp_field);
         }
