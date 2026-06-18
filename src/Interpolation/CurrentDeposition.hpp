@@ -71,13 +71,18 @@ inline void assemble_current_collocated(const Mesh& mesh,
             for (unsigned d = 0; d < Dim; ++d)
                 mid[d] = T(0.5) * (seg.p0[d] + seg.p1[d]);
 
+            // Half-cell shift so the deposit matches the field centering
+            // (UniformCartesian DefaultCentering == Cell) and IPPL's gather,
+            // which evaluates CIC weights at (x-origin)/h + 0.5. Without it the
+            // deposited current sits half a cell from where E,B are gathered,
+            // breaking scatter/gather reciprocity (spurious self-force).
             Kokkos::Array<size_t, Dim> cellIdx;
-            for (unsigned d = 0; d < Dim; ++d)
-                cellIdx[d] = static_cast<size_t>((mid[d] - origin[d]) / h[d]);
-
             Kokkos::Array<T, Dim> xi;
-            for (unsigned d = 0; d < Dim; ++d)
-                xi[d] = (mid[d] - origin[d]) / h[d] - T(cellIdx[d]);
+            for (unsigned d = 0; d < Dim; ++d) {
+                const T gp = (mid[d] - origin[d]) / h[d] - T(0.5);
+                cellIdx[d] = static_cast<size_t>(Kokkos::floor(gp));
+                xi[d]      = gp - T(cellIdx[d]);
+            }
 
             // Scatter to all 2^Dim corners with CIC weights.
             // All J components share the same weight and index set because

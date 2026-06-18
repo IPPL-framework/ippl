@@ -212,9 +212,10 @@ void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Do
      * same random numbers.
      */
     if (bunchInit.generator_ == "random") {
-        /* Initialize the random number generator.
+        /* Initialize the random number generator with a fixed seed so the
+         * generated bunch is reproducible across runs.
          */
-        srand(time(NULL));
+        srand(42);
         /* Np / ng * 20 is the maximum number of particles.
          */
         randomNumbers.resize(Np / ng * 20, 0.0);

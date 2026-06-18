@@ -4,7 +4,7 @@
       "length-scale" : "micrometers",
       "time-scale"   : "picoseconds",
       "extents": [3200.0, 3200.0, 280.0],
-      "resolution": [64, 64, 2800],
+      "resolution": [96, 96, 3000],
       "mesh-center": [0.0, 0.0, 0.0],
       "total-time": 30000.0,
       "bunch-time-step": 1.6,
@@ -54,7 +54,7 @@
         "undulator-parameter": 1.417,
         "_undulator-parameter": 0,
         "period": 30000.0,
-        "length": 5e6,
+        "length": 9e6,
         "polarization-angle": 0.0
       }
     },

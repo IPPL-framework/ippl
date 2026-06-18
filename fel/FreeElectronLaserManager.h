@@ -679,8 +679,10 @@ protected:
                 Kokkos::Array<size_t, Dim> cellIdx;
                 Kokkos::Array<T, Dim> xi;
                 for (unsigned d = 0; d < Dim; ++d) {
-                    const T gridpos = (pos[d] - origin[d]) / h[d];
-                    cellIdx[d]      = static_cast<size_t>(gridpos);
+                    // Half-cell shift to match the Cell-centered field and the
+                    // gather (see assemble_current_collocated).
+                    const T gridpos = (pos[d] - origin[d]) / h[d] - T(0.5);
+                    cellIdx[d]      = static_cast<size_t>(Kokkos::floor(gridpos));
                     xi[d]           = gridpos - T(cellIdx[d]);
                 }
                 for (unsigned corner = 0; corner < (1u << Dim); ++corner) {
