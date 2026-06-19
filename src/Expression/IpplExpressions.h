@@ -5,7 +5,9 @@
 #ifndef IPPL_EXPRESSIONS_H
 #define IPPL_EXPRESSIONS_H
 
-#include <type_traits>
+#include <Kokkos_Macros.hpp>  // for KOKKOS_INLINE_FUNCTION, KOKKOS_FUNCTION
+#include <cstdlib>            // for size_t
+#include <type_traits>        // for false_type, true_type
 
 namespace ippl {
     namespace detail {

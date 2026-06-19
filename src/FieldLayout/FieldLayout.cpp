@@ -1,3 +1,5 @@
+#include <string>
+
 #include "Utility/IpplException.h"
 
 namespace ippl {
