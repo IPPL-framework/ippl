@@ -173,9 +173,10 @@ public:
         const auto ldom   = fc.getFL().getLocalNDIndex();
 
         // Project local particles onto the (z, x) plane as green dots.
-        auto phmirror = pc.R.getHostMirror();
-        Kokkos::deep_copy(phmirror, pc.R.getView());
-        for (size_t hi = 0; hi < pc.getLocalNum(); hi++) {
+        const size_t nLocal = pc.getLocalNum();
+        auto rView          = Kokkos::subview(pc.R.getView(), Kokkos::make_pair(size_t(0), nLocal));
+        auto phmirror       = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), rView);
+        for (size_t hi = 0; hi < nLocal; hi++) {
             ippl::Vector<T, 3> ppos = phmirror(hi);
             ppos -= origin;
             ppos /= vector_cast<T>(cfg.extents);

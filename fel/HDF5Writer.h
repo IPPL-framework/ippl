@@ -100,11 +100,12 @@ public:
                    static_cast<int>(localPoyntingZ.size()), MPI_DOUBLE, MPI_SUM, 0,
                    ippl::Comm->getCommunicator());
 
-        auto rHost = pc.R.getHostMirror();
-        Kokkos::deep_copy(rHost, pc.R.getView());
+        const size_t nLocal = pc.getLocalNum();
+        auto rView          = Kokkos::subview(pc.R.getView(), Kokkos::make_pair(size_t(0), nLocal));
+        auto rHost          = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), rView);
         const int localParticleValues = static_cast<int>(pc.getLocalNum() * 2);
         std::vector<double> localParticles(std::max(localParticleValues, 1), 0.0);
-        for (size_t i = 0; i < pc.getLocalNum(); ++i) {
+        for (size_t i = 0; i < nLocal; ++i) {
             localParticles[2 * i]     = rHost(i)[0] * unit_length_in_meters;
             localParticles[2 * i + 1] = rHost(i)[2] * unit_length_in_meters;
         }
