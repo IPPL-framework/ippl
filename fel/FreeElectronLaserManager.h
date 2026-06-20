@@ -374,6 +374,9 @@ public:
     }
 
     void dump() {
+        // These CSV files are rank-0 scalar diagnostics, complementary to the
+        // visualization frames: they store globally reduced time-series values
+        // every step, while HDF5/movie output stores frame data on output_rhythm.
         dumpRadiation();
         dumpRadiationBanded();
         dumpFELDiagnostics();
@@ -423,6 +426,8 @@ public:
                      * unit_length_in_meters)
             * this->hr_m[0] * this->hr_m[1];
         double power_global = 0.0;
+        // Sum the exit-plane contribution across all z-domain ranks; rank 0 is
+        // the only writer, so the CSV is a single global time series.
         MPI_Reduce(&power_local, &power_global, 1, MPI_DOUBLE, MPI_SUM, 0,
                    ippl::Comm->getCommunicator());
 
@@ -437,9 +442,9 @@ public:
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
             if (std::fabs(this->time_m) < 1e-14) {
-                csvout << "labframe_z, radiated_power_W" << endl;
+                csvout << "labframe_z_m,radiated_power_W" << endl;
             }
-            csvout << pos[2] * unit_length_in_meters << " " << power_global << endl;
+            csvout << pos[2] * unit_length_in_meters << "," << power_global << endl;
         }
         ippl::Comm->barrier();
     }
@@ -526,6 +531,8 @@ public:
                        * this->hr_m[0] * this->hr_m[1];
 
         double power_global = 0.0;
+        // Sum the resonant-band exit-plane contribution across ranks before
+        // writing one global diagnostic row.
         MPI_Reduce(&power_local, &power_global, 1, MPI_DOUBLE, MPI_SUM, 0,
                    ippl::Comm->getCommunicator());
 
@@ -540,9 +547,9 @@ public:
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
             if (std::fabs(this->time_m) < 1e-14) {
-                csvout << "labframe_z, banded_power_W" << endl;
+                csvout << "labframe_z_m,banded_power_W" << endl;
             }
-            csvout << pos[2] * unit_length_in_meters << " " << power_global << endl;
+            csvout << pos[2] * unit_length_in_meters << "," << power_global << endl;
         }
         ippl::Comm->barrier();
     }
@@ -574,6 +581,8 @@ public:
             },
             sumcos, sumsin);
 
+        // All particle and field diagnostics below are reduced over the full
+        // MPI decomposition before rank 0 writes the CSV row.
         double gsumcos = 0.0, gsumsin = 0.0;
         ippl::Comm->reduce(sumcos, gsumcos, 1, std::plus<double>());
         ippl::Comm->reduce(sumsin, gsumsin, 1, std::plus<double>());
@@ -655,13 +664,13 @@ public:
             csvout.precision(10);
             csvout.setf(std::ios::scientific, std::ios::floatfield);
             if (std::fabs(this->time_m) < 1e-14) {
-                csvout << "labframe_z, bunching, max_E, field_energy, num_particles, "
-                          "centroid_z, rms_z, rms_perp, mean_gbz"
+                csvout << "labframe_z_m,bunching,max_E,field_energy,num_particles,"
+                          "centroid_z,rms_z,rms_perp,mean_gbz"
                        << endl;
             }
-            csvout << pos[2] * unit_length_in_meters << " " << bunching << " " << globalEmax << " "
-                   << fieldEnergy << " " << nGlobal << " " << cz << " " << rmsz << " " << rmsperp
-                   << " " << meangbz << endl;
+            csvout << pos[2] * unit_length_in_meters << "," << bunching << "," << globalEmax
+                   << "," << fieldEnergy << "," << nGlobal << "," << cz << "," << rmsz << ","
+                   << rmsperp << "," << meangbz << endl;
         }
         ippl::Comm->barrier();
     }
