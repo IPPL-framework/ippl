@@ -13,10 +13,14 @@
 #include "Config.h"
 #include "FELFieldContainer.hpp"
 #include "FELParticleContainer.hpp"
+#ifdef IPPL_HDF5
+#include "HDF5Writer.h"
+#else
+#include "VideoWriter.h"
+#endif
 #include "LorentzTransform.h"
 #include "MithraBunch.h"
 #include "Undulator.h"
-#include "VideoWriter.h"
 #include "datatypes.h"
 #include "units.h"
 
@@ -53,7 +57,7 @@ public:
         , frame_m(ippl::UniaxialLorentzframe<T, 2>::from_gamma(frame_gamma_m))
         , undulator_m(uparams_m, 2.0 * cfg.sigma_position[2] * frame_gamma_m * frame_gamma_m) {}
 
-    ~FreeElectronLaserManager() { video_m.close(); }
+    ~FreeElectronLaserManager() { output_m.close(); }
 
 protected:
     config m_config;
@@ -84,7 +88,11 @@ protected:
     ippl::undulator_parameters<T> uparams_m;    ///< Undulator parameters.
     ippl::UniaxialLorentzframe<T, 2> frame_m;   ///< Boost into the co-moving frame (z-axis).
     ippl::Undulator<T> undulator_m;             ///< Static undulator field model.
-    FELVideoWriter<T, Dim> video_m;             ///< Optional ffmpeg Poynting-flux video.
+#ifdef IPPL_HDF5
+    FELHDF5Writer<T, Dim> output_m;             ///< Optional HDF5 visualization output.
+#else
+    FELVideoWriter<T, Dim> output_m;            ///< Optional ffmpeg Poynting-flux video.
+#endif
 
     // --- narrow-band (resonant) radiation power diagnostic state ---
     // MITHRA reports the FEL output power as a sliding-window single-frequency
@@ -304,8 +312,8 @@ public:
 
         initializeParticles();
 
-        // Open the ffmpeg pipe (rank 0, only if periodic output was requested).
-        video_m.open(this->m_config);
+        // Open rank-0 visualization output when periodic output was requested.
+        output_m.open(this->m_config);
 
         this->dump();
 
@@ -370,12 +378,17 @@ public:
         dumpRadiationBanded();
         dumpFELDiagnostics();
 
-        // Emit a video frame on the configured rhythm. writeFrame is collective,
+        // Emit visualization output on the configured rhythm. writeFrame is collective,
         // so every rank must reach it under the same condition.
         if (this->m_config.output_rhythm != 0
             && (this->it_m % (int)this->m_config.output_rhythm) == 0) {
-            video_m.writeFrame(this->it_m, *this->fcontainer_m, *this->pcontainer_m, frame_m,
-                               this->m_config, this->nr_m);
+#ifdef IPPL_HDF5
+            output_m.writeFrame(this->it_m, this->time_m, *this->fcontainer_m,
+                                *this->pcontainer_m, frame_m, this->m_config, this->nr_m);
+#else
+            output_m.writeFrame(this->it_m, *this->fcontainer_m, *this->pcontainer_m, frame_m,
+                                this->m_config, this->nr_m);
+#endif
         }
     }
 

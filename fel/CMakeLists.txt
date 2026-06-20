@@ -17,6 +17,12 @@ set (COMPILE_FLAGS ${OPAL_CXX_FLAGS})
 add_executable (FreeElectronLaser FreeElectronLaser.cpp)
 target_link_libraries (FreeElectronLaser ${IPPL_LIBS})
 
+if (IPPL_HDF5)
+    target_include_directories (FreeElectronLaser PRIVATE ${HDF5_INCLUDE_DIR})
+    target_link_libraries (FreeElectronLaser ${HDF5_LIBRARIES})
+    target_compile_definitions (FreeElectronLaser PRIVATE IPPL_HDF5)
+endif()
+
 # vi: set et ts=4 sw=4 sts=4:
 
 # Local Variables:

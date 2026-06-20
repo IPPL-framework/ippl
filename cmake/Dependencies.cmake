@@ -292,6 +292,58 @@ if(IPPL_ENABLE_FFT)
 endif()
 
 # ------------------------------------------------------------------------------
+# HDF5
+# ------------------------------------------------------------------------------
+if(IPPL_HDF5)
+  add_compile_definitions(IPPL_HDF5)
+
+  if(IPPL_USE_INSTALLED_HDF5)
+    colour_message(STATUS ${Green} "✅ Using system-installed HDF5")
+    find_package(HDF5 REQUIRED COMPONENTS C)
+
+    if(NOT HDF5_FOUND)
+      colour_message(FATAL_ERROR ${Red} "❌ System HDF5 requested but not found")
+    endif()
+
+    if(HDF5_VERSION VERSION_LESS "1.10.0")
+      colour_message(FATAL_ERROR ${Red}
+                     "❌ System HDF5 version ${HDF5_VERSION} is too old; require >= 1.10.0")
+    endif()
+
+    set(HDF5_INCLUDE_DIR ${HDF5_INCLUDE_DIRS})
+    set(HDF5_LIBRARIES ${HDF5_LIBRARIES})
+  else()
+    colour_message(STATUS ${Green} "✅ HDF5 1.14.6 building from source")
+    set(HDF5_ENABLE_PARALLEL ON CACHE BOOL "Enable parallel HDF5" FORCE)
+    set(HDF5_BUILD_HL_LIB OFF CACHE BOOL "Disable HDF5 high-level APIs" FORCE)
+    set(HDF5_BUILD_EXAMPLES OFF CACHE BOOL "Disable HDF5 examples" FORCE)
+    set(HDF5_BUILD_TOOLS OFF CACHE BOOL "Disable HDF5 tools" FORCE)
+    set(HDF5_ENABLE_THREADSAFE OFF CACHE BOOL "Disable HDF5 thread-safe mode" FORCE)
+    set(HDF5_TEST_PARALLEL OFF CACHE BOOL "Disable HDF5 parallel tests" FORCE)
+    set(HDF5_ENABLE_FLOAT16 OFF CACHE BOOL "Disable HDF5 half-precision floats" FORCE)
+    set(HDF5_VERSION "1.14.6")
+
+    FetchContent_Declare(
+      HDF5
+      URL https://github.com/HDFGroup/hdf5/releases/download/hdf5_${HDF5_VERSION}/hdf5-${HDF5_VERSION}.tar.gz
+      URL_HASH SHA256=e4defbac30f50d64e1556374aa49e574417c9e72c6b1de7a4ff88c4b1bea6e9b)
+    FetchContent_MakeAvailable(HDF5)
+
+    if(TARGET hdf5-shared)
+      add_library(hdf5::hdf5 ALIAS hdf5-shared)
+    elseif(TARGET hdf5-static)
+      add_library(hdf5::hdf5 ALIAS hdf5-static)
+    endif()
+
+    set(HDF5_FOUND TRUE)
+    set(HDF5_LIBRARIES hdf5::hdf5)
+  endif()
+
+  colour_message(STATUS ${Green} "✅ HDF5 libraries: ${HDF5_LIBRARIES}")
+  colour_message(STATUS ${Green} "✅ HDF5 include dir: ${HDF5_INCLUDE_DIR}")
+endif()
+
+# ------------------------------------------------------------------------------
 # GoogleTest
 # ------------------------------------------------------------------------------
 if(IPPL_ENABLE_UNIT_TESTS)
