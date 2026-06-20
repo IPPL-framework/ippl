@@ -85,7 +85,10 @@ int main(int argc, char* argv[]) {
         mg.setDebugPrint(true);
         mg.init_fields(rhs);
 
-        field_type result = mg(rhs);
+        field_type result(mesh, layout);
+        mg.init_fields(rhs);
+
+        mg(rhs, result);
 
         if (ippl::Comm->rank() == 0) {
             std::cout << "\nFinal multigrid result:\n";
