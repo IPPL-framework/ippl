@@ -313,4 +313,475 @@ namespace ippl {
         }
 
         void init_fields(Field& b) override {
-            // One-shot precomputation of the rho
+            // One-shot precomputation of the rho coefficients.
+            if (rho_m == nullptr) {
+                theta_m = (beta_m + alpha_m) / 2.0 * (1.0 + zeta_m);
+                delta_m = (beta_m - alpha_m) / 2.0;
+                sigma_m = theta_m / delta_m;
+
+                rho_m    = new double[degree_m + 1];
+                rho_m[0] = 1.0 / sigma_m;
+                for (unsigned int i = 1; i < degree_m + 1; ++i) {
+                    rho_m[i] = 1.0 / (2.0 * sigma_m - rho_m[i - 1]);
+                }
+            }
+            mesh_type& mesh     = b.get_mesh();
+            layout_type& layout = b.getLayout();
+            // First call allocates; subsequent calls refresh the layout so a
+            // repartition is tracked without throwing the storage away.
+            if (!fields_initialized_m) {
+                x_m                  = Field(mesh, layout);
+                x_old_m              = Field(mesh, layout);
+                A_m                  = Field(mesh, layout);
+                z_m                  = Field(mesh, layout);
+                fields_initialized_m = true;
+            } else {
+                x_m.updateLayout(layout);
+                x_old_m.updateLayout(layout);
+                A_m.updateLayout(layout);
+                z_m.updateLayout(layout);
+            }
+        }
+
+    protected:
+        OperatorF op_m;
+        double alpha_m;
+        double beta_m;
+        double delta_m;
+        double theta_m;
+        double sigma_m;
+        unsigned degree_m;
+        double zeta_m;
+        double* rho_m = nullptr;  // Size is determined at runtime
+        Field x_m;
+        Field x_old_m;
+        Field A_m;
+        Field z_m;
+        bool fields_initialized_m = false;
+    };
+
+    /*!
+     * Richardson preconditioner
+     */
+    template <typename Field, typename UpperAndLowerF, typename InvDiagF>
+    struct richardson_preconditioner : public preconditioner<Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using mesh_type               = typename Field::Mesh_t;
+        using layout_type             = typename Field::Layout_t;
+
+        richardson_preconditioner(UpperAndLowerF&& upper_and_lower, InvDiagF&& inverse_diagonal,
+                                  unsigned innerloops = 5)
+            : preconditioner<Field>("Richardson")
+            , innerloops_m(innerloops) {
+            upper_and_lower_m  = std::move(upper_and_lower);
+            inverse_diagonal_m = std::move(inverse_diagonal);
+        }
+
+        void operator()(Field& r, Field& result) override {
+            // Richardson iteration in-place on the caller-provided result
+            // buffer. ULg_m stays as a member scratch; the inner deep copies
+            // remain because the (upper, diag, inverse, lower) operators may
+            // return Field-valued expressions that alias their input.
+
+            result = 0;
+            for (unsigned int j = 0; j < innerloops_m; ++j) {
+                ULg_m  = upper_and_lower_m(result);
+                ULg_m  = ULg_m.deepCopy();
+                result = r - ULg_m;
+
+                // The inverse diagonal is applied to the
+                // vector itself to return the result usually.
+                // However, the operator for FEM already
+                // returns the result of inv_diag * itself
+                // due to the matrix-free evaluation.
+                // Therefore, we need this if to differentiate
+                // the two cases.
+                if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
+                    result = inverse_diagonal_m(result) * result;
+                } else {
+                    result = inverse_diagonal_m(result).deepCopy();
+                }
+            }
+        }
+
+        void init_fields(Field& b) override {
+            layout_type& layout = b.getLayout();
+            mesh_type& mesh     = b.get_mesh();
+            if (!fields_initialized_m) {
+                ULg_m                = Field(mesh, layout);
+                fields_initialized_m = true;
+            } else {
+                ULg_m.updateLayout(layout);
+            }
+        }
+
+    protected:
+        UpperAndLowerF upper_and_lower_m;
+        InvDiagF inverse_diagonal_m;
+        unsigned innerloops_m;
+        Field ULg_m;
+        bool fields_initialized_m = false;
+    };
+
+    /*!
+     * Alternative Richardson preconditioner
+     * Given the linear system of equations Ax=b the update steps are performed as follows:
+     * x_{k+1} = x_k + D^{-1}*(b-A*x_k)
+     * A derivation of this preconditioner can be found at:
+     * https://jschoeberl.github.io/iFEM/iterative/preconditioning.html
+     */
+    template <typename Field, typename OperatorF, typename InvDiagF>
+    struct richardson_preconditioner_alt : public preconditioner<Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using mesh_type               = typename Field::Mesh_t;
+        using layout_type             = typename Field::Layout_t;
+
+        richardson_preconditioner_alt(OperatorF&& op, InvDiagF&& inverse_diagonal,
+                                      unsigned innerloops = 5)
+            : preconditioner<Field>("Richardson_alt")
+            , innerloops_m(innerloops) {
+            op_m               = std::move(op);
+            inverse_diagonal_m = std::move(inverse_diagonal);
+        }
+
+        void operator()(Field& r, Field& result) override {
+            // result holds the running iterate; Ag_m and g_old_m are scratch
+            // members. The inner deep copies remain because the operators
+            // (op_m, inverse_diagonal_m) may return Field-valued expressions
+            // that alias their input.
+
+            result  = 0;
+            g_old_m = 0;
+
+            for (unsigned int j = 0; j < innerloops_m; ++j) {
+                Ag_m   = op_m(result);
+                Ag_m   = Ag_m.deepCopy();
+                result = r - Ag_m;
+
+                // The inverse diagonal is applied to the
+                // vector itself to return the result usually.
+                // However, the operator for FEM already
+                // returns the result of inv_diag * itself
+                // due to the matrix-free evaluation.
+                // Therefore, we need this if to differentiate
+                // the two cases.
+                if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
+                    result = g_old_m + inverse_diagonal_m(result) * result;
+                } else {
+                    result = g_old_m + inverse_diagonal_m(result);
+                }
+                Kokkos::deep_copy(g_old_m.getView(), result.getView());
+            }
+        }
+
+        void init_fields(Field& b) override {
+            layout_type& layout = b.getLayout();
+            mesh_type& mesh     = b.get_mesh();
+            if (!fields_initialized_m) {
+                Ag_m                 = Field(mesh, layout);
+                g_old_m              = Field(mesh, layout);
+                fields_initialized_m = true;
+            } else {
+                Ag_m.updateLayout(layout);
+                g_old_m.updateLayout(layout);
+            }
+        }
+
+    protected:
+        OperatorF op_m;
+        InvDiagF inverse_diagonal_m;
+        unsigned innerloops_m;
+        Field Ag_m;
+        Field g_old_m;
+        bool fields_initialized_m = false;
+    };
+
+    /*!
+     * 2-step Gauss-Seidel preconditioner
+     */
+    template <typename Field, typename LowerF, typename UpperF, typename InvDiagF>
+    struct gs_preconditioner : public preconditioner<Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using mesh_type               = typename Field::Mesh_t;
+        using layout_type             = typename Field::Layout_t;
+
+        gs_preconditioner(LowerF&& lower, UpperF&& upper, InvDiagF&& inverse_diagonal,
+                          unsigned innerloops, unsigned outerloops)
+            : preconditioner<Field>("Gauss-Seidel")
+            , innerloops_m(innerloops)
+            , outerloops_m(outerloops) {
+            lower_m            = std::move(lower);
+            upper_m            = std::move(upper);
+            inverse_diagonal_m = std::move(inverse_diagonal);
+        }
+
+        void operator()(Field& b, Field& result) override {
+            // The running iterate lives in result; UL_m and r_m are scratch
+            // members. The inner deep copies remain because the (upper, lower,
+            // inverse) operators may return Field-valued expressions that
+            // alias their input.
+
+            result = 0;  // Initial guess
+
+            for (unsigned int k = 0; k < outerloops_m; ++k) {
+                UL_m = upper_m(result);
+                UL_m = UL_m.deepCopy();
+                r_m  = b - UL_m;
+                for (unsigned int j = 0; j < innerloops_m; ++j) {
+                    UL_m   = lower_m(result);
+                    UL_m   = UL_m.deepCopy();
+                    result = r_m - UL_m;
+                    if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
+                        result = inverse_diagonal_m(result) * result;
+                    } else {
+                        result = inverse_diagonal_m(result).deepCopy();
+                    }
+                    // The inverse diagonal is applied to the
+                    // vector itself to return the result usually.
+                    // However, the operator for FEM already
+                    // returns the result of inv_diag * itself
+                    // due to the matrix-free evaluation.
+                    // Therefore, we need this if to differentiate
+                    // the two cases.
+                }
+                UL_m = lower_m(result);
+                UL_m = UL_m.deepCopy();
+                r_m  = b - UL_m;
+                for (unsigned int j = 0; j < innerloops_m; ++j) {
+                    UL_m   = upper_m(result);
+                    UL_m   = UL_m.deepCopy();
+                    result = r_m - UL_m;
+                    if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
+                        result = inverse_diagonal_m(result) * result;
+                    } else {
+                        result = inverse_diagonal_m(result).deepCopy();
+                    }
+                    // The inverse diagonal is applied to the
+                    // vector itself to return the result usually.
+                    // However, the operator for FEM already
+                    // returns the result of inv_diag * itself
+                    // due to the matrix-free evaluation.
+                    // Therefore, we need this if to differentiate
+                    // the two cases.
+                }
+            }
+        }
+
+        void init_fields(Field& b) override {
+            layout_type& layout = b.getLayout();
+            mesh_type& mesh     = b.get_mesh();
+            if (!fields_initialized_m) {
+                UL_m                 = Field(mesh, layout);
+                r_m                  = Field(mesh, layout);
+                fields_initialized_m = true;
+            } else {
+                UL_m.updateLayout(layout);
+                r_m.updateLayout(layout);
+            }
+        }
+
+    protected:
+        LowerF lower_m;
+        UpperF upper_m;
+        InvDiagF inverse_diagonal_m;
+        unsigned innerloops_m;
+        unsigned outerloops_m;
+        Field UL_m;
+        Field r_m;
+        bool fields_initialized_m = false;
+    };
+
+    /*!
+     * Symmetric successive over-relaxation
+     */
+    template <typename Field, typename LowerF, typename UpperF, typename InvDiagF, typename DiagF>
+    struct ssor_preconditioner : public preconditioner<Field> {
+        constexpr static unsigned Dim = Field::dim;
+        using mesh_type               = typename Field::Mesh_t;
+        using layout_type             = typename Field::Layout_t;
+
+        ssor_preconditioner(LowerF&& lower, UpperF&& upper, InvDiagF&& inverse_diagonal,
+                            DiagF&& diagonal, unsigned innerloops, unsigned outerloops,
+                            double omega)
+            : preconditioner<Field>("ssor")
+            , innerloops_m(innerloops)
+            , outerloops_m(outerloops)
+            , omega_m(omega) {
+            lower_m            = std::move(lower);
+            upper_m            = std::move(upper);
+            inverse_diagonal_m = std::move(inverse_diagonal);
+            diagonal_m         = std::move(diagonal);
+        }
+
+        void operator()(Field& b, Field& result) override {
+            // In the FEM solver, which uses the preconditioner,
+            // we re-use a resultField to avoid allocating new
+            // memory at every iteration.
+            // In order for the operator calls to not rewrite
+            // on this same field over and over when calling
+            // the operators (upper, diag, inverse, lower, etc)
+            // we need deep copies to the preconditioner fields.
+
+            // The inverse diagonal is applied to the
+            // vector itself to return the result usually.
+            // However, the operator for FEM already
+            // returns the result of inv_diag * itself
+            // due to the matrix-free evaluation.
+            // Therefore, we need this if to differentiate
+            // the two cases.
+
+            double D;
+
+            // In order for the operator calls to not rewrite on this same field
+            // over and over when calling the operators (upper, diag, inverse,
+            // lower, etc) we need deep copies to the preconditioner fields."
+
+            result = 0;  // Initial guess
+
+            for (unsigned int k = 0; k < outerloops_m; ++k) {
+                if constexpr (std::is_same_v<InvDiagF, std::function<double(Field&)>>) {
+                    UL_m = upper_m(result);
+                    D    = diagonal_m(result);
+                    r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * result;
+
+                    for (unsigned int j = 0; j < innerloops_m; ++j) {
+                        UL_m   = lower_m(result);
+                        result = r_m - omega_m * UL_m;
+                        result = inverse_diagonal_m(result) * result;
+                    }
+                    UL_m = lower_m(result);
+                    D    = diagonal_m(result);
+                    r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * D * result;
+                    for (unsigned int j = 0; j < innerloops_m; ++j) {
+                        UL_m   = upper_m(result);
+                        result = r_m - omega_m * UL_m;
+                        result = inverse_diagonal_m(result) * result;
+                    }
+                } else {
+                    UL_m = upper_m(result).deepCopy();
+                    r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * diagonal_m(result);
+
+                    for (unsigned int j = 0; j < innerloops_m; ++j) {
+                        UL_m   = lower_m(result).deepCopy();
+                        result = r_m - omega_m * UL_m;
+                        result = inverse_diagonal_m(result).deepCopy();
+                    }
+                    UL_m = lower_m(result).deepCopy();
+                    r_m  = omega_m * (b - UL_m) + (1.0 - omega_m) * diagonal_m(result);
+                    for (unsigned int j = 0; j < innerloops_m; ++j) {
+                        UL_m   = upper_m(result).deepCopy();
+                        result = r_m - omega_m * UL_m;
+                        result = inverse_diagonal_m(result).deepCopy();
+                    }
+                }
+            }
+        }
+
+        void init_fields(Field& b) override {
+            layout_type& layout = b.getLayout();
+            mesh_type& mesh     = b.get_mesh();
+            if (!fields_initialized_m) {
+                UL_m                 = Field(mesh, layout);
+                r_m                  = Field(mesh, layout);
+                fields_initialized_m = true;
+            } else {
+                UL_m.updateLayout(layout);
+                r_m.updateLayout(layout);
+            }
+        }
+
+    protected:
+        LowerF lower_m;
+        UpperF upper_m;
+        InvDiagF inverse_diagonal_m;
+        DiagF diagonal_m;
+        unsigned innerloops_m;
+        unsigned outerloops_m;
+        double omega_m;
+        Field UL_m;
+        Field r_m;
+        bool fields_initialized_m = false;
+    };
+
+    /*!
+     * Computes the largest Eigenvalue of the Functor f
+     * @param f Functor
+     * @param x_0 initial guess
+     * @param max_iter maximum number of iterations
+     * @param tol tolerance
+     */
+    template <typename Field, typename Functor>
+    double powermethod(Functor&& f, Field& x_0, unsigned int max_iter = 5000, double tol = 1e-3) {
+        unsigned int i      = 0;
+        using mesh_type     = typename Field::Mesh_t;
+        using layout_type   = typename Field::Layout_t;
+        mesh_type& mesh     = x_0.get_mesh();
+        layout_type& layout = x_0.getLayout();
+        Field x_new(mesh, layout);
+        Field x_diff(mesh, layout);
+        double error  = 1.0;
+        double lambda = 1.0;
+        while (error > tol && i < max_iter) {
+            x_new  = f(x_0);
+            lambda = norm(x_new);
+            x_diff = x_new - lambda * x_0;
+            error  = norm(x_diff);
+            x_new  = x_new / lambda;
+            x_0    = x_new.deepCopy();
+            ++i;
+        }
+        if (i == max_iter) {
+            std::cerr << "Powermethod did not converge, lambda_max : " << lambda
+                      << ", error : " << error << std::endl;
+        }
+        return lambda;
+    }
+
+    /*!
+     * Computes the smallest Eigenvalue of the Functor f (f must be symmetric positive definite)
+     * @param f Functor
+     * @param x_0 initial guess
+     * @param lambda_max largest Eigenvalue
+     * @param max_iter maximum number of iterations
+     * @param tol tolerance
+     */
+    template <typename Field, typename Functor>
+    double adapted_powermethod(Functor&& f, Field& x_0, double lambda_max,
+                               unsigned int max_iter = 5000, double tol = 1e-3) {
+        unsigned int i      = 0;
+        using mesh_type     = typename Field::Mesh_t;
+        using layout_type   = typename Field::Layout_t;
+        mesh_type& mesh     = x_0.get_mesh();
+        layout_type& layout = x_0.getLayout();
+        Field x_new(mesh, layout);
+        Field x_diff(mesh, layout);
+        double error  = 1.0;
+        double lambda = 1.0;
+        while (error > tol && i < max_iter) {
+            x_new  = f(x_0);
+            x_new  = x_new - lambda_max * x_0;
+            lambda = -norm(x_new);  // We know that lambda < 0;
+            x_diff = x_new - lambda * x_0;
+            error  = norm(x_diff);
+            x_new  = x_new / -lambda;
+            x_0    = x_new.deepCopy();
+            ++i;
+        }
+        lambda = lambda + lambda_max;
+        if (i == max_iter) {
+            std::cerr << "Powermethod did not converge, lambda_min : " << lambda
+                      << ", error : " << error << std::endl;
+        }
+        return lambda;
+    }
+
+    /*
+    // Use the powermethod to compute the eigenvalues if no analytical solution is known
+    beta = powermethod(std::move(op_m), x_0);
+    // Trick for computing the smallest Eigenvalue of SPD Matrix
+    alpha = adapted_powermethod(std::move(op_m), x_0, beta);
+     */
+
+}  // namespace ippl
+
+#endif  // IPPL_PRECONDITIONER_H
