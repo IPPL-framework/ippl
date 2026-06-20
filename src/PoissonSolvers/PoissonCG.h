@@ -8,16 +8,16 @@
 
 #include "LaplaceHelpers.h"
 #include "LinearSolvers/PCG.h"
+#include "LinearSolvers/PreconditionerValidation.h"
 #include "Poisson.h"
 namespace ippl {
 
-// Expands to a lambda that acts as a wrapper for a differential operator
-// fun: the function for which to create the wrapper, such as ippl::laplace
-// type: the argument type, which should match the LHS type for the solver
-#define IPPL_SOLVER_OPERATOR_WRAPPER(fun, type) \
-    [](type arg) {                              \
-        return fun(arg);                        \
-    }
+    // IPPL_SOLVER_OPERATOR_WRAPPER is defined once in LinearSolvers/Preconditioner.h
+    // (re-exported through this header via PCG.h). Defining it again here used to
+    // silently shadow that definition with a by-value lambda, which copies the
+    // Field on every op_m() call and reintroduces the per-iteration cudaMalloc
+    // in the halo exchange (the realloc never propagates back to the original
+    // Field). Keep a single by-reference definition.
 
     template <typename FieldLHS, typename FieldRHS = FieldLHS>
     class PoissonCG : public Poisson<FieldLHS, FieldRHS> {
@@ -64,8 +64,13 @@ namespace ippl {
                 algo_m = std::move(
                     std::make_unique<PCG<OperatorRet, LowerRet, UpperRet, UpperAndLowerRet,
                                          InverseDiagonalRet, DiagRet, FieldLHS, FieldRHS>>());
+                // Get the preconditioner type,
+                // if it is not part of the valid list of preconditioners, throw an error.
                 std::string preconditioner_type =
                     this->params_m.template get<std::string>("preconditioner_type");
+                preconditioner_validation::throwIfUnknownType(preconditioner_type, "PoissonCG::setSolver");
+
+                // Read in the preconditioner parameters
                 int level    = this->params_m.template get<int>("newton_level");
                 int degree   = this->params_m.template get<int>("chebyshev_degree");
                 int inner    = this->params_m.template get<int>("gauss_seidel_inner_iterations");
@@ -74,6 +79,14 @@ namespace ippl {
                 int richardson_iterations =
                     this->params_m.template get<int>("richardson_iterations");
                 int communication = this->params_m.template get<int>("communication");
+
+                Inform warn("PoissonCG");
+                // After reading in preconditioner parameters, if they are invalid, 
+                // the user is warned that the parameter is invalid, and a default
+                // parameter is used.
+                preconditioner_validation::sanitizeParams(preconditioner_type, warn, level, degree,
+                                                         richardson_iterations, inner, outer, omega,
+                                                         &communication);
                 // Analytical eigenvalues for the d dimensional laplace operator
                 // Going brute force through all possible eigenvalues seems to be the only way to
                 // find max and min

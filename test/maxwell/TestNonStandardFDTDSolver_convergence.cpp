@@ -47,6 +47,9 @@ void compute_convergence(char direction, unsigned int np, std::string fname) {
     std::array<bool, 3> isParallel;
     isParallel.fill(true);
 
+    // periodic layout
+    bool isAllPeriodic = true;
+
     // unit box
     ippl::Vector<scalar, 3> hx;
     for (unsigned d = 0; d < 3; d++) {
@@ -56,7 +59,7 @@ void compute_convergence(char direction, unsigned int np, std::string fname) {
     ippl::UniformCartesian<scalar, 3> mesh(owned, hx, origin);
 
     // all parallel layout, standard domain, normal axis order
-    ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
+    ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel, isAllPeriodic);
 
     // Define the source and field types
     SourceField source(mesh, layout);
