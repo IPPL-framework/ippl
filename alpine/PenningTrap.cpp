@@ -44,55 +44,74 @@ const char* TestName   = "PenningTrap";
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
+    int exit_code = 0;
     {
-        Inform msg(TestName);
-        Inform msg2all(TestName, INFORM_ALL_NODES);
+        try {
+            Inform msg(TestName);
+            Inform msg2all(TestName, INFORM_ALL_NODES);
 
-        static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
-        IpplTimings::startTimer(mainTimer);
+            static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
+            IpplTimings::startTimer(mainTimer);
 
-        // Read input parameters, assign them to the corresponding memebers of manager
-        int arg = 1;
-        Vector_t<int, Dim> nr;
+            // Read input parameters, assign them to the corresponding memebers of manager
+            int arg = 1;
+            Vector_t<int, Dim> nr;
 
-        for (unsigned d = 0; d < Dim; d++) {
-            nr[d] = std::atoi(argv[arg++]);
-        }
-        size_type totalP        = std::atoll(argv[arg++]);
-        int nt                  = std::atoi(argv[arg++]);
-        std::string solver      = argv[arg++];
-        double lbt              = std::atof(argv[arg++]);
-        std::string step_method = argv[arg++];
-
-        std::vector<std::string> preconditioner_params;
-
-        // Create an instance of a manger for the considered application
-        if (solver == "PCG") {
-            for (int i = 0; i < 5; i++) {
-                preconditioner_params.push_back(argv[arg++]);
+            for (unsigned d = 0; d < Dim; d++) {
+                nr[d] = std::atoi(argv[arg++]);
             }
+            size_type totalP        = std::atoll(argv[arg++]);
+            int nt                  = std::atoi(argv[arg++]);
+            std::string solver      = argv[arg++];
+            double lbt              = std::atof(argv[arg++]);
+            std::string step_method = argv[arg++];
+
+            std::vector<std::string> preconditioner_params;
+
+            if (solver == "PCG" || solver == "FEM_PRECON") {
+                while (arg < argc) {
+                    const std::string token = argv[arg];
+                    if (token.rfind("--", 0) == 0) {
+                        break;
+                    }
+                    preconditioner_params.push_back(token);
+                    ++arg;
+                }
+            }
+
+            // Create an instance of a manger for the considered application
+            PenningTrapManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method,
+                                               preconditioner_params);
+
+            // Perform pre-run operations, including creating mesh, particles,...
+            manager.pre_run();
+
+            manager.setTime(0.0);
+
+            msg << "Starting iterations ..." << endl;
+
+            manager.run(manager.getNt());
+
+            msg << "End." << endl;
+
+            IpplTimings::stopTimer(mainTimer);
+            IpplTimings::print();
+            IpplTimings::print(std::string("timing.dat"));
+        } catch (const IpplException& ex) {
+            Inform err(TestName);
+            err << "IPPL exception: " << ex.what() << endl;
+            exit_code = 1;
+        } catch (const std::exception& ex) {
+            Inform err(TestName);
+            err << "Unhandled std::exception: " << ex.what() << endl;
+            exit_code = 1;
+        } catch (...) {
+            Inform err(TestName);
+            err << "Unhandled unknown exception" << endl;
+            exit_code = 1;
         }
-
-        // Create an instance of a manger for the considered application
-        PenningTrapManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method,
-                                           preconditioner_params);
-
-        // Perform pre-run operations, including creating mesh, particles,...
-        manager.pre_run();
-
-        manager.setTime(0.0);
-
-        msg << "Starting iterations ..." << endl;
-
-        manager.run(manager.getNt());
-
-        msg << "End." << endl;
-
-        IpplTimings::stopTimer(mainTimer);
-        IpplTimings::print();
-        IpplTimings::print(std::string("timing.dat"));
     }
     ippl::finalize();
 
-    return 0;
+    return exit_code;
 }

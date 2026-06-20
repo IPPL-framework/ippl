@@ -1,9 +1,12 @@
 #ifndef IPPL_FIELD_SOLVER_H
 #define IPPL_FIELD_SOLVER_H
 
+#include <algorithm>
+#include <array>
 #include <filesystem>
 #include <memory>
 
+#include "LinearSolvers/PreconditionerValidation.h"
 #include "Manager/BaseManager.h"
 #include "Manager/FieldSolverBase.h"
 
@@ -11,10 +14,115 @@
 template <typename T, unsigned Dim>
 class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
 private:
+    struct ParsedPreconditionerParams {
+        std::string type          = "";
+        bool use_defaults         = true;
+        int newton_level          = ippl::pcg_preconditioner_defaults::newton_level;
+        int chebyshev_degree      = ippl::pcg_preconditioner_defaults::chebyshev_degree;
+        int richardson_iterations = ippl::pcg_preconditioner_defaults::richardson_iterations;
+        int gauss_seidel_inner_iterations = ippl::pcg_preconditioner_defaults::gauss_seidel_inner;
+        int gauss_seidel_outer_iterations = ippl::pcg_preconditioner_defaults::gauss_seidel_outer;
+        int communication                 = ippl::pcg_preconditioner_defaults::communication;
+        double ssor_omega                 = ippl::pcg_preconditioner_defaults::ssor_omega;
+        // Multigrid preconditioner parameters
+        int mg_pre_smooth_iters  = 2;
+        int mg_post_smooth_iters = 2;
+        double mg_omega          = 1.0;
+        int mg_min_cells         = 2;
+    };
+
     Field_t<Dim>* rho_m;
     VField_t<T, Dim>* E_m;
     Field<T, Dim>* phi_m;
     std::vector<std::string> preconditioner_params_m;
+
+    // Parse the preconditioner params (PCG and FEMPrecon solvers);
+    //   [type, optional numeric args...]
+    // Type validation and numeric sanitization are delegated to the shared
+    // preconditioner validation helper to avoid duplication with Poisson solvers.
+    // If the type is known but the numeric args are invalid or the number
+    // of arguments is wrong, a warning is printed and default parameters
+    // are used.
+    ParsedPreconditionerParams parsePreconditionerParams(const std::string& solver_name) const {
+        Inform warn("FieldSolver");
+        ParsedPreconditionerParams parsed;
+        if (preconditioner_params_m.empty()) {
+            warn << "No preconditioner type provided for solver " << solver_name
+                 << "; using default identity preconditioner." << endl;
+            return parsed;
+        }
+
+        parsed.type = preconditioner_params_m[0];
+        ippl::preconditioner_validation::throwIfUnknownType(
+            parsed.type, "FieldSolver::parsePreconditionerParams");
+
+        size_t expected_arg_count = 0;
+        if (parsed.type == "newton" || parsed.type == "chebyshev"
+            || parsed.type == "richardson_alt") {
+            expected_arg_count = 1;
+        } else if (parsed.type == "richardson") {
+            expected_arg_count = 2;
+        } else if (parsed.type == "gauss-seidel" || parsed.type == "ssor") {
+            expected_arg_count = 3;
+        } else if (parsed.type == "multigrid") {
+            expected_arg_count = 4;
+        }
+
+        const size_t provided_arg_count = preconditioner_params_m.size() - 1;
+        if (provided_arg_count == 0) {
+            return parsed;
+        }
+
+        auto warnAndUseDefaults = [&](const std::string& detail) {
+            warn << "Invalid parameters for preconditioner '" << parsed.type << "' in solver "
+                 << solver_name << " (" << detail << "). Using default preconditioner parameters."
+                 << endl;
+            parsed.use_defaults = true;
+        };
+
+        if (provided_arg_count != expected_arg_count) {
+            warnAndUseDefaults("expected " + std::to_string(expected_arg_count)
+                               + " argument(s), got " + std::to_string(provided_arg_count));
+            return parsed;
+        }
+
+        try {
+            int arg = 1;
+            if (parsed.type == "newton") {
+                parsed.newton_level = std::stoi(preconditioner_params_m[arg++]);
+            } else if (parsed.type == "chebyshev") {
+                parsed.chebyshev_degree = std::stoi(preconditioner_params_m[arg++]);
+            } else if (parsed.type == "richardson" || parsed.type == "richardson_alt") {
+                parsed.richardson_iterations = std::stoi(preconditioner_params_m[arg++]);
+                if (parsed.type == "richardson") {
+                    parsed.communication = std::stoi(preconditioner_params_m[arg++]);
+                }
+            } else if (parsed.type == "gauss-seidel") {
+                parsed.gauss_seidel_inner_iterations = std::stoi(preconditioner_params_m[arg++]);
+                parsed.gauss_seidel_outer_iterations = std::stoi(preconditioner_params_m[arg++]);
+                parsed.communication                 = std::stoi(preconditioner_params_m[arg++]);
+            } else if (parsed.type == "ssor") {
+                parsed.gauss_seidel_inner_iterations = std::stoi(preconditioner_params_m[arg++]);
+                parsed.gauss_seidel_outer_iterations = std::stoi(preconditioner_params_m[arg++]);
+                parsed.ssor_omega                    = std::stod(preconditioner_params_m[arg++]);
+            } else if (parsed.type == "multigrid") {
+                parsed.mg_pre_smooth_iters  = std::stoi(preconditioner_params_m[arg++]);
+                parsed.mg_post_smooth_iters = std::stoi(preconditioner_params_m[arg++]);
+                parsed.mg_omega             = std::stod(preconditioner_params_m[arg++]);
+                parsed.mg_min_cells         = std::stoi(preconditioner_params_m[arg++]);
+            }
+            parsed.use_defaults = false;
+        } catch (const std::exception& ex) {
+            warnAndUseDefaults(std::string("failed to parse numeric values: ") + ex.what());
+        }
+
+        ippl::preconditioner_validation::sanitizeParams(
+            parsed.type, warn, parsed.newton_level, parsed.chebyshev_degree,
+            parsed.richardson_iterations, parsed.gauss_seidel_inner_iterations,
+            parsed.gauss_seidel_outer_iterations, parsed.ssor_omega, &parsed.communication);
+
+        return parsed;
+    }
 
 public:
     FieldSolver(std::string solver, Field_t<Dim>* rho, VField_t<T, Dim>* E, Field<T, Dim>* phi,
@@ -200,57 +308,20 @@ public:
         sp.add("output_type", CGSolver_t<T, Dim>::GRAD);
         // Increase tolerance in the 1D case
         sp.add("tolerance", 1e-4);
+        const auto parsed = parsePreconditionerParams("PCG");
 
-        int arg = 0;
-
-        int gauss_seidel_inner_iterations;
-        int gauss_seidel_outer_iterations;
-        int newton_level;
-        int chebyshev_degree;
-        int richardson_iterations;
-        int communication = 0;
-        double ssor_omega;
-        int mg_pre;
-        int mg_post;
-        double mg_omega;
-        int mg_min_cells;
-        std::string preconditioner_type = "";
-
-        preconditioner_type = preconditioner_params_m[arg++];
-        if (preconditioner_type == "newton") {
-            newton_level = std::stoi(preconditioner_params_m[arg++]);
-        } else if (preconditioner_type == "chebyshev") {
-            chebyshev_degree = std::stoi(preconditioner_params_m[arg++]);
-        } else if (preconditioner_type == "richardson") {
-            richardson_iterations = std::stoi(preconditioner_params_m[arg++]);
-            communication         = std::stoi(preconditioner_params_m[arg++]);
-        } else if (preconditioner_type == "gauss-seidel") {
-            gauss_seidel_inner_iterations = std::stoi(preconditioner_params_m[arg++]);
-            gauss_seidel_outer_iterations = std::stoi(preconditioner_params_m[arg++]);
-            communication                 = std::stoi(preconditioner_params_m[arg++]);
-        } else if (preconditioner_type == "ssor") {
-            gauss_seidel_inner_iterations = std::stoi(preconditioner_params_m[arg++]);
-            gauss_seidel_outer_iterations = std::stoi(preconditioner_params_m[arg++]);
-            ssor_omega                    = std::stod(preconditioner_params_m[arg++]);
-        } else if (preconditioner_type == "multigrid") {
-            mg_pre       = std::stoi(preconditioner_params_m[arg++]);
-            mg_post      = std::stoi(preconditioner_params_m[arg++]);
-            mg_omega     = std::stod(preconditioner_params_m[arg++]);
-            mg_min_cells = std::stoi(preconditioner_params_m[arg++]);
-        }
-
-        sp.add("preconditioner_type", preconditioner_type);
-        sp.add("gauss_seidel_inner_iterations", gauss_seidel_inner_iterations);
-        sp.add("gauss_seidel_outer_iterations", gauss_seidel_outer_iterations);
-        sp.add("newton_level", newton_level);
-        sp.add("chebyshev_degree", chebyshev_degree);
-        sp.add("richardson_iterations", richardson_iterations);
-        sp.add("communication", communication);
-        sp.add("ssor_omega", ssor_omega);
-        sp.add("mg_pre_smooth_iters", mg_pre);
-        sp.add("mg_post_smooth_iters", mg_post);
-        sp.add("mg_omega", mg_omega);
-        sp.add("min_cells_per_rank_per_dim", mg_min_cells);
+        sp.add("preconditioner_type", parsed.type);
+        sp.add("gauss_seidel_inner_iterations", parsed.gauss_seidel_inner_iterations);
+        sp.add("gauss_seidel_outer_iterations", parsed.gauss_seidel_outer_iterations);
+        sp.add("newton_level", parsed.newton_level);
+        sp.add("chebyshev_degree", parsed.chebyshev_degree);
+        sp.add("richardson_iterations", parsed.richardson_iterations);
+        sp.add("communication", parsed.communication);
+        sp.add("ssor_omega", parsed.ssor_omega);
+        sp.add("mg_pre_smooth_iters", parsed.mg_pre_smooth_iters);
+        sp.add("mg_post_smooth_iters", parsed.mg_post_smooth_iters);
+        sp.add("mg_omega", parsed.mg_omega);
+        sp.add("min_cells_per_rank_per_dim", parsed.mg_min_cells);
 
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
@@ -268,44 +339,16 @@ public:
         sp.add("solver", "preconditioned");
         sp.add("output_type", FEMPreconSolver_t<T, Dim>::SOL);
         sp.add("tolerance", 1e-4);
+        const auto parsed = parsePreconditionerParams("FEM_PRECON");
 
-        int arg = 0;
-
-        int gauss_seidel_inner_iterations;
-        int gauss_seidel_outer_iterations;
-        int newton_level;
-        int chebyshev_degree;
-        int richardson_iterations;
-        int communication = 0;
-        double ssor_omega;
-        std::string preconditioner_type = "";
-
-        preconditioner_type = preconditioner_params_m[arg++];
-        if (preconditioner_type == "newton") {
-            newton_level = std::stoi(preconditioner_params_m[arg++]);
-        } else if (preconditioner_type == "chebyshev") {
-            chebyshev_degree = std::stoi(preconditioner_params_m[arg++]);
-        } else if (preconditioner_type == "richardson") {
-            richardson_iterations = std::stoi(preconditioner_params_m[arg++]);
-            communication         = std::stoi(preconditioner_params_m[arg++]);
-        } else if (preconditioner_type == "gauss-seidel") {
-            gauss_seidel_inner_iterations = std::stoi(preconditioner_params_m[arg++]);
-            gauss_seidel_outer_iterations = std::stoi(preconditioner_params_m[arg++]);
-            communication                 = std::stoi(preconditioner_params_m[arg++]);
-        } else if (preconditioner_type == "ssor") {
-            gauss_seidel_inner_iterations = std::stoi(preconditioner_params_m[arg++]);
-            gauss_seidel_outer_iterations = std::stoi(preconditioner_params_m[arg++]);
-            ssor_omega                    = std::stod(preconditioner_params_m[arg++]);
-        }
-
-        sp.add("preconditioner_type", preconditioner_type);
-        sp.add("gauss_seidel_inner_iterations", gauss_seidel_inner_iterations);
-        sp.add("gauss_seidel_outer_iterations", gauss_seidel_outer_iterations);
-        sp.add("newton_level", newton_level);
-        sp.add("chebyshev_degree", chebyshev_degree);
-        sp.add("richardson_iterations", richardson_iterations);
-        sp.add("communication", communication);
-        sp.add("ssor_omega", ssor_omega);
+        sp.add("preconditioner_type", parsed.type);
+        sp.add("gauss_seidel_inner_iterations", parsed.gauss_seidel_inner_iterations);
+        sp.add("gauss_seidel_outer_iterations", parsed.gauss_seidel_outer_iterations);
+        sp.add("newton_level", parsed.newton_level);
+        sp.add("chebyshev_degree", parsed.chebyshev_degree);
+        sp.add("richardson_iterations", parsed.richardson_iterations);
+        sp.add("communication", parsed.communication);
+        sp.add("ssor_omega", parsed.ssor_omega);
 
         initSolverWithParams<FEMPreconSolver_t<T, Dim>>(sp);
     }

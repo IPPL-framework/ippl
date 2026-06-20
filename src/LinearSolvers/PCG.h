@@ -6,7 +6,8 @@
 #ifndef IPPL_PCG_H
 #define IPPL_PCG_H
 
-#include "Ippl.h"
+#include <algorithm>
+#include <array>
 
 #include "FEM/FEMVector.h"
 #include "Multigrid.h"
@@ -14,6 +15,31 @@
 #include "SolverAlgorithm.h"
 
 namespace ippl {
+    namespace pcg_preconditioner_defaults {
+        inline constexpr int newton_level          = 5;
+        inline constexpr int chebyshev_degree      = 31;
+        inline constexpr int richardson_iterations = 4;
+        inline constexpr int gauss_seidel_inner    = 2;
+        inline constexpr int gauss_seidel_outer    = 2;
+        inline constexpr int communication         = 0;
+        inline constexpr double ssor_omega         = 1.57079632679;
+
+        // Multigrid preconditioner defaults
+        inline constexpr int mg_pre_smooth     = 2;
+        inline constexpr int mg_post_smooth    = 2;
+        inline constexpr double mg_omega       = 0.8;
+        inline constexpr unsigned mg_min_cells = 4;
+        inline constexpr bool mg_communication = false;
+
+        inline constexpr std::array<const char*, 8> valid_types = {
+            "jacobi",         "newton",       "chebyshev", "richardson",
+            "richardson_alt", "gauss-seidel", "ssor",      "multigrid"};
+
+        inline bool is_valid_type(const std::string& type) {
+            return std::find(valid_types.begin(), valid_types.end(), type) != valid_types.end();
+        }
+    }  // namespace pcg_preconditioner_defaults
+
     template <typename OperatorRet, typename LowerRet, typename UpperRet, typename UpperLowerRet,
               typename InverseDiagRet, typename DiagRet, typename FieldLHS,
               typename FieldRHS = FieldLHS>
@@ -23,12 +49,12 @@ namespace ippl {
 
     public:
         using typename Base::lhs_type, typename Base::rhs_type;
-        using OperatorF    = std::function<OperatorRet(lhs_type)>;
-        using LowerF       = std::function<LowerRet(lhs_type)>;
-        using UpperF       = std::function<UpperRet(lhs_type)>;
-        using UpperLowerF  = std::function<UpperLowerRet(lhs_type)>;
-        using InverseDiagF = std::function<InverseDiagRet(lhs_type)>;
-        using DiagF        = std::function<DiagRet(lhs_type)>;
+        using OperatorF    = std::function<OperatorRet(lhs_type&)>;
+        using LowerF       = std::function<LowerRet(lhs_type&)>;
+        using UpperF       = std::function<UpperRet(lhs_type&)>;
+        using UpperLowerF  = std::function<UpperLowerRet(lhs_type&)>;
+        using InverseDiagF = std::function<InverseDiagRet(lhs_type&)>;
+        using DiagF        = std::function<DiagRet(lhs_type&)>;
         using mesh_type    = typename lhs_type::Mesh_t;
         using layout_type  = typename lhs_type::Layout_t;
 
@@ -65,29 +91,46 @@ namespace ippl {
             [[maybe_unused]] std::string preconditioner_type =
                 "",  // Name of the preconditioner that should be used
             [[maybe_unused]] int level =
-                5,  // This is a dummy default parameter, actual default parameter should be
+                pcg_preconditioner_defaults::newton_level,  // This is a dummy default parameter,
+                                                            // actual default parameter should be
             // set in main
             [[maybe_unused]] int degree =
-                31,  // This is a dummy default parameter, actual default parameter should
+                pcg_preconditioner_defaults::chebyshev_degree,  // This is a dummy default
+                                                                // parameter, actual default
+                                                                // parameter should
             // be set in main
             [[maybe_unused]] int richardson_iterations =
-                1,  // This is a dummy default parameter, actual default
+                pcg_preconditioner_defaults::richardson_iterations,  // This is a dummy default
+                                                                     // parameter, actual default
             // parameter should be set in main
             [[maybe_unused]] int inner =
-                5,  // This is a dummy default parameter, actual default parameter should be
+                pcg_preconditioner_defaults::gauss_seidel_inner,  // This is a dummy default
+                                                                  // parameter, actual default
+                                                                  // parameter should be
             // set in main
             [[maybe_unused]] int outer =
-                1,  // This is a dummy default parameter, actual default parameter should be
-            [[maybe_unused]] double omega = 1,  // This is a dummy default parameter, actual default
-                                                // parameter should be set in main
-            [[maybe_unused]] int mg_pre = 2,    // This is a dummy default parameter, actual default
-                                                // parameter should be set in main
-            [[maybe_unused]] int mg_post = 2,   // This is a dummy default parameter, actual default
-                                                // parameter should be set in main
-            [[maybe_unused]] double mg_omega = 0.8,  // This is a dummy default parameter, actual
-                                                     // default parameter should be set in main
-            [[maybe_unused]] unsigned mg_min_cells_per_rank_per_dim = 4,
-            [[maybe_unused]] bool mg_communication                  = true) {}
+                pcg_preconditioner_defaults::gauss_seidel_outer,  // This is a dummy default
+                                                                  // parameter, actual default
+                                                                  // parameter should be set in main
+            [[maybe_unused]] double omega =
+                pcg_preconditioner_defaults::ssor_omega,  // This is a dummy default parameter,
+                                                          // actual default parameter should be set
+                                                          // in main
+            [[maybe_unused]] int mg_pre =
+                pcg_preconditioner_defaults::mg_pre_smooth,  // This is a dummy default parameter,
+                                                             // actual default parameter should be
+                                                             // set in main
+            [[maybe_unused]] int mg_post =
+                pcg_preconditioner_defaults::mg_post_smooth,  // This is a dummy default parameter,
+                                                              // actual default parameter should be
+                                                              // set in main
+            [[maybe_unused]] double mg_omega =
+                pcg_preconditioner_defaults::mg_omega,  // This is a dummy default parameter, actual
+                                                        // default parameter should be set in main
+            [[maybe_unused]] unsigned mg_min_cells_per_rank_per_dim =
+                pcg_preconditioner_defaults::mg_min_cells,
+            [[maybe_unused]] bool mg_communication =
+                pcg_preconditioner_defaults::mg_communication) {}
         /*!
          * Query how many iterations were required to obtain the solution
          * the last time this solver was used
@@ -196,7 +239,10 @@ namespace ippl {
         T residueNorm    = 0;
         int iterations_m = 0;
 
-    private:
+        // Workspaces, allocated once via initializeFields() and reused across
+        // solves. Protected so derived solvers (e.g. PCG) can extend the
+        // workspace set without redeclaring r, d, q as locals on every
+        // operator() call.
         lhs_type r;
         lhs_type d;
         lhs_type q;
@@ -210,11 +256,11 @@ namespace ippl {
 
     public:
         using typename Base::lhs_type, typename Base::rhs_type;
-        using OperatorF    = std::function<OperatorRet(lhs_type)>;
-        using LowerF       = std::function<LowerRet(lhs_type)>;
-        using UpperF       = std::function<UpperRet(lhs_type)>;
-        using UpperLowerF  = std::function<UpperLowerRet(lhs_type)>;
-        using InverseDiagF = std::function<InverseDiagRet(lhs_type)>;
+        using OperatorF    = std::function<OperatorRet(lhs_type&)>;
+        using LowerF       = std::function<LowerRet(lhs_type&)>;
+        using UpperF       = std::function<UpperRet(lhs_type&)>;
+        using UpperLowerF  = std::function<UpperLowerRet(lhs_type&)>;
+        using InverseDiagF = std::function<InverseDiagRet(lhs_type&)>;
 
         virtual ~CG() = default;
 
@@ -236,19 +282,27 @@ namespace ippl {
             [[maybe_unused]] std::string preconditioner_type =
                 "",  // Name of the preconditioner that should be used
             [[maybe_unused]] int level =
-                5,  // This is a dummy default parameter, actual default parameter should be
+                pcg_preconditioner_defaults::newton_level,  // This is a dummy default parameter,
+                                                            // actual default parameter should be
             // set in main
             [[maybe_unused]] int degree =
-                31,  // This is a dummy default parameter, actual default parameter should
+                pcg_preconditioner_defaults::chebyshev_degree,  // This is a dummy default
+                                                                // parameter, actual default
+                                                                // parameter should
             // be set in main
             [[maybe_unused]] int richardson_iterations =
-                1,  // This is a dummy default parameter, actual default
+                pcg_preconditioner_defaults::richardson_iterations,  // This is a dummy default
+                                                                     // parameter, actual default
             // parameter should be set in main
             [[maybe_unused]] int inner =
-                5,  // This is a dummy default parameter, actual default parameter should be
+                pcg_preconditioner_defaults::gauss_seidel_inner,  // This is a dummy default
+                                                                  // parameter, actual default
+                                                                  // parameter should be
             // set in main
-            [[maybe_unused]] int outer = 1  // This is a dummy default parameter, actual default
-                                            // parameter should be set in main
+            [[maybe_unused]] int outer =
+                pcg_preconditioner_defaults::gauss_seidel_outer  // This is a dummy default
+                                                                 // parameter, actual default
+                                                                 // parameter should be set in main
         ) {}
         /*!
          * Query how many iterations were required to obtain the solution
@@ -328,17 +382,27 @@ namespace ippl {
 
     public:
         using typename Base::lhs_type, typename Base::rhs_type;
-        using OperatorF    = std::function<OperatorRet(lhs_type)>;
-        using LowerF       = std::function<LowerRet(lhs_type)>;
-        using UpperF       = std::function<UpperRet(lhs_type)>;
-        using UpperLowerF  = std::function<UpperLowerRet(lhs_type)>;
-        using InverseDiagF = std::function<InverseDiagRet(lhs_type)>;
-        using DiagF        = std::function<DiagRet(lhs_type)>;
+        using OperatorF    = std::function<OperatorRet(lhs_type&)>;
+        using LowerF       = std::function<LowerRet(lhs_type&)>;
+        using UpperF       = std::function<UpperRet(lhs_type&)>;
+        using UpperLowerF  = std::function<UpperLowerRet(lhs_type&)>;
+        using InverseDiagF = std::function<InverseDiagRet(lhs_type&)>;
+        using DiagF        = std::function<DiagRet(lhs_type&)>;
+
+        using mesh_type   = typename lhs_type::Mesh_t;
+        using layout_type = typename lhs_type::Layout_t;
 
         PCG()
             : CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS,
                  FieldRHS>()
             , preconditioner_m(nullptr) {};
+
+        void initializeFields(mesh_type& mesh, layout_type& layout) override {
+            CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS,
+               FieldRHS>::initializeFields(mesh, layout);
+            s.initialize(mesh, layout);
+            pcond_out.initialize(mesh, layout);
+        }
 
         /*!
          * Sets the differential operator for the conjugate gradient algorithm
@@ -354,30 +418,47 @@ namespace ippl {
             double alpha,                     // smallest eigenvalue of the operator
             double beta,                      // largest eigenvalue of the operator
             std::string preconditioner_type = "",  // Name of the preconditioner that should be used
-            int level = 5,  // This is a dummy default parameter, actual default parameter should be
+            int level =
+                pcg_preconditioner_defaults::newton_level,  // This is a dummy default parameter,
+                                                            // actual default parameter should be
             // set in main
-            int degree = 31,  // This is a dummy default parameter, actual default parameter should
+            int degree = pcg_preconditioner_defaults::chebyshev_degree,  // This is a dummy default
+                                                                         // parameter, actual
+                                                                         // default parameter should
             // be set in main
-            int richardson_iterations = 4,  // This is a dummy default parameter, actual default
+            int richardson_iterations =
+                pcg_preconditioner_defaults::richardson_iterations,  // This is a dummy default
+                                                                     // parameter, actual default
             // parameter should be set in main
-            int inner = 2,  // This is a dummy default parameter, actual default parameter should be
+            int inner =
+                pcg_preconditioner_defaults::gauss_seidel_inner,  // This is a dummy default
+                                                                  // parameter, actual default
+                                                                  // parameter should be
             // set in main
-            int outer = 2,  // This is a dummy default parameter, actual default parameter should be
+            int outer =
+                pcg_preconditioner_defaults::gauss_seidel_outer,  // This is a dummy default
+                                                                  // parameter, actual default
+                                                                  // parameter should be
             // set in main
-            double omega = 1.57079632679,  // This is a dummy default parameter, actual default
+            double omega = pcg_preconditioner_defaults::ssor_omega,  // This is a dummy default
+                                                                     // parameter, actual default
             // parameter should be set in main
             // default = pi/2 as this was found optimal during hyperparameter scan for test case
             // (see
             // https://amas.web.psi.ch/people/aadelmann/ETH-Accel-Lecture-1/projectscompleted/cse/BSc-mbolliger.pdf)
-            int mg_pre = 2,   // This is a dummy default parameter, actual default parameter should
-                              // be set in main
-            int mg_post = 2,  // This is a dummy default parameter, actual default parameter should
-                              // be set in main
-            double mg_omega = 0.8,  // This is a dummy default parameter, actual default parameter
-                                    // should be set in main
-            unsigned mg_min_cells_per_rank_per_dim = 4, bool mg_communication = true
-
-            ) override {
+            int mg_pre =
+                pcg_preconditioner_defaults::mg_pre_smooth,  // This is a dummy default parameter,
+                                                             // actual default parameter should be
+                                                             // set in main
+            int mg_post =
+                pcg_preconditioner_defaults::mg_post_smooth,  // This is a dummy default parameter,
+                                                              // actual default parameter should be
+                                                              // set in main
+            double mg_omega =
+                pcg_preconditioner_defaults::mg_omega,  // This is a dummy default parameter, actual
+                                                        // default parameter should be set in main
+            unsigned mg_min_cells_per_rank_per_dim = pcg_preconditioner_defaults::mg_min_cells,
+            bool mg_communication = pcg_preconditioner_defaults::mg_communication) override {
             if (preconditioner_type == "jacobi") {
                 // Turn on damping parameter
                 /*
@@ -436,19 +517,23 @@ namespace ippl {
                                     "Preconditioner has not been set for PCG solver");
             }
 
-            typename lhs_type::Mesh_t& mesh     = lhs.get_mesh();
-            typename lhs_type::Layout_t& layout = lhs.getLayout();
-
             this->iterations_m      = 0;
             const int maxIterations = params.get<int>("max_iterations");
 
             // Variable names mostly based on description in
             // https://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf
-            lhs_type r(mesh, layout);
-            lhs_type d(mesh, layout);
-            lhs_type s(mesh, layout);
-            lhs_type q(mesh, layout);
+            // Field layouts are updated such that we don't keep a stale domain decomposition
+            // if the lhs layout has been changed during the simulation, for example by the load
+            // balancer.
+            this->r.updateLayout(lhs.getLayout());
+            this->d.updateLayout(lhs.getLayout());
+            s.updateLayout(lhs.getLayout());
+            pcond_out.updateLayout(lhs.getLayout());
+            this->q.updateLayout(lhs.getLayout());
 
+            // Each preconditioner's init_fields() is responsible for being
+            // cheap on the steady-state path (refreshing layout in-place, not
+            // reallocating).
             preconditioner_m->init_fields(lhs);
 
             using bc_type  = BConds<lhs_type, Dim>;
@@ -473,20 +558,22 @@ namespace ippl {
                 }
             }
 
-            r = rhs - this->op_m(lhs);
-            d = preconditioner_m->operator()(r).deepCopy();
-            d.setFieldBC(bc);
+            this->r = rhs - this->op_m(lhs);
+            (*preconditioner_m)(this->r, pcond_out);
+            this->d = T(1) * pcond_out;
+            this->d.setFieldBC(bc);
 
-            T delta1          = innerProduct(r, d);
+            T delta1          = innerProduct(this->r, this->d);
             T delta0          = delta1;
             this->residueNorm = Kokkos::sqrt(Kokkos::abs(delta1));
             const T tolerance = params.get<T>("tolerance") * this->residueNorm;
 
             while (this->iterations_m<maxIterations&& this->residueNorm> tolerance) {
-                q       = this->op_m(d);
-                q       = q.deepCopy();
-                T alpha = delta1 / innerProduct(d, q);
-                lhs     = lhs + alpha * d;
+                // op_m(d) writes its expression into q's existing storage; no
+                // allocation, no per-iteration deep copy.
+                this->q = this->op_m(this->d);
+                T alpha = delta1 / innerProduct(this->d, this->q);
+                lhs     = lhs + alpha * this->d;
 
                 // The exact residue is given by
                 // r = rhs - BaseCG::op_m(lhs);
@@ -495,16 +582,17 @@ namespace ippl {
                 // the correction does not have a significant effect on accuracy;
                 // in some implementations, the correction may be applied every few
                 // iterations to offset accumulated floating point errors
-                r = r - alpha * q;
-                s = preconditioner_m->operator()(r).deepCopy();
+                this->r = this->r - alpha * this->q;
+                // s := M^{-1} r; preconditioner writes into s (NoBcFace).
+                (*preconditioner_m)(this->r, s);
 
                 delta0 = delta1;
-                delta1 = innerProduct(r, s);
+                delta1 = innerProduct(this->r, s);
 
                 T beta            = delta1 / delta0;
                 this->residueNorm = Kokkos::sqrt(Kokkos::abs(delta1));
 
-                d = s + beta * d;
+                this->d = s + beta * this->d;
                 ++this->iterations_m;
             }
 
@@ -516,6 +604,20 @@ namespace ippl {
 
     protected:
         std::unique_ptr<preconditioner<FieldLHS>> preconditioner_m;
+
+        /*
+         * Extends the CG workspace with the preconditioner result buffers s and
+         * pcond_out so operator() does not allocate per solve.
+         * Preconditioner result buffers, allocated once via initializeFields()
+         * pcond_out keeps its default NoBcFace BCs: the preconditioner's internal operator
+         * chain therefore never triggers PeriodicFace::apply MPI calls -- if it
+         * did, the global MPI sequence would diverge from the master code path
+         * (where the preconditioner returned a fresh NoBcFace field) and
+         * intermittent multi-rank halo deadlocks would follow.
+         */
+
+        lhs_type s;
+        lhs_type pcond_out;
     };
 
 };  // namespace ippl
