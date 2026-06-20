@@ -82,11 +82,15 @@ namespace ippl {
                 int communication = this->params_m.template get<int>("communication");
 
                 // Extract Multigrid params
-                int mg_pre      = this->params_m.template get<int>("mg_pre_smooth_iters");
-                int mg_post     = this->params_m.template get<int>("mg_post_smooth_iters");
-                double mg_omega = this->params_m.template get<double>("mg_omega");
-                unsigned mg_min_cells =
-                    this->params_m.template get<int>("min_cells_per_rank_per_dim");
+                int mg_pre = this->params_m.template get<int>(
+                    "mg_pre_smooth_iters", pcg_preconditioner_defaults::mg_pre_smooth);
+                int mg_post = this->params_m.template get<int>(
+                    "mg_post_smooth_iters", pcg_preconditioner_defaults::mg_post_smooth);
+                double mg_omega = this->params_m.template get<double>(
+                    "mg_omega", pcg_preconditioner_defaults::mg_omega);
+                unsigned mg_min_cells = static_cast<unsigned>(this->params_m.template get<int>(
+                    "min_cells_per_rank_per_dim",
+                    static_cast<int>(pcg_preconditioner_defaults::mg_min_cells)));
                 bool mg_communication = communication;
 
                 Inform warn("PoissonCG");
