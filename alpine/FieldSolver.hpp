@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <memory>
 
+#include "LinearSolvers/PCG.h"
 #include "LinearSolvers/PreconditionerValidation.h"
 #include "Manager/BaseManager.h"
 #include "Manager/FieldSolverBase.h"
@@ -25,10 +26,10 @@ private:
         int communication                 = ippl::pcg_preconditioner_defaults::communication;
         double ssor_omega                 = ippl::pcg_preconditioner_defaults::ssor_omega;
         // Multigrid preconditioner parameters
-        int mg_pre_smooth_iters  = 2;
-        int mg_post_smooth_iters = 2;
-        double mg_omega          = 1.0;
-        int mg_min_cells         = 2;
+        int mg_pre_smooth_iters  = ippl::pcg_preconditioner_defaults::mg_pre_smooth;
+        int mg_post_smooth_iters = ippl::pcg_preconditioner_defaults::mg_post_smooth;
+        double mg_omega          = ippl::pcg_preconditioner_defaults::mg_omega;
+        int mg_min_cells         = ippl::pcg_preconditioner_defaults::mg_min_cells;
     };
 
     Field_t<Dim>* rho_m;
