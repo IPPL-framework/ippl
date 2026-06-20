@@ -162,10 +162,14 @@ namespace ippl {
         /**
          * @brief Applies the multigrid preconditioner to the input field.
          *
+         * Writes the preconditioned field M^{-1} b into the caller-provided
+         * result buffer (allocated once by the owning solver via init_fields),
+         * avoiding a per-call Field allocation / return-by-value copy.
+         *
          * @param b The input field (right-hand side).
-         * @return The preconditioned field.
+         * @param result The output buffer that receives the preconditioned field.
          */
-        Field operator()(Field& b) override {
+        void operator()(Field& b, Field& result) override {
             IpplTimings::TimerRef mg = IpplTimings::getTimer("MG-PRECOND");
             IpplTimings::startTimer(mg);
 
@@ -190,9 +194,15 @@ namespace ippl {
                 if (communication_)
                     L_[0].u.fillHalo();
             }
-            IpplTimings::stopTimer(mg);
 
-            return L_[0].u;
+            // Write the result into the caller-provided buffer instead of
+            // returning by value. deep_copy of the underlying views keeps
+            // result's own BCs/halo metadata intact (matching the identity
+            // and chebyshev preconditioners), so the PCG outer operator chain
+            // does not inherit L_[0].u's field BCs.
+            Kokkos::deep_copy(result.getView(), L_[0].u.getView());
+
+            IpplTimings::stopTimer(mg);
         }
 
         /**
