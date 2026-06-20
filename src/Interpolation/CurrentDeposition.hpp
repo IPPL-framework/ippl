@@ -76,12 +76,27 @@ inline void assemble_current_collocated(const Mesh& mesh,
             // which evaluates CIC weights at (x-origin)/h + 0.5. Without it the
             // deposited current sits half a cell from where E,B are gathered,
             // breaking scatter/gather reciprocity (spurious self-force).
-            Kokkos::Array<size_t, Dim> cellIdx;
+            Kokkos::Array<int, Dim> cellIdx;
+            Kokkos::Array<int, Dim> localBase;
             Kokkos::Array<T, Dim> xi;
+            bool inLocalAllocation = true;
             for (unsigned d = 0; d < Dim; ++d) {
                 const T gp = (mid[d] - origin[d]) / h[d] - T(0.5);
-                cellIdx[d] = static_cast<size_t>(Kokkos::floor(gp));
+                cellIdx[d] = static_cast<int>(Kokkos::floor(gp));
                 xi[d]      = gp - T(cellIdx[d]);
+                localBase[d] = cellIdx[d] - ldom.first()[d] + nghost;
+
+                // Particles are migrated after the push. The start point of
+                // the deposited segment can therefore be outside this rank's
+                // owned cells, and high-energy open-boundary particles can
+                // leave the allocated ghost region. Skip only the segment
+                // pieces this rank cannot represent instead of unsigned-
+                // wrapping a negative index into a huge Kokkos View index.
+                inLocalAllocation &= (localBase[d] >= 0);
+                inLocalAllocation &= (localBase[d] + 1 < static_cast<int>(view.extent(d)));
+            }
+            if (!inLocalAllocation) {
+                continue;
             }
 
             // Scatter to all 2^Dim corners with CIC weights.
@@ -93,7 +108,7 @@ inline void assemble_current_collocated(const Mesh& mesh,
                 for (unsigned d = 0; d < Dim; ++d) {
                     const unsigned offset = (corner >> d) & 1u;
                     weight *= offset ? xi[d] : (T(1) - xi[d]);
-                    idx[d] = cellIdx[d] - ldom.first()[d] + nghost + offset;
+                    idx[d] = static_cast<size_t>(localBase[d] + offset);
                 }
 
                 for (unsigned c = 0; c < Dim; ++c) {

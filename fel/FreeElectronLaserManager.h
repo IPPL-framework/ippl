@@ -698,14 +698,23 @@ protected:
                 const ippl::Vector<T, Dim> pos = rview(p);
                 const T value                  = qview(p) / volume;
 
-                Kokkos::Array<size_t, Dim> cellIdx;
+                Kokkos::Array<int, Dim> cellIdx;
+                Kokkos::Array<int, Dim> localBase;
                 Kokkos::Array<T, Dim> xi;
+                bool inLocalAllocation = true;
                 for (unsigned d = 0; d < Dim; ++d) {
                     // Half-cell shift to match the Cell-centered field and the
                     // gather (see assemble_current_collocated).
                     const T gridpos = (pos[d] - origin[d]) / h[d] - T(0.5);
-                    cellIdx[d]      = static_cast<size_t>(Kokkos::floor(gridpos));
+                    cellIdx[d]      = static_cast<int>(Kokkos::floor(gridpos));
                     xi[d]           = gridpos - T(cellIdx[d]);
+                    localBase[d]    = cellIdx[d] - ldom.first()[d] + nghost;
+
+                    inLocalAllocation &= (localBase[d] >= 0);
+                    inLocalAllocation &= (localBase[d] + 1 < static_cast<int>(view.extent(d)));
+                }
+                if (!inLocalAllocation) {
+                    return;
                 }
                 for (unsigned corner = 0; corner < (1u << Dim); ++corner) {
                     size_t idx[Dim];
@@ -713,7 +722,7 @@ protected:
                     for (unsigned d = 0; d < Dim; ++d) {
                         const unsigned offset = (corner >> d) & 1u;
                         weight *= offset ? xi[d] : (T(1) - xi[d]);
-                        idx[d] = cellIdx[d] - ldom.first()[d] + nghost + offset;
+                        idx[d] = static_cast<size_t>(localBase[d] + offset);
                     }
                     Kokkos::atomic_add(&(ippl::apply(view, idx)[0]), value * weight);
                 }
