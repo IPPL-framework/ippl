@@ -203,7 +203,7 @@ namespace ippl {
             const size_type begin = static_cast<size_type>(sendOffsets_h_(rank));
             auto ids_sub =
                 Kokkos::subview(sendIds_d_, std::make_pair((size_t)begin, (size_t)(begin + count)));
-            requests.push_back(pc.sendToRank(rank, tag, ids_sub));
+            requests.push_back(pc.template sendToRank(rank, tag, ids_sub));
         }
 
         IpplTimings::stopTimer(sendTimer);
@@ -239,7 +239,7 @@ namespace ippl {
 
         for (size_t i = 0; i < recvList.size(); ++i) {
             auto [rank, count] = recvList[i];
-            auto [req, fin]    = pc.postRecvFromRank(rank, tag, count);
+            auto [req, fin]    = pc.template postRecvFromRank(rank, tag, count);
             recvRequests[i]    = req;
             finalizers[i]      = std::move(fin);
         }
