@@ -542,6 +542,33 @@ namespace ippl {
         return nonNeighborRanks;
     }
 
+    /*!
+     * We need this struct since Kokkos parallel_scan only accepts
+     * one variable of type ReturnType where to perform the reduction operation.
+     * For more details, see
+     * https://kokkos.github.io/kokkos-core-wiki/API/core/parallel-dispatch/parallel_scan.html.
+     */
+    struct increment_type {
+        size_t count[2];
+
+        KOKKOS_FUNCTION void init() {
+            count[0] = 0;
+            count[1] = 0;
+        }
+
+        KOKKOS_INLINE_FUNCTION increment_type& operator+=(bool* values) {
+            count[0] += values[0];
+            count[1] += values[1];
+            return *this;
+        }
+
+        KOKKOS_INLINE_FUNCTION increment_type& operator+=(increment_type values) {
+            count[0] += values.count[0];
+            count[1] += values.count[1];
+            return *this;
+        }
+    };
+
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <typename ParticleContainer>
     std::pair<detail::size_type, detail::size_type>
