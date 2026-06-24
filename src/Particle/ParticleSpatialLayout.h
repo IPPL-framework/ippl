@@ -54,8 +54,7 @@ namespace ippl {
      * @tparam Dim dimension
      * @tparam Mesh type
      */
-    template <typename T, unsigned Dim, class Mesh = UniformCartesian<T, Dim>,
-              typename... PositionProperties>
+    template <typename T, unsigned Dim, class Mesh, typename... PositionProperties>
     class ParticleSpatialLayout : public detail::ParticleLayout<T, Dim, PositionProperties...> {
     public:
         using Base = detail::ParticleLayout<T, Dim, PositionProperties...>;
