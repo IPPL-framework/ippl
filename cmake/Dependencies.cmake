@@ -104,7 +104,9 @@ function(set_kokkos_options)
   endforeach()
 
   if("CUDA" IN_LIST IPPL_PLATFORMS)
-    set(Kokkos_ENABLE_CUDA_LAMBDA ON)
+    if(Kokkos_VERSION VERSION_LESS 5.0.0)
+      set(Kokkos_ENABLE_CUDA_LAMBDA ON CACHE BOOL "Enable Kokkos CUDA lambda support" FORCE)
+    endif()
   endif()
 
   if("HIP" IN_LIST IPPL_PLATFORMS)
