@@ -289,7 +289,7 @@ TYPED_TEST(GatherScatterTest, ScatterCustomHashTest) {
     std::mt19937_64 eng(42);
     std::uniform_real_distribution<typename TestFixture::scalar_type> unif_charge(0.5, 1.5);
     auto Q_host = this->bunch->Q.getHostMirror();
-    for (size_t i = 0; i < n; ++i) {
+    for (size_t i = 0; i < nLoc; ++i) {
         Q_host(i) = unif_charge(eng);
     }
     Kokkos::deep_copy(this->bunch->Q.getView(), Q_host);
