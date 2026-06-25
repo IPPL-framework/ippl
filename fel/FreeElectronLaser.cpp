@@ -5,7 +5,7 @@
 //    or
 //    mpirun -np [N] ./FreeElectronLaser  [<config.json>] --info [0-5]
 //
-//   Reads a MITHRA-style JSON job file (default: ../config.json) describing the
+//   Reads a MITHRA-style JSON job file (default: ../fel/config.json) describing the
 //   grid, the relativistic electron bunch, and the undulator. The simulation
 //   runs in a Lorentz frame co-moving with the bunch: a charge-conserving
 //   current is deposited onto the grid, Maxwell's equations are advanced with a
@@ -38,8 +38,10 @@ int main(int argc, char* argv[]) {
         IpplTimings::startTimer(mainTimer);
 
         // First positional argument (if any, and not an --option) is the config
-        // file path; otherwise fall back to ../config.json as the original did.
-        const char* config_path = "../config.json";
+        // file path; otherwise fall back to the shipped example config. The
+        // path is relative to the working directory, so this default assumes
+        // the program is launched from the build directory.
+        const char* config_path = "../fel/config.json";
         if (argc > 1 && argv[1][0] != '-') {
             config_path = argv[1];
         }
