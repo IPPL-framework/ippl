@@ -119,6 +119,80 @@ endfunction()
 
 # -----------------------------------------------------------------------------
 # ~~~
+# utility function to set CMake CUDA architectures from Kokkos CUDA arch options
+# NB. Heffte relies on CMAKE_CUDA_ARCHITECTURES for its CUDA kernels.
+# ~~~
+# -----------------------------------------------------------------------------
+function(set_cuda_architectures_from_kokkos)
+  if(NOT "CUDA" IN_LIST IPPL_PLATFORMS)
+    return()
+  endif()
+
+  if(DEFINED CMAKE_CUDA_ARCHITECTURES
+     AND NOT CMAKE_CUDA_ARCHITECTURES STREQUAL ""
+     AND NOT CMAKE_CUDA_ARCHITECTURES STREQUAL "native")
+    return()
+  endif()
+
+  set(cuda_architectures)
+  if(Kokkos_ARCH_MAXWELL50)
+    list(APPEND cuda_architectures 50)
+  endif()
+  if(Kokkos_ARCH_MAXWELL52)
+    list(APPEND cuda_architectures 52)
+  endif()
+  if(Kokkos_ARCH_MAXWELL53)
+    list(APPEND cuda_architectures 53)
+  endif()
+  if(Kokkos_ARCH_PASCAL60)
+    list(APPEND cuda_architectures 60)
+  endif()
+  if(Kokkos_ARCH_PASCAL61)
+    list(APPEND cuda_architectures 61)
+  endif()
+  if(Kokkos_ARCH_VOLTA70)
+    list(APPEND cuda_architectures 70)
+  endif()
+  if(Kokkos_ARCH_VOLTA72)
+    list(APPEND cuda_architectures 72)
+  endif()
+  if(Kokkos_ARCH_TURING75)
+    list(APPEND cuda_architectures 75)
+  endif()
+  if(Kokkos_ARCH_AMPERE80)
+    list(APPEND cuda_architectures 80)
+  endif()
+  if(Kokkos_ARCH_AMPERE86)
+    list(APPEND cuda_architectures 86)
+  endif()
+  if(Kokkos_ARCH_AMPERE87)
+    list(APPEND cuda_architectures 87)
+  endif()
+  if(Kokkos_ARCH_ADA89)
+    list(APPEND cuda_architectures 89)
+  endif()
+  if(Kokkos_ARCH_HOPPER90)
+    list(APPEND cuda_architectures 90)
+  endif()
+  if(Kokkos_ARCH_BLACKWELL100)
+    list(APPEND cuda_architectures 100)
+  endif()
+  if(Kokkos_ARCH_BLACKWELL120)
+    list(APPEND cuda_architectures 120)
+  endif()
+
+  if(cuda_architectures)
+    set(CMAKE_CUDA_ARCHITECTURES
+        "${cuda_architectures}"
+        CACHE STRING "CUDA architectures to compile, e.g., -DCMAKE_CUDA_ARCHITECTURES=70;72"
+        FORCE)
+    message(STATUS
+            "IPPL_PLATFORM set: CMAKE_CUDA_ARCHITECTURES '${CMAKE_CUDA_ARCHITECTURES}' from Kokkos CUDA architecture")
+  endif()
+endfunction()
+
+# -----------------------------------------------------------------------------
+# ~~~
 # utility function to set heffte options
 # NB. We only set these options if we are building Heffte from source.
 # ~~~
@@ -135,6 +209,7 @@ function(set_heffte_options)
   if(IPPL_ENABLE_FFT)
     set(Heffte_ENABLE_FFTW ON)
     if("CUDA" IN_LIST IPPL_PLATFORMS)
+      set_cuda_architectures_from_kokkos()
       set(Heffte_ENABLE_CUDA ON CACHE BOOL "Enable Heffte CUDA backend" FORCE)
     else()
       set(Heffte_ENABLE_CUDA OFF CACHE BOOL "Disable Heffte CUDA backend" FORCE)
