@@ -195,11 +195,7 @@ namespace ippl {
                     L_[0].u.fillHalo();
             }
 
-            // Write the result into the caller-provided buffer instead of
-            // returning by value. deep_copy of the underlying views keeps
-            // result's own BCs/halo metadata intact (matching the identity
-            // and chebyshev preconditioners), so the PCG outer operator chain
-            // does not inherit L_[0].u's field BCs.
+            // Write the result into the caller-provided buffer
             Kokkos::deep_copy(result.getView(), L_[0].u.getView());
 
             IpplTimings::stopTimer(mg);
