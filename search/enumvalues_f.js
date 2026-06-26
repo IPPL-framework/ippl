@@ -7,5 +7,6 @@ var searchData=
   ['sol_5fand_5fgrad_4',['SOL_AND_GRAD',['../classippl_1_1Poisson.html#a46f42979d7cf8518784fd655229ef1eea8da31213d220ba43f137493e06dc5fb6',1,'ippl::Poisson']]],
   ['solver_5frecv_5',['SOLVER_RECV',['../namespaceippl_1_1mpi_1_1tag.html#a15d567b75f6be9891166d172c200185aa6eb67bf33352d33d9b8d199a15ce4b47',1,'ippl::mpi::tag']]],
   ['solver_5fsend_6',['SOLVER_SEND',['../namespaceippl_1_1mpi_1_1tag.html#a15d567b75f6be9891166d172c200185aa2f2886600ba0b8f30cd54638b1e73540',1,'ippl::mpi::tag']]],
-  ['sum_7',['SUM',['../namespaceippl_1_1mpi.html#af4f4f1044f97b9c23c582bf914d74a0fa6970bdc2201030b9c03fbdcf3973858a',1,'ippl::mpi']]]
+  ['standard_7',['STANDARD',['../classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbad60ea505c04fcdf124a6c9c9b00ddf42',1,'ippl::FFTOpenPoissonSolver']]],
+  ['sum_8',['SUM',['../namespaceippl_1_1mpi.html#af4f4f1044f97b9c23c582bf914d74a0fa6970bdc2201030b9c03fbdcf3973858a',1,'ippl::mpi']]]
 ];

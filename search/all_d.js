@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['name_0',['name',['../classIpplTimerInfo.html#a701f790d76e60744d6527f8bdfabf68f',1,'IpplTimerInfo']]],
-  ['name_1',['Name',['../classInform.html#ac51a65202140728946392db3ad3ff184',1,'Inform']]],
+  ['name_0',['Name',['../classInform.html#ac51a65202140728946392db3ad3ff184',1,'Inform']]],
+  ['name_1',['name',['../classIpplTimerInfo.html#a701f790d76e60744d6527f8bdfabf68f',1,'IpplTimerInfo']]],
   ['name_5fm_2',['name_m',['../classippl_1_1detail_1_1ParticleAttribBase.html#a878b80f9d5e3ba7e47490ef9ca84384e',1,'ippl::detail::ParticleAttribBase']]],
   ['ndindex_3',['NDIndex',['../classippl_1_1NDIndex.html',1,'ippl::NDIndex&lt; Dim &gt;'],['../classippl_1_1NDIndex.html#a8ca5ffdd9829db26ba48f499fcac4877',1,'ippl::NDIndex::NDIndex()'],['../classippl_1_1NDIndex.html#a04d742dd324814ce5eea6537cab4add3',1,'ippl::NDIndex::NDIndex(const Args &amp;... args)'],['../classippl_1_1NDIndex.html#a91603046eb4f271f99e1e0d9c3cea9b0',1,'ippl::NDIndex::NDIndex(const Vector&lt; unsigned, Dim &gt; &amp;sizes)']]],
   ['ndindex_2eh_4',['NDIndex.h',['../NDIndex_8h.html',1,'']]],

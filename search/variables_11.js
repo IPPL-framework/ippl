@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['r_0',['R',['../classippl_1_1ParticleBase.html#af28b1c693f7fb69f12ccd65e507ef22a',1,'ippl::ParticleBase']]],
-  ['r_1',['r',['../classippl_1_1CG.html#ac38e371539660a4b63fa6026bc31ca2a',1,'ippl::CG']]],
+  ['r_0',['r',['../classippl_1_1CG.html#ac38e371539660a4b63fa6026bc31ca2a',1,'ippl::CG']]],
+  ['r_1',['R',['../classippl_1_1ParticleBase.html#af28b1c693f7fb69f12ccd65e507ef22a',1,'ippl::ParticleBase']]],
   ['r_5fm_2',['r_m',['../structippl_1_1ssor__preconditioner.html#a024bded42725402ea1b313494116d396',1,'ippl::ssor_preconditioner']]],
   ['r_5fm_3',['R_m',['../classippl_1_1TruncatedGreenParticleInteraction.html#a999a5df169104fe31813cbb4562b6b37',1,'ippl::TruncatedGreenParticleInteraction']]],
   ['r_5fm_4',['r_m',['../structippl_1_1gs__preconditioner.html#ad9940470290eeb588083c2bf48ca61ea',1,'ippl::gs_preconditioner']]],

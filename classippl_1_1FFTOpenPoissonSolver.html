@@ -86,6 +86,7 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classippl_1_1FFTOpenPoissonSolver-members.html">List of all members</a>  </div>
@@ -99,8 +100,8 @@ Inheritance diagram for ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt;:<
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FFTOpenPoissonSolver__inherit__graph.png" border="0" usemap="#aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map" id="aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="5,357,196,793"/>
-<area shape="rect" href="classippl_1_1Poisson.html" title=" " alt="" coords="16,5,185,309"/>
+<area shape="rect" title=" " alt="" coords="5,357,213,852"/>
+<area shape="rect" href="classippl_1_1Poisson.html" title=" " alt="" coords="25,5,194,309"/>
 </map>
 </div>
 <div class="dynheader">
@@ -108,7 +109,7 @@ Collaboration diagram for ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt;
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FFTOpenPoissonSolver__coll__graph.png" border="0" usemap="#aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_coll__map" id="aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="1233,2088,1423,2524"/>
+<area shape="rect" title=" " alt="" coords="1224,2088,1432,2583"/>
 <area shape="rect" href="classippl_1_1Poisson.html" title=" " alt="" coords="815,1751,985,2025"/>
 <area shape="rect" href="classippl_1_1ParameterList.html" title=" " alt="" coords="833,1472,967,1659"/>
 <area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="574,1450,767,1681"/>
@@ -148,6 +149,11 @@ Public Types</h2></td></tr>
 , <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef3f7d047237466da93dbefe55eee50aab271f4563c8dca8e84536c94260799f2">DCT_VICO</a> = 0b100
  }</td></tr>
 <tr class="separator:aef3f7d047237466da93dbefe55eee50a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef4d0197af3ef8a26c8a2c2a5ee769fb"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fb">GreenFunction</a> { <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbad60ea505c04fcdf124a6c9c9b00ddf42">STANDARD</a> = 0
+, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbab1104edc87699b301665b0657fe13176">INTEGRATED</a> = 1
+ }</td></tr>
+<tr class="memdesc:aef4d0197af3ef8a26c8a2c2a5ee769fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Real-space Green-function model used by the Hockney open-boundary solver.  <a href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fb">More...</a><br /></td></tr>
+<tr class="separator:aef4d0197af3ef8a26c8a2c2a5ee769fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b2a9cb8711b3c3b9f6228bbdee16382"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a8b2a9cb8711b3c3b9f6228bbdee16382">Base</a> = <a class="el" href="classippl_1_1Poisson.html">Poisson</a>&lt; FieldLHS, FieldRHS &gt;</td></tr>
 <tr class="separator:a8b2a9cb8711b3c3b9f6228bbdee16382"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9cc56c843b6a193a3c3eeac6e22b7766"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1FFT.html">FFT</a>&lt; <a class="el" href="classippl_1_1RCTransform.html">RCTransform</a>, FieldRHS &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9cc56c843b6a193a3c3eeac6e22b7766">FFT_t</a></td></tr>
@@ -220,8 +226,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa450b3f8127dad563128e0a3f2e1bf9a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a1cfa5cdbb7ebd67b0ebc8f3bcbc5f49b">MField_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa450b3f8127dad563128e0a3f2e1bf9a">getHessian</a> () override</td></tr>
 <tr class="separator:aa450b3f8127dad563128e0a3f2e1bf9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b32133c36164d4f571297c35b43bc86"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a5b32133c36164d4f571297c35b43bc86">greensFunction</a> ()</td></tr>
+<tr class="memdesc:a5b32133c36164d4f571297c35b43bc86"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute and cache the <a class="el" href="classippl_1_1FFT.html">FFT</a> of the selected Green function.  <a href="classippl_1_1FFTOpenPoissonSolver.html#a5b32133c36164d4f571297c35b43bc86">More...</a><br /></td></tr>
 <tr class="separator:a5b32133c36164d4f571297c35b43bc86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f1d8f484489eddce30070e8ddc55fbc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9f1d8f484489eddce30070e8ddc55fbc">shiftedGreensFunction</a> (const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; double, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt; &amp;shift)</td></tr>
+<tr class="memdesc:a9f1d8f484489eddce30070e8ddc55fbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace the cached kernel by a shifted Hockney Green function.  <a href="classippl_1_1FFTOpenPoissonSolver.html#a9f1d8f484489eddce30070e8ddc55fbc">More...</a><br /></td></tr>
 <tr class="separator:a9f1d8f484489eddce30070e8ddc55fbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17eecbcc51e40e4d6a368af11a2312ef"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a17eecbcc51e40e4d6a368af11a2312ef">initializeFields</a> ()</td></tr>
 <tr class="separator:a17eecbcc51e40e4d6a368af11a2312ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -269,6 +277,19 @@ Private Types</h2></td></tr>
 <tr class="separator:aa682906ee3e32d8f41d51bbe24a68903"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0543b83e62bfa3a48770c51de37932b4"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a0543b83e62bfa3a48770c51de37932b4">Tg</a> = typename FieldLHS::value_type::value_type</td></tr>
 <tr class="separator:a0543b83e62bfa3a48770c51de37932b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-methods" name="pri-static-methods"></a>
+Static Private Member Functions</h2></td></tr>
+<tr class="memitem:abbd85419d460cd054088968111ad1f85"><td class="memItemLeft" align="right" valign="top">static KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#abbd85419d460cd054088968111ad1f85">integratedGreenAntiderivative</a> (const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;x, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;y, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;z)</td></tr>
+<tr class="memdesc:abbd85419d460cd054088968111ad1f85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closed-form antiderivative for the integrated 3D Green kernel.  <a href="classippl_1_1FFTOpenPoissonSolver.html#abbd85419d460cd054088968111ad1f85">More...</a><br /></td></tr>
+<tr class="separator:abbd85419d460cd054088968111ad1f85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d5a2f6c99ea41f0a56ac70e0261e052"><td class="memItemLeft" align="right" valign="top">static KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a3d5a2f6c99ea41f0a56ac70e0261e052">integratedGreenLogTerm</a> (const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;a, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;b, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;c, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;r)</td></tr>
+<tr class="separator:a3d5a2f6c99ea41f0a56ac70e0261e052"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ae56bb563353c4906466b8fd19e158e"><td class="memItemLeft" align="right" valign="top">static KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a3ae56bb563353c4906466b8fd19e158e">integratedGreenAtanTerm</a> (const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;numerator, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;denominator)</td></tr>
+<tr class="separator:a3ae56bb563353c4906466b8fd19e158e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb763271059c16411d6632f5b85ef55d"><td class="memItemLeft" align="right" valign="top">static KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#abb763271059c16411d6632f5b85ef55d">integratedGreenAverage</a> (const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;x, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;y, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;z, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a186ddc4f2a74c242d547b350db6ff8bb">vector_type</a> &amp;h)</td></tr>
+<tr class="memdesc:abb763271059c16411d6632f5b85ef55d"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classCell.html">Cell</a> average of \(1/r\) over a cell centered at <code>(x,y,z)</code>.  <a href="classippl_1_1FFTOpenPoissonSolver.html#abb763271059c16411d6632f5b85ef55d">More...</a><br /></td></tr>
+<tr class="separator:abb763271059c16411d6632f5b85ef55d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -740,6 +761,51 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 
 </div>
 </div>
+<a id="aef4d0197af3ef8a26c8a2c2a5ee769fb" name="aef4d0197af3ef8a26c8a2c2a5ee769fb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef4d0197af3ef8a26c8a2c2a5ee769fb">&#9670;&#160;</a></span>GreenFunction</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fb">ippl::FFTOpenPoissonSolver::GreenFunction</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Real-space Green-function model used by the Hockney open-boundary solver. </p>
+<p ><code>STANDARD</code> samples the free-space Green function at doubled-grid points:  </p><p class="formulaDsp">
+\[
+  G(\mathbf{r}) = -\frac{1}{4\pi |\mathbf{r}|}.
+\]
+</p>
+<p ><code>INTEGRATED</code> uses the cell-averaged Green function of Qiang et al. for a uniform charge density in each source cell:  </p><p class="formulaDsp">
+\[
+  \overline{G}(\mathbf{r}) =
+  -\frac{1}{4\pi h_x h_y h_z}
+  \int_{-h_x/2}^{h_x/2}
+  \int_{-h_y/2}^{h_y/2}
+  \int_{-h_z/2}^{h_z/2}
+  \frac{dx&#39; dy&#39; dz&#39;}
+       {\sqrt{(x-x&#39;)^2 + (y-y&#39;)^2 + (z-z&#39;)^2}}.
+\]
+</p>
+<p >The integrated kernel is currently supported for 3D Hockney open boundary conditions only. It is intended for high-aspect-ratio beams where point sampling of \(1/r\) can be inefficient near narrow dimensions.</p>
+<p >References:</p><ul>
+<li>J. Qiang, S. M. Lidia, R. D. Ryne, and C. Limborg-Deprey, "Three-Dimensional Quasi-Static Model for High Brightness Beam
+  Dynamics Simulation," Phys. Rev. ST Accel. Beams 9, 044204 (2006), <a href="https://doi.org/10.1103/PhysRevSTAB.9.044204">https://doi.org/10.1103/PhysRevSTAB.9.044204</a>.</li>
+<li>J. Qiang et al., LBNL-59098, <a href="http://repositories.cdlib.org/lbnl/LBNL-59098">http://repositories.cdlib.org/lbnl/LBNL-59098</a>.</li>
+<li>See also IPPL issue #556. </li>
+</ul>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aef4d0197af3ef8a26c8a2c2a5ee769fbad60ea505c04fcdf124a6c9c9b00ddf42" name="aef4d0197af3ef8a26c8a2c2a5ee769fbad60ea505c04fcdf124a6c9c9b00ddf42"></a>STANDARD&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="aef4d0197af3ef8a26c8a2c2a5ee769fbab1104edc87699b301665b0657fe13176" name="aef4d0197af3ef8a26c8a2c2a5ee769fbab1104edc87699b301665b0657fe13176"></a>INTEGRATED&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+</div>
+</div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ae8b5537fc6d0e94892c0576fca587532" name="ae8b5537fc6d0e94892c0576fca587532"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae8b5537fc6d0e94892c0576fca587532">&#9670;&#160;</a></span>FFTOpenPoissonSolver() <span class="overload">[1/3]</span></h2>
@@ -1015,6 +1081,9 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
       </table>
 </div><div class="memdoc">
 
+<p>Compute and cache the <a class="el" href="classippl_1_1FFT.html">FFT</a> of the selected Green function. </p>
+<p >The selected kernel is controlled by the integer parameter <code>greens_function</code>, with values from GreenFunction. For Hockney, the real-space kernel is filled on the doubled convolution grid and then transformed into <code>grntr_m</code>. The default is <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbad60ea505c04fcdf124a6c9c9b00ddf42">GreenFunction::STANDARD</a> to preserve historical IPPL behavior. </p>
+
 </div>
 </div>
 <a id="a17eecbcc51e40e4d6a368af11a2312ef" name="a17eecbcc51e40e4d6a368af11a2312ef"></a>
@@ -1029,6 +1098,203 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
           <td class="memname">void <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::initializeFields</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abbd85419d460cd054088968111ad1f85" name="abbd85419d460cd054088968111ad1f85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abbd85419d460cd054088968111ad1f85">&#9670;&#160;</a></span>integratedGreenAntiderivative()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">::scalar_type</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::integratedGreenAntiderivative </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>z</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Closed-form antiderivative for the integrated 3D Green kernel. </p>
+<p >Let \(r=\sqrt{x^2+y^2+z^2}\). This evaluates  </p><p class="formulaDsp">
+\[
+F(x,y,z) =
+-\frac{z^2}{2}\tan^{-1}\!\left(\frac{xy}{zr}\right)
+-\frac{y^2}{2}\tan^{-1}\!\left(\frac{xz}{yr}\right)
+-\frac{x^2}{2}\tan^{-1}\!\left(\frac{yz}{xr}\right)
++ yz\ln(x+r) + xz\ln(y+r) + xy\ln(z+r).
+\]
+</p>
+<p> The integrated kernel is formed by the eight-corner difference of \(F\) divided by the cell volume. </p>
+
+</div>
+</div>
+<a id="a3ae56bb563353c4906466b8fd19e158e" name="a3ae56bb563353c4906466b8fd19e158e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ae56bb563353c4906466b8fd19e158e">&#9670;&#160;</a></span>integratedGreenAtanTerm()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">::scalar_type</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::integratedGreenAtanTerm </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>numerator</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>denominator</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abb763271059c16411d6632f5b85ef55d" name="abb763271059c16411d6632f5b85ef55d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb763271059c16411d6632f5b85ef55d">&#9670;&#160;</a></span>integratedGreenAverage()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">::scalar_type</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::integratedGreenAverage </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>z</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a186ddc4f2a74c242d547b350db6ff8bb">vector_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>h</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classCell.html">Cell</a> average of \(1/r\) over a cell centered at <code>(x,y,z)</code>. </p>
+<p >The returned value is the cell average without the <a class="el" href="classippl_1_1Poisson.html">Poisson</a> prefactor; callers multiply by \(-1/(4\pi)\) to match IPPL's Hockney sign convention. </p>
+
+</div>
+</div>
+<a id="a3d5a2f6c99ea41f0a56ac70e0261e052" name="a3d5a2f6c99ea41f0a56ac70e0261e052"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d5a2f6c99ea41f0a56ac70e0261e052">&#9670;&#160;</a></span>integratedGreenLogTerm()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">::scalar_type</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::integratedGreenLogTerm </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>b</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>c</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>r</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -1132,6 +1398,28 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Replace the cached kernel by a shifted Hockney Green function. </p>
+<p >For <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbad60ea505c04fcdf124a6c9c9b00ddf42">GreenFunction::STANDARD</a>, the shifted kernel is  </p><p class="formulaDsp">
+\[
+  G_s(\mathbf{r}) = -\frac{1}{4\pi |\mathbf{r}-\mathbf{s}|},
+\]
+</p>
+<p> where \(\mathbf{s}\) is <code>shift</code>.</p>
+<p >For <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbab1104edc87699b301665b0657fe13176">GreenFunction::INTEGRATED</a>, the same translation is applied before the cell average:  </p><p class="formulaDsp">
+\[
+  \overline{G}_s(\mathbf{r}) =
+  -\frac{1}{4\pi h_x h_y h_z}
+  \int_{\mathrm{cell}}
+  \frac{d^3\mathbf{r}&#39;}
+       {|\mathbf{r}-\mathbf{s}-\mathbf{r}&#39;|}.
+\]
+</p>
+<p >After this call, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ad7efcf5b8a0794782fac3a25d57f192e">solve()</a> convolves the RHS with the shifted kernel until <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a5b32133c36164d4f571297c35b43bc86" title="Compute and cache the FFT of the selected Green function.">greensFunction()</a> is called again or the mesh spacing changes.</p>
+<p >Intended use for Dirichlet boundary conditions via the method of images: choose the shift from the plane location and domain center, solve with the shifted kernel, then let the caller flip/sign-compose the image contribution. See test/solver/TestShiftedGreensFunction.cpp for the reference orchestration.</p>
+<dl class="section pre"><dt>Precondition</dt><dd><code>algorithm == HOCKNEY</code>. </dd>
+<dd>
+<a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbab1104edc87699b301665b0657fe13176">GreenFunction::INTEGRATED</a> additionally requires <code>Dim == 3</code>. </dd></dl>
 
 </div>
 </div>
@@ -1909,7 +2197,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">            <a class="code hl_variable" href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">storage_field</a></div>
-<div class="ttc" id="aclassippl_1_1FFTOpenPoissonSolver_html_a03c8b55bd849928aed963810a620192f"><div class="ttname"><a href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">ippl::FFTOpenPoissonSolver::storage_field</a></div><div class="ttdeci">Field_t storage_field</div><div class="ttdef"><b>Definition:</b> FFTOpenPoissonSolver.h:153</div></div>
+<div class="ttc" id="aclassippl_1_1FFTOpenPoissonSolver_html_a03c8b55bd849928aed963810a620192f"><div class="ttname"><a href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">ippl::FFTOpenPoissonSolver::storage_field</a></div><div class="ttdeci">Field_t storage_field</div><div class="ttdef"><b>Definition:</b> FFTOpenPoissonSolver.h:211</div></div>
 </div><!-- fragment -->
 </div>
 </div>

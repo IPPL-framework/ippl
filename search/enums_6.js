@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['locktype_0',['LockType',['../classippl_1_1mpi_1_1rma_1_1Window.html#ad51963c9de49f39912dd08d5368d60ba',1,'ippl::mpi::rma::Window']]]
+  ['initialguesstype_0',['InitialGuessType',['../namespaceippl.html#ae5668da1fffa028ce4a727cc38f30bee',1,'ippl']]]
 ];
