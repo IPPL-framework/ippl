@@ -53,6 +53,12 @@ namespace ippl {
             DCT_VICO   = 0b100
         };
 
+        // enum type for the real-space Green's function used by Hockney
+        enum GreenFunction {
+            STANDARD   = 0,
+            INTEGRATED = 1
+        };
+
         // define a type for a 3 dimensional field (e.g. charge density field)
         // define a type of Field with integers to be used for the helper Green's function
         // also define a type for the Fourier transformed complex valued fields
@@ -107,17 +113,18 @@ namespace ippl {
             return &hess_m;
         }
 
-        // compute standard Green's function
+        // compute Green's function
         void greensFunction();
 
         // Replace the cached FFT Green's function (grntr_m) with the FFT of a
-        // free-space Green's function translated by `shift` in real space, i.e.
-        //   G(r) = -1 / (4 pi |r - shift|)
-        // using the same sign convention as greensFunction() (HOCKNEY). After
-        // this call, solve() will convolve rho with the shifted kernel instead
-        // of the standard one, up to the usual caveat that solve() recomputes
-        // greensFunction() if it detects a change in mesh spacing, so the
-        // caller should keep the mesh fixed between setup and solve().
+        // free-space Green's function translated by `shift` in real space. For
+        // `greens_function = STANDARD`, this is the point-sampled kernel
+        // G(r) = -1 / (4 pi |r - shift|). For `greens_function = INTEGRATED`,
+        // this is the cell-averaged kernel translated by `shift`. After this
+        // call, solve() will convolve rho with the shifted kernel instead of
+        // the standard one, up to the usual caveat that solve() recomputes
+        // greensFunction() if it detects a change in mesh spacing, so the caller
+        // should keep the mesh fixed between setup and solve().
         //
         // To restore the standard kernel, call greensFunction() explicitly.
         //
@@ -226,6 +233,22 @@ namespace ippl {
         // buffer for communication
         detail::FieldBufferData<Trhs> fd_m;
 
+        KOKKOS_INLINE_FUNCTION static scalar_type integratedGreenAntiderivative(
+            const scalar_type& x, const scalar_type& y, const scalar_type& z);
+
+        KOKKOS_INLINE_FUNCTION static scalar_type integratedGreenLogTerm(const scalar_type& a,
+                                                                         const scalar_type& b,
+                                                                         const scalar_type& c,
+                                                                         const scalar_type& r);
+
+        KOKKOS_INLINE_FUNCTION static scalar_type integratedGreenAtanTerm(
+            const scalar_type& numerator, const scalar_type& denominator);
+
+        KOKKOS_INLINE_FUNCTION static scalar_type integratedGreenAverage(const scalar_type& x,
+                                                                         const scalar_type& y,
+                                                                         const scalar_type& z,
+                                                                         const vector_type& h);
+
     protected:
         virtual void setDefaultParameters() override {
             using heffteBackend       = typename FFT_t::heffteBackend;
@@ -254,6 +277,7 @@ namespace ippl {
             }
 
             this->params_m.add("algorithm", HOCKNEY);
+            this->params_m.add("greens_function", STANDARD);
             this->params_m.add("hessian", false);
         }
     };
