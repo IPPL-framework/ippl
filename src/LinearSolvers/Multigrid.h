@@ -141,7 +141,7 @@ namespace ippl {
             , min_cells_per_rank_per_dim_(min_cells_per_rank_per_dim)
             , communication_(communication) {}
 
-        // --- DEBUGGING - To be deleted ---
+        // --- DEBUGGING ---
 
         /**
          * @brief Enables or disables debug printing of the multigrid state.
@@ -488,7 +488,7 @@ namespace ippl {
         bool communication_;
         bool is_all_periodic_ = false;
 
-        // --- DEBUGGING - To be deleted ---
+        // --- DEBUGGING ---
 
         bool debug_print_ = false;
 
