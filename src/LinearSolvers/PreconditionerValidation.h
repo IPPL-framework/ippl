@@ -4,20 +4,20 @@
 #include <cmath>
 #include <string>
 
-#include "LinearSolvers/PCG.h"
 #include "Utility/Inform.h"
 #include "Utility/IpplException.h"
+
+#include "LinearSolvers/PCG.h"
 
 namespace ippl::preconditioner_validation {
     inline void throwIfUnknownType(const std::string& preconditioner_type,
                                    const std::string& caller_name) {
         if (!pcg_preconditioner_defaults::is_valid_type(preconditioner_type)) {
-            throw IpplException(
-                caller_name.c_str(),
-                ("Unknown preconditioner_type '" + preconditioner_type
-                 + "'. Supported types: jacobi, newton, chebyshev, richardson, "
-                   "richardson_alt, gauss-seidel, ssor")
-                    .c_str());
+            throw IpplException(caller_name.c_str(),
+                                ("Unknown preconditioner_type '" + preconditioner_type
+                                 + "'. Supported types: jacobi, newton, chebyshev, richardson, "
+                                   "richardson_alt, gauss-seidel, ssor")
+                                    .c_str());
         }
     }
 
@@ -27,8 +27,8 @@ namespace ippl::preconditioner_validation {
         auto warnAndDefault = [&](const std::string& what, const std::string& value,
                                   const std::string& default_value) {
             warn << "Invalid " << what << "='" << value << "' for preconditioner '"
-                 << preconditioner_type << "'. Using default " << what << "=" << default_value << "."
-                 << endl;
+                 << preconditioner_type << "'. Using default " << what << "=" << default_value
+                 << "." << endl;
         };
 
         if (level <= 0) {
