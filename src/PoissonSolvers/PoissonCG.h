@@ -97,9 +97,9 @@ namespace ippl {
                 // After reading in preconditioner parameters, if they are invalid,
                 // the user is warned that the parameter is invalid, and a default
                 // parameter is used.
-                preconditioner_validation::sanitizeParams(preconditioner_type, warn, level, degree,
-                                                          richardson_iterations, inner, outer,
-                                                          omega, &communication);
+                preconditioner_validation::sanitizeParams(
+                    preconditioner_type, warn, level, degree, richardson_iterations, inner, outer,
+                    omega, &communication, mg_pre, mg_post, mg_omega, mg_min_cells);
                 // Analytical eigenvalues for the d dimensional laplace operator
                 // Going brute force through all possible eigenvalues seems to be the only way to
                 // find max and min
