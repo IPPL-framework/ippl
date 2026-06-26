@@ -9,8 +9,9 @@
 //   that they have type char and thus contain raw bytes, unlike other typed buffers
 //   such as detail::FieldBufferData used by HaloCells.
 //
-//   On CUDA/HIP the internal buffer is allocated directly via cudaMalloc/hipMalloc
-//   so that the pointer is page-aligned (4K) and compatible with MPI IPC.
+//   On CUDA/HIP device-memory archives, the internal buffer is allocated directly
+//   via cudaMalloc/hipMalloc so that the pointer is compatible with MPI IPC.
+//   HIP device allocations are rounded to the 64 KiB HSA IPC granularity.
 //
 #ifndef IPPL_ARCHIVE_H
 #define IPPL_ARCHIVE_H
