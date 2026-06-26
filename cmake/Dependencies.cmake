@@ -128,66 +128,35 @@ function(set_cuda_architectures_from_kokkos)
     return()
   endif()
 
-  if(DEFINED CMAKE_CUDA_ARCHITECTURES
-     AND NOT CMAKE_CUDA_ARCHITECTURES STREQUAL ""
+  if(DEFINED CMAKE_CUDA_ARCHITECTURES AND NOT CMAKE_CUDA_ARCHITECTURES STREQUAL ""
      AND NOT CMAKE_CUDA_ARCHITECTURES STREQUAL "native")
     return()
   endif()
 
+  # Kokkos sets Kokkos_ARCH_<Family><CC> cache booleans for each enabled CUDA architecture.  We scan
+  # all cache variables, extract the trailing digits (the compute capability) from any enabled
+  # Kokkos_ARCH_* entry, and use those digits directly.  This works for any existing or future
+  # Kokkos arch without an explicit mapping list.
   set(cuda_architectures)
-  if(Kokkos_ARCH_MAXWELL50)
-    list(APPEND cuda_architectures 50)
-  endif()
-  if(Kokkos_ARCH_MAXWELL52)
-    list(APPEND cuda_architectures 52)
-  endif()
-  if(Kokkos_ARCH_MAXWELL53)
-    list(APPEND cuda_architectures 53)
-  endif()
-  if(Kokkos_ARCH_PASCAL60)
-    list(APPEND cuda_architectures 60)
-  endif()
-  if(Kokkos_ARCH_PASCAL61)
-    list(APPEND cuda_architectures 61)
-  endif()
-  if(Kokkos_ARCH_VOLTA70)
-    list(APPEND cuda_architectures 70)
-  endif()
-  if(Kokkos_ARCH_VOLTA72)
-    list(APPEND cuda_architectures 72)
-  endif()
-  if(Kokkos_ARCH_TURING75)
-    list(APPEND cuda_architectures 75)
-  endif()
-  if(Kokkos_ARCH_AMPERE80)
-    list(APPEND cuda_architectures 80)
-  endif()
-  if(Kokkos_ARCH_AMPERE86)
-    list(APPEND cuda_architectures 86)
-  endif()
-  if(Kokkos_ARCH_AMPERE87)
-    list(APPEND cuda_architectures 87)
-  endif()
-  if(Kokkos_ARCH_ADA89)
-    list(APPEND cuda_architectures 89)
-  endif()
-  if(Kokkos_ARCH_HOPPER90)
-    list(APPEND cuda_architectures 90)
-  endif()
-  if(Kokkos_ARCH_BLACKWELL100)
-    list(APPEND cuda_architectures 100)
-  endif()
-  if(Kokkos_ARCH_BLACKWELL120)
-    list(APPEND cuda_architectures 120)
-  endif()
+
+  get_cmake_property(_cache_vars CACHE_VARIABLES)
+  foreach(_var IN LISTS _cache_vars)
+    if(_var MATCHES "^Kokkos_ARCH_[A-Z]+([0-9]+)$" AND ${_var})
+      list(APPEND cuda_architectures ${CMAKE_MATCH_1})
+    endif()
+  endforeach()
+  unset(_cache_vars)
+  unset(_var)
 
   if(cuda_architectures)
-    set(CMAKE_CUDA_ARCHITECTURES
-        "${cuda_architectures}"
-        CACHE STRING "CUDA architectures to compile, e.g., -DCMAKE_CUDA_ARCHITECTURES=70;72"
-        FORCE)
-    message(STATUS
-            "IPPL_PLATFORM set: CMAKE_CUDA_ARCHITECTURES '${CMAKE_CUDA_ARCHITECTURES}' from Kokkos CUDA architecture")
+    list(REMOVE_DUPLICATES cuda_architectures)
+    list(SORT cuda_architectures)
+    set(CMAKE_CUDA_ARCHITECTURES "${cuda_architectures}"
+        CACHE STRING "CUDA architectures to compile, e.g., -DCMAKE_CUDA_ARCHITECTURES=70;72" FORCE)
+    message(
+      STATUS
+        "IPPL_PLATFORM set: CMAKE_CUDA_ARCHITECTURES '${CMAKE_CUDA_ARCHITECTURES}' from Kokkos CUDA architecture"
+    )
   endif()
 endfunction()
 
