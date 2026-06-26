@@ -611,33 +611,6 @@ namespace ippl {
             smooth_jacobi(level, nu2_);  // Post-smoothing
         }
 
-        // void vcycle(size_t level) {
-        //     auto dbg = [&](const char* tag) {
-        //         const double nu = norm(L_[level].u);
-        //         const double nf = norm(L_[level].f);
-        //         Inform m("");
-        //         m << "L" << level << " " << tag << "  ||u||=" << std::setprecision(15) << nu
-        //           << "  ||f||=" << nf << endl;
-        //     };
-        //
-        //     if (level == L_.size() - 1) {
-        //         dbg("coarse-in");
-        //         smooth_jacobi(level, 50);
-        //         dbg("coarse-out");
-        //         return;
-        //     }
-        //     dbg("pre-in");
-        //     smooth_jacobi(level, nu1_);
-        //     dbg("after-presmooth");
-        //     restrict_average(level);
-        //     dbg("after-restrict");
-        //     vcycle(level + 1);
-        //     prolong_add(level);
-        //     dbg("after-prolong");
-        //     smooth_jacobi(level, nu2_);
-        //     dbg("after-postsmooth");
-        // }
-
         /**
          * @brief Performs Jacobi smoothing on a given level.
          *
