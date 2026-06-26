@@ -18,6 +18,8 @@
 #include "Types/IpplTypes.h"
 #include "Types/ViewTypes.h"
 
+#include <type_traits>
+
 #include "Types/Vector.h"
 
 namespace ippl {
@@ -32,6 +34,7 @@ namespace ippl {
         class Archive {
         public:
             using buffer_type  = typename ViewType<char, 1, Properties...>::view_type;
+            using memory_space = typename buffer_type::memory_space;
             using pointer_type = typename buffer_type::pointer_type;
 
             Archive(size_type size = 0);
@@ -119,12 +122,41 @@ namespace ippl {
             size_type readpos_m;
 
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
+            //! Serialized data for host-accessible memory spaces.
+            buffer_type buffer_m;
+
             //! Raw device pointer from cudaMalloc/hipMalloc (page-aligned, IPC-safe)
             pointer_type buffer_ptr_m = nullptr;
             size_type buffer_size_m   = 0;
 
-            pointer_type bufferData() const { return buffer_ptr_m; }
-            size_type bufferSize() const { return buffer_size_m; }
+            static constexpr bool useRawGpuBuffer() {
+#if defined(KOKKOS_ENABLE_CUDA)
+                if constexpr (std::is_same_v<memory_space, Kokkos::CudaSpace>) {
+                    return true;
+                }
+#endif
+#if defined(KOKKOS_ENABLE_HIP)
+                if constexpr (std::is_same_v<memory_space, Kokkos::HIPSpace>) {
+                    return true;
+                }
+#endif
+                return false;
+            }
+
+            pointer_type bufferData() const {
+                if constexpr (useRawGpuBuffer()) {
+                    return buffer_ptr_m;
+                } else {
+                    return buffer_m.data();
+                }
+            }
+            size_type bufferSize() const {
+                if constexpr (useRawGpuBuffer()) {
+                    return buffer_size_m;
+                } else {
+                    return buffer_m.size();
+                }
+            }
 
             void gpuAlloc(size_type size);
             void gpuFree();
