@@ -274,8 +274,8 @@ namespace ippl {
             IpplTimings::stopTimer(initialize_vico);
         }
 
-        // these are fields that are used for calculating the Green's function for Hockney
-        if (alg == Algorithm::HOCKNEY) {
+        // these are fields that are used for calculating the standard Green's function for Hockney
+        if ((alg == Algorithm::HOCKNEY) && (greensFunctionType == GreenFunction::STANDARD)) {
             // start a timer
             static IpplTimings::TimerRef initialize_hockney =
                 IpplTimings::getTimer("Initialize: extra Hockney");
