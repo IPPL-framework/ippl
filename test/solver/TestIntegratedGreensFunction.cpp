@@ -1,10 +1,39 @@
-//
-// TestIntegratedGreensFunction
-//
-// Validates FFTOpenPoissonSolver with greens_function = INTEGRATED for the 3D
-// Hockney open-boundary solver. A single mesh cell with unit density is
-// convolved with both the unshifted and shifted integrated Green's function.
-//
+/**
+ * @file TestIntegratedGreensFunction.cpp
+ * @brief Regression test for integrated and shifted integrated Hockney kernels.
+ *
+ * This test exercises FFTOpenPoissonSolver with
+ * `greens_function = Solver_t::INTEGRATED`, `algorithm = Solver_t::HOCKNEY`,
+ * and `output_type = Solver_t::SOL`.
+ *
+ * The source is deliberately minimal: one physical mesh cell at the origin is
+ * assigned unit density and every other cell is zero. With IPPL's Hockney solve
+ * normalization, the potential sampled at physical grid offset
+ * @f$\mathbf{r}_{ijk}=(i h_x, j h_y, k h_z)@f$ is expected to be
+ * @f[
+ *   \phi_{ijk} =
+ *   \frac{h_x h_y h_z}{4\pi}
+ *   \frac{1}{h_x h_y h_z}
+ *   \int_{\mathrm{cell}}
+ *   \frac{d^3\mathbf{r}'}{|\mathbf{r}_{ijk}-\mathbf{r}'|}.
+ * @f]
+ *
+ * The shifted case calls FFTOpenPoissonSolver::shiftedGreensFunction() and
+ * checks the translated cell average
+ * @f[
+ *   \phi^s_{ijk} =
+ *   \frac{h_x h_y h_z}{4\pi}
+ *   \frac{1}{h_x h_y h_z}
+ *   \int_{\mathrm{cell}}
+ *   \frac{d^3\mathbf{r}'}{|\mathbf{r}_{ijk}-\mathbf{s}-\mathbf{r}'|}.
+ * @f]
+ *
+ * The reference values are computed independently in this file from the same
+ * closed-form eight-corner antiderivative used by Qiang et al. This is a
+ * deterministic kernel/normalization test rather than a beam-physics
+ * convergence benchmark; it is intended to catch sign, shift, cell-volume, and
+ * distributed-layout mistakes.
+ */
 
 #include "Ippl.h"
 
@@ -16,6 +45,10 @@
 #include "PoissonSolvers/FFTOpenPoissonSolver.h"
 
 namespace {
+    // Principal arctangent used by the closed-form antiderivative. The
+    // denominator can vanish on coordinate planes; returning the limiting
+    // +/-pi/2 value avoids NaNs while preserving atan(numerator/denominator)
+    // semantics.
     KOKKOS_INLINE_FUNCTION double atan_ratio(double numerator, double denominator) {
         const double pi = Kokkos::numbers::pi_v<double>;
         if (denominator == 0.0) {
@@ -28,11 +61,15 @@ namespace {
         return Kokkos::atan(numerator / denominator);
     }
 
+    // Term b*c*log(a+r). The coefficient is exactly zero on coordinate planes,
+    // where a+r can also be zero, so skip the logarithm in that removable case.
     KOKKOS_INLINE_FUNCTION double log_term(double a, double b, double c, double r) {
         const double coeff = b * c;
         return (coeff == 0.0) ? 0.0 : coeff * Kokkos::log(a + r);
     }
 
+    // Antiderivative F(x,y,z) for the volume integral of 1/r over a rectangular
+    // cell. The cell integral is the signed eight-corner difference of F.
     KOKKOS_INLINE_FUNCTION double antiderivative(double x, double y, double z) {
         const double r2 = x * x + y * y + z * z;
         if (r2 == 0.0)
@@ -49,6 +86,9 @@ namespace {
         return value;
     }
 
+    // Average of 1/r over a cell of size hx*hy*hz centered at (x,y,z). This
+    // helper deliberately returns the average without the 1/(4*pi) prefactor;
+    // the test applies that prefactor at the same point where the solver does.
     KOKKOS_INLINE_FUNCTION double integrated_average(double x, double y, double z, double hx,
                                                      double hy, double hz) {
         const double x0 = x - 0.5 * hx;
@@ -104,6 +144,9 @@ int main(int argc, char* argv[]) {
         phi_unshifted.initialize(mesh, layout);
         phi_shifted.initialize(mesh, layout);
 
+        // Put unit density in the global origin cell. The physical source
+        // charge is therefore rho * cellVolume = cellVolume, which is why the
+        // expected potential below carries an explicit cellVolume factor.
         auto initialize_delta = [&]() {
             auto view        = rho.getView();
             auto clean       = rho_clean.getView();
@@ -146,6 +189,9 @@ int main(int argc, char* argv[]) {
         const double cellVolume = hr[0] * hr[1] * hr[2];
         const double inv4pi     = 1.0 / (4.0 * Kokkos::numbers::pi_v<double>);
 
+        // Compare a solved potential against the analytical integrated kernel
+        // on the physical N^3 domain. kernelShift = 0 tests greensFunction();
+        // kernelShift = shift tests shiftedGreensFunction(shift).
         auto compute_error = [&](field_t& phi, const ippl::Vector<double, Dim>& kernelShift) {
             auto view        = phi.getView();
             const int nghost = phi.getNghost();
@@ -162,6 +208,8 @@ int main(int argc, char* argv[]) {
                     const double x = static_cast<double>(ig) * hr[0] - kernelShift[0];
                     const double y = static_cast<double>(jg) * hr[1] - kernelShift[1];
                     const double z = static_cast<double>(kg) * hr[2] - kernelShift[2];
+                    // solve() multiplies the inverse FFT result by the cell
+                    // volume. The integrated kernel itself is a cell average.
                     const double expected =
                         cellVolume * inv4pi * integrated_average(x, y, z, hr[0], hr[1], hr[2]);
                     const double diff = Kokkos::fabs(view(i, j, k) - expected);
@@ -204,6 +252,9 @@ int main(int argc, char* argv[]) {
             << endl;
         msg << "shifted max abs error = " << shiftedErr << ", relative = " << shiftedRel << endl;
 
+        // This is an exact closed-form kernel check up to FFT and floating-point
+        // roundoff, so the tolerance can be much tighter than a physics
+        // convergence test.
         const double tol = 5.0e-12;
         if (unshiftedRel > tol) {
             msg << "FAIL: unshifted integrated Green's function error exceeds " << tol << endl;
