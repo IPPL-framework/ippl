@@ -11,7 +11,6 @@
 #include <array>
 #include <cstddef>
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <ostream>
 #include <vector>
@@ -25,6 +24,7 @@
 #include "FieldLayout/SubFieldLayout.h"
 #include "Index/Index.h"
 #include "Index/NDIndex.h"
+#include "Kokkos_NumericTraits.hpp"
 #include "LinearSolvers/Preconditioner.h"
 
 namespace ippl {
@@ -226,12 +226,12 @@ namespace ippl {
 
             // 1. Calculate number of levels
             const auto& localFine = fine_layout.getLocalNDIndex();  // this rank's slab
-            int min_local         = std::numeric_limits<int>::max();
+            int min_local         = Kokkos::Experimental::finite_max<int>::value;
 
             for (unsigned d = 0; d < Dim; ++d) {
                 // For serial dims, every rank's local extent == global extent, so this naturally
                 // covers them too. We do not have to check if dim is parallel or not.
-                min_local = std::min(min_local, static_cast<int>(localFine[d].length()));
+                min_local = Kokkos::min(min_local, static_cast<int>(localFine[d].length()));
             }
 
             // reduce over all ranks to find smallest dimensional extent
