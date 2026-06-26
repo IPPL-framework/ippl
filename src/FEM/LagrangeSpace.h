@@ -7,6 +7,7 @@
 
 #include <cmath>
 
+#include "FEM/FEMQuadratureData.h"
 #include "FEM/FiniteElementSpace.h"
 
 constexpr unsigned getLagrangeNumElementDOFs(unsigned Dim, unsigned Order) {
