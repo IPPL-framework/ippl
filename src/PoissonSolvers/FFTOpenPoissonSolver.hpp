@@ -1323,28 +1323,34 @@ namespace ippl {
             const auto& ldom                 = layout2_m->getLocalNDIndex();
 
             if (greensFunctionType == GreenFunction::INTEGRATED) {
-                Vector<int, Dim> nr = nr_m;
-                vector_type hs      = hr_m;
+                if constexpr (Dim == 3) {
+                    Vector<int, Dim> nr = nr_m;
+                    vector_type hs      = hr_m;
 
-                ippl::parallel_for(
-                    "Integrated Green's function ", grn_mr.getFieldRangePolicy(),
-                    KOKKOS_LAMBDA(const index_array_type& args) {
-                        Vector<int, Dim> igVec = args - nghost;
-                        for (unsigned d = 0; d < Dim; ++d) {
-                            igVec[d] += ldom[d].first();
-                        }
+                    ippl::parallel_for(
+                        "Integrated Green's function ", grn_mr.getFieldRangePolicy(),
+                        KOKKOS_LAMBDA(const index_array_type& args) {
+                            Vector<int, Dim> igVec = args - nghost;
+                            for (unsigned d = 0; d < Dim; ++d) {
+                                igVec[d] += ldom[d].first();
+                            }
 
-                        scalar_type offset[Dim];
-                        for (unsigned int d = 0; d < Dim; ++d) {
-                            const int igSigned =
-                                (igVec[d] < nr[d]) ? igVec[d] : igVec[d] - 2 * nr[d];
-                            offset[d] = static_cast<scalar_type>(igSigned) * hs[d];
-                        }
+                            scalar_type offset[Dim];
+                            for (unsigned int d = 0; d < Dim; ++d) {
+                                const int igSigned =
+                                    (igVec[d] < nr[d]) ? igVec[d] : igVec[d] - 2 * nr[d];
+                                offset[d] = static_cast<scalar_type>(igSigned) * hs[d];
+                            }
 
-                        const scalar_type avg =
-                            integratedGreenAverage(offset[0], offset[1], offset[2], hs);
-                        apply(view, args) = -avg / (scalar_type(4) * pi);
-                    });
+                            const scalar_type avg =
+                                integratedGreenAverage(offset[0], offset[1], offset[2], hs);
+                            apply(view, args) = -avg / (scalar_type(4) * pi);
+                        });
+                } else {
+                    throw IpplException("FFTOpenPoissonSolver::greensFunction()",
+                                        "The integrated Green's function is currently only "
+                                        "implemented for 3D HOCKNEY open BCs");
+                }
             } else {
                 // calculate square of the mesh spacing for each dimension
                 Vector_t hrsq(hr_m * hr_m);
@@ -2250,25 +2256,32 @@ namespace ippl {
 
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         if (greensFunctionType == GreenFunction::INTEGRATED) {
-            ippl::parallel_for(
-                "Shifted integrated Green's function", grn_mr.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const index_array_type& args) {
-                    Vector<int, Dim> igVec = args - nghost;
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        igVec[d] += ldom[d].first();
-                    }
+            if constexpr (Dim == 3) {
+                ippl::parallel_for(
+                    "Shifted integrated Green's function", grn_mr.getFieldRangePolicy(),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        Vector<int, Dim> igVec = args - nghost;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            igVec[d] += ldom[d].first();
+                        }
 
-                    scalar_type offset[Dim];
-                    for (unsigned int d = 0; d < Dim; ++d) {
-                        const int igSigned = (igVec[d] < nr[d]) ? igVec[d] : igVec[d] - 2 * nr[d];
-                        offset[d]          = static_cast<scalar_type>(igSigned) * hs[d]
-                                    - static_cast<scalar_type>(shft[d]);
-                    }
+                        scalar_type offset[Dim];
+                        for (unsigned int d = 0; d < Dim; ++d) {
+                            const int igSigned =
+                                (igVec[d] < nr[d]) ? igVec[d] : igVec[d] - 2 * nr[d];
+                            offset[d] = static_cast<scalar_type>(igSigned) * hs[d]
+                                - static_cast<scalar_type>(shft[d]);
+                        }
 
-                    const scalar_type avg =
-                        integratedGreenAverage(offset[0], offset[1], offset[2], hs);
-                    apply(view, args) = -avg / (scalar_type(4) * pi);
-                });
+                        const scalar_type avg =
+                            integratedGreenAverage(offset[0], offset[1], offset[2], hs);
+                        apply(view, args) = -avg / (scalar_type(4) * pi);
+                    });
+            } else {
+                throw IpplException("FFTOpenPoissonSolver::shiftedGreensFunction",
+                                    "Shifted integrated Green's function is only implemented "
+                                    "for 3D.");
+            }
         } else {
             // Regularization threshold (axis-min mesh spacing, squared, quartered).
             scalar_type hmin2 = hs[0] * hs[0];
