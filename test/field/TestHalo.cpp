@@ -23,13 +23,13 @@ int main(int argc, char* argv[]) {
         ippl::Index I(pt[0]);
         ippl::Index J(pt[1]);
         ippl::Index K(pt[2]);
-        ippl::NDIndex<dim> owned(I, J, K);
+        ippl::NDIndex<dim> global_domain(I, J, K);
 
         std::array<bool, dim> isParallel;  // Specifies SERIAL, PARALLEL dims
         isParallel.fill(true);
 
         typedef ippl::FieldLayout<dim> Layout_t;
-        Layout_t layout(MPI_COMM_WORLD, owned, isParallel);
+        Layout_t layout(MPI_COMM_WORLD, global_domain, isParallel);
 
         std::array<double, dim> dx = {
             1.0 / double(pt[0]),
@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
         };
         ippl::Vector<double, 3> hx     = {dx[0], dx[1], dx[2]};
         ippl::Vector<double, 3> origin = {0, 0, 0};
-        Mesh_t mesh(owned, hx, origin);
+        Mesh_t mesh(global_domain, hx, origin);
 
         typedef ippl::Field<double, dim, Mesh_t, Centering_t> field_type;
 

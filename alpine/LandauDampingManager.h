@@ -1,8 +1,8 @@
 #ifndef IPPL_LANDAU_DAMPING_MANAGER_H
 #define IPPL_LANDAU_DAMPING_MANAGER_H
 
-#include <memory>
 #include <filesystem>
+#include <memory>
 
 #include "AlpineManager.h"
 #include "FieldContainer.hpp"
@@ -67,7 +67,7 @@ public:
         Inform m("Pre Run");
 
         const double pi = Kokkos::numbers::pi_v<T>;
-	
+
         if (this->solver_m == "OPEN") {
             throw IpplException("LandauDamping",
                                 "Open boundaries solver incompatible with this simulation!");
@@ -84,7 +84,7 @@ public:
         this->rmax_m  = 2 * pi / this->kw_m;
 
         bool isFEM = ((this->getSolver() == "FEM") || (this->getSolver() == "FEM_PRECON"));
-        
+
         Vector<int, Dim> nElements = this->nr_m - 1;
         if (isFEM) {
             this->hr_m = this->rmax_m / nElements;
@@ -110,8 +110,7 @@ public:
             this->isAllPeriodic_m));
 
         this->setParticleContainer(std::make_shared<ParticleContainer_t>(
-            this->fcontainer_m->getMesh(), this->fcontainer_m->getFL(),
-            isFEM));
+            this->fcontainer_m->getMesh(), this->fcontainer_m->getFL(), isFEM));
 
         this->fcontainer_m->initializeFields(this->solver_m);
 
@@ -191,7 +190,8 @@ public:
                 this->fcontainer_m->getRho().getFieldRangePolicy(),
                 KOKKOS_LAMBDA(const index_array_type& args) {
                     // local to global index conversion
-                    Vector_t<double, Dim> xvec = (args + lDom.first() - nghost + 0.5*(!isFEM)) * hr + origin;
+                    Vector_t<double, Dim> xvec =
+                        (args + lDom.first() - nghost + 0.5 * (!isFEM)) * hr + origin;
 
                     // ippl::apply accesses the view at the given indices and obtains a
                     // reference; see src/Expression/IpplOperations.h
@@ -246,7 +246,7 @@ public:
         this->pcontainer_m->q = this->Q_m / totalP;
 
         // For FEM need an update due to node-centering, as periodic BCs mean
-        // that a particle at R=0 is equivalent to R=1 so it could be on the 
+        // that a particle at R=0 is equivalent to R=1 so it could be on the
         // wrong rank and needs to be sent over.
         if (isFEM) {
             this->pcontainer_m->update();
@@ -325,7 +325,7 @@ public:
 
         if ((this->getSolver() == "FEM") || (this->getSolver() == "FEM_PRECON")) {
             // When using FEM, we only have E on particles
-            // so we use the dump function which computes the 
+            // so we use the dump function which computes the
             // energy using the particles instead of the field.
             dumpLandau();
         } else {
@@ -385,15 +385,15 @@ public:
         ippl::Comm->barrier();
     }
 
-    // Overloaded dumpLandau which computes the E-field energy using the particles 
-    // instead of using the E-field on the grid (as above). Since we have E for 
+    // Overloaded dumpLandau which computes the E-field energy using the particles
+    // instead of using the E-field on the grid (as above). Since we have E for
     // each particle, we treat the particles as Monte-Carlo samples to compute
     // the energy integral.
     void dumpLandau() {
-        auto Eview = this->pcontainer_m->E.getView();
+        auto Eview               = this->pcontainer_m->E.getView();
         size_type localParticles = this->pcontainer_m->getLocalNum();
 
-        using exec_space = typename Kokkos::View<const size_t*>::execution_space;
+        using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
         policy_type iteration_policy(0, localParticles);
 
@@ -412,9 +412,8 @@ public:
 
         // MC integration: divide by no. of particles N and multiply by volume
         ippl::Vector<T, Dim> domain_size = this->rmax_m - this->rmin_m;
-        double fieldEnergy =
-            std::reduce(domain_size.begin(), domain_size.end(),
-                        globaltemp, std::multiplies<double>());
+        double fieldEnergy = std::reduce(domain_size.begin(), domain_size.end(), globaltemp,
+                                         std::multiplies<double>());
 
         fieldEnergy = fieldEnergy / this->totalP_m;
 

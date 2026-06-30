@@ -95,8 +95,11 @@ namespace ippl {
         }
 
         if (totparelems < nRanks) {
-            throw std::runtime_error("FieldLayout:initialize: domain can only be partitioned in to "
-                + std::to_string(totparelems) + " local domains, but there are " + std::to_string(nRanks) + " ranks, decrease the number of ranks or increase the domain.");
+            throw std::runtime_error(
+                "FieldLayout:initialize: domain can only be partitioned in to "
+                + std::to_string(totparelems) + " local domains, but there are "
+                + std::to_string(nRanks)
+                + " ranks, decrease the number of ranks or increase the domain.");
         }
 
         Kokkos::resize(dLocalDomains_m, nRanks);
@@ -316,8 +319,11 @@ namespace ippl {
          * Add "+1" to the upper bound since Kokkos loops always to "< extent".
          */
         for (size_t i = 0; i < Dim; ++i) {
-            intersect.lo[i] = overlap[i].first() - offset[i].first() /*offset*/ + nghost;
-            intersect.hi[i] = overlap[i].last() - offset[i].first() /*offset*/ + nghost + 1;
+            const int stride = offset[i].stride();
+
+            intersect.lo[i] = (overlap[i].first() - offset[i].first() /*offset*/) / stride + nghost;
+            intersect.hi[i] =
+                (overlap[i].last() - offset[i].first() /*offset*/) / stride + nghost + 1;
         }
 
         return intersect;
@@ -326,15 +332,16 @@ namespace ippl {
     template <unsigned Dim>
     int FieldLayout<Dim>::getPeriodicOffset(const NDIndex_t& nd, const unsigned int d,
                                             const int k) {
+        const int period = gDomain_m[d].length() * gDomain_m[d].stride();
         switch (k) {
             case 0:
                 if (nd[d].max() == gDomain_m[d].max()) {
-                    return -gDomain_m[d].length();
+                    return -period;
                 }
                 break;
             case 1:
                 if (nd[d].min() == gDomain_m[d].min()) {
-                    return gDomain_m[d].length();
+                    return period;
                 }
                 break;
             default:

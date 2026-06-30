@@ -68,7 +68,8 @@ namespace ippl {
                 // if it is not part of the valid list of preconditioners, throw an error.
                 std::string preconditioner_type =
                     this->params_m.template get<std::string>("preconditioner_type");
-                preconditioner_validation::throwIfUnknownType(preconditioner_type, "PoissonCG::setSolver");
+                preconditioner_validation::throwIfUnknownType(preconditioner_type,
+                                                              "PoissonCG::setSolver");
 
                 // Read in the preconditioner parameters
                 int level    = this->params_m.template get<int>("newton_level");
@@ -80,13 +81,25 @@ namespace ippl {
                     this->params_m.template get<int>("richardson_iterations");
                 int communication = this->params_m.template get<int>("communication");
 
+                // Extract Multigrid params
+                int mg_pre = this->params_m.template get<int>(
+                    "mg_pre_smooth_iters", pcg_preconditioner_defaults::mg_pre_smooth);
+                int mg_post = this->params_m.template get<int>(
+                    "mg_post_smooth_iters", pcg_preconditioner_defaults::mg_post_smooth);
+                double mg_omega = this->params_m.template get<double>(
+                    "mg_omega", pcg_preconditioner_defaults::mg_omega);
+                unsigned mg_min_cells = static_cast<unsigned>(this->params_m.template get<int>(
+                    "min_cells_per_rank_per_dim",
+                    static_cast<int>(pcg_preconditioner_defaults::mg_min_cells)));
+                bool mg_communication = communication;
+
                 Inform warn("PoissonCG");
-                // After reading in preconditioner parameters, if they are invalid, 
+                // After reading in preconditioner parameters, if they are invalid,
                 // the user is warned that the parameter is invalid, and a default
                 // parameter is used.
-                preconditioner_validation::sanitizeParams(preconditioner_type, warn, level, degree,
-                                                         richardson_iterations, inner, outer, omega,
-                                                         &communication);
+                preconditioner_validation::sanitizeParams(
+                    preconditioner_type, warn, level, degree, richardson_iterations, inner, outer,
+                    omega, &communication, mg_pre, mg_post, mg_omega, mg_min_cells);
                 // Analytical eigenvalues for the d dimensional laplace operator
                 // Going brute force through all possible eigenvalues seems to be the only way to
                 // find max and min
@@ -120,7 +133,7 @@ namespace ippl {
                         IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(diagonal_laplace, lhs_type), alpha, beta,
                         preconditioner_type, level, degree, richardson_iterations, inner, outer,
-                        omega);
+                        omega, mg_pre, mg_post, mg_omega, mg_min_cells, mg_communication);
                 } else {
                     algo_m->setPreconditioner(
                         IPPL_SOLVER_OPERATOR_WRAPPER(-laplace, lhs_type),
@@ -130,7 +143,7 @@ namespace ippl {
                         IPPL_SOLVER_OPERATOR_WRAPPER(negative_inverse_diagonal_laplace, lhs_type),
                         IPPL_SOLVER_OPERATOR_WRAPPER(diagonal_laplace, lhs_type), alpha, beta,
                         preconditioner_type, level, degree, richardson_iterations, inner, outer,
-                        omega);
+                        omega, mg_pre, mg_post, mg_omega, mg_min_cells, mg_communication);
                 }
             } else {
                 algo_m = std::move(
