@@ -92,7 +92,7 @@ Collaboration diagram for FieldSolver&lt; T, Dim &gt;::ParsedPreconditionerParam
 <div class="dyncontent">
 <div class="center"><img src="structFieldSolver_1_1ParsedPreconditionerParams__coll__graph.png" border="0" usemap="#aFieldSolver_3_01T_00_01Dim_01_4_1_1ParsedPreconditionerParams_coll__map" alt="Collaboration graph"/></div>
 <map name="aFieldSolver_3_01T_00_01Dim_01_4_1_1ParsedPreconditionerParams_coll__map" id="aFieldSolver_3_01T_00_01Dim_01_4_1_1ParsedPreconditionerParams_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,213,221"/>
+<area shape="rect" title=" " alt="" coords="5,5,213,280"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -116,6 +116,14 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a354367f7c4b1db16404f2de88cad4d4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a661f3939e47de9c9023fb613e2cd6154"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFieldSolver_1_1ParsedPreconditionerParams.html#a661f3939e47de9c9023fb613e2cd6154">ssor_omega</a> = ippl::pcg_preconditioner_defaults::ssor_omega</td></tr>
 <tr class="separator:a661f3939e47de9c9023fb613e2cd6154"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a1deba1eddfd83af494485a6d3a125a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFieldSolver_1_1ParsedPreconditionerParams.html#a5a1deba1eddfd83af494485a6d3a125a">mg_pre_smooth_iters</a> = <a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a64f73579f34d10d986351be6e082051a">ippl::pcg_preconditioner_defaults::mg_pre_smooth</a></td></tr>
+<tr class="separator:a5a1deba1eddfd83af494485a6d3a125a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68af217f31f211a1907fe8a542b85dd8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFieldSolver_1_1ParsedPreconditionerParams.html#a68af217f31f211a1907fe8a542b85dd8">mg_post_smooth_iters</a> = <a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a518b54ebf12276a24f186816129ed97c">ippl::pcg_preconditioner_defaults::mg_post_smooth</a></td></tr>
+<tr class="separator:a68af217f31f211a1907fe8a542b85dd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ace89f9cda3d42498bfc48b00bebfc0d3"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFieldSolver_1_1ParsedPreconditionerParams.html#ace89f9cda3d42498bfc48b00bebfc0d3">mg_omega</a> = ippl::pcg_preconditioner_defaults::mg_omega</td></tr>
+<tr class="separator:ace89f9cda3d42498bfc48b00bebfc0d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56005cd1fb11a9166e2871748c9e9751"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structFieldSolver_1_1ParsedPreconditionerParams.html#a56005cd1fb11a9166e2871748c9e9751">mg_min_cells</a> = ippl::pcg_preconditioner_defaults::mg_min_cells</td></tr>
+<tr class="separator:a56005cd1fb11a9166e2871748c9e9751"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a3654cbb58950f7bda620030aeb2091c8" name="a3654cbb58950f7bda620030aeb2091c8"></a>
@@ -176,6 +184,70 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
       <table class="memname">
         <tr>
           <td class="memname">int <a class="el" href="classFieldSolver.html">FieldSolver</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::ParsedPreconditionerParams::gauss_seidel_outer_iterations = <a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a13568259569cc9f888b6fb61b38b5299">ippl::pcg_preconditioner_defaults::gauss_seidel_outer</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a56005cd1fb11a9166e2871748c9e9751" name="a56005cd1fb11a9166e2871748c9e9751"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a56005cd1fb11a9166e2871748c9e9751">&#9670;&#160;</a></span>mg_min_cells</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned <a class="el" href="classFieldSolver.html">FieldSolver</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::ParsedPreconditionerParams::mg_min_cells = ippl::pcg_preconditioner_defaults::mg_min_cells</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ace89f9cda3d42498bfc48b00bebfc0d3" name="ace89f9cda3d42498bfc48b00bebfc0d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ace89f9cda3d42498bfc48b00bebfc0d3">&#9670;&#160;</a></span>mg_omega</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">double <a class="el" href="classFieldSolver.html">FieldSolver</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::ParsedPreconditionerParams::mg_omega = ippl::pcg_preconditioner_defaults::mg_omega</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a68af217f31f211a1907fe8a542b85dd8" name="a68af217f31f211a1907fe8a542b85dd8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68af217f31f211a1907fe8a542b85dd8">&#9670;&#160;</a></span>mg_post_smooth_iters</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">int <a class="el" href="classFieldSolver.html">FieldSolver</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::ParsedPreconditionerParams::mg_post_smooth_iters = <a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a518b54ebf12276a24f186816129ed97c">ippl::pcg_preconditioner_defaults::mg_post_smooth</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5a1deba1eddfd83af494485a6d3a125a" name="a5a1deba1eddfd83af494485a6d3a125a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a1deba1eddfd83af494485a6d3a125a">&#9670;&#160;</a></span>mg_pre_smooth_iters</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">int <a class="el" href="classFieldSolver.html">FieldSolver</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::ParsedPreconditionerParams::mg_pre_smooth_iters = <a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a64f73579f34d10d986351be6e082051a">ippl::pcg_preconditioner_defaults::mg_pre_smooth</a></td>
         </tr>
       </table>
 </div><div class="memdoc">

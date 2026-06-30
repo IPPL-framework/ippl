@@ -1,10 +1,11 @@
 <map id="ippl::preconditioner&lt; Field &gt;" name="ippl::preconditioner&lt; Field &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="657,5,790,177"/>
+<area shape="rect" id="node1" title=" " alt="" coords="753,5,886,177"/>
 <area shape="rect" id="node2" href="$structippl_1_1gs__preconditioner.html" title=" " alt="" coords="5,313,172,559"/>
 <area shape="rect" id="node3" href="$structippl_1_1jacobi__preconditioner.html" title=" " alt="" coords="196,372,371,500"/>
-<area shape="rect" id="node4" href="$structippl_1_1polynomial__chebyshev__preconditioner.html" title=" " alt="" coords="395,225,577,647"/>
-<area shape="rect" id="node5" href="$structippl_1_1polynomial__newton__preconditioner.html" title=" " alt="" coords="602,262,845,610"/>
-<area shape="rect" id="node6" href="$structippl_1_1richardson__preconditioner.html" title=" " alt="" coords="869,343,1109,529"/>
-<area shape="rect" id="node7" href="$structippl_1_1richardson__preconditioner__alt.html" title=" " alt="" coords="1133,328,1351,544"/>
-<area shape="rect" id="node8" href="$structippl_1_1ssor__preconditioner.html" title=" " alt="" coords="1375,299,1541,573"/>
+<area shape="rect" id="node4" href="$structippl_1_1multigrid__preconditioner.html" title="Multigrid preconditioner for linear solvers." alt="" coords="395,233,585,639"/>
+<area shape="rect" id="node5" href="$structippl_1_1polynomial__chebyshev__preconditioner.html" title=" " alt="" coords="609,225,792,647"/>
+<area shape="rect" id="node6" href="$structippl_1_1polynomial__newton__preconditioner.html" title=" " alt="" coords="817,262,1059,610"/>
+<area shape="rect" id="node7" href="$structippl_1_1richardson__preconditioner.html" title=" " alt="" coords="1083,343,1323,529"/>
+<area shape="rect" id="node8" href="$structippl_1_1richardson__preconditioner__alt.html" title=" " alt="" coords="1348,328,1565,544"/>
+<area shape="rect" id="node9" href="$structippl_1_1ssor__preconditioner.html" title=" " alt="" coords="1589,299,1756,573"/>
 </map>

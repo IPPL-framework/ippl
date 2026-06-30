@@ -20,6 +20,7 @@ var searchData=
   ['meta_5fupper_5flaplace_17',['meta_upper_laplace',['../structippl_1_1detail_1_1meta__upper__laplace.html',1,'ippl::detail']]],
   ['midpointquadrature_18',['MidpointQuadrature',['../classippl_1_1MidpointQuadrature.html',1,'ippl']]],
   ['min_19',['Min',['../structKokkosCorrection_1_1Min.html',1,'KokkosCorrection']]],
-  ['multispacecontainer_20',['MultispaceContainer',['../classippl_1_1detail_1_1MultispaceContainer.html',1,'ippl::detail']]],
-  ['my_5fauto_5fptr_21',['my_auto_ptr',['../classmy__auto__ptr.html',1,'']]]
+  ['multigrid_5fpreconditioner_20',['multigrid_preconditioner',['../structippl_1_1multigrid__preconditioner.html',1,'ippl']]],
+  ['multispacecontainer_21',['MultispaceContainer',['../classippl_1_1detail_1_1MultispaceContainer.html',1,'ippl::detail']]],
+  ['my_5fauto_5fptr_22',['my_auto_ptr',['../classmy__auto__ptr.html',1,'']]]
 ];

@@ -109,8 +109,18 @@ Variables</h2></td></tr>
 <tr class="separator:a47b1ecc8e133475961199d20159101a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a24c962d05d3a224017dd3ae84b215630"><td class="memItemLeft" align="right" valign="top">constexpr double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a24c962d05d3a224017dd3ae84b215630">ssor_omega</a> = 1.57079632679</td></tr>
 <tr class="separator:a24c962d05d3a224017dd3ae84b215630"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a31019c7b201ae63f6dc2c4de6f39d3"><td class="memItemLeft" align="right" valign="top">constexpr std::array&lt; const char *, 7 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a8a31019c7b201ae63f6dc2c4de6f39d3">valid_types</a></td></tr>
-<tr class="separator:a8a31019c7b201ae63f6dc2c4de6f39d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64f73579f34d10d986351be6e082051a"><td class="memItemLeft" align="right" valign="top">constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a64f73579f34d10d986351be6e082051a">mg_pre_smooth</a> = 2</td></tr>
+<tr class="separator:a64f73579f34d10d986351be6e082051a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a518b54ebf12276a24f186816129ed97c"><td class="memItemLeft" align="right" valign="top">constexpr int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a518b54ebf12276a24f186816129ed97c">mg_post_smooth</a> = 2</td></tr>
+<tr class="separator:a518b54ebf12276a24f186816129ed97c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7fa06cca95c172efa8e5656cef9de9f"><td class="memItemLeft" align="right" valign="top">constexpr double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#ab7fa06cca95c172efa8e5656cef9de9f">mg_omega</a> = 0.8</td></tr>
+<tr class="separator:ab7fa06cca95c172efa8e5656cef9de9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33b1ef44157b4080b6e79351b4ef29c6"><td class="memItemLeft" align="right" valign="top">constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a33b1ef44157b4080b6e79351b4ef29c6">mg_min_cells</a> = 4</td></tr>
+<tr class="separator:a33b1ef44157b4080b6e79351b4ef29c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ff3bab202680a082426709ee8520ddf"><td class="memItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a4ff3bab202680a082426709ee8520ddf">mg_communication</a> = false</td></tr>
+<tr class="separator:a4ff3bab202680a082426709ee8520ddf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a942da6c93f761001960ccd0c78860c93"><td class="memItemLeft" align="right" valign="top">constexpr std::array&lt; const char *, 8 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html#a942da6c93f761001960ccd0c78860c93">valid_types</a></td></tr>
+<tr class="separator:a942da6c93f761001960ccd0c78860c93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a222721c33cb4f8888f84338ace832c2a" name="a222721c33cb4f8888f84338ace832c2a"></a>
@@ -228,6 +238,116 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a4ff3bab202680a082426709ee8520ddf" name="a4ff3bab202680a082426709ee8520ddf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ff3bab202680a082426709ee8520ddf">&#9670;&#160;</a></span>mg_communication</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr bool ippl::pcg_preconditioner_defaults::mg_communication = false</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a33b1ef44157b4080b6e79351b4ef29c6" name="a33b1ef44157b4080b6e79351b4ef29c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a33b1ef44157b4080b6e79351b4ef29c6">&#9670;&#160;</a></span>mg_min_cells</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr unsigned ippl::pcg_preconditioner_defaults::mg_min_cells = 4</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab7fa06cca95c172efa8e5656cef9de9f" name="ab7fa06cca95c172efa8e5656cef9de9f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7fa06cca95c172efa8e5656cef9de9f">&#9670;&#160;</a></span>mg_omega</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr double ippl::pcg_preconditioner_defaults::mg_omega = 0.8</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a518b54ebf12276a24f186816129ed97c" name="a518b54ebf12276a24f186816129ed97c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a518b54ebf12276a24f186816129ed97c">&#9670;&#160;</a></span>mg_post_smooth</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr int ippl::pcg_preconditioner_defaults::mg_post_smooth = 2</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a64f73579f34d10d986351be6e082051a" name="a64f73579f34d10d986351be6e082051a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64f73579f34d10d986351be6e082051a">&#9670;&#160;</a></span>mg_pre_smooth</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr int ippl::pcg_preconditioner_defaults::mg_pre_smooth = 2</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a9c512f54a3a4d72e6e26cb59f92a32fd" name="a9c512f54a3a4d72e6e26cb59f92a32fd"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9c512f54a3a4d72e6e26cb59f92a32fd">&#9670;&#160;</a></span>newton_level</h2>
 
@@ -294,8 +414,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a8a31019c7b201ae63f6dc2c4de6f39d3" name="a8a31019c7b201ae63f6dc2c4de6f39d3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a31019c7b201ae63f6dc2c4de6f39d3">&#9670;&#160;</a></span>valid_types</h2>
+<a id="a942da6c93f761001960ccd0c78860c93" name="a942da6c93f761001960ccd0c78860c93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a942da6c93f761001960ccd0c78860c93">&#9670;&#160;</a></span>valid_types</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -304,7 +424,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr std::array&lt;const char*, 7&gt; ippl::pcg_preconditioner_defaults::valid_types</td>
+          <td class="memname">constexpr std::array&lt;const char*, 8&gt; ippl::pcg_preconditioner_defaults::valid_types</td>
         </tr>
       </table>
   </td>
@@ -314,8 +434,8 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">= {</div>
-<div class="line">            <span class="stringliteral">&quot;jacobi&quot;</span>, <span class="stringliteral">&quot;newton&quot;</span>, <span class="stringliteral">&quot;chebyshev&quot;</span>, <span class="stringliteral">&quot;richardson&quot;</span>, <span class="stringliteral">&quot;richardson_alt&quot;</span>, <span class="stringliteral">&quot;gauss-seidel&quot;</span>, <span class="stringliteral">&quot;ssor&quot;</span></div>
-<div class="line">        }</div>
+<div class="line">            <span class="stringliteral">&quot;jacobi&quot;</span>,         <span class="stringliteral">&quot;newton&quot;</span>,       <span class="stringliteral">&quot;chebyshev&quot;</span>, <span class="stringliteral">&quot;richardson&quot;</span>,</div>
+<div class="line">            <span class="stringliteral">&quot;richardson_alt&quot;</span>, <span class="stringliteral">&quot;gauss-seidel&quot;</span>, <span class="stringliteral">&quot;ssor&quot;</span>,      <span class="stringliteral">&quot;multigrid&quot;</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>

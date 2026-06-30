@@ -395,17 +395,6 @@ template&lt;unsigned Dim&gt; </div>
 </div><div class="memdoc">
 
 <p>Constructor that creates a <a class="el" href="classippl_1_1SubFieldLayout.html" title="SubFieldLayout provides a layout for a sub-region of a larger field.">SubFieldLayout</a> for a sub-region of a larger domain. </p>
-<p >Constructor that creates a <a class="el" href="classippl_1_1SubFieldLayout.html" title="SubFieldLayout provides a layout for a sub-region of a larger field.">SubFieldLayout</a> for a sub-region of a larger domain. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">communicator</td><td>MPI communicator to use </td></tr>
-    <tr><td class="paramname">domain</td><td>The full domain that defines the partitioning </td></tr>
-    <tr><td class="paramname">subDomain</td><td>The sub-region within the full domain, which is partitioned in the same way as the fullomain </td></tr>
-    <tr><td class="paramname">decomp</td><td>Array specifying which dimensions should be parallel </td></tr>
-    <tr><td class="paramname">isAllPeriodic</td><td>Whether all dimensions have periodic boundary conditions</td></tr>
-  </table>
-  </dd>
-</dl>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">communicator</td><td>MPI communicator to use </td></tr>
@@ -417,8 +406,6 @@ template&lt;unsigned Dim&gt; </div>
   </dd>
 </dl>
 <p>Implementation details: Initializes both the full domain decomposition and the sub-domain layout. The sub-domain must be contained within the full domain. All MPI ranks must have non-empty local domains after intersection with the sub-domain, otherwise an exception will be thrown.</p>
-<p >This constructor sets up the parallel decomposition based on the full domain, then restricts the full domain to the specified sub-region while maintaining the same partitioning structure. </p>
-<p >Implementation details: Initializes both the full domain decomposition and the sub-domain layout. The sub-domain must be contained within the full domain. All MPI ranks must have non-empty local domains after intersection with the sub-domain, otherwise an exception will be thrown.</p>
 <p >This constructor sets up the parallel decomposition based on the full domain, then restricts the full domain to the specified sub-region while maintaining the same partitioning structure. </p>
 
 </div>
