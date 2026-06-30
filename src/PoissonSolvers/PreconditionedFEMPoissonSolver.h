@@ -195,12 +195,19 @@ namespace ippl {
             int outer    = this->params_m.template get<int>("gauss_seidel_outer_iterations");
             double omega = this->params_m.template get<double>("ssor_omega");
             int richardson_iterations = this->params_m.template get<int>("richardson_iterations");
-            preconditioner_validation::sanitizeParams(preconditioner_type, warn, level, degree,
-                                                     richardson_iterations, inner, outer, omega);
+            int communication          = pcg_preconditioner_defaults::communication;
+            int mg_pre                 = pcg_preconditioner_defaults::mg_pre_smooth;
+            int mg_post                = pcg_preconditioner_defaults::mg_post_smooth;
+            double mg_omega            = pcg_preconditioner_defaults::mg_omega;
+            unsigned mg_min_cells      = pcg_preconditioner_defaults::mg_min_cells;
+            preconditioner_validation::sanitizeParams(
+                preconditioner_type, warn, level, degree, richardson_iterations, inner, outer,
+                omega, &communication, mg_pre, mg_post, mg_omega, mg_min_cells);
 
             pcg_algo_m.setPreconditioner(algoOperator, algoOperatorL, algoOperatorU, algoOperatorUL,
                                          algoOperatorInvD, algoOperatorD, 0, 0, preconditioner_type,
-                                         level, degree, richardson_iterations, inner, outer, omega);
+                                         level, degree, richardson_iterations, inner, outer, omega,
+                                         mg_pre, mg_post, mg_omega, mg_min_cells);
 
             pcg_algo_m.setOperator(algoOperator);
 
