@@ -2,6 +2,7 @@
 #define IPPL_ALPINE_MANAGER_H
 
 #include <memory>
+#include <vector>
 
 #include "FEM/FEMInterpolate.hpp"
 #include "FieldContainer.hpp"
@@ -25,7 +26,8 @@ public:
     using FieldContainer_t    = FieldContainer<T, Dim>;
     using FieldSolver_t       = FieldSolver<T, Dim>;
     using LoadBalancer_t      = LoadBalancer<T, Dim>;
-    using Base                = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using Base =
+        ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim, ippl::UniformCartesian<T, Dim>>>;
 
 protected:
     size_type totalP_m;
