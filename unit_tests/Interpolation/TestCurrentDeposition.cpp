@@ -58,9 +58,11 @@ using Tests      = TestForTypes<CreateCombinations<Precisions, Ranks>::type>::ty
 
 TYPED_TEST_SUITE(AssembleCurrentTest, Tests);
 
-// Pure x-motion inside a single cell. All 2^Dim corners receive equal weight
-// (midpoint lies exactly at cell centre). Verifies:
-//   - Jx is distributed uniformly over all 2^Dim nodes.
+// Pure x-motion inside a single cell. The midpoint lies at the mesh cell centre.
+// assemble_current_collocated applies the same half-cell shift used by the
+// centered field gather, so this point lands exactly on node (0,...,0).
+// Verifies:
+//   - Jx is deposited at the shifted node location.
 //   - Jy (and Jz in 3D) remain exactly zero.
 //   - The scalar slot field[0] is untouched (remains zero).
 TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
@@ -148,23 +150,20 @@ TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
         EXPECT_NEAR(global_val, 0.0, static_cast<double>(tol));
     };
 
-    // One segment in cell (0,...,0). Mid=(0.5,0.5,...), xi=(0.5,0.5,...),
-    // dp=(0.5,0,...). All 2^Dim corners share weight (0.5)^Dim.
-    // Jx = dp[0] * (0.5)^Dim per corner; Jy = Jz = 0.
+    // One segment. Mid=(0.5,0.5,...), shifted gp=(0,0,...), xi=(0,0,...),
+    // dp=(0.5,0,...). The full Jx contribution lands on node (0,...,0).
     if constexpr (Dim == 2) {
-        // weight=0.25, Jx=0.5*0.25=0.125 at each of 4 corners.
-        check({0, 0}, 0, 0.125); check({1, 0}, 0, 0.125);
-        check({0, 1}, 0, 0.125); check({1, 1}, 0, 0.125);
+        check({0, 0}, 0, 0.5);   check({1, 0}, 0, 0.0);
+        check({0, 1}, 0, 0.0);   check({1, 1}, 0, 0.0);
         check({0, 0}, 1, 0.0);   check({1, 0}, 1, 0.0);
         check({0, 1}, 1, 0.0);   check({1, 1}, 1, 0.0);
         check_scalar({0, 0}); check_scalar({1, 0});
         check_scalar({0, 1}); check_scalar({1, 1});
     } else if constexpr (Dim == 3) {
-        // weight=0.125, Jx=0.5*0.125=0.0625 at each of 8 corners.
         for (int i = 0; i <= 1; ++i)
             for (int j = 0; j <= 1; ++j)
                 for (int k = 0; k <= 1; ++k) {
-                    check({i, j, k}, 0, 0.0625);
+                    check({i, j, k}, 0, (i == 0 && j == 0 && k == 0) ? 0.5 : 0.0);
                     check({i, j, k}, 1, 0.0);
                     check({i, j, k}, 2, 0.0);
                     check_scalar({i, j, k});
@@ -174,10 +173,11 @@ TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
 
 // Diagonal path crossing two cell boundaries (three segments). 2D only.
 //
-// Segments (GridPathSegmenter: x-cut t=1/3, y-cut t=2/3):
-//   seg0: cell(0,0) xi=(0.875,0.625) dp=(0.25,0.25)
-//   seg1: cell(1,0) xi=(0.125,0.875) dp=(0.25,0.25)
-//   seg2: cell(1,1) xi=(0.375,0.125) dp=(0.25,0.25)
+// Segments (GridPathSegmenter: x-cut t=1/3, y-cut t=2/3), evaluated with the
+// half-cell shifted coordinate gp=mid/h-0.5:
+//   seg0: xi=(0.375,0.125) dp=(0.25,0.25)
+//   seg1: xi=(0.625,0.375) dp=(0.25,0.25)
+//   seg2: xi=(0.875,0.625) dp=(0.25,0.25)
 //
 // Because dp_x == dp_y for every segment, Jx == Jy at every node.
 // With h=1 (volume=1), q_over_dt_vol = 1.
@@ -254,21 +254,22 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_ThreeCells_ExactValues) {
         };
 
         // All single-particle values scaled by 3 (three identical particles).
-        check(0, 0, 0, 0.03515625);  check(0, 0, 1, 0.03515625);
-        check(1, 0, 0, 0.328125);    check(1, 0, 1, 0.328125);
-        check(0, 1, 0, 0.05859375);  check(0, 1, 1, 0.05859375);
-        check(1, 1, 0, 1.39453125);  check(1, 1, 1, 1.39453125);
-        check(2, 0, 0, 0.01171875);  check(2, 0, 1, 0.01171875);
-        check(2, 1, 0, 0.328125);    check(2, 1, 1, 0.328125);
-        check(1, 2, 0, 0.05859375);  check(1, 2, 1, 0.05859375);
-        check(2, 2, 0, 0.03515625);  check(2, 2, 1, 0.03515625);
+        check(0, 0, 0, 0.62109375);  check(0, 0, 1, 0.62109375);
+        check(1, 0, 0, 0.78515625);  check(1, 0, 1, 0.78515625);
+        check(0, 1, 0, 0.22265625);  check(0, 1, 1, 0.22265625);
+        check(1, 1, 0, 0.62109375);  check(1, 1, 1, 0.62109375);
+        check(2, 0, 0, 0.0);         check(2, 0, 1, 0.0);
+        check(2, 1, 0, 0.0);         check(2, 1, 1, 0.0);
+        check(1, 2, 0, 0.0);         check(1, 2, 1, 0.0);
+        check(2, 2, 0, 0.0);         check(2, 2, 1, 0.0);
     }
 }
 
 // 3D path where all three axes are crossed simultaneously at t=0.5 (vertex hit).
-// Active segments after degenerate zero-length segments are skipped:
-//   seg0: cell(0,0,0) xi=(0.95,0.95,0.9) dp=(0.1,0.1,0.2)
-//   seg3: cell(1,1,1) xi=(0.05,0.05,0.1) dp=(0.1,0.1,0.2)
+// Active segments after degenerate zero-length segments are skipped, evaluated
+// with the half-cell shifted coordinate gp=mid/h-0.5:
+//   seg0: xi=(0.45,0.45,0.4) dp=(0.1,0.1,0.2)
+//   seg3: xi=(0.55,0.55,0.6) dp=(0.1,0.1,0.2)
 //
 // Symmetry used to reduce the number of assertions:
 //   Jy == Jx everywhere (dp_y == dp_x)
@@ -346,45 +347,45 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_VertexHit_3D) {
         };
 
         // Jx (c=0): dp[0]=0.1 per segment, weights from full trilinear CIC.
-        check({0, 0, 0}, 0, 0.000025);
-        check({1, 0, 0}, 0, 0.000475);
-        check({0, 1, 0}, 0, 0.000475);
-        check({1, 1, 0}, 0, 0.009025);
-        check({0, 0, 1}, 0, 0.000225);
-        check({1, 0, 1}, 0, 0.004275);
-        check({0, 1, 1}, 0, 0.004275);
-        check({1, 1, 1}, 0, 0.16245);
-        check({2, 1, 1}, 0, 0.004275);
-        check({1, 2, 1}, 0, 0.004275);
-        check({2, 2, 1}, 0, 0.000225);
-        check({1, 1, 2}, 0, 0.009025);
-        check({2, 1, 2}, 0, 0.000475);
-        check({1, 2, 2}, 0, 0.000475);
-        check({2, 2, 2}, 0, 0.000025);
+        check({0, 0, 0}, 0, 0.02625);
+        check({1, 0, 0}, 0, 0.02475);
+        check({0, 1, 0}, 0, 0.02475);
+        check({1, 1, 0}, 0, 0.02425);
+        check({0, 0, 1}, 0, 0.02425);
+        check({1, 0, 1}, 0, 0.02475);
+        check({0, 1, 1}, 0, 0.02475);
+        check({1, 1, 1}, 0, 0.02625);
+        check({2, 1, 1}, 0, 0.0);
+        check({1, 2, 1}, 0, 0.0);
+        check({2, 2, 1}, 0, 0.0);
+        check({1, 1, 2}, 0, 0.0);
+        check({2, 1, 2}, 0, 0.0);
+        check({1, 2, 2}, 0, 0.0);
+        check({2, 2, 2}, 0, 0.0);
 
         // Jy == Jx (dp_y == dp_x): spot-check a subset of nodes.
-        check({0, 0, 0}, 1, 0.000025);
-        check({1, 1, 0}, 1, 0.009025);
-        check({1, 1, 1}, 1, 0.16245);
-        check({1, 1, 2}, 1, 0.009025);
-        check({2, 2, 2}, 1, 0.000025);
+        check({0, 0, 0}, 1, 0.02625);
+        check({1, 1, 0}, 1, 0.02425);
+        check({1, 1, 1}, 1, 0.02625);
+        check({1, 1, 2}, 1, 0.0);
+        check({2, 2, 2}, 1, 0.0);
 
         // Jz (c=2): dp[2]=0.2 == 2*dp[0], so Jz == 2*Jx at every node.
-        check({0, 0, 0}, 2, 0.00005);
-        check({1, 0, 0}, 2, 0.00095);
-        check({0, 1, 0}, 2, 0.00095);
-        check({1, 1, 0}, 2, 0.01805);
-        check({0, 0, 1}, 2, 0.00045);
-        check({1, 0, 1}, 2, 0.00855);
-        check({0, 1, 1}, 2, 0.00855);
-        check({1, 1, 1}, 2, 0.3249);
-        check({2, 1, 1}, 2, 0.00855);
-        check({1, 2, 1}, 2, 0.00855);
-        check({2, 2, 1}, 2, 0.00045);
-        check({1, 1, 2}, 2, 0.01805);
-        check({2, 1, 2}, 2, 0.00095);
-        check({1, 2, 2}, 2, 0.00095);
-        check({2, 2, 2}, 2, 0.00005);
+        check({0, 0, 0}, 2, 0.0525);
+        check({1, 0, 0}, 2, 0.0495);
+        check({0, 1, 0}, 2, 0.0495);
+        check({1, 1, 0}, 2, 0.0485);
+        check({0, 0, 1}, 2, 0.0485);
+        check({1, 0, 1}, 2, 0.0495);
+        check({0, 1, 1}, 2, 0.0495);
+        check({1, 1, 1}, 2, 0.0525);
+        check({2, 1, 1}, 2, 0.0);
+        check({1, 2, 1}, 2, 0.0);
+        check({2, 2, 1}, 2, 0.0);
+        check({1, 1, 2}, 2, 0.0);
+        check({2, 1, 2}, 2, 0.0);
+        check({1, 2, 2}, 2, 0.0);
+        check({2, 2, 2}, 2, 0.0);
     }
 }
 
