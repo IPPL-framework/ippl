@@ -4,10 +4,8 @@ include:
 variables:
   ROCM6_3_UENV: "prgenv-gnu/25.07-6.3.3:v12"
   WITH_UENV_VIEW: "default"
-  F7T_CLIENT_ID: $F7T_TDS_CONSUMER_KEY
-  F7T_CLIENT_SECRET: $F7T_TDS_CONSUMER_SECRET
   SCRATCH: "/capstor/scratch/cscs/biddisco"
-  SRUN_FLAGS: "--uenv=${ROCM6_3_UENV};--view=${WITH_UENV_VIEW};--repo=$SCRATCH/.uenv-images-ci-beverin;$WRAPPER"
+  SRUN_FLAGS: "--uenv=${ROCM6_3_UENV};--view=${WITH_UENV_VIEW};--repo=$SCRATCH/.uenv-images-ci-beverin"
   BUILD_ARCH: "mi300"
   CTEST_SITE: "Beverin mi300 ROCm 6.3.3"
 
@@ -30,6 +28,7 @@ variables:
     - export CXX=amdclang++
     - export HSA_PATH=$( find /user-environment/ -name hsa-rocr-dev\* )
     - export CMAKE_PREFIX_PATH=$HSA_PATH:$CMAKE_PREFIX_PATH
+    - export WRAPPER="$( pwd )/$BUILD_DIR/scripts/landau/strong-scaling-alps/wrapper-mi300.sh"
   script:
     - >-
       ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-configure-build.cmake
@@ -38,11 +37,12 @@ variables:
       -DCDASH_LABEL=$CDASH_LABEL
       -DBUILD_TYPE=$BUILD_TYPE
       -DBUILD_DIR=$BUILD_PATH
+      -DIPPL_ENABLE_SCRIPTS=ON
       -DBUILD_ARCH=$BUILD_ARCH
       -DKokkos_VERSION=git.4.7.02
       -DKokkos_ARCH_FLAG=Kokkos_ARCH_AMD_GFX942_APU
       -DMPIEXEC_EXECUTABLE=/usr/bin/srun
-      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"
+      -DMPIEXEC_PREFLAGS="$SRUN_FLAGS;${WRAPPER}"
       -DMPIEXEC_MAX_NUMPROCS=4
     # -DHeffte_ENABLE_GPU_AWARE_MPI=OFF
     - echo "Build directory size (before cleanup):" $(du -sh $BUILD_PATH | cut -f1)

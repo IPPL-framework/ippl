@@ -39,14 +39,14 @@ int main(int argc, char* argv[]) {
         int pt         = std::atoi(argv[1]);
         bool gauss_fct = std::atoi(argv[2]);
         ippl::Index I(pt);
-        ippl::NDIndex<dim> owned(I, I, I);
+        ippl::NDIndex<dim> global_domain(I, I, I);
 
         // Specifies SERIAL, PARALLEL dims
         std::array<bool, dim> isParallel;
         isParallel.fill(true);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, global_domain, isParallel);
 
         // type definitions
         typedef ippl::Vector<double, dim> Vector_t;
@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
         double dx       = 1.0 / double(pt);
         Vector_t hx     = {dx, dx, dx};
         Vector_t origin = {0.0, 0.0, 0.0};
-        Mesh_t mesh(owned, hx, origin);
+        Mesh_t mesh(global_domain, hx, origin);
 
         Field_t field(mesh, layout, 1);
         MField_t result(mesh, layout, 1);
