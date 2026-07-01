@@ -100,6 +100,11 @@ function(set_kokkos_options)
       if(NOT DEFINED CMAKE_HIP_ARCHITECTURES)
         message(FATAL_ERROR "HIP platform requested but CMAKE_HIP_ARCHITECTURES not set")
       endif()
+
+      if(NOT DEFINED AMDGPU_TARGETS)
+       set(AMDGPU_TARGETS "${CMAKE_HIP_ARCHITECTURES}" CACHE STRING
+        "AMDGPU targets for ROCm packages" FORCE)
+      endif()
     endif()
   endforeach()
 
