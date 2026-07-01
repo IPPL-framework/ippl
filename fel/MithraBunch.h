@@ -36,11 +36,6 @@ template <typename scalar>
 using FieldVector = ippl::Vector<scalar, 3>;
 template <typename scalar>
 struct BunchInitialize {
-    /* Type of the bunch which is one of the manual, ellipsoid, cylinder, cube, and 3D-crystal. If
-     * it is manual the charge at points of the position vector will be produced.
-     */
-    // std::string     			bunchType_;
-
     /* Type of the distributions (transverse or longitudinal) in the bunch.
      */
     std::string distribution_;
@@ -65,7 +60,6 @@ struct BunchInitialize {
     FieldVector<scalar> initialDirection_;
 
     /* Position of the center of the bunch in the unit of length scale. */
-    // std::vector<FieldVector<scalar> >	position_;
     FieldVector<scalar> position_;
 
     /* Number of macroparticles in each direction for 3Dcrystal type. */
@@ -114,8 +108,6 @@ struct BunchInitialize {
      */
     FieldVector<scalar> betaVector_;
 
-    /* Initialize the parameters for the bunch initialization to some first values. */
-    // BunchInitialize ();
 };
 
 // LORENTZ FRAME AND UNDULATOR
@@ -136,7 +128,7 @@ BunchInitialize<scalar> generate_mithra_config(
     init.sigmaGammaBeta_   = vector_cast<scalar>(cfg.sigma_momentum);
     init.sigmaPosition_    = vector_cast<scalar>(cfg.sigma_position);
 
-    // TODO: Initial bunching factor huh
+    // Initial bunching factor.
     init.bF_                = 0.01;
     init.bFP_               = 0;
     init.shotNoise_         = false;
@@ -164,8 +156,6 @@ struct Charge {
      * be double, because this flag needs to be communicated during bunch update.
      */
     Double e;
-
-    // Charge();
 };
 template <typename scalar>
 using ChargeVector = std::list<Charge<scalar>>;
@@ -177,9 +167,9 @@ void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Do
     if (bunchInit.numberOfParticles_ % 4 != 0) {
         unsigned int n = bunchInit.numberOfParticles_ % 4;
         bunchInit.numberOfParticles_ += 4 - n;
-        // printmessage(std::string(__FILE__), __LINE__, std::string("Warning: The number of
-        // particles in the bunch is not a multiple of four. ") +
-        //     std::string("It is corrected to ") +  std::to_string(bunchInit.numberOfParticles_) );
+        Inform msg("BunchInitialize");
+        msg << "Warning: number of particles in the bunch is not a multiple of four; "
+            << "corrected to " << bunchInit.numberOfParticles_ << "." << endl;
     }
 
     /* Save the initially given number of particles. */
@@ -204,8 +194,8 @@ void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Do
 
     /* Check the bunching factor. */
     if (bunchInit.bF_ > 2.0 || bunchInit.bF_ < 0.0) {
-        // printmessage(std::string(__FILE__), __LINE__, std::string("The bunching factor can not be
-        // larger than one or a negative value !!!") ); exit(1);
+        throw IpplException("initializeBunchEllipsoid",
+                            "The bunching factor must be between 0 and 2.");
     }
 
     /* If the generator is random we should make sure that different processors do not produce the
@@ -227,12 +217,7 @@ void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Do
     /* Declare the generator function depending on the input.
      */
     auto generate = [&](unsigned int n, unsigned int m) {
-        // if 	( bunchInit.generator_ == "random" )
         return (randomNumbers.at(n * 2 * Np / ng + m));
-        // else
-        //   return  ( randomNumbers[ n * 2 * Np/ng + m ] );
-        // TODO: Return halton properly
-        // return 	( halton(n,m) );
     };
 
     /* Declare the function for injecting the shot noise.
@@ -357,7 +342,7 @@ void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Do
     }
 
     /* If the longitudinal type of the bunch is uniform a tapered part needs to be added to remove
-     * the CSE from the tail of the bunch.
+     * the coherent spontaneous emission (CSE) from the tail of the bunch.
      */
     if (bunchInit.distribution_ == "uniform") {
         for (; i < unsigned(uint32_t(Np / ng)
