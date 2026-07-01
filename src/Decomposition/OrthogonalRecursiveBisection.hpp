@@ -164,8 +164,8 @@ namespace ippl {
     }
 
     template <class Field, class Tp>
-    bool OrthogonalRecursiveBisection<Field, Tp>::domainsOverlap(
-        const NDIndex<Dim>& lhs, const NDIndex<Dim>& rhs) const {
+    bool OrthogonalRecursiveBisection<Field, Tp>::domainsOverlap(const NDIndex<Dim>& lhs,
+                                                                 const NDIndex<Dim>& rhs) const {
         for (unsigned d = 0; d < Dim; ++d) {
             if (lhs[d].last() < rhs[d].first() || rhs[d].last() < lhs[d].first()) {
                 return false;
