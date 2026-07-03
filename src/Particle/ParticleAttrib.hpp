@@ -109,8 +109,7 @@ namespace ippl {
     // KOKKOS_INLINE_FUNCTION
     ParticleAttrib<T, Properties...>& ParticleAttrib<T, Properties...>::operator=(
         detail::Expression<E, N> const& expr) {
-        using capture_type = detail::CapturedExpression<E, N>;
-        capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
+        const E expr_ = static_cast<const E&>(expr);
 
         auto dview = dview_m;
         using policy_type = Kokkos::RangePolicy<execution_space>;
