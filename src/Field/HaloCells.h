@@ -141,13 +141,7 @@ namespace ippl {
             template <class Op>
             void exchangeBoundaries(view_type& view, Layout_t* layout, SendOrder order, int nghost = 1);
 
-            /*!
-             * Extract the subview of the original data. This does not copy.
-             * A subview points to the same memory.
-             * @param view is the original field data
-             * @param intersect the bounds of the intersection
-             */
-            auto makeSubview(const view_type& view, const bound_type& intersect);
+            static size_type rangeSize(const bound_type& range);
 
             databuffer_type haloData_m;
         };
