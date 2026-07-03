@@ -176,11 +176,11 @@ namespace ippl {
             template <class Buffer, typename Archive>
             void isend(int dest, int tag, Buffer& buffer, Archive& ar, MPI_Request& request,
                        size_type nsends) {
+                buffer.serialize(ar, nsends);
                 if (ar.getSize() > INT_MAX) {
                     std::cerr << "Message size exceeds range of int" << std::endl;
                     this->abort();
                 }
-                buffer.serialize(ar, nsends);
                 MPI_Isend(ar.getBuffer(), ar.getSize(), MPI_BYTE, dest, tag, *comm_m, &request);
             }
 
