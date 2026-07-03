@@ -54,9 +54,6 @@ namespace ippl {
                 if (const char* gpuAware = std::getenv("IPPL_MPI_GPU_AWARE")) {
                     return !envEnabled(gpuAware);
                 }
-                if (const char* mpichGpu = std::getenv("MPICH_GPU_SUPPORT_ENABLED")) {
-                    return !envEnabled(mpichGpu);
-                }
 
                 return true;
             }
