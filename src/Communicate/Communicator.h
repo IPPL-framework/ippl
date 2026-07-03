@@ -267,6 +267,14 @@ namespace ippl {
                     std::cerr << "Message size exceeds range of int" << std::endl;
                     this->abort();
                 }
+                using memory_space = typename Archive::buffer_type::memory_space;
+                if (archive_transport::useHostStaging<memory_space>()) {
+                    std::cerr << "Non-blocking archive receive requires direct archive MPI. "
+                                 "Set IPPL_MPI_ARCHIVE_HOST_STAGING=0 or IPPL_MPI_GPU_AWARE=1 "
+                                 "only when the MPI stack supports this archive memory space."
+                              << std::endl;
+                    this->abort();
+                }
                 MPI_Irecv(ar.getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &request);
             }
 
