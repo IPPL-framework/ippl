@@ -154,8 +154,8 @@ namespace ippl {
         buffer_type reallocateLargestFreeBuffer(size_type requiredSize);
         buffer_type allocateNewBuffer(size_type requiredSize);
 
-        size_type usedSize_m = 0;  ///< Total size of all allocated buffers
-        size_type freeSize_m = 0;  ///< Total size of all free buffers
+        size_type usedSize_m;  ///< Total size of all allocated buffers
+        size_type freeSize_m;  ///< Total size of all free buffers
 
     protected:
         buffer_set_type used_buffers{

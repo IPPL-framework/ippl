@@ -147,7 +147,7 @@ namespace ippl {
                         range = sendRanges[index][i];
                     }
 
-                    size_type nrecvs = rangeSize(range);
+                    size_type nrecvs = range.size();
 
                     buffer_type buf = comm.template getBuffer<memory_space, T>(nrecvs);
 
@@ -166,58 +166,35 @@ namespace ippl {
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
-        size_type HaloCells<T, Dim, ViewArgs...>::rangeSize(const bound_type& range) {
-            size_type total = 1;
-            for (unsigned d = 0; d < Dim; ++d) {
-                const long extent = range.hi[d] - range.lo[d];
-                if (extent <= 0) {
-                    return 0;
-                }
-                total *= static_cast<size_type>(extent);
-            }
-            return total;
-        }
-
-        template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::pack(const bound_type& range, const view_type& view,
                                                   databuffer_type& fd, size_type& nsends) {
-            auto& fieldBuffer = fd.buffer;
+            auto subview = makeSubview(view, range);
 
-            size_type size = rangeSize(range);
+            auto& buffer = fd.buffer;
+
+            size_t size = subview.size();
             nsends      = size;
-            if (size == 0) {
-                return;
-            }
-            if (fieldBuffer.size() < size) {
+            if (buffer.size() < size) {
                 int overalloc = Comm->getDefaultOverallocation();
-                Kokkos::realloc(fieldBuffer, size * overalloc);
-            }
-            auto buffer   = fieldBuffer;
-            auto fullView = view;
-
-            using exec_space = typename view_type::execution_space;
-            using index_type = typename RangePolicy<Dim, exec_space>::index_type;
-            Kokkos::Array<index_type, Dim> begin, end, extent;
-            for (unsigned d = 0; d < Dim; ++d) {
-                begin[d]  = range.lo[d];
-                end[d]    = range.hi[d];
-                extent[d] = end[d] - begin[d];
+                Kokkos::realloc(buffer, size * overalloc);
             }
 
             using index_array_type =
-                typename RangePolicy<Dim, exec_space>::index_array_type;
+                typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
             ippl::parallel_for(
-                "HaloCells::pack()", createRangePolicy<Dim, exec_space>(begin, end),
+                "HaloCells::pack()", getRangePolicy(subview),
                 KOKKOS_LAMBDA(const index_array_type& args) {
-                    size_type l      = 0;
-                    size_type stride = 1;
+                    int l = 0;
 
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        l += static_cast<size_type>(args[d] - begin[d]) * stride;
-                        stride *= static_cast<size_type>(extent[d]);
+                    for (unsigned d1 = 0; d1 < Dim; d1++) {
+                        int next = args[d1];
+                        for (unsigned d2 = 0; d2 < d1; d2++) {
+                            next *= subview.extent(d2);
+                        }
+                        l += next;
                     }
 
-                    buffer(l) = apply(fullView, args);
+                    buffer(l) = apply(subview, args);
                 });
             Kokkos::fence();
         }
@@ -226,42 +203,41 @@ namespace ippl {
         template <typename Op>
         void HaloCells<T, Dim, ViewArgs...>::unpack(const bound_type& range, const view_type& view,
                                                     databuffer_type& fd) {
-            if (rangeSize(range) == 0) {
-                return;
-            }
-
-            auto buffer   = fd.buffer;
-            auto fullView = view;
+            auto subview = makeSubview(view, range);
+            auto buffer  = fd.buffer;
 
             // 29. November 2020
             // https://stackoverflow.com/questions/3735398/operator-as-template-parameter
             Op op;
 
-            using exec_space = typename view_type::execution_space;
-            using index_type = typename RangePolicy<Dim, exec_space>::index_type;
-            Kokkos::Array<index_type, Dim> begin, end, extent;
-            for (unsigned d = 0; d < Dim; ++d) {
-                begin[d]  = range.lo[d];
-                end[d]    = range.hi[d];
-                extent[d] = end[d] - begin[d];
-            }
-
             using index_array_type =
-                typename RangePolicy<Dim, exec_space>::index_array_type;
+                typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
             ippl::parallel_for(
-                "HaloCells::unpack()", createRangePolicy<Dim, exec_space>(begin, end),
+                "HaloCells::unpack()", getRangePolicy(subview),
                 KOKKOS_LAMBDA(const index_array_type& args) {
-                    size_type l      = 0;
-                    size_type stride = 1;
+                    int l = 0;
 
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        l += static_cast<size_type>(args[d] - begin[d]) * stride;
-                        stride *= static_cast<size_type>(extent[d]);
+                    for (unsigned d1 = 0; d1 < Dim; d1++) {
+                        int next = args[d1];
+                        for (unsigned d2 = 0; d2 < d1; d2++) {
+                            next *= subview.extent(d2);
+                        }
+                        l += next;
                     }
 
-                    op(apply(fullView, args), buffer(l));
+                    op(apply(subview, args), buffer(l));
                 });
             Kokkos::fence();
+        }
+
+        template <typename T, unsigned Dim, class... ViewArgs>
+        auto HaloCells<T, Dim, ViewArgs...>::makeSubview(const view_type& view,
+                                                         const bound_type& intersect) {
+            auto makeSub = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
+                return Kokkos::subview(view,
+                                       Kokkos::make_pair(intersect.lo[Idx], intersect.hi[Idx])...);
+            };
+            return makeSub(std::make_index_sequence<Dim>{});
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
