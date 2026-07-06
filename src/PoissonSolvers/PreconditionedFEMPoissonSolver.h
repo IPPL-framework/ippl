@@ -9,6 +9,7 @@
 #include "EvalFunctor.h"
 #include "LaplaceHelpers.h"
 #include "LinearSolvers/PCG.h"
+#include "LinearSolvers/PreconditionerValidation.h"
 #include "Poisson.h"
 
 namespace ippl {
@@ -184,21 +185,39 @@ namespace ippl {
             // set preconditioner for PCG
             std::string preconditioner_type =
                 this->params_m.template get<std::string>("preconditioner_type");
+            preconditioner_validation::throwIfUnknownType(preconditioner_type,
+                                                          "PreconditionedFEMPoissonSolver::solve");
+
+            Inform warn("PreconditionedFEMPoissonSolver");
             int level    = this->params_m.template get<int>("newton_level");
             int degree   = this->params_m.template get<int>("chebyshev_degree");
             int inner    = this->params_m.template get<int>("gauss_seidel_inner_iterations");
             int outer    = this->params_m.template get<int>("gauss_seidel_outer_iterations");
             double omega = this->params_m.template get<double>("ssor_omega");
             int richardson_iterations = this->params_m.template get<int>("richardson_iterations");
+            int communication          = pcg_preconditioner_defaults::communication;
+            int mg_pre                 = pcg_preconditioner_defaults::mg_pre_smooth;
+            int mg_post                = pcg_preconditioner_defaults::mg_post_smooth;
+            double mg_omega            = pcg_preconditioner_defaults::mg_omega;
+            unsigned mg_min_cells      = pcg_preconditioner_defaults::mg_min_cells;
+            preconditioner_validation::sanitizeParams(
+                preconditioner_type, warn, level, degree, richardson_iterations, inner, outer,
+                omega, &communication, mg_pre, mg_post, mg_omega, mg_min_cells);
 
             pcg_algo_m.setPreconditioner(algoOperator, algoOperatorL, algoOperatorU, algoOperatorUL,
                                          algoOperatorInvD, algoOperatorD, 0, 0, preconditioner_type,
-                                         level, degree, richardson_iterations, inner, outer, omega);
+                                         level, degree, richardson_iterations, inner, outer, omega,
+                                         mg_pre, mg_post, mg_omega, mg_min_cells);
 
             pcg_algo_m.setOperator(algoOperator);
 
             // send boundary values to RHS (load vector) i.e. lifting (Dirichlet BCs)
             if (bcType == CONSTANT_FACE) {
+                // Set per-face Dirichlet values on physical boundary nodes before halo exchange;
+                // fillHalo must see the correct boundary state after load vector assembly.
+                bcField.apply(*(this->rhs_mp));
+                bcField.assignGhostToPhysical(*(this->rhs_mp));
+                this->rhs_mp->fillHalo();
                 *(this->rhs_mp) =
                     *(this->rhs_mp)
                     - lagrangeSpace_m.evaluateAx_lift(*(this->rhs_mp), poissonEquationEval);

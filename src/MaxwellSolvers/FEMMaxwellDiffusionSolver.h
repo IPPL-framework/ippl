@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <iostream>
 
+#include "FEM/FEMQuadratureData.h"
 #include "LinearSolvers/PCG.h"
 #include "Maxwell.h"
 
@@ -62,17 +63,15 @@ namespace ippl {
          *
          * @param i The first DOF index.
          * @param j The second DOF index.
-         * @param curl_b_q_k The curl of the DOFs.
-         * @param val_b_q_k The values of the DOFs.
+         * @param qd Per-quadrature basis values and curls.
          *
          * @returns (curl(b_i)*curl(b_j) + b_i*b_j)*absDetDPhi
          */
         KOKKOS_FUNCTION auto operator()(
             size_t i, size_t j,
-            const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& curl_b_q_k,
-            const ippl::Vector<ippl::Vector<T, Dim>, numElementDOFs>& val_b_q_k) const {
-            T curlTerm = dot(DPhiInvT * curl_b_q_k[j], DPhiInvT * curl_b_q_k[i]).apply();
-            T massTerm = dot(val_b_q_k[j], val_b_q_k[i]).apply();
+            const QuadratureData<Vector<T, Dim>, Vector<T, Dim>, numElementDOFs>& qd) const {
+            T curlTerm = dot(DPhiInvT * qd.deriv_q[j], DPhiInvT * qd.deriv_q[i]).apply();
+            T massTerm = dot(qd.val_q[j], qd.val_q[i]).apply();
             return (curlTerm + massTerm) * absDetDPhi;
         }
     };

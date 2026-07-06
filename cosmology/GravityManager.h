@@ -29,7 +29,8 @@ public:
     using FieldContainer_t    = FieldContainer<T, Dim>;
     using FieldSolver_t       = FieldSolver<T, Dim>;
     using LoadBalancer_t      = LoadBalancer<T, Dim>;
-    using Base                = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using Base =
+        ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim, ippl::UniformCartesian<T, Dim>>>;
 
 public:
     /**
@@ -232,7 +233,7 @@ public:
     /**
      * @brief Virtual method to dump data (default does nothing).
      */
-    virtual void dump(){/* default does nothing */};
+    virtual void dump() { /* default does nothing */ };
 
     // Step methods
 

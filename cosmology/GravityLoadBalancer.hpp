@@ -13,7 +13,8 @@
  */
 template <typename T, unsigned Dim>
 class LoadBalancer {
-    using Base          = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+    using Base =
+        ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim, ippl::UniformCartesian<T, Dim>>>;
     using FieldSolver_t = ippl::FieldSolverBase<T, Dim>;
 
 public:
@@ -111,7 +112,8 @@ public:
     void repartition(ippl::FieldLayout<Dim>* fl, ippl::UniformCartesian<T, Dim>* mesh,
                      bool& isFirstRepartition) {
         // Repartition the domains
-        using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+        using Base =
+            ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim, ippl::UniformCartesian<T, Dim>>>;
         typename Base::particle_position_type* R;
         R        = &pc_m->R;
         bool res = orb.binaryRepartition(*R, *fl, isFirstRepartition);

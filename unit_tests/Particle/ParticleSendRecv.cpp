@@ -149,7 +149,6 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     typename TestFixture::rank_type::view_type::host_mirror_type ER_host =
         bunch->expectedRank.getHostMirror();
 
-    Kokkos::resize(ER_host, bunch->expectedRank.size());
     Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());
 
     for (size_t i = 0; i < bunch->getLocalNum(); ++i) {

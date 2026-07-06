@@ -19,6 +19,7 @@ endif()
 if(IPPL_ENABLE_SOLVERS)
   add_subdirectory(solver)
   add_subdirectory(solver/fem)
+  add_subdirectory(solver/multigrid)
   add_subdirectory(maxwell)
 endif()
 

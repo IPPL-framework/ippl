@@ -22,7 +22,8 @@ namespace ippl {
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
-        void HaloCells<T, Dim, ViewArgs...>::accumulateHalo_noghost(view_type& view, Layout_t* layout, int nghost) {
+        void HaloCells<T, Dim, ViewArgs...>::accumulateHalo_noghost(view_type& view,
+                                                                    Layout_t* layout, int nghost) {
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL_NOGHOST, nghost);
         }
         template <typename T, unsigned Dim, class... ViewArgs>
@@ -55,7 +56,7 @@ namespace ippl {
             // needed for the NOGHOST approach - we want to remove the ghost
             // cells on the boundaries of the global domain from the halo
             // exchange when we set HALO_TO_INTERNAL_NOGHOST
-            const auto domain = layout->getDomain();
+            const auto domain    = layout->getDomain();
             const auto& ldomains = layout->getHostLocalDomains();
 
             size_t totalRequests = 0;
@@ -89,11 +90,16 @@ namespace ippl {
                         range = recvRanges[index][i];
 
                         for (size_t j = 0; j < Dim; ++j) {
-                            bool isLower = ((range.lo[j] + ldomains[me][j].first()
-                                            - nghost) == domain[j].min());
-                            bool isUpper = ((range.hi[j] - 1 + 
-                                            ldomains[me][j].first() - nghost)
-                                            == domain[j].max());
+                            const int stride = ldomains[me][j].stride();
+
+                            const int globalLo =
+                                ldomains[me][j].first() + (range.lo[j] - nghost) * stride;
+                            const int globalHi =
+                                ldomains[me][j].first() + (range.hi[j] - 1 - nghost) * stride;
+
+                            bool isLower = (globalLo == domain[j].min());
+                            bool isUpper = (globalHi == domain[j].max());
+
                             range.lo[j] += isLower * (nghost);
                             range.hi[j] -= isUpper * (nghost);
                         }
@@ -125,11 +131,16 @@ namespace ippl {
                         range = sendRanges[index][i];
 
                         for (size_t j = 0; j < Dim; ++j) {
-                            bool isLower = ((range.lo[j] + ldomains[me][j].first()
-                                            - nghost) == domain[j].min());
-                            bool isUpper = ((range.hi[j] - 1 + 
-                                            ldomains[me][j].first() - nghost)
-                                            == domain[j].max());
+                            const int stride = ldomains[me][j].stride();
+
+                            const int globalLo =
+                                ldomains[me][j].first() + (range.lo[j] - nghost) * stride;
+                            const int globalHi =
+                                ldomains[me][j].first() + (range.hi[j] - 1 - nghost) * stride;
+
+                            bool isLower = (globalLo == domain[j].min());
+                            bool isUpper = (globalHi == domain[j].max());
+
                             range.lo[j] += isLower * (nghost);
                             range.hi[j] -= isUpper * (nghost);
                         }
@@ -151,7 +162,7 @@ namespace ippl {
             if (totalRequests > 0) {
                 MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
-            
+
             comm.freeAllBuffers();
         }
 

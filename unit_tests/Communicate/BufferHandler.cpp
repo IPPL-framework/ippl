@@ -4,6 +4,8 @@
 
 #include "Utility/TypeUtils.h"
 
+#include <algorithm>
+
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
@@ -15,11 +17,16 @@ protected:
     using memory_space = MemorySpace;
     static constexpr size_t page_size = 4096;
 
-    static size_t roundedSize(size_t size) {
+    static size_t roundedPageSize(size_t size) {
         if (size < page_size) {
             return page_size;
         }
         return ((size + page_size - 1) / page_size) * page_size;
+    }
+
+    static size_t expectedBufferSize(size_t size) {
+        ippl::detail::Archive<memory_space> archive(size);
+        return std::max(roundedPageSize(size), archive.getBufferSize());
     }
 
     class TestableBufferHandler : public ippl::DefaultBufferHandler<memory_space> {
@@ -45,7 +52,7 @@ TYPED_TEST_SUITE(TypedBufferHandlerTest, MemorySpaces);
 TYPED_TEST(TypedBufferHandlerTest, GetBuffer_EmptyFreeBuffers) {
     auto buffer = this->handler->getBuffer(100, 1.0);
     ASSERT_NE(buffer, nullptr);
-    EXPECT_EQ(buffer->getBufferSize(), TestFixture::roundedSize(100));
+    EXPECT_EQ(buffer->getBufferSize(), TestFixture::expectedBufferSize(100));
     EXPECT_EQ(this->handler->usedBuffersSize(), 1);
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
@@ -56,7 +63,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetBuffer_SuitableBufferAvailable) {
     this->handler->freeBuffer(buffer1);
 
     auto buffer2 = this->handler->getBuffer(40, 1.0);
-    EXPECT_EQ(buffer2->getBufferSize(), TestFixture::roundedSize(50));
+    EXPECT_EQ(buffer2->getBufferSize(), TestFixture::expectedBufferSize(50));
     EXPECT_EQ(this->handler->usedBuffersSize(), 1);
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
@@ -99,7 +106,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetBuffer_ResizeLargerThanAvailable) {
     this->handler->freeBuffer(smallBuffer);
 
     auto largeBuffer = this->handler->getBuffer(200, 1.0);
-    EXPECT_EQ(largeBuffer->getBufferSize(), TestFixture::roundedSize(200));
+    EXPECT_EQ(largeBuffer->getBufferSize(), TestFixture::expectedBufferSize(200));
     EXPECT_EQ(this->handler->usedBuffersSize(), 1);
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
@@ -110,7 +117,7 @@ TYPED_TEST(TypedBufferHandlerTest, GetBuffer_ExactSizeMatch) {
     this->handler->freeBuffer(buffer1);
 
     auto buffer2 = this->handler->getBuffer(100, 1.0);
-    EXPECT_EQ(buffer2->getBufferSize(), TestFixture::roundedSize(100));
+    EXPECT_EQ(buffer2->getBufferSize(), TestFixture::expectedBufferSize(100));
     EXPECT_EQ(this->handler->usedBuffersSize(), 1);
     EXPECT_EQ(this->handler->freeBuffersSize(), 0);
 }
