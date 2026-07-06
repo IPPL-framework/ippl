@@ -16,7 +16,6 @@
 ////////////////////////////////////////////////
 // For message size check; see below
 #include <climits>
-#include <cstring>
 #include <cstdlib>
 
 #include "Utility/TypeUtils.h"
@@ -28,53 +27,6 @@
 
 namespace ippl {
     namespace mpi {
-
-        namespace archive_transport {
-            inline bool envEnabled(const char* value) {
-                if (value == nullptr || value[0] == '\0') {
-                    return false;
-                }
-                return std::strcmp(value, "0") != 0 && std::strcmp(value, "false") != 0
-                       && std::strcmp(value, "False") != 0 && std::strcmp(value, "FALSE") != 0
-                       && std::strcmp(value, "off") != 0 && std::strcmp(value, "Off") != 0
-                       && std::strcmp(value, "OFF") != 0 && std::strcmp(value, "no") != 0
-                       && std::strcmp(value, "No") != 0 && std::strcmp(value, "NO") != 0;
-            }
-
-            template <typename MemorySpace>
-            bool useHostStaging() {
-                if constexpr (Kokkos::SpaceAccessibility<Kokkos::HostSpace,
-                                                          MemorySpace>::accessible) {
-                    return false;
-                }
-
-                if (const char* force = std::getenv("IPPL_MPI_ARCHIVE_HOST_STAGING")) {
-                    return envEnabled(force);
-                }
-                if (const char* gpuAware = std::getenv("IPPL_MPI_GPU_AWARE")) {
-                    return !envEnabled(gpuAware);
-                }
-
-                return true;
-            }
-
-            template <typename DstArchive, typename SrcArchive>
-            void copyBytes(DstArchive& dst, SrcArchive& src, ippl::detail::size_type size) {
-                using dst_memory_space = typename DstArchive::buffer_type::memory_space;
-                using src_memory_space = typename SrcArchive::buffer_type::memory_space;
-                using src_view_type =
-                    Kokkos::View<const char*, src_memory_space,
-                                 Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
-                using dst_view_type =
-                    Kokkos::View<char*, dst_memory_space,
-                                 Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
-
-                src_view_type srcView(src.getBuffer(), size);
-                dst_view_type dstView(dst.getBuffer(), size);
-                Kokkos::deep_copy(dstView, srcView);
-                Kokkos::fence();
-            }
-        }  // namespace archive_transport
 
         class Communicator : public TagMaker {
         public:
@@ -216,19 +168,7 @@ namespace ippl {
                     this->abort();
                 }
                 MPI_Status status;
-                ar.resetReadPos();
-                using memory_space = typename Archive::buffer_type::memory_space;
-                if (archive_transport::useHostStaging<memory_space>()) {
-                    auto hostAr = this->getBuffer<Kokkos::HostSpace>(msize);
-                    hostAr->resetWritePos();
-                    hostAr->resetReadPos();
-                    MPI_Recv(hostAr->getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &status);
-                    archive_transport::copyBytes(ar, *hostAr, msize);
-                    hostAr->resetWritePos();
-                    hostAr->resetReadPos();
-                } else {
-                    MPI_Recv(ar.getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &status);
-                }
+                MPI_Recv(ar.getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &status);
 
                 buffer.deserialize(ar, nrecvs);
             }
@@ -236,40 +176,18 @@ namespace ippl {
             template <class Buffer, typename Archive>
             void isend(int dest, int tag, Buffer& buffer, Archive& ar, MPI_Request& request,
                        size_type nsends) {
-                ar.resetWritePos();
-                buffer.serialize(ar, nsends);
-                const size_type msgSize = ar.getSize();
-                if (msgSize > INT_MAX) {
+                if (ar.getSize() > INT_MAX) {
                     std::cerr << "Message size exceeds range of int" << std::endl;
                     this->abort();
                 }
-                using memory_space = typename Archive::buffer_type::memory_space;
-                if (archive_transport::useHostStaging<memory_space>()) {
-                    auto hostAr = this->getBuffer<Kokkos::HostSpace>(msgSize);
-                    hostAr->resetWritePos();
-                    hostAr->resetReadPos();
-                    archive_transport::copyBytes(*hostAr, ar, msgSize);
-                    MPI_Isend(hostAr->getBuffer(), msgSize, MPI_BYTE, dest, tag, *comm_m,
-                              &request);
-                    hostAr->resetWritePos();
-                    hostAr->resetReadPos();
-                } else {
-                    MPI_Isend(ar.getBuffer(), msgSize, MPI_BYTE, dest, tag, *comm_m, &request);
-                }
+                buffer.serialize(ar, nsends);
+                MPI_Isend(ar.getBuffer(), ar.getSize(), MPI_BYTE, dest, tag, *comm_m, &request);
             }
 
             template <typename Archive>
             void irecv(int src, int tag, Archive& ar, MPI_Request& request, size_type msize) {
                 if (msize > INT_MAX) {
                     std::cerr << "Message size exceeds range of int" << std::endl;
-                    this->abort();
-                }
-                using memory_space = typename Archive::buffer_type::memory_space;
-                if (archive_transport::useHostStaging<memory_space>()) {
-                    std::cerr << "Non-blocking archive receive requires direct archive MPI. "
-                                 "Set IPPL_MPI_ARCHIVE_HOST_STAGING=0 or IPPL_MPI_GPU_AWARE=1 "
-                                 "only when the MPI stack supports this archive memory space."
-                              << std::endl;
                     this->abort();
                 }
                 MPI_Irecv(ar.getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &request);

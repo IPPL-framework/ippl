@@ -6,9 +6,6 @@
 #define IPPL_HALO_CELLS_H
 
 #include <array>
-#include <cstdlib>
-#include <cstring>
-#include <utility>
 
 #include "Types/IpplTypes.h"
 #include "Types/ViewTypes.h"
@@ -19,18 +16,6 @@
 
 namespace ippl {
     namespace detail {
-        inline bool fieldBufferArchiveHostStagingEnabled() {
-            const char* value = std::getenv("IPPL_FIELD_BUFFER_ARCHIVE_HOST_STAGING");
-            if (value == nullptr || value[0] == '\0') {
-                return false;
-            }
-            return std::strcmp(value, "0") != 0 && std::strcmp(value, "false") != 0
-                   && std::strcmp(value, "False") != 0 && std::strcmp(value, "FALSE") != 0
-                   && std::strcmp(value, "off") != 0 && std::strcmp(value, "Off") != 0
-                   && std::strcmp(value, "OFF") != 0 && std::strcmp(value, "no") != 0
-                   && std::strcmp(value, "No") != 0 && std::strcmp(value, "NO") != 0;
-        }
-
         /*!
          * Helper class to send / receive field data.
          */
@@ -39,48 +24,9 @@ namespace ippl {
             using view_type    = typename detail::ViewType<T, 1, ViewArgs...>::view_type;
             using archive_type = Archive<typename view_type::memory_space>;
 
-            void serialize(archive_type& ar, size_type nsends) {
-                using memory_space = typename view_type::memory_space;
-                if constexpr (Kokkos::SpaceAccessibility<Kokkos::HostSpace,
-                                                          memory_space>::accessible) {
-                    ar.serialize(buffer, nsends);
-                } else {
-                    if (fieldBufferArchiveHostStagingEnabled()) {
-                        Kokkos::View<T*, Kokkos::HostSpace> hostBuffer(
-                            "field buffer host archive staging send", nsends);
-                        std::pair<size_type, size_type> range(0, nsends);
-                        auto src   = Kokkos::subview(buffer, range);
-                        Kokkos::deep_copy(hostBuffer, src);
-                        Kokkos::fence();
-                        ar.serialize(hostBuffer, nsends);
-                    } else {
-                        ar.serialize(buffer, nsends);
-                    }
-                }
-            }
+            void serialize(archive_type& ar, size_type nsends) { ar.serialize(buffer, nsends); }
 
-            void deserialize(archive_type& ar, size_type nrecvs) {
-                using memory_space = typename view_type::memory_space;
-                if constexpr (Kokkos::SpaceAccessibility<Kokkos::HostSpace,
-                                                          memory_space>::accessible) {
-                    ar.deserialize(buffer, nrecvs);
-                } else {
-                    if (fieldBufferArchiveHostStagingEnabled()) {
-                        if (nrecvs > buffer.extent(0)) {
-                            Kokkos::realloc(buffer, nrecvs);
-                        }
-                        Kokkos::View<T*, Kokkos::HostSpace> hostBuffer(
-                            "field buffer host archive staging recv", nrecvs);
-                        ar.deserialize(hostBuffer, nrecvs);
-                        std::pair<size_type, size_type> range(0, nrecvs);
-                        auto dst   = Kokkos::subview(buffer, range);
-                        Kokkos::deep_copy(dst, hostBuffer);
-                        Kokkos::fence();
-                    } else {
-                        ar.deserialize(buffer, nrecvs);
-                    }
-                }
-            }
+            void deserialize(archive_type& ar, size_type nrecvs) { ar.deserialize(buffer, nrecvs); }
 
             view_type buffer;
         };
