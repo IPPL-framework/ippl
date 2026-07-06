@@ -15,7 +15,6 @@ namespace ippl {
     using detail::solver_send;
     using detail::unpack;
 
-
     /////////////////////////////////////////////////////////////////////////
     // constructor and destructor
     template <typename FieldLHS, typename FieldRHS>
@@ -122,8 +121,9 @@ namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
     void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
         // get algorithm and hessian flag from parameter list
-        const int alg      = this->params_m.template get<int>("algorithm");
-        const bool hessian = this->params_m.template get<bool>("hessian");
+        const int alg                = this->params_m.template get<int>("algorithm");
+        const int greensFunctionType = this->params_m.template get<int>("greens_function");
+        const bool hessian           = this->params_m.template get<bool>("hessian");
 
         // first check if valid algorithm choice
         if ((alg != Algorithm::VICO) && (alg != Algorithm::HOCKNEY)
@@ -131,6 +131,20 @@ namespace ippl {
             throw IpplException("FFTOpenPoissonSolver::initializeFields()",
                                 "Currently only HOCKNEY, VICO, DCT_VICO, and BIHARMONIC are "
                                 "supported for open BCs");
+        }
+
+        if ((greensFunctionType != GreenFunction::STANDARD)
+            && (greensFunctionType != GreenFunction::INTEGRATED)) {
+            throw IpplException("FFTOpenPoissonSolver::initializeFields()",
+                                "Currently only STANDARD and INTEGRATED Green's functions are "
+                                "supported for open BCs");
+        }
+
+        if ((greensFunctionType == GreenFunction::INTEGRATED)
+            && ((alg != Algorithm::HOCKNEY) || (Dim != 3))) {
+            throw IpplException("FFTOpenPoissonSolver::initializeFields()",
+                                "The integrated Green's function is currently only implemented "
+                                "for 3D HOCKNEY open BCs");
         }
 
         // check dimension
@@ -260,8 +274,8 @@ namespace ippl {
             IpplTimings::stopTimer(initialize_vico);
         }
 
-        // these are fields that are used for calculating the Green's function for Hockney
-        if (alg == Algorithm::HOCKNEY) {
+        // these are fields that are used for calculating the standard Green's function for Hockney
+        if ((alg == Algorithm::HOCKNEY) && (greensFunctionType == GreenFunction::STANDARD)) {
             // start a timer
             static IpplTimings::TimerRef initialize_hockney =
                 IpplTimings::getTimer("Initialize: extra Hockney");
@@ -285,7 +299,7 @@ namespace ippl {
                     grnIField_m[gd].getFieldRangePolicy(),
                     KOKKOS_LAMBDA(const index_array_type& args) {
                         scalar_type checkVal = 0.0;
-                                
+
                         // go from local indices to global
                         Vector<int, Dim> igVec = args - nghost;
                         for (unsigned d = 0; d < Dim; ++d) {
@@ -295,15 +309,13 @@ namespace ippl {
 
                         // assign (index)^2 if 0 <= index < N, and (2N-index)^2 elsewhere
                         const bool outsideN = (igVec[gd] >= size);
-                        apply(view, args) = (2 * size * outsideN - igVec[gd]) 
-                                          * (2 * size * outsideN - igVec[gd]);
+                        apply(view, args) =
+                            (2 * size * outsideN - igVec[gd]) * (2 * size * outsideN - igVec[gd]);
 
                         // add 1.0 if at (0,0,0) to avoid singularity
                         const bool isOrig = (checkVal == 0);
                         apply(view, args) += isOrig * 1.0;
                     });
-
-
             }
             IpplTimings::stopTimer(initialize_hockney);
         }
@@ -325,7 +337,7 @@ namespace ippl {
         rho2_mr  = 0.0;
         rho2tr_m = 0.0;
         if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
-            grnL_m   = 0.0;
+            grnL_m = 0.0;
         }
         if (alg == Algorithm::DCT_VICO) {
             grn2n1_m = 0.0;
@@ -587,7 +599,7 @@ namespace ippl {
                             checkVal += Kokkos::abs(igVec1[d] - igVec2[d]);
                         }
 
-                        // Take [0,N-1] quadrant as physical solution. 
+                        // Take [0,N-1] quadrant as physical solution.
                         // Check whether we are in the 1st quadrant by checking whether
                         // the global indices for view1 and view2 are equal.
                         // This is done using checkVal, which should be 0 if ig1 = ig2.
@@ -748,7 +760,7 @@ namespace ippl {
                                 checkVal += Kokkos::abs(igVec1[d] - igVec2[d]);
                             }
 
-                            // Take [0,N-1] quadrant as physical solution. 
+                            // Take [0,N-1] quadrant as physical solution.
                             // Check whether we are in the 1st quadrant by checking whether
                             // the global indices for view1 and view2 are equal.
                             // This is done using checkVal, which should be 0 if ig1 = ig2.
@@ -912,11 +924,11 @@ namespace ippl {
                                     checkVal += Kokkos::abs(igVec1[d] - igVec2[d]);
                                 }
 
-                                // Take [0,N-1] quadrant as physical solution. 
+                                // Take [0,N-1] quadrant as physical solution.
                                 // Check whether we are in the 1st quadrant by checking whether
                                 // the global indices for view1 and view2 are equal.
                                 // This is done using checkVal, which should be 0 if ig1 = ig2.
-                                const bool isQuadrant1 = (checkVal == 0);
+                                const bool isQuadrant1       = (checkVal == 0);
                                 apply(viewH, args)[row][col] = apply(view2, args) * isQuadrant1;
                             });
                     }
@@ -932,11 +944,86 @@ namespace ippl {
     // calculate FFT of the Green's function
 
     template <typename FieldLHS, typename FieldRHS>
+    KOKKOS_INLINE_FUNCTION typename FFTOpenPoissonSolver<FieldLHS, FieldRHS>::scalar_type
+    FFTOpenPoissonSolver<FieldLHS, FieldRHS>::integratedGreenAtanTerm(
+        const scalar_type& numerator, const scalar_type& denominator) {
+        const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
+        if (denominator == scalar_type(0)) {
+            if (numerator > scalar_type(0)) {
+                return scalar_type(0.5) * pi;
+            }
+            if (numerator < scalar_type(0)) {
+                return -scalar_type(0.5) * pi;
+            }
+            return scalar_type(0);
+        }
+        return Kokkos::atan(numerator / denominator);
+    }
+
+    template <typename FieldLHS, typename FieldRHS>
+    KOKKOS_INLINE_FUNCTION typename FFTOpenPoissonSolver<FieldLHS, FieldRHS>::scalar_type
+    FFTOpenPoissonSolver<FieldLHS, FieldRHS>::integratedGreenLogTerm(const scalar_type& a,
+                                                                     const scalar_type& b,
+                                                                     const scalar_type& c,
+                                                                     const scalar_type& r) {
+        const scalar_type coeff = b * c;
+        return (coeff == scalar_type(0)) ? scalar_type(0) : coeff * Kokkos::log(a + r);
+    }
+
+    template <typename FieldLHS, typename FieldRHS>
+    KOKKOS_INLINE_FUNCTION typename FFTOpenPoissonSolver<FieldLHS, FieldRHS>::scalar_type
+    FFTOpenPoissonSolver<FieldLHS, FieldRHS>::integratedGreenAntiderivative(const scalar_type& x,
+                                                                            const scalar_type& y,
+                                                                            const scalar_type& z) {
+        const scalar_type r2 = x * x + y * y + z * z;
+        if (r2 == scalar_type(0)) {
+            return scalar_type(0);
+        }
+
+        const scalar_type r = Kokkos::sqrt(r2);
+        scalar_type value   = scalar_type(0);
+        value -= scalar_type(0.5) * z * z * integratedGreenAtanTerm(x * y, z * r);
+        value -= scalar_type(0.5) * y * y * integratedGreenAtanTerm(x * z, y * r);
+        value -= scalar_type(0.5) * x * x * integratedGreenAtanTerm(y * z, x * r);
+        value += integratedGreenLogTerm(x, y, z, r);
+        value += integratedGreenLogTerm(y, x, z, r);
+        value += integratedGreenLogTerm(z, x, y, r);
+        return value;
+    }
+
+    template <typename FieldLHS, typename FieldRHS>
+    KOKKOS_INLINE_FUNCTION typename FFTOpenPoissonSolver<FieldLHS, FieldRHS>::scalar_type
+    FFTOpenPoissonSolver<FieldLHS, FieldRHS>::integratedGreenAverage(const scalar_type& x,
+                                                                     const scalar_type& y,
+                                                                     const scalar_type& z,
+                                                                     const vector_type& h) {
+        const scalar_type half = scalar_type(0.5);
+        const scalar_type x0   = x - half * h[0];
+        const scalar_type x1   = x + half * h[0];
+        const scalar_type y0   = y - half * h[1];
+        const scalar_type y1   = y + half * h[1];
+        const scalar_type z0   = z - half * h[2];
+        const scalar_type z1   = z + half * h[2];
+
+        scalar_type integral = integratedGreenAntiderivative(x1, y1, z1);
+        integral -= integratedGreenAntiderivative(x0, y1, z1);
+        integral -= integratedGreenAntiderivative(x1, y0, z1);
+        integral += integratedGreenAntiderivative(x0, y0, z1);
+        integral -= integratedGreenAntiderivative(x1, y1, z0);
+        integral += integratedGreenAntiderivative(x0, y1, z0);
+        integral += integratedGreenAntiderivative(x1, y0, z0);
+        integral -= integratedGreenAntiderivative(x0, y0, z0);
+
+        return integral / (h[0] * h[1] * h[2]);
+    }
+
+    template <typename FieldLHS, typename FieldRHS>
     void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::greensFunction() {
         const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
         grn_mr               = 0.0;
 
-        const int alg = this->params_m.template get<int>("algorithm");
+        const int alg                = this->params_m.template get<int>("algorithm");
+        const int greensFunctionType = this->params_m.template get<int>("greens_function");
 
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
 
@@ -993,8 +1080,8 @@ namespace ippl {
                             Tg s = 0;
                             for (unsigned d = 0; d < Dim; ++d) {
                                 bool isOutside = (igVec[d] > 2 * size[d] - 1);
-                                const Tg t = igVec[d] * hs_m[d] + isOutside * origin[d];
-                                s += (t*t);
+                                const Tg t     = igVec[d] * hs_m[d] + isOutside * origin[d];
+                                s += (t * t);
                             }
                             s = Kokkos::sqrt(s);
 
@@ -1002,7 +1089,8 @@ namespace ippl {
                             // if (0,0,0), assign L^2/2 (analytical limit of sinc)
                             const bool isOrig    = (checkVal == 0);
                             const Tg analyticLim = -L_sum * L_sum * 0.5;
-                            const Tg value = -2.0 * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
+                            const Tg value       = -2.0
+                                             * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
                                              * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0));
 
                             apply(view_g, args) = (!isOrig) * value + isOrig * analyticLim;
@@ -1024,8 +1112,8 @@ namespace ippl {
                             Tg s = 0;
                             for (unsigned d = 0; d < Dim; ++d) {
                                 bool isOutside = (igVec[d] > 2 * size[d] - 1);
-                                const Tg t = igVec[d] * hs_m[d] + isOutside * origin[d];
-                                s += (t*t);
+                                const Tg t     = igVec[d] * hs_m[d] + isOutside * origin[d];
+                                s += (t * t);
                             }
                             s = Kokkos::sqrt(s);
 
@@ -1033,13 +1121,14 @@ namespace ippl {
                             // if (0,0,0), assign L^2/2 (analytical limit of sinc)
                             const bool isOrig    = (checkVal == 0);
                             const Tg analyticLim = -L_sum * L_sum * L_sum * L_sum / 8.0;
-                            const Tg value = -((2 - (L_sum * L_sum * s * s)) * Kokkos::cos(L_sum * s)
-                                               + 2 * L_sum * s * Kokkos::sin(L_sum * s) - 2)
-                                             / (2 * s * s * s * s + isOrig * 1.0);
+                            const Tg value =
+                                -((2 - (L_sum * L_sum * s * s)) * Kokkos::cos(L_sum * s)
+                                  + 2 * L_sum * s * Kokkos::sin(L_sum * s) - 2)
+                                / (2 * s * s * s * s + isOrig * 1.0);
 
                             apply(view_g, args) = (!isOrig) * value + isOrig * analyticLim;
                         });
-                    }
+                }
 
                 // start a timer
                 static IpplTimings::TimerRef fft4 = IpplTimings::getTimer("FFT: Precomputation");
@@ -1095,11 +1184,11 @@ namespace ippl {
                             view(s, j, k) = real(view_g(i + 1, j, k));
                             view(i, p, k) = real(view_g(i, j + 1, k));
                             view(i, j, q) = real(view_g(i, j, k + 1));
-                        view(s, j, q) = real(view_g(i + 1, j, k + 1));
-                        view(s, p, k) = real(view_g(i + 1, j + 1, k));
-                        view(i, p, q) = real(view_g(i, j + 1, k + 1));
-                        view(s, p, q) = real(view_g(i + 1, j + 1, k + 1));
-                    });
+                            view(s, j, q) = real(view_g(i + 1, j, k + 1));
+                            view(s, p, k) = real(view_g(i + 1, j + 1, k));
+                            view(i, p, q) = real(view_g(i, j + 1, k + 1));
+                            view(s, p, q) = real(view_g(i + 1, j + 1, k + 1));
+                        });
                 }
                 IpplTimings::stopTimer(ifftshift);
             }
@@ -1150,12 +1239,13 @@ namespace ippl {
                         Tg s = 0;
                         for (unsigned d = 0; d < Dim; ++d) {
                             double t = igVec[d] * hs_m[d];
-                            s += (t*t);
+                            s += (t * t);
                         }
                         s = Kokkos::sqrt(s);
 
                         const bool isOrig = (checkVal == 0);
-                        const double val  = -2.0 * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
+                        const double val  = -2.0
+                                           * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0))
                                            * (Kokkos::sin(0.5 * L_sum * s) / (s + isOrig * 1.0));
                         const double analyticLim = -L_sum * L_sum * 0.5;
 
@@ -1228,43 +1318,74 @@ namespace ippl {
         } else {
             // Hockney case
 
-            // calculate square of the mesh spacing for each dimension
-            Vector_t hrsq(hr_m * hr_m);
-
-            // use the grnIField_m helper field to compute Green's function
-            for (unsigned int i = 0; i < Dim; ++i) {
-                grn_mr = grn_mr + grnIField_m[i] * hrsq[i];
-            }
-
-            // Formula of Green's function (2D and 3D supported for Hockney)
-            if (Dim == 2) {
-                grn_mr = log(sqrt(grn_mr)) / (2 * pi);
-            } else if (Dim == 3) {
-                grn_mr = -1.0 / (4.0 * pi * sqrt(grn_mr));
-            }
-
             typename Field_t::view_type view = grn_mr.getView();
             const int nghost                 = grn_mr.getNghost();
             const auto& ldom                 = layout2_m->getLocalNDIndex();
 
-            // Kokkos parallel for loop to find (0,0,0) point and regularize
-            ippl::parallel_for(
-                "Regularize Green's function ", grn_mr.getFieldRangePolicy(),
-                KOKKOS_LAMBDA(const index_array_type& args) {
-                    scalar_type checkVal = 0;
+            if (greensFunctionType == GreenFunction::INTEGRATED) {
+                if constexpr (Dim == 3) {
+                    Vector<int, Dim> nr = nr_m;
+                    vector_type hs      = hr_m;
 
-                    // go from local indices to global
-                    Vector<int, Dim> igVec = args - nghost;
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        igVec[d] += ldom[d].first();
-                        checkVal += igVec[d];
-                    }
+                    ippl::parallel_for(
+                        "Integrated Green's function ", grn_mr.getFieldRangePolicy(),
+                        KOKKOS_LAMBDA(const index_array_type& args) {
+                            Vector<int, Dim> igVec = args - nghost;
+                            for (unsigned d = 0; d < Dim; ++d) {
+                                igVec[d] += ldom[d].first();
+                            }
 
-                    // if (0,0,0), assign to it 1/(4*pi)
-                    const bool isOrig = (checkVal == 0);
-                    apply(view, args) = isOrig * (-1.0 / (4.0 * pi)) 
-                                        + (!isOrig) * apply(view, args);
-                });
+                            scalar_type offset[Dim];
+                            for (unsigned int d = 0; d < Dim; ++d) {
+                                const int igSigned =
+                                    (igVec[d] < nr[d]) ? igVec[d] : igVec[d] - 2 * nr[d];
+                                offset[d] = static_cast<scalar_type>(igSigned) * hs[d];
+                            }
+
+                            const scalar_type avg =
+                                integratedGreenAverage(offset[0], offset[1], offset[2], hs);
+                            apply(view, args) = -avg / (scalar_type(4) * pi);
+                        });
+                } else {
+                    throw IpplException("FFTOpenPoissonSolver::greensFunction()",
+                                        "The integrated Green's function is currently only "
+                                        "implemented for 3D HOCKNEY open BCs");
+                }
+            } else {
+                // calculate square of the mesh spacing for each dimension
+                Vector_t hrsq(hr_m * hr_m);
+
+                // use the grnIField_m helper field to compute Green's function
+                for (unsigned int i = 0; i < Dim; ++i) {
+                    grn_mr = grn_mr + grnIField_m[i] * hrsq[i];
+                }
+
+                // Formula of Green's function (2D and 3D supported for Hockney)
+                if (Dim == 2) {
+                    grn_mr = log(sqrt(grn_mr)) / (2 * pi);
+                } else if (Dim == 3) {
+                    grn_mr = -1.0 / (4.0 * pi * sqrt(grn_mr));
+                }
+
+                // Kokkos parallel for loop to find (0,0,0) point and regularize
+                ippl::parallel_for(
+                    "Regularize Green's function ", grn_mr.getFieldRangePolicy(),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        scalar_type checkVal = 0;
+
+                        // go from local indices to global
+                        Vector<int, Dim> igVec = args - nghost;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            igVec[d] += ldom[d].first();
+                            checkVal += igVec[d];
+                        }
+
+                        // if (0,0,0), assign to it 1/(4*pi)
+                        const bool isOrig = (checkVal == 0);
+                        apply(view, args) =
+                            isOrig * (-1.0 / (4.0 * pi)) + (!isOrig) * apply(view, args);
+                    });
+            }
         }
 
         // start a timer
@@ -2096,10 +2217,15 @@ namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
     void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::shiftedGreensFunction(
         const Vector<double, Dim>& shift) {
-        const int alg = this->params_m.template get<int>("algorithm");
+        const int alg                = this->params_m.template get<int>("algorithm");
+        const int greensFunctionType = this->params_m.template get<int>("greens_function");
         if (alg != Algorithm::HOCKNEY) {
             throw IpplException("FFTOpenPoissonSolver::shiftedGreensFunction",
                                 "Shifted Green's function is only implemented for HOCKNEY.");
+        }
+        if ((greensFunctionType == GreenFunction::INTEGRATED) && (Dim != 3)) {
+            throw IpplException("FFTOpenPoissonSolver::shiftedGreensFunction",
+                                "Shifted integrated Green's function is only implemented for 3D.");
         }
 
         // Sync mesh spacing with the current RHS mesh (same logic as solve()'s
@@ -2128,43 +2254,72 @@ namespace ippl {
         Vector_t hs              = hr_m;
         Vector<double, Dim> shft = shift;
 
-        // Regularization threshold (axis-min mesh spacing, squared, quartered).
-        scalar_type hmin2 = hs[0] * hs[0];
-        for (unsigned int d = 1; d < Dim; ++d) {
-            hmin2 = (hs[d] * hs[d] < hmin2) ? (hs[d] * hs[d]) : hmin2;
-        }
-        const scalar_type regThresh = 0.25 * hmin2;
-
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
-        ippl::parallel_for(
-            "Shifted Green's function", grn_mr.getFieldRangePolicy(),
-            KOKKOS_LAMBDA(const index_array_type& args) {
-                // local -> global indices
-                Vector<int, Dim> igVec = args - nghost;
-                for (unsigned d = 0; d < Dim; ++d) {
-                    igVec[d] += ldom[d].first();
-                }
+        if (greensFunctionType == GreenFunction::INTEGRATED) {
+            if constexpr (Dim == 3) {
+                ippl::parallel_for(
+                    "Shifted integrated Green's function", grn_mr.getFieldRangePolicy(),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        Vector<int, Dim> igVec = args - nghost;
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            igVec[d] += ldom[d].first();
+                        }
 
-                // Hockney convention: map doubled-grid indices.
-                //   ig in [0, N)   -> offset =  ig        * h
-                //   ig in [N, 2N)  -> offset = (ig - 2N)  * h
-                // Subtract the shift to evaluate the shifted Green's function G(r-s).
-                double rsq = 0.0;
-                for (unsigned int d = 0; d < Dim; ++d) {
-                    const double ig_signed = (igVec[d] < nr[d])
-                                                 ? static_cast<double>(igVec[d])
-                                                 : static_cast<double>(igVec[d] - 2 * nr[d]);
-                    const double xoff      = ig_signed * hs[d] - shft[d];
-                    rsq += xoff * xoff;
-                }
+                        scalar_type offset[Dim];
+                        for (unsigned int d = 0; d < Dim; ++d) {
+                            const int igSigned =
+                                (igVec[d] < nr[d]) ? igVec[d] : igVec[d] - 2 * nr[d];
+                            offset[d] = static_cast<scalar_type>(igSigned) * hs[d]
+                                - static_cast<scalar_type>(shft[d]);
+                        }
 
-                // Sign convention matches greensFunction() (HOCKNEY): grn_mr stores -G0
-                // so that solve()'s `rho2tr_m = -rho2tr_m * grntr_m` yields +conv(rho,G0)
-                // where G0(r) = 1/(4 pi |r|).
-                const bool nearSing = (rsq < regThresh);
-                const scalar_type r = Kokkos::sqrt(rsq + nearSing * regThresh);
-                apply(view, args)       = -1.0 / (4.0 * pi * r);
-            });
+                        const scalar_type avg =
+                            integratedGreenAverage(offset[0], offset[1], offset[2], hs);
+                        apply(view, args) = -avg / (scalar_type(4) * pi);
+                    });
+            } else {
+                throw IpplException("FFTOpenPoissonSolver::shiftedGreensFunction",
+                                    "Shifted integrated Green's function is only implemented "
+                                    "for 3D.");
+            }
+        } else {
+            // Regularization threshold (axis-min mesh spacing, squared, quartered).
+            scalar_type hmin2 = hs[0] * hs[0];
+            for (unsigned int d = 1; d < Dim; ++d) {
+                hmin2 = (hs[d] * hs[d] < hmin2) ? (hs[d] * hs[d]) : hmin2;
+            }
+            const scalar_type regThresh = 0.25 * hmin2;
+
+            ippl::parallel_for(
+                "Shifted Green's function", grn_mr.getFieldRangePolicy(),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    // local -> global indices
+                    Vector<int, Dim> igVec = args - nghost;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        igVec[d] += ldom[d].first();
+                    }
+
+                    // Hockney convention: map doubled-grid indices.
+                    //   ig in [0, N)   -> offset =  ig        * h
+                    //   ig in [N, 2N)  -> offset = (ig - 2N)  * h
+                    // Subtract the shift to evaluate the shifted Green's function G(r-s).
+                    double rsq = 0.0;
+                    for (unsigned int d = 0; d < Dim; ++d) {
+                        const double ig_signed = (igVec[d] < nr[d])
+                                                     ? static_cast<double>(igVec[d])
+                                                     : static_cast<double>(igVec[d] - 2 * nr[d]);
+                        const double xoff      = ig_signed * hs[d] - shft[d];
+                        rsq += xoff * xoff;
+                    }
+
+                    // Sign convention matches greensFunction() (HOCKNEY): grn_mr stores -G0
+                    // so that solve()'s `rho2tr_m = -rho2tr_m * grntr_m` yields +conv(rho,G0)
+                    // where G0(r) = 1/(4 pi |r|).
+                    const bool nearSing = (rsq < regThresh);
+                    const scalar_type r = Kokkos::sqrt(rsq + nearSing * regThresh);
+                    apply(view, args)   = -1.0 / (4.0 * pi * r);
+                });
+        }
 
         // Store Fourier transform of shifted Green's function for convolution in solve()
         static IpplTimings::TimerRef fftsg = IpplTimings::getTimer("FFT: Shifted Green");

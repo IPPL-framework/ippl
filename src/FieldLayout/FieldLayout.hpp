@@ -326,8 +326,11 @@ namespace ippl {
          * Add "+1" to the upper bound since Kokkos loops always to "< extent".
          */
         for (size_t i = 0; i < Dim; ++i) {
-            intersect.lo[i] = overlap[i].first() - offset[i].first() /*offset*/ + nghost;
-            intersect.hi[i] = overlap[i].last() - offset[i].first() /*offset*/ + nghost + 1;
+            const int stride = offset[i].stride();
+
+            intersect.lo[i] = (overlap[i].first() - offset[i].first() /*offset*/) / stride + nghost;
+            intersect.hi[i] =
+                (overlap[i].last() - offset[i].first() /*offset*/) / stride + nghost + 1;
         }
 
         return intersect;
@@ -336,15 +339,16 @@ namespace ippl {
     template <unsigned Dim>
     int FieldLayout<Dim>::getPeriodicOffset(const NDIndex_t& nd, const unsigned int d,
                                             const int k) {
+        const int period = gDomain_m[d].length() * gDomain_m[d].stride();
         switch (k) {
             case 0:
                 if (nd[d].max() == gDomain_m[d].max()) {
-                    return -gDomain_m[d].length();
+                    return -period;
                 }
                 break;
             case 1:
                 if (nd[d].min() == gDomain_m[d].min()) {
-                    return gDomain_m[d].length();
+                    return period;
                 }
                 break;
             default:

@@ -6,25 +6,34 @@
 #ifndef IPPL_PCG_H
 #define IPPL_PCG_H
 
+#include <algorithm>
+#include <array>
+
 #include "FEM/FEMVector.h"
+#include "Multigrid.h"
 #include "Preconditioner.h"
 #include "SolverAlgorithm.h"
-#include <array>
-#include <algorithm>
 
 namespace ippl {
     namespace pcg_preconditioner_defaults {
-        inline constexpr int newton_level = 5;
-        inline constexpr int chebyshev_degree = 31;
+        inline constexpr int newton_level          = 5;
+        inline constexpr int chebyshev_degree      = 31;
         inline constexpr int richardson_iterations = 4;
-        inline constexpr int gauss_seidel_inner = 2;
-        inline constexpr int gauss_seidel_outer = 2;
-        inline constexpr int communication = 0;
-        inline constexpr double ssor_omega = 1.57079632679;
+        inline constexpr int gauss_seidel_inner    = 2;
+        inline constexpr int gauss_seidel_outer    = 2;
+        inline constexpr int communication         = 0;
+        inline constexpr double ssor_omega         = 1.57079632679;
 
-        inline constexpr std::array<const char*, 7> valid_types = {
-            "jacobi", "newton", "chebyshev", "richardson", "richardson_alt", "gauss-seidel", "ssor"
-        };
+        // Multigrid preconditioner defaults
+        inline constexpr int mg_pre_smooth     = 2;
+        inline constexpr int mg_post_smooth    = 2;
+        inline constexpr double mg_omega       = 0.8;
+        inline constexpr unsigned mg_min_cells = 4;
+        inline constexpr bool mg_communication = false;
+
+        inline constexpr std::array<const char*, 8> valid_types = {
+            "jacobi",         "newton",       "chebyshev", "richardson",
+            "richardson_alt", "gauss-seidel", "ssor",      "multigrid"};
 
         inline bool is_valid_type(const std::string& type) {
             return std::find(valid_types.begin(), valid_types.end(), type) != valid_types.end();
@@ -82,22 +91,46 @@ namespace ippl {
             [[maybe_unused]] std::string preconditioner_type =
                 "",  // Name of the preconditioner that should be used
             [[maybe_unused]] int level =
-                pcg_preconditioner_defaults::newton_level,  // This is a dummy default parameter, actual default parameter should be
+                pcg_preconditioner_defaults::newton_level,  // This is a dummy default parameter,
+                                                            // actual default parameter should be
             // set in main
             [[maybe_unused]] int degree =
-                pcg_preconditioner_defaults::chebyshev_degree,  // This is a dummy default parameter, actual default parameter should
+                pcg_preconditioner_defaults::chebyshev_degree,  // This is a dummy default
+                                                                // parameter, actual default
+                                                                // parameter should
             // be set in main
             [[maybe_unused]] int richardson_iterations =
-                pcg_preconditioner_defaults::richardson_iterations,  // This is a dummy default parameter, actual default
+                pcg_preconditioner_defaults::richardson_iterations,  // This is a dummy default
+                                                                     // parameter, actual default
             // parameter should be set in main
             [[maybe_unused]] int inner =
-                pcg_preconditioner_defaults::gauss_seidel_inner,  // This is a dummy default parameter, actual default parameter should be
+                pcg_preconditioner_defaults::gauss_seidel_inner,  // This is a dummy default
+                                                                  // parameter, actual default
+                                                                  // parameter should be
             // set in main
             [[maybe_unused]] int outer =
-                pcg_preconditioner_defaults::gauss_seidel_outer,  // This is a dummy default parameter, actual default parameter should be
-            [[maybe_unused]] double omega = pcg_preconditioner_defaults::ssor_omega  // This is a dummy default parameter, actual default
-                                               // parameter should be set in main
-        ) {}
+                pcg_preconditioner_defaults::gauss_seidel_outer,  // This is a dummy default
+                                                                  // parameter, actual default
+                                                                  // parameter should be set in main
+            [[maybe_unused]] double omega =
+                pcg_preconditioner_defaults::ssor_omega,  // This is a dummy default parameter,
+                                                          // actual default parameter should be set
+                                                          // in main
+            [[maybe_unused]] int mg_pre =
+                pcg_preconditioner_defaults::mg_pre_smooth,  // This is a dummy default parameter,
+                                                             // actual default parameter should be
+                                                             // set in main
+            [[maybe_unused]] int mg_post =
+                pcg_preconditioner_defaults::mg_post_smooth,  // This is a dummy default parameter,
+                                                              // actual default parameter should be
+                                                              // set in main
+            [[maybe_unused]] double mg_omega =
+                pcg_preconditioner_defaults::mg_omega,  // This is a dummy default parameter, actual
+                                                        // default parameter should be set in main
+            [[maybe_unused]] unsigned mg_min_cells_per_rank_per_dim =
+                pcg_preconditioner_defaults::mg_min_cells,
+            [[maybe_unused]] bool mg_communication =
+                pcg_preconditioner_defaults::mg_communication) {}
         /*!
          * Query how many iterations were required to obtain the solution
          * the last time this solver was used
@@ -249,19 +282,27 @@ namespace ippl {
             [[maybe_unused]] std::string preconditioner_type =
                 "",  // Name of the preconditioner that should be used
             [[maybe_unused]] int level =
-                pcg_preconditioner_defaults::newton_level,  // This is a dummy default parameter, actual default parameter should be
+                pcg_preconditioner_defaults::newton_level,  // This is a dummy default parameter,
+                                                            // actual default parameter should be
             // set in main
             [[maybe_unused]] int degree =
-                pcg_preconditioner_defaults::chebyshev_degree,  // This is a dummy default parameter, actual default parameter should
+                pcg_preconditioner_defaults::chebyshev_degree,  // This is a dummy default
+                                                                // parameter, actual default
+                                                                // parameter should
             // be set in main
             [[maybe_unused]] int richardson_iterations =
-                pcg_preconditioner_defaults::richardson_iterations,  // This is a dummy default parameter, actual default
+                pcg_preconditioner_defaults::richardson_iterations,  // This is a dummy default
+                                                                     // parameter, actual default
             // parameter should be set in main
             [[maybe_unused]] int inner =
-                pcg_preconditioner_defaults::gauss_seidel_inner,  // This is a dummy default parameter, actual default parameter should be
+                pcg_preconditioner_defaults::gauss_seidel_inner,  // This is a dummy default
+                                                                  // parameter, actual default
+                                                                  // parameter should be
             // set in main
-            [[maybe_unused]] int outer = pcg_preconditioner_defaults::gauss_seidel_outer  // This is a dummy default parameter, actual default
-                                            // parameter should be set in main
+            [[maybe_unused]] int outer =
+                pcg_preconditioner_defaults::gauss_seidel_outer  // This is a dummy default
+                                                                 // parameter, actual default
+                                                                 // parameter should be set in main
         ) {}
         /*!
          * Query how many iterations were required to obtain the solution
@@ -389,22 +430,47 @@ namespace ippl {
             double alpha,                     // smallest eigenvalue of the operator
             double beta,                      // largest eigenvalue of the operator
             std::string preconditioner_type = "",  // Name of the preconditioner that should be used
-            int level = pcg_preconditioner_defaults::newton_level,  // This is a dummy default parameter, actual default parameter should be
+            int level =
+                pcg_preconditioner_defaults::newton_level,  // This is a dummy default parameter,
+                                                            // actual default parameter should be
             // set in main
-            int degree = pcg_preconditioner_defaults::chebyshev_degree,  // This is a dummy default parameter, actual default parameter should
+            int degree = pcg_preconditioner_defaults::chebyshev_degree,  // This is a dummy default
+                                                                         // parameter, actual
+                                                                         // default parameter should
             // be set in main
-            int richardson_iterations = pcg_preconditioner_defaults::richardson_iterations,  // This is a dummy default parameter, actual default
+            int richardson_iterations =
+                pcg_preconditioner_defaults::richardson_iterations,  // This is a dummy default
+                                                                     // parameter, actual default
             // parameter should be set in main
-            int inner = pcg_preconditioner_defaults::gauss_seidel_inner,  // This is a dummy default parameter, actual default parameter should be
+            int inner =
+                pcg_preconditioner_defaults::gauss_seidel_inner,  // This is a dummy default
+                                                                  // parameter, actual default
+                                                                  // parameter should be
             // set in main
-            int outer = pcg_preconditioner_defaults::gauss_seidel_outer,  // This is a dummy default parameter, actual default parameter should be
+            int outer =
+                pcg_preconditioner_defaults::gauss_seidel_outer,  // This is a dummy default
+                                                                  // parameter, actual default
+                                                                  // parameter should be
             // set in main
-            double omega = pcg_preconditioner_defaults::ssor_omega  // This is a dummy default parameter, actual default
+            double omega = pcg_preconditioner_defaults::ssor_omega,  // This is a dummy default
+                                                                     // parameter, actual default
             // parameter should be set in main
             // default = pi/2 as this was found optimal during hyperparameter scan for test case
             // (see
             // https://amas.web.psi.ch/people/aadelmann/ETH-Accel-Lecture-1/projectscompleted/cse/BSc-mbolliger.pdf)
-            ) override {
+            int mg_pre =
+                pcg_preconditioner_defaults::mg_pre_smooth,  // This is a dummy default parameter,
+                                                             // actual default parameter should be
+                                                             // set in main
+            int mg_post =
+                pcg_preconditioner_defaults::mg_post_smooth,  // This is a dummy default parameter,
+                                                              // actual default parameter should be
+                                                              // set in main
+            double mg_omega =
+                pcg_preconditioner_defaults::mg_omega,  // This is a dummy default parameter, actual
+                                                        // default parameter should be set in main
+            unsigned mg_min_cells_per_rank_per_dim = pcg_preconditioner_defaults::mg_min_cells,
+            bool mg_communication = pcg_preconditioner_defaults::mg_communication) override {
             if (preconditioner_type == "jacobi") {
                 // Turn on damping parameter
                 /*
@@ -445,6 +511,11 @@ namespace ippl {
                               ssor_preconditioner<FieldLHS, LowerF, UpperF, InverseDiagF, DiagF>>(
                         std::move(lower), std::move(upper), std::move(inverse_diagonal),
                         std::move(diagonal), inner, outer, omega));
+            } else if (preconditioner_type == "multigrid") {
+                preconditioner_m =
+                    std::move(std::make_unique<multigrid_preconditioner<FieldLHS, OperatorF>>(
+                        std::move(op), mg_pre, mg_post, mg_omega, mg_min_cells_per_rank_per_dim,
+                        mg_communication));
             } else {
                 preconditioner_m = std::move(std::make_unique<preconditioner<FieldLHS>>());
             }

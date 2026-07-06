@@ -1,29 +1,35 @@
 #ifndef IPPL_FIELD_SOLVER_H
 #define IPPL_FIELD_SOLVER_H
 
-#include <memory>
-#include <filesystem>
-#include <array>
 #include <algorithm>
+#include <array>
+#include <filesystem>
+#include <memory>
 
+#include "LinearSolvers/PCG.h"
+#include "LinearSolvers/PreconditionerValidation.h"
 #include "Manager/BaseManager.h"
 #include "Manager/FieldSolverBase.h"
-#include "LinearSolvers/PreconditionerValidation.h"
 
 // Define the FieldSolver class
 template <typename T, unsigned Dim>
 class FieldSolver : public ippl::FieldSolverBase<T, Dim> {
 private:
     struct ParsedPreconditionerParams {
-        std::string type = "";
-        bool use_defaults = true;
-        int newton_level = ippl::pcg_preconditioner_defaults::newton_level;
-        int chebyshev_degree = ippl::pcg_preconditioner_defaults::chebyshev_degree;
+        std::string type          = "";
+        bool use_defaults         = true;
+        int newton_level          = ippl::pcg_preconditioner_defaults::newton_level;
+        int chebyshev_degree      = ippl::pcg_preconditioner_defaults::chebyshev_degree;
         int richardson_iterations = ippl::pcg_preconditioner_defaults::richardson_iterations;
         int gauss_seidel_inner_iterations = ippl::pcg_preconditioner_defaults::gauss_seidel_inner;
         int gauss_seidel_outer_iterations = ippl::pcg_preconditioner_defaults::gauss_seidel_outer;
-        int communication = ippl::pcg_preconditioner_defaults::communication;
-        double ssor_omega = ippl::pcg_preconditioner_defaults::ssor_omega;
+        int communication                 = ippl::pcg_preconditioner_defaults::communication;
+        double ssor_omega                 = ippl::pcg_preconditioner_defaults::ssor_omega;
+        // Multigrid preconditioner parameters
+        int mg_pre_smooth_iters  = ippl::pcg_preconditioner_defaults::mg_pre_smooth;
+        int mg_post_smooth_iters = ippl::pcg_preconditioner_defaults::mg_post_smooth;
+        double mg_omega          = ippl::pcg_preconditioner_defaults::mg_omega;
+        unsigned mg_min_cells    = ippl::pcg_preconditioner_defaults::mg_min_cells;
     };
 
     Field_t<Dim>* rho_m;
@@ -52,12 +58,15 @@ private:
             parsed.type, "FieldSolver::parsePreconditionerParams");
 
         size_t expected_arg_count = 0;
-        if (parsed.type == "newton" || parsed.type == "chebyshev" || parsed.type == "richardson_alt") {
+        if (parsed.type == "newton" || parsed.type == "chebyshev"
+            || parsed.type == "richardson_alt") {
             expected_arg_count = 1;
         } else if (parsed.type == "richardson") {
             expected_arg_count = 2;
         } else if (parsed.type == "gauss-seidel" || parsed.type == "ssor") {
             expected_arg_count = 3;
+        } else if (parsed.type == "multigrid") {
+            expected_arg_count = 4;
         }
 
         const size_t provided_arg_count = preconditioner_params_m.size() - 1;
@@ -73,8 +82,8 @@ private:
         };
 
         if (provided_arg_count != expected_arg_count) {
-            warnAndUseDefaults("expected " + std::to_string(expected_arg_count) + " argument(s), got "
-                               + std::to_string(provided_arg_count));
+            warnAndUseDefaults("expected " + std::to_string(expected_arg_count)
+                               + " argument(s), got " + std::to_string(provided_arg_count));
             return parsed;
         }
 
@@ -97,6 +106,12 @@ private:
                 parsed.gauss_seidel_inner_iterations = std::stoi(preconditioner_params_m[arg++]);
                 parsed.gauss_seidel_outer_iterations = std::stoi(preconditioner_params_m[arg++]);
                 parsed.ssor_omega                    = std::stod(preconditioner_params_m[arg++]);
+            } else if (parsed.type == "multigrid") {
+                parsed.mg_pre_smooth_iters  = std::stoi(preconditioner_params_m[arg++]);
+                parsed.mg_post_smooth_iters = std::stoi(preconditioner_params_m[arg++]);
+                parsed.mg_omega             = std::stod(preconditioner_params_m[arg++]);
+                parsed.mg_min_cells =
+                    static_cast<unsigned>(std::stoul(preconditioner_params_m[arg++]));
             }
             parsed.use_defaults = false;
         } catch (const std::exception& ex) {
@@ -106,7 +121,9 @@ private:
         ippl::preconditioner_validation::sanitizeParams(
             parsed.type, warn, parsed.newton_level, parsed.chebyshev_degree,
             parsed.richardson_iterations, parsed.gauss_seidel_inner_iterations,
-            parsed.gauss_seidel_outer_iterations, parsed.ssor_omega, &parsed.communication);
+            parsed.gauss_seidel_outer_iterations, parsed.ssor_omega, &parsed.communication,
+            parsed.mg_pre_smooth_iters, parsed.mg_post_smooth_iters, parsed.mg_omega,
+            parsed.mg_min_cells);
 
         return parsed;
     }
@@ -158,11 +175,11 @@ public:
         // CG requires explicit periodic boundary conditions while the periodic Poisson solver
         // simply assumes them
         typedef ippl::BConds<Field<T, Dim>, Dim> bc_type;
-        if ((this->getStype() == "CG") || (this->getStype() == "PCG") || (this->getStype() == "FEM") ||
-            (this->getStype() == "FEM_PRECON")) {
+        if ((this->getStype() == "CG") || (this->getStype() == "PCG") || (this->getStype() == "FEM")
+            || (this->getStype() == "FEM_PRECON")) {
             bc_type allPeriodic;
             for (unsigned int i = 0; i < 2 * Dim; ++i) {
-                allPeriodic[i]  = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
+                allPeriodic[i] = std::make_shared<ippl::PeriodicFace<Field<T, Dim>>>(i);
             }
             phi_m->setFieldBC(allPeriodic);
             if ((this->getStype() == "FEM") || (this->getStype() == "FEM_PRECON")) {
@@ -172,10 +189,10 @@ public:
     }
 
     void runSolver() override {
-        if ((this->getStype() == "CG") || (this->getStype() == "PCG") || (this->getStype() == "FEM") ||
-            (this->getStype() == "FEM_PRECON")) {
+        if ((this->getStype() == "CG") || (this->getStype() == "PCG") || (this->getStype() == "FEM")
+            || (this->getStype() == "FEM_PRECON")) {
             int iterations = 0;
-            int residue = 0;
+            int residue    = 0;
 
             if (this->getStype() == "FEM") {
                 FEMSolver_t<T, Dim>& solver = std::get<FEMSolver_t<T, Dim>>(this->getSolver());
@@ -184,7 +201,8 @@ public:
                 iterations = solver.getIterationCount();
                 residue    = solver.getResidue();
             } else if (this->getStype() == "FEM_PRECON") {
-                FEMPreconSolver_t<T, Dim>& solver = std::get<FEMPreconSolver_t<T, Dim>>(this->getSolver());
+                FEMPreconSolver_t<T, Dim>& solver =
+                    std::get<FEMPreconSolver_t<T, Dim>>(this->getSolver());
                 solver.solve();
 
                 iterations = solver.getIterationCount();
@@ -200,8 +218,8 @@ public:
             if (ippl::Comm->rank() == 0) {
                 std::filesystem::create_directory("data_CG");
                 std::stringstream fname;
-                if ((this->getStype() == "CG") || (this->getStype() == "FEM") ||
-                    (this->getStype() == "FEM_PRECON")) {
+                if ((this->getStype() == "CG") || (this->getStype() == "FEM")
+                    || (this->getStype() == "FEM_PRECON")) {
                     fname << "data_CG/CG_";
                 } else {
                     fname << "data_CG/";
@@ -248,10 +266,10 @@ public:
 
         solver.setRhs(*rho_m);
 
-        if constexpr ((std::is_same_v<Solver, CGSolver_t<T, Dim>>) || 
-                     (std::is_same_v<Solver, FEMSolver_t<T, Dim>>) || 
-                     (std::is_same_v<Solver, FEMPreconSolver_t<T, Dim>>)) {
-            // The CG solver and FEMPoissonSolver compute the potential 
+        if constexpr ((std::is_same_v<Solver, CGSolver_t<T, Dim>>)
+                      || (std::is_same_v<Solver, FEMSolver_t<T, Dim>>)
+                      || (std::is_same_v<Solver, FEMPreconSolver_t<T, Dim>>)) {
+            // The CG solver and FEMPoissonSolver compute the potential
             // directly and use this to get the electric field
             solver.setLhs(*phi_m);
             solver.setGradient(*E_m);
@@ -304,6 +322,10 @@ public:
         sp.add("richardson_iterations", parsed.richardson_iterations);
         sp.add("communication", parsed.communication);
         sp.add("ssor_omega", parsed.ssor_omega);
+        sp.add("mg_pre_smooth_iters", parsed.mg_pre_smooth_iters);
+        sp.add("mg_post_smooth_iters", parsed.mg_post_smooth_iters);
+        sp.add("mg_omega", parsed.mg_omega);
+        sp.add("min_cells_per_rank_per_dim", parsed.mg_min_cells);
 
         initSolverWithParams<CGSolver_t<T, Dim>>(sp);
     }
@@ -331,7 +353,7 @@ public:
         sp.add("richardson_iterations", parsed.richardson_iterations);
         sp.add("communication", parsed.communication);
         sp.add("ssor_omega", parsed.ssor_omega);
-        
+
         initSolverWithParams<FEMPreconSolver_t<T, Dim>>(sp);
     }
 
