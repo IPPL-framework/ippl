@@ -184,11 +184,11 @@ namespace ippl{
     template <typename T>
     template <typename E, size_t N>
     FEMVector<T>& FEMVector<T>::operator= (const detail::Expression<E, N>& expr) {
-        using capture_type = detail::CapturedExpression<E, N>;
-        capture_type expr_ = reinterpret_cast<const capture_type&>(expr);
+        const E expr_ = static_cast<const E&>(expr);
+        auto data     = data_m;
         Kokkos::parallel_for("FEMVector::operator=(Expression)", data_m.extent(0),
-            KOKKOS_CLASS_LAMBDA(const size_t& i){
-                data_m[i] = expr_(i);
+            KOKKOS_LAMBDA(const size_t& i){
+                data[i] = expr_(i);
             }
         );
         return *this;
