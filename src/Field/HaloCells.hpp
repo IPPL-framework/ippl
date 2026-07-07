@@ -3,7 +3,6 @@
 //   The guard / ghost cells of BareField.
 //
 
-#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -18,21 +17,6 @@ namespace ippl {
 
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view, Layout_t* layout) {
-            using exec_space  = typename view_type::execution_space;
-            using policy_type = Kokkos::RangePolicy<exec_space>;
-            const int rank    = Comm->rank();
-            std::cout << "[rank " << rank
-                      << "] HaloCells::accumulateHalo launching entry noop kernel" << std::endl;
-            Kokkos::parallel_for(
-                "HaloCells::accumulateHalo debug entry noop", policy_type(0, 1),
-                KOKKOS_LAMBDA(const int) {});
-            std::cout << "[rank " << rank
-                      << "] HaloCells::accumulateHalo launched entry noop kernel, entering fence"
-                      << std::endl;
-            Kokkos::fence();
-            std::cout << "[rank " << rank
-                      << "] HaloCells::accumulateHalo completed entry noop fence" << std::endl;
-
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
         }
 
@@ -58,6 +42,7 @@ namespace ippl {
             const neighbor_list& neighbors = layout->getNeighbors();
             const range_list &sendRanges   = layout->getNeighborsSendRange(),
                              &recvRanges   = layout->getNeighborsRecvRange();
+
             auto ldom = layout->getLocalNDIndex();
             for (const auto& axis : ldom) {
                 if ((axis.length() == 1) && (Dim != 1)) {
@@ -72,6 +57,7 @@ namespace ippl {
             // exchange when we set HALO_TO_INTERNAL_NOGHOST
             const auto domain    = layout->getDomain();
             const auto& ldomains = layout->getHostLocalDomains();
+
             size_t totalRequests = 0;
             for (const auto& componentNeighbors : neighbors) {
                 totalRequests += componentNeighbors.size();
@@ -124,6 +110,7 @@ namespace ippl {
                     pack(range, view, haloData_m, nsends);
 
                     buffer_type buf = comm.template getBuffer<memory_space, T>(nsends);
+
                     comm.isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++], nsends);
                     buf->resetWritePos();
                 }
@@ -181,250 +168,35 @@ namespace ippl {
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::pack(const bound_type& range, const view_type& view,
                                                   databuffer_type& fd, size_type& nsends) {
+            auto subview = makeSubview(view, range);
+
             auto& buffer = fd.buffer;
 
-            using exec_space          = typename view_type::execution_space;
-            using view_memory_space   = typename view_type::memory_space;
-            using buffer_view_type    = typename databuffer_type::view_type;
-            using buffer_memory_space = typename buffer_view_type::memory_space;
-            using range_policy_type   = Kokkos::RangePolicy<exec_space>;
-
-            const int rank = Comm->rank();
-
-            size_type size = 1;
-            for (unsigned d = 0; d < Dim; ++d) {
-                const long extent = range.hi[d] - range.lo[d];
-                if (extent <= 0) {
-                    nsends = 0;
-                    return;
-                }
-                size *= static_cast<size_type>(extent);
-            }
-
-            std::cout << "[rank " << rank
-                      << "] HaloCells::pack launching pre-realloc noop kernel sizeofT="
-                      << sizeof(T) << " execSpace=" << exec_space::name()
-                      << " viewMemorySpace=" << view_memory_space::name()
-                      << " bufferMemorySpace=" << buffer_memory_space::name() << std::endl;
-            Kokkos::parallel_for(
-                "HaloCells::pack(debug pre-realloc noop)", range_policy_type(0, 1),
-                KOKKOS_LAMBDA(const int) {});
-            std::cout << "[rank " << rank
-                      << "] HaloCells::pack launched pre-realloc noop kernel, entering fence"
-                      << std::endl;
-            Kokkos::fence();
-            std::cout << "[rank " << rank
-                      << "] HaloCells::pack completed pre-realloc noop fence" << std::endl;
-
-            const auto bufferSizeBefore = buffer.size();
-
-            nsends = size;
+            size_t size = subview.size();
+            nsends      = size;
             if (buffer.size() < size) {
                 int overalloc = Comm->getDefaultOverallocation();
                 Kokkos::realloc(buffer, size * overalloc);
-                std::cout << "[rank " << Comm->rank()
-                          << "] HaloCells::pack reallocated typed buffer, entering fence"
-                          << std::endl;
-                Kokkos::fence();
-                std::cout << "[rank " << Comm->rank()
-                          << "] HaloCells::pack completed typed-buffer realloc fence"
-                          << std::endl;
-            }
-            const auto bufferSizeAfter = buffer.size();
-
-            auto packedBuffer = buffer;
-            auto fullView     = view;
-
-            using index_type = typename RangePolicy<Dim, exec_space>::index_type;
-            Kokkos::Array<index_type, Dim> begin, end, extent;
-            for (unsigned d = 0; d < Dim; ++d) {
-                begin[d]  = static_cast<index_type>(range.lo[d]);
-                end[d]    = static_cast<index_type>(range.hi[d]);
-                extent[d] = end[d] - begin[d];
             }
 
-            std::cout << "[rank " << rank << "] HaloCells::pack begin range.lo=(";
-            for (unsigned d = 0; d < Dim; ++d) {
-                if (d != 0) {
-                    std::cout << ", ";
-                }
-                std::cout << range.lo[d];
-            }
-            std::cout << ") range.hi=(";
-            for (unsigned d = 0; d < Dim; ++d) {
-                if (d != 0) {
-                    std::cout << ", ";
-                }
-                std::cout << range.hi[d];
-            }
-            std::cout << ") view.extent=(";
-            for (unsigned d = 0; d < Dim; ++d) {
-                if (d != 0) {
-                    std::cout << ", ";
-                }
-                std::cout << view.extent(d);
-            }
-            std::cout << ") nsends=" << nsends << " bufferBefore=" << bufferSizeBefore
-                      << " bufferAfter=" << bufferSizeAfter
-                      << " viewData=" << static_cast<const void*>(view.data())
-                      << " bufferData=" << static_cast<const void*>(buffer.data()) << std::endl;
+            using index_array_type =
+                typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
+            ippl::parallel_for(
+                "HaloCells::pack()", getRangePolicy(subview),
+                KOKKOS_LAMBDA(const index_array_type& args) {
+                    int l = 0;
 
-            if constexpr (Dim == 3) {
-                const index_type first0 = begin[0];
-                const index_type first1 = begin[1];
-                const index_type first2 = begin[2];
-                const index_type last0  = end[0];
-                const index_type last1  = end[1];
-                const index_type last2  = end[2];
-                const size_type extent0 = static_cast<size_type>(extent[0]);
-                const size_type extent1 = static_cast<size_type>(extent[1]);
-
-                using mdrange_type = Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>;
-
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack launching post-realloc noop kernel"
-                          << std::endl;
-                Kokkos::parallel_for(
-                    "HaloCells::pack(debug post-realloc noop)", range_policy_type(0, 1),
-                    KOKKOS_LAMBDA(const int) {});
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack launched post-realloc noop kernel, entering fence"
-                          << std::endl;
-                Kokkos::fence();
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack completed post-realloc noop fence" << std::endl;
-
-                buffer_view_type freshBuffer("HaloCells::pack(debug fresh typed buffer)", 1);
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack allocated fresh typed buffer data="
-                          << static_cast<const void*>(freshBuffer.data()) << ", entering fence"
-                          << std::endl;
-                Kokkos::fence();
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack completed fresh typed-buffer alloc fence"
-                          << std::endl;
-
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack launching debug fresh-buffer touch kernel"
-                          << std::endl;
-                Kokkos::parallel_for(
-                    "HaloCells::pack(debug fresh buffer touch)", range_policy_type(0, 1),
-                    KOKKOS_LAMBDA(const int) {
-                        freshBuffer(0) = T();
-                    });
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack launched debug fresh-buffer touch kernel, entering fence"
-                          << std::endl;
-                Kokkos::fence();
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack completed debug fresh-buffer touch fence"
-                          << std::endl;
-
-                T* packedBufferPtr = buffer.data();
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack launching debug raw-pointer buffer-touch kernel"
-                          << std::endl;
-                Kokkos::parallel_for(
-                    "HaloCells::pack(debug raw pointer buffer touch)", range_policy_type(0, 1),
-                    KOKKOS_LAMBDA(const int) {
-                        packedBufferPtr[0] = T();
-                    });
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack launched debug raw-pointer buffer-touch kernel, entering fence"
-                          << std::endl;
-                Kokkos::fence();
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack completed debug raw-pointer buffer-touch fence"
-                          << std::endl;
-
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack launching debug buffer-touch kernel"
-                          << std::endl;
-                Kokkos::parallel_for(
-                    "HaloCells::pack(debug buffer touch)", range_policy_type(0, 1),
-                    KOKKOS_LAMBDA(const int) {
-                        packedBuffer(0) = T();
-                    });
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack launched debug buffer-touch kernel, entering fence"
-                          << std::endl;
-                Kokkos::fence();
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack completed debug buffer-touch fence" << std::endl;
-
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack launching debug one-cell copy kernel"
-                          << std::endl;
-                Kokkos::parallel_for(
-                    "HaloCells::pack(debug one-cell copy)", range_policy_type(0, 1),
-                    KOKKOS_LAMBDA(const int) {
-                        packedBuffer(0) = fullView(first0, first1, first2);
-                    });
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack launched debug one-cell copy kernel, entering fence"
-                          << std::endl;
-                Kokkos::fence();
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack completed debug one-cell copy fence" << std::endl;
-
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack launching debug raw 3D buffer-fill kernel"
-                          << std::endl;
-                Kokkos::parallel_for(
-                    "HaloCells::pack(debug raw3d buffer fill)",
-                    mdrange_type({first0, first1, first2}, {last0, last1, last2}),
-                    KOKKOS_LAMBDA(const index_type i, const index_type j, const index_type k) {
-                        const size_type local0 = static_cast<size_type>(i - first0);
-                        const size_type local1 = static_cast<size_type>(j - first1);
-                        const size_type local2 = static_cast<size_type>(k - first2);
-                        const size_type l      = local0 + local1 * extent0
-                                            + local2 * extent0 * extent1;
-
-                        packedBuffer(l) = T();
-                    });
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack launched debug raw 3D buffer-fill kernel, entering fence"
-                          << std::endl;
-                Kokkos::fence();
-                std::cout << "[rank " << rank
-                          << "] HaloCells::pack completed debug raw 3D buffer-fill fence"
-                          << std::endl;
-
-                std::cout << "[rank " << rank << "] HaloCells::pack launching raw 3D kernel"
-                          << std::endl;
-                Kokkos::parallel_for(
-                    "HaloCells::pack(raw3d)",
-                    mdrange_type({first0, first1, first2}, {last0, last1, last2}),
-                    KOKKOS_LAMBDA(const index_type i, const index_type j, const index_type k) {
-                        const size_type local0 = static_cast<size_type>(i - first0);
-                        const size_type local1 = static_cast<size_type>(j - first1);
-                        const size_type local2 = static_cast<size_type>(k - first2);
-                        const size_type l      = local0 + local1 * extent0
-                                            + local2 * extent0 * extent1;
-
-                        packedBuffer(l) = fullView(i, j, k);
-                    });
-            } else {
-                using index_array_type =
-                    typename RangePolicy<Dim, exec_space>::index_array_type;
-                ippl::parallel_for(
-                    "HaloCells::pack()", createRangePolicy<Dim, exec_space>(begin, end),
-                    KOKKOS_LAMBDA(const index_array_type& args) {
-                        size_type l      = 0;
-                        size_type stride = 1;
-
-                        for (unsigned d = 0; d < Dim; ++d) {
-                            l += static_cast<size_type>(args[d] - begin[d]) * stride;
-                            stride *= static_cast<size_type>(extent[d]);
+                    for (unsigned d1 = 0; d1 < Dim; d1++) {
+                        int next = args[d1];
+                        for (unsigned d2 = 0; d2 < d1; d2++) {
+                            next *= subview.extent(d2);
                         }
+                        l += next;
+                    }
 
-                        packedBuffer(l) = apply(fullView, args);
-                    });
-            }
-            std::cout << "[rank " << rank << "] HaloCells::pack launched kernel, entering fence"
-                      << std::endl;
+                    buffer(l) = apply(subview, args);
+                });
             Kokkos::fence();
-            std::cout << "[rank " << rank << "] HaloCells::pack completed fence" << std::endl;
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>

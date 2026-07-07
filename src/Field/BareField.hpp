@@ -9,7 +9,6 @@
 
 #include <Kokkos_ReductionIdentity.hpp>
 #include <cstdlib>
-#include <iostream>
 #include <map>
 #include <utility>
 
@@ -158,21 +157,6 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::accumulateHalo() {
         if (layout_m->comm.size() > 1) {
-            using exec_space  = typename view_type::execution_space;
-            using policy_type = Kokkos::RangePolicy<exec_space>;
-            const int rank    = Comm->rank();
-            std::cout << "[rank " << rank
-                      << "] BareField::accumulateHalo launching entry noop kernel" << std::endl;
-            Kokkos::parallel_for(
-                "BareField::accumulateHalo debug entry noop", policy_type(0, 1),
-                KOKKOS_LAMBDA(const int) {});
-            std::cout << "[rank " << rank
-                      << "] BareField::accumulateHalo launched entry noop kernel, entering fence"
-                      << std::endl;
-            Kokkos::fence();
-            std::cout << "[rank " << rank
-                      << "] BareField::accumulateHalo completed entry noop fence" << std::endl;
-
             halo_m.accumulateHalo(dview_m, layout_m);
         }
         if (layout_m->isAllPeriodic_m) {
