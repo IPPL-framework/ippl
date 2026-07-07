@@ -17,6 +17,12 @@ namespace ippl {
 
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view, Layout_t* layout) {
+            using guard_policy_type = Kokkos::RangePolicy<typename view_type::execution_space>;
+            Kokkos::parallel_for(
+                "HaloCells::accumulateHalo launch guard", guard_policy_type(0, 1),
+                KOKKOS_LAMBDA(const int) {});
+            Kokkos::fence();
+
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
         }
 
