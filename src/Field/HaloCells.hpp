@@ -18,6 +18,21 @@ namespace ippl {
 
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view, Layout_t* layout) {
+            using exec_space  = typename view_type::execution_space;
+            using policy_type = Kokkos::RangePolicy<exec_space>;
+            const int rank    = Comm->rank();
+            std::cout << "[rank " << rank
+                      << "] HaloCells::accumulateHalo launching entry noop kernel" << std::endl;
+            Kokkos::parallel_for(
+                "HaloCells::accumulateHalo debug entry noop", policy_type(0, 1),
+                KOKKOS_LAMBDA(const int) {});
+            std::cout << "[rank " << rank
+                      << "] HaloCells::accumulateHalo launched entry noop kernel, entering fence"
+                      << std::endl;
+            Kokkos::fence();
+            std::cout << "[rank " << rank
+                      << "] HaloCells::accumulateHalo completed entry noop fence" << std::endl;
+
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
         }
 

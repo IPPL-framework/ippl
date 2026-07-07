@@ -253,6 +253,19 @@ namespace ippl {
                   << "] ParticleAttrib::scatter completed CIC fence" << std::endl;
         IpplTimings::stopTimer(scatterTimer);
 
+        using post_scatter_policy_type = Kokkos::RangePolicy<typename Field::execution_space>;
+        std::cout << "[rank " << Comm->rank()
+                  << "] ParticleAttrib::scatter launching post-CIC noop kernel" << std::endl;
+        Kokkos::parallel_for(
+            "ParticleAttrib::scatter debug post-CIC noop", post_scatter_policy_type(0, 1),
+            KOKKOS_LAMBDA(const int) {});
+        std::cout << "[rank " << Comm->rank()
+                  << "] ParticleAttrib::scatter launched post-CIC noop kernel, entering fence"
+                  << std::endl;
+        Kokkos::fence();
+        std::cout << "[rank " << Comm->rank()
+                  << "] ParticleAttrib::scatter completed post-CIC noop fence" << std::endl;
+
         static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("accumulateHalo");
         std::cout << "[rank " << Comm->rank()
                   << "] ParticleAttrib::scatter entering accumulateHalo" << std::endl;
