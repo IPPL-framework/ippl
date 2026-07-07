@@ -3,6 +3,7 @@
 //   The guard / ghost cells of BareField.
 //
 
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -177,11 +178,14 @@ namespace ippl {
                 size *= static_cast<size_type>(extent);
             }
 
-            nsends      = size;
+            const auto bufferSizeBefore = buffer.size();
+
+            nsends = size;
             if (buffer.size() < size) {
                 int overalloc = Comm->getDefaultOverallocation();
                 Kokkos::realloc(buffer, size * overalloc);
             }
+            const auto bufferSizeAfter = buffer.size();
 
             auto packedBuffer = buffer;
             auto fullView     = view;
@@ -195,22 +199,77 @@ namespace ippl {
                 extent[d] = end[d] - begin[d];
             }
 
-            using index_array_type =
-                typename RangePolicy<Dim, exec_space>::index_array_type;
-            ippl::parallel_for(
-                "HaloCells::pack()", createRangePolicy<Dim, exec_space>(begin, end),
-                KOKKOS_LAMBDA(const index_array_type& args) {
-                    size_type l      = 0;
-                    size_type stride = 1;
+            const int rank = Comm->rank();
+            std::cout << "[rank " << rank << "] HaloCells::pack begin range.lo=(";
+            for (unsigned d = 0; d < Dim; ++d) {
+                if (d != 0) {
+                    std::cout << ", ";
+                }
+                std::cout << range.lo[d];
+            }
+            std::cout << ") range.hi=(";
+            for (unsigned d = 0; d < Dim; ++d) {
+                if (d != 0) {
+                    std::cout << ", ";
+                }
+                std::cout << range.hi[d];
+            }
+            std::cout << ") view.extent=(";
+            for (unsigned d = 0; d < Dim; ++d) {
+                if (d != 0) {
+                    std::cout << ", ";
+                }
+                std::cout << view.extent(d);
+            }
+            std::cout << ") nsends=" << nsends << " bufferBefore=" << bufferSizeBefore
+                      << " bufferAfter=" << bufferSizeAfter << std::endl;
 
-                    for (unsigned d = 0; d < Dim; ++d) {
-                        l += static_cast<size_type>(args[d] - begin[d]) * stride;
-                        stride *= static_cast<size_type>(extent[d]);
-                    }
+            if constexpr (Dim == 3) {
+                const index_type first0 = begin[0];
+                const index_type first1 = begin[1];
+                const index_type first2 = begin[2];
+                const index_type last0  = end[0];
+                const index_type last1  = end[1];
+                const index_type last2  = end[2];
+                const size_type extent0 = static_cast<size_type>(extent[0]);
+                const size_type extent1 = static_cast<size_type>(extent[1]);
 
-                    packedBuffer(l) = apply(fullView, args);
-                });
+                using mdrange_type = Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>;
+                std::cout << "[rank " << rank << "] HaloCells::pack launching raw 3D kernel"
+                          << std::endl;
+                Kokkos::parallel_for(
+                    "HaloCells::pack(raw3d)",
+                    mdrange_type({first0, first1, first2}, {last0, last1, last2}),
+                    KOKKOS_LAMBDA(const index_type i, const index_type j, const index_type k) {
+                        const size_type local0 = static_cast<size_type>(i - first0);
+                        const size_type local1 = static_cast<size_type>(j - first1);
+                        const size_type local2 = static_cast<size_type>(k - first2);
+                        const size_type l      = local0 + local1 * extent0
+                                            + local2 * extent0 * extent1;
+
+                        packedBuffer(l) = fullView(i, j, k);
+                    });
+            } else {
+                using index_array_type =
+                    typename RangePolicy<Dim, exec_space>::index_array_type;
+                ippl::parallel_for(
+                    "HaloCells::pack()", createRangePolicy<Dim, exec_space>(begin, end),
+                    KOKKOS_LAMBDA(const index_array_type& args) {
+                        size_type l      = 0;
+                        size_type stride = 1;
+
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            l += static_cast<size_type>(args[d] - begin[d]) * stride;
+                            stride *= static_cast<size_type>(extent[d]);
+                        }
+
+                        packedBuffer(l) = apply(fullView, args);
+                    });
+            }
+            std::cout << "[rank " << rank << "] HaloCells::pack launched kernel, entering fence"
+                      << std::endl;
             Kokkos::fence();
+            std::cout << "[rank " << rank << "] HaloCells::pack completed fence" << std::endl;
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
