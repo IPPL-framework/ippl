@@ -184,8 +184,10 @@ namespace ippl {
         void HaloCells<T, Dim, ViewArgs...>::pack(const bound_type& range, const view_type& view,
                                                   databuffer_type& fd, size_type& nsends) {
             auto subview = makeSubview(view, range);
+            std::cout << "Step 7.2.1" << std::endl;
 
             auto& buffer = fd.buffer;
+            std::cout << "Step 7.2.2" << std::endl;
 
             size_t size = subview.size();
             nsends      = size;
@@ -193,9 +195,11 @@ namespace ippl {
                 int overalloc = Comm->getDefaultOverallocation();
                 Kokkos::realloc(buffer, size * overalloc);
             }
+            std::cout << "Step 7.2.3" << std::endl;
 
             using index_array_type =
                 typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
+            std::cout << "Step 7.2.4" << std::endl;
             ippl::parallel_for(
                 "HaloCells::pack()", getRangePolicy(subview),
                 KOKKOS_LAMBDA(const index_array_type& args) {
@@ -211,6 +215,7 @@ namespace ippl {
 
                     buffer(l) = apply(subview, args);
                 });
+            std::cout << "Step 7.2.5" << std::endl;
             Kokkos::fence();
         }
 
