@@ -184,6 +184,13 @@ namespace ippl {
             if (buffer.size() < size) {
                 int overalloc = Comm->getDefaultOverallocation();
                 Kokkos::realloc(buffer, size * overalloc);
+                std::cout << "[rank " << Comm->rank()
+                          << "] HaloCells::pack reallocated typed buffer, entering fence"
+                          << std::endl;
+                Kokkos::fence();
+                std::cout << "[rank " << Comm->rank()
+                          << "] HaloCells::pack completed typed-buffer realloc fence"
+                          << std::endl;
             }
             const auto bufferSizeAfter = buffer.size();
 
@@ -222,7 +229,9 @@ namespace ippl {
                 std::cout << view.extent(d);
             }
             std::cout << ") nsends=" << nsends << " bufferBefore=" << bufferSizeBefore
-                      << " bufferAfter=" << bufferSizeAfter << std::endl;
+                      << " bufferAfter=" << bufferSizeAfter
+                      << " viewData=" << static_cast<const void*>(view.data())
+                      << " bufferData=" << static_cast<const void*>(buffer.data()) << std::endl;
 
             if constexpr (Dim == 3) {
                 const index_type first0 = begin[0];
@@ -235,6 +244,61 @@ namespace ippl {
                 const size_type extent1 = static_cast<size_type>(extent[1]);
 
                 using mdrange_type = Kokkos::MDRangePolicy<exec_space, Kokkos::Rank<3>>;
+                using range_policy_type = Kokkos::RangePolicy<exec_space>;
+
+                std::cout << "[rank " << rank
+                          << "] HaloCells::pack launching debug buffer-touch kernel"
+                          << std::endl;
+                Kokkos::parallel_for(
+                    "HaloCells::pack(debug buffer touch)", range_policy_type(0, 1),
+                    KOKKOS_LAMBDA(const int) {
+                        packedBuffer(0) = T();
+                    });
+                std::cout << "[rank " << rank
+                          << "] HaloCells::pack launched debug buffer-touch kernel, entering fence"
+                          << std::endl;
+                Kokkos::fence();
+                std::cout << "[rank " << rank
+                          << "] HaloCells::pack completed debug buffer-touch fence" << std::endl;
+
+                std::cout << "[rank " << rank
+                          << "] HaloCells::pack launching debug one-cell copy kernel"
+                          << std::endl;
+                Kokkos::parallel_for(
+                    "HaloCells::pack(debug one-cell copy)", range_policy_type(0, 1),
+                    KOKKOS_LAMBDA(const int) {
+                        packedBuffer(0) = fullView(first0, first1, first2);
+                    });
+                std::cout << "[rank " << rank
+                          << "] HaloCells::pack launched debug one-cell copy kernel, entering fence"
+                          << std::endl;
+                Kokkos::fence();
+                std::cout << "[rank " << rank
+                          << "] HaloCells::pack completed debug one-cell copy fence" << std::endl;
+
+                std::cout << "[rank " << rank
+                          << "] HaloCells::pack launching debug raw 3D buffer-fill kernel"
+                          << std::endl;
+                Kokkos::parallel_for(
+                    "HaloCells::pack(debug raw3d buffer fill)",
+                    mdrange_type({first0, first1, first2}, {last0, last1, last2}),
+                    KOKKOS_LAMBDA(const index_type i, const index_type j, const index_type k) {
+                        const size_type local0 = static_cast<size_type>(i - first0);
+                        const size_type local1 = static_cast<size_type>(j - first1);
+                        const size_type local2 = static_cast<size_type>(k - first2);
+                        const size_type l      = local0 + local1 * extent0
+                                            + local2 * extent0 * extent1;
+
+                        packedBuffer(l) = T();
+                    });
+                std::cout << "[rank " << rank
+                          << "] HaloCells::pack launched debug raw 3D buffer-fill kernel, entering fence"
+                          << std::endl;
+                Kokkos::fence();
+                std::cout << "[rank " << rank
+                          << "] HaloCells::pack completed debug raw 3D buffer-fill fence"
+                          << std::endl;
+
                 std::cout << "[rank " << rank << "] HaloCells::pack launching raw 3D kernel"
                           << std::endl;
                 Kokkos::parallel_for(
