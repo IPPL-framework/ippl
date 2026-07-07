@@ -84,6 +84,7 @@ namespace ippl {
                     int targetRank = componentNeighbors[i];
 
                     bound_type range;
+                    std::cout << "Step 7.1" << std::endl;
                     if (order == INTERNAL_TO_HALO) {
                         /*We store only the sending and receiving ranges
                          * of INTERNAL_TO_HALO and use the fact that the
@@ -113,12 +114,16 @@ namespace ippl {
                     }
 
                     size_type nsends;
+                    std::cout << "Step 7.2" << std::endl;
                     pack(range, view, haloData_m, nsends);
+                    std::cout << "Step 7.3" << std::endl;
 
                     buffer_type buf = comm.template getBuffer<memory_space, T>(nsends);
-
+                    std::cout << "Step 7.4" << std::endl;
                     comm.isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++], nsends);
+                    std::cout << "Step 7.5" << std::endl;
                     buf->resetWritePos();
+                    std::cout << "Step 7.6" << std::endl;
                 }
             }
 
