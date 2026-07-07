@@ -3,7 +3,6 @@
 //   The guard / ghost cells of BareField.
 //
 
-#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -40,14 +39,10 @@ namespace ippl {
 
             auto& comm = layout->comm;
 
-            std::cout << "Step 1" << std::endl;
             const neighbor_list& neighbors = layout->getNeighbors();
-            std::cout << "Step 2" << std::endl;
             const range_list &sendRanges   = layout->getNeighborsSendRange(),
                              &recvRanges   = layout->getNeighborsRecvRange();
-            std::cout << "Step 3" << std::endl;
             auto ldom = layout->getLocalNDIndex();
-            std::cout << "Step 4" << std::endl;
             for (const auto& axis : ldom) {
                 if ((axis.length() == 1) && (Dim != 1)) {
                     throw std::runtime_error(
@@ -61,12 +56,10 @@ namespace ippl {
             // exchange when we set HALO_TO_INTERNAL_NOGHOST
             const auto domain    = layout->getDomain();
             const auto& ldomains = layout->getHostLocalDomains();
-            std::cout << "Step 5" << std::endl;
             size_t totalRequests = 0;
             for (const auto& componentNeighbors : neighbors) {
                 totalRequests += componentNeighbors.size();
             }
-            std::cout << "Step 6" << std::endl;
 
             int me = Comm->rank();
 
@@ -76,7 +69,6 @@ namespace ippl {
             // sending loop
             constexpr size_t cubeCount = detail::countHypercubes(Dim) - 1;
             size_t requestIndex        = 0;
-            std::cout << "Step 7" << std::endl;
             for (size_t index = 0; index < cubeCount; index++) {
                 int tag                        = mpi::tag::HALO + index;
                 const auto& componentNeighbors = neighbors[index];
@@ -84,7 +76,6 @@ namespace ippl {
                     int targetRank = componentNeighbors[i];
 
                     bound_type range;
-                    std::cout << "Step 7.1" << std::endl;
                     if (order == INTERNAL_TO_HALO) {
                         /*We store only the sending and receiving ranges
                          * of INTERNAL_TO_HALO and use the fact that the
@@ -114,21 +105,15 @@ namespace ippl {
                     }
 
                     size_type nsends;
-                    std::cout << "Step 7.2" << std::endl;
                     pack(range, view, haloData_m, nsends);
-                    std::cout << "Step 7.3" << std::endl;
 
                     buffer_type buf = comm.template getBuffer<memory_space, T>(nsends);
-                    std::cout << "Step 7.4" << std::endl;
                     comm.isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++], nsends);
-                    std::cout << "Step 7.5" << std::endl;
                     buf->resetWritePos();
-                    std::cout << "Step 7.6" << std::endl;
                 }
             }
 
             // receiving loop
-            std::cout << "Step 8" << std::endl;
             for (size_t index = 0; index < cubeCount; index++) {
                 int tag                        = mpi::tag::HALO + Layout_t::getMatchingIndex(index);
                 const auto& componentNeighbors = neighbors[index];
@@ -169,53 +154,62 @@ namespace ippl {
                     unpack<Op>(range, view, haloData_m);
                 }
             }
-            std::cout << "Step 9" << std::endl;
 
             if (totalRequests > 0) {
                 MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
-            std::cout << "Step 10" << std::endl;
 
             comm.freeAllBuffers();
-            std::cout << "Step 11" << std::endl;
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::pack(const bound_type& range, const view_type& view,
                                                   databuffer_type& fd, size_type& nsends) {
-            auto subview = makeSubview(view, range);
-            std::cout << "Step 7.2.1" << std::endl;
-
             auto& buffer = fd.buffer;
-            std::cout << "Step 7.2.2" << std::endl;
 
-            size_t size = subview.size();
+            size_type size = 1;
+            for (unsigned d = 0; d < Dim; ++d) {
+                const long extent = range.hi[d] - range.lo[d];
+                if (extent <= 0) {
+                    nsends = 0;
+                    return;
+                }
+                size *= static_cast<size_type>(extent);
+            }
+
             nsends      = size;
             if (buffer.size() < size) {
                 int overalloc = Comm->getDefaultOverallocation();
                 Kokkos::realloc(buffer, size * overalloc);
             }
-            std::cout << "Step 7.2.3" << std::endl;
+
+            auto packedBuffer = buffer;
+            auto fullView     = view;
+
+            using exec_space = typename view_type::execution_space;
+            using index_type = typename RangePolicy<Dim, exec_space>::index_type;
+            Kokkos::Array<index_type, Dim> begin, end, extent;
+            for (unsigned d = 0; d < Dim; ++d) {
+                begin[d]  = static_cast<index_type>(range.lo[d]);
+                end[d]    = static_cast<index_type>(range.hi[d]);
+                extent[d] = end[d] - begin[d];
+            }
 
             using index_array_type =
-                typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
-            std::cout << "Step 7.2.4" << std::endl;
+                typename RangePolicy<Dim, exec_space>::index_array_type;
             ippl::parallel_for(
-                "HaloCells::pack()", getRangePolicy(subview),
+                "HaloCells::pack()", createRangePolicy<Dim, exec_space>(begin, end),
                 KOKKOS_LAMBDA(const index_array_type& args) {
-                    int l = 0;
+                    size_type l      = 0;
+                    size_type stride = 1;
 
-                    for (unsigned d1 = 0; d1 < Dim; d1++) {
-                        int next = args[d1];
-                        for (unsigned d2 = 0; d2 < d1; d2++) {
-                            next *= subview.extent(d2);
-                        }
-                        l += next;
+                    for (unsigned d = 0; d < Dim; ++d) {
+                        l += static_cast<size_type>(args[d] - begin[d]) * stride;
+                        stride *= static_cast<size_type>(extent[d]);
                     }
 
-                    buffer(l) = apply(subview, args);
+                    packedBuffer(l) = apply(fullView, args);
                 });
-            std::cout << "Step 7.2.5" << std::endl;
             Kokkos::fence();
         }
 
