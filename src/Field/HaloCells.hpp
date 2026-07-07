@@ -3,6 +3,7 @@
 //   The guard / ghost cells of BareField.
 //
 
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -39,11 +40,14 @@ namespace ippl {
 
             auto& comm = layout->comm;
 
+            std::cout << "Step 1" << std::endl;
             const neighbor_list& neighbors = layout->getNeighbors();
+            std::cout << "Step 2" << std::endl;
             const range_list &sendRanges   = layout->getNeighborsSendRange(),
                              &recvRanges   = layout->getNeighborsRecvRange();
-
+            std::cout << "Step 3" << std::endl;
             auto ldom = layout->getLocalNDIndex();
+            std::cout << "Step 4" << std::endl;
             for (const auto& axis : ldom) {
                 if ((axis.length() == 1) && (Dim != 1)) {
                     throw std::runtime_error(
@@ -57,11 +61,12 @@ namespace ippl {
             // exchange when we set HALO_TO_INTERNAL_NOGHOST
             const auto domain    = layout->getDomain();
             const auto& ldomains = layout->getHostLocalDomains();
-
+            std::cout << "Step 5" << std::endl;
             size_t totalRequests = 0;
             for (const auto& componentNeighbors : neighbors) {
                 totalRequests += componentNeighbors.size();
             }
+            std::cout << "Step 6" << std::endl;
 
             int me = Comm->rank();
 
@@ -71,6 +76,7 @@ namespace ippl {
             // sending loop
             constexpr size_t cubeCount = detail::countHypercubes(Dim) - 1;
             size_t requestIndex        = 0;
+            std::cout << "Step 7" << std::endl;
             for (size_t index = 0; index < cubeCount; index++) {
                 int tag                        = mpi::tag::HALO + index;
                 const auto& componentNeighbors = neighbors[index];
@@ -117,6 +123,7 @@ namespace ippl {
             }
 
             // receiving loop
+            std::cout << "Step 8" << std::endl;
             for (size_t index = 0; index < cubeCount; index++) {
                 int tag                        = mpi::tag::HALO + Layout_t::getMatchingIndex(index);
                 const auto& componentNeighbors = neighbors[index];
@@ -157,12 +164,15 @@ namespace ippl {
                     unpack<Op>(range, view, haloData_m);
                 }
             }
+            std::cout << "Step 9" << std::endl;
 
             if (totalRequests > 0) {
                 MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
+            std::cout << "Step 10" << std::endl;
 
             comm.freeAllBuffers();
+            std::cout << "Step 11" << std::endl;
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
