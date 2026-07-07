@@ -15,6 +15,8 @@
 //
 #include "Ippl.h"
 
+#include <iostream>
+
 #include "Communicate/DataTypes.h"
 
 #include "Utility/IpplTimings.h"
@@ -154,6 +156,78 @@ namespace ippl {
         }
         auto dview  = dview_m;
         auto ppview = pp.getView();
+
+        const auto policyBegin = iteration_policy.begin();
+        const auto policyEnd   = iteration_policy.end();
+        const size_type dviewExtent = dview.extent(0);
+        const size_type ppExtent    = ppview.extent(0);
+        Kokkos::Array<size_type, Dim> fieldExtent;
+        for (unsigned d = 0; d < Dim; ++d) {
+            fieldExtent[d] = view.extent(d);
+        }
+
+        std::cout << "[rank " << Comm->rank() << "] ParticleAttrib::scatter begin"
+                  << " policy=[" << policyBegin << ", " << policyEnd << ")"
+                  << " useHashView=" << useHashView
+                  << " hashExtent=" << hash_array.extent(0)
+                  << " attribExtent=" << dviewExtent
+                  << " posExtent=" << ppExtent
+                  << " fieldExtent=(";
+        for (unsigned d = 0; d < Dim; ++d) {
+            std::cout << fieldExtent[d] << (d + 1 == Dim ? ")" : ", ");
+        }
+        std::cout << " nghost=" << nghost << " lDomFirst=(";
+        const auto lDomFirst = lDom.first();
+        for (unsigned d = 0; d < Dim; ++d) {
+            std::cout << lDomFirst[d] << (d + 1 == Dim ? ")" : ", ");
+        }
+        std::cout << std::endl;
+
+        size_type invalidMappedCount = 0;
+        Kokkos::parallel_reduce(
+            "ParticleAttrib::scatter debug mapped index", iteration_policy,
+            KOKKOS_LAMBDA(const size_t idx, size_type& localInvalid) {
+                const size_t mapped_idx = useHashView ? hash_array(idx) : idx;
+                if (mapped_idx >= dviewExtent || mapped_idx >= ppExtent) {
+                    localInvalid++;
+                }
+            },
+            invalidMappedCount);
+        Kokkos::fence();
+        std::cout << "[rank " << Comm->rank()
+                  << "] ParticleAttrib::scatter mapped-index debug invalidCount="
+                  << invalidMappedCount << std::endl;
+
+        size_type invalidStencilCount = 0;
+        Kokkos::parallel_reduce(
+            "ParticleAttrib::scatter debug CIC stencil bounds", iteration_policy,
+            KOKKOS_LAMBDA(const size_t idx, size_type& localInvalid) {
+                const size_t mapped_idx = useHashView ? hash_array(idx) : idx;
+                if (mapped_idx >= dviewExtent || mapped_idx >= ppExtent) {
+                    return;
+                }
+
+                vector_type l                 = (ppview(mapped_idx) - origin) * invdx + 0.5;
+                Vector<int, Field::dim> index = l;
+                Vector<int, Field::dim> args  = index - lDomFirst + nghost;
+
+                bool inBounds = true;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    inBounds = inBounds && args[d] > 0
+                               && args[d] < static_cast<int>(fieldExtent[d]);
+                }
+                if (!inBounds) {
+                    localInvalid++;
+                }
+            },
+            invalidStencilCount);
+        Kokkos::fence();
+        std::cout << "[rank " << Comm->rank()
+                  << "] ParticleAttrib::scatter CIC-stencil debug invalidCount="
+                  << invalidStencilCount << std::endl;
+
+        std::cout << "[rank " << Comm->rank()
+                  << "] ParticleAttrib::scatter launching CIC kernel" << std::endl;
         Kokkos::parallel_for(
             "ParticleAttrib::scatter", iteration_policy, KOKKOS_LAMBDA(const size_t idx) {
                 // map index to possible hash_map
@@ -172,12 +246,21 @@ namespace ippl {
                 detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi,
                                        args, val);
             });
+        std::cout << "[rank " << Comm->rank()
+                  << "] ParticleAttrib::scatter launched CIC kernel, entering fence" << std::endl;
+        Kokkos::fence();
+        std::cout << "[rank " << Comm->rank()
+                  << "] ParticleAttrib::scatter completed CIC fence" << std::endl;
         IpplTimings::stopTimer(scatterTimer);
 
         static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("accumulateHalo");
+        std::cout << "[rank " << Comm->rank()
+                  << "] ParticleAttrib::scatter entering accumulateHalo" << std::endl;
         IpplTimings::startTimer(accumulateHaloTimer);
         f.accumulateHalo();
         IpplTimings::stopTimer(accumulateHaloTimer);
+        std::cout << "[rank " << Comm->rank()
+                  << "] ParticleAttrib::scatter completed accumulateHalo" << std::endl;
     }
 
     template <typename T, class... Properties>
