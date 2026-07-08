@@ -5,8 +5,10 @@
 #ifndef IPPL_MPI_COMMUNICATOR_H
 #define IPPL_MPI_COMMUNICATOR_H
 
+#include <iostream>
 #include <memory>
 #include <mpi.h>
+#include <type_traits>
 
 #include "Communicate/BufferHandler.h"
 #include "Communicate/LoggingBufferHandler.h"
@@ -24,6 +26,10 @@
 #include "Communicate/TagMaker.h"
 #include "Communicate/Tags.h"
 ////////////////////////////////////////////////////
+
+#if defined(KOKKOS_ENABLE_CUDA)
+#include <cuda_runtime_api.h>
+#endif
 
 namespace ippl {
     namespace mpi {
@@ -140,6 +146,78 @@ namespace ippl {
             using buffer_handler_type =
                 typename detail::ContainerForAllSpaces<buffer_container_type>::type;
 
+            static bool debugArchiveMpiEnabled() {
+                static const bool enabled = [] {
+                    const char* value = std::getenv("IPPL_DEBUG_ARCHIVE_MPI");
+                    return value != nullptr && value[0] != '\0'
+                           && !(value[0] == '0' && value[1] == '\0');
+                }();
+                return enabled;
+            }
+
+            static int debugArchiveMpiLimit() {
+                static const int limit = [] {
+                    const char* value = std::getenv("IPPL_DEBUG_ARCHIVE_MPI_LIMIT");
+                    if (value == nullptr || value[0] == '\0') {
+                        return 64;
+                    }
+                    long parsed = std::strtol(value, nullptr, 10);
+                    return parsed < 0 ? 0 : static_cast<int>(parsed);
+                }();
+                return limit;
+            }
+
+            template <typename Archive>
+            void debugArchiveMpiBuffer(const char* op, int peer, int tag, Archive& ar,
+                                       detail::size_type mpiBytes) {
+                if (!debugArchiveMpiEnabled()) {
+                    return;
+                }
+
+                static int printed = 0;
+                auto* ptr          = ar.getBuffer();
+                const auto cap     = ar.getBufferSize();
+                const auto written = ar.getSize();
+                const bool invalid = (mpiBytes > 0 && ptr == nullptr) || mpiBytes > cap;
+                const bool emit    = invalid || printed < debugArchiveMpiLimit();
+
+                if (emit) {
+                    ++printed;
+                    std::cerr << "[rank " << rank_m << "] " << op << " archive buffer"
+                              << " peer=" << peer << " tag=" << tag << " ptr="
+                              << static_cast<const void*>(ptr) << " mpiBytes=" << mpiBytes
+                              << " capacity=" << cap << " writeSize=" << written << std::endl;
+
+#if defined(KOKKOS_ENABLE_CUDA)
+                    using memory_space = typename Archive::buffer_type::memory_space;
+                    if constexpr (std::is_same_v<memory_space, Kokkos::CudaSpace>) {
+                        if (ptr != nullptr) {
+                            cudaPointerAttributes attrs;
+                            cudaError_t err = cudaPointerGetAttributes(&attrs, ptr);
+                            if (err == cudaSuccess) {
+                                std::cerr << "[rank " << rank_m << "] " << op
+                                          << " cudaPointerGetAttributes type="
+                                          << static_cast<int>(attrs.type)
+                                          << " device=" << attrs.device << std::endl;
+                            } else {
+                                std::cerr << "[rank " << rank_m << "] " << op
+                                          << " cudaPointerGetAttributes failed: "
+                                          << cudaGetErrorString(err) << std::endl;
+                                cudaGetLastError();
+                            }
+                        }
+                    }
+#endif
+                }
+
+                if (invalid) {
+                    std::cerr << "[rank " << rank_m << "] invalid archive MPI buffer for " << op
+                              << ": mpiBytes=" << mpiBytes << " capacity=" << cap
+                              << " ptr=" << static_cast<const void*>(ptr) << std::endl;
+                    this->abort();
+                }
+            }
+
         public:
             using size_type = detail::size_type;
             double getDefaultOverallocation() const { return defaultOveralloc_m; }
@@ -168,6 +246,7 @@ namespace ippl {
                     this->abort();
                 }
                 MPI_Status status;
+                debugArchiveMpiBuffer("MPI_Recv", src, tag, ar, msize);
                 MPI_Recv(ar.getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &status);
 
                 buffer.deserialize(ar, nrecvs);
@@ -176,12 +255,14 @@ namespace ippl {
             template <class Buffer, typename Archive>
             void isend(int dest, int tag, Buffer& buffer, Archive& ar, MPI_Request& request,
                        size_type nsends) {
-                if (ar.getSize() > INT_MAX) {
+                buffer.serialize(ar, nsends);
+                const size_type sendSize = ar.getSize();
+                if (sendSize > INT_MAX) {
                     std::cerr << "Message size exceeds range of int" << std::endl;
                     this->abort();
                 }
-                buffer.serialize(ar, nsends);
-                MPI_Isend(ar.getBuffer(), ar.getSize(), MPI_BYTE, dest, tag, *comm_m, &request);
+                debugArchiveMpiBuffer("MPI_Isend", dest, tag, ar, sendSize);
+                MPI_Isend(ar.getBuffer(), sendSize, MPI_BYTE, dest, tag, *comm_m, &request);
             }
 
             template <typename Archive>
@@ -190,6 +271,7 @@ namespace ippl {
                     std::cerr << "Message size exceeds range of int" << std::endl;
                     this->abort();
                 }
+                debugArchiveMpiBuffer("MPI_Irecv", src, tag, ar, msize);
                 MPI_Irecv(ar.getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &request);
             }
 
