@@ -16,6 +16,7 @@
 
 #include "Utility/Inform.h"
 #include "Utility/IpplInfo.h"
+#include "Utility/LaunchGuard.h"
 
 #include "BareField.h"
 namespace Kokkos {
@@ -157,11 +158,9 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::accumulateHalo() {
         if (layout_m->comm.size() > 1) {
-            using guard_policy_type = Kokkos::RangePolicy<typename view_type::execution_space>;
-            Kokkos::parallel_for(
-                "BareField::accumulateHalo launch guard", guard_policy_type(0, 1),
-                KOKKOS_LAMBDA(const int) {});
-            Kokkos::fence();
+            detail::launchGuard<typename view_type::execution_space>(
+                "IPPL_GH200_GUARD_BAREFIELD_ACCUMULATE",
+                "BareField::accumulateHalo launch guard");
 
             halo_m.accumulateHalo(dview_m, layout_m);
         }
