@@ -4,11 +4,13 @@
 //
 
 #include <memory>
+#include <iostream>
 #include <vector>
 
 #include "Utility/IpplException.h"
 
 #include "Communicate/Communicator.h"
+#include "Utility/Debug.h"
 
 namespace ippl {
     namespace detail {
@@ -64,12 +66,23 @@ namespace ippl {
             }
 
             int me = Comm->rank();
+            constexpr size_t cubeCount = detail::countHypercubes(Dim) - 1;
+            const bool debugScatterHalo = detail::debugScatterHaloEnabled();
+            if (debugScatterHalo) {
+                std::cerr << "[rank " << me << "] HaloCells::exchangeBoundaries begin"
+                          << " order=" << static_cast<int>(order)
+                          << " totalRequests=" << totalRequests
+                          << " cubeCount=" << cubeCount << " viewExtent=(";
+                for (unsigned d = 0; d < Dim; ++d) {
+                    std::cerr << view.extent(d) << (d + 1 == Dim ? "" : ", ");
+                }
+                std::cerr << ")" << std::endl;
+            }
 
             using memory_space = typename view_type::memory_space;
             using buffer_type  = mpi::Communicator::buffer_type<memory_space>;
             std::vector<MPI_Request> requests(totalRequests);
             // sending loop
-            constexpr size_t cubeCount = detail::countHypercubes(Dim) - 1;
             size_t requestIndex        = 0;
             for (size_t index = 0; index < cubeCount; index++) {
                 int tag                        = mpi::tag::HALO + index;
@@ -107,10 +120,33 @@ namespace ippl {
                     }
 
                     size_type nsends;
+                    if (debugScatterHalo) {
+                        std::cerr << "[rank " << me << "] HaloCells::exchangeBoundaries pack"
+                                  << " target=" << targetRank << " tag=" << tag
+                                  << " range.lo=(";
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            std::cerr << range.lo[d] << (d + 1 == Dim ? "" : ", ");
+                        }
+                        std::cerr << ") range.hi=(";
+                        for (unsigned d = 0; d < Dim; ++d) {
+                            std::cerr << range.hi[d] << (d + 1 == Dim ? "" : ", ");
+                        }
+                        std::cerr << ")" << std::endl;
+                    }
                     pack(range, view, haloData_m, nsends);
+                    if (debugScatterHalo) {
+                        std::cerr << "[rank " << me << "] HaloCells::exchangeBoundaries packed"
+                                  << " target=" << targetRank << " tag=" << tag
+                                  << " nsends=" << nsends << std::endl;
+                    }
 
                     buffer_type buf = comm.template getBuffer<memory_space, T>(nsends);
 
+                    if (debugScatterHalo) {
+                        std::cerr << "[rank " << me << "] HaloCells::exchangeBoundaries isend"
+                                  << " target=" << targetRank << " tag=" << tag
+                                  << " nsends=" << nsends << std::endl;
+                    }
                     comm.isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++], nsends);
                     buf->resetWritePos();
                 }
@@ -151,18 +187,35 @@ namespace ippl {
 
                     buffer_type buf = comm.template getBuffer<memory_space, T>(nrecvs);
 
+                    if (debugScatterHalo) {
+                        std::cerr << "[rank " << me << "] HaloCells::exchangeBoundaries recv"
+                                  << " source=" << sourceRank << " tag=" << tag
+                                  << " nrecvs=" << nrecvs << std::endl;
+                    }
                     comm.recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
+                    if (debugScatterHalo) {
+                        std::cerr << "[rank " << me << "] HaloCells::exchangeBoundaries unpack"
+                                  << " source=" << sourceRank << " tag=" << tag
+                                  << " nrecvs=" << nrecvs << std::endl;
+                    }
 
                     unpack<Op>(range, view, haloData_m);
                 }
             }
 
             if (totalRequests > 0) {
+                if (debugScatterHalo) {
+                    std::cerr << "[rank " << me << "] HaloCells::exchangeBoundaries waitall"
+                              << " totalRequests=" << totalRequests << std::endl;
+                }
                 MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
             }
 
             comm.freeAllBuffers();
+            if (debugScatterHalo) {
+                std::cerr << "[rank " << me << "] HaloCells::exchangeBoundaries end" << std::endl;
+            }
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
@@ -179,6 +232,15 @@ namespace ippl {
                 Kokkos::realloc(buffer, size * overalloc);
             }
 
+            if (detail::debugScatterHaloEnabled()) {
+                std::cerr << "[rank " << Comm->rank() << "] HaloCells::pack launch"
+                          << " nsends=" << nsends << " bufferExtent=" << buffer.extent(0)
+                          << " subviewExtent=(";
+                for (unsigned d = 0; d < Dim; ++d) {
+                    std::cerr << subview.extent(d) << (d + 1 == Dim ? "" : ", ");
+                }
+                std::cerr << ")" << std::endl;
+            }
             using index_array_type =
                 typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
             ippl::parallel_for(
@@ -197,6 +259,10 @@ namespace ippl {
                     buffer(l) = apply(subview, args);
                 });
             Kokkos::fence();
+            if (detail::debugScatterHaloEnabled()) {
+                std::cerr << "[rank " << Comm->rank() << "] HaloCells::pack completed"
+                          << " nsends=" << nsends << std::endl;
+            }
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>

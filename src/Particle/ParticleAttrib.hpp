@@ -16,9 +16,11 @@
 #include "Ippl.h"
 
 #include <cstdio>
+#include <iostream>
 
 #include "Communicate/DataTypes.h"
 
+#include "Utility/Debug.h"
 #include "Utility/IpplTimings.h"
 
 namespace ippl {
@@ -157,6 +159,25 @@ namespace ippl {
         auto dview  = dview_m;
         auto ppview = pp.getView();
         const int rank = Comm->rank();
+        const bool debugScatterHalo = detail::debugScatterHaloEnabled();
+        if (debugScatterHalo) {
+            std::cerr << "[rank " << rank << "] ParticleAttrib::scatter begin policy=["
+                      << iteration_policy.begin() << ", " << iteration_policy.end()
+                      << ") useHashView=" << useHashView
+                      << " hashExtent=" << hash_array.extent(0)
+                      << " attribExtent=" << dview.extent(0)
+                      << " posExtent=" << ppview.extent(0)
+                      << " fieldExtent=(";
+            for (unsigned d = 0; d < Dim; ++d) {
+                std::cerr << view.extent(d) << (d + 1 == Dim ? "" : ", ");
+            }
+            std::cerr << ") nghost=" << nghost << " lDomFirst=(";
+            for (unsigned d = 0; d < Dim; ++d) {
+                std::cerr << lDom[d].first() << (d + 1 == Dim ? "" : ", ");
+            }
+            std::cerr << ")" << std::endl;
+        }
+
         Kokkos::parallel_for(
             "ParticleAttrib::scatter", iteration_policy, KOKKOS_LAMBDA(const size_t idx) {
                 // map index to possible hash_map
@@ -213,11 +234,27 @@ namespace ippl {
                 detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi,
                                        args, val);
             });
+        if (debugScatterHalo) {
+            std::cerr << "[rank " << rank
+                      << "] ParticleAttrib::scatter launched kernel, entering debug fence"
+                      << std::endl;
+            Kokkos::fence("ParticleAttrib::scatter debug fence");
+            std::cerr << "[rank " << rank << "] ParticleAttrib::scatter completed debug fence"
+                      << std::endl;
+        }
         IpplTimings::stopTimer(scatterTimer);
 
         static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("accumulateHalo");
         IpplTimings::startTimer(accumulateHaloTimer);
+        if (debugScatterHalo) {
+            std::cerr << "[rank " << rank << "] ParticleAttrib::scatter entering accumulateHalo"
+                      << std::endl;
+        }
         f.accumulateHalo();
+        if (debugScatterHalo) {
+            std::cerr << "[rank " << rank << "] ParticleAttrib::scatter completed accumulateHalo"
+                      << std::endl;
+        }
         IpplTimings::stopTimer(accumulateHaloTimer);
     }
 
