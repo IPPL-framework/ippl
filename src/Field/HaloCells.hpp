@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "Utility/IpplException.h"
-#include "Utility/LaunchGuard.h"
 
 #include "Communicate/Communicator.h"
 
@@ -18,21 +17,6 @@ namespace ippl {
 
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view, Layout_t* layout) {
-            const auto accumulateGuardMode = detail::launchGuardMode(
-                "IPPL_GH200_GUARD_HALOCELLS_ACCUMULATE",
-                "HaloCells::accumulateHalo launch guard");
-            if (accumulateGuardMode == detail::LaunchGuardMode::Launch
-                || accumulateGuardMode == detail::LaunchGuardMode::LaunchAndFence) {
-                using guard_policy_type = Kokkos::RangePolicy<typename view_type::execution_space>;
-                Kokkos::parallel_for(
-                    "HaloCells::accumulateHalo launch guard", guard_policy_type(0, 1),
-                    KOKKOS_LAMBDA(const int) {});
-            }
-            if (accumulateGuardMode == detail::LaunchGuardMode::Fence
-                || accumulateGuardMode == detail::LaunchGuardMode::LaunchAndFence) {
-                Kokkos::fence();
-            }
-
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
         }
 

@@ -15,10 +15,11 @@
 //
 #include "Ippl.h"
 
+#include <cstdio>
+
 #include "Communicate/DataTypes.h"
 
 #include "Utility/IpplTimings.h"
-#include "Utility/LaunchGuard.h"
 
 namespace ippl {
 
@@ -155,10 +156,25 @@ namespace ippl {
         }
         auto dview  = dview_m;
         auto ppview = pp.getView();
+        const int rank = Comm->rank();
         Kokkos::parallel_for(
             "ParticleAttrib::scatter", iteration_policy, KOKKOS_LAMBDA(const size_t idx) {
                 // map index to possible hash_map
-                size_t mapped_idx = useHashView ? hash_array(idx) : idx;
+                const long long mapped_idx_signed =
+                    useHashView ? static_cast<long long>(hash_array(idx))
+                                : static_cast<long long>(idx);
+                if (mapped_idx_signed < 0
+                    || mapped_idx_signed >= static_cast<long long>(dview.extent(0))
+                    || mapped_idx_signed >= static_cast<long long>(ppview.extent(0))) {
+                    printf("[rank %d] ParticleAttrib::scatter invalid mapped index: idx=%llu "
+                           "mapped=%lld attribExtent=%lld posExtent=%lld useHashView=%d\n",
+                           rank, static_cast<unsigned long long>(idx), mapped_idx_signed,
+                           static_cast<long long>(dview.extent(0)),
+                           static_cast<long long>(ppview.extent(0)), static_cast<int>(useHashView));
+                    Kokkos::abort("ParticleAttrib::scatter invalid mapped index");
+                }
+
+                size_t mapped_idx = static_cast<size_t>(mapped_idx_signed);
 
                 // find nearest grid point
                 vector_type l                        = (ppview(mapped_idx) - origin) * invdx + 0.5;
@@ -166,30 +182,37 @@ namespace ippl {
                 Vector<PositionType, Field::dim> whi = l - index;
                 Vector<PositionType, Field::dim> wlo = 1.0 - whi;
 
-                Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
+                Vector<int, Field::dim> args = index - lDom.first() + nghost;
+
+                for (unsigned point = 0; point < (1u << Field::dim); ++point) {
+                    for (unsigned d = 0; d < Field::dim; ++d) {
+                        const int target = args[d] - ((point & (1u << d)) ? 1 : 0);
+                        const int extent = static_cast<int>(view.extent(d));
+                        if (target < 0 || target >= extent) {
+                            printf("[rank %d] ParticleAttrib::scatter invalid CIC target: idx=%llu "
+                                   "mapped=%llu point=%u dim=%u target=%d extent=%d base=(",
+                                   rank, static_cast<unsigned long long>(idx),
+                                   static_cast<unsigned long long>(mapped_idx), point, d, target,
+                                   extent);
+                            for (unsigned p = 0; p < Field::dim; ++p) {
+                                printf("%d%s", args[p], (p + 1 == Field::dim) ? "" : ", ");
+                            }
+                            printf(") viewExtent=(");
+                            for (unsigned p = 0; p < Field::dim; ++p) {
+                                printf("%lld%s", static_cast<long long>(view.extent(p)),
+                                       (p + 1 == Field::dim) ? "" : ", ");
+                            }
+                            printf(")\n");
+                            Kokkos::abort("ParticleAttrib::scatter invalid CIC target");
+                        }
+                    }
+                }
 
                 // scatter
                 const value_type& val = dview(mapped_idx);
                 detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi,
                                        args, val);
             });
-
-        // A separate launch before halo accumulation avoids a GH200 CUDA release-mode crash
-        // seen when the next launch happens inside HaloCells::pack().
-        const auto scatterGuardMode = detail::launchGuardMode(
-            "IPPL_GH200_GUARD_SCATTER_POST_CIC",
-            "ParticleAttrib::scatter post-CIC launch guard");
-        if (scatterGuardMode == detail::LaunchGuardMode::Launch
-            || scatterGuardMode == detail::LaunchGuardMode::LaunchAndFence) {
-            using post_scatter_policy_type = Kokkos::RangePolicy<typename Field::execution_space>;
-            Kokkos::parallel_for(
-                "ParticleAttrib::scatter post-CIC launch guard",
-                post_scatter_policy_type(0, 1), KOKKOS_LAMBDA(const int) {});
-        }
-        if (scatterGuardMode == detail::LaunchGuardMode::Fence
-            || scatterGuardMode == detail::LaunchGuardMode::LaunchAndFence) {
-            Kokkos::fence();
-        }
         IpplTimings::stopTimer(scatterTimer);
 
         static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("accumulateHalo");
