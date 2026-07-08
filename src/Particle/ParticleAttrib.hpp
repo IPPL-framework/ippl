@@ -176,9 +176,20 @@ namespace ippl {
 
         // A separate launch before halo accumulation avoids a GH200 CUDA release-mode crash
         // seen when the next launch happens inside HaloCells::pack().
-        detail::launchGuard<typename Field::execution_space>(
+        const auto scatterGuardMode = detail::launchGuardMode(
             "IPPL_GH200_GUARD_SCATTER_POST_CIC",
             "ParticleAttrib::scatter post-CIC launch guard");
+        if (scatterGuardMode == detail::LaunchGuardMode::Launch
+            || scatterGuardMode == detail::LaunchGuardMode::LaunchAndFence) {
+            using post_scatter_policy_type = Kokkos::RangePolicy<typename Field::execution_space>;
+            Kokkos::parallel_for(
+                "ParticleAttrib::scatter post-CIC launch guard",
+                post_scatter_policy_type(0, 1), KOKKOS_LAMBDA(const int) {});
+        }
+        if (scatterGuardMode == detail::LaunchGuardMode::Fence
+            || scatterGuardMode == detail::LaunchGuardMode::LaunchAndFence) {
+            Kokkos::fence();
+        }
         IpplTimings::stopTimer(scatterTimer);
 
         static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("accumulateHalo");
