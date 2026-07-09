@@ -9,7 +9,6 @@
 
 #include <Kokkos_ReductionIdentity.hpp>
 #include <cstdlib>
-#include <iostream>
 #include <map>
 #include <utility>
 
@@ -159,28 +158,14 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::accumulateHalo() {
         const bool debugScatterHalo = detail::debugScatterHaloEnabled();
-        if (debugScatterHalo) {
-            std::cerr << "[rank " << Comm->rank() << "] BareField::accumulateHalo begin"
-                      << " commSize=" << layout_m->comm.size() << " viewExtent=(";
-            for (unsigned d = 0; d < Dim; ++d) {
-                std::cerr << dview_m.extent(d) << (d + 1 == Dim ? "" : ", ");
-            }
-            std::cerr << ")" << std::endl;
-        }
+        (void)debugScatterHalo;
+
         if (layout_m->comm.size() > 1) {
             halo_m.accumulateHalo(dview_m, layout_m);
-            if (debugScatterHalo) {
-                std::cerr << "[rank " << Comm->rank()
-                          << "] BareField::accumulateHalo completed halo exchange" << std::endl;
-            }
         }
         if (layout_m->isAllPeriodic_m) {
             using Op = typename detail::HaloCells<T, Dim, ViewArgs...>::rhs_plus_assign;
             halo_m.template applyPeriodicSerialDim<Op>(dview_m, layout_m, nghost_m);
-        }
-        if (debugScatterHalo) {
-            std::cerr << "[rank " << Comm->rank() << "] BareField::accumulateHalo end"
-                      << std::endl;
         }
     }
 
