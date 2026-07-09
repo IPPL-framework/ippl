@@ -17,6 +17,7 @@ namespace ippl {
 
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view, Layout_t* layout) {
+            Kokkos::fence("BareField::accumulateHalo pre-halo fence");
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
         }
 
@@ -36,7 +37,7 @@ namespace ippl {
                                                                 SendOrder order, int nghost) {
             using neighbor_list = typename Layout_t::neighbor_list;
             using range_list    = typename Layout_t::neighbor_range_list;
-            Kokkos::fence("BareField::accumulateHalo pre-halo fence");
+
             auto& comm = layout->comm;
 
             const neighbor_list& neighbors = layout->getNeighbors();
