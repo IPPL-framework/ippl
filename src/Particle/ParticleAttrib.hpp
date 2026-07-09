@@ -15,12 +15,8 @@
 //
 #include "Ippl.h"
 
-#include <cstdio>
-#include <iostream>
-
 #include "Communicate/DataTypes.h"
 
-#include "Utility/Debug.h"
 #include "Utility/IpplTimings.h"
 
 namespace ippl {
@@ -158,44 +154,10 @@ namespace ippl {
         }
         auto dview  = dview_m;
         auto ppview = pp.getView();
-        const int rank = Comm->rank();
-        const bool debugScatterHalo = detail::debugScatterHaloEnabled();
-        if (debugScatterHalo) {
-            std::cerr << "[rank " << rank << "] ParticleAttrib::scatter begin policy=["
-                      << iteration_policy.begin() << ", " << iteration_policy.end()
-                      << ") useHashView=" << useHashView
-                      << " hashExtent=" << hash_array.extent(0)
-                      << " attribExtent=" << dview.extent(0)
-                      << " posExtent=" << ppview.extent(0)
-                      << " fieldExtent=(";
-            for (unsigned d = 0; d < Dim; ++d) {
-                std::cerr << view.extent(d) << (d + 1 == Dim ? "" : ", ");
-            }
-            std::cerr << ") nghost=" << nghost << " lDomFirst=(";
-            for (unsigned d = 0; d < Dim; ++d) {
-                std::cerr << lDom[d].first() << (d + 1 == Dim ? "" : ", ");
-            }
-            std::cerr << ")" << std::endl;
-        }
-
         Kokkos::parallel_for(
             "ParticleAttrib::scatter", iteration_policy, KOKKOS_LAMBDA(const size_t idx) {
                 // map index to possible hash_map
-                const long long mapped_idx_signed =
-                    useHashView ? static_cast<long long>(hash_array(idx))
-                                : static_cast<long long>(idx);
-                if (mapped_idx_signed < 0
-                    || mapped_idx_signed >= static_cast<long long>(dview.extent(0))
-                    || mapped_idx_signed >= static_cast<long long>(ppview.extent(0))) {
-                    printf("[rank %d] ParticleAttrib::scatter invalid mapped index: idx=%llu "
-                           "mapped=%lld attribExtent=%lld posExtent=%lld useHashView=%d\n",
-                           rank, static_cast<unsigned long long>(idx), mapped_idx_signed,
-                           static_cast<long long>(dview.extent(0)),
-                           static_cast<long long>(ppview.extent(0)), static_cast<int>(useHashView));
-                    Kokkos::abort("ParticleAttrib::scatter invalid mapped index");
-                }
-
-                size_t mapped_idx = static_cast<size_t>(mapped_idx_signed);
+                size_t mapped_idx = useHashView ? hash_array(idx) : idx;
 
                 // find nearest grid point
                 vector_type l                        = (ppview(mapped_idx) - origin) * invdx + 0.5;
@@ -203,58 +165,18 @@ namespace ippl {
                 Vector<PositionType, Field::dim> whi = l - index;
                 Vector<PositionType, Field::dim> wlo = 1.0 - whi;
 
-                Vector<int, Field::dim> args = index - lDom.first() + nghost;
-
-                for (unsigned point = 0; point < (1u << Field::dim); ++point) {
-                    for (unsigned d = 0; d < Field::dim; ++d) {
-                        const int target = args[d] - ((point & (1u << d)) ? 1 : 0);
-                        const int extent = static_cast<int>(view.extent(d));
-                        if (target < 0 || target >= extent) {
-                            printf("[rank %d] ParticleAttrib::scatter invalid CIC target: idx=%llu "
-                                   "mapped=%llu point=%u dim=%u target=%d extent=%d base=(",
-                                   rank, static_cast<unsigned long long>(idx),
-                                   static_cast<unsigned long long>(mapped_idx), point, d, target,
-                                   extent);
-                            for (unsigned p = 0; p < Field::dim; ++p) {
-                                printf("%d%s", args[p], (p + 1 == Field::dim) ? "" : ", ");
-                            }
-                            printf(") viewExtent=(");
-                            for (unsigned p = 0; p < Field::dim; ++p) {
-                                printf("%lld%s", static_cast<long long>(view.extent(p)),
-                                       (p + 1 == Field::dim) ? "" : ", ");
-                            }
-                            printf(")\n");
-                            Kokkos::abort("ParticleAttrib::scatter invalid CIC target");
-                        }
-                    }
-                }
+                Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
 
                 // scatter
                 const value_type& val = dview(mapped_idx);
                 detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi,
                                        args, val);
             });
-        if (debugScatterHalo) {
-            std::cerr << "[rank " << rank
-                      << "] ParticleAttrib::scatter launched kernel, entering debug fence"
-                      << std::endl;
-            Kokkos::fence("ParticleAttrib::scatter debug fence");
-            std::cerr << "[rank " << rank << "] ParticleAttrib::scatter completed debug fence"
-                      << std::endl;
-        }
         IpplTimings::stopTimer(scatterTimer);
 
         static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("accumulateHalo");
         IpplTimings::startTimer(accumulateHaloTimer);
-        if (debugScatterHalo) {
-            std::cerr << "[rank " << rank << "] ParticleAttrib::scatter entering accumulateHalo"
-                      << std::endl;
-        }
         f.accumulateHalo();
-        if (debugScatterHalo) {
-            std::cerr << "[rank " << rank << "] ParticleAttrib::scatter completed accumulateHalo"
-                      << std::endl;
-        }
         IpplTimings::stopTimer(accumulateHaloTimer);
     }
 

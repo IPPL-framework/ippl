@@ -15,7 +15,6 @@
 #include "Communicate/DataTypes.h"
 
 #include "Utility/Inform.h"
-#include "Utility/Debug.h"
 #include "Utility/IpplInfo.h"
 
 #include "BareField.h"
@@ -157,9 +156,6 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::accumulateHalo() {
-        const bool debugScatterHalo = detail::debugScatterHaloEnabled();
-        (void)debugScatterHalo;
-
         if (layout_m->comm.size() > 1) {
             halo_m.accumulateHalo(dview_m, layout_m);
         }
