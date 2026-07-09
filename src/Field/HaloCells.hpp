@@ -171,7 +171,6 @@ namespace ippl {
             auto subview = makeSubview(view, range);
 
             auto& buffer = fd.buffer;
-            Kokkos::fence("HaloCells::pack pre-fence");
             size_t size = subview.size();
             nsends      = size;
             if (buffer.size() < size) {
