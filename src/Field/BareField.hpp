@@ -156,7 +156,7 @@ namespace ippl {
 
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::accumulateHalo() {
-        Kokkos::fence("BareField::accumulateHalo pre-halo fence");
+        //Kokkos::fence("BareField::accumulateHalo pre-halo fence");
 
         if (layout_m->comm.size() > 1) {
             halo_m.accumulateHalo(dview_m, layout_m);
