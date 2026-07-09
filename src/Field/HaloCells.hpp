@@ -36,7 +36,7 @@ namespace ippl {
                                                                 SendOrder order, int nghost) {
             using neighbor_list = typename Layout_t::neighbor_list;
             using range_list    = typename Layout_t::neighbor_range_list;
-
+            Kokkos::fence("BareField::accumulateHalo pre-halo fence");
             auto& comm = layout->comm;
 
             const neighbor_list& neighbors = layout->getNeighbors();
