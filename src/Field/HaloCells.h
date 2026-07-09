@@ -135,10 +135,7 @@ namespace ippl {
              * @param view is the original field data
              * @param layout the field layout storing the domain decomposition
              * @param order the data send orientation
-             * @tparam Op the data assigment operator of the
-             * unpack function call
              */
-            template <class Op>
             void exchangeBoundaries(view_type& view, Layout_t* layout, SendOrder order, int nghost = 1);
 
             /*!

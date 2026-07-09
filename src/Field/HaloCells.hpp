@@ -17,22 +17,20 @@ namespace ippl {
 
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view, Layout_t* layout) {
-            Kokkos::fence("BareField::accumulateHalo pre-halo fence");
-            exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
+            exchangeBoundaries(view, layout, HALO_TO_INTERNAL);
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::accumulateHalo_noghost(view_type& view,
                                                                     Layout_t* layout, int nghost) {
-            exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL_NOGHOST, nghost);
+            exchangeBoundaries(view, layout, HALO_TO_INTERNAL_NOGHOST, nghost);
         }
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::fillHalo(view_type& view, Layout_t* layout) {
-            exchangeBoundaries<assign>(view, layout, INTERNAL_TO_HALO);
+            exchangeBoundaries(view, layout, INTERNAL_TO_HALO);
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
-        template <class Op>
         void HaloCells<T, Dim, ViewArgs...>::exchangeBoundaries(view_type& view, Layout_t* layout,
                                                                 SendOrder order, int nghost) {
             using neighbor_list = typename Layout_t::neighbor_list;
@@ -155,7 +153,11 @@ namespace ippl {
                     comm.recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
                     buf->resetReadPos();
 
-                    unpack<Op>(range, view, haloData_m);
+                    if (order == INTERNAL_TO_HALO) {
+                        unpack<assign>(range, view, haloData_m);
+                    } else {
+                        unpack<lhs_plus_assign>(range, view, haloData_m);
+                    }
                 }
             }
 
