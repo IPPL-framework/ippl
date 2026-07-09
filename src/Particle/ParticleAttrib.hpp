@@ -176,7 +176,6 @@ namespace ippl {
 
         static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("accumulateHalo");
         IpplTimings::startTimer(accumulateHaloTimer);
-        Kokkos::fence("BareField::accumulateHalo pre-halo fence");
         f.accumulateHalo();
         IpplTimings::stopTimer(accumulateHaloTimer);
     }
