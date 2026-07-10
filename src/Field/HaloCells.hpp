@@ -64,15 +64,22 @@ namespace ippl {
             int nghost;
 
             KOKKOS_INLINE_FUNCTION void operator()(IndexArray coords) const {
+                // The ghosts are filled starting from the inside of the domain proceeding outwards
+                // for both lower and upper faces. The extra brackets and explicit mention
+
+                // nghost + i
                 coords[dimension] += nghost;
                 auto&& left = apply(view, coords);
 
+                // N - nghost - i
                 coords[dimension] = extent - coords[dimension];
                 auto&& right      = apply(view, coords);
 
+                // nghost - 1 - i
                 coords[dimension] += 2 * nghost - 1 - extent;
                 op(apply(view, coords), right);
 
+                // N - (nghost - 1 - i) = N - (nghost - 1) + i
                 coords[dimension] = extent - coords[dimension];
                 op(apply(view, coords), left);
             }
