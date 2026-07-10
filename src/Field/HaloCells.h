@@ -139,9 +139,6 @@ namespace ippl {
              * unpack function call
              */
             template <class Op>
-#if defined(__GNUC__) || defined(__clang__)
-            __attribute__((noinline))
-#endif
             void exchangeBoundaries(view_type& view, Layout_t* layout, SendOrder order, int nghost = 1);
 
             /*!
