@@ -12,12 +12,77 @@
 
 namespace ippl {
     namespace detail {
+        // These kernels are instantiated in multiple translation units. Named functors avoid
+        // NVCC's translation-unit-local extended-lambda copy/delete helper state.
+        template <typename Subview, typename Buffer, typename IndexArray, unsigned Dim>
+        struct HaloPackFunctor {
+            Subview subview;
+            Buffer buffer;
+
+            KOKKOS_INLINE_FUNCTION void operator()(const IndexArray& args) const {
+                int l = 0;
+
+                for (unsigned d1 = 0; d1 < Dim; ++d1) {
+                    int next = args[d1];
+                    for (unsigned d2 = 0; d2 < d1; ++d2) {
+                        next *= subview.extent(d2);
+                    }
+                    l += next;
+                }
+
+                buffer(l) = apply(subview, args);
+            }
+        };
+
+        template <typename Subview, typename Buffer, typename Op, typename IndexArray, unsigned Dim>
+        struct HaloUnpackFunctor {
+            Subview subview;
+            Buffer buffer;
+            Op op;
+
+            KOKKOS_INLINE_FUNCTION void operator()(const IndexArray& args) const {
+                int l = 0;
+
+                for (unsigned d1 = 0; d1 < Dim; ++d1) {
+                    int next = args[d1];
+                    for (unsigned d2 = 0; d2 < d1; ++d2) {
+                        next *= subview.extent(d2);
+                    }
+                    l += next;
+                }
+
+                op(apply(subview, args), buffer(l));
+            }
+        };
+
+        template <typename View, typename Op, typename IndexArray>
+        struct HaloPeriodicFunctor {
+            View view;
+            Op op;
+            unsigned dimension;
+            int extent;
+            int nghost;
+
+            KOKKOS_INLINE_FUNCTION void operator()(IndexArray coords) const {
+                coords[dimension] += nghost;
+                auto&& left = apply(view, coords);
+
+                coords[dimension] = extent - coords[dimension];
+                auto&& right      = apply(view, coords);
+
+                coords[dimension] += 2 * nghost - 1 - extent;
+                op(apply(view, coords), right);
+
+                coords[dimension] = extent - coords[dimension];
+                op(apply(view, coords), left);
+            }
+        };
+
         template <typename T, unsigned Dim, class... ViewArgs>
         HaloCells<T, Dim, ViewArgs...>::HaloCells() {}
 
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view, Layout_t* layout) {
-            Kokkos::fence("BareField::accumulateHalo pre-halo fence");
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
         }
 
@@ -172,8 +237,8 @@ namespace ippl {
             auto subview = makeSubview(view, range);
 
             auto& buffer = fd.buffer;
-            size_t size = subview.size();
-            nsends      = size;
+            size_t size  = subview.size();
+            nsends       = size;
             if (buffer.size() < size) {
                 int overalloc = Comm->getDefaultOverallocation();
                 Kokkos::realloc(buffer, size * overalloc);
@@ -181,21 +246,11 @@ namespace ippl {
 
             using index_array_type =
                 typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
-            ippl::parallel_for(
-                "HaloCells::pack()", getRangePolicy(subview),
-                KOKKOS_LAMBDA(const index_array_type& args) {
-                    int l = 0;
-
-                    for (unsigned d1 = 0; d1 < Dim; d1++) {
-                        int next = args[d1];
-                        for (unsigned d2 = 0; d2 < d1; d2++) {
-                            next *= subview.extent(d2);
-                        }
-                        l += next;
-                    }
-
-                    buffer(l) = apply(subview, args);
-                });
+            using buffer_view_type = typename databuffer_type::view_type;
+            using functor_type =
+                HaloPackFunctor<decltype(subview), buffer_view_type, index_array_type, Dim>;
+            ippl::parallel_for("HaloCells::pack()", getRangePolicy(subview),
+                               functor_type{subview, buffer});
             Kokkos::fence();
         }
 
@@ -212,21 +267,10 @@ namespace ippl {
 
             using index_array_type =
                 typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
-            ippl::parallel_for(
-                "HaloCells::unpack()", getRangePolicy(subview),
-                KOKKOS_LAMBDA(const index_array_type& args) {
-                    int l = 0;
-
-                    for (unsigned d1 = 0; d1 < Dim; d1++) {
-                        int next = args[d1];
-                        for (unsigned d2 = 0; d2 < d1; d2++) {
-                            next *= subview.extent(d2);
-                        }
-                        l += next;
-                    }
-
-                    op(apply(subview, args), buffer(l));
-                });
+            using functor_type =
+                HaloUnpackFunctor<decltype(subview), decltype(buffer), Op, index_array_type, Dim>;
+            ippl::parallel_for("HaloCells::unpack()", getRangePolicy(subview),
+                               functor_type{subview, buffer, op});
             Kokkos::fence();
         }
 
@@ -271,30 +315,10 @@ namespace ippl {
                     using index_array_type =
                         typename RangePolicy<Dim,
                                              typename view_type::execution_space>::index_array_type;
-                    ippl::parallel_for(
-                        "applyPeriodicSerialDim", createRangePolicy<Dim, exec_space>(begin, end),
-                        KOKKOS_LAMBDA(index_array_type & coords) {
-                            // The ghosts are filled starting from the inside
-                            // of the domain proceeding outwards for both lower
-                            // and upper faces. The extra brackets and explicit
-                            // mention
-
-                            // nghost + i
-                            coords[d] += nghost;
-                            auto&& left = apply(view, coords);
-
-                            // N - nghost - i
-                            coords[d]    = N - coords[d];
-                            auto&& right = apply(view, coords);
-
-                            // nghost - 1 - i
-                            coords[d] += 2 * nghost - 1 - N;
-                            op(apply(view, coords), right);
-
-                            // N - (nghost - 1 - i) = N - (nghost - 1) + i
-                            coords[d] = N - coords[d];
-                            op(apply(view, coords), left);
-                        });
+                    using functor_type = HaloPeriodicFunctor<view_type, Op, index_array_type>;
+                    ippl::parallel_for("applyPeriodicSerialDim",
+                                       createRangePolicy<Dim, exec_space>(begin, end),
+                                       functor_type{view, op, d, N, nghost});
 
                     Kokkos::fence();
                 }
