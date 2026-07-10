@@ -17,7 +17,6 @@ namespace ippl {
 
         template <typename T, unsigned Dim, class... ViewArgs>
         void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view, Layout_t* layout) {
-            Kokkos::fence("BareField::accumulateHalo pre-halo fence");
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
         }
 
