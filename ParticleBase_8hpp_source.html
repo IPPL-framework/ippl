@@ -207,7 +207,7 @@ $(function() {
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span> </div>
 <div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">Comm</a>-&gt;allreduce(localNum_m, totalNum_m, 1, std::plus&lt;size_type&gt;());</div>
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    }</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#ae68c5dbfc385a73e6c479eaa6be0cf54">  124</a></span> </div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span> </div>
 <div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>    <span class="keyword">template</span> &lt;<span class="keyword">class </span>PLayout, <span class="keyword">typename</span>... IP&gt;</div>
 <div class="line"><a id="l00126" name="l00126"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#ab13c7aa247bab34b537bdebfc07a1889">  126</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classippl_1_1ParticleBase.html#ab13c7aa247bab34b537bdebfc07a1889">ParticleBase&lt;PLayout, IP...&gt;::alloc</a>(<a class="code hl_typedef" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> nLocal) {</div>
 <div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        <a class="code hl_define" href="PAssert_8h.html#a718e6f44fb7a5898928459b897eee6e4">PAssert</a>(layout_m != <span class="keyword">nullptr</span>);</div>
@@ -216,7 +216,7 @@ $(function() {
 <div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>        });</div>
 <div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>        <span class="comment">// Intentionally does NOT touch localNum_m, totalNum_m, nextID_m.</span></div>
 <div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>    }</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a49eef12d4d22c3d11e6aec285538cdc6">  133</a></span> </div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span> </div>
 <div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>    <span class="keyword">template</span> &lt;<span class="keyword">class </span>PLayout, <span class="keyword">typename</span>... IP&gt;</div>
 <div class="line"><a id="l00135" name="l00135"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#ab87d85479c6ab4529eda17cf633f5e7e">  135</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classippl_1_1ParticleBase.html#ab87d85479c6ab4529eda17cf633f5e7e">ParticleBase&lt;PLayout, IP...&gt;::createWithID</a>(<a class="code hl_typedef" href="classippl_1_1ParticleBase.html#abdf11c4649e1f2c081664eea7ea97c95">index_type</a> <span class="keywordtype">id</span>) {</div>
 <div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>        <a class="code hl_define" href="PAssert_8h.html#a718e6f44fb7a5898928459b897eee6e4">PAssert</a>(layout_m != <span class="keyword">nullptr</span>);</div>
@@ -233,7 +233,7 @@ $(function() {
 <div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>        nextID_m   = tmpNextID;</div>
 <div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>        numNodes_m = <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">Comm</a>-&gt;size();</div>
 <div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>    }</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a590c9364ebf6ae749d07ca1d87c6c736">  150</a></span> </div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span> </div>
 <div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>    <span class="keyword">template</span> &lt;<span class="keyword">class </span>PLayout, <span class="keyword">typename</span>... IP&gt;</div>
 <div class="line"><a id="l00152" name="l00152"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a3a30b76ad2e2928440c96c41acd94bde">  152</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classippl_1_1ParticleBase.html#a3a30b76ad2e2928440c96c41acd94bde">ParticleBase&lt;PLayout, IP...&gt;::globalCreate</a>(<a class="code hl_typedef" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> nTotal) {</div>
 <div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>        <a class="code hl_define" href="PAssert_8h.html#a718e6f44fb7a5898928459b897eee6e4">PAssert</a>(layout_m != <span class="keyword">nullptr</span>);</div>
@@ -274,12 +274,12 @@ $(function() {
 <div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>        <span class="comment">// If we&#39;re deleting all the particles, there&#39;s no point in doing</span></div>
 <div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>        <span class="comment">// anything because the valid region will be empty; we only need to</span></div>
 <div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>        <span class="comment">// update the particle count</span></div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a0be575af2d65071098ead2588619e2af">  191</a></span>        <span class="keywordflow">if</span> (destroyNum == localNum_m) {</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>        <span class="keywordflow">if</span> (destroyNum == localNum_m) {</div>
 <div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>            localNum_m = 0;</div>
 <div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>            <span class="keywordflow">return</span>;</div>
 <div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>        }</div>
 <div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span> </div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        <span class="keyword">using </span><a class="code hl_typedef" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a>       = Kokkos::View&lt;<span class="keywordtype">bool</span>*, Properties...&gt;;</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        <span class="keyword">using </span>view_type       = Kokkos::View&lt;<span class="keywordtype">bool</span>*, Properties...&gt;;</div>
 <div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>        <span class="keyword">using </span>memory_space    = <span class="keyword">typename</span> view_type::memory_space;</div>
 <div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>        <span class="keyword">using </span>execution_space = <span class="keyword">typename</span> view_type::execution_space;</div>
 <div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        <span class="keyword">using </span>policy_type     = Kokkos::RangePolicy&lt;execution_space&gt;;</div>
@@ -340,7 +340,7 @@ $(function() {
 <div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>            });</div>
 <div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span> </div>
 <div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>        Kokkos::fence();</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a6ccf18dc93c5f22edfb678514cfeca06">  257</a></span> </div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span> </div>
 <div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>        localNum_m -= destroyNum;</div>
 <div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span> </div>
 <div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>        <span class="comment">// We need to delete particles in all memory spaces. If there are any attributes not stored</span></div>
@@ -349,21 +349,21 @@ $(function() {
 <div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>        <span class="keyword">auto</span> filter = [&amp;]&lt;<span class="keyword">typename</span> MemorySpace&gt;() {</div>
 <div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>            <span class="keywordflow">return</span> attributes_m.template get&lt;MemorySpace&gt;().size() &gt; 0;</div>
 <div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>        };</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#ab13c7aa247bab34b537bdebfc07a1889">  266</a></span>        deleteIndex_m.copyToOtherSpaces&lt;memory_space&gt;(filter);</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>        deleteIndex_m.copyToOtherSpaces&lt;memory_space&gt;(filter);</div>
 <div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>        keepIndex_m.copyToOtherSpaces&lt;memory_space&gt;(filter);</div>
 <div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span> </div>
 <div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>        <span class="comment">// Partition the attributes into valid and invalid regions</span></div>
 <div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>        <span class="comment">// NOTE: The vector elements are pointers, but we want to extract</span></div>
 <div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>        <span class="comment">// the memory space from the class type, so we explicitly</span></div>
 <div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>        <span class="comment">// make the lambda argument a pointer to the template parameter</span></div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#ab87d85479c6ab4529eda17cf633f5e7e">  273</a></span>        forAllAttributes([&amp;]&lt;<span class="keyword">typename</span> Attribute&gt;(Attribute*&amp; attribute) {</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>        forAllAttributes([&amp;]&lt;<span class="keyword">typename</span> Attribute&gt;(Attribute*&amp; attribute) {</div>
 <div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>            <span class="keyword">using </span>att_memory_space = <span class="keyword">typename</span> Attribute::memory_space;</div>
 <div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>            <span class="keyword">auto</span>&amp; del              = deleteIndex_m.get&lt;att_memory_space&gt;();</div>
 <div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>            <span class="keyword">auto</span>&amp; keep             = keepIndex_m.get&lt;att_memory_space&gt;();</div>
 <div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>            attribute-&gt;destroy(del, keep, maxDeleteIndex + 1);</div>
 <div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>        });</div>
 <div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>    }</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a3a30b76ad2e2928440c96c41acd94bde">  280</a></span> </div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span> </div>
 <div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>    <span class="keyword">template</span> &lt;<span class="keyword">class </span>PLayout, <span class="keyword">typename</span>... IP&gt;</div>
 <div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> HashType&gt;</div>
 <div class="line"><a id="l00283" name="l00283"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#ad3d4126c982bb9ee4fe1812b6c67b2ef">  283</a></span>    <span class="keywordtype">void</span> <a class="code hl_class" href="classippl_1_1ParticleBase.html">ParticleBase&lt;PLayout, IP...&gt;::sendToRank</a>(<span class="keywordtype">int</span> rank, <span class="keywordtype">int</span> tag,</div>
@@ -373,20 +373,20 @@ $(function() {
 <div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>        requests.resize(requests.size() + 1);</div>
 <div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span> </div>
 <div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>        <span class="keyword">auto</span> hashes = <a class="code hl_typedef" href="classippl_1_1ParticleBase.html#a0dd49a2a4f86f0c9938ed992d5c911f0">hash_container_type</a>(hash, [&amp;]&lt;<span class="keyword">typename</span> MemorySpace&gt;() {</div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a7084863878529c81e3db676fe70f1165">  290</a></span>            <span class="keywordflow">return</span> attributes_m.template get&lt;MemorySpace&gt;().size() &gt; 0;</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>            <span class="keywordflow">return</span> attributes_m.template get&lt;MemorySpace&gt;().size() &gt; 0;</div>
 <div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>        });</div>
 <div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>        pack(hashes);</div>
 <div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>        detail::runForAllSpaces([&amp;]&lt;<span class="keyword">typename</span> MemorySpace&gt;() {</div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>            <a class="code hl_typedef" href="datatypes_8h.html#a117948da4a7f2c353ea5ef900c1762c4">size_type</a> bufSize = packedSize&lt;MemorySpace&gt;(nSends);</div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>            <a class="code hl_typedef" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> bufSize = packedSize&lt;MemorySpace&gt;(nSends);</div>
 <div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>            <span class="keywordflow">if</span> (bufSize == 0) {</div>
 <div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>                <span class="keywordflow">return</span>;</div>
 <div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>            }</div>
 <div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span> </div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>            <span class="keyword">auto</span> buf = Comm-&gt;getBuffer&lt;MemorySpace&gt;(bufSize);</div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>            <span class="keyword">auto</span> buf = <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">Comm</a>-&gt;getBuffer&lt;MemorySpace&gt;(bufSize);</div>
 <div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span> </div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>            Comm-&gt;isend(rank, tag++, *<span class="keyword">this</span>, *buf, requests.back(), nSends);</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>            <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">Comm</a>-&gt;isend(rank, tag++, *<span class="keyword">this</span>, *buf, requests.back(), nSends);</div>
 <div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>            buf-&gt;resetWritePos();</div>
-<div class="line"><a id="l00303" name="l00303"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a2fe367c841ac657314d7d6e3dc60809a">  303</a></span>        });</div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>        });</div>
 <div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>    }</div>
 <div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span> </div>
 <div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>    <span class="keyword">template</span> &lt;<span class="keyword">class </span>PLayout, <span class="keyword">typename</span>... IP&gt;</div>
@@ -399,7 +399,7 @@ $(function() {
 <div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span> </div>
 <div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>            <span class="keyword">auto</span> buf = <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">Comm</a>-&gt;getBuffer&lt;MemorySpace&gt;(bufSize);</div>
 <div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span> </div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#ad3d4126c982bb9ee4fe1812b6c67b2ef">  316</a></span>            <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">Comm</a>-&gt;recv(rank, tag++, *<span class="keyword">this</span>, *buf, bufSize, nRecvs);</div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>            <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">Comm</a>-&gt;recv(rank, tag++, *<span class="keyword">this</span>, *buf, bufSize, nRecvs);</div>
 <div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>            buf-&gt;resetReadPos();</div>
 <div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>        });</div>
 <div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>        unpack(nRecvs);</div>
@@ -408,7 +408,7 @@ $(function() {
 <div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>    <span class="keyword">template</span> &lt;<span class="keyword">class </span>PLayout, <span class="keyword">typename</span>... IP&gt;</div>
 <div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> Archive&gt;</div>
 <div class="line"><a id="l00324" name="l00324"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a18a1fd153895545b58cf20bc4a1fa027">  324</a></span>    <span class="keywordtype">void</span> <a class="code hl_class" href="classippl_1_1ParticleBase.html">ParticleBase&lt;PLayout, IP...&gt;::serialize</a>(Archive&amp; ar, <a class="code hl_typedef" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> nsends) {</div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#aaf5d24d53d37df58854baeb8ad3ec5f3">  325</a></span>        <span class="keyword">using </span>memory_space = <span class="keyword">typename</span> Archive::buffer_type::memory_space;</div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>        <span class="keyword">using </span>memory_space = <span class="keyword">typename</span> Archive::buffer_type::memory_space;</div>
 <div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>        forAllAttributes&lt;memory_space&gt;([&amp;]&lt;<span class="keyword">typename</span> Attribute&gt;(Attribute&amp; att) {</div>
 <div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>            att-&gt;serialize(ar, nsends);</div>
 <div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>        });</div>
@@ -424,7 +424,7 @@ $(function() {
 <div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>    }</div>
 <div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span> </div>
 <div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>    <span class="keyword">template</span> &lt;<span class="keyword">class </span>PLayout, <span class="keyword">typename</span>... IP&gt;</div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#af79e1c75308033ee316306f6d066fcf6">  341</a></span>    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> MemorySpace&gt;</div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> MemorySpace&gt;</div>
 <div class="line"><a id="l00342" name="l00342"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a3c6d1709d2ba9691d8adbcab65acc048">  342</a></span>    <a class="code hl_typedef" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">detail::size_type</a> <a class="code hl_class" href="classippl_1_1ParticleBase.html">ParticleBase&lt;PLayout, IP...&gt;::packedSize</a>(<span class="keyword">const</span> <a class="code hl_typedef" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> count)<span class="keyword"> const </span>{</div>
 <div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>        <a class="code hl_typedef" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> total = 0;</div>
 <div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>        forAllAttributes&lt;MemorySpace&gt;([&amp;]&lt;<span class="keyword">typename</span> Attribute&gt;(<span class="keyword">const</span> Attribute&amp; att) {</div>
@@ -440,13 +440,13 @@ $(function() {
 <div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>            <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> j = 0; j &lt; att.size(); j++) {</div>
 <div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>                att[j]-&gt;pack(hash.template get&lt;MemorySpace&gt;());</div>
 <div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>            }</div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a10bccce6658ee94552afc07cd93e1976">  357</a></span>        });</div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>        });</div>
 <div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>    }</div>
 <div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span> </div>
 <div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>    <span class="keyword">template</span> &lt;<span class="keyword">class </span>PLayout, <span class="keyword">typename</span>... IP&gt;</div>
 <div class="line"><a id="l00361" name="l00361"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a68817eb516a698bce3a0fd30171d5204">  361</a></span>    <span class="keywordtype">void</span> <a class="code hl_class" href="classippl_1_1ParticleBase.html">ParticleBase&lt;PLayout, IP...&gt;::unpack</a>(<a class="code hl_typedef" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> nrecvs) {</div>
 <div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>        detail::runForAllSpaces([&amp;]&lt;<span class="keyword">typename</span> MemorySpace&gt;() {</div>
-<div class="line"><a id="l00363" name="l00363"></a><span class="lineno"><a class="line" href="classippl_1_1ParticleBase.html#a68817eb516a698bce3a0fd30171d5204">  363</a></span>            <span class="keyword">auto</span>&amp; att = attributes_m.template get&lt;MemorySpace&gt;();</div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>            <span class="keyword">auto</span>&amp; att = attributes_m.template get&lt;MemorySpace&gt;();</div>
 <div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>            <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> j = 0; j &lt; att.size(); j++) {</div>
 <div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>                att[j]-&gt;unpack(nrecvs);</div>
 <div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>            }</div>
@@ -454,7 +454,6 @@ $(function() {
 <div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>        localNum_m += nrecvs;</div>
 <div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>    }</div>
 <div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span>}  <span class="comment">// namespace ippl</span></div>
-<div class="ttc" id="aAlpineManager_8h_html_abac6b71b6ea68a6c8bb864e8ebd5fe62"><div class="ttname"><a href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a></div><div class="ttdeci">typename ippl::detail::ViewType&lt; ippl::Vector&lt; double, Dim &gt;, 1 &gt;::view_type view_type</div><div class="ttdef"><b>Definition:</b> AlpineManager.h:18</div></div>
 <div class="ttc" id="aPAssert_8h_html_a718e6f44fb7a5898928459b897eee6e4"><div class="ttname"><a href="PAssert_8h.html#a718e6f44fb7a5898928459b897eee6e4">PAssert</a></div><div class="ttdeci">#define PAssert(c)</div><div class="ttdef"><b>Definition:</b> PAssert.h:116</div></div>
 <div class="ttc" id="aclassippl_1_1ParticleAttrib_html_a2e4b91589bd6d174f7f0472e3e8116c4"><div class="ttname"><a href="classippl_1_1ParticleAttrib.html#a2e4b91589bd6d174f7f0472e3e8116c4">ippl::ParticleAttrib::set_name</a></div><div class="ttdeci">void set_name(const std::string &amp;name_) override</div><div class="ttdef"><b>Definition:</b> ParticleAttrib.h:121</div></div>
 <div class="ttc" id="aclassippl_1_1ParticleBase_html"><div class="ttname"><a href="classippl_1_1ParticleBase.html">ippl::ParticleBase</a></div><div class="ttdef"><b>Definition:</b> ParticleBase.h:87</div></div>

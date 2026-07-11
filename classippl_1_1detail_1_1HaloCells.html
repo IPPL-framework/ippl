@@ -120,13 +120,13 @@ Public Types</h2></td></tr>
 , <a class="el" href="classippl_1_1detail_1_1HaloCells.html#a608d4b766782192817f1f0a19b6d98ffa5c359149ad7d37b8a2e416cac8a597e3">HALO_TO_INTERNAL_NOGHOST</a>
  }</td></tr>
 <tr class="separator:a608d4b766782192817f1f0a19b6d98ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44ed3d52f39b66f1fb2a5bee88209e16"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">detail::ViewType</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs... &gt;<a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">::view_type</a></td></tr>
+<tr class="memitem:a44ed3d52f39b66f1fb2a5bee88209e16"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">detail::ViewType</a>&lt; T, Dim, ViewArgs... &gt;::view_type</td></tr>
 <tr class="separator:a44ed3d52f39b66f1fb2a5bee88209e16"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab9cf9d54adfb0826fb0d3893685caa68"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#ab9cf9d54adfb0826fb0d3893685caa68">Layout_t</a> = <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;</td></tr>
+<tr class="memitem:ab9cf9d54adfb0826fb0d3893685caa68"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#ab9cf9d54adfb0826fb0d3893685caa68">Layout_t</a> = <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; Dim &gt;</td></tr>
 <tr class="separator:ab9cf9d54adfb0826fb0d3893685caa68"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc83a5b03212d720ed8cbc3b32279c74"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#adc83a5b03212d720ed8cbc3b32279c74">bound_type</a> = typename <a class="el" href="structippl_1_1FieldLayout_1_1bound__type.html">Layout_t::bound_type</a></td></tr>
 <tr class="separator:adc83a5b03212d720ed8cbc3b32279c74"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca4845e126f4f2d5dc6de6f0ed2ad39e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#aca4845e126f4f2d5dc6de6f0ed2ad39e">databuffer_type</a> = <a class="el" href="structippl_1_1detail_1_1FieldBufferData.html">FieldBufferData</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, ViewArgs... &gt;</td></tr>
+<tr class="memitem:aca4845e126f4f2d5dc6de6f0ed2ad39e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#aca4845e126f4f2d5dc6de6f0ed2ad39e">databuffer_type</a> = <a class="el" href="structippl_1_1detail_1_1FieldBufferData.html">FieldBufferData</a>&lt; T, ViewArgs... &gt;</td></tr>
 <tr class="separator:aca4845e126f4f2d5dc6de6f0ed2ad39e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
@@ -168,10 +168,10 @@ Private Attributes</h2></td></tr>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::bound_type =  typename <a class="el" href="structippl_1_1FieldLayout_1_1bound__type.html">Layout_t::bound_type</a></td>
+          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::bound_type =  typename <a class="el" href="structippl_1_1FieldLayout_1_1bound__type.html">Layout_t::bound_type</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -184,10 +184,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::databuffer_type =  <a class="el" href="structippl_1_1detail_1_1FieldBufferData.html">FieldBufferData</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, ViewArgs...&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::databuffer_type =  <a class="el" href="structippl_1_1detail_1_1FieldBufferData.html">FieldBufferData</a>&lt;T, ViewArgs...&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -200,10 +200,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::Layout_t =  <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::Layout_t =  <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt;Dim&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -216,10 +216,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;<a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">::view_type</a> =  typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">detail::ViewType</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs...&gt;<a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">::view_type</a></td>
+          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::view_type =  typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">detail::ViewType</a>&lt;T, Dim, ViewArgs...&gt;::view_type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -233,7 +233,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">enum <a class="el" href="classippl_1_1detail_1_1HaloCells.html#a608d4b766782192817f1f0a19b6d98ff">ippl::detail::HaloCells::SendOrder</a></td>
@@ -255,10 +255,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::HaloCells</td>
+          <td class="memname"><a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::HaloCells</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -272,10 +272,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::accumulateHalo </td>
+          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::accumulateHalo </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> &amp;&#160;</td>
           <td class="paramname"><em>view</em>, </td>
@@ -309,10 +309,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::accumulateHalo_noghost </td>
+          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::accumulateHalo_noghost </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> &amp;&#160;</td>
           <td class="paramname"><em>view</em>, </td>
@@ -353,12 +353,12 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
 <div class="memtemplate">
 template&lt;typename Op &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::applyPeriodicSerialDim </td>
+          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::applyPeriodicSerialDim </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> &amp;&#160;</td>
           <td class="paramname"><em>view</em>, </td>
@@ -392,7 +392,7 @@ template&lt;typename Op &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
 <div class="memtemplate">
 template&lt;class Op &gt; </div>
 <table class="mlabels">
@@ -400,7 +400,7 @@ template&lt;class Op &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::exchangeBoundaries </td>
+          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::exchangeBoundaries </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> &amp;&#160;</td>
           <td class="paramname"><em>view</em>, </td>
@@ -458,10 +458,10 @@ template&lt;class Op &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::fillHalo </td>
+          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::fillHalo </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> &amp;&#160;</td>
           <td class="paramname"><em>view</em>, </td>
@@ -495,13 +495,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">auto <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::makeSubview </td>
+          <td class="memname">auto <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::makeSubview </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classippl_1_1detail_1_1HaloCells.html#a44ed3d52f39b66f1fb2a5bee88209e16">view_type</a> &amp;&#160;</td>
           <td class="paramname"><em>view</em>, </td>
@@ -540,10 +540,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::pack </td>
+          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::pack </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classippl_1_1detail_1_1HaloCells.html#adc83a5b03212d720ed8cbc3b32279c74">bound_type</a> &amp;&#160;</td>
           <td class="paramname"><em>range</em>, </td>
@@ -590,12 +590,12 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
 <div class="memtemplate">
 template&lt;typename Op &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::unpack </td>
+          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::unpack </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classippl_1_1detail_1_1HaloCells.html#adc83a5b03212d720ed8cbc3b32279c74">bound_type</a> &amp;&#160;</td>
           <td class="paramname"><em>range</em>, </td>
@@ -643,13 +643,13 @@ template&lt;typename Op &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#aca4845e126f4f2d5dc6de6f0ed2ad39e">databuffer_type</a> <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, ViewArgs &gt;::haloData_m</td>
+          <td class="memname"><a class="el" href="classippl_1_1detail_1_1HaloCells.html#aca4845e126f4f2d5dc6de6f0ed2ad39e">databuffer_type</a> <a class="el" href="classippl_1_1detail_1_1HaloCells.html">ippl::detail::HaloCells</a>&lt; T, Dim, ViewArgs &gt;::haloData_m</td>
         </tr>
       </table>
   </td>

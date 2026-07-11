@@ -1,7 +1,8 @@
 <map id="ippl::FiniteElementSpace&lt; T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;" name="ippl::FiniteElementSpace&lt; T, Dim, NumElementDOFs, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;">
-<area shape="rect" id="node1" title="The FiniteElementSpace class handles the mesh index mapping to vertices and elements and is the base ..." alt="" coords="47,461,283,795"/>
-<area shape="rect" id="node2" href="$classippl_1_1Vector.html" title=" " alt="" coords="25,139,149,384"/>
+<area shape="rect" id="node1" title="The FiniteElementSpace class handles the mesh index mapping to vertices and elements and is the base ..." alt="" coords="159,475,395,808"/>
+<area shape="rect" id="node2" href="$classippl_1_1Vector.html" title=" " alt="" coords="137,159,261,390"/>
 <area shape="rect" id="node3" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,157,89"/>
-<area shape="rect" id="node4" href="$classippl_1_1Vector.html" title=" " alt="" coords="182,139,325,384"/>
-<area shape="rect" id="node5" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="181,5,333,89"/>
+<area shape="rect" id="node4" title=" " alt="" coords="182,27,242,67"/>
+<area shape="rect" id="node5" href="$classippl_1_1Vector.html" title=" " alt="" coords="285,152,427,397"/>
+<area shape="rect" id="node6" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="280,5,432,89"/>
 </map>

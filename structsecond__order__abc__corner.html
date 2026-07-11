@@ -106,8 +106,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a400c5468996e5971c925826d2d0fb286"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsecond__order__abc__corner.html#a400c5468996e5971c925826d2d0fb286">second_order_abc_corner</a> (<a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="structsecond__order__abc__corner.html#ac46057c3321ecde86c2d66dcb89ec691">scalar</a>, 3 &gt; hr, <a class="el" href="structsecond__order__abc__corner.html#ac46057c3321ecde86c2d66dcb89ec691">scalar</a> dt)</td></tr>
 <tr class="memdesc:a400c5468996e5971c925826d2d0fb286"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for the second-order ABC corner.  <a href="structsecond__order__abc__corner.html#a400c5468996e5971c925826d2d0fb286">More...</a><br /></td></tr>
 <tr class="separator:a400c5468996e5971c925826d2d0fb286"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a12b6e58bba684211d05909e9c3121e"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> , typename Coords &gt; </td></tr>
-<tr class="memitem:a8a12b6e58bba684211d05909e9c3121e"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structsecond__order__abc__corner.html#a8a12b6e58bba684211d05909e9c3121e">operator()</a> (const <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> &amp;A_n, const <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> &amp;A_nm1, const <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> &amp;A_np1, const Coords &amp;c) const -&gt; typename view_type::value_type</td></tr>
+<tr class="memitem:a8a12b6e58bba684211d05909e9c3121e"><td class="memTemplParams" colspan="2">template&lt;typename view_type , typename Coords &gt; </td></tr>
+<tr class="memitem:a8a12b6e58bba684211d05909e9c3121e"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structsecond__order__abc__corner.html#a8a12b6e58bba684211d05909e9c3121e">operator()</a> (const view_type &amp;A_n, const view_type &amp;A_nm1, const view_type &amp;A_np1, const Coords &amp;c) const -&gt; typename view_type::value_type</td></tr>
 <tr class="memdesc:a8a12b6e58bba684211d05909e9c3121e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies the second-order ABC to the corner of the field.  <a href="structsecond__order__abc__corner.html#a8a12b6e58bba684211d05909e9c3121e">More...</a><br /></td></tr>
 <tr class="separator:a8a12b6e58bba684211d05909e9c3121e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a67b32087f7384096b591056450198b5b"><td class="memTemplParams" colspan="2">template&lt;typename value_type &gt; </td></tr>
@@ -362,7 +362,7 @@ template&lt;typename value_type &gt; </div>
 <div class="memtemplate">
 template&lt;typename _scalar , bool x0, bool y0, bool z0&gt; </div>
 <div class="memtemplate">
-template&lt;typename <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> , typename Coords &gt; </div>
+template&lt;typename view_type , typename Coords &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -370,19 +370,19 @@ template&lt;typename <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c
         <tr>
           <td class="memname">KOKKOS_INLINE_FUNCTION auto <a class="el" href="structsecond__order__abc__corner.html">second_order_abc_corner</a>&lt; _scalar, x0, y0, z0 &gt;::operator() </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> &amp;&#160;</td>
+          <td class="paramtype">const view_type &amp;&#160;</td>
           <td class="paramname"><em>A_n</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> &amp;&#160;</td>
+          <td class="paramtype">const view_type &amp;&#160;</td>
           <td class="paramname"><em>A_nm1</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> &amp;&#160;</td>
+          <td class="paramtype">const view_type &amp;&#160;</td>
           <td class="paramname"><em>A_np1</em>, </td>
         </tr>
         <tr>

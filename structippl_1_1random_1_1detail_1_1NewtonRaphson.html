@@ -111,7 +111,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a112b6d24b2d646ff001ea69720bd4228"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ccc35744d697ef2ec4e04fdb0303b2d"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html#a5ccc35744d697ef2ec4e04fdb0303b2d">NewtonRaphson</a> (const <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &amp;dist_)</td></tr>
 <tr class="separator:a5ccc35744d697ef2ec4e04fdb0303b2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac0b5e270684985a7707cc53475423dc2"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html#ac0b5e270684985a7707cc53475423dc2">solve</a> (unsigned int d, <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &amp;x, <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &amp;u)</td></tr>
+<tr class="memitem:ac0b5e270684985a7707cc53475423dc2"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html#ac0b5e270684985a7707cc53475423dc2">solve</a> (unsigned int d, T &amp;x, T &amp;u)</td></tr>
 <tr class="memdesc:ac0b5e270684985a7707cc53475423dc2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Solve an equation using the Newton-Raphson method.  <a href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html#ac0b5e270684985a7707cc53475423dc2">More...</a><br /></td></tr>
 <tr class="separator:ac0b5e270684985a7707cc53475423dc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -125,7 +125,7 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ac1006fdf002cdb456a5b4d9a35f94666"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a>&gt;<br />
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename T, class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a>&gt;<br />
 struct ippl::random::detail::NewtonRaphson&lt; T, Distribution &gt;</div><p >Functor for solving equations using the Newton-Raphson method. </p>
 <p >In particular, find the root x of the equation dist.obj(x, u)= 0 for a given u using Newton-Raphson method.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
@@ -150,13 +150,13 @@ struct ippl::random::detail::NewtonRaphson&lt; T, Distribution &gt;</div><p >Fun
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_FUNCTION <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::NewtonRaphson </td>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; T, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::NewtonRaphson </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -177,13 +177,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_FUNCTION <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::~<a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">NewtonRaphson</a> </td>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; T, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::~<a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">NewtonRaphson</a> </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -204,13 +204,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::NewtonRaphson </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; T, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::NewtonRaphson </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &amp;&#160;</td>
           <td class="paramname"><em>dist_</em></td><td>)</td>
@@ -233,13 +233,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION void <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::solve </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION void <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; T, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::solve </td>
           <td>(</td>
           <td class="paramtype">unsigned int&#160;</td>
           <td class="paramname"><em>d</em>, </td>
@@ -247,13 +247,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &amp;&#160;</td>
+          <td class="paramtype">T &amp;&#160;</td>
           <td class="paramname"><em>x</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &amp;&#160;</td>
+          <td class="paramtype">T &amp;&#160;</td>
           <td class="paramname"><em>u</em>&#160;</td>
         </tr>
         <tr>
@@ -289,10 +289,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">double <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::atol = 1e-12</td>
+          <td class="memname">double <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; T, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::atol = 1e-12</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -305,10 +305,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::dist</td>
+          <td class="memname"><a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; T, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::dist</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -321,10 +321,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">unsigned int <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::max_iter = 20</td>
+          <td class="memname">unsigned int <a class="el" href="structippl_1_1random_1_1detail_1_1NewtonRaphson.html">ippl::random::detail::NewtonRaphson</a>&lt; T, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::max_iter = 20</td>
         </tr>
       </table>
 </div><div class="memdoc">

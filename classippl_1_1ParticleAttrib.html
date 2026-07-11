@@ -116,13 +116,13 @@ Collaboration diagram for ippl::ParticleAttrib&lt; T, Properties &gt;:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a246c4bc18a3ae7be08b49a02d2c6ac1e"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a246c4bc18a3ae7be08b49a02d2c6ac1e">value_type</a></td></tr>
+<tr class="memitem:a246c4bc18a3ae7be08b49a02d2c6ac1e"><td class="memItemLeft" align="right" valign="top">typedef T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a246c4bc18a3ae7be08b49a02d2c6ac1e">value_type</a></td></tr>
 <tr class="separator:a246c4bc18a3ae7be08b49a02d2c6ac1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb098466040f451217868f3f3fb4a802"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#aeb098466040f451217868f3f3fb4a802">Base</a> = typename <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">detail::ParticleAttribBase</a>&lt;&gt;::with_properties&lt; Properties... &gt;</td></tr>
 <tr class="separator:aeb098466040f451217868f3f3fb4a802"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:addee7ea4ae1549aa32acd86d0bc2b61e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> = typename Base::hash_type</td></tr>
 <tr class="separator:addee7ea4ae1549aa32acd86d0bc2b61e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7e408e96cb4deeb181cef5dd70252f02"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">detail::ViewType</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, 1, Properties... &gt;<a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">::view_type</a></td></tr>
+<tr class="memitem:a7e408e96cb4deeb181cef5dd70252f02"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">detail::ViewType</a>&lt; T, 1, Properties... &gt;::view_type</td></tr>
 <tr class="separator:a7e408e96cb4deeb181cef5dd70252f02"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3965ae201ffaf0f579a79be960139ad"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ad3965ae201ffaf0f579a79be960139ad">host_mirror_type</a> = typename view_type::host_mirror_type</td></tr>
 <tr class="separator:ad3965ae201ffaf0f579a79be960139ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -162,7 +162,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ade0eb9794eb380bb58813913852a2a23"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3166186f30b00e52ff4274c9d9ba3a2d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a3166186f30b00e52ff4274c9d9ba3a2d">print</a> ()</td></tr>
 <tr class="separator:a3166186f30b00e52ff4274c9d9ba3a2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad5e1e90f12b3c24bdd91c2e95ac423bd"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ad5e1e90f12b3c24bdd91c2e95ac423bd">operator()</a> (const size_t i) const</td></tr>
+<tr class="memitem:ad5e1e90f12b3c24bdd91c2e95ac423bd"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION T &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ad5e1e90f12b3c24bdd91c2e95ac423bd">operator()</a> (const size_t i) const</td></tr>
 <tr class="separator:ad5e1e90f12b3c24bdd91c2e95ac423bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa8d74db0ebda410c439fc35b92ae2ac0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#aa8d74db0ebda410c439fc35b92ae2ac0">getView</a> ()</td></tr>
 <tr class="separator:aa8d74db0ebda410c439fc35b92ae2ac0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -174,10 +174,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a2e4b91589bd6d174f7f0472e3e8116c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae48fa38dad7187c07115e59476fb08bb"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ae48fa38dad7187c07115e59476fb08bb">get_name</a> () const override</td></tr>
 <tr class="separator:ae48fa38dad7187c07115e59476fb08bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb932273adda27993ef792e78c45fe28"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties... &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#aeb932273adda27993ef792e78c45fe28">operator=</a> (<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> x)</td></tr>
+<tr class="memitem:aeb932273adda27993ef792e78c45fe28"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; T, Properties... &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#aeb932273adda27993ef792e78c45fe28">operator=</a> (T x)</td></tr>
 <tr class="separator:aeb932273adda27993ef792e78c45fe28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4f287dce957d7f64f3c93d9e3fd6aa3"><td class="memTemplParams" colspan="2">template&lt;typename E , size_t N&gt; </td></tr>
-<tr class="memitem:af4f287dce957d7f64f3c93d9e3fd6aa3"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties... &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#af4f287dce957d7f64f3c93d9e3fd6aa3">operator=</a> (<a class="el" href="structippl_1_1detail_1_1Expression.html">detail::Expression</a>&lt; E, N &gt; const &amp;expr)</td></tr>
+<tr class="memitem:af4f287dce957d7f64f3c93d9e3fd6aa3"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; T, Properties... &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#af4f287dce957d7f64f3c93d9e3fd6aa3">operator=</a> (<a class="el" href="structippl_1_1detail_1_1Expression.html">detail::Expression</a>&lt; E, N &gt; const &amp;expr)</td></tr>
 <tr class="separator:af4f287dce957d7f64f3c93d9e3fd6aa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c1e525ba6f54288080cfe2ea3e5cfb0"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename P2 , typename policy_type &gt; </td></tr>
 <tr class="memitem:a6c1e525ba6f54288080cfe2ea3e5cfb0"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a6c1e525ba6f54288080cfe2ea3e5cfb0">scatter</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; P2, <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a> &gt;, Properties... &gt; &amp;pp, policy_type iteration_policy, <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> hash_array={}) const</td></tr>
@@ -187,13 +187,13 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a8e3886c6f0c7a19eda43944b456016b9"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a8e3886c6f0c7a19eda43944b456016b9">gather</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const <a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; P2, <a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">Field::dim</a> &gt;, Properties... &gt; &amp;pp, const bool addToAttribute=false)</td></tr>
 <tr class="memdesc:a8e3886c6f0c7a19eda43944b456016b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gather field data into the particle attribute.  <a href="classippl_1_1ParticleAttrib.html#a8e3886c6f0c7a19eda43944b456016b9">More...</a><br /></td></tr>
 <tr class="separator:a8e3886c6f0c7a19eda43944b456016b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1bfa23788a10d5a310bb76622a381119"><td class="memItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a1bfa23788a10d5a310bb76622a381119">sum</a> ()</td></tr>
+<tr class="memitem:a1bfa23788a10d5a310bb76622a381119"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a1bfa23788a10d5a310bb76622a381119">sum</a> ()</td></tr>
 <tr class="separator:a1bfa23788a10d5a310bb76622a381119"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10dd97bf1e89441aede8255249946701"><td class="memItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a10dd97bf1e89441aede8255249946701">max</a> ()</td></tr>
+<tr class="memitem:a10dd97bf1e89441aede8255249946701"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a10dd97bf1e89441aede8255249946701">max</a> ()</td></tr>
 <tr class="separator:a10dd97bf1e89441aede8255249946701"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a344019e1a886e1148fc2834f714f0abb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a344019e1a886e1148fc2834f714f0abb">min</a> ()</td></tr>
+<tr class="memitem:a344019e1a886e1148fc2834f714f0abb"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#a344019e1a886e1148fc2834f714f0abb">min</a> ()</td></tr>
 <tr class="separator:a344019e1a886e1148fc2834f714f0abb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae19dbfb97ab2286790388d31e8bfdfd6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ae19dbfb97ab2286790388d31e8bfdfd6">prod</a> ()</td></tr>
+<tr class="memitem:ae19dbfb97ab2286790388d31e8bfdfd6"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#ae19dbfb97ab2286790388d31e8bfdfd6">prod</a> ()</td></tr>
 <tr class="separator:ae19dbfb97ab2286790388d31e8bfdfd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeaf71c160901943212aeeceb41d9e8fb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleAttrib.html#aeaf71c160901943212aeeceb41d9e8fb">applyPermutation</a> (const <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> &amp;permutation) override</td></tr>
 <tr class="memdesc:aeaf71c160901943212aeeceb41d9e8fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sort the attribute according to a permutation.  <a href="classippl_1_1ParticleAttrib.html#aeaf71c160901943212aeeceb41d9e8fb">More...</a><br /></td></tr>
@@ -230,10 +230,10 @@ Private Attributes</h2></td></tr>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::Base =  typename <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">detail::ParticleAttribBase</a>&lt;&gt;::with_properties&lt;Properties...&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::Base =  typename <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">detail::ParticleAttribBase</a>&lt;&gt;::with_properties&lt;Properties...&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -246,10 +246,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::execution_space =  typename view_type::execution_space</td>
+          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::execution_space =  typename view_type::execution_space</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -262,10 +262,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::hash_type =  typename Base::hash_type</td>
+          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::hash_type =  typename Base::hash_type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -278,10 +278,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::host_mirror_type =  typename view_type::host_mirror_type</td>
+          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::host_mirror_type =  typename view_type::host_mirror_type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -294,10 +294,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::memory_space =  typename view_type::memory_space</td>
+          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::memory_space =  typename view_type::memory_space</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -310,10 +310,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;<a class="el" href="datatypes_8h.html#a117948da4a7f2c353ea5ef900c1762c4">::size_type</a> =  <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">detail::size_type</a></td>
+          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;<a class="el" href="datatypes_8h.html#a117948da4a7f2c353ea5ef900c1762c4">::size_type</a> =  <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">detail::size_type</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -326,10 +326,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::value_type</td>
+          <td class="memname">typedef T <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::value_type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -342,10 +342,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;<a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">::view_type</a> =  typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">detail::ViewType</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, 1, Properties...&gt;<a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">::view_type</a></td>
+          <td class="memname">using <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::view_type =  typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">detail::ViewType</a>&lt;T, 1, Properties...&gt;::view_type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -359,13 +359,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::~<a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a> </td>
+          <td class="memname">virtual <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::~<a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a> </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -387,13 +387,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::alloc </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::alloc </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a>&#160;</td>
           <td class="paramname"><em>n</em></td><td>)</td>
@@ -415,13 +415,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::applyPermutation </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::applyPermutation </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> &amp;&#160;</td>
           <td class="paramname"><em>permutation</em></td><td>)</td>
@@ -453,13 +453,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::create </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::create </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a>&#160;</td>
           <td class="paramname"><em>n</em>, </td>
@@ -491,13 +491,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::deserialize </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::deserialize </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1Archive.html">detail::Archive</a>&lt; <a class="el" href="classippl_1_1ParticleAttrib.html#a13abc54397e7274cef79fca9976ffb82">memory_space</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>ar</em>, </td>
@@ -529,13 +529,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::destroy </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::destroy </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> &amp;&#160;</td>
           <td class="paramname"><em>deleteIndex</em>, </td>
@@ -581,12 +581,12 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <div class="memtemplate">
 template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename P2 &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::gather </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::gather </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1Field.html">Field</a> &amp;&#160;</td>
           <td class="paramname"><em>f</em>, </td>
@@ -638,13 +638,13 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , ty
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::string <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::get_name </td>
+          <td class="memname">std::string <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::get_name </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -665,13 +665,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#ad3965ae201ffaf0f579a79be960139ad">host_mirror_type</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::getHostMirror </td>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#ad3965ae201ffaf0f579a79be960139ad">host_mirror_type</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::getHostMirror </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -692,13 +692,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> &amp; <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::getView </td>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> &amp; <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::getView </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -719,13 +719,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> &amp; <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::getView </td>
+          <td class="memname">const <a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> &amp; <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::getView </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -746,13 +746,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::internalCopy </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::internalCopy </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> &amp;&#160;</td>
           <td class="paramname"><em>indices</em></td><td>)</td>
@@ -783,10 +783,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::max </td>
+          <td class="memname">T <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::max </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -802,10 +802,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::min </td>
+          <td class="memname">T <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::min </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -821,13 +821,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &amp; <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::operator() </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION T &amp; <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::operator() </td>
           <td>(</td>
           <td class="paramtype">const size_t&#160;</td>
           <td class="paramname"><em>i</em></td><td>)</td>
@@ -849,12 +849,12 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <div class="memtemplate">
 template&lt;typename E , size_t N&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties... &gt; &amp; <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::operator= </td>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; T, Properties... &gt; &amp; <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::operator= </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structippl_1_1detail_1_1Expression.html">detail::Expression</a>&lt; E, N &gt; const &amp;&#160;</td>
           <td class="paramname"><em>expr</em></td><td>)</td>
@@ -884,12 +884,12 @@ template&lt;typename E , size_t N&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties... &gt; &amp; <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::operator= </td>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html">ParticleAttrib</a>&lt; T, Properties... &gt; &amp; <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::operator= </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td>
+          <td class="paramtype">T&#160;</td>
           <td class="paramname"><em>x</em></td><td>)</td>
           <td></td>
         </tr>
@@ -905,13 +905,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::pack </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::pack </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classippl_1_1ParticleAttrib.html#addee7ea4ae1549aa32acd86d0bc2b61e">hash_type</a> &amp;&#160;</td>
           <td class="paramname"><em>hash</em></td><td>)</td>
@@ -933,13 +933,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::packedSize </td>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::packedSize </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a>&#160;</td>
           <td class="paramname"><em>count</em></td><td>)</td>
@@ -961,13 +961,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::print </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::print </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -988,10 +988,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::prod </td>
+          <td class="memname">T <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::prod </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -1007,13 +1007,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::realloc </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::realloc </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a>&#160;</td>
           <td class="paramname"><em>n</em></td><td>)</td>
@@ -1044,13 +1044,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::resize </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::resize </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a>&#160;</td>
           <td class="paramname"><em>n</em></td><td>)</td>
@@ -1072,12 +1072,12 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <div class="memtemplate">
 template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename P2 , typename policy_type &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::scatter </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::scatter </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1Field.html">Field</a> &amp;&#160;</td>
           <td class="paramname"><em>f</em>, </td>
@@ -1142,12 +1142,12 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , ty
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <div class="memtemplate">
 template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , class PT , typename policy_type &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::scatter </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::scatter </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1Field.html">Field</a> &amp;&#160;</td>
           <td class="paramname"><em>f</em>, </td>
@@ -1186,13 +1186,13 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , cl
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::serialize </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::serialize </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1Archive.html">detail::Archive</a>&lt; <a class="el" href="classippl_1_1ParticleAttrib.html#a13abc54397e7274cef79fca9976ffb82">memory_space</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>ar</em>, </td>
@@ -1224,13 +1224,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::set_name </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::set_name </td>
           <td>(</td>
           <td class="paramtype">const std::string &amp;&#160;</td>
           <td class="paramname"><em>name_</em></td><td>)</td>
@@ -1252,13 +1252,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::size </td>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::size </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1279,10 +1279,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::sum </td>
+          <td class="memname">T <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::sum </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -1298,13 +1298,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::unpack </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::unpack </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1ParticleAttrib.html#a671c0e6e015dd4daaae0c1440441e48d">size_type</a>&#160;</td>
           <td class="paramname"><em>nrecvs</em></td><td>)</td>
@@ -1327,13 +1327,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::buf_m</td>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::buf_m</td>
         </tr>
       </table>
   </td>
@@ -1351,13 +1351,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::dim = 1</td>
+          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::dim = 1</td>
         </tr>
       </table>
   </td>
@@ -1375,13 +1375,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... Properties&gt; </div>
+template&lt;typename T , class... Properties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Properties &gt;::dview_m</td>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleAttrib.html#a7e408e96cb4deeb181cef5dd70252f02">view_type</a> <a class="el" href="classippl_1_1ParticleAttrib.html">ippl::ParticleAttrib</a>&lt; T, Properties &gt;::dview_m</td>
         </tr>
       </table>
   </td>

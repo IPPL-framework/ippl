@@ -129,7 +129,7 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a2c434f48385daf2d47dd1768d0fefcaa"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a2c434f48385daf2d47dd1768d0fefcaa">value_type</a> = <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a></td></tr>
+<tr class="memitem:a2c434f48385daf2d47dd1768d0fefcaa"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a2c434f48385daf2d47dd1768d0fefcaa">value_type</a> = T</td></tr>
 <tr class="memdesc:a2c434f48385daf2d47dd1768d0fefcaa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dummy type definition in order for the <code><a class="el" href="structippl_1_1detail_1_1Expression.html">detail::Expression</a></code> defined operators to work.  <a href="classippl_1_1FEMVector.html#a2c434f48385daf2d47dd1768d0fefcaa">More...</a><br /></td></tr>
 <tr class="separator:a2c434f48385daf2d47dd1768d0fefcaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -138,7 +138,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af458cf9f30805a58f1622c40c0e218c7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#af458cf9f30805a58f1622c40c0e218c7">FEMVector</a> (size_t n, std::vector&lt; size_t &gt; neighbors, std::vector&lt; Kokkos::View&lt; size_t * &gt; &gt; sendIdxs, std::vector&lt; Kokkos::View&lt; size_t * &gt; &gt; recvIdxs)</td></tr>
 <tr class="memdesc:af458cf9f30805a58f1622c40c0e218c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor taking size, neighbors, and halo exchange indices.  <a href="classippl_1_1FEMVector.html#af458cf9f30805a58f1622c40c0e218c7">More...</a><br /></td></tr>
 <tr class="separator:af458cf9f30805a58f1622c40c0e218c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af33c3d9dd5f875473b16e8fcb8699e5f"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#af33c3d9dd5f875473b16e8fcb8699e5f">FEMVector</a> (const <a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &amp;other)</td></tr>
+<tr class="memitem:af33c3d9dd5f875473b16e8fcb8699e5f"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#af33c3d9dd5f875473b16e8fcb8699e5f">FEMVector</a> (const <a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt; &amp;other)</td></tr>
 <tr class="memdesc:af33c3d9dd5f875473b16e8fcb8699e5f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy constructor (shallow).  <a href="classippl_1_1FEMVector.html#af33c3d9dd5f875473b16e8fcb8699e5f">More...</a><br /></td></tr>
 <tr class="separator:af33c3d9dd5f875473b16e8fcb8699e5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3df1cc9631c61810880cf3e34972855e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a3df1cc9631c61810880cf3e34972855e">FEMVector</a> (size_t n)</td></tr>
@@ -150,32 +150,32 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aac63bbecccfa5b737b20dd1fa532ef95"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#aac63bbecccfa5b737b20dd1fa532ef95">accumulateHalo</a> ()</td></tr>
 <tr class="memdesc:aac63bbecccfa5b737b20dd1fa532ef95"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accumulate halo values in neighbor.  <a href="classippl_1_1FEMVector.html#aac63bbecccfa5b737b20dd1fa532ef95">More...</a><br /></td></tr>
 <tr class="separator:aac63bbecccfa5b737b20dd1fa532ef95"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afef9e2438d324eebab4c6bc890209a7d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#afef9e2438d324eebab4c6bc890209a7d">setHalo</a> (<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> setValue)</td></tr>
+<tr class="memitem:afef9e2438d324eebab4c6bc890209a7d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#afef9e2438d324eebab4c6bc890209a7d">setHalo</a> (T setValue)</td></tr>
 <tr class="memdesc:afef9e2438d324eebab4c6bc890209a7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the halo cells to <code>setValue</code>.  <a href="classippl_1_1FEMVector.html#afef9e2438d324eebab4c6bc890209a7d">More...</a><br /></td></tr>
 <tr class="separator:afef9e2438d324eebab4c6bc890209a7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a52a19b16759eebdf7e2aa02e95b26633"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a52a19b16759eebdf7e2aa02e95b26633">operator=</a> (<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> value)</td></tr>
+<tr class="memitem:a52a19b16759eebdf7e2aa02e95b26633"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a52a19b16759eebdf7e2aa02e95b26633">operator=</a> (T value)</td></tr>
 <tr class="memdesc:a52a19b16759eebdf7e2aa02e95b26633"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set all the values of the vector to <code>value</code>.  <a href="classippl_1_1FEMVector.html#a52a19b16759eebdf7e2aa02e95b26633">More...</a><br /></td></tr>
 <tr class="separator:a52a19b16759eebdf7e2aa02e95b26633"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44f51bdc18ff23bf7ca295985de00960"><td class="memTemplParams" colspan="2">template&lt;typename E , size_t N&gt; </td></tr>
-<tr class="memitem:a44f51bdc18ff23bf7ca295985de00960"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a44f51bdc18ff23bf7ca295985de00960">operator=</a> (const <a class="el" href="structippl_1_1detail_1_1Expression.html">detail::Expression</a>&lt; E, N &gt; &amp;expr)</td></tr>
+<tr class="memitem:a44f51bdc18ff23bf7ca295985de00960"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt; &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a44f51bdc18ff23bf7ca295985de00960">operator=</a> (const <a class="el" href="structippl_1_1detail_1_1Expression.html">detail::Expression</a>&lt; E, N &gt; &amp;expr)</td></tr>
 <tr class="memdesc:a44f51bdc18ff23bf7ca295985de00960"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set all the values of this vector to the values of the expression.  <a href="classippl_1_1FEMVector.html#a44f51bdc18ff23bf7ca295985de00960">More...</a><br /></td></tr>
 <tr class="separator:a44f51bdc18ff23bf7ca295985de00960"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27f4fd932425457880c53e76d586d2c6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a27f4fd932425457880c53e76d586d2c6">operator=</a> (const <a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &amp;v)</td></tr>
+<tr class="memitem:a27f4fd932425457880c53e76d586d2c6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a27f4fd932425457880c53e76d586d2c6">operator=</a> (const <a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt; &amp;v)</td></tr>
 <tr class="memdesc:a27f4fd932425457880c53e76d586d2c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy the values from another <code><a class="el" href="classippl_1_1FEMVector.html" title="1D vector used in the context of FEM.">FEMVector</a></code> to this one.  <a href="classippl_1_1FEMVector.html#a27f4fd932425457880c53e76d586d2c6">More...</a><br /></td></tr>
 <tr class="separator:a27f4fd932425457880c53e76d586d2c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2029e07bc696888f3153032a77d723a"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#af2029e07bc696888f3153032a77d723a">operator[]</a> (size_t i) const</td></tr>
+<tr class="memitem:af2029e07bc696888f3153032a77d723a"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#af2029e07bc696888f3153032a77d723a">operator[]</a> (size_t i) const</td></tr>
 <tr class="memdesc:af2029e07bc696888f3153032a77d723a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Subscript operator to get value at position <code>i</code>.  <a href="classippl_1_1FEMVector.html#af2029e07bc696888f3153032a77d723a">More...</a><br /></td></tr>
 <tr class="separator:af2029e07bc696888f3153032a77d723a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a72b940ceb6f2e4d293d4bd65d6f3caf4"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a72b940ceb6f2e4d293d4bd65d6f3caf4">operator()</a> (size_t i) const</td></tr>
+<tr class="memitem:a72b940ceb6f2e4d293d4bd65d6f3caf4"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a72b940ceb6f2e4d293d4bd65d6f3caf4">operator()</a> (size_t i) const</td></tr>
 <tr class="memdesc:a72b940ceb6f2e4d293d4bd65d6f3caf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Subscript operator to get value at position <code>i</code>.  <a href="classippl_1_1FEMVector.html#a72b940ceb6f2e4d293d4bd65d6f3caf4">More...</a><br /></td></tr>
 <tr class="separator:a72b940ceb6f2e4d293d4bd65d6f3caf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a71b0fde79b67f8be8fca38bce6b2af5d"><td class="memItemLeft" align="right" valign="top">const Kokkos::View&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a71b0fde79b67f8be8fca38bce6b2af5d">getView</a> () const</td></tr>
+<tr class="memitem:a71b0fde79b67f8be8fca38bce6b2af5d"><td class="memItemLeft" align="right" valign="top">const Kokkos::View&lt; T * &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a71b0fde79b67f8be8fca38bce6b2af5d">getView</a> () const</td></tr>
 <tr class="memdesc:a71b0fde79b67f8be8fca38bce6b2af5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get underlying data view.  <a href="classippl_1_1FEMVector.html#a71b0fde79b67f8be8fca38bce6b2af5d">More...</a><br /></td></tr>
 <tr class="separator:a71b0fde79b67f8be8fca38bce6b2af5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef3fc24ccfabacc43ca86d72ccea0d9b"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#aef3fc24ccfabacc43ca86d72ccea0d9b">size</a> () const</td></tr>
 <tr class="memdesc:aef3fc24ccfabacc43ca86d72ccea0d9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the size (number of elements) of the vector.  <a href="classippl_1_1FEMVector.html#aef3fc24ccfabacc43ca86d72ccea0d9b">More...</a><br /></td></tr>
 <tr class="separator:aef3fc24ccfabacc43ca86d72ccea0d9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd820ec824fc0744b581769201efe86a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#afd820ec824fc0744b581769201efe86a">deepCopy</a> () const</td></tr>
+<tr class="memitem:afd820ec824fc0744b581769201efe86a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#afd820ec824fc0744b581769201efe86a">deepCopy</a> () const</td></tr>
 <tr class="memdesc:afd820ec824fc0744b581769201efe86a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a deep copy, where all the information of this vector is copied to a new one.  <a href="classippl_1_1FEMVector.html#afd820ec824fc0744b581769201efe86a">More...</a><br /></td></tr>
 <tr class="separator:afd820ec824fc0744b581769201efe86a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a3b428be4cc6deee63dbee306f4e265"><td class="memTemplParams" colspan="2">template&lt;typename K &gt; </td></tr>
@@ -204,7 +204,7 @@ Static Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a80e2dc0b274c86f07bf43a8242c0aa41"><td class="memItemLeft" align="right" valign="top">Kokkos::View&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a80e2dc0b274c86f07bf43a8242c0aa41">data_m</a></td></tr>
+<tr class="memitem:a80e2dc0b274c86f07bf43a8242c0aa41"><td class="memItemLeft" align="right" valign="top">Kokkos::View&lt; T * &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a80e2dc0b274c86f07bf43a8242c0aa41">data_m</a></td></tr>
 <tr class="memdesc:a80e2dc0b274c86f07bf43a8242c0aa41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Data this object is storing.  <a href="classippl_1_1FEMVector.html#a80e2dc0b274c86f07bf43a8242c0aa41">More...</a><br /></td></tr>
 <tr class="separator:a80e2dc0b274c86f07bf43a8242c0aa41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0eafdceba52f1c1a0d522a9862f05a86"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="structippl_1_1FEMVector_1_1BoundaryInfo.html">BoundaryInfo</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMVector.html#a0eafdceba52f1c1a0d522a9862f05a86">boundaryInfo_m</a></td></tr>
@@ -212,7 +212,7 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a0eafdceba52f1c1a0d522a9862f05a86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&gt;<br />
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename T&gt;<br />
 class ippl::FEMVector&lt; T &gt;</div><p >1D vector used in the context of FEM. </p>
 <p >This class represents a 1D vector which stores elements of type <code>T</code> and provides functionalities to handle halo cells and their exchanges. It can conceptually be though of being a mathemtical vector, and to this extend is used during fem to represent the vectors \(x\), \(b\) when solving the linear system \(Ax = b\).</p>
 <p >We use this instead of an <code><a class="el" href="classippl_1_1Field.html">ippl::Field</a></code>, because for basis functions which have DoFs at non-vertex positions a representation as a field is not easily possible.</p>
@@ -229,10 +229,10 @@ class ippl::FEMVector&lt; T &gt;</div><p >1D vector used in the context of FEM. 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::value_type =  <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a></td>
+          <td class="memname">using <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::value_type =  T</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -249,10 +249,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::FEMVector </td>
+          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::FEMVector </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
           <td class="paramname"><em>n</em>, </td>
@@ -303,12 +303,12 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::FEMVector </td>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::FEMVector </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt; &amp;&#160;</td>
           <td class="paramname"><em>other</em></td><td>)</td>
           <td></td>
         </tr>
@@ -332,10 +332,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::FEMVector </td>
+          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::FEMVector </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
           <td class="paramname"><em>n</em></td><td>)</td>
@@ -356,10 +356,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::accumulateHalo</td>
+          <td class="memname">void <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::accumulateHalo</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -375,10 +375,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::deepCopy</td>
+          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::deepCopy</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -395,10 +395,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::fillHalo</td>
+          <td class="memname">void <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::fillHalo</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -414,10 +414,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">const Kokkos::View&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> * &gt; &amp; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::getView</td>
+          <td class="memname">const Kokkos::View&lt; T * &gt; &amp; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::getView</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -433,10 +433,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::operator() </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION T <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::operator() </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
           <td class="paramname"><em>i</em></td><td>)</td>
@@ -462,12 +462,12 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
 <div class="memtemplate">
 template&lt;typename E , size_t N&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &amp; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::operator= </td>
+          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt; &amp; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::operator= </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="structippl_1_1detail_1_1Expression.html">detail::Expression</a>&lt; E, N &gt; &amp;&#160;</td>
           <td class="paramname"><em>expr</em></td><td>)</td>
@@ -494,12 +494,12 @@ template&lt;typename E , size_t N&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &amp; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::operator= </td>
+          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt; &amp; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::operator= </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt; &amp;&#160;</td>
           <td class="paramname"><em>v</em></td><td>)</td>
           <td></td>
         </tr>
@@ -523,12 +523,12 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; &amp; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::operator= </td>
+          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt; &amp; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::operator= </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td>
+          <td class="paramtype">T&#160;</td>
           <td class="paramname"><em>value</em></td><td>)</td>
           <td></td>
         </tr>
@@ -552,10 +552,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::operator[] </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION T <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::operator[] </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
           <td class="paramname"><em>i</em></td><td>)</td>
@@ -581,10 +581,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::pack </td>
+          <td class="memname">void <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::pack </td>
           <td>(</td>
           <td class="paramtype">const Kokkos::View&lt; size_t * &gt; &amp;&#160;</td>
           <td class="paramname"><em>idxStore</em></td><td>)</td>
@@ -610,12 +610,12 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::setHalo </td>
+          <td class="memname">void <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::setHalo </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td>
+          <td class="paramtype">T&#160;</td>
           <td class="paramname"><em>setValue</em></td><td>)</td>
           <td></td>
         </tr>
@@ -638,10 +638,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">size_t <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::size</td>
+          <td class="memname">size_t <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::size</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -656,12 +656,12 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
 <div class="memtemplate">
 template&lt;typename K &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; K &gt; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::skeletonCopy</td>
+          <td class="memname"><a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; K &gt; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::skeletonCopy</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -684,12 +684,12 @@ template&lt;typename K &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
 <div class="memtemplate">
 template&lt;typename Op &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::unpack </td>
+          <td class="memname">void <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::unpack </td>
           <td>(</td>
           <td class="paramtype">const Kokkos::View&lt; size_t * &gt; &amp;&#160;</td>
           <td class="paramname"><em>idxStore</em></td><td>)</td>
@@ -722,13 +722,13 @@ template&lt;typename Op &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::shared_ptr&lt;<a class="el" href="structippl_1_1FEMVector_1_1BoundaryInfo.html">BoundaryInfo</a>&gt; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::boundaryInfo_m</td>
+          <td class="memname">std::shared_ptr&lt;<a class="el" href="structippl_1_1FEMVector_1_1BoundaryInfo.html">BoundaryInfo</a>&gt; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::boundaryInfo_m</td>
         </tr>
       </table>
   </td>
@@ -749,13 +749,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Kokkos::View&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>*&gt; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::data_m</td>
+          <td class="memname">Kokkos::View&lt;T*&gt; <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::data_m</td>
         </tr>
       </table>
   </td>
@@ -776,13 +776,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt; </div>
+template&lt;typename T &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;::dim = 1</td>
+          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1FEMVector.html">ippl::FEMVector</a>&lt; T &gt;::dim = 1</td>
         </tr>
       </table>
   </td>

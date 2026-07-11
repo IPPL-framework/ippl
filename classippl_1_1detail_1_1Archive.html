@@ -104,7 +104,7 @@ Collaboration diagram for ippl::detail::Archive&lt; Properties &gt;:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a3ae496f57583256eb083aeddc6028c24"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a3ae496f57583256eb083aeddc6028c24">buffer_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a>&lt; char, 1, Properties... &gt;<a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">::view_type</a></td></tr>
+<tr class="memitem:a3ae496f57583256eb083aeddc6028c24"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a3ae496f57583256eb083aeddc6028c24">buffer_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a>&lt; char, 1, Properties... &gt;::view_type</td></tr>
 <tr class="separator:a3ae496f57583256eb083aeddc6028c24"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd98363e497ce517630ae5341fd209bb"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#acd98363e497ce517630ae5341fd209bb">pointer_type</a> = typename buffer_type::pointer_type</td></tr>
 <tr class="separator:acd98363e497ce517630ae5341fd209bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -113,17 +113,17 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:abddcdf76b0ccb517e03698bf89ed545a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#abddcdf76b0ccb517e03698bf89ed545a">Archive</a> (<a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> size=0)</td></tr>
 <tr class="separator:abddcdf76b0ccb517e03698bf89ed545a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0149ea2797d448d073fdf9092fefd803"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... ViewArgs&gt; </td></tr>
-<tr class="memitem:a0149ea2797d448d073fdf9092fefd803"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a0149ea2797d448d073fdf9092fefd803">serialize</a> (const Kokkos::View&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nsends)</td></tr>
+<tr class="memitem:a0149ea2797d448d073fdf9092fefd803"><td class="memTemplParams" colspan="2">template&lt;typename T , class... ViewArgs&gt; </td></tr>
+<tr class="memitem:a0149ea2797d448d073fdf9092fefd803"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a0149ea2797d448d073fdf9092fefd803">serialize</a> (const Kokkos::View&lt; T *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nsends)</td></tr>
 <tr class="separator:a0149ea2797d448d073fdf9092fefd803"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1ed8af6da9c86743cbef15b6aa9a911f"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </td></tr>
-<tr class="memitem:a1ed8af6da9c86743cbef15b6aa9a911f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a1ed8af6da9c86743cbef15b6aa9a911f">serialize</a> (const Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nsends)</td></tr>
+<tr class="memitem:a1ed8af6da9c86743cbef15b6aa9a911f"><td class="memTemplParams" colspan="2">template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </td></tr>
+<tr class="memitem:a1ed8af6da9c86743cbef15b6aa9a911f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a1ed8af6da9c86743cbef15b6aa9a911f">serialize</a> (const Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nsends)</td></tr>
 <tr class="separator:a1ed8af6da9c86743cbef15b6aa9a911f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a47de1f8edec65ea856f7bfaa57c8daf8"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... ViewArgs&gt; </td></tr>
-<tr class="memitem:a47de1f8edec65ea856f7bfaa57c8daf8"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a47de1f8edec65ea856f7bfaa57c8daf8">deserialize</a> (Kokkos::View&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nrecvs)</td></tr>
+<tr class="memitem:a47de1f8edec65ea856f7bfaa57c8daf8"><td class="memTemplParams" colspan="2">template&lt;typename T , class... ViewArgs&gt; </td></tr>
+<tr class="memitem:a47de1f8edec65ea856f7bfaa57c8daf8"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a47de1f8edec65ea856f7bfaa57c8daf8">deserialize</a> (Kokkos::View&lt; T *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nrecvs)</td></tr>
 <tr class="separator:a47de1f8edec65ea856f7bfaa57c8daf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af1b2e7a0b88f9ac4ff7c0965dfe2fd1a"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </td></tr>
-<tr class="memitem:af1b2e7a0b88f9ac4ff7c0965dfe2fd1a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#af1b2e7a0b88f9ac4ff7c0965dfe2fd1a">deserialize</a> (Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nrecvs)</td></tr>
+<tr class="memitem:af1b2e7a0b88f9ac4ff7c0965dfe2fd1a"><td class="memTemplParams" colspan="2">template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </td></tr>
+<tr class="memitem:af1b2e7a0b88f9ac4ff7c0965dfe2fd1a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#af1b2e7a0b88f9ac4ff7c0965dfe2fd1a">deserialize</a> (Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nrecvs)</td></tr>
 <tr class="separator:af1b2e7a0b88f9ac4ff7c0965dfe2fd1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2fa4a3d5d0fb0d97be551a10fff4838"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1detail_1_1Archive.html#acd98363e497ce517630ae5341fd209bb">pointer_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#ae2fa4a3d5d0fb0d97be551a10fff4838">getBuffer</a> ()</td></tr>
 <tr class="separator:ae2fa4a3d5d0fb0d97be551a10fff4838"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -164,7 +164,7 @@ Private Attributes</h2></td></tr>
 template&lt;class... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::buffer_type =  typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a>&lt;char, 1, Properties...&gt;<a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">::view_type</a></td>
+          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::buffer_type =  typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a>&lt;char, 1, Properties...&gt;::view_type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -244,12 +244,12 @@ template&lt;class... Properties&gt; </div>
 <div class="memtemplate">
 template&lt;class... Properties&gt; </div>
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... ViewArgs&gt; </div>
+template&lt;typename T , class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::deserialize </td>
           <td>(</td>
-          <td class="paramtype">Kokkos::View&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> *, ViewArgs... &gt; &amp;&#160;</td>
+          <td class="paramtype">Kokkos::View&lt; T *, ViewArgs... &gt; &amp;&#160;</td>
           <td class="paramname"><em>view</em>, </td>
         </tr>
         <tr>
@@ -282,12 +282,12 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memtemplate">
 template&lt;class... Properties&gt; </div>
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::deserialize </td>
           <td>(</td>
-          <td class="paramtype">Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; *, ViewArgs... &gt; &amp;&#160;</td>
+          <td class="paramtype">Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; *, ViewArgs... &gt; &amp;&#160;</td>
           <td class="paramname"><em>view</em>, </td>
         </tr>
         <tr>
@@ -515,12 +515,12 @@ template&lt;class... Properties&gt; </div>
 <div class="memtemplate">
 template&lt;class... Properties&gt; </div>
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , class... ViewArgs&gt; </div>
+template&lt;typename T , class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::serialize </td>
           <td>(</td>
-          <td class="paramtype">const Kokkos::View&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> *, ViewArgs... &gt; &amp;&#160;</td>
+          <td class="paramtype">const Kokkos::View&lt; T *, ViewArgs... &gt; &amp;&#160;</td>
           <td class="paramname"><em>view</em>, </td>
         </tr>
         <tr>
@@ -553,12 +553,12 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memtemplate">
 template&lt;class... Properties&gt; </div>
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class... ViewArgs&gt; </div>
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::serialize </td>
           <td>(</td>
-          <td class="paramtype">const Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; *, ViewArgs... &gt; &amp;&#160;</td>
+          <td class="paramtype">const Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; *, ViewArgs... &gt; &amp;&#160;</td>
           <td class="paramname"><em>view</em>, </td>
         </tr>
         <tr>

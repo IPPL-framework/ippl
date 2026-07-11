@@ -113,7 +113,7 @@ Collaboration diagram for ippl::detail::SinkBC&lt; T, Dim, ViewType &gt;:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:abff6c0d3d65d5e71c79089749d640fac"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1SinkBC.html#abff6c0d3d65d5e71c79089749d640fac">value_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ParticleBC.html">ParticleBC</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt;::value_type</td></tr>
+<tr class="memitem:abff6c0d3d65d5e71c79089749d640fac"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1SinkBC.html#abff6c0d3d65d5e71c79089749d640fac">value_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ParticleBC.html">ParticleBC</a>&lt; T, Dim, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt;::value_type</td></tr>
 <tr class="separator:abff6c0d3d65d5e71c79089749d640fac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_types_structippl_1_1detail_1_1ParticleBC"><td colspan="2" onclick="javascript:toggleInherit('pub_types_structippl_1_1detail_1_1ParticleBC')"><img src="closed.png" alt="-"/>&#160;Public Types inherited from <a class="el" href="structippl_1_1detail_1_1ParticleBC.html">ippl::detail::ParticleBC&lt; T, Dim, ViewType &gt;</a></td></tr>
 <tr class="memitem:aac7b7cbd00176695857cb0f1228e4920 inherit pub_types_structippl_1_1detail_1_1ParticleBC"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1ParticleBC.html#aac7b7cbd00176695857cb0f1228e4920">value_type</a> = typename ViewType::value_type::value_type</td></tr>
@@ -123,7 +123,7 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a3b218d52d02c0109adb86cf168268504"><td class="memItemLeft" align="right" valign="top">KOKKOS_DEFAULTED_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1SinkBC.html#a3b218d52d02c0109adb86cf168268504">SinkBC</a> ()=default</td></tr>
 <tr class="separator:a3b218d52d02c0109adb86cf168268504"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a274832cab647bfa0190683cfad4424ce"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1SinkBC.html#a274832cab647bfa0190683cfad4424ce">SinkBC</a> (const <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &amp;view, const <a class="el" href="classippl_1_1NDRegion.html">NDRegion</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;nr, const unsigned &amp;dim, const bool &amp;<a class="el" href="namespaceippl_1_1detail.html#af5cb3f4133091465784b612237769df9">isUpper</a>)</td></tr>
+<tr class="memitem:a274832cab647bfa0190683cfad4424ce"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1SinkBC.html#a274832cab647bfa0190683cfad4424ce">SinkBC</a> (const <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &amp;view, const <a class="el" href="classippl_1_1NDRegion.html">NDRegion</a>&lt; T, Dim &gt; &amp;nr, const unsigned &amp;dim, const bool &amp;<a class="el" href="namespaceippl_1_1detail.html#af5cb3f4133091465784b612237769df9">isUpper</a>)</td></tr>
 <tr class="separator:a274832cab647bfa0190683cfad4424ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c4f07a9b7763ab6af36250851368003"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1SinkBC.html#a4c4f07a9b7763ab6af36250851368003">operator()</a> (const size_t &amp;i) const</td></tr>
 <tr class="separator:a4c4f07a9b7763ab6af36250851368003"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -132,7 +132,7 @@ Public Member Functions</h2></td></tr>
 <tr class="inherit_header pub_methods_structippl_1_1detail_1_1ParticleBC"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_structippl_1_1detail_1_1ParticleBC')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="structippl_1_1detail_1_1ParticleBC.html">ippl::detail::ParticleBC&lt; T, Dim, ViewType &gt;</a></td></tr>
 <tr class="memitem:acfd06737fd9089fcdb449179fa157722 inherit pub_methods_structippl_1_1detail_1_1ParticleBC"><td class="memItemLeft" align="right" valign="top">KOKKOS_DEFAULTED_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1ParticleBC.html#acfd06737fd9089fcdb449179fa157722">ParticleBC</a> ()=default</td></tr>
 <tr class="separator:acfd06737fd9089fcdb449179fa157722 inherit pub_methods_structippl_1_1detail_1_1ParticleBC"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1516b469014b44e64a39934c876f9547 inherit pub_methods_structippl_1_1detail_1_1ParticleBC"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1ParticleBC.html#a1516b469014b44e64a39934c876f9547">ParticleBC</a> (const <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &amp;view, const <a class="el" href="classippl_1_1NDRegion.html">NDRegion</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;nr, const unsigned &amp;dim, const bool &amp;<a class="el" href="namespaceippl_1_1detail.html#af5cb3f4133091465784b612237769df9">isUpper</a>)</td></tr>
+<tr class="memitem:a1516b469014b44e64a39934c876f9547 inherit pub_methods_structippl_1_1detail_1_1ParticleBC"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1ParticleBC.html#a1516b469014b44e64a39934c876f9547">ParticleBC</a> (const <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &amp;view, const <a class="el" href="classippl_1_1NDRegion.html">NDRegion</a>&lt; T, Dim &gt; &amp;nr, const unsigned &amp;dim, const bool &amp;<a class="el" href="namespaceippl_1_1detail.html#af5cb3f4133091465784b612237769df9">isUpper</a>)</td></tr>
 <tr class="separator:a1516b469014b44e64a39934c876f9547 inherit pub_methods_structippl_1_1detail_1_1ParticleBC"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a15d3d184b67a00125ccdda2c5cb222 inherit pub_methods_structippl_1_1detail_1_1ParticleBC"><td class="memItemLeft" align="right" valign="top">KOKKOS_DEFAULTED_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1ParticleBC.html#a2a15d3d184b67a00125ccdda2c5cb222">~ParticleBC</a> ()=default</td></tr>
 <tr class="separator:a2a15d3d184b67a00125ccdda2c5cb222 inherit pub_methods_structippl_1_1detail_1_1ParticleBC"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -168,10 +168,10 @@ Additional Inherited Members</h2></td></tr>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="structippl_1_1detail_1_1SinkBC.html">ippl::detail::SinkBC</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt;::value_type =  typename <a class="el" href="structippl_1_1detail_1_1ParticleBC.html">ParticleBC</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a>&gt;::value_type</td>
+          <td class="memname">using <a class="el" href="structippl_1_1detail_1_1SinkBC.html">ippl::detail::SinkBC</a>&lt; T, Dim, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt;::value_type =  typename <a class="el" href="structippl_1_1detail_1_1ParticleBC.html">ParticleBC</a>&lt;T, Dim, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a>&gt;::value_type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -185,13 +185,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_DEFAULTED_FUNCTION <a class="el" href="structippl_1_1detail_1_1SinkBC.html">ippl::detail::SinkBC</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt;::SinkBC </td>
+          <td class="memname">KOKKOS_DEFAULTED_FUNCTION <a class="el" href="structippl_1_1detail_1_1SinkBC.html">ippl::detail::SinkBC</a>&lt; T, Dim, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt;::SinkBC </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -212,13 +212,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="structippl_1_1detail_1_1SinkBC.html">ippl::detail::SinkBC</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt;::SinkBC </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="structippl_1_1detail_1_1SinkBC.html">ippl::detail::SinkBC</a>&lt; T, Dim, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt;::SinkBC </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &amp;&#160;</td>
           <td class="paramname"><em>view</em>, </td>
@@ -226,7 +226,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1NDRegion.html">NDRegion</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1NDRegion.html">NDRegion</a>&lt; T, Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>nr</em>, </td>
         </tr>
         <tr>
@@ -262,13 +262,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_DEFAULTED_FUNCTION <a class="el" href="structippl_1_1detail_1_1SinkBC.html">ippl::detail::SinkBC</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt;::~<a class="el" href="structippl_1_1detail_1_1SinkBC.html">SinkBC</a> </td>
+          <td class="memname">KOKKOS_DEFAULTED_FUNCTION <a class="el" href="structippl_1_1detail_1_1SinkBC.html">ippl::detail::SinkBC</a>&lt; T, Dim, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt;::~<a class="el" href="structippl_1_1detail_1_1SinkBC.html">SinkBC</a> </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -290,13 +290,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION void <a class="el" href="structippl_1_1detail_1_1SinkBC.html">ippl::detail::SinkBC</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt;::operator() </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION void <a class="el" href="structippl_1_1detail_1_1SinkBC.html">ippl::detail::SinkBC</a>&lt; T, Dim, <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a> &gt;::operator() </td>
           <td>(</td>
           <td class="paramtype">const size_t &amp;&#160;</td>
           <td class="paramname"><em>i</em></td><td>)</td>

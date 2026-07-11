@@ -106,8 +106,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a75cbf7f34eff75a28828218a6c5e932b"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structsecond__order__abc__edge.html#a75cbf7f34eff75a28828218a6c5e932b">second_order_abc_edge</a> (<a class="el" href="classippl_1_1Vector.html">ippl::Vector</a>&lt; <a class="el" href="structsecond__order__abc__edge.html#a32c0c484c6c0d5196e7fc4964e351346">scalar</a>, 3 &gt; hr, <a class="el" href="structsecond__order__abc__edge.html#a32c0c484c6c0d5196e7fc4964e351346">scalar</a> dt)</td></tr>
 <tr class="memdesc:a75cbf7f34eff75a28828218a6c5e932b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for the second-order ABC edge.  <a href="structsecond__order__abc__edge.html#a75cbf7f34eff75a28828218a6c5e932b">More...</a><br /></td></tr>
 <tr class="separator:a75cbf7f34eff75a28828218a6c5e932b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4f13792e9bd9337b9cd16cc5c41004a1"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> , typename Coords &gt; </td></tr>
-<tr class="memitem:a4f13792e9bd9337b9cd16cc5c41004a1"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structsecond__order__abc__edge.html#a4f13792e9bd9337b9cd16cc5c41004a1">operator()</a> (const <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> &amp;A_n, const <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> &amp;A_nm1, const <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> &amp;A_np1, const Coords &amp;c) const -&gt; typename view_type::value_type</td></tr>
+<tr class="memitem:a4f13792e9bd9337b9cd16cc5c41004a1"><td class="memTemplParams" colspan="2">template&lt;typename view_type , typename Coords &gt; </td></tr>
+<tr class="memitem:a4f13792e9bd9337b9cd16cc5c41004a1"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structsecond__order__abc__edge.html#a4f13792e9bd9337b9cd16cc5c41004a1">operator()</a> (const view_type &amp;A_n, const view_type &amp;A_nm1, const view_type &amp;A_np1, const Coords &amp;c) const -&gt; typename view_type::value_type</td></tr>
 <tr class="memdesc:a4f13792e9bd9337b9cd16cc5c41004a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies the second-order ABC to the edge of the field.  <a href="structsecond__order__abc__edge.html#a4f13792e9bd9337b9cd16cc5c41004a1">More...</a><br /></td></tr>
 <tr class="separator:a4f13792e9bd9337b9cd16cc5c41004a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a37aca0ab886fa333d1f535462bd0b0e5"><td class="memTemplParams" colspan="2">template&lt;typename value_type &gt; </td></tr>
@@ -338,7 +338,7 @@ template&lt;typename value_type &gt; </div>
 <div class="memtemplate">
 template&lt;typename _scalar , unsigned edge_axis, unsigned normal_axis1, unsigned normal_axis2, bool na1_zero, bool na2_zero&gt; </div>
 <div class="memtemplate">
-template&lt;typename <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> , typename Coords &gt; </div>
+template&lt;typename view_type , typename Coords &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -346,19 +346,19 @@ template&lt;typename <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c
         <tr>
           <td class="memname">KOKKOS_INLINE_FUNCTION auto <a class="el" href="structsecond__order__abc__edge.html">second_order_abc_edge</a>&lt; _scalar, edge_axis, normal_axis1, normal_axis2, na1_zero, na2_zero &gt;::operator() </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> &amp;&#160;</td>
+          <td class="paramtype">const view_type &amp;&#160;</td>
           <td class="paramname"><em>A_n</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> &amp;&#160;</td>
+          <td class="paramtype">const view_type &amp;&#160;</td>
           <td class="paramname"><em>A_nm1</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="AlpineManager_8h.html#abac6b71b6ea68a6c8bb864e8ebd5fe62">view_type</a> &amp;&#160;</td>
+          <td class="paramtype">const view_type &amp;&#160;</td>
           <td class="paramname"><em>A_np1</em>, </td>
         </tr>
         <tr>

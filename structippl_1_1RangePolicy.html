@@ -100,11 +100,11 @@ Collaboration diagram for ippl::RangePolicy&lt; Dim, PolicyArgs &gt;:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a7c216d6f86e98bb5bcb88f5305fd4acb"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1RangePolicy.html#a7c216d6f86e98bb5bcb88f5305fd4acb">policy_type</a> = Kokkos::MDRangePolicy&lt; PolicyArgs..., Kokkos::Rank&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &gt;</td></tr>
+<tr class="memitem:a7c216d6f86e98bb5bcb88f5305fd4acb"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1RangePolicy.html#a7c216d6f86e98bb5bcb88f5305fd4acb">policy_type</a> = Kokkos::MDRangePolicy&lt; PolicyArgs..., Kokkos::Rank&lt; Dim &gt; &gt;</td></tr>
 <tr class="separator:a7c216d6f86e98bb5bcb88f5305fd4acb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acebe72fe9a3ed66692ef306dbc5a9c81"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1RangePolicy.html#acebe72fe9a3ed66692ef306dbc5a9c81">index_type</a> = typename policy_type::array_index_type</td></tr>
 <tr class="separator:acebe72fe9a3ed66692ef306dbc5a9c81"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1ac167308cb0defee103e0cb4eccefc7"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1RangePolicy.html#a1ac167308cb0defee103e0cb4eccefc7">index_array_type</a> = <a class="el" href="classippl_1_1Vector.html">::ippl::Vector</a>&lt; <a class="el" href="structippl_1_1RangePolicy.html#acebe72fe9a3ed66692ef306dbc5a9c81">index_type</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;</td></tr>
+<tr class="memitem:a1ac167308cb0defee103e0cb4eccefc7"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1RangePolicy.html#a1ac167308cb0defee103e0cb4eccefc7">index_array_type</a> = <a class="el" href="classippl_1_1Vector.html">::ippl::Vector</a>&lt; <a class="el" href="structippl_1_1RangePolicy.html#acebe72fe9a3ed66692ef306dbc5a9c81">index_type</a>, Dim &gt;</td></tr>
 <tr class="separator:a1ac167308cb0defee103e0cb4eccefc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -126,7 +126,7 @@ struct ippl::RangePolicy&lt; Dim, PolicyArgs &gt;</div><p >Wrapper type for <a c
 template&lt;unsigned Dim, class... PolicyArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="structippl_1_1RangePolicy.html">ippl::RangePolicy</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, PolicyArgs &gt;::index_array_type =  <a class="el" href="classippl_1_1Vector.html">::ippl::Vector</a>&lt;<a class="el" href="structippl_1_1RangePolicy.html#acebe72fe9a3ed66692ef306dbc5a9c81">index_type</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt;</td>
+          <td class="memname">using <a class="el" href="structippl_1_1RangePolicy.html">ippl::RangePolicy</a>&lt; Dim, PolicyArgs &gt;::index_array_type =  <a class="el" href="classippl_1_1Vector.html">::ippl::Vector</a>&lt;<a class="el" href="structippl_1_1RangePolicy.html#acebe72fe9a3ed66692ef306dbc5a9c81">index_type</a>, Dim&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -142,7 +142,7 @@ template&lt;unsigned Dim, class... PolicyArgs&gt; </div>
 template&lt;unsigned Dim, class... PolicyArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="structippl_1_1RangePolicy.html">ippl::RangePolicy</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, PolicyArgs &gt;::index_type =  typename policy_type::array_index_type</td>
+          <td class="memname">using <a class="el" href="structippl_1_1RangePolicy.html">ippl::RangePolicy</a>&lt; Dim, PolicyArgs &gt;::index_type =  typename policy_type::array_index_type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -158,7 +158,7 @@ template&lt;unsigned Dim, class... PolicyArgs&gt; </div>
 template&lt;unsigned Dim, class... PolicyArgs&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="structippl_1_1RangePolicy.html">ippl::RangePolicy</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, PolicyArgs &gt;::policy_type =  Kokkos::MDRangePolicy&lt;PolicyArgs..., Kokkos::Rank&lt;<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; &gt;</td>
+          <td class="memname">using <a class="el" href="structippl_1_1RangePolicy.html">ippl::RangePolicy</a>&lt; Dim, PolicyArgs &gt;::policy_type =  Kokkos::MDRangePolicy&lt;PolicyArgs..., Kokkos::Rank&lt;Dim&gt; &gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">

@@ -90,11 +90,18 @@ $(function() {
 <p ><sub> <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/"><img src="https://img.shields.io/badge/CI/CD-red.svg" alt="CI/CD" style="pointer-events: none;" class="inline"/> </a> <a href="https://my.cdash.org/index.php?project=IPPL"><img src="https://my.cdash.org/img/cdash.svg" alt="CI/CD CSCS" style="pointer-events: none;" height="20" class="inline"/> </a> <a href="https://en.wikipedia.org/wiki/C%2B%2B20"><img src="https://img.shields.io/badge/c%2B%2B-20-blue.svg" alt="C++ standard" style="pointer-events: none;" class="inline"/> </a> <a href="https://doi.org/10.5281/zenodo.8389192"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.5940225.svg" alt="DOI" style="pointer-events: none;" class="inline"/> </a> <a href="https://github.com/IPPL-framework/ippl/blob/master/LICENSE"><img src="https://img.shields.io/github/license/IPPL-framework/ippl" alt="License" class="inline"/> </a> </sub></p>
 <p ><sub></sub></p>
 <p ><sub>The IPPL (Independent Parallel Particle Layer) library provides performance portable and dimension independent building blocks for scientific simulations requiring particle-mesh methods, with Eulerian (mesh-based) and Lagrangian (particle-based) approaches. IPPL makes use of <a href="https://github.com/kokkos/kokkos">Kokkos</a>, <a href="https://github.com/icl-utk-edu/heffte">HeFFTe</a>, and MPI (Message Passing Interface) to deliver a portable, massively parallel toolkit for particle-mesh methods. IPPL supports simulations in one to six dimensions, mixed precision, and asynchronous execution in different execution spaces (e.g. CPUs and GPUs).</sub></p>
-<p ><sub><b>Installation</b> | <b>Contributions</b> | <b>CI/CD</b> | <b>Citing IPPL</b> | <b>SLURM Job scripts</b> | <b>Profiling</b></sub></p>
+<p ><sub><b>Resources</b> | <b>Contributions</b> | <b>CI/CD</b> | <b>Citing IPPL</b> |</sub></p>
 <p ><sub></sub></p>
 <h1><a class="anchor" id="autotoc_md0"></a>
-Installation</h1>
-<p ><sub>We compiled installation instructions for many HPC systems.</sub></p>
+Resources</h1>
+<p ><sub> The <a href="https://ippl-framework.github.io/Manual/">IPPL Manual</a> contains comprehensive documentation, including:</p><ul>
+<li><b>Installation Instructions:</b> Guides for building locally and on various HPC systems.</li>
+<li><b>Framework Overview:</b> A broad look at IPPL's core functionalities.</li>
+<li><b>Theory &amp; Examples:</b> Underlying theoretical concepts alongside practical code examples.</li>
+</ul>
+<p></sub></p>
+<p ><sub>For detailed API, class, and file documentation, please visit our <a href="https://ippl-framework.github.io/ippl/">Doxygen site</a>.</sub></p>
+<p ><sub><b>Feedback &amp; Support</b> If you find any issues with the manual, please report them in the <a href="https://github.com/IPPL-framework/Manual">Manual's GitHub repository</a>.</sub></p>
 <p ><sub></sub></p>
 <h1><a class="anchor" id="autotoc_md1"></a>
 Contributions</h1>
@@ -102,17 +109,13 @@ Contributions</h1>
 <p ><sub>For larger projects we recommend to fork the main repository and then submit a pull request from it. More information regarding github workflow for forks can be found in this <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks">page</a> and how to submit a pull request from a fork can be found <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork">here</a>. Please follow the coding guidelines as mentioned in this <a href="https://github.com/IPPL-framework/ippl/blob/master/WORKFLOW.md">page</a>.</sub></p>
 <p ><sub>You can add an upstream to be able to get all the latest changes from the master. For example, if you are working with a fork of the main repository, you can add the upstream by: </p><div class="fragment"><div class="line">$ git remote add upstream git@github.com:IPPL-framework/ippl.git</div>
 </div><!-- fragment --><p> You can then easily pull by typing </p><div class="fragment"><div class="line">$ git pull upstream master</div>
-</div><!-- fragment --><p> All the contributions (except for bug fixes) need to be accompanied with a unit test. For more information on unit tests in IPPL please take a look at this <a href="https://github.com/IPPL-framework/ippl/blob/master/UNIT_TESTS.md">page</a>.</sub></p>
-<p ><sub></sub></p>
+</div><!-- fragment --><p></sub></p>
+<p ><sub>Please refer to the <a href="https://ippl-framework.github.io/Manual/">IPPL Manual</a> for further details regarding contributions, fromatting, unit tests, etc. </sub></p>
 <h1><a class="anchor" id="autotoc_md2"></a>
 CI/CD and PR testing</h1>
 <p ><sub>Please see <a href="https://ippl-bc4558.pages.jsc.fz-juelich.de/">Julich CI results</a> and CSCS PR testing for further information.</sub></p>
 <p ><sub></sub></p>
 <h1><a class="anchor" id="autotoc_md3"></a>
-Code Formatting</h1>
-<p ><sub>Please see <a class="el" href="md_extras_CodeFormattingSetup.html">Code Formatting Setup</a> for further information and instructions.</sub></p>
-<p ><sub></sub></p>
-<h1><a class="anchor" id="autotoc_md4"></a>
 Citing IPPL</h1>
 <p ><sub> </p><div class="fragment"><div class="line">@inproceedings{muralikrishnan2024scaling,</div>
 <div class="line">  title={Scaling and performance portability of the particle-in-cell scheme for plasma physics applications</div>
@@ -124,176 +127,7 @@ Citing IPPL</h1>
 <div class="line">  year={2024},</div>
 <div class="line">  organization={SIAM}</div>
 <div class="line">}</div>
-</div><!-- fragment --><p></sub></p>
-<p ><sub></sub></p>
-<h1><a class="anchor" id="autotoc_md5"></a>
-SLURM Job scripts</h1>
-<p ><sub> You can use the following example job scripts to run on the local PSI computing cluster, which uses slurm. More documentation on the local cluster can be found <a href="https://lsm-hpce.gitpages.psi.ch/merlin6/introduction.html">here</a> (need to be in the PSI network to access).</sub></p>
-<p ><sub></sub></p>
-<h2><a class="anchor" id="autotoc_md6"></a>
-Merlin CPU (MPI + OpenMP)</h2>
-<p ><sub>For example, to run a job on 1 MPI node, with 44 OpenMP threads: </p><div class="fragment"><div class="line">#!/bin/bash</div>
-<div class="line">#SBATCH --partition=hourly      # Using &#39;hourly&#39; will grant higher priority</div>
-<div class="line">#SBATCH --nodes=1               # No. of nodes</div>
-<div class="line">#SBATCH --ntasks-per-node=1     # No. of MPI ranks per node. Merlin CPU nodes have 44 cores</div>
-<div class="line">#SBATCH --cpus-per-task=44      # No. of OMP threads</div>
-<div class="line">#SBATCH --time=00:05:00         # Define max time job will run (e.g. here 5 mins)</div>
-<div class="line">#SBATCH --hint=nomultithread    # Without hyperthreading</div>
-<div class="line">##SBATCH --exclusive            # The allocations will be exclusive if turned on (remove extra hashtag to turn on)</div>
-<div class="line"> </div>
-<div class="line">#SBATCH --output=&lt;output_file_name&gt;.out  # Name of output file</div>
-<div class="line">#SBATCH --error=&lt;error_file_name&gt;.err    # Name of error file</div>
-<div class="line"> </div>
-<div class="line">export OMP_NUM_THREADS=44</div>
-<div class="line">export OMP_PROC_BIND=spread</div>
-<div class="line">export OMP_PLACES=threads</div>
-<div class="line"> </div>
-<div class="line"># need to pass the --cpus-per-task option to srun otherwise will not use more than 1 core per task</div>
-<div class="line"># (see https://lsm-hpce.gitpages.psi.ch/merlin6/known-problems.html#sbatch-using-one-core-despite-setting--ccpus-per-task)</div>
-<div class="line"> </div>
-<div class="line">srun --cpus-per-task=44 ./&lt;your_executable&gt; &lt;args&gt;</div>
-</div><!-- fragment --><p></sub></p>
-<p ><sub></sub></p>
-<h2><a class="anchor" id="autotoc_md7"></a>
-Gwendolen GPU</h2>
-<p ><sub>For example, to run a job on 4 GPUs (max on Gwendolen is 8 GPUs, which are all on a single node): </p><div class="fragment"><div class="line">#!/bin/bash</div>
-<div class="line">#SBATCH --time=00:05:00         # Define max time job will run (e.g. here 5 mins)</div>
-<div class="line">#SBATCH --nodes=1               # No. of nodes (there is only 1 node on Gwendolen)</div>
-<div class="line">#SBATCH --ntasks=4              # No. of tasks (max. 8)</div>
-<div class="line">#SBATCH --clusters=gmerlin6     # Specify that we are running on the GPU cluster</div>
-<div class="line">#SBATCH --partition=gwendolen   # Running on the Gwendolen partition of the GPU cluster</div>
-<div class="line">#SBATCH --account=gwendolen</div>
-<div class="line">##SBATCH --exclusive            # The allocations will be exclusive if turned on (remove extra hashtag to turn on)</div>
-<div class="line">#SBATCH --gpus=4                # No. of GPUs (max. 8)</div>
-<div class="line"> </div>
-<div class="line">#SBATCH --output=&lt;output_file_name&gt;.out  # Name of output file</div>
-<div class="line">#SBATCH --error=&lt;error_file_name&gt;.err    # Name of error file</div>
-<div class="line"> </div>
-<div class="line">srun ./&lt;your_executable&gt; &lt;args&gt; --kokkos-map-device-id-by=mpi_rank</div>
 </div><!-- fragment --><p> </sub></p>
-<h2><a class="anchor" id="autotoc_md8"></a>
-LUMI GPU partition</h2>
-<p ><sub>For example, to run a job on 8 nodes with 8 GPUs each: </p><div class="fragment"><div class="line">#!/bin/bash</div>
-<div class="line">#SBATCH --job-name=TestGaussian</div>
-<div class="line">#SBATCH --error=TestGaussian-%j.error</div>
-<div class="line">#SBATCH --output=TestGaussian-%j.out</div>
-<div class="line">#SBATCH --partition=dev-g  # partition name</div>
-<div class="line">#SBATCH --time=00:10:00</div>
-<div class="line">#SBATCH --nodes 8</div>
-<div class="line">#SBATCH --ntasks-per-node=8     # 8 MPI ranks per node, 64 total (8x8)</div>
-<div class="line">#SBATCH --gpus-per-node=8       # Allocate one gpu per MPI rank per node</div>
-<div class="line">#SBATCH --account=project_xxx</div>
-<div class="line">#SBATCH --hint=nomultithread</div>
-<div class="line">module load  LUMI/24.03 partition/G cpeAMD rocm buildtools/24.03</div>
-<div class="line">CPU_BIND=&quot;map_cpu:49,57,17,25,1,9,33,41&quot;</div>
-<div class="line">export MPICH_GPU_SUPPORT_ENABLED=1</div>
-<div class="line">ulimit -s unlimited</div>
-<div class="line">export EXE_DIR=/users/adelmann/sandbox/vico-paper/build/test/solver</div>
-<div class="line">cat &lt;&lt; EOF &gt; select_gpu</div>
-<div class="line">#!/bin/bash</div>
-<div class="line">export ROCR_VISIBLE_DEVICES=\$SLURM_LOCALID</div>
-<div class="line">exec \$*</div>
-<div class="line">EOF</div>
-<div class="line">chmod +x ./select_gpu</div>
-<div class="line">srun ./select_gpu ${EXE_DIR}/TestGaussian 1024 1024 1024 pencils a2av no-reorder HOCKNEY --info 5</div>
-<div class="line">rm -rf ./select_gpu</div>
-</div><!-- fragment --><p></sub></p>
-<p ><sub></sub></p>
-<h1><a class="anchor" id="autotoc_md9"></a>
-Profiling</h1>
-<p ><sub> </sub></p>
-<h2><a class="anchor" id="autotoc_md10"></a>
-MPI Calls</h2>
-<p ><sub>You can use the mpiP tool (<a href="https://github.com/LLNL/mpiP">https://github.com/LLNL/mpiP</a>) to get statistics about the MPI calls in IPPL.</sub></p>
-<p ><sub>To use it, download it from <a href="https://github.com/LLNL/mpiP">Github</a> and follow the instructions to install it. You may run into some issues while installing, here is a list of common issues and the solution:</p><ul>
-<li>On Cray systems "MPI_Init not defined": This I fixed by passing the correct Cray wrappers for the compilers to the configure: <code>./configure CC=cc FC=ftn F77=ftn</code></li>
-<li>If you have an issue with it not recognizing a function symbol in Fortran 77, you need to substitute the line <code>echo "main(){ FF(); return 0; }" &gt; flink.c</code> (line 706) in the file <code>configure.ac</code> by the following line <code>echo "extern void FF(); int main() { FF(); return 0; }" &gt; flink.c</code></li>
-<li>During the <code>make all</code>, if you run into an issue of some Testing file not recognizing mpi.h, then you need to add the following line <code>CXX = CC</code> in the file <code>Testing/Makefile</code>.</li>
-</ul>
-<p></sub></p>
-<p ><sub>If the installation was successful, you should have the library <code>libmpip.so</code> in the mpiP directory.</sub></p>
-<p ><sub>To instument your application with the mpiP library, add the following line to your jobscript (or run it in your command line if you are running locally/on an interactive node): <code>export LD_PRELOAD=$[path to mpip directory]/libmpiP.so</code> To pass any options to mpiP, you can export the variable MPIP with the options you want. For example, if you would like to get a histogram of the data sent by MPI calls (option <code>-y</code>), you would need to add the following line to your jobscript: <code>export MPIP="-y"</code></sub></p>
-<p ><sub>If you application has been correctly instrumented, you will see that mpiP has been found and its version is printed at the top of the standard output. At the end of the standard output, you will get the name of the file containing the MPI statistics: <code>Storing mpiP output in ...</code></sub></p>
-<p ><sub>To get a total amount of bytes moved around by your application, you can use the python script mpiP.py (found in the top level IPPL directory) in the following form: <code>python3 mpiP.py [path/to/directory]</code> where path/to/directory refers to the place where the .mpiP output can be found. This python script will then print out the total amount of Bytes moved by MPI in your application.</sub></p>
-<p ><sub></sub></p>
-<h2><a class="anchor" id="autotoc_md11"></a>
-Profiling on LUMI</h2>
-<p ><sub> </sub></p>
-<h3><a class="anchor" id="autotoc_md12"></a>
-rocprof</h3>
-<p ><sub> Analysis with: <a href="https://ui.perfetto.dev/">https://ui.perfetto.dev/</a></sub></p>
-<p ><sub></p><div class="fragment"><div class="line">#!/bin/bash -l</div>
-<div class="line">#</div>
-<div class="line">#SBATCH --job-name=opalx1</div>
-<div class="line">#SBATCH --error=opalx-%j.error</div>
-<div class="line">#SBATCH --output=opalx-2-%j.out</div>
-<div class="line">#SBATCH --time=00:05:00</div>
-<div class="line">#SBATCH --partition=standard-g</div>
-<div class="line">#SBATCH --nodes 1</div>
-<div class="line">#SBATCH --ntasks-per-core=1</div>
-<div class="line">#SBATCH -c 56 --threads-per-core=1</div>
-<div class="line">#SBATCH --ntasks-per-node=1</div>
-<div class="line">#SBATCH --gpus-per-node=8</div>
-<div class="line">#SBATCH --account=project_465001705 </div>
-<div class="line">#SBATCH --hint=nomultithread</div>
-<div class="line">#SBATCH --hint=exclusive</div>
-<div class="line">CPU_BIND=&quot;map_cpu:49,57,17,25,1,9,33,41&quot;</div>
-<div class="line">export MPICH_GPU_SUPPORT_ENABLED=1</div>
-<div class="line"> </div>
-<div class="line">ulimit -s unlimited</div>
-<div class="line">export EXE_DIR=/users/adelmann/sandbox/opalx/build/src/</div>
-<div class="line">module load cray-python/3.11.7 </div>
-<div class="line">module use /appl/local/containers/test-modules</div>
-<div class="line">module load LUMI/24.03 partition/G cpeAMD rocm/6.1.3 buildtools/24.03</div>
-<div class="line"> </div>
-<div class="line">cat &lt;&lt; EOF &gt; select_gpu</div>
-<div class="line">#!/bin/bash</div>
-<div class="line">export HIP_VISIBLE_DEVICES=\$SLURM_LOCALID</div>
-<div class="line">exec \$*</div>
-<div class="line">EOF</div>
-<div class="line">chmod +x ./select_gpu</div>
-<div class="line">srun ./select_gpu rocprof --hip-trace ${EXE_DIR}/opalx input.in --info 5</div>
-<div class="line">rm -rf ./select_gpu</div>
-</div><!-- fragment --><p></sub></p>
-<p ><sub></sub></p>
-<h3><a class="anchor" id="autotoc_md13"></a>
-omniperf (do not use omnitrace)</h3>
-<p ><sub> doc url: <a href="https://rocm.docs.amd.com/projects/rocprofiler-compute/en/docs-6.2.4/how-to/profile/mode.html">https://rocm.docs.amd.com/projects/rocprofiler-compute/en/docs-6.2.4/how-to/profile/mode.html</a></sub></p>
-<p ><sub></p><div class="fragment"><div class="line">#!/bin/bash -l</div>
-<div class="line">#</div>
-<div class="line">#SBATCH --job-name=opalx1</div>
-<div class="line">#SBATCH --error=opalx-%j.error</div>
-<div class="line">#SBATCH --output=opalx-2-%j.out</div>
-<div class="line">#SBATCH --time=00:05:00</div>
-<div class="line">#SBATCH --partition=standard-g</div>
-<div class="line">#SBATCH --nodes 1</div>
-<div class="line">#SBATCH --ntasks-per-core=1</div>
-<div class="line">#SBATCH -c 56 --threads-per-core=1</div>
-<div class="line">#SBATCH --ntasks-per-node=1</div>
-<div class="line">#SBATCH --gpus-per-node=8</div>
-<div class="line">#SBATCH --account=project_465001705 </div>
-<div class="line">#SBATCH --hint=nomultithread</div>
-<div class="line">#SBATCH --hint=exclusive</div>
-<div class="line">CPU_BIND=&quot;map_cpu:49,57,17,25,1,9,33,41&quot;</div>
-<div class="line">export MPICH_GPU_SUPPORT_ENABLED=1</div>
-<div class="line"> </div>
-<div class="line">ulimit -s unlimited</div>
-<div class="line">export EXE_DIR=/users/adelmann/sandbox/opalx/build/src/</div>
-<div class="line">module load cray-python/3.11.7 </div>
-<div class="line">module use /appl/local/containers/test-modules</div>
-<div class="line">module load LUMI/24.03 partition/G cpeAMD rocm/6.1.3 buildtools/24.03</div>
-<div class="line">module load omniperf</div>
-<div class="line">cat &lt;&lt; EOF &gt; select_gpu</div>
-<div class="line">#!/bin/bash</div>
-<div class="line">#export ROCR_VISIBLE_DEVICES=\$SLURM_LOCALID</div>
-<div class="line">export HIP_VISIBLE_DEVICES=\$SLURM_LOCALID</div>
-<div class="line">exec \$*</div>
-<div class="line">EOF</div>
-<div class="line">chmod +x ./select_gpu</div>
-<div class="line">srun ./select_gpu omniperf profile --name opalx  --roof-only --kernel-names -- ${EXE_DIR}/opalx input.in --info 5</div>
-<div class="line">rm -rf ./select_gpu</div>
-</div><!-- fragment --><p></sub></p>
-<p ><sub>Happy profiling! </sub></p>
 </div></div><!-- PageDoc -->
 </div><!-- contents -->
 <!-- start footer part -->

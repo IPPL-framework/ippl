@@ -115,20 +115,20 @@ Collaboration diagram for ippl::Element&lt; T, Dim, NumVertices &gt;:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:aef97fee3c91b7f1ac40449b5b6276b03"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Element.html#aef97fee3c91b7f1ac40449b5b6276b03">point_t</a></td></tr>
+<tr class="memitem:aef97fee3c91b7f1ac40449b5b6276b03"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Element.html#aef97fee3c91b7f1ac40449b5b6276b03">point_t</a></td></tr>
 <tr class="separator:aef97fee3c91b7f1ac40449b5b6276b03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9252b8db2836c1d038e997ef772fb449"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1Element.html#aef97fee3c91b7f1ac40449b5b6276b03">point_t</a>, NumVertices &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Element.html#a9252b8db2836c1d038e997ef772fb449">vertex_points_t</a></td></tr>
 <tr class="separator:a9252b8db2836c1d038e997ef772fb449"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
-<tr class="memitem:afa8ecf3db00760a55d1e84c2156f5690"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Element.html#afa8ecf3db00760a55d1e84c2156f5690">dim</a> = <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a></td></tr>
+<tr class="memitem:afa8ecf3db00760a55d1e84c2156f5690"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Element.html#afa8ecf3db00760a55d1e84c2156f5690">dim</a> = Dim</td></tr>
 <tr class="separator:afa8ecf3db00760a55d1e84c2156f5690"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f176e2447f6a48a83398250d9288e5e"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Element.html#a2f176e2447f6a48a83398250d9288e5e">numVertices</a> = NumVertices</td></tr>
 <tr class="separator:a2f176e2447f6a48a83398250d9288e5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, unsigned Dim, unsigned NumVertices&gt;<br />
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename T, unsigned Dim, unsigned NumVertices&gt;<br />
 class ippl::Element&lt; T, Dim, NumVertices &gt;</div><p >Base class for all elements. </p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
@@ -145,10 +145,10 @@ class ippl::Element&lt; T, Dim, NumVertices &gt;</div><p >Base class for all ele
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned NumVertices&gt; </div>
+template&lt;typename T , unsigned Dim, unsigned NumVertices&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; <a class="el" href="classippl_1_1Element.html">ippl::Element</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, NumVertices &gt;::point_t</td>
+          <td class="memname">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;T, Dim&gt; <a class="el" href="classippl_1_1Element.html">ippl::Element</a>&lt; T, Dim, NumVertices &gt;::point_t</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -161,10 +161,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned NumVertices&gt; </div>
+template&lt;typename T , unsigned Dim, unsigned NumVertices&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="classippl_1_1Element.html#aef97fee3c91b7f1ac40449b5b6276b03">point_t</a>, NumVertices&gt; <a class="el" href="classippl_1_1Element.html">ippl::Element</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, NumVertices &gt;::vertex_points_t</td>
+          <td class="memname">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="classippl_1_1Element.html#aef97fee3c91b7f1ac40449b5b6276b03">point_t</a>, NumVertices&gt; <a class="el" href="classippl_1_1Element.html">ippl::Element</a>&lt; T, Dim, NumVertices &gt;::vertex_points_t</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -178,13 +178,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned NumVertices&gt; </div>
+template&lt;typename T , unsigned Dim, unsigned NumVertices&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1Element.html">ippl::Element</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, NumVertices &gt;::dim = <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a></td>
+          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1Element.html">ippl::Element</a>&lt; T, Dim, NumVertices &gt;::dim = Dim</td>
         </tr>
       </table>
   </td>
@@ -202,13 +202,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, unsigned NumVertices&gt; </div>
+template&lt;typename T , unsigned Dim, unsigned NumVertices&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1Element.html">ippl::Element</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, NumVertices &gt;::numVertices = NumVertices</td>
+          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1Element.html">ippl::Element</a>&lt; T, Dim, NumVertices &gt;::numVertices = NumVertices</td>
         </tr>
       </table>
   </td>

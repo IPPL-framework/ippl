@@ -100,7 +100,7 @@ Collaboration diagram for ippl::GridPathSegmenter&lt; Dim, T, Rule &gt;:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a691ecc38380c2d7cdb7f4bcbba98f480"><td class="memItemLeft" align="right" valign="top">static KOKKOS_INLINE_FUNCTION Kokkos::Array&lt; <a class="el" href="structippl_1_1Segment.html">Segment</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>+1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1GridPathSegmenter.html#a691ecc38380c2d7cdb7f4bcbba98f480">split</a> (const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;A, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;B, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;origin, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;h)</td></tr>
+<tr class="memitem:a691ecc38380c2d7cdb7f4bcbba98f480"><td class="memItemLeft" align="right" valign="top">static KOKKOS_INLINE_FUNCTION Kokkos::Array&lt; <a class="el" href="structippl_1_1Segment.html">Segment</a>&lt; Dim, T &gt;, Dim+1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1GridPathSegmenter.html#a691ecc38380c2d7cdb7f4bcbba98f480">split</a> (const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; &amp;A, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; &amp;B, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; &amp;origin, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; &amp;h)</td></tr>
 <tr class="separator:a691ecc38380c2d7cdb7f4bcbba98f480"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
@@ -110,33 +110,33 @@ Static Public Member Functions</h2></td></tr>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;unsigned Dim, typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , typename Rule &gt; </div>
+template&lt;unsigned Dim, typename T , typename Rule &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION Kokkos::Array&lt; <a class="el" href="structippl_1_1Segment.html">Segment</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> &gt;, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>+1 &gt; <a class="el" href="structippl_1_1GridPathSegmenter.html">ippl::GridPathSegmenter</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, Rule &gt;::split </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION Kokkos::Array&lt; <a class="el" href="structippl_1_1Segment.html">Segment</a>&lt; Dim, T &gt;, Dim+1 &gt; <a class="el" href="structippl_1_1GridPathSegmenter.html">ippl::GridPathSegmenter</a>&lt; Dim, T, Rule &gt;::split </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>A</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>B</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>origin</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>h</em>&#160;</td>
         </tr>
         <tr>

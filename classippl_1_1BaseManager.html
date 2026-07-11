@@ -97,13 +97,8 @@ Inheritance diagram for ippl::BaseManager:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1BaseManager__inherit__graph.png" border="0" usemap="#aippl_1_1BaseManager_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1BaseManager_inherit__map" id="aippl_1_1BaseManager_inherit__map">
-<area shape="rect" title="A base class for managing simulations using IPPL." alt="" coords="391,5,523,148"/>
-<area shape="rect" href="classippl_1_1PicManager.html" title=" " alt="" coords="252,196,445,529"/>
-<area shape="rect" href="classippl_1_1PicManager.html" title="A template class for managing Particle&#45;in&#45;Cell (PIC) simulations." alt="" coords="469,218,663,507"/>
-<area shape="rect" href="classAlpineManager.html" title=" " alt="" coords="253,577,445,940"/>
-<area shape="rect" href="classBumponTailInstabilityManager.html" title=" " alt="" coords="5,995,228,1255"/>
-<area shape="rect" href="classLandauDampingManager.html" title=" " alt="" coords="253,1025,445,1226"/>
-<area shape="rect" href="classPenningTrapManager.html" title=" " alt="" coords="469,988,639,1263"/>
+<area shape="rect" title="A base class for managing simulations using IPPL." alt="" coords="36,5,168,148"/>
+<area shape="rect" href="classippl_1_1PicManager.html" title="A template class for managing Particle&#45;in&#45;Cell (PIC) simulations." alt="" coords="5,196,199,485"/>
 </map>
 </div>
 <div class="dynheader">
@@ -218,8 +213,6 @@ Public Member Functions</h2></td></tr>
 <p>A method that should be used to execute/advance a step of simulation. </p>
 <p >In a derived class, the user must override this method to implement their time integration method for solving the considered governing equation. </p>
 
-<p>Implemented in <a class="el" href="classBumponTailInstabilityManager.html#a548eed8cf90c3268e45dabadd642415e">BumponTailInstabilityManager&lt; T, Dim &gt;</a>, <a class="el" href="classLandauDampingManager.html#a36e09c3d34bb30985be7335cdad177bd">LandauDampingManager&lt; T, Dim &gt;</a>, and <a class="el" href="classPenningTrapManager.html#aa379bd2f6141f2fb5cf2f74d4e79a1ff">PenningTrapManager&lt; T, Dim &gt;</a>.</p>
-
 </div>
 </div>
 <a id="aa68d8c667e7656b12175d58c4885d7c4" name="aa68d8c667e7656b12175d58c4885d7c4"></a>
@@ -247,8 +240,6 @@ Public Member Functions</h2></td></tr>
 
 <p>A method that should be used after perfoming a step of simulation. </p>
 <p >Derived classes can override this method to dump data, increment time, etc. The default implementation does nothing. </p>
-
-<p>Reimplemented in <a class="el" href="classAlpineManager.html#a5d20695e9a523868589de74518bade44">AlpineManager&lt; T, Dim &gt;</a>.</p>
 
 </div>
 </div>
@@ -278,8 +269,6 @@ Public Member Functions</h2></td></tr>
 <p>A method that should be used for setting up the simulation. </p>
 <p >Derived classes can override this method to allocate memory, initialize variables, etc. The default implementation does nothing. </p>
 
-<p>Reimplemented in <a class="el" href="classBumponTailInstabilityManager.html#a52914017aabc2a1028bc44b133f3700a">BumponTailInstabilityManager&lt; T, Dim &gt;</a>, <a class="el" href="classLandauDampingManager.html#ae72ba4554613144a4f30cbb60f38b611">LandauDampingManager&lt; T, Dim &gt;</a>, and <a class="el" href="classPenningTrapManager.html#a7259e8e7c24631240841564254e804c2">PenningTrapManager&lt; T, Dim &gt;</a>.</p>
-
 </div>
 </div>
 <a id="a96166e16509394c66669e0109cf22c79" name="a96166e16509394c66669e0109cf22c79"></a>
@@ -307,8 +296,6 @@ Public Member Functions</h2></td></tr>
 
 <p>A method that should be used for preparation before perfoming a step of simulation. </p>
 <p >The default implementation does nothing. </p>
-
-<p>Reimplemented in <a class="el" href="classAlpineManager.html#a929d289fbee1e130d08392e82f1fac4a">AlpineManager&lt; T, Dim &gt;</a>.</p>
 
 </div>
 </div>

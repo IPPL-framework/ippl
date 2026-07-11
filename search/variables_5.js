@@ -11,14 +11,12 @@ var searchData=
   ['fft_5fmp_8',['fft_mp',['../classippl_1_1FFTPeriodicPoissonSolver.html#a43ca7beeb947532c56f277327dec466d',1,'ippl::FFTPeriodicPoissonSolver']]],
   ['field_5fm_9',['Field_m',['../classippl_1_1TruncatedGreenParticleInteraction.html#a04718cb15f565f4ed7726b454b73b342',1,'ippl::TruncatedGreenParticleInteraction']]],
   ['fieldcomplex_5fm_10',['fieldComplex_m',['../classippl_1_1FFTPeriodicPoissonSolver.html#aec1c937f6c2de7ffc3e9e0d54b9bb83c',1,'ippl::FFTPeriodicPoissonSolver']]],
-  ['fields_5finitialized_5fm_11',['fields_initialized_m',['../structippl_1_1polynomial__newton__preconditioner.html#ae15bda52001ca625b4ee852f40151858',1,'ippl::polynomial_newton_preconditioner::fields_initialized_m()'],['../structippl_1_1ssor__preconditioner.html#a22b7574a85eafbf5832724c6f55268c4',1,'ippl::ssor_preconditioner::fields_initialized_m()'],['../structippl_1_1gs__preconditioner.html#a5832378e1be7bab71eb68d9d2c89d23f',1,'ippl::gs_preconditioner::fields_initialized_m()'],['../structippl_1_1richardson__preconditioner__alt.html#a33432eafa20b57812b10462817ebd525',1,'ippl::richardson_preconditioner_alt::fields_initialized_m()'],['../structippl_1_1richardson__preconditioner.html#a7c1b70530e7ac8a7db9d79282d548395',1,'ippl::richardson_preconditioner::fields_initialized_m()'],['../structippl_1_1polynomial__chebyshev__preconditioner.html#ad4e35ac1046c15a88f3fd563137806bf',1,'ippl::polynomial_chebyshev_preconditioner::fields_initialized_m()']]],
+  ['fields_5finitialized_5fm_11',['fields_initialized_m',['../structippl_1_1polynomial__newton__preconditioner.html#ae15bda52001ca625b4ee852f40151858',1,'ippl::polynomial_newton_preconditioner::fields_initialized_m()'],['../structippl_1_1polynomial__chebyshev__preconditioner.html#ad4e35ac1046c15a88f3fd563137806bf',1,'ippl::polynomial_chebyshev_preconditioner::fields_initialized_m()'],['../structippl_1_1richardson__preconditioner.html#a7c1b70530e7ac8a7db9d79282d548395',1,'ippl::richardson_preconditioner::fields_initialized_m()'],['../structippl_1_1richardson__preconditioner__alt.html#a33432eafa20b57812b10462817ebd525',1,'ippl::richardson_preconditioner_alt::fields_initialized_m()'],['../structippl_1_1gs__preconditioner.html#a5832378e1be7bab71eb68d9d2c89d23f',1,'ippl::gs_preconditioner::fields_initialized_m()'],['../structippl_1_1ssor__preconditioner.html#a22b7574a85eafbf5832724c6f55268c4',1,'ippl::ssor_preconditioner::fields_initialized_m()']]],
   ['first_5fm_12',['first_m',['../classippl_1_1Index.html#a77dd0d501ec12a0e9d853091d7e13e4c',1,'ippl::Index']]],
-  ['fl_5fm_13',['fl_m',['../classFieldContainer.html#ad15aa6daefcfaba72e945ff16cc5a5e8',1,'FieldContainer']]],
-  ['flayout_5fm_14',['flayout_m',['../classippl_1_1ParticleSpatialLayout.html#afeb77e08a97933c1f11a256d89e75b75',1,'ippl::ParticleSpatialLayout']]],
-  ['formatbuf_15',['FormatBuf',['../classInform.html#a97ec176ae7ebdba670445c7ee38f1777',1,'Inform']]],
-  ['free_5fbuffers_16',['free_buffers',['../classippl_1_1DefaultBufferHandler.html#aef45416249a81c51161a7a625523ebe4',1,'ippl::DefaultBufferHandler']]],
-  ['freesize_17',['freeSize',['../structippl_1_1LogEntry.html#a43f5ed0f39d1404e9384133d9801b7ea',1,'ippl::LogEntry']]],
-  ['freesize_5fm_18',['freeSize_m',['../classippl_1_1DefaultBufferHandler.html#a19be2d1cfe2b9f1be9fc5f547dbbcb47',1,'ippl::DefaultBufferHandler']]],
-  ['fs_5fm_19',['fs_m',['../classLoadBalancer.html#ac7744ba558bbd97abdd0bdf8ec8c65dc',1,'LoadBalancer']]],
-  ['fsolver_5fm_20',['fsolver_m',['../classippl_1_1PicManager.html#a3e35a3507cf0e1d3db1409088d82e6ec',1,'ippl::PicManager']]]
+  ['flayout_5fm_13',['flayout_m',['../classippl_1_1ParticleSpatialLayout.html#afeb77e08a97933c1f11a256d89e75b75',1,'ippl::ParticleSpatialLayout']]],
+  ['formatbuf_14',['FormatBuf',['../classInform.html#a97ec176ae7ebdba670445c7ee38f1777',1,'Inform']]],
+  ['free_5fbuffers_15',['free_buffers',['../classippl_1_1DefaultBufferHandler.html#aef45416249a81c51161a7a625523ebe4',1,'ippl::DefaultBufferHandler']]],
+  ['freesize_16',['freeSize',['../structippl_1_1LogEntry.html#a43f5ed0f39d1404e9384133d9801b7ea',1,'ippl::LogEntry']]],
+  ['freesize_5fm_17',['freeSize_m',['../classippl_1_1DefaultBufferHandler.html#a19be2d1cfe2b9f1be9fc5f547dbbcb47',1,'ippl::DefaultBufferHandler']]],
+  ['fsolver_5fm_18',['fsolver_m',['../classippl_1_1PicManager.html#a3e35a3507cf0e1d3db1409088d82e6ec',1,'ippl::PicManager']]]
 ];

@@ -113,10 +113,10 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a8ca5ffdd9829db26ba48f499fcac4877"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a8ca5ffdd9829db26ba48f499fcac4877">NDIndex</a> ()</td></tr>
 <tr class="separator:a8ca5ffdd9829db26ba48f499fcac4877"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04d742dd324814ce5eea6537cab4add3"><td class="memTemplParams" colspan="2">template&lt;class... Args, typename std::enable_if&lt; sizeof...(Args)==<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, bool &gt;::type  = true&gt; </td></tr>
+<tr class="memitem:a04d742dd324814ce5eea6537cab4add3"><td class="memTemplParams" colspan="2">template&lt;class... Args, typename std::enable_if&lt; sizeof...(Args)==Dim, bool &gt;::type  = true&gt; </td></tr>
 <tr class="memitem:a04d742dd324814ce5eea6537cab4add3"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a04d742dd324814ce5eea6537cab4add3">NDIndex</a> (const Args &amp;... args)</td></tr>
 <tr class="separator:a04d742dd324814ce5eea6537cab4add3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a91603046eb4f271f99e1e0d9c3cea9b0"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a91603046eb4f271f99e1e0d9c3cea9b0">NDIndex</a> (const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; unsigned, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;sizes)</td></tr>
+<tr class="memitem:a91603046eb4f271f99e1e0d9c3cea9b0"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a91603046eb4f271f99e1e0d9c3cea9b0">NDIndex</a> (const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; unsigned, Dim &gt; &amp;sizes)</td></tr>
 <tr class="separator:a91603046eb4f271f99e1e0d9c3cea9b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9bb9925b06e6eeeb36ded123691422de"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION const <a class="el" href="classippl_1_1Index.html">ippl::Index</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a9bb9925b06e6eeeb36ded123691422de">operator[]</a> (unsigned d) const noexcept</td></tr>
 <tr class="separator:a9bb9925b06e6eeeb36ded123691422de"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -126,29 +126,29 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a85b3bb33059b35c5ec11dcaf92d55fcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e8a94bd17afc5a5e8d41378477bdeb9"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a5e8a94bd17afc5a5e8d41378477bdeb9">empty</a> () const noexcept</td></tr>
 <tr class="separator:a5e8a94bd17afc5a5e8d41378477bdeb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaead5613b1dbf73ed6c8a8df6bd00079"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a> (const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;) const</td></tr>
+<tr class="memitem:aaead5613b1dbf73ed6c8a8df6bd00079"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#aaead5613b1dbf73ed6c8a8df6bd00079">intersect</a> (const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;) const</td></tr>
 <tr class="separator:aaead5613b1dbf73ed6c8a8df6bd00079"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae9c819a5525fb4566acf3799091020d7"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#ae9c819a5525fb4566acf3799091020d7">grow</a> (int ncells) const</td></tr>
+<tr class="memitem:ae9c819a5525fb4566acf3799091020d7"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#ae9c819a5525fb4566acf3799091020d7">grow</a> (int ncells) const</td></tr>
 <tr class="separator:ae9c819a5525fb4566acf3799091020d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:accd3d04c0ce63bf53a5022cac86f24ce"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#accd3d04c0ce63bf53a5022cac86f24ce">grow</a> (int ncells, unsigned int dim) const</td></tr>
+<tr class="memitem:accd3d04c0ce63bf53a5022cac86f24ce"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#accd3d04c0ce63bf53a5022cac86f24ce">grow</a> (int ncells, unsigned int dim) const</td></tr>
 <tr class="separator:accd3d04c0ce63bf53a5022cac86f24ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a400dc39095aa42b26ef0385c18e4d9f5"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a> (const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;) const</td></tr>
+<tr class="memitem:a400dc39095aa42b26ef0385c18e4d9f5"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a400dc39095aa42b26ef0385c18e4d9f5">touches</a> (const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;) const</td></tr>
 <tr class="separator:a400dc39095aa42b26ef0385c18e4d9f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac1f68f57b8b6f87f11185b7fba7fd71e"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#ac1f68f57b8b6f87f11185b7fba7fd71e">contains</a> (const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;a) const</td></tr>
+<tr class="memitem:ac1f68f57b8b6f87f11185b7fba7fd71e"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#ac1f68f57b8b6f87f11185b7fba7fd71e">contains</a> (const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;a) const</td></tr>
 <tr class="separator:ac1f68f57b8b6f87f11185b7fba7fd71e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d03b85a14dc03b37ca53eac5ea8ef95"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a9d03b85a14dc03b37ca53eac5ea8ef95">split</a> (<a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;l, <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;r, unsigned d, int i) const</td></tr>
+<tr class="memitem:a9d03b85a14dc03b37ca53eac5ea8ef95"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a9d03b85a14dc03b37ca53eac5ea8ef95">split</a> (<a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;l, <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;r, unsigned d, int i) const</td></tr>
 <tr class="separator:a9d03b85a14dc03b37ca53eac5ea8ef95"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a655f995d5ce9141718c4a9f9a4a58afe"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a655f995d5ce9141718c4a9f9a4a58afe">split</a> (<a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;l, <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;r, unsigned d, double a) const</td></tr>
+<tr class="memitem:a655f995d5ce9141718c4a9f9a4a58afe"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a655f995d5ce9141718c4a9f9a4a58afe">split</a> (<a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;l, <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;r, unsigned d, double a) const</td></tr>
 <tr class="separator:a655f995d5ce9141718c4a9f9a4a58afe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abc9a01d66cef4ccb7fa42851bf0d45dc"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#abc9a01d66cef4ccb7fa42851bf0d45dc">split</a> (<a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;l, <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;r, unsigned d) const</td></tr>
+<tr class="memitem:abc9a01d66cef4ccb7fa42851bf0d45dc"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#abc9a01d66cef4ccb7fa42851bf0d45dc">split</a> (<a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;l, <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;r, unsigned d) const</td></tr>
 <tr class="separator:abc9a01d66cef4ccb7fa42851bf0d45dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a208f4dfc4be92f87914e73ec9c79ba"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a0a208f4dfc4be92f87914e73ec9c79ba">split</a> (<a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;l, <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;r) const</td></tr>
+<tr class="memitem:a0a208f4dfc4be92f87914e73ec9c79ba"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a0a208f4dfc4be92f87914e73ec9c79ba">split</a> (<a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;l, <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;r) const</td></tr>
 <tr class="separator:a0a208f4dfc4be92f87914e73ec9c79ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acdbe14ad31f8a6188d2921f39e227405"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#acdbe14ad31f8a6188d2921f39e227405">length</a> () const</td></tr>
+<tr class="memitem:acdbe14ad31f8a6188d2921f39e227405"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#acdbe14ad31f8a6188d2921f39e227405">length</a> () const</td></tr>
 <tr class="separator:acdbe14ad31f8a6188d2921f39e227405"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a867c03b8f54e8241f83860b4d058c7a5"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a867c03b8f54e8241f83860b4d058c7a5">first</a> () const</td></tr>
+<tr class="memitem:a867c03b8f54e8241f83860b4d058c7a5"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a867c03b8f54e8241f83860b4d058c7a5">first</a> () const</td></tr>
 <tr class="separator:a867c03b8f54e8241f83860b4d058c7a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c0bb93c7e9561d47d380f9a8acdb5d7"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a7c0bb93c7e9561d47d380f9a8acdb5d7">last</a> () const</td></tr>
+<tr class="memitem:a7c0bb93c7e9561d47d380f9a8acdb5d7"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a7c0bb93c7e9561d47d380f9a8acdb5d7">last</a> () const</td></tr>
 <tr class="separator:a7c0bb93c7e9561d47d380f9a8acdb5d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a122382fabc0dced88dd51e9fffeaf83b"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr <a class="el" href="classippl_1_1NDIndex.html#a3d71b4f4e8a8c26b1b5927cf29ee0cca">iterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#a122382fabc0dced88dd51e9fffeaf83b">begin</a> ()</td></tr>
 <tr class="separator:a122382fabc0dced88dd51e9fffeaf83b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -161,7 +161,7 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:ab7662f16f6e1c29bc7f91fcf51e69b93"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Index.html">Index</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#ab7662f16f6e1c29bc7f91fcf51e69b93">indices_m</a> [<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>]</td></tr>
+<tr class="memitem:ab7662f16f6e1c29bc7f91fcf51e69b93"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Index.html">Index</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NDIndex.html#ab7662f16f6e1c29bc7f91fcf51e69b93">indices_m</a> [Dim]</td></tr>
 <tr class="memdesc:ab7662f16f6e1c29bc7f91fcf51e69b93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Array of indices.  <a href="classippl_1_1NDIndex.html#ab7662f16f6e1c29bc7f91fcf51e69b93">More...</a><br /></td></tr>
 <tr class="separator:ab7662f16f6e1c29bc7f91fcf51e69b93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -175,7 +175,7 @@ Private Attributes</h2></td></tr>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::const_iterator =  const <a class="el" href="classippl_1_1Index.html">Index</a>*</td>
+          <td class="memname">using <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::const_iterator =  const <a class="el" href="classippl_1_1Index.html">Index</a>*</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -191,7 +191,7 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::iterator =  <a class="el" href="classippl_1_1Index.html">Index</a>*</td>
+          <td class="memname">using <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::iterator =  <a class="el" href="classippl_1_1Index.html">Index</a>*</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -211,7 +211,7 @@ template&lt;unsigned Dim&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::NDIndex </td>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::NDIndex </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -234,10 +234,10 @@ template&lt;unsigned Dim&gt; </div>
 <div class="memtemplate">
 template&lt;unsigned Dim&gt; </div>
 <div class="memtemplate">
-template&lt;class... Args, typename std::enable_if&lt; sizeof...(Args)==<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, bool &gt;::type &gt; </div>
+template&lt;class... Args, typename std::enable_if&lt; sizeof...(Args)==Dim, bool &gt;::type &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::NDIndex </td>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::NDIndex </td>
           <td>(</td>
           <td class="paramtype">const Args &amp;...&#160;</td>
           <td class="paramname"><em>args</em></td><td>)</td>
@@ -257,9 +257,9 @@ template&lt;class... Args, typename std::enable_if&lt; sizeof...(Args)==<a class
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::NDIndex </td>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::NDIndex </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; unsigned, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; unsigned, Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>sizes</em></td><td>)</td>
           <td></td>
         </tr>
@@ -281,7 +281,7 @@ template&lt;unsigned Dim&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION constexpr <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;<a class="el" href="classippl_1_1NDIndex.html#a3d71b4f4e8a8c26b1b5927cf29ee0cca">::iterator</a> <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::begin</td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION constexpr <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt;<a class="el" href="classippl_1_1NDIndex.html#a3d71b4f4e8a8c26b1b5927cf29ee0cca">::iterator</a> <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::begin</td>
         </tr>
       </table>
   </td>
@@ -305,7 +305,7 @@ template&lt;unsigned Dim&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION constexpr <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;<a class="el" href="classippl_1_1NDIndex.html#a05d0ee67974d1311df9e4dba9f0c4b12">::const_iterator</a> <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::begin</td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION constexpr <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt;<a class="el" href="classippl_1_1NDIndex.html#a05d0ee67974d1311df9e4dba9f0c4b12">::const_iterator</a> <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::begin</td>
         </tr>
       </table>
   </td>
@@ -326,9 +326,9 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::contains </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::contains </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>a</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -349,7 +349,7 @@ template&lt;unsigned Dim&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::empty</td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::empty</td>
         </tr>
       </table>
   </td>
@@ -374,7 +374,7 @@ template&lt;unsigned Dim&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION constexpr <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;<a class="el" href="classippl_1_1NDIndex.html#a3d71b4f4e8a8c26b1b5927cf29ee0cca">::iterator</a> <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::end</td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION constexpr <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt;<a class="el" href="classippl_1_1NDIndex.html#a3d71b4f4e8a8c26b1b5927cf29ee0cca">::iterator</a> <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::end</td>
         </tr>
       </table>
   </td>
@@ -398,7 +398,7 @@ template&lt;unsigned Dim&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION constexpr <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;<a class="el" href="classippl_1_1NDIndex.html#a05d0ee67974d1311df9e4dba9f0c4b12">::const_iterator</a> <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::end</td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION constexpr <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt;<a class="el" href="classippl_1_1NDIndex.html#a05d0ee67974d1311df9e4dba9f0c4b12">::const_iterator</a> <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::end</td>
         </tr>
       </table>
   </td>
@@ -419,7 +419,7 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::first</td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, Dim &gt; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::first</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -435,7 +435,7 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::grow </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::grow </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>ncells</em></td><td>)</td>
@@ -456,7 +456,7 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::grow </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::grow </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>ncells</em>, </td>
@@ -486,9 +486,9 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::intersect </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::intersect </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>ndi</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -507,7 +507,7 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::last</td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, Dim &gt; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::last</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -523,7 +523,7 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::length</td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, Dim &gt; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::length</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -542,7 +542,7 @@ template&lt;unsigned Dim&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION const <a class="el" href="classippl_1_1Index.html">Index</a> &amp; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::operator[] </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION const <a class="el" href="classippl_1_1Index.html">Index</a> &amp; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::operator[] </td>
           <td>(</td>
           <td class="paramtype">unsigned&#160;</td>
           <td class="paramname"><em>d</em></td><td>)</td>
@@ -571,7 +571,7 @@ template&lt;unsigned Dim&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Index.html">Index</a> &amp; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::operator[] </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Index.html">Index</a> &amp; <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::operator[] </td>
           <td>(</td>
           <td class="paramtype">unsigned&#160;</td>
           <td class="paramname"><em>d</em></td><td>)</td>
@@ -599,7 +599,7 @@ template&lt;unsigned Dim&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION unsigned <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::size</td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION unsigned <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::size</td>
         </tr>
       </table>
   </td>
@@ -621,15 +621,15 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::split </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::split </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>l</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>r</em>&#160;</td>
         </tr>
         <tr>
@@ -651,15 +651,15 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::split </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::split </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>l</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>r</em>, </td>
         </tr>
         <tr>
@@ -687,15 +687,15 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::split </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::split </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>l</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>r</em>, </td>
         </tr>
         <tr>
@@ -729,15 +729,15 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::split </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::split </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>l</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>r</em>, </td>
         </tr>
         <tr>
@@ -771,9 +771,9 @@ template&lt;unsigned Dim&gt; </div>
 template&lt;unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::touches </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION bool <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::touches </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>a</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -795,7 +795,7 @@ template&lt;unsigned Dim&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1Index.html">Index</a> <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::indices_m[<a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>]</td>
+          <td class="memname"><a class="el" href="classippl_1_1Index.html">Index</a> <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; Dim &gt;::indices_m[Dim]</td>
         </tr>
       </table>
   </td>

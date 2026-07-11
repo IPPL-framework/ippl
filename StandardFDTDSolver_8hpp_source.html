@@ -159,11 +159,11 @@ $(function() {
 <div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>        <span class="comment">// get mesh spacing, timestep, domain, and mesh size</span></div>
 <div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>        this-&gt;hr_m = this-&gt;mesh_mp-&gt;getMeshSpacing();</div>
 <div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        this-&gt;dt   = this-&gt;hr_m[0] / 2;</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>        <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>; ++i) {</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>        <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; Dim; ++i) {</div>
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>            this-&gt;dt = std::min(this-&gt;dt, this-&gt;hr_m[i] / 2);</div>
 <div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>        }</div>
 <div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>        this-&gt;domain_m = this-&gt;layout_mp-&gt;getDomain();</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>        <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; <a class="code hl_variable" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>; ++i)</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>        <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i = 0; i &lt; Dim; ++i)</div>
 <div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>            this-&gt;nr_m[i] = this-&gt;domain_m[i].length();</div>
 <div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
 <div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>        <span class="comment">// initialize fields</span></div>
@@ -182,7 +182,6 @@ $(function() {
 <div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>        }</div>
 <div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>    }</div>
 <div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>}  <span class="comment">// namespace ippl</span></div>
-<div class="ttc" id="aBumponTailInstability_8cpp_html_afef54e0ebfe65da0a396b342dcbe30f5"><div class="ttname"><a href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a></div><div class="ttdeci">constexpr unsigned Dim</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:22</div></div>
 <div class="ttc" id="aclassippl_1_1FDTDSolverBase_html"><div class="ttname"><a href="classippl_1_1FDTDSolverBase.html">ippl::FDTDSolverBase</a></div><div class="ttdoc">Base class for FDTD solvers in the ippl library.</div><div class="ttdef"><b>Definition:</b> FDTDSolverBase.h:28</div></div>
 <div class="ttc" id="aclassippl_1_1Maxwell_html"><div class="ttname"><a href="classippl_1_1Maxwell.html">ippl::Maxwell</a></div><div class="ttdef"><b>Definition:</b> Maxwell.h:20</div></div>
 <div class="ttc" id="aclassippl_1_1StandardFDTDSolver_html_a2290a3d9945ae5a04c06396fb35ad08f"><div class="ttname"><a href="classippl_1_1StandardFDTDSolver.html#a2290a3d9945ae5a04c06396fb35ad08f">ippl::StandardFDTDSolver::scalar</a></div><div class="ttdeci">typename EMField::value_type::value_type scalar</div><div class="ttdef"><b>Definition:</b> StandardFDTDSolver.h:45</div></div>

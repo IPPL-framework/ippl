@@ -107,12 +107,12 @@ Collaboration diagram for ippl::random::InverseTransformSampling&lt; T, Dim, Dev
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a4a7dc71d2172ad12ca09efa8c44f75b9"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#a4a7dc71d2172ad12ca09efa8c44f75b9">value_type</a> = <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a></td></tr>
+<tr class="memitem:a4a7dc71d2172ad12ca09efa8c44f75b9"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#a4a7dc71d2172ad12ca09efa8c44f75b9">value_type</a> = T</td></tr>
 <tr class="separator:a4a7dc71d2172ad12ca09efa8c44f75b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ac68cc3284273353284422c0958c4ee67"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">fill_random</a> (<a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &amp;dist_r, <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#a7473fc957a1552e778b66df1660bd1fb">view_type</a> &amp;x_r, GeneratorPool &amp;rand_pool_r, <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;umin_r, <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;umax_r, unsigned int &amp;d_r)</td></tr>
+<tr class="memitem:ac68cc3284273353284422c0958c4ee67"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">fill_random</a> (<a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &amp;dist_r, <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#a7473fc957a1552e778b66df1660bd1fb">view_type</a> &amp;x_r, GeneratorPool &amp;rand_pool_r, <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; &amp;umin_r, <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; &amp;umax_r, unsigned int &amp;d_r)</td></tr>
 <tr class="memdesc:ac68cc3284273353284422c0958c4ee67"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for the <a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html" title="Functor that is used for generating samples.">fill_random</a> functor.  <a href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">More...</a><br /></td></tr>
 <tr class="separator:ac68cc3284273353284422c0958c4ee67"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19757cffbe003afae8f18bcb8abc3c06"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#a19757cffbe003afae8f18bcb8abc3c06">operator()</a> (const size_t i) const</td></tr>
@@ -127,15 +127,15 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a9dfa770f1265cd21398b702e30095651"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab279e507ff4961cbf4ddb82c7305a004"><td class="memItemLeft" align="right" valign="top">GeneratorPool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ab279e507ff4961cbf4ddb82c7305a004">pool_m</a></td></tr>
 <tr class="separator:ab279e507ff4961cbf4ddb82c7305a004"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a73f05efff9aeaa381d59fb82106e67bc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#a73f05efff9aeaa381d59fb82106e67bc">minbound_m</a></td></tr>
+<tr class="memitem:a73f05efff9aeaa381d59fb82106e67bc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#a73f05efff9aeaa381d59fb82106e67bc">minbound_m</a></td></tr>
 <tr class="separator:a73f05efff9aeaa381d59fb82106e67bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08919471c08544a58caebbe960eacec2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#a08919471c08544a58caebbe960eacec2">maxbound_m</a></td></tr>
+<tr class="memitem:a08919471c08544a58caebbe960eacec2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#a08919471c08544a58caebbe960eacec2">maxbound_m</a></td></tr>
 <tr class="separator:a08919471c08544a58caebbe960eacec2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8cd9052ced259be16419dffe83e94bbc"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#a8cd9052ced259be16419dffe83e94bbc">dim_m</a></td></tr>
 <tr class="separator:a8cd9052ced259be16419dffe83e94bbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, unsigned Dim, class DeviceType, class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a>&gt;<br />
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename T, unsigned Dim, class DeviceType, class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a>&gt;<br />
 template&lt;class GeneratorPool&gt;<br />
 struct ippl::random::InverseTransformSampling&lt; T, Dim, DeviceType, Distribution &gt;::fill_random&lt; GeneratorPool &gt;</div><p >Functor that is used for generating samples. </p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
@@ -145,12 +145,12 @@ struct ippl::random::InverseTransformSampling&lt; T, Dim, DeviceType, Distributi
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <div class="memtemplate">
 template&lt;class GeneratorPool &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::value_type =  <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a></td>
+          <td class="memname">using <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; T, Dim, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::value_type =  T</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -164,7 +164,7 @@ template&lt;class GeneratorPool &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <div class="memtemplate">
 template&lt;class GeneratorPool &gt; </div>
 <table class="mlabels">
@@ -172,7 +172,7 @@ template&lt;class GeneratorPool &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::fill_random&lt; GeneratorPool &gt;::fill_random </td>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; T, Dim, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;::fill_random&lt; GeneratorPool &gt;::fill_random </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &amp;&#160;</td>
           <td class="paramname"><em>dist_r</em>, </td>
@@ -192,13 +192,13 @@ template&lt;class GeneratorPool &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>umin_r</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>umax_r</em>, </td>
         </tr>
         <tr>
@@ -241,7 +241,7 @@ template&lt;class GeneratorPool &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <div class="memtemplate">
 template&lt;class GeneratorPool &gt; </div>
 <table class="mlabels">
@@ -249,7 +249,7 @@ template&lt;class GeneratorPool &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION void <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::operator() </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION void <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; T, Dim, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::operator() </td>
           <td>(</td>
           <td class="paramtype">const size_t&#160;</td>
           <td class="paramname"><em>i</em></td><td>)</td>
@@ -280,12 +280,12 @@ template&lt;class GeneratorPool &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <div class="memtemplate">
 template&lt;class GeneratorPool &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">unsigned int <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::dim_m</td>
+          <td class="memname">unsigned int <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; T, Dim, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::dim_m</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -298,12 +298,12 @@ template&lt;class GeneratorPool &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <div class="memtemplate">
 template&lt;class GeneratorPool &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::maxbound_m</td>
+          <td class="memname"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;T, Dim&gt; <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; T, Dim, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::maxbound_m</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -316,12 +316,12 @@ template&lt;class GeneratorPool &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <div class="memtemplate">
 template&lt;class GeneratorPool &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::minbound_m</td>
+          <td class="memname"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;T, Dim&gt; <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; T, Dim, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::minbound_m</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -334,12 +334,12 @@ template&lt;class GeneratorPool &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <div class="memtemplate">
 template&lt;class GeneratorPool &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">GeneratorPool <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::pool_m</td>
+          <td class="memname">GeneratorPool <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; T, Dim, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::pool_m</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -352,12 +352,12 @@ template&lt;class GeneratorPool &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <div class="memtemplate">
 template&lt;class GeneratorPool &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#a7473fc957a1552e778b66df1660bd1fb">view_type</a> <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::sample_m</td>
+          <td class="memname"><a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html#a7473fc957a1552e778b66df1660bd1fb">view_type</a> <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; T, Dim, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::sample_m</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -370,12 +370,12 @@ template&lt;class GeneratorPool &gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
+template&lt;typename T , unsigned Dim, class DeviceType , class <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt; </div>
 <div class="memtemplate">
 template&lt;class GeneratorPool &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::targetdist_m</td>
+          <td class="memname"><a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> <a class="el" href="classippl_1_1random_1_1InverseTransformSampling.html">ippl::random::InverseTransformSampling</a>&lt; T, Dim, DeviceType, <a class="el" href="classippl_1_1random_1_1Distribution.html">Distribution</a> &gt;<a class="el" href="structippl_1_1random_1_1InverseTransformSampling_1_1fill__random.html#ac68cc3284273353284422c0958c4ee67">::fill_random</a>&lt; GeneratorPool &gt;::targetdist_m</td>
         </tr>
       </table>
 </div><div class="memdoc">

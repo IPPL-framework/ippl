@@ -126,7 +126,7 @@ $(function() {
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno"><a class="line" href="classippl_1_1FFTPeriodicPoissonSolver.html#ad228685eeb7a00b18025c6e3437a7c34">   41</a></span>        <a class="code hl_function" href="classippl_1_1FFTPeriodicPoissonSolver.html#ad228685eeb7a00b18025c6e3437a7c34">FFTPeriodicPoissonSolver</a>()</div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>            : <a class="code hl_class" href="classippl_1_1Poisson.html">Base</a>() {</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>            <span class="keyword">using </span><a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> = <span class="keyword">typename</span> FieldLHS::value_type::value_type;</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>            <span class="keyword">using </span>T = <span class="keyword">typename</span> FieldLHS::value_type::value_type;</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>            <span class="keyword">static_assert</span>(std::is_floating_point&lt;T&gt;::value, <span class="stringliteral">&quot;Not a floating point type&quot;</span>);</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>            <a class="code hl_function" href="classippl_1_1FFTPeriodicPoissonSolver.html#a10bb7ff4e0958b23c147802c6275e412">setDefaultParameters</a>();</div>
@@ -134,7 +134,7 @@ $(function() {
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno"><a class="line" href="classippl_1_1FFTPeriodicPoissonSolver.html#aa9d457fb1974fc00e90d1b3f55aad3c2">   49</a></span>        <a class="code hl_function" href="classippl_1_1FFTPeriodicPoissonSolver.html#aa9d457fb1974fc00e90d1b3f55aad3c2">FFTPeriodicPoissonSolver</a>(<a class="code hl_typedef" href="classippl_1_1FFTPeriodicPoissonSolver.html#afb9803ccc30ca00408107714a1f7ab41">lhs_type</a>&amp; lhs, <a class="code hl_typedef" href="classippl_1_1Poisson.html#a96a91a7da45bb0d881ec749ddfef38e3">rhs_type</a>&amp; rhs)</div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>            : <a class="code hl_class" href="classippl_1_1Poisson.html">Base</a>(lhs, rhs) {</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>            <span class="keyword">using </span><a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> = <span class="keyword">typename</span> FieldLHS::value_type::value_type;</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>            <span class="keyword">using </span>T = <span class="keyword">typename</span> FieldLHS::value_type::value_type;</div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>            <span class="keyword">static_assert</span>(std::is_floating_point&lt;T&gt;::value, <span class="stringliteral">&quot;Not a floating point type&quot;</span>);</div>
 <div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
 <div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>            <a class="code hl_function" href="classippl_1_1FFTPeriodicPoissonSolver.html#a10bb7ff4e0958b23c147802c6275e412">setDefaultParameters</a>();</div>
@@ -187,7 +187,6 @@ $(function() {
 <div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span> </div>
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span><span class="preprocessor">#include &quot;<a class="code" href="FFTPeriodicPoissonSolver_8hpp.html">PoissonSolvers/FFTPeriodicPoissonSolver.hpp</a>&quot;</span></div>
 <div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span><span class="preprocessor">#endif</span></div>
-<div class="ttc" id="aBumponTailInstability_8cpp_html_a6b2d038ea9c8d2651eecffe0e28b7ebb"><div class="ttname"><a href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a></div><div class="ttdeci">double T</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:23</div></div>
 <div class="ttc" id="aFFTPeriodicPoissonSolver_8hpp_html"><div class="ttname"><a href="FFTPeriodicPoissonSolver_8hpp.html">FFTPeriodicPoissonSolver.hpp</a></div></div>
 <div class="ttc" id="aFFT_8h_html"><div class="ttname"><a href="FFT_8h.html">FFT.h</a></div></div>
 <div class="ttc" id="aFieldLayout_8h_html"><div class="ttname"><a href="FieldLayout_8h.html">FieldLayout.h</a></div></div>

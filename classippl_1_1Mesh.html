@@ -96,11 +96,9 @@ Inheritance diagram for ippl::Mesh&lt; T, Dim &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1Mesh__inherit__graph.png" border="0" usemap="#aippl_1_1Mesh_3_01T_00_01Dim_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1Mesh_3_01T_00_01Dim_01_4_inherit__map" id="aippl_1_1Mesh_3_01T_00_01Dim_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="330,5,474,236"/>
-<area shape="rect" href="classippl_1_1UniformCartesian.html" title=" " alt="" coords="5,291,188,537"/>
-<area shape="rect" href="classippl_1_1UniformCartesian.html" title=" " alt="" coords="212,291,395,537"/>
-<area shape="rect" href="classippl_1_1UniformCartesian.html" title=" " alt="" coords="419,284,583,544"/>
-<area shape="rect" href="classippl_1_1UniformCartesian.html" title=" " alt="" coords="607,284,771,544"/>
+<area shape="rect" title=" " alt="" coords="109,5,253,236"/>
+<area shape="rect" href="classippl_1_1UniformCartesian.html" title=" " alt="" coords="5,284,169,544"/>
+<area shape="rect" href="classippl_1_1UniformCartesian.html" title=" " alt="" coords="193,284,357,544"/>
 </map>
 </div>
 <div class="dynheader">
@@ -117,11 +115,11 @@ Public Types</h2></td></tr>
 <tr class="memitem:a83d2c83b1d8800b69495903bb9b81461"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom">{ <a class="el" href="classippl_1_1Mesh.html#a83d2c83b1d8800b69495903bb9b81461a2f431e3abe60c1fca586da4cea68accf">Dimension</a> = Dim
  }</td></tr>
 <tr class="separator:a83d2c83b1d8800b69495903bb9b81461"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a263f7adcb28a2a2613a75f98e934578c"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#a263f7adcb28a2a2613a75f98e934578c">value_type</a></td></tr>
+<tr class="memitem:a263f7adcb28a2a2613a75f98e934578c"><td class="memItemLeft" align="right" valign="top">typedef T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#a263f7adcb28a2a2613a75f98e934578c">value_type</a></td></tr>
 <tr class="separator:a263f7adcb28a2a2613a75f98e934578c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a16d92f105f704301adb708d574e3fcdb"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a></td></tr>
+<tr class="memitem:a16d92f105f704301adb708d574e3fcdb"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a></td></tr>
 <tr class="separator:a16d92f105f704301adb708d574e3fcdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a102bad798da7441046e353fc7a666f77"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#a102bad798da7441046e353fc7a666f77">matrix_type</a></td></tr>
+<tr class="memitem:a102bad798da7441046e353fc7a666f77"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a>, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#a102bad798da7441046e353fc7a666f77">matrix_type</a></td></tr>
 <tr class="separator:a102bad798da7441046e353fc7a666f77"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
@@ -136,17 +134,17 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a91a619982e4c96ed6015974f180ce296"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab659264a175fb3f9997e7ff271953f03"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION const <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#ab659264a175fb3f9997e7ff271953f03">getGridsize</a> () const</td></tr>
 <tr class="separator:ab659264a175fb3f9997e7ff271953f03"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4f326339486fb6403eec97a85270058f"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#a4f326339486fb6403eec97a85270058f">getCellVolume</a> () const =0</td></tr>
+<tr class="memitem:a4f326339486fb6403eec97a85270058f"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_INLINE_FUNCTION T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#a4f326339486fb6403eec97a85270058f">getCellVolume</a> () const =0</td></tr>
 <tr class="separator:a4f326339486fb6403eec97a85270058f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aab7ad22276b3ccbd4da4c1e3bef948ad"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#aab7ad22276b3ccbd4da4c1e3bef948ad">getMeshVolume</a> () const =0</td></tr>
+<tr class="memitem:aab7ad22276b3ccbd4da4c1e3bef948ad"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_INLINE_FUNCTION T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#aab7ad22276b3ccbd4da4c1e3bef948ad">getMeshVolume</a> () const =0</td></tr>
 <tr class="separator:aab7ad22276b3ccbd4da4c1e3bef948ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6cb1d43992a7cf23a2276034866d0d7d"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#a6cb1d43992a7cf23a2276034866d0d7d">getGridsize</a> (size_t dim) const</td></tr>
+<tr class="memitem:a6cb1d43992a7cf23a2276034866d0d7d"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#a6cb1d43992a7cf23a2276034866d0d7d">getGridsize</a> (size_t dim) const</td></tr>
 <tr class="separator:a6cb1d43992a7cf23a2276034866d0d7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a07b48e99e5eeba05b4079b1be6e92aa8"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#a07b48e99e5eeba05b4079b1be6e92aa8">getVertexPosition</a> (const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;ndi) const =0</td></tr>
+<tr class="memitem:a07b48e99e5eeba05b4079b1be6e92aa8"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#a07b48e99e5eeba05b4079b1be6e92aa8">getVertexPosition</a> (const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;ndi) const =0</td></tr>
 <tr class="separator:a07b48e99e5eeba05b4079b1be6e92aa8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1e208ebe7e6b29b6362463c9f4a6752"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_INLINE_FUNCTION const <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#ab1e208ebe7e6b29b6362463c9f4a6752">getMeshSpacing</a> () const =0</td></tr>
 <tr class="separator:ab1e208ebe7e6b29b6362463c9f4a6752"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af869c8e017c4c82492991375af348e53"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#af869c8e017c4c82492991375af348e53">getDeltaVertex</a> (const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;ndi) const =0</td></tr>
+<tr class="memitem:af869c8e017c4c82492991375af348e53"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Mesh.html#af869c8e017c4c82492991375af348e53">getDeltaVertex</a> (const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;ndi) const =0</td></tr>
 <tr class="separator:af869c8e017c4c82492991375af348e53"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
@@ -163,10 +161,10 @@ Protected Attributes</h2></td></tr>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::matrix_type</td>
+          <td class="memname">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a>, Dim&gt; <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::matrix_type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -179,10 +177,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::value_type</td>
+          <td class="memname">typedef T <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::value_type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -195,10 +193,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a>&gt; <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::vector_type</td>
+          <td class="memname">typedef <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;T, Dim&gt; <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::vector_type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -212,7 +210,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">anonymous enum</td>
@@ -232,13 +230,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::Mesh </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::Mesh </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -259,13 +257,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::~<a class="el" href="classippl_1_1Mesh.html">Mesh</a> </td>
+          <td class="memname">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::~<a class="el" href="classippl_1_1Mesh.html">Mesh</a> </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -287,13 +285,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getCellVolume </td>
+          <td class="memname">virtual KOKKOS_INLINE_FUNCTION T <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::getCellVolume </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -307,7 +305,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </div><div class="memdoc">
 <p >Query the cell volume of the grid </p><dl class="section return"><dt>Returns</dt><dd>The volume of a single mesh cell </dd></dl>
 
-<p>Implemented in <a class="el" href="classippl_1_1UniformCartesian.html#a8976e775b98d84fed261a9a51e4def34">ippl::UniformCartesian&lt; T, Dim &gt;</a>, <a class="el" href="classippl_1_1UniformCartesian.html#a8976e775b98d84fed261a9a51e4def34">ippl::UniformCartesian&lt; 2 &gt;</a>, <a class="el" href="classippl_1_1UniformCartesian.html#a8976e775b98d84fed261a9a51e4def34">ippl::UniformCartesian&lt; 3 &gt;</a>, and <a class="el" href="classippl_1_1UniformCartesian.html#a8976e775b98d84fed261a9a51e4def34">ippl::UniformCartesian&lt; Tlhs, Dim &gt;</a>.</p>
+<p>Implemented in <a class="el" href="classippl_1_1UniformCartesian.html#a8976e775b98d84fed261a9a51e4def34">ippl::UniformCartesian&lt; T, Dim &gt;</a>, and <a class="el" href="classippl_1_1UniformCartesian.html#a8976e775b98d84fed261a9a51e4def34">ippl::UniformCartesian&lt; Tlhs, Dim &gt;</a>.</p>
 
 </div>
 </div>
@@ -317,15 +315,15 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getDeltaVertex </td>
+          <td class="memname">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::getDeltaVertex </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>ndi</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -337,7 +335,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classippl_1_1UniformCartesian.html#a96cdecb384d082f2c5c45512fb92ca94">ippl::UniformCartesian&lt; T, Dim &gt;</a>, <a class="el" href="classippl_1_1UniformCartesian.html#a96cdecb384d082f2c5c45512fb92ca94">ippl::UniformCartesian&lt; 2 &gt;</a>, <a class="el" href="classippl_1_1UniformCartesian.html#a96cdecb384d082f2c5c45512fb92ca94">ippl::UniformCartesian&lt; 3 &gt;</a>, and <a class="el" href="classippl_1_1UniformCartesian.html#a96cdecb384d082f2c5c45512fb92ca94">ippl::UniformCartesian&lt; Tlhs, Dim &gt;</a>.</p>
+<p>Implemented in <a class="el" href="classippl_1_1UniformCartesian.html#a96cdecb384d082f2c5c45512fb92ca94">ippl::UniformCartesian&lt; T, Dim &gt;</a>, and <a class="el" href="classippl_1_1UniformCartesian.html#a96cdecb384d082f2c5c45512fb92ca94">ippl::UniformCartesian&lt; Tlhs, Dim &gt;</a>.</p>
 
 </div>
 </div>
@@ -347,10 +345,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION const <a class="el" href="classippl_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;<a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">::vector_type</a> &amp; <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getGridsize</td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION const <a class="el" href="classippl_1_1Mesh.html">Mesh</a>&lt; T, Dim &gt;<a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">::vector_type</a> &amp; <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::getGridsize</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -363,10 +361,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getGridsize </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION T <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::getGridsize </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
           <td class="paramname"><em>dim</em></td><td>)</td>
@@ -383,13 +381,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual KOKKOS_INLINE_FUNCTION const <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> &amp; <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getMeshSpacing </td>
+          <td class="memname">virtual KOKKOS_INLINE_FUNCTION const <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> &amp; <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::getMeshSpacing </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -402,7 +400,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classippl_1_1UniformCartesian.html#aa10091fe9f8952dbdbe528d8ff7a0d48">ippl::UniformCartesian&lt; T, Dim &gt;</a>, <a class="el" href="classippl_1_1UniformCartesian.html#aa10091fe9f8952dbdbe528d8ff7a0d48">ippl::UniformCartesian&lt; 2 &gt;</a>, <a class="el" href="classippl_1_1UniformCartesian.html#aa10091fe9f8952dbdbe528d8ff7a0d48">ippl::UniformCartesian&lt; 3 &gt;</a>, and <a class="el" href="classippl_1_1UniformCartesian.html#aa10091fe9f8952dbdbe528d8ff7a0d48">ippl::UniformCartesian&lt; Tlhs, Dim &gt;</a>.</p>
+<p>Implemented in <a class="el" href="classippl_1_1UniformCartesian.html#aa10091fe9f8952dbdbe528d8ff7a0d48">ippl::UniformCartesian&lt; T, Dim &gt;</a>, and <a class="el" href="classippl_1_1UniformCartesian.html#aa10091fe9f8952dbdbe528d8ff7a0d48">ippl::UniformCartesian&lt; Tlhs, Dim &gt;</a>.</p>
 
 </div>
 </div>
@@ -412,13 +410,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getMeshVolume </td>
+          <td class="memname">virtual KOKKOS_INLINE_FUNCTION T <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::getMeshVolume </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -432,7 +430,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </div><div class="memdoc">
 <p >Query the volume of the represented domain </p><dl class="section return"><dt>Returns</dt><dd>Total volume of the mesh </dd></dl>
 
-<p>Implemented in <a class="el" href="classippl_1_1UniformCartesian.html#a15bcc82b201bbbf47b59398d8f35194e">ippl::UniformCartesian&lt; T, Dim &gt;</a>, <a class="el" href="classippl_1_1UniformCartesian.html#a15bcc82b201bbbf47b59398d8f35194e">ippl::UniformCartesian&lt; 2 &gt;</a>, <a class="el" href="classippl_1_1UniformCartesian.html#a15bcc82b201bbbf47b59398d8f35194e">ippl::UniformCartesian&lt; 3 &gt;</a>, and <a class="el" href="classippl_1_1UniformCartesian.html#a15bcc82b201bbbf47b59398d8f35194e">ippl::UniformCartesian&lt; Tlhs, Dim &gt;</a>.</p>
+<p>Implemented in <a class="el" href="classippl_1_1UniformCartesian.html#a15bcc82b201bbbf47b59398d8f35194e">ippl::UniformCartesian&lt; T, Dim &gt;</a>, and <a class="el" href="classippl_1_1UniformCartesian.html#a15bcc82b201bbbf47b59398d8f35194e">ippl::UniformCartesian&lt; Tlhs, Dim &gt;</a>.</p>
 
 </div>
 </div>
@@ -442,10 +440,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html">Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;<a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">::vector_type</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getOrigin</td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html">Mesh</a>&lt; T, Dim &gt;<a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">::vector_type</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::getOrigin</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -458,15 +456,15 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::getVertexPosition </td>
+          <td class="memname">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::getVertexPosition </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt; &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;&#160;</td>
           <td class="paramname"><em>ndi</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -478,7 +476,7 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classippl_1_1UniformCartesian.html#a461e1591f5ce16966eef62430fa39948">ippl::UniformCartesian&lt; T, Dim &gt;</a>, <a class="el" href="classippl_1_1UniformCartesian.html#a461e1591f5ce16966eef62430fa39948">ippl::UniformCartesian&lt; 2 &gt;</a>, <a class="el" href="classippl_1_1UniformCartesian.html#a461e1591f5ce16966eef62430fa39948">ippl::UniformCartesian&lt; 3 &gt;</a>, and <a class="el" href="classippl_1_1UniformCartesian.html#a461e1591f5ce16966eef62430fa39948">ippl::UniformCartesian&lt; Tlhs, Dim &gt;</a>.</p>
+<p>Implemented in <a class="el" href="classippl_1_1UniformCartesian.html#a461e1591f5ce16966eef62430fa39948">ippl::UniformCartesian&lt; T, Dim &gt;</a>, and <a class="el" href="classippl_1_1UniformCartesian.html#a461e1591f5ce16966eef62430fa39948">ippl::UniformCartesian&lt; Tlhs, Dim &gt;</a>.</p>
 
 </div>
 </div>
@@ -488,10 +486,10 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_INLINE_FUNCTION void <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::setOrigin </td>
+          <td class="memname">KOKKOS_INLINE_FUNCTION void <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::setOrigin </td>
           <td>(</td>
           <td class="paramtype">const <a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> &amp;&#160;</td>
           <td class="paramname"><em>origin</em></td><td>)</td>
@@ -509,13 +507,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::gridSizes_m</td>
+          <td class="memname"><a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::gridSizes_m</td>
         </tr>
       </table>
   </td>
@@ -533,13 +531,13 @@ template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d03
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a> , unsigned Dim&gt; </div>
+template&lt;typename T , unsigned Dim&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; <a class="el" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>, <a class="el" href="BumponTailInstability_8cpp.html#afef54e0ebfe65da0a396b342dcbe30f5">Dim</a> &gt;::origin_m</td>
+          <td class="memname"><a class="el" href="classippl_1_1Mesh.html#a16d92f105f704301adb708d574e3fcdb">vector_type</a> <a class="el" href="classippl_1_1Mesh.html">ippl::Mesh</a>&lt; T, Dim &gt;::origin_m</td>
         </tr>
       </table>
   </td>

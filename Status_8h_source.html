@@ -133,7 +133,7 @@ $(function() {
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>            }</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>            <span class="keywordtype">int</span> <a class="code hl_function" href="classippl_1_1mpi_1_1Status.html#a2ab9c3c543650cc6b1a1ba9ee6e11f79">count</a>             = MPI_UNDEFINED;</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>            MPI_Datatype datatype = get_mpi_datatype&lt;T&gt;(<a class="code hl_typedef" href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a>());</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>            MPI_Datatype datatype = get_mpi_datatype&lt;T&gt;(T());</div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>            MPI_Get_count(&amp;<a class="code hl_variable" href="classippl_1_1mpi_1_1Status.html#ad38602fee633f20a60da816659dc7250">status_m</a>, datatype, &amp;<a class="code hl_function" href="classippl_1_1mpi_1_1Status.html#a2ab9c3c543650cc6b1a1ba9ee6e11f79">count</a>);</div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
 <div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>            <span class="keywordflow">if</span> (<a class="code hl_function" href="classippl_1_1mpi_1_1Status.html#a2ab9c3c543650cc6b1a1ba9ee6e11f79">count</a> == MPI_UNDEFINED) {</div>
@@ -146,7 +146,6 @@ $(function() {
 <div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>}  <span class="comment">// namespace ippl</span></div>
 <div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span><span class="preprocessor">#endif</span></div>
-<div class="ttc" id="aBumponTailInstability_8cpp_html_a6b2d038ea9c8d2651eecffe0e28b7ebb"><div class="ttname"><a href="BumponTailInstability_8cpp.html#a6b2d038ea9c8d2651eecffe0e28b7ebb">T</a></div><div class="ttdeci">double T</div><div class="ttdef"><b>Definition:</b> BumponTailInstability.cpp:23</div></div>
 <div class="ttc" id="aclassippl_1_1mpi_1_1Status_html"><div class="ttname"><a href="classippl_1_1mpi_1_1Status.html">ippl::mpi::Status</a></div><div class="ttdef"><b>Definition:</b> Status.h:14</div></div>
 <div class="ttc" id="aclassippl_1_1mpi_1_1Status_html_a2ab9c3c543650cc6b1a1ba9ee6e11f79"><div class="ttname"><a href="classippl_1_1mpi_1_1Status.html#a2ab9c3c543650cc6b1a1ba9ee6e11f79">ippl::mpi::Status::count</a></div><div class="ttdeci">std::optional&lt; int &gt; count()</div><div class="ttdef"><b>Definition:</b> Status.h:44</div></div>
 <div class="ttc" id="aclassippl_1_1mpi_1_1Status_html_a3ee09e4eb063296ef4b2b124f313fe46"><div class="ttname"><a href="classippl_1_1mpi_1_1Status.html#a3ee09e4eb063296ef4b2b124f313fe46">ippl::mpi::Status::Status</a></div><div class="ttdeci">Status(const Status &amp;)=default</div></div>
