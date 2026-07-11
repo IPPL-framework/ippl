@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['t_0',['T',['../classippl_1_1FEMMaxwellDiffusionSolver.html#aa4f71e7341c2b640ddc58c63d9e7494a',1,'ippl::FEMMaxwellDiffusionSolver::T()'],['../classippl_1_1PCG.html#a71da464e2b99d7fbfe1f9e187700aa02',1,'ippl::PCG::T()'],['../classippl_1_1CG.html#af50461812c5406eff7a5b12d0d50375d',1,'ippl::CG::T()'],['../classippl_1_1PeriodicFace.html#a3ea2e84d2a3a4a2ea5a28968a2e78da5',1,'ippl::PeriodicFace::T()'],['../classippl_1_1ConstantFace.html#a901187abceed71b9b5dced3f29d66397',1,'ippl::ConstantFace::T()'],['../classippl_1_1ExtrapolateFace.html#a73149408220b7f637ccfe792160a3ec8',1,'ippl::ExtrapolateFace::T()']]],
-  ['t_1',['t',['../classIpplTimerInfo.html#a03484ceb4fd1d7c189da3f58a60b435b',1,'IpplTimerInfo::t()'],['../structippl_1_1CutTimes.html#a9667ab7272ed9942e5fa6a37d02b8b2f',1,'ippl::CutTimes::t()']]],
+  ['t_0',['t',['../classIpplTimerInfo.html#a03484ceb4fd1d7c189da3f58a60b435b',1,'IpplTimerInfo::t()'],['../structippl_1_1CutTimes.html#a9667ab7272ed9942e5fa6a37d02b8b2f',1,'ippl::CutTimes::t()']]],
+  ['t_1',['T',['../classippl_1_1FEMMaxwellDiffusionSolver.html#aa4f71e7341c2b640ddc58c63d9e7494a',1,'ippl::FEMMaxwellDiffusionSolver::T()'],['../classippl_1_1PCG.html#a71da464e2b99d7fbfe1f9e187700aa02',1,'ippl::PCG::T()'],['../classippl_1_1CG.html#af50461812c5406eff7a5b12d0d50375d',1,'ippl::CG::T()'],['../classippl_1_1PeriodicFace.html#a3ea2e84d2a3a4a2ea5a28968a2e78da5',1,'ippl::PeriodicFace::T()'],['../classippl_1_1ConstantFace.html#a901187abceed71b9b5dced3f29d66397',1,'ippl::ConstantFace::T()'],['../classippl_1_1ExtrapolateFace.html#a73149408220b7f637ccfe792160a3ec8',1,'ippl::ExtrapolateFace::T()']]],
   ['tag_2',['Tag',['../namespaceippl_1_1mpi_1_1tag.html#a15d567b75f6be9891166d172c200185a',1,'ippl::mpi::tag']]],
   ['tag_3',['tag',['../classippl_1_1mpi_1_1Status.html#a7830ecdba8ad2994f3fc75c2242956ac',1,'ippl::mpi::Status']]],
   ['tagcompare_4',['TagCompare',['../classTagMaker_1_1TagCompare.html',1,'TagMaker']]],

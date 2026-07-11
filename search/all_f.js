@@ -134,11 +134,10 @@ var searchData=
   ['printversion_131',['printVersion',['../classIpplInfo.html#a1e8cf4e5b628c014c9fea84e932515e0',1,'IpplInfo']]],
   ['probe_132',['probe',['../classippl_1_1mpi_1_1Communicator.html#ae601c2b19f2ff813b277cb7d2b03dfac',1,'ippl::mpi::Communicator']]],
   ['prod_133',['Prod',['../structKokkosCorrection_1_1Prod.html',1,'KokkosCorrection']]],
-  ['prod_134',['prod',['../namespaceippl.html#a4a18c8ae92048307dad2530aa3c2cb31',1,'ippl']]],
+  ['prod_134',['prod',['../namespaceippl.html#a4a18c8ae92048307dad2530aa3c2cb31',1,'ippl::prod()'],['../classippl_1_1BareField.html#a5409e8e1c01d3e0d233f5be7a1a86a36',1,'ippl::BareField::prod()'],['../structKokkos_1_1reduction__identity_3_01ippl_1_1Vector_3_01T_00_01Dim_01_4_01_4.html#a2a36b077f7981dff9a931bcb413349bd',1,'Kokkos::reduction_identity&lt; ippl::Vector&lt; T, Dim &gt; &gt;::prod()'],['../classippl_1_1ParticleAttrib.html#ae19dbfb97ab2286790388d31e8bfdfd6',1,'ippl::ParticleAttrib::prod()']]],
   ['prod_135',['Prod',['../structKokkosCorrection_1_1Prod.html#a473fa770315625e026eafd026cdc2c73',1,'KokkosCorrection::Prod']]],
-  ['prod_136',['prod',['../classippl_1_1BareField.html#a5409e8e1c01d3e0d233f5be7a1a86a36',1,'ippl::BareField::prod()'],['../structKokkos_1_1reduction__identity_3_01ippl_1_1Vector_3_01T_00_01Dim_01_4_01_4.html#a2a36b077f7981dff9a931bcb413349bd',1,'Kokkos::reduction_identity&lt; ippl::Vector&lt; T, Dim &gt; &gt;::prod()'],['../classippl_1_1ParticleAttrib.html#ae19dbfb97ab2286790388d31e8bfdfd6',1,'ippl::ParticleAttrib::prod()']]],
-  ['projectcurrent_2ehpp_137',['ProjectCurrent.hpp',['../ProjectCurrent_8hpp.html',1,'']]],
-  ['prolong_5fadd_138',['prolong_add',['../structippl_1_1multigrid__preconditioner.html#aa3d9a91d69c282759521915a08ead4b8',1,'ippl::multigrid_preconditioner']]],
-  ['put_139',['put',['../classippl_1_1mpi_1_1rma_1_1Window.html#aef1a80921caa6fdad44135bd727e9755',1,'ippl::mpi::rma::Window::put(Iter first, Iter last, int dest, unsigned int pos, Request *request=nullptr)'],['../classippl_1_1mpi_1_1rma_1_1Window.html#aa679fa217d982f5d5e45b435a25100e3',1,'ippl::mpi::rma::Window::put(const T *value, int dest, unsigned int pos, Request *request=nullptr)']]],
-  ['px_140',['px',['../classmy__auto__ptr.html#ad040b4d59a7327923d4772bdf63a00d4',1,'my_auto_ptr']]]
+  ['projectcurrent_2ehpp_136',['ProjectCurrent.hpp',['../ProjectCurrent_8hpp.html',1,'']]],
+  ['prolong_5fadd_137',['prolong_add',['../structippl_1_1multigrid__preconditioner.html#aa3d9a91d69c282759521915a08ead4b8',1,'ippl::multigrid_preconditioner']]],
+  ['put_138',['put',['../classippl_1_1mpi_1_1rma_1_1Window.html#aef1a80921caa6fdad44135bd727e9755',1,'ippl::mpi::rma::Window::put(Iter first, Iter last, int dest, unsigned int pos, Request *request=nullptr)'],['../classippl_1_1mpi_1_1rma_1_1Window.html#aa679fa217d982f5d5e45b435a25100e3',1,'ippl::mpi::rma::Window::put(const T *value, int dest, unsigned int pos, Request *request=nullptr)']]],
+  ['px_139',['px',['../classmy__auto__ptr.html#ad040b4d59a7327923d4772bdf63a00d4',1,'my_auto_ptr']]]
 ];

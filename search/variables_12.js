@@ -18,5 +18,6 @@ var searchData=
   ['storage_5ffield_15',['storage_field',['../classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f',1,'ippl::FFTOpenPoissonSolver']]],
   ['stride_5fm_16',['stride_m',['../classippl_1_1Index_1_1iterator.html#aaf1e42334bb2e13f74aab92da11e828f',1,'ippl::Index::iterator::stride_m()'],['../classippl_1_1Index.html#a39c4821b048d444dc9f98a047dc2efa2',1,'ippl::Index::stride_m()']]],
   ['stype_5fm_17',['stype_m',['../classippl_1_1FieldSolverBase.html#aae1edb44781d471a8316a39baee039d2',1,'ippl::FieldSolverBase']]],
-  ['subdomains_5fm_18',['subdomains_m',['../classippl_1_1detail_1_1RegionLayout.html#a7ee3947d6c945ae53e54c55890812494',1,'ippl::detail::RegionLayout']]]
+  ['subdomains_5fm_18',['subdomains_m',['../classippl_1_1detail_1_1RegionLayout.html#a7ee3947d6c945ae53e54c55890812494',1,'ippl::detail::RegionLayout']]],
+  ['subview_19',['subview',['../structippl_1_1detail_1_1HaloPackFunctor.html#a369d062fb75c03d803a42226a8888903',1,'ippl::detail::HaloPackFunctor::subview()'],['../structippl_1_1detail_1_1HaloUnpackFunctor.html#adb44429be1a58c4c15ebb1ddacfc5486',1,'ippl::detail::HaloUnpackFunctor::subview()']]]
 ];
