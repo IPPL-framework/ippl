@@ -28,7 +28,7 @@ namespace ippl {
         inline constexpr int mg_pre_smooth     = 2;
         inline constexpr int mg_post_smooth    = 2;
         inline constexpr double mg_omega       = 0.8;
-        inline constexpr unsigned mg_min_cells = 4;
+        inline constexpr int mg_min_cells = 4;
         inline constexpr bool mg_communication = false;
 
         inline constexpr std::array<const char*, 8> valid_types = {
@@ -47,7 +47,7 @@ namespace ippl {
         using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
         typedef typename Base::lhs_type::value_type T;
 
-    public:
+      public:
         using typename Base::lhs_type, typename Base::rhs_type;
         using OperatorF    = std::function<OperatorRet(lhs_type&)>;
         using LowerF       = std::function<LowerRet(lhs_type&)>;
@@ -127,7 +127,7 @@ namespace ippl {
             [[maybe_unused]] double mg_omega =
                 pcg_preconditioner_defaults::mg_omega,  // This is a dummy default parameter, actual
                                                         // default parameter should be set in main
-            [[maybe_unused]] unsigned mg_min_cells_per_rank_per_dim =
+            [[maybe_unused]] int mg_min_cells_per_rank_per_dim =
                 pcg_preconditioner_defaults::mg_min_cells,
             [[maybe_unused]] bool mg_communication =
                 pcg_preconditioner_defaults::mg_communication) {}
@@ -234,7 +234,7 @@ namespace ippl {
 
         virtual T getResidue() const { return residueNorm; }
 
-    protected:
+      protected:
         OperatorF op_m;
         T residueNorm    = 0;
         int iterations_m = 0;
@@ -254,7 +254,7 @@ namespace ippl {
              FEMVector<T>> : public SolverAlgorithm<FEMVector<T>, FEMVector<T>> {
         using Base = SolverAlgorithm<FEMVector<T>, FEMVector<T>>;
 
-    public:
+      public:
         using typename Base::lhs_type, typename Base::rhs_type;
         using OperatorF    = std::function<OperatorRet(lhs_type&)>;
         using LowerF       = std::function<LowerRet(lhs_type&)>;
@@ -366,7 +366,7 @@ namespace ippl {
 
         virtual T getResidue() const { return residueNorm; }
 
-    protected:
+      protected:
         OperatorF op_m;
         T residueNorm    = 0;
         int iterations_m = 0;
@@ -380,7 +380,7 @@ namespace ippl {
         using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
         typedef typename Base::lhs_type::value_type T;
 
-    public:
+      public:
         using typename Base::lhs_type, typename Base::rhs_type;
         using OperatorF    = std::function<OperatorRet(lhs_type&)>;
         using LowerF       = std::function<LowerRet(lhs_type&)>;
@@ -469,7 +469,7 @@ namespace ippl {
             double mg_omega =
                 pcg_preconditioner_defaults::mg_omega,  // This is a dummy default parameter, actual
                                                         // default parameter should be set in main
-            unsigned mg_min_cells_per_rank_per_dim = pcg_preconditioner_defaults::mg_min_cells,
+            int mg_min_cells_per_rank_per_dim = pcg_preconditioner_defaults::mg_min_cells,
             bool mg_communication = pcg_preconditioner_defaults::mg_communication) override {
             if (preconditioner_type == "jacobi") {
                 // Turn on damping parameter
@@ -614,7 +614,7 @@ namespace ippl {
             }
         }
 
-    protected:
+      protected:
         std::unique_ptr<preconditioner<FieldLHS>> preconditioner_m;
 
         /*

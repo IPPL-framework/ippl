@@ -29,7 +29,7 @@ private:
         int mg_pre_smooth_iters  = ippl::pcg_preconditioner_defaults::mg_pre_smooth;
         int mg_post_smooth_iters = ippl::pcg_preconditioner_defaults::mg_post_smooth;
         double mg_omega          = ippl::pcg_preconditioner_defaults::mg_omega;
-        unsigned mg_min_cells    = ippl::pcg_preconditioner_defaults::mg_min_cells;
+        int mg_min_cells    = ippl::pcg_preconditioner_defaults::mg_min_cells;
     };
 
     Field_t<Dim>* rho_m;
@@ -110,8 +110,7 @@ private:
                 parsed.mg_pre_smooth_iters  = std::stoi(preconditioner_params_m[arg++]);
                 parsed.mg_post_smooth_iters = std::stoi(preconditioner_params_m[arg++]);
                 parsed.mg_omega             = std::stod(preconditioner_params_m[arg++]);
-                parsed.mg_min_cells =
-                    static_cast<unsigned>(std::stoul(preconditioner_params_m[arg++]));
+                parsed.mg_min_cells         = std::stoi(preconditioner_params_m[arg++]);
             }
             parsed.use_defaults = false;
         } catch (const std::exception& ex) {

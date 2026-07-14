@@ -199,7 +199,7 @@ namespace ippl {
             int mg_pre                 = pcg_preconditioner_defaults::mg_pre_smooth;
             int mg_post                = pcg_preconditioner_defaults::mg_post_smooth;
             double mg_omega            = pcg_preconditioner_defaults::mg_omega;
-            unsigned mg_min_cells      = pcg_preconditioner_defaults::mg_min_cells;
+            int mg_min_cells           = pcg_preconditioner_defaults::mg_min_cells;
             preconditioner_validation::sanitizeParams(
                 preconditioner_type, warn, level, degree, richardson_iterations, inner, outer,
                 omega, &communication, mg_pre, mg_post, mg_omega, mg_min_cells);
