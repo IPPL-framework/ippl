@@ -537,6 +537,10 @@ Functions</h2></td></tr>
 <tr class="memitem:a494d531f735e82bd4f9a1206adee199b"><td class="memTemplParams" colspan="2">template&lt;unsigned Dim&gt; </td></tr>
 <tr class="memitem:a494d531f735e82bd4f9a1206adee199b"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a494d531f735e82bd4f9a1206adee199b">operator!=</a> (const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;nd1, const <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a>&lt; Dim &gt; &amp;nd2)</td></tr>
 <tr class="separator:a494d531f735e82bd4f9a1206adee199b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aead8ee3150750e42e64b5a663d491bc2"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename ChargeAttrib , typename PosAttrib , typename JField , typename policy_type  = Kokkos::RangePolicy&lt;&gt;&gt; </td></tr>
+<tr class="memitem:aead8ee3150750e42e64b5a663d491bc2"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#aead8ee3150750e42e64b5a663d491bc2">assemble_current_collocated</a> (const <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;mesh, const ChargeAttrib &amp;q_attrib, const PosAttrib &amp;X0, const PosAttrib &amp;X1, JField &amp;J_field, policy_type iteration_policy, typename <a class="el" href="classippl_1_1Mesh.html#a263f7adcb28a2a2613a75f98e934578c">Mesh::value_type</a> dt)</td></tr>
+<tr class="memdesc:aead8ee3150750e42e64b5a663d491bc2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deposit current density onto a co-located (non-staggered) grid.  <a href="namespaceippl.html#aead8ee3150750e42e64b5a663d491bc2">More...</a><br /></td></tr>
+<tr class="separator:aead8ee3150750e42e64b5a663d491bc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac275f83b68020453f7ee6b86b0cb9955"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename ChargeAttrib , typename PosAttrib , typename JField , typename policy_type  = Kokkos::RangePolicy&lt;&gt;&gt; </td></tr>
 <tr class="memitem:ac275f83b68020453f7ee6b86b0cb9955"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#ac275f83b68020453f7ee6b86b0cb9955">assemble_current_yee</a> (const <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;mesh, const ChargeAttrib &amp;q_attrib, const PosAttrib &amp;X0, const PosAttrib &amp;X1, JField &amp;J_field, policy_type iteration_policy, typename <a class="el" href="classippl_1_1Mesh.html#a263f7adcb28a2a2613a75f98e934578c">Mesh::value_type</a> dt)</td></tr>
 <tr class="memdesc:ac275f83b68020453f7ee6b86b0cb9955"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deposit current density onto a Yee-staggered grid.  <a href="namespaceippl.html#ac275f83b68020453f7ee6b86b0cb9955">More...</a><br /></td></tr>
@@ -1078,6 +1082,78 @@ template&lt;typename View , typename Coords , size_t... Idx&gt; </div>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="aead8ee3150750e42e64b5a663d491bc2" name="aead8ee3150750e42e64b5a663d491bc2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aead8ee3150750e42e64b5a663d491bc2">&#9670;&#160;</a></span>assemble_current_collocated()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename ChargeAttrib , typename PosAttrib , typename JField , typename policy_type  = Kokkos::RangePolicy&lt;&gt;&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ippl::assemble_current_collocated </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const ChargeAttrib &amp;&#160;</td>
+          <td class="paramname"><em>q_attrib</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const PosAttrib &amp;&#160;</td>
+          <td class="paramname"><em>X0</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const PosAttrib &amp;&#160;</td>
+          <td class="paramname"><em>X1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">JField &amp;&#160;</td>
+          <td class="paramname"><em>J_field</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">policy_type&#160;</td>
+          <td class="paramname"><em>iteration_policy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">typename <a class="el" href="classippl_1_1Mesh.html#a263f7adcb28a2a2613a75f98e934578c">Mesh::value_type</a>&#160;</td>
+          <td class="paramname"><em>dt</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Deposit current density onto a co-located (non-staggered) grid. </p>
+<p >For each particle p moving from X0(p) to X1(p) during one time step dt, the trajectory is split into sub-segments each lying within a single mesh cell (via <a class="el" href="structippl_1_1GridPathSegmenter.html">GridPathSegmenter</a>). For each segment, the contribution is scattered onto all 2^Dim surrounding grid nodes using CIC weights evaluated at the midpoint (all J components share the same grid location on a co-located grid).</p>
+<p >Writes q*dp[c]/(dt*cell_volume) into component [c+1] of the field vector. Component [0] is reserved for the scalar potential / charge density. This matches the co-located 4-potential FDTD formulation where the source field stores (phi, Jx, Jy, Jz) at each node. </p>
 
 </div>
 </div>
