@@ -267,7 +267,6 @@ namespace ippl {
 
         create(copySize);  // localNum_mp becomes oldSize + copySize
 
-        auto view = this->getView();
         Kokkos::parallel_for(
             "Copy to temp", policy_type(0, copySize),
             KOKKOS_LAMBDA(const size_type& i) { view(size + i) = view(i); });
