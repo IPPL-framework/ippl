@@ -39,6 +39,7 @@ option(IPPL_ENABLE_FFT "Enable FFT support" OFF)
 option(IPPL_ENABLE_SOLVERS "Enable IPPL solvers" OFF)
 option(IPPL_ENABLE_ALPINE "Enable building the Alpine module" OFF)
 option(IPPL_ENABLE_COSMOLOGY "Enable building the Cosmology module" OFF)
+option(IPPL_ENABLE_FEL "Enable building the FEL module" OFF)
 option(IPPL_ENABLE_EXAMPLES "Enable building the Example module" OFF)
 option(IPPL_ENABLE_TESTS "Build integration tests in test/ directory" OFF)
 option(IPPL_ENABLE_COVERAGE "Enable code coverage" OFF)
@@ -129,6 +130,10 @@ endif()
 
 if(IPPL_ENABLE_COSMOLOGY)
   add_subdirectory(cosmology)
+endif()
+
+if(IPPL_ENABLE_FEL)
+  add_subdirectory(fel)
 endif()
 
 if(IPPL_ENABLE_EXAMPLES)
