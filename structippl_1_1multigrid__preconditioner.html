@@ -129,9 +129,9 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ab2754426cc117a0c3399dfab51c5f99a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1multigrid__preconditioner.html#ab2754426cc117a0c3399dfab51c5f99a">multigrid_preconditioner</a> (OperatorF &amp;&amp;op, unsigned pre_smooth_iters=2, unsigned post_smooth_iters=2, double omega_jacobi=0.8, unsigned min_cells_per_rank_per_dim=4, bool communication=true)</td></tr>
-<tr class="memdesc:ab2754426cc117a0c3399dfab51c5f99a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new <a class="el" href="structippl_1_1multigrid__preconditioner.html" title="Multigrid preconditioner for linear solvers.">multigrid_preconditioner</a> object.  <a href="structippl_1_1multigrid__preconditioner.html#ab2754426cc117a0c3399dfab51c5f99a">More...</a><br /></td></tr>
-<tr class="separator:ab2754426cc117a0c3399dfab51c5f99a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f942182aa81eceb2422573fde7a2a98"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1multigrid__preconditioner.html#a0f942182aa81eceb2422573fde7a2a98">multigrid_preconditioner</a> (OperatorF &amp;&amp;op, unsigned pre_smooth_iters=2, unsigned post_smooth_iters=2, double omega_jacobi=0.8, int min_cells_per_rank_per_dim=4, bool communication=true)</td></tr>
+<tr class="memdesc:a0f942182aa81eceb2422573fde7a2a98"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new <a class="el" href="structippl_1_1multigrid__preconditioner.html" title="Multigrid preconditioner for linear solvers.">multigrid_preconditioner</a> object.  <a href="structippl_1_1multigrid__preconditioner.html#a0f942182aa81eceb2422573fde7a2a98">More...</a><br /></td></tr>
+<tr class="separator:a0f942182aa81eceb2422573fde7a2a98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac190ef0c79c40645671bd92fa74a4965"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1multigrid__preconditioner.html#ac190ef0c79c40645671bd92fa74a4965">setDebugPrint</a> (bool enabled)</td></tr>
 <tr class="memdesc:ac190ef0c79c40645671bd92fa74a4965"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enables or disables debug printing of the multigrid state.  <a href="structippl_1_1multigrid__preconditioner.html#ac190ef0c79c40645671bd92fa74a4965">More...</a><br /></td></tr>
 <tr class="separator:ac190ef0c79c40645671bd92fa74a4965"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -205,8 +205,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a82d74c6f72bc6490df40de8923861162"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a818cb010391a874ce896bfc40596c4cd"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1multigrid__preconditioner.html#a818cb010391a874ce896bfc40596c4cd">omega_</a></td></tr>
 <tr class="separator:a818cb010391a874ce896bfc40596c4cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaa7b3040961bab30e9acb490f7f162fa"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1multigrid__preconditioner.html#aaa7b3040961bab30e9acb490f7f162fa">min_cells_per_rank_per_dim_</a></td></tr>
-<tr class="separator:aaa7b3040961bab30e9acb490f7f162fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f3d0f833d1b933ea6acbea2fe429f22"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1multigrid__preconditioner.html#a9f3d0f833d1b933ea6acbea2fe429f22">min_cells_per_rank_per_dim_</a></td></tr>
+<tr class="separator:a9f3d0f833d1b933ea6acbea2fe429f22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7de20dc854efd87228f16ebfba4dfdf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1multigrid__preconditioner.html#ae7de20dc854efd87228f16ebfba4dfdf">communication_</a></td></tr>
 <tr class="separator:ae7de20dc854efd87228f16ebfba4dfdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22a79eb8021d07e908e22e343585f042"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1multigrid__preconditioner.html#a22a79eb8021d07e908e22e343585f042">is_all_periodic_</a> = false</td></tr>
@@ -262,8 +262,8 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , ty
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ab2754426cc117a0c3399dfab51c5f99a" name="ab2754426cc117a0c3399dfab51c5f99a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab2754426cc117a0c3399dfab51c5f99a">&#9670;&#160;</a></span>multigrid_preconditioner()</h2>
+<a id="a0f942182aa81eceb2422573fde7a2a98" name="a0f942182aa81eceb2422573fde7a2a98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f942182aa81eceb2422573fde7a2a98">&#9670;&#160;</a></span>multigrid_preconditioner()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -300,7 +300,7 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , ty
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramtype">int&#160;</td>
           <td class="paramname"><em>min_cells_per_rank_per_dim</em> = <code>4</code>, </td>
         </tr>
         <tr>
@@ -964,8 +964,8 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , ty
 
 </div>
 </div>
-<a id="aaa7b3040961bab30e9acb490f7f162fa" name="aaa7b3040961bab30e9acb490f7f162fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa7b3040961bab30e9acb490f7f162fa">&#9670;&#160;</a></span>min_cells_per_rank_per_dim_</h2>
+<a id="a9f3d0f833d1b933ea6acbea2fe429f22" name="a9f3d0f833d1b933ea6acbea2fe429f22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f3d0f833d1b933ea6acbea2fe429f22">&#9670;&#160;</a></span>min_cells_per_rank_per_dim_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -976,7 +976,7 @@ template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> , ty
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">unsigned <a class="el" href="structippl_1_1multigrid__preconditioner.html">ippl::multigrid_preconditioner</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, OperatorF &gt;::min_cells_per_rank_per_dim_</td>
+          <td class="memname">int <a class="el" href="structippl_1_1multigrid__preconditioner.html">ippl::multigrid_preconditioner</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a>, OperatorF &gt;::min_cells_per_rank_per_dim_</td>
         </tr>
       </table>
   </td>

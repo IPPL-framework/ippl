@@ -94,8 +94,8 @@ Collaboration diagram for IpplTimings:</div>
 <div class="dyncontent">
 <div class="center"><img src="classIpplTimings__coll__graph.png" border="0" usemap="#aIpplTimings_coll__map" alt="Collaboration graph"/></div>
 <map name="aIpplTimings_coll__map" id="aIpplTimings_coll__map">
-<area shape="rect" title=" " alt="" coords="5,269,133,485"/>
-<area shape="rect" href="structTiming.html" title=" " alt="" coords="18,5,121,207"/>
+<area shape="rect" title=" " alt="" coords="17,313,145,559"/>
+<area shape="rect" href="structTiming.html" title=" " alt="" coords="5,5,156,251"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -126,6 +126,20 @@ Static Public Member Functions</h2></td></tr>
 <tr class="separator:a28583a92d84a01e2d8ae6966990025bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acba3089a5be6d565119c0a38c5714d3c"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#acba3089a5be6d565119c0a38c5714d3c">pop</a> ()</td></tr>
 <tr class="separator:acba3089a5be6d565119c0a38c5714d3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f66bbb83c64eb8a7e676d339b51d54e"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#a1f66bbb83c64eb8a7e676d339b51d54e">resetAllTimers</a> ()</td></tr>
+<tr class="separator:a1f66bbb83c64eb8a7e676d339b51d54e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9b09986e9c8b989c54b2573ce02b92ba"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#a9b09986e9c8b989c54b2573ce02b92ba">dumpToCSV</a> (const std::string &amp;filename)</td></tr>
+<tr class="separator:a9b09986e9c8b989c54b2573ce02b92ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3cc051973d992489918d2e44833db960"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#a3cc051973d992489918d2e44833db960">dumpToCSV</a> (const std::string &amp;filename, const std::string &amp;delimiter, bool includeHeader=true)</td></tr>
+<tr class="separator:a3cc051973d992489918d2e44833db960"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a95e845e6e3b3012a3b6a95a03f1472"><td class="memItemLeft" align="right" valign="top">static const std::vector&lt; double &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#a7a95e845e6e3b3012a3b6a95a03f1472">getMeasurements</a> (<a class="el" href="classIpplTimings.html#a06ab8330445cb281b26fa12dbfa2b72c">TimerRef</a> t)</td></tr>
+<tr class="separator:a7a95e845e6e3b3012a3b6a95a03f1472"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac35f3374183caa2743ae5b2df6484f91"><td class="memItemLeft" align="right" valign="top">static const std::vector&lt; double &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#ac35f3374183caa2743ae5b2df6484f91">getMeasurements</a> (const std::string &amp;name)</td></tr>
+<tr class="separator:ac35f3374183caa2743ae5b2df6484f91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac5c01fb639bf6994b456dba45a184d7"><td class="memItemLeft" align="right" valign="top">static size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#aac5c01fb639bf6994b456dba45a184d7">getMeasurementCount</a> (<a class="el" href="classIpplTimings.html#a06ab8330445cb281b26fa12dbfa2b72c">TimerRef</a> t)</td></tr>
+<tr class="separator:aac5c01fb639bf6994b456dba45a184d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a325edcbbd58bb24a0c973109c3ab559b"><td class="memItemLeft" align="right" valign="top">static std::vector&lt; std::string &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classIpplTimings.html#a325edcbbd58bb24a0c973109c3ab559b">getTimerNames</a> ()</td></tr>
+<tr class="separator:a325edcbbd58bb24a0c973109c3ab559b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
 Private Types</h2></td></tr>
@@ -299,6 +313,152 @@ Static Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a9b09986e9c8b989c54b2573ce02b92ba" name="a9b09986e9c8b989c54b2573ce02b92ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9b09986e9c8b989c54b2573ce02b92ba">&#9670;&#160;</a></span>dumpToCSV() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void IpplTimings::dumpToCSV </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>filename</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3cc051973d992489918d2e44833db960" name="a3cc051973d992489918d2e44833db960"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3cc051973d992489918d2e44833db960">&#9670;&#160;</a></span>dumpToCSV() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void IpplTimings::dumpToCSV </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>filename</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>delimiter</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>includeHeader</em> = <code>true</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aac5c01fb639bf6994b456dba45a184d7" name="aac5c01fb639bf6994b456dba45a184d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac5c01fb639bf6994b456dba45a184d7">&#9670;&#160;</a></span>getMeasurementCount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static size_t IpplTimings::getMeasurementCount </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classIpplTimings.html#a06ab8330445cb281b26fa12dbfa2b72c">TimerRef</a>&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac35f3374183caa2743ae5b2df6484f91" name="ac35f3374183caa2743ae5b2df6484f91"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac35f3374183caa2743ae5b2df6484f91">&#9670;&#160;</a></span>getMeasurements() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static const std::vector&lt; double &gt; &amp; IpplTimings::getMeasurements </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7a95e845e6e3b3012a3b6a95a03f1472" name="a7a95e845e6e3b3012a3b6a95a03f1472"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a95e845e6e3b3012a3b6a95a03f1472">&#9670;&#160;</a></span>getMeasurements() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static const std::vector&lt; double &gt; &amp; IpplTimings::getMeasurements </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classIpplTimings.html#a06ab8330445cb281b26fa12dbfa2b72c">TimerRef</a>&#160;</td>
+          <td class="paramname"><em>t</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a59ffa7a04c160376d3a6593bff568fb4" name="a59ffa7a04c160376d3a6593bff568fb4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a59ffa7a04c160376d3a6593bff568fb4">&#9670;&#160;</a></span>getTimer()</h2>
 
@@ -313,6 +473,31 @@ Static Private Attributes</h2></td></tr>
           <td>(</td>
           <td class="paramtype">const char *&#160;</td>
           <td class="paramname"><em>nm</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a325edcbbd58bb24a0c973109c3ab559b" name="a325edcbbd58bb24a0c973109c3ab559b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a325edcbbd58bb24a0c973109c3ab559b">&#9670;&#160;</a></span>getTimerNames()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static std::vector&lt; std::string &gt; IpplTimings::getTimerNames </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -426,6 +611,31 @@ Static Private Attributes</h2></td></tr>
           <td></td>
           <td>)</td>
           <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1f66bbb83c64eb8a7e676d339b51d54e" name="a1f66bbb83c64eb8a7e676d339b51d54e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f66bbb83c64eb8a7e676d339b51d54e">&#9670;&#160;</a></span>resetAllTimers()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void IpplTimings::resetAllTimers </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
         </tr>
       </table>
   </td>

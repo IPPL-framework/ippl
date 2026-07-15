@@ -84,6 +84,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1detail_1_1Archive-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::detail::Archive&lt; Properties &gt; Class Template Reference</div></div>
@@ -106,6 +107,8 @@ Collaboration diagram for ippl::detail::Archive&lt; Properties &gt;:</div>
 Public Types</h2></td></tr>
 <tr class="memitem:a3ae496f57583256eb083aeddc6028c24"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a3ae496f57583256eb083aeddc6028c24">buffer_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a>&lt; char, 1, Properties... &gt;::view_type</td></tr>
 <tr class="separator:a3ae496f57583256eb083aeddc6028c24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3ad159c41c816edb1b508259062d7f1"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#aa3ad159c41c816edb1b508259062d7f1">memory_space</a> = typename buffer_type::memory_space</td></tr>
+<tr class="separator:aa3ad159c41c816edb1b508259062d7f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd98363e497ce517630ae5341fd209bb"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#acd98363e497ce517630ae5341fd209bb">pointer_type</a> = typename buffer_type::pointer_type</td></tr>
 <tr class="separator:acd98363e497ce517630ae5341fd209bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -113,15 +116,29 @@ Public Types</h2></td></tr>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:abddcdf76b0ccb517e03698bf89ed545a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#abddcdf76b0ccb517e03698bf89ed545a">Archive</a> (<a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> size=0)</td></tr>
 <tr class="separator:abddcdf76b0ccb517e03698bf89ed545a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65bc1ff8584e8bb98f960de2db522202"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a65bc1ff8584e8bb98f960de2db522202">~Archive</a> ()</td></tr>
+<tr class="separator:a65bc1ff8584e8bb98f960de2db522202"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0149ea2797d448d073fdf9092fefd803"><td class="memTemplParams" colspan="2">template&lt;typename T , class... ViewArgs&gt; </td></tr>
 <tr class="memitem:a0149ea2797d448d073fdf9092fefd803"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a0149ea2797d448d073fdf9092fefd803">serialize</a> (const Kokkos::View&lt; T *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nsends)</td></tr>
 <tr class="separator:a0149ea2797d448d073fdf9092fefd803"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f760fb168eab7bff6eec651eceea655"><td class="memTemplParams" colspan="2">template&lt;typename T , class... ViewArgs, typename HashView &gt; </td></tr>
+<tr class="memitem:a9f760fb168eab7bff6eec651eceea655"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a9f760fb168eab7bff6eec651eceea655">serialize</a> (const Kokkos::View&lt; T *, ViewArgs... &gt; &amp;view, const HashView &amp;hash, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nsends)</td></tr>
+<tr class="separator:a9f760fb168eab7bff6eec651eceea655"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ed8af6da9c86743cbef15b6aa9a911f"><td class="memTemplParams" colspan="2">template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </td></tr>
 <tr class="memitem:a1ed8af6da9c86743cbef15b6aa9a911f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a1ed8af6da9c86743cbef15b6aa9a911f">serialize</a> (const Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nsends)</td></tr>
 <tr class="separator:a1ed8af6da9c86743cbef15b6aa9a911f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8c5ede8e65a64531fe38a54f71047b8"><td class="memTemplParams" colspan="2">template&lt;typename T , unsigned Dim, class... ViewArgs, typename HashView &gt; </td></tr>
+<tr class="memitem:af8c5ede8e65a64531fe38a54f71047b8"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#af8c5ede8e65a64531fe38a54f71047b8">serialize</a> (const Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; *, ViewArgs... &gt; &amp;view, const HashView &amp;hash, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nsends)</td></tr>
+<tr class="separator:af8c5ede8e65a64531fe38a54f71047b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a47de1f8edec65ea856f7bfaa57c8daf8"><td class="memTemplParams" colspan="2">template&lt;typename T , class... ViewArgs&gt; </td></tr>
 <tr class="memitem:a47de1f8edec65ea856f7bfaa57c8daf8"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a47de1f8edec65ea856f7bfaa57c8daf8">deserialize</a> (Kokkos::View&lt; T *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nrecvs)</td></tr>
 <tr class="separator:a47de1f8edec65ea856f7bfaa57c8daf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59f6df74d5759b065a85d352d6e9d0fc"><td class="memTemplParams" colspan="2">template&lt;typename T , class... ViewArgs&gt; </td></tr>
+<tr class="memitem:a59f6df74d5759b065a85d352d6e9d0fc"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a59f6df74d5759b065a85d352d6e9d0fc">deserialize</a> (Kokkos::View&lt; T *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> offset, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nrecvs)</td></tr>
+<tr class="separator:a59f6df74d5759b065a85d352d6e9d0fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c3fdb57714bad2e88dd9fb9e14bb2b6"><td class="memTemplParams" colspan="2">template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </td></tr>
+<tr class="memitem:a9c3fdb57714bad2e88dd9fb9e14bb2b6"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a9c3fdb57714bad2e88dd9fb9e14bb2b6">deserialize</a> (Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> offset, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nrecvs)</td></tr>
+<tr class="separator:a9c3fdb57714bad2e88dd9fb9e14bb2b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af1b2e7a0b88f9ac4ff7c0965dfe2fd1a"><td class="memTemplParams" colspan="2">template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </td></tr>
 <tr class="memitem:af1b2e7a0b88f9ac4ff7c0965dfe2fd1a"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#af1b2e7a0b88f9ac4ff7c0965dfe2fd1a">deserialize</a> (Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; *, ViewArgs... &gt; &amp;view, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nrecvs)</td></tr>
 <tr class="separator:af1b2e7a0b88f9ac4ff7c0965dfe2fd1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -139,8 +156,13 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a945131644935c484507aa55f01973341"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7768636782bbbc8d4c5e4c7b947927c1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a7768636782bbbc8d4c5e4c7b947927c1">resetReadPos</a> ()</td></tr>
 <tr class="separator:a7768636782bbbc8d4c5e4c7b947927c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b3027ffdbe1bec44e8c317a3737dcc9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a3b3027ffdbe1bec44e8c317a3737dcc9">~Archive</a> ()=default</td></tr>
-<tr class="separator:a3b3027ffdbe1bec44e8c317a3737dcc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a53d84346386a0e4e7bdfd7b222e340a7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1detail_1_1Archive.html#acd98363e497ce517630ae5341fd209bb">pointer_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a53d84346386a0e4e7bdfd7b222e340a7">bufferData</a> () const</td></tr>
+<tr class="separator:a53d84346386a0e4e7bdfd7b222e340a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4c29e431471704428f9661e2297631c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#af4c29e431471704428f9661e2297631c">bufferSize</a> () const</td></tr>
+<tr class="separator:af4c29e431471704428f9661e2297631c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -151,7 +173,7 @@ Private Attributes</h2></td></tr>
 <tr class="memdesc:ad2e3e55f4dac237fde836121c057d86e"><td class="mdescLeft">&#160;</td><td class="mdescRight">read position for deserialization  <a href="classippl_1_1detail_1_1Archive.html#ad2e3e55f4dac237fde836121c057d86e">More...</a><br /></td></tr>
 <tr class="separator:ad2e3e55f4dac237fde836121c057d86e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a55cb4dd67cd9c8ede377a0d78d59cbc1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1detail_1_1Archive.html#a3ae496f57583256eb083aeddc6028c24">buffer_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1Archive.html#a55cb4dd67cd9c8ede377a0d78d59cbc1">buffer_m</a></td></tr>
-<tr class="memdesc:a55cb4dd67cd9c8ede377a0d78d59cbc1"><td class="mdescLeft">&#160;</td><td class="mdescRight">serialized data  <a href="classippl_1_1detail_1_1Archive.html#a55cb4dd67cd9c8ede377a0d78d59cbc1">More...</a><br /></td></tr>
+<tr class="memdesc:a55cb4dd67cd9c8ede377a0d78d59cbc1"><td class="mdescLeft">&#160;</td><td class="mdescRight">serialized data (standard <a class="el" href="namespaceKokkos.html">Kokkos</a> view on CPU)  <a href="classippl_1_1detail_1_1Archive.html#a55cb4dd67cd9c8ede377a0d78d59cbc1">More...</a><br /></td></tr>
 <tr class="separator:a55cb4dd67cd9c8ede377a0d78d59cbc1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Typedef Documentation</h2>
@@ -165,6 +187,22 @@ template&lt;class... Properties&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::buffer_type =  typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a>&lt;char, 1, Properties...&gt;::view_type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa3ad159c41c816edb1b508259062d7f1" name="aa3ad159c41c816edb1b508259062d7f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa3ad159c41c816edb1b508259062d7f1">&#9670;&#160;</a></span>memory_space</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class... Properties&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::memory_space =  typename buffer_type::memory_space</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -208,8 +246,8 @@ template&lt;class... Properties&gt; </div>
 
 </div>
 </div>
-<a id="a3b3027ffdbe1bec44e8c317a3737dcc9" name="a3b3027ffdbe1bec44e8c317a3737dcc9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3b3027ffdbe1bec44e8c317a3737dcc9">&#9670;&#160;</a></span>~Archive()</h2>
+<a id="a65bc1ff8584e8bb98f960de2db522202" name="a65bc1ff8584e8bb98f960de2db522202"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65bc1ff8584e8bb98f960de2db522202">&#9670;&#160;</a></span>~Archive()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -236,8 +274,62 @@ template&lt;class... Properties&gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a53d84346386a0e4e7bdfd7b222e340a7" name="a53d84346386a0e4e7bdfd7b222e340a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a53d84346386a0e4e7bdfd7b222e340a7">&#9670;&#160;</a></span>bufferData()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1detail_1_1Archive.html#acd98363e497ce517630ae5341fd209bb">pointer_type</a> <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::bufferData </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af4c29e431471704428f9661e2297631c" name="af4c29e431471704428f9661e2297631c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4c29e431471704428f9661e2297631c">&#9670;&#160;</a></span>bufferSize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::bufferSize </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a47de1f8edec65ea856f7bfaa57c8daf8" name="a47de1f8edec65ea856f7bfaa57c8daf8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a47de1f8edec65ea856f7bfaa57c8daf8">&#9670;&#160;</a></span>deserialize() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a47de1f8edec65ea856f7bfaa57c8daf8">&#9670;&#160;</a></span>deserialize() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -274,8 +366,46 @@ template&lt;typename T , class... ViewArgs&gt; </div>
 
 </div>
 </div>
+<a id="a59f6df74d5759b065a85d352d6e9d0fc" name="a59f6df74d5759b065a85d352d6e9d0fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59f6df74d5759b065a85d352d6e9d0fc">&#9670;&#160;</a></span>deserialize() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class... Properties&gt; </div>
+<div class="memtemplate">
+template&lt;typename T , class... ViewArgs&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::deserialize </td>
+          <td>(</td>
+          <td class="paramtype">Kokkos::View&lt; T *, ViewArgs... &gt; &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td>
+          <td class="paramname"><em>offset</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td>
+          <td class="paramname"><em>nrecvs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="af1b2e7a0b88f9ac4ff7c0965dfe2fd1a" name="af1b2e7a0b88f9ac4ff7c0965dfe2fd1a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af1b2e7a0b88f9ac4ff7c0965dfe2fd1a">&#9670;&#160;</a></span>deserialize() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af1b2e7a0b88f9ac4ff7c0965dfe2fd1a">&#9670;&#160;</a></span>deserialize() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -314,6 +444,44 @@ template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
 
 </div>
 </div>
+<a id="a9c3fdb57714bad2e88dd9fb9e14bb2b6" name="a9c3fdb57714bad2e88dd9fb9e14bb2b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c3fdb57714bad2e88dd9fb9e14bb2b6">&#9670;&#160;</a></span>deserialize() <span class="overload">[4/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class... Properties&gt; </div>
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class... ViewArgs&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::deserialize </td>
+          <td>(</td>
+          <td class="paramtype">Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; *, ViewArgs... &gt; &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td>
+          <td class="paramname"><em>offset</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td>
+          <td class="paramname"><em>nrecvs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ae2fa4a3d5d0fb0d97be551a10fff4838" name="ae2fa4a3d5d0fb0d97be551a10fff4838"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae2fa4a3d5d0fb0d97be551a10fff4838">&#9670;&#160;</a></span>getBuffer()</h2>
 
@@ -338,7 +506,7 @@ template&lt;class... Properties&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>a pointer to the data of the buffer </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>a pointer to the data of the buffer. On GPU this is a page-aligned device pointer from cudaMalloc/hipMalloc. </dd></dl>
 
 </div>
 </div>
@@ -366,6 +534,7 @@ template&lt;class... Properties&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+<dl class="section return"><dt>Returns</dt><dd>the total capacity of the buffer in bytes </dd></dl>
 
 </div>
 </div>
@@ -393,7 +562,7 @@ template&lt;class... Properties&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>the size of the buffer </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>the number of bytes written so far </dd></dl>
 
 </div>
 </div>
@@ -404,9 +573,6 @@ template&lt;class... Properties&gt; </div>
 <div class="memproto">
 <div class="memtemplate">
 template&lt;class... Properties&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::reallocBuffer </td>
@@ -416,11 +582,6 @@ template&lt;class... Properties&gt; </div>
           <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 </div>
@@ -486,9 +647,6 @@ template&lt;class... Properties&gt; </div>
 <div class="memproto">
 <div class="memtemplate">
 template&lt;class... Properties&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">void <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::resizeBuffer </td>
@@ -498,17 +656,50 @@ template&lt;class... Properties&gt; </div>
           <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
-  </tr>
-</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9f760fb168eab7bff6eec651eceea655" name="a9f760fb168eab7bff6eec651eceea655"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f760fb168eab7bff6eec651eceea655">&#9670;&#160;</a></span>serialize() <span class="overload">[1/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class... Properties&gt; </div>
+<div class="memtemplate">
+template&lt;typename T , class... ViewArgs, typename HashView &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::serialize </td>
+          <td>(</td>
+          <td class="paramtype">const Kokkos::View&lt; T *, ViewArgs... &gt; &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const HashView &amp;&#160;</td>
+          <td class="paramname"><em>hash</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td>
+          <td class="paramname"><em>nsends</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
 </div><div class="memdoc">
 
 </div>
 </div>
 <a id="a0149ea2797d448d073fdf9092fefd803" name="a0149ea2797d448d073fdf9092fefd803"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0149ea2797d448d073fdf9092fefd803">&#9670;&#160;</a></span>serialize() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a0149ea2797d448d073fdf9092fefd803">&#9670;&#160;</a></span>serialize() <span class="overload">[2/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -545,8 +736,46 @@ template&lt;typename T , class... ViewArgs&gt; </div>
 
 </div>
 </div>
+<a id="af8c5ede8e65a64531fe38a54f71047b8" name="af8c5ede8e65a64531fe38a54f71047b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8c5ede8e65a64531fe38a54f71047b8">&#9670;&#160;</a></span>serialize() <span class="overload">[3/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class... Properties&gt; </div>
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class... ViewArgs, typename HashView &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1detail_1_1Archive.html">ippl::detail::Archive</a>&lt; Properties &gt;::serialize </td>
+          <td>(</td>
+          <td class="paramtype">const Kokkos::View&lt; <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, Dim &gt; *, ViewArgs... &gt; &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const HashView &amp;&#160;</td>
+          <td class="paramname"><em>hash</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td>
+          <td class="paramname"><em>nsends</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a1ed8af6da9c86743cbef15b6aa9a911f" name="a1ed8af6da9c86743cbef15b6aa9a911f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1ed8af6da9c86743cbef15b6aa9a911f">&#9670;&#160;</a></span>serialize() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ed8af6da9c86743cbef15b6aa9a911f">&#9670;&#160;</a></span>serialize() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -608,7 +837,7 @@ template&lt;class... Properties&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>serialized data </p>
+<p>serialized data (standard <a class="el" href="namespaceKokkos.html">Kokkos</a> view on CPU) </p>
 
 </div>
 </div>

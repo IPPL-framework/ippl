@@ -96,7 +96,7 @@ Collaboration diagram for ippl::mpi::Environment:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1mpi_1_1Environment__coll__graph.png" border="0" usemap="#aippl_1_1mpi_1_1Environment_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1mpi_1_1Environment_coll__map" id="aippl_1_1mpi_1_1Environment_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,156,148"/>
+<area shape="rect" title=" " alt="" coords="5,5,156,177"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -108,6 +108,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad96e73aa3f7a883292466eae7ce4876e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9c7d41be8fe37845ca8b0e319722aa1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Environment.html#af9c7d41be8fe37845ca8b0e319722aa1">~Environment</a> ()</td></tr>
 <tr class="separator:af9c7d41be8fe37845ca8b0e319722aa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa6354ff98c73c6fe6b95463bf08cd34d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Environment.html#aa6354ff98c73c6fe6b95463bf08cd34d">threadMultiple</a> () noexcept</td></tr>
+<tr class="separator:aa6354ff98c73c6fe6b95463bf08cd34d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad5c2f90508e056eb720ab80f4066af49"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Environment.html#ad5c2f90508e056eb720ab80f4066af49">abort</a> (int errorcode=-1) noexcept</td></tr>
 <tr class="separator:ad5c2f90508e056eb720ab80f4066af49"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -122,6 +124,8 @@ Static Public Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:af80d64d70d20727ed1dadb945c669eed"><td class="memItemLeft" align="right" valign="top">MPI_Comm&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Environment.html#af80d64d70d20727ed1dadb945c669eed">comm_m</a></td></tr>
 <tr class="separator:af80d64d70d20727ed1dadb945c669eed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d69f438bf4fa0a0b6a9cb9f4fde864f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1mpi_1_1Environment.html#a7d69f438bf4fa0a0b6a9cb9f4fde864f">threadMultiple_m</a></td></tr>
+<tr class="separator:a7d69f438bf4fa0a0b6a9cb9f4fde864f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a08271f9dfe97cdc0b8305651cd7b6d72" name="a08271f9dfe97cdc0b8305651cd7b6d72"></a>
@@ -277,6 +281,31 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="aa6354ff98c73c6fe6b95463bf08cd34d" name="aa6354ff98c73c6fe6b95463bf08cd34d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa6354ff98c73c6fe6b95463bf08cd34d">&#9670;&#160;</a></span>threadMultiple()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ippl::mpi::Environment::threadMultiple </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="af80d64d70d20727ed1dadb945c669eed" name="af80d64d70d20727ed1dadb945c669eed"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af80d64d70d20727ed1dadb945c669eed">&#9670;&#160;</a></span>comm_m</h2>
@@ -289,6 +318,28 @@ Private Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">MPI_Comm ippl::mpi::Environment::comm_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7d69f438bf4fa0a0b6a9cb9f4fde864f" name="a7d69f438bf4fa0a0b6a9cb9f4fde864f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d69f438bf4fa0a0b6a9cb9f4fde864f">&#9670;&#160;</a></span>threadMultiple_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ippl::mpi::Environment::threadMultiple_m</td>
         </tr>
       </table>
   </td>

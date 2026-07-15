@@ -96,8 +96,8 @@ Collaboration diagram for ippl::LogEntry:</div>
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1LogEntry__coll__graph.png" border="0" usemap="#aippl_1_1LogEntry_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1LogEntry_coll__map" id="aippl_1_1LogEntry_coll__map">
-<area shape="rect" title=" " alt="" coords="5,123,121,265"/>
-<area shape="rect" title=" " alt="" coords="33,5,93,45"/>
+<area shape="rect" title=" " alt="" coords="5,123,159,280"/>
+<area shape="rect" title=" " alt="" coords="52,5,112,45"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -110,6 +110,8 @@ Public Member Functions</h2></td></tr>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:a792851c9b379410eb7c017aacf9dd41c"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structippl_1_1LogEntry.html">LogEntry</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LogEntry.html#a792851c9b379410eb7c017aacf9dd41c">deserialize</a> (const std::vector&lt; char &gt; &amp;buffer, size_t offset=0)</td></tr>
 <tr class="separator:a792851c9b379410eb7c017aacf9dd41c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b2b282fdc515922baa44285704caf2d"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structippl_1_1LogEntry.html">LogEntry</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LogEntry.html#a8b2b282fdc515922baa44285704caf2d">deserializeAdvance</a> (const std::vector&lt; char &gt; &amp;buffer, size_t &amp;offset)</td></tr>
+<tr class="separator:a8b2b282fdc515922baa44285704caf2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -162,6 +164,43 @@ Public Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8b2b282fdc515922baa44285704caf2d" name="a8b2b282fdc515922baa44285704caf2d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b2b282fdc515922baa44285704caf2d">&#9670;&#160;</a></span>deserializeAdvance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structippl_1_1LogEntry.html">LogEntry</a> ippl::LogEntry::deserializeAdvance </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; char &gt; &amp;&#160;</td>
+          <td class="paramname"><em>buffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t &amp;&#160;</td>
+          <td class="paramname"><em>offset</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p >Variant of <a class="el" href="structippl_1_1LogEntry.html#a792851c9b379410eb7c017aacf9dd41c">deserialize()</a> that advances the caller's offset past the just-read entry. Lets callers walk a byte-stream of entries without re-serializing each one to compute its size. </p>
 
 </div>
 </div>

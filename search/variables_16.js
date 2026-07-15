@@ -7,5 +7,6 @@ var searchData=
   ['win_5fm_4',['win_m',['../classippl_1_1mpi_1_1rma_1_1Window.html#a3c08a56adb5d0269a13fcd15dae32f88',1,'ippl::mpi::rma::Window']]],
   ['window_5fm_5',['window_m',['../classippl_1_1ParticleSpatialLayout.html#a065d6293239ce1ecdf81fabca0897eed',1,'ippl::ParticleSpatialLayout']]],
   ['workspace_5fm_6',['workspace_m',['../classippl_1_1FFTBase.html#a774c1a64890151f5c7ef447268030b08',1,'ippl::FFTBase']]],
-  ['writepos_5fm_7',['writepos_m',['../classippl_1_1detail_1_1Archive.html#a819a368b360a9d2f8366f6110b5b3508',1,'ippl::detail::Archive']]]
+  ['wpos_7',['wpos',['../structippl_1_1detail_1_1SerializeHashFunctor.html#a87806a94ab2a698f7175844c4da92059',1,'ippl::detail::SerializeHashFunctor::wpos()'],['../structippl_1_1detail_1_1SerializeHashVectorFunctor.html#a8f7f851f56f02473d1887be1f43bb2ca',1,'ippl::detail::SerializeHashVectorFunctor::wpos()']]],
+  ['writepos_5fm_8',['writepos_m',['../classippl_1_1detail_1_1Archive.html#a819a368b360a9d2f8366f6110b5b3508',1,'ippl::detail::Archive']]]
 ];

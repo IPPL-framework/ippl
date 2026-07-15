@@ -86,11 +86,13 @@ $(function() {
 <a href="#namespaces">Namespaces</a> &#124;
 <a href="#concepts">Concepts</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">ParallelDispatch.h File Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;Kokkos_Core.hpp&gt;</code><br />
+<code>#include &quot;<a class="el" href="Ippl_8h_source.html">Ippl.h</a>&quot;</code><br />
 <code>#include &lt;tuple&gt;</code><br />
 <code>#include &quot;<a class="el" href="Vector_8h_source.html">Types/Vector.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="IpplException_8h_source.html">Utility/IpplException.h</a>&quot;</code><br />
@@ -99,20 +101,56 @@ Include dependency graph for ParallelDispatch.h:</div>
 <div class="dyncontent">
 <div class="center"><img src="ParallelDispatch_8h__incl.png" border="0" usemap="#aParallelDispatch_8h" alt=""/></div>
 <map name="aParallelDispatch_8h" id="aParallelDispatch_8h">
-<area shape="rect" title=" " alt="" coords="189,5,316,31"/>
-<area shape="rect" title=" " alt="" coords="5,79,129,104"/>
-<area shape="rect" title=" " alt="" coords="186,299,237,324"/>
-<area shape="rect" href="Vector_8h.html" title=" " alt="" coords="285,79,394,104"/>
-<area shape="rect" href="IpplException_8h.html" title=" " alt="" coords="510,79,657,104"/>
-<area shape="rect" title=" " alt="" coords="205,152,301,177"/>
-<area shape="rect" href="IpplExpressions_8h.html" title=" " alt="" coords="325,152,516,177"/>
-<area shape="rect" href="Vector_8hpp.html" title=" " alt="" coords="540,152,624,177"/>
-<area shape="rect" title=" " alt="" coords="222,225,305,251"/>
-<area shape="rect" href="IpplOperations_8h.html" title=" " alt="" coords="329,225,512,251"/>
-<area shape="rect" title=" " alt="" coords="305,299,537,324"/>
-<area shape="rect" title=" " alt="" coords="542,225,609,251"/>
-<area shape="rect" title=" " alt="" coords="633,225,705,251"/>
-<area shape="rect" title=" " alt="" coords="648,152,703,177"/>
+<area shape="rect" title=" " alt="" coords="2614,5,2741,31"/>
+<area shape="rect" title=" " alt="" coords="2320,636,2444,661"/>
+<area shape="rect" href="Ippl_8h.html" title=" " alt="" coords="827,79,880,104"/>
+<area shape="rect" href="Vector_8h.html" title=" " alt="" coords="2035,783,2144,808"/>
+<area shape="rect" href="IpplException_8h.html" title=" " alt="" coords="2468,636,2615,661"/>
+<area shape="rect" title=" " alt="" coords="2615,475,2666,500"/>
+<area shape="rect" title=" " alt="" coords="1614,929,1686,955"/>
+<area shape="rect" href="IpplTypes_8h.html" title=" " alt="" coords="301,783,428,808"/>
+<area shape="rect" href="Inform_8h.html" title=" " alt="" coords="18,856,124,881"/>
+<area shape="rect" href="Communicator_8h.html" title=" " alt="" coords="1268,475,1468,500"/>
+<area shape="rect" href="Environment_8h.html" title=" " alt="" coords="70,152,258,177"/>
+<area shape="rect" href="IpplCore_8h.html" title=" " alt="" coords="1308,152,1388,177"/>
+<area shape="rect" title=" " alt="" coords="332,856,397,881"/>
+<area shape="rect" title=" " alt="" coords="1312,929,1379,955"/>
+<area shape="rect" title=" " alt="" coords="36,929,106,955"/>
+<area shape="rect" title=" " alt="" coords="1174,709,1242,735"/>
+<area shape="rect" title=" " alt="" coords="686,709,739,735"/>
+<area shape="rect" href="BufferHandler_8h.html" title=" " alt="" coords="1992,636,2187,661"/>
+<area shape="rect" href="Archive_8h.html" title=" " alt="" coords="2010,709,2170,735"/>
+<area shape="rect" href="LoggingBufferHandler_8h.html" title=" " alt="" coords="2127,548,2314,588"/>
+<area shape="rect" href="Request_8h.html" title=" " alt="" coords="690,555,854,581"/>
+<area shape="rect" href="Status_8h.html" title=" " alt="" coords="635,636,790,661"/>
+<area shape="rect" title=" " alt="" coords="981,555,1041,581"/>
+<area shape="rect" title=" " alt="" coords="554,555,614,581"/>
+<area shape="rect" href="TypeUtils_8h.html" title=" " alt="" coords="2389,555,2513,581"/>
+<area shape="rect" href="TagMaker_8h.html" title=" " alt="" coords="1065,555,1240,581"/>
+<area shape="rect" href="Tags_8h.html" title=" " alt="" coords="1264,555,1409,581"/>
+<area shape="rect" href="Collectives_8hpp.html" title=" " alt="" coords="1434,555,1628,581"/>
+<area shape="rect" href="PointToPoint_8hpp.html" title=" " alt="" coords="1652,555,1858,581"/>
+<area shape="rect" href="Buffers_8hpp.html" title=" " alt="" coords="1882,555,2052,581"/>
+<area shape="rect" title=" " alt="" coords="2042,856,2138,881"/>
+<area shape="rect" href="IpplExpressions_8h.html" title=" " alt="" coords="1069,856,1260,881"/>
+<area shape="rect" href="Vector_8hpp.html" title=" " alt="" coords="1608,856,1692,881"/>
+<area shape="rect" title=" " alt="" coords="2384,709,2438,735"/>
+<area shape="rect" href="BareField_8h.html" title=" " alt="" coords="565,321,684,346"/>
+<area shape="rect" href="IpplInfo_8h.html" title=" " alt="" coords="323,401,435,427"/>
+<area shape="rect" href="FieldLayout_8h.html" title=" " alt="" coords="2215,401,2386,427"/>
+<area shape="rect" href="Field_8h.html" title=" " alt="" coords="1105,233,1197,258"/>
+<area shape="rect" href="BConds_8h.html" title=" " alt="" coords="176,475,286,500"/>
+<area shape="rect" href="SubFieldLayout_8h.html" title=" " alt="" coords="1929,321,2122,346"/>
+<area shape="rect" href="ParticleBase_8h.html" title=" " alt="" coords="2460,401,2615,427"/>
+<area shape="rect" href="ParticleSpatialLayout_8h.html" title=" " alt="" coords="2346,313,2500,353"/>
+<area shape="rect" href="OrthogonalRecursiveBisection_8h.html" title=" " alt="" coords="1324,225,1498,265"/>
+<area shape="rect" href="EdgeElement_8h.html" title=" " alt="" coords="416,233,614,258"/>
+<area shape="rect" href="HexahedralElement_8h.html" title=" " alt="" coords="638,233,872,258"/>
+<area shape="rect" href="QuadrilateralElement_8h.html" title=" " alt="" coords="896,225,1080,265"/>
+<area shape="rect" href="GaussJacobiQuadrature_8h.html" title=" " alt="" coords="1574,225,1771,265"/>
+<area shape="rect" href="MidpointQuadrature_8h.html" title=" " alt="" coords="1796,233,2040,258"/>
+<area shape="rect" href="LagrangeSpace_8h.html" title=" " alt="" coords="2064,233,2219,258"/>
+<area shape="rect" href="NedelecSpace_8h.html" title=" " alt="" coords="2244,233,2392,258"/>
 </map>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -120,56 +158,56 @@ This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="ParallelDispatch_8h__dep__incl.png" border="0" usemap="#aParallelDispatch_8hdep" alt=""/></div>
 <map name="aParallelDispatch_8hdep" id="aParallelDispatch_8hdep">
-<area shape="rect" title=" " alt="" coords="2210,5,2337,31"/>
-<area shape="rect" href="Ippl_8h.html" title=" " alt="" coords="2247,79,2300,104"/>
-<area shape="rect" href="BareField_8hpp.html" title=" " alt="" coords="781,299,883,324"/>
-<area shape="rect" href="Multigrid_8h.html" title=" " alt="" coords="1343,665,1425,691"/>
-<area shape="rect" href="BaseManager_8h.html" title=" " alt="" coords="2091,973,2203,999"/>
-<area shape="rect" href="Buffers_8cpp.html" title=" " alt="" coords="2311,152,2398,177"/>
-<area shape="rect" href="Environment_8cpp.html" title=" " alt="" coords="2422,152,2541,177"/>
-<area shape="rect" href="FieldLayout_8hpp.html" title=" " alt="" coords="1122,152,1235,177"/>
-<area shape="rect" href="SubFieldLayout_8hpp.html" title=" " alt="" coords="1444,372,1580,397"/>
-<area shape="rect" href="Inform_8cpp.html" title=" " alt="" coords="2565,152,2648,177"/>
-<area shape="rect" href="Ippl_8cpp.html" title=" " alt="" coords="2672,152,2739,177"/>
-<area shape="rect" href="IpplInfo_8cpp.html" title=" " alt="" coords="2763,152,2853,177"/>
-<area shape="rect" href="IpplTimings_8cpp.html" title=" " alt="" coords="2877,152,2990,177"/>
-<area shape="rect" href="ParticleAttrib_8hpp.html" title=" " alt="" coords="2013,152,2134,177"/>
-<area shape="rect" href="BareField_8h.html" title=" " alt="" coords="789,372,875,397"/>
-<area shape="rect" href="FFT_8hpp.html" title=" " alt="" coords="917,445,987,471"/>
-<area shape="rect" href="Field_8h.html" title=" " alt="" coords="747,739,807,764"/>
-<area shape="rect" href="IpplCore_8h.html" title=" " alt="" coords="1781,812,1861,837"/>
-<area shape="rect" href="UniformCartesian_8hpp.html" title=" " alt="" coords="644,445,791,471"/>
-<area shape="rect" href="FFT_8h.html" title=" " alt="" coords="979,812,1035,837"/>
-<area shape="rect" href="FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="984,893,1155,918"/>
-<area shape="rect" href="FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="1179,893,1365,918"/>
-<area shape="rect" href="FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="773,885,960,925"/>
-<area shape="rect" href="datatypes_8h.html" title=" " alt="" coords="1417,973,1505,999"/>
-<area shape="rect" href="FieldSolverBase_8h.html" title=" " alt="" coords="1982,1047,2109,1072"/>
-<area shape="rect" href="PicManager_8h.html" title=" " alt="" coords="1995,1120,2096,1145"/>
-<area shape="rect" href="AbsorbingBC_8h.html" title=" " alt="" coords="378,812,486,837"/>
-<area shape="rect" href="Maxwell_8h.html" title=" " alt="" coords="275,812,354,837"/>
-<area shape="rect" href="Poisson_8h.html" title=" " alt="" coords="1329,812,1407,837"/>
-<area shape="rect" href="FDTDSolverBase_8h.html" title=" " alt="" coords="144,893,277,918"/>
-<area shape="rect" href="NonStandardFDTDSolver_8h.html" title="Defines the NonStandardFDTDSolver class for solving Maxwell&#39;s equations using a non&#45;standard Finite&#45;D..." alt="" coords="103,973,281,999"/>
-<area shape="rect" href="StandardFDTDSolver_8h.html" title="Defines the StandardFDTDSolver class for solving Maxwell&#39;s equations using the FDTD method." alt="" coords="305,973,460,999"/>
-<area shape="rect" href="FEMMaxwellDiffusionSolver_8h.html" title=" " alt="" coords="555,893,749,918"/>
-<area shape="rect" href="FEMPoissonSolver_8h.html" title=" " alt="" coords="1390,893,1533,918"/>
-<area shape="rect" href="PoissonCG_8h.html" title=" " alt="" coords="1557,893,1656,918"/>
-<area shape="rect" href="PreconditionedFEMPoissonSolver_8h.html" title=" " alt="" coords="1681,885,1863,925"/>
-<area shape="rect" href="UniformCartesian_8h.html" title=" " alt="" coords="559,519,692,544"/>
-<area shape="rect" href="BcTypes_8h.html" title=" " alt="" coords="1055,592,1137,617"/>
-<area shape="rect" href="BConds_8h.html" title=" " alt="" coords="1057,665,1135,691"/>
-<area shape="rect" href="PCG_8h.html" title=" " alt="" coords="1354,739,1414,764"/>
-<area shape="rect" href="PreconditionerValidation_8h.html" title=" " alt="" coords="1534,812,1706,837"/>
-<area shape="rect" href="FieldLayout_8h.html" title=" " alt="" coords="1129,225,1228,251"/>
-<area shape="rect" href="HaloCells_8h.html" title=" " alt="" coords="975,299,1063,324"/>
-<area shape="rect" href="OrthogonalRecursiveBisection_8h.html" title=" " alt="" coords="1649,445,1855,471"/>
-<area shape="rect" href="ParticleSpatialLayout_8h.html" title=" " alt="" coords="1655,372,1809,397"/>
-<area shape="rect" href="ParticleSpatialOverlapLayout_8h.html" title=" " alt="" coords="1884,372,2084,397"/>
-<area shape="rect" href="SubFieldLayout_8h.html" title=" " alt="" coords="1345,299,1468,324"/>
-<area shape="rect" href="BcTypes_8hpp.html" title=" " alt="" coords="1018,519,1115,544"/>
-<area shape="rect" href="ParticleAttrib_8h.html" title=" " alt="" coords="2020,225,2127,251"/>
-<area shape="rect" href="ParticleLayout_8h.html" title=" " alt="" coords="1969,299,2084,324"/>
+<area shape="rect" title=" " alt="" coords="750,5,877,31"/>
+<area shape="rect" href="HaloCells_8hpp.html" title=" " alt="" coords="1363,79,1466,104"/>
+<area shape="rect" href="Ippl_8h.html" title=" " alt="" coords="787,445,840,471"/>
+<area shape="rect" href="ParticleSpatialLayout_8hpp.html" title=" " alt="" coords="190,519,359,544"/>
+<area shape="rect" href="HaloCells_8h.html" title=" " alt="" coords="1811,152,1899,177"/>
+<area shape="rect" href="BareField_8h.html" title=" " alt="" coords="1811,225,1898,251"/>
+<area shape="rect" href="FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="2149,819,2320,845"/>
+<area shape="rect" href="BcTypes_8hpp.html" title=" " alt="" coords="1462,445,1559,471"/>
+<area shape="rect" href="FEMVector_8h.html" title=" " alt="" coords="1203,225,1301,251"/>
+<area shape="rect" href="FieldBufferOps_8hpp.html" title=" " alt="" coords="2335,299,2467,324"/>
+<area shape="rect" href="BareField_8hpp.html" title=" " alt="" coords="1829,519,1931,544"/>
+<area shape="rect" href="FFT_8hpp.html" title=" " alt="" coords="2329,665,2399,691"/>
+<area shape="rect" href="Field_8h.html" title=" " alt="" coords="2058,299,2118,324"/>
+<area shape="rect" href="IpplCore_8h.html" title=" " alt="" coords="1161,372,1241,397"/>
+<area shape="rect" href="UniformCartesian_8hpp.html" title=" " alt="" coords="1904,372,2051,397"/>
+<area shape="rect" href="FFT_8h.html" title=" " alt="" coords="2227,739,2283,764"/>
+<area shape="rect" href="FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="1939,819,2125,845"/>
+<area shape="rect" href="FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="2344,812,2531,852"/>
+<area shape="rect" href="datatypes_8h.html" title=" " alt="" coords="1575,1061,1663,1087"/>
+<area shape="rect" href="FieldSolverBase_8h.html" title=" " alt="" coords="1031,1135,1158,1160"/>
+<area shape="rect" href="PicManager_8h.html" title=" " alt="" coords="943,1208,1044,1233"/>
+<area shape="rect" href="Maxwell_8h.html" title=" " alt="" coords="1545,665,1623,691"/>
+<area shape="rect" href="BaseManager_8h.html" title=" " alt="" coords="844,1061,956,1087"/>
+<area shape="rect" href="Buffers_8cpp.html" title=" " alt="" coords="833,519,919,544"/>
+<area shape="rect" href="Environment_8cpp.html" title=" " alt="" coords="943,519,1062,544"/>
+<area shape="rect" href="FieldLayout_8hpp.html" title=" " alt="" coords="1590,519,1703,544"/>
+<area shape="rect" href="Multigrid_8h.html" title=" " alt="" coords="1390,739,1471,764"/>
+<area shape="rect" href="SubFieldLayout_8hpp.html" title=" " alt="" coords="1229,739,1365,764"/>
+<area shape="rect" href="Inform_8cpp.html" title=" " alt="" coords="384,519,467,544"/>
+<area shape="rect" href="Ippl_8cpp.html" title=" " alt="" coords="491,519,557,544"/>
+<area shape="rect" href="IpplInfo_8cpp.html" title=" " alt="" coords="582,519,671,544"/>
+<area shape="rect" href="IpplTimings_8cpp.html" title=" " alt="" coords="695,519,809,544"/>
+<area shape="rect" href="ParticleAttrib_8hpp.html" title=" " alt="" coords="45,519,166,544"/>
+<area shape="rect" href="FieldLayout_8h.html" title=" " alt="" coords="1692,592,1791,617"/>
+<area shape="rect" href="BcTypes_8h.html" title=" " alt="" coords="1437,665,1520,691"/>
+<area shape="rect" href="FDTDSolverBase_8h.html" title=" " alt="" coords="1699,739,1832,764"/>
+<area shape="rect" href="NonStandardFDTDSolver_8h.html" title="Defines the NonStandardFDTDSolver class for solving Maxwell&#39;s equations using a non&#45;standard Finite&#45;D..." alt="" coords="1552,819,1731,845"/>
+<area shape="rect" href="StandardFDTDSolver_8h.html" title="Defines the StandardFDTDSolver class for solving Maxwell&#39;s equations using the FDTD method." alt="" coords="1755,819,1909,845"/>
+<area shape="rect" href="OrthogonalRecursiveBisection_8h.html" title=" " alt="" coords="890,739,1097,764"/>
+<area shape="rect" href="ParticleSpatialLayout_8h.html" title=" " alt="" coords="859,665,1013,691"/>
+<area shape="rect" href="ParticleSpatialOverlapLayout_8h.html" title=" " alt="" coords="1800,665,2000,691"/>
+<area shape="rect" href="SubFieldLayout_8h.html" title=" " alt="" coords="1291,665,1413,691"/>
+<area shape="rect" href="PCG_8h.html" title=" " alt="" coords="1401,819,1461,845"/>
+<area shape="rect" href="FEMMaxwellDiffusionSolver_8h.html" title=" " alt="" coords="1645,900,1838,925"/>
+<area shape="rect" href="FEMPoissonSolver_8h.html" title=" " alt="" coords="1237,981,1379,1006"/>
+<area shape="rect" href="PoissonCG_8h.html" title=" " alt="" coords="1404,981,1503,1006"/>
+<area shape="rect" href="PreconditionedFEMPoissonSolver_8h.html" title=" " alt="" coords="1527,973,1710,1013"/>
+<area shape="rect" href="PreconditionerValidation_8h.html" title=" " alt="" coords="1397,900,1569,925"/>
+<area shape="rect" href="ParticleAttrib_8h.html" title=" " alt="" coords="231,592,337,617"/>
+<area shape="rect" href="NedelecSpace_8h.html" title=" " alt="" coords="1047,299,1164,324"/>
 </map>
 </div>
 </div>
@@ -214,7 +252,6 @@ Concepts</h2></td></tr>
 Enumerations</h2></td></tr>
 <tr class="memitem:a0be274c2d351e95c9f462b417f5166db"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a0be274c2d351e95c9f462b417f5166db">ippl::detail::e_functor_type</a> { <a class="el" href="namespaceippl_1_1detail.html#a0be274c2d351e95c9f462b417f5166dba6515c98d630640caad4bd9970b407863">ippl::detail::FOR</a>
 , <a class="el" href="namespaceippl_1_1detail.html#a0be274c2d351e95c9f462b417f5166dba0cc2f6aef460579d789862c31085e9e3">ippl::detail::REDUCE</a>
-, <a class="el" href="namespaceippl_1_1detail.html#a0be274c2d351e95c9f462b417f5166dbacfb7291455930bcbe473b184613c2322">ippl::detail::SCAN</a>
  }</td></tr>
 <tr class="separator:a0be274c2d351e95c9f462b417f5166db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -226,6 +263,24 @@ Functions</h2></td></tr>
 <tr class="memitem:a396152d1cdbeeaf2ab6e3dc93c903bc3"><td class="memTemplParams" colspan="2">template&lt;size_t Dim, class... PolicyArgs&gt; </td></tr>
 <tr class="memitem:a396152d1cdbeeaf2ab6e3dc93c903bc3"><td class="memTemplItemLeft" align="right" valign="top">RangePolicy&lt; Dim, PolicyArgs... &gt;::policy_type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a396152d1cdbeeaf2ab6e3dc93c903bc3">ippl::createRangePolicy</a> (const Kokkos::Array&lt; typename RangePolicy&lt; Dim, PolicyArgs... &gt;::index_type, Dim &gt; &amp;begin, const Kokkos::Array&lt; typename RangePolicy&lt; Dim, PolicyArgs... &gt;::index_type, Dim &gt; &amp;end)</td></tr>
 <tr class="separator:a396152d1cdbeeaf2ab6e3dc93c903bc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b2956557a9be9443813ed63c6004adb"><td class="memTemplParams" colspan="2">template&lt;int... Is, typename F &gt; </td></tr>
+<tr class="memitem:a5b2956557a9be9443813ed63c6004adb"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FORCEINLINE_FUNCTION void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a5b2956557a9be9443813ed63c6004adb">ippl::for_constexpr</a> (std::integer_sequence&lt; int, Is... &gt;, F &amp;&amp;f)</td></tr>
+<tr class="separator:a5b2956557a9be9443813ed63c6004adb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd3deb0b693fbe066c819fa6a40f30e3"><td class="memTemplParams" colspan="2">template&lt;int... Is, typename F &gt; </td></tr>
+<tr class="memitem:abd3deb0b693fbe066c819fa6a40f30e3"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FORCEINLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#abd3deb0b693fbe066c819fa6a40f30e3">ippl::product_over</a> (std::integer_sequence&lt; int, Is... &gt;, F &amp;&amp;f)</td></tr>
+<tr class="separator:abd3deb0b693fbe066c819fa6a40f30e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca815ad255fcad03b69ed0120189fcbd"><td class="memTemplParams" colspan="2">template&lt;int N, typename F &gt; </td></tr>
+<tr class="memitem:aca815ad255fcad03b69ed0120189fcbd"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FORCEINLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#aca815ad255fcad03b69ed0120189fcbd">ippl::product_over</a> (F &amp;&amp;f)</td></tr>
+<tr class="separator:aca815ad255fcad03b69ed0120189fcbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f7e87aa61b5cc17fb8eb4a6b64cacfd"><td class="memTemplParams" colspan="2">template&lt;int Dim, typename Team , typename Extents , typename F &gt; </td></tr>
+<tr class="memitem:a1f7e87aa61b5cc17fb8eb4a6b64cacfd"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FORCEINLINE_FUNCTION void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a1f7e87aa61b5cc17fb8eb4a6b64cacfd">ippl::thread_vector_md_for</a> (const Team &amp;team, const Extents &amp;extents, F &amp;&amp;f)</td></tr>
+<tr class="separator:a1f7e87aa61b5cc17fb8eb4a6b64cacfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2215c7a2844161092b5891721ac268fc"><td class="memTemplParams" colspan="2">template&lt;int Dim, int W, typename Team , typename F &gt; </td></tr>
+<tr class="memitem:a2215c7a2844161092b5891721ac268fc"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FORCEINLINE_FUNCTION void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a2215c7a2844161092b5891721ac268fc">ippl::thread_vector_stencil_for</a> (const Team &amp;team, F &amp;&amp;f)</td></tr>
+<tr class="separator:a2215c7a2844161092b5891721ac268fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7cdc734e5317fe3d16efab9a476ec4d5"><td class="memTemplParams" colspan="2">template&lt;typename F &gt; </td></tr>
+<tr class="memitem:a7cdc734e5317fe3d16efab9a476ec4d5"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a7cdc734e5317fe3d16efab9a476ec4d5">ippl::detail::parallelForMPI</a> (size_t n, F &amp;&amp;f)</td></tr>
+<tr class="separator:a7cdc734e5317fe3d16efab9a476ec4d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a3e1bc3cc9531ad7979480f0f562208"><td class="memTemplParams" colspan="2">template&lt;e_functor_type Type, typename Policy , typename... Acc, typename Functor &gt; </td></tr>
 <tr class="memitem:a5a3e1bc3cc9531ad7979480f0f562208"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a5a3e1bc3cc9531ad7979480f0f562208">ippl::detail::functorize</a> (const Functor &amp;f)</td></tr>
 <tr class="separator:a5a3e1bc3cc9531ad7979480f0f562208"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -235,6 +290,21 @@ Functions</h2></td></tr>
 <tr class="memitem:ab8faeca32cc3523c0e39f7c0e6ec7cbc"><td class="memTemplParams" colspan="2">template&lt;class ExecPolicy , class FunctorType , class... ReducerArgument&gt; </td></tr>
 <tr class="memitem:ab8faeca32cc3523c0e39f7c0e6ec7cbc"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#ab8faeca32cc3523c0e39f7c0e6ec7cbc">ippl::parallel_reduce</a> (const std::string &amp;name, const ExecPolicy &amp;policy, const FunctorType &amp;functor, ReducerArgument &amp;&amp;... reducer)</td></tr>
 <tr class="separator:ab8faeca32cc3523c0e39f7c0e6ec7cbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adfc9dfca724f984ece23247b38512d87"><td class="memTemplParams" colspan="2">template&lt;std::size_t I, typename T , typename... Rest&gt; </td></tr>
+<tr class="memitem:adfc9dfca724f984ece23247b38512d87"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FORCEINLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#adfc9dfca724f984ece23247b38512d87">ippl::get_arg</a> (T <a class="el" href="AbsorbingBC_8h.html#a58ce4b72dde36d8333e494948da516ba">first</a>, Rest... rest)</td></tr>
+<tr class="separator:adfc9dfca724f984ece23247b38512d87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a223e85e59bab0a5f3c3bc5efd597ed36"><td class="memTemplParams" colspan="2">template&lt;typename Grid , typename Base , typename... Stencils&gt; </td></tr>
+<tr class="memitem:a223e85e59bab0a5f3c3bc5efd597ed36"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FORCEINLINE_FUNCTION decltype(auto)&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a223e85e59bab0a5f3c3bc5efd597ed36">ippl::grid_at</a> (Grid &amp;grid, const Base &amp;base, int team_rank, Stencils... stencil_idx)</td></tr>
+<tr class="separator:a223e85e59bab0a5f3c3bc5efd597ed36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63bd072663b103c09c6ee742762080ac"><td class="memTemplParams" colspan="2">template&lt;int D, typename Grid , typename Base , typename Stencils &gt; </td></tr>
+<tr class="memitem:a63bd072663b103c09c6ee742762080ac"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FORCEINLINE_FUNCTION decltype(auto)&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a63bd072663b103c09c6ee742762080ac">ippl::grid_at_t</a> (Grid &amp;grid, const Base &amp;base, int team_rank, Stencils &amp;stencil_idx)</td></tr>
+<tr class="separator:a63bd072663b103c09c6ee742762080ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a3bacbcbd547af13faee5c53cac824386"><td class="memTemplParams" colspan="2">template&lt;typename ExecSpace &gt; </td></tr>
+<tr class="memitem:a3bacbcbd547af13faee5c53cac824386"><td class="memTemplItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a3bacbcbd547af13faee5c53cac824386">ippl::detail::isGPUSpace</a> = false</td></tr>
+<tr class="separator:a3bacbcbd547af13faee5c53cac824386"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 <!-- start footer part -->

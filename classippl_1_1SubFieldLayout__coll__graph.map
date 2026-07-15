@@ -1,6 +1,6 @@
 <map id="ippl::SubFieldLayout&lt; Dim &gt;" name="ippl::SubFieldLayout&lt; Dim &gt;">
-<area shape="rect" id="node1" title="SubFieldLayout provides a layout for a sub&#45;region of a larger field." alt="" coords="167,1079,310,1280"/>
-<area shape="rect" id="node2" href="$classippl_1_1FieldLayout.html" title=" " alt="" coords="153,637,324,1029"/>
+<area shape="rect" id="node1" title="SubFieldLayout provides a layout for a sub&#45;region of a larger field." alt="" coords="167,1093,310,1295"/>
+<area shape="rect" id="node2" href="$classippl_1_1FieldLayout.html" title=" " alt="" coords="153,637,324,1044"/>
 <area shape="rect" id="node3" href="$classippl_1_1mpi_1_1Communicator.html" title=" " alt="" coords="5,227,189,575"/>
 <area shape="rect" id="node4" href="$classTagMaker.html" title=" " alt="" coords="31,5,164,177"/>
 <area shape="rect" id="node5" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="213,373,360,428"/>

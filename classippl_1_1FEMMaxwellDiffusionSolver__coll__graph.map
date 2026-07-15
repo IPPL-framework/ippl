@@ -1,7 +1,7 @@
 <map id="ippl::FEMMaxwellDiffusionSolver&lt; FieldType &gt;" name="ippl::FEMMaxwellDiffusionSolver&lt; FieldType &gt;">
 <area shape="rect" id="node1" title="A solver for the electric diffusion equation given by &#160;and &#160;using the Nédélec basis functions." alt="" coords="328,1325,533,1571"/>
 <area shape="rect" id="node2" href="$classippl_1_1Maxwell.html" title=" " alt="" coords="5,981,176,1197"/>
-<area shape="rect" id="node3" href="$classippl_1_1ParameterList.html" title=" " alt="" coords="23,585,158,771"/>
+<area shape="rect" id="node3" href="$classippl_1_1ParameterList.html" title=" " alt="" coords="23,577,158,779"/>
 <area shape="rect" id="node4" href="$classippl_1_1CG.html" title=" " alt="" coords="200,944,427,1233"/>
 <area shape="rect" id="node5" href="$classippl_1_1SolverAlgorithm.html" title=" " alt="" coords="229,643,392,713"/>
 <area shape="rect" id="node6" href="$classippl_1_1GaussJacobiQuadrature.html" title=" " alt="" coords="451,1017,650,1160"/>

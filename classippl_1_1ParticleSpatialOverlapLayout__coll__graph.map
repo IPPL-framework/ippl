@@ -1,11 +1,12 @@
 <map id="ippl::ParticleSpatialOverlapLayout&lt; T, Dim, Mesh, PositionProperties &gt;" name="ippl::ParticleSpatialOverlapLayout&lt; T, Dim, Mesh, PositionProperties &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="440,1047,713,1571"/>
-<area shape="rect" id="node2" href="$classippl_1_1ParticleSpatialLayout.html" title=" " alt="" coords="358,695,593,969"/>
-<area shape="rect" id="node3" href="$classippl_1_1detail_1_1ParticleLayout.html" title=" " alt="" coords="5,394,209,581"/>
-<area shape="rect" id="node4" href="$classippl_1_1detail_1_1RegionLayout.html" title=" " alt="" coords="234,350,474,625"/>
-<area shape="rect" id="node5" href="$classippl_1_1NDRegion.html" title=" " alt="" coords="189,5,324,265"/>
-<area shape="rect" id="node6" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="349,108,551,163"/>
-<area shape="rect" id="node7" href="$classippl_1_1mpi_1_1rma_1_1Window.html" title=" " alt="" coords="499,343,652,632"/>
-<area shape="rect" id="node8" href="$classippl_1_1Vector.html" title=" " alt="" coords="665,709,789,955"/>
-<area shape="rect" id="node9" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="677,445,829,529"/>
+<area shape="rect" id="node1" title=" " alt="" coords="655,1017,928,1541"/>
+<area shape="rect" id="node2" href="$classippl_1_1ParticleSpatialLayout.html" title=" " alt="" coords="573,445,807,940"/>
+<area shape="rect" id="node3" href="$classippl_1_1detail_1_1ParticleLayout.html" title=" " alt="" coords="5,57,209,243"/>
+<area shape="rect" id="node4" href="$classippl_1_1mpi_1_1rma_1_1Window.html" title=" " alt="" coords="233,5,387,295"/>
+<area shape="rect" id="node5" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="411,115,577,185"/>
+<area shape="rect" id="node6" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="602,115,778,185"/>
+<area shape="rect" id="node7" title=" " alt="" coords="803,130,863,170"/>
+<area shape="rect" id="node8" href="$structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="887,123,1069,177"/>
+<area shape="rect" id="node9" href="$classippl_1_1Vector.html" title=" " alt="" coords="969,570,1093,815"/>
+<area shape="rect" id="node10" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="1094,108,1246,192"/>
 </map>

@@ -14,7 +14,13 @@ var searchData=
   ['bconds_3c_20field_3c_20matrix_5ft_2c_20dim_2c_20mesh_5ftype_2c_20centering_2c_20viewargs_2e_2e_2e_20_3e_2c_20dim_20_3e_11',['BConds&lt; Field&lt; Matrix_t, Dim, mesh_type, Centering, ViewArgs... &gt;, Dim &gt;',['../classippl_1_1BConds.html',1,'ippl']]],
   ['bconds_3c_20field_3c_20t_2c_20dim_2c_20mesh_2c_20centering_2c_20viewargs_2e_2e_2e_20_3e_2c_20dim_20_3e_12',['BConds&lt; Field&lt; T, Dim, Mesh, Centering, ViewArgs... &gt;, Dim &gt;',['../classippl_1_1BConds.html',1,'ippl']]],
   ['bconds_3c_20field_3c_20t_2c_20dim_2c_20mesh_5ft_3c_20dim_20_3e_2c_20centering_5ft_3c_20dim_20_3e_2c_20viewargs_2e_2e_2e_20_3e_2c_20dim_20_3e_13',['BConds&lt; Field&lt; T, Dim, Mesh_t&lt; Dim &gt;, Centering_t&lt; Dim &gt;, ViewArgs... &gt;, Dim &gt;',['../classippl_1_1BConds.html',1,'ippl']]],
-  ['bound_5ftype_14',['bound_type',['../structippl_1_1FieldLayout_1_1bound__type.html',1,'ippl::FieldLayout']]],
-  ['boundaryinfo_15',['BoundaryInfo',['../structippl_1_1FEMVector_1_1BoundaryInfo.html',1,'ippl::FEMVector']]],
-  ['bufferhandler_16',['BufferHandler',['../classippl_1_1BufferHandler.html',1,'ippl']]]
+  ['binsortbuffers_14',['BinSortBuffers',['../classippl_1_1detail_1_1BinSortBuffers.html',1,'ippl::detail']]],
+  ['binsortbuffersholder_15',['BinSortBuffersHolder',['../classippl_1_1detail_1_1BinSortBuffersHolder.html',1,'ippl::detail']]],
+  ['bound_5ftype_16',['bound_type',['../structippl_1_1FieldLayout_1_1bound__type.html',1,'ippl::FieldLayout']]],
+  ['boundaryinfo_17',['BoundaryInfo',['../structippl_1_1FEMVector_1_1BoundaryInfo.html',1,'ippl::FEMVector']]],
+  ['bufferhandler_18',['BufferHandler',['../classippl_1_1BufferHandler.html',1,'ippl']]],
+  ['buffersizecomputer_19',['BufferSizeComputer',['../structippl_1_1BufferSizeComputer.html',1,'ippl']]],
+  ['buffersizecomputer_3c_20t_20_3e_20',['BufferSizeComputer&lt; T &gt;',['../structippl_1_1BufferSizeComputer_3_01T_01_4.html',1,'ippl']]],
+  ['buffersizecomputer_3c_20t_2c_20rest_2e_2e_2e_20_3e_21',['BufferSizeComputer&lt; T, Rest... &gt;',['../structippl_1_1BufferSizeComputer_3_01T_00_01Rest_8_8_8_01_4.html',1,'ippl']]],
+  ['bufferview_22',['BufferView',['../classippl_1_1BufferView.html',1,'ippl']]]
 ];

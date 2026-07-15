@@ -11,5 +11,6 @@ var searchData=
   ['bufferhandler_2eh_8',['BufferHandler.h',['../BufferHandler_8h.html',1,'']]],
   ['bufferhandler_2ehpp_9',['BufferHandler.hpp',['../BufferHandler_8hpp.html',1,'']]],
   ['buffers_2ecpp_10',['Buffers.cpp',['../Buffers_8cpp.html',1,'']]],
-  ['buffers_2ehpp_11',['Buffers.hpp',['../Buffers_8hpp.html',1,'']]]
+  ['buffers_2ehpp_11',['Buffers.hpp',['../Buffers_8hpp.html',1,'']]],
+  ['bufferview_2eh_12',['BufferView.h',['../BufferView_8h.html',1,'']]]
 ];

@@ -4,7 +4,7 @@ var searchData=
   ['temp_5fview_5ftype_1',['temp_view_type',['../classippl_1_1FFTBase.html#aa309bd0a36c47a6ce9ec5bb929047c92',1,'ippl::FFTBase']]],
   ['tf_2',['Tf',['../classippl_1_1OrthogonalRecursiveBisection.html#a9a933b0bd8564fef1c1c757a83b84b75',1,'ippl::OrthogonalRecursiveBisection']]],
   ['tg_3',['Tg',['../classippl_1_1FFTOpenPoissonSolver.html#a0543b83e62bfa3a48770c51de37932b4',1,'ippl::FFTOpenPoissonSolver']]],
-  ['timer_5ftype_4',['timer_type',['../classTimer.html#ad8832485437c643452094267e0545238',1,'Timer']]],
+  ['tileconfig_4',['TileConfig',['../classippl_1_1TileSizeTuner.html#ace3513fccfc12b959e9e05dffa1cf78e',1,'ippl::TileSizeTuner']]],
   ['timerinfo_5',['TimerInfo',['../structTiming.html#a6153542254b8f61660c4e9408eb6746f',1,'Timing::TimerInfo()'],['../classIpplTimings.html#a8733ef0d226941ebcf124e7e703e4185',1,'IpplTimings::TimerInfo()']]],
   ['timerlist_5ft_6',['TimerList_t',['../structTiming.html#afe7b35e5acb41d6ae5b22bd35f58c356',1,'Timing::TimerList_t()'],['../classIpplTimings.html#a4cf9e004ab60e8a62057038dca484ef0',1,'IpplTimings::TimerList_t()']]],
   ['timermap_5ft_7',['TimerMap_t',['../structTiming.html#a82f68810d1eeb2d0e35bdd0bbefd6722',1,'Timing::TimerMap_t()'],['../classIpplTimings.html#a764b03de866882a900429dc5225c9cef',1,'IpplTimings::TimerMap_t()']]],

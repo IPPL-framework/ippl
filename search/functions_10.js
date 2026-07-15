@@ -1,32 +1,4 @@
 var searchData=
 [
-  ['randn_0',['randn',['../structippl_1_1random_1_1randn.html#a391e47a951a49c4b4dfe2582595387ca',1,'ippl::random::randn::randn(view_type v_, GeneratorPool rand_pool_)'],['../structippl_1_1random_1_1randn.html#a75b9f30b7550dcaeb3363ff273a610a4',1,'ippl::random::randn::randn(view_type v_, GeneratorPool rand_pool_, T *mu_p, T *sd_p)']]],
-  ['randu_1',['randu',['../structippl_1_1random_1_1randu.html#a250c196f45ed6280bd7543b466085c9e',1,'ippl::random::randu::randu(view_type v_, GeneratorPool rand_pool_)'],['../structippl_1_1random_1_1randu.html#a06d5c539515361e92852af0979cc9841',1,'ippl::random::randu::randu(view_type v_, GeneratorPool rand_pool_, T *rmin_p, T *rmax_p)']]],
-  ['rank_2',['rank',['../classippl_1_1mpi_1_1Communicator.html#a641eadba2e74d25d11a5011147f4acc0',1,'ippl::mpi::Communicator']]],
-  ['realloc_3',['realloc',['../classippl_1_1ParticleAttrib.html#ade0eb9794eb380bb58813913852a2a23',1,'ippl::ParticleAttrib']]],
-  ['reallocatelargestfreebuffer_4',['reallocateLargestFreeBuffer',['../classippl_1_1DefaultBufferHandler.html#a19b09c9c6b1303c3049ac1a104ea1bd8',1,'ippl::DefaultBufferHandler']]],
-  ['reallocbuffer_5',['reallocBuffer',['../classippl_1_1detail_1_1Archive.html#ac7423282d62093d13d8d709c8a310912',1,'ippl::detail::Archive']]],
-  ['reconstructtopoints_6',['reconstructToPoints',['../classippl_1_1NedelecSpace.html#ae6887abed860330731922ab76541f1e9',1,'ippl::NedelecSpace::reconstructToPoints()'],['../classippl_1_1FEMMaxwellDiffusionSolver.html#a409bc61cc23471b41843469600d0ef98',1,'ippl::FEMMaxwellDiffusionSolver::reconstructToPoints()']]],
-  ['recursive_5fpreconditioner_7',['recursive_preconditioner',['../structippl_1_1polynomial__newton__preconditioner.html#a77eae60708123fa67015a4658564e38e',1,'ippl::polynomial_newton_preconditioner']]],
-  ['recv_8',['recv',['../classippl_1_1mpi_1_1Communicator.html#a6b75419e63192367f6721ec98d59d48d',1,'ippl::mpi::Communicator::recv(T &amp;output, int count, int source, int tag, Status &amp;status)'],['../classippl_1_1mpi_1_1Communicator.html#af382580572d05ff0047b43921f11c9dd',1,'ippl::mpi::Communicator::recv(int src, int tag, Buffer &amp;buffer, Archive &amp;ar, size_type msize, size_type nrecvs)'],['../classippl_1_1mpi_1_1Communicator.html#af104973e57ef6012c5607282acda2da7',1,'ippl::mpi::Communicator::recv(T *output, int count, int source, int tag, Status &amp;status)']]],
-  ['recvfromrank_9',['recvFromRank',['../classippl_1_1ParticleBase.html#aaf5d24d53d37df58854baeb8ad3ec5f3',1,'ippl::ParticleBase']]],
-  ['reduce_10',['reduce',['../classippl_1_1mpi_1_1Communicator.html#a684bf5a9b71c2e46c44fe0c004b7d243',1,'ippl::mpi::Communicator::reduce(const T *input, T *output, int count, Op op, int root=0)'],['../classippl_1_1mpi_1_1Communicator.html#a78a311906da5cc7b00cc11676d567102',1,'ippl::mpi::Communicator::reduce(const T &amp;input, T &amp;output, int count, Op op, int root=0)']]],
-  ['reflectivebc_11',['ReflectiveBC',['../structippl_1_1detail_1_1ReflectiveBC.html#abba0c1631039c8ee409b4b9cf49bee9c',1,'ippl::detail::ReflectiveBC::ReflectiveBC()=default'],['../structippl_1_1detail_1_1ReflectiveBC.html#af2e6284cd91059abc533d63299f97786',1,'ippl::detail::ReflectiveBC::ReflectiveBC(const ViewType &amp;view, const NDRegion&lt; T, Dim &gt; &amp;nr, const unsigned &amp;dim, const bool &amp;isUpper)']]],
-  ['regionlayout_12',['RegionLayout',['../classippl_1_1detail_1_1RegionLayout.html#ae802e0709e5e124a12a334583a9937d4',1,'ippl::detail::RegionLayout::RegionLayout()'],['../classippl_1_1detail_1_1RegionLayout.html#ae967a5aa67af7902e92066ad9560592f',1,'ippl::detail::RegionLayout::RegionLayout(const FieldLayout&lt; Dim &gt; &amp;, const Mesh &amp;, bool node=false)']]],
-  ['release_13',['release',['../classmy__auto__ptr.html#af850d017d2884b441e8696254765b81c',1,'my_auto_ptr']]],
-  ['releaseusedbuffer_14',['releaseUsedBuffer',['../classippl_1_1DefaultBufferHandler.html#a0ce32a229274bf38f3c51e1bd82aef59',1,'ippl::DefaultBufferHandler']]],
-  ['request_15',['Request',['../classippl_1_1mpi_1_1Request.html#a51aca79fd4ccd192debcb113a4f4096e',1,'ippl::mpi::Request']]],
-  ['reset_5ftag_16',['reset_tag',['../classTagMaker.html#af807e4aa5edb24ce945768e6a38d135d',1,'TagMaker']]],
-  ['resetreadpos_17',['resetReadPos',['../classippl_1_1detail_1_1Archive.html#a7768636782bbbc8d4c5e4c7b947927c1',1,'ippl::detail::Archive']]],
-  ['resetwritepos_18',['resetWritePos',['../classippl_1_1detail_1_1Archive.html#a945131644935c484507aa55f01973341',1,'ippl::detail::Archive']]],
-  ['residual_19',['residual',['../structippl_1_1multigrid__preconditioner.html#a6b2cb9326a73dffcefde2f3d66ab8ff3',1,'ippl::multigrid_preconditioner']]],
-  ['resize_20',['resize',['../classippl_1_1ParticleAttrib.html#af17581dfc1c80932122c3bb8635ad639',1,'ippl::ParticleAttrib::resize()'],['../classippl_1_1BareField.html#adf53a613903263c12ec27dfd8e08a640',1,'ippl::BareField::resize()']]],
-  ['resizebuffer_21',['resizeBuffer',['../classippl_1_1detail_1_1Archive.html#a0a44048523db7aa285ab246cfc3ed6ab',1,'ippl::detail::Archive']]],
-  ['restrict_5faverage_22',['restrict_average',['../structippl_1_1multigrid__preconditioner.html#a680c0738cca9e67fa96a363d749610c7',1,'ippl::multigrid_preconditioner']]],
-  ['reverse_23',['reverse',['../classippl_1_1Index.html#a7427dba1283fd616998b4bee748d0a3e',1,'ippl::Index']]],
-  ['richardson_5fpreconditioner_24',['richardson_preconditioner',['../structippl_1_1richardson__preconditioner.html#a92767cf524db3e63adb4d9f5df46286a',1,'ippl::richardson_preconditioner']]],
-  ['richardson_5fpreconditioner_5falt_25',['richardson_preconditioner_alt',['../structippl_1_1richardson__preconditioner__alt.html#a010a29f70eec959f8bb39d911ae90f3c',1,'ippl::richardson_preconditioner_alt']]],
-  ['run_26',['run',['../classippl_1_1BaseManager.html#a9300907fad46b9217f4231f5c46d71fb',1,'ippl::BaseManager']]],
-  ['runforallspaces_27',['runForAllSpaces',['../namespaceippl_1_1detail.html#aeb0ea8b584dda433cfe4005e0056f022',1,'ippl::detail']]],
-  ['runsolver_28',['runSolver',['../classippl_1_1FieldSolverBase.html#a9980642f484ba57648724206d43f083e',1,'ippl::FieldSolverBase']]]
+  ['quadrature_0',['Quadrature',['../classippl_1_1Quadrature.html#ad0cdd78559face6a747400440d2c6fac',1,'ippl::Quadrature']]]
 ];

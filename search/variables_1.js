@@ -6,10 +6,14 @@ var searchData=
   ['bcs_5fm_3',['bcs_m',['../classippl_1_1detail_1_1ParticleLayout.html#af56ebab788ddbc4b2d902c69375ddec1',1,'ippl::detail::ParticleLayout']]],
   ['beta_5fm_4',['beta_m',['../classippl_1_1GaussJacobiQuadrature.html#ac943b455b9c1efa607cb4b8a1c62d998',1,'ippl::GaussJacobiQuadrature::beta_m()'],['../structippl_1_1polynomial__newton__preconditioner.html#a26589137ca53ac6cb6a9623cc66e212b',1,'ippl::polynomial_newton_preconditioner::beta_m()'],['../structippl_1_1polynomial__chebyshev__preconditioner.html#ab207f2df124fb2b61ba92e4a2fb7bc5e',1,'ippl::polynomial_chebyshev_preconditioner::beta_m()']]],
   ['bf_5fm_5',['bf_m',['../classippl_1_1OrthogonalRecursiveBisection.html#aea7dbfee70c37404573da9e220003f63',1,'ippl::OrthogonalRecursiveBisection']]],
-  ['bn_5fmp_6',['Bn_mp',['../classippl_1_1Maxwell.html#adcb2aece160c1a1db0c2931ac107d2af',1,'ippl::Maxwell']]],
-  ['boundaryinfo_5fm_7',['boundaryInfo_m',['../classippl_1_1FEMVector.html#a0eafdceba52f1c1a0d522a9862f05a86',1,'ippl::FEMVector']]],
-  ['buf_5fm_8',['buf_m',['../classippl_1_1ParticleAttrib.html#aeb0fbbf91f91d51d74c0165311afae9d',1,'ippl::ParticleAttrib']]],
-  ['buffer_9',['buffer',['../structippl_1_1detail_1_1CapturedExpression.html#a4b0db64fdced30e27a47a0f8086e25d7',1,'ippl::detail::CapturedExpression::buffer()'],['../structippl_1_1detail_1_1FieldBufferData.html#a0f0d9d8de8da637c4d50c72b8603b6c7',1,'ippl::detail::FieldBufferData::buffer()'],['../structippl_1_1detail_1_1HaloPackFunctor.html#a89ce253dd940ab2c059df366607152a3',1,'ippl::detail::HaloPackFunctor::buffer()'],['../structippl_1_1detail_1_1HaloUnpackFunctor.html#a09c904f21baff49aea526c1ed441d842',1,'ippl::detail::HaloUnpackFunctor::buffer()']]],
-  ['buffer_5fhandlers_5fm_10',['buffer_handlers_m',['../classippl_1_1mpi_1_1Communicator.html#aaa7a06745f3f107ec3f372a7592f7f39',1,'ippl::mpi::Communicator']]],
-  ['buffer_5fm_11',['buffer_m',['../classippl_1_1detail_1_1Archive.html#a55cb4dd67cd9c8ede377a0d78d59cbc1',1,'ippl::detail::Archive']]]
+  ['bin_5fkeys_5f_6',['bin_keys_',['../classippl_1_1detail_1_1BinSortBuffers.html#aeaa6900a19878732b9728a4939600eca',1,'ippl::detail::BinSortBuffers']]],
+  ['bin_5foffset_5fcapacity_5f_7',['bin_offset_capacity_',['../classippl_1_1detail_1_1BinSortBuffers.html#adfb80e8828284647bcdf03b07ea5cc9a',1,'ippl::detail::BinSortBuffers']]],
+  ['bin_5foffsets_5f_8',['bin_offsets_',['../classippl_1_1detail_1_1BinSortBuffers.html#a891a87d333906c7e12e35a2dc92bc75b',1,'ippl::detail::BinSortBuffers']]],
+  ['bn_5fmp_9',['Bn_mp',['../classippl_1_1Maxwell.html#adcb2aece160c1a1db0c2931ac107d2af',1,'ippl::Maxwell']]],
+  ['boundaryinfo_5fm_10',['boundaryInfo_m',['../classippl_1_1FEMVector.html#a0eafdceba52f1c1a0d522a9862f05a86',1,'ippl::FEMVector']]],
+  ['buf_11',['buf',['../structippl_1_1detail_1_1SerializeHashFunctor.html#aadec8b84116c2db4a1bd9549c0924506',1,'ippl::detail::SerializeHashFunctor::buf()'],['../structippl_1_1detail_1_1SerializeHashVectorFunctor.html#aaeddc266f05b44e792b9a16e05895a48',1,'ippl::detail::SerializeHashVectorFunctor::buf()']]],
+  ['buf_5fm_12',['buf_m',['../classippl_1_1ParticleAttrib.html#aeb0fbbf91f91d51d74c0165311afae9d',1,'ippl::ParticleAttrib']]],
+  ['buffer_13',['buffer',['../structippl_1_1detail_1_1CapturedExpression.html#a4b0db64fdced30e27a47a0f8086e25d7',1,'ippl::detail::CapturedExpression::buffer()'],['../structippl_1_1detail_1_1FieldBufferData.html#a0f0d9d8de8da637c4d50c72b8603b6c7',1,'ippl::detail::FieldBufferData::buffer()'],['../structippl_1_1detail_1_1HaloPackFunctor.html#a89ce253dd940ab2c059df366607152a3',1,'ippl::detail::HaloPackFunctor::buffer()'],['../structippl_1_1detail_1_1HaloUnpackFunctor.html#a09c904f21baff49aea526c1ed441d842',1,'ippl::detail::HaloUnpackFunctor::buffer()']]],
+  ['buffer_5fm_14',['buffer_m',['../classippl_1_1detail_1_1Archive.html#a55cb4dd67cd9c8ede377a0d78d59cbc1',1,'ippl::detail::Archive::buffer_m()'],['../classippl_1_1MultiViewBuffer.html#a6432c7c23e27bc8e93eae88cf37f6325',1,'ippl::MultiViewBuffer::buffer_m()']]],
+  ['buffers_5f_15',['buffers_',['../classippl_1_1detail_1_1BinSortBuffersHolder.html#a1312fd43fa2447c9edcd94971dcf3adb',1,'ippl::detail::BinSortBuffersHolder']]]
 ];

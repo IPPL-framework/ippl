@@ -20,5 +20,6 @@ var searchData=
   ['min_17',['Min',['../structKokkosCorrection_1_1Min.html',1,'KokkosCorrection']]],
   ['multigrid_5fpreconditioner_18',['multigrid_preconditioner',['../structippl_1_1multigrid__preconditioner.html',1,'ippl']]],
   ['multispacecontainer_19',['MultispaceContainer',['../classippl_1_1detail_1_1MultispaceContainer.html',1,'ippl::detail']]],
-  ['my_5fauto_5fptr_20',['my_auto_ptr',['../classmy__auto__ptr.html',1,'']]]
+  ['multiviewbuffer_20',['MultiViewBuffer',['../classippl_1_1MultiViewBuffer.html',1,'ippl']]],
+  ['my_5fauto_5fptr_21',['my_auto_ptr',['../classmy__auto__ptr.html',1,'']]]
 ];

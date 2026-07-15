@@ -98,7 +98,7 @@ Collaboration diagram for ippl::detail::MultispaceContainer&lt; Type, Spaces &gt
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1detail_1_1MultispaceContainer__coll__graph.png" border="0" usemap="#aippl_1_1detail_1_1MultispaceContainer_3_01Type_00_01Spaces_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1detail_1_1MultispaceContainer_3_01Type_00_01Spaces_01_4_coll__map" id="aippl_1_1detail_1_1MultispaceContainer_3_01Type_00_01Spaces_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="5,5,184,236"/>
+<area shape="rect" title=" " alt="" coords="5,5,184,221"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -138,12 +138,9 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a5d4dd44f993bf9268691795a7afb37fa"><td class="memTemplParams" colspan="2">template&lt;typename Space &gt; </td></tr>
 <tr class="memitem:a5d4dd44f993bf9268691795a7afb37fa"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1MultispaceContainer.html#a5d4dd44f993bf9268691795a7afb37fa">initElements</a> ()</td></tr>
 <tr class="separator:a5d4dd44f993bf9268691795a7afb37fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a60134a9260c8561fbedec1bce57a4022"><td class="memTemplParams" colspan="2">template&lt;typename MemorySpace , typename Filter , std::enable_if_t&lt; std::is_null_pointer_v&lt; std::decay_t&lt; Filter &gt; &gt;, int &gt;  = 0&gt; </td></tr>
-<tr class="memitem:a60134a9260c8561fbedec1bce57a4022"><td class="memTemplItemLeft" align="right" valign="top">constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1MultispaceContainer.html#a60134a9260c8561fbedec1bce57a4022">copyToSpace</a> (Filter &amp;&amp;)</td></tr>
-<tr class="separator:a60134a9260c8561fbedec1bce57a4022"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2fe4687ad8a2feaba14f97ad1640ffc3"><td class="memTemplParams" colspan="2">template&lt;typename MemorySpace , typename Filter , std::enable_if_t&lt;!std::is_null_pointer_v&lt; std::decay_t&lt; Filter &gt; &gt;, int &gt;  = 0&gt; </td></tr>
-<tr class="memitem:a2fe4687ad8a2feaba14f97ad1640ffc3"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1MultispaceContainer.html#a2fe4687ad8a2feaba14f97ad1640ffc3">copyToSpace</a> (Filter &amp;&amp;predicate)</td></tr>
-<tr class="separator:a2fe4687ad8a2feaba14f97ad1640ffc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89edcc2c00f08aef54899d3a7e2b4d0c"><td class="memTemplParams" colspan="2">template&lt;typename MemorySpace , typename Filter &gt; </td></tr>
+<tr class="memitem:a89edcc2c00f08aef54899d3a7e2b4d0c"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1MultispaceContainer.html#a89edcc2c00f08aef54899d3a7e2b4d0c">copyToSpace</a> (Filter &amp;&amp;predicate)</td></tr>
+<tr class="separator:a89edcc2c00f08aef54899d3a7e2b4d0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-methods" name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
@@ -342,46 +339,15 @@ template&lt;typename Space , typename Filter  = std::nullptr_t&gt; </div>
 
 </div>
 </div>
-<a id="a60134a9260c8561fbedec1bce57a4022" name="a60134a9260c8561fbedec1bce57a4022"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a60134a9260c8561fbedec1bce57a4022">&#9670;&#160;</a></span>copyToSpace() <span class="overload">[1/2]</span></h2>
+<a id="a89edcc2c00f08aef54899d3a7e2b4d0c" name="a89edcc2c00f08aef54899d3a7e2b4d0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a89edcc2c00f08aef54899d3a7e2b4d0c">&#9670;&#160;</a></span>copyToSpace()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;template&lt; typename &gt; class Type, typename... Spaces&gt; </div>
 <div class="memtemplate">
-template&lt;typename MemorySpace , typename Filter , std::enable_if_t&lt; std::is_null_pointer_v&lt; std::decay_t&lt; Filter &gt; &gt;, int &gt;  = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">constexpr bool <a class="el" href="classippl_1_1detail_1_1MultispaceContainer.html">ippl::detail::MultispaceContainer</a>&lt; Type, Spaces &gt;::copyToSpace </td>
-          <td>(</td>
-          <td class="paramtype">Filter &amp;&amp;&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p >Determine whether the element for a space should be initialized, possibly based on a predicate functor </p>
-
-</div>
-</div>
-<a id="a2fe4687ad8a2feaba14f97ad1640ffc3" name="a2fe4687ad8a2feaba14f97ad1640ffc3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2fe4687ad8a2feaba14f97ad1640ffc3">&#9670;&#160;</a></span>copyToSpace() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;template&lt; typename &gt; class Type, typename... Spaces&gt; </div>
-<div class="memtemplate">
-template&lt;typename MemorySpace , typename Filter , std::enable_if_t&lt;!std::is_null_pointer_v&lt; std::decay_t&lt; Filter &gt; &gt;, int &gt;  = 0&gt; </div>
+template&lt;typename MemorySpace , typename Filter &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -400,6 +366,7 @@ template&lt;typename MemorySpace , typename Filter , std::enable_if_t&lt;!std::i
   </tr>
 </table>
 </div><div class="memdoc">
+<p >Determine whether the element for a space should be initialized, possibly based on a predicate functor. A nullptr_t Filter unconditionally enables the copy. </p>
 
 </div>
 </div>

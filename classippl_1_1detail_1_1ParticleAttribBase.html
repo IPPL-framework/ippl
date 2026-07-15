@@ -130,6 +130,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:adee8033d1fa3b11aeb51a357fbff7181"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af5afaf829fa17c7ac5949fe321364942"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#af5afaf829fa17c7ac5949fe321364942">create</a> (<a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>, bool non_destructive=false)=0</td></tr>
 <tr class="separator:af5afaf829fa17c7ac5949fe321364942"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a963522f3900ed3dbb95793689c504a36"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a963522f3900ed3dbb95793689c504a36">reserve</a> (<a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>)=0</td></tr>
+<tr class="separator:a963522f3900ed3dbb95793689c504a36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a28d8afb8057ff4d2f8edcc60d3929314"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a28d8afb8057ff4d2f8edcc60d3929314">destroy</a> (const <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a3f6b0b242ba2df58838e176a0f9e0307">hash_type</a> &amp;, const <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a3f6b0b242ba2df58838e176a0f9e0307">hash_type</a> &amp;, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>)=0</td></tr>
 <tr class="separator:a28d8afb8057ff4d2f8edcc60d3929314"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac8fd8efe4b95f3c91244b78dfeaf3b90"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#ac8fd8efe4b95f3c91244b78dfeaf3b90">packedSize</a> (const <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>) const =0</td></tr>
@@ -140,12 +142,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a09b13675bfc8dd56c96a19264b5b629e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeeb12aeef5d68b63fe13767b1aaaf155"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#aeeb12aeef5d68b63fe13767b1aaaf155">serialize</a> (<a class="el" href="classippl_1_1detail_1_1Archive.html">Archive</a>&lt; <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a8bbbee7bcb6b611bbf2e74dbe5ed2009">memory_space</a> &gt; &amp;ar, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nsends)=0</td></tr>
 <tr class="separator:aeeb12aeef5d68b63fe13767b1aaaf155"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abaa41fa577de59e5c60a1ad2f978f77b"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#abaa41fa577de59e5c60a1ad2f978f77b">serialize</a> (<a class="el" href="classippl_1_1detail_1_1Archive.html">detail::Archive</a>&lt; <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a8bbbee7bcb6b611bbf2e74dbe5ed2009">memory_space</a> &gt; &amp;ar, const <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a3f6b0b242ba2df58838e176a0f9e0307">hash_type</a> &amp;hash, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nsends)=0</td></tr>
+<tr class="separator:abaa41fa577de59e5c60a1ad2f978f77b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ebe1b58444b21fedffa1368240f2464"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a2ebe1b58444b21fedffa1368240f2464">deserialize</a> (<a class="el" href="classippl_1_1detail_1_1Archive.html">Archive</a>&lt; <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a8bbbee7bcb6b611bbf2e74dbe5ed2009">memory_space</a> &gt; &amp;ar, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nrecvs)=0</td></tr>
 <tr class="separator:a2ebe1b58444b21fedffa1368240f2464"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64093fb6f8e787594cc6409c907264c8"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a64093fb6f8e787594cc6409c907264c8">deserialize</a> (<a class="el" href="classippl_1_1detail_1_1Archive.html">detail::Archive</a>&lt; <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a8bbbee7bcb6b611bbf2e74dbe5ed2009">memory_space</a> &gt; &amp;ar, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> offset, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> nrecvs)=0</td></tr>
+<tr class="separator:a64093fb6f8e787594cc6409c907264c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a524b125bdf24a221b543f76aac2fa9d8"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a524b125bdf24a221b543f76aac2fa9d8">size</a> () const =0</td></tr>
 <tr class="separator:a524b125bdf24a221b543f76aac2fa9d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a002abdeac69a8f2a8890261996e83cae"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a002abdeac69a8f2a8890261996e83cae">~ParticleAttribBase</a> ()=default</td></tr>
-<tr class="separator:a002abdeac69a8f2a8890261996e83cae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87b43381dcb90446c887a673a6794a0e"><td class="memItemLeft" align="right" valign="top">virtual KOKKOS_INLINE_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a87b43381dcb90446c887a673a6794a0e">~ParticleAttribBase</a> ()=default</td></tr>
+<tr class="separator:a87b43381dcb90446c887a673a6794a0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2caa92cf2c0eb13f9fff95d04ae286a7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a2caa92cf2c0eb13f9fff95d04ae286a7">setParticleCount</a> (<a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a> &amp;num)</td></tr>
 <tr class="separator:a2caa92cf2c0eb13f9fff95d04ae286a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4872bc5ed2316fcfe6c3e40041a15e38"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a4872bc5ed2316fcfe6c3e40041a15e38">getParticleCount</a> () const</td></tr>
@@ -257,8 +263,8 @@ template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&
 
 </div>
 </div>
-<a id="a002abdeac69a8f2a8890261996e83cae" name="a002abdeac69a8f2a8890261996e83cae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a002abdeac69a8f2a8890261996e83cae">&#9670;&#160;</a></span>~ParticleAttribBase()</h2>
+<a id="a87b43381dcb90446c887a673a6794a0e" name="a87b43381dcb90446c887a673a6794a0e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87b43381dcb90446c887a673a6794a0e">&#9670;&#160;</a></span>~ParticleAttribBase()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -269,7 +275,7 @@ template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">ippl::detail::ParticleAttribBase</a>&lt; MemorySpace &gt;::~<a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">ParticleAttribBase</a> </td>
+          <td class="memname">virtual KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">ippl::detail::ParticleAttribBase</a>&lt; MemorySpace &gt;::~<a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">ParticleAttribBase</a> </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -380,7 +386,7 @@ template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&
 </div>
 </div>
 <a id="a2ebe1b58444b21fedffa1368240f2464" name="a2ebe1b58444b21fedffa1368240f2464"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ebe1b58444b21fedffa1368240f2464">&#9670;&#160;</a></span>deserialize()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ebe1b58444b21fedffa1368240f2464">&#9670;&#160;</a></span>deserialize() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -395,6 +401,50 @@ template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1Archive.html">Archive</a>&lt; <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a8bbbee7bcb6b611bbf2e74dbe5ed2009">memory_space</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>ar</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td>
+          <td class="paramname"><em>nrecvs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a64093fb6f8e787594cc6409c907264c8" name="a64093fb6f8e787594cc6409c907264c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64093fb6f8e787594cc6409c907264c8">&#9670;&#160;</a></span>deserialize() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">ippl::detail::ParticleAttribBase</a>&lt; MemorySpace &gt;::deserialize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1Archive.html">detail::Archive</a>&lt; <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a8bbbee7bcb6b611bbf2e74dbe5ed2009">memory_space</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>ar</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td>
+          <td class="paramname"><em>offset</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -599,8 +649,36 @@ template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&
 
 </div>
 </div>
+<a id="a963522f3900ed3dbb95793689c504a36" name="a963522f3900ed3dbb95793689c504a36"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a963522f3900ed3dbb95793689c504a36">&#9670;&#160;</a></span>reserve()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">ippl::detail::ParticleAttribBase</a>&lt; MemorySpace &gt;::reserve </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="aeeb12aeef5d68b63fe13767b1aaaf155" name="aeeb12aeef5d68b63fe13767b1aaaf155"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeeb12aeef5d68b63fe13767b1aaaf155">&#9670;&#160;</a></span>serialize()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aeeb12aeef5d68b63fe13767b1aaaf155">&#9670;&#160;</a></span>serialize() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -615,6 +693,50 @@ template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&
           <td>(</td>
           <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1Archive.html">Archive</a>&lt; <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a8bbbee7bcb6b611bbf2e74dbe5ed2009">memory_space</a> &gt; &amp;&#160;</td>
           <td class="paramname"><em>ar</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">size_type</a>&#160;</td>
+          <td class="paramname"><em>nsends</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abaa41fa577de59e5c60a1ad2f978f77b" name="abaa41fa577de59e5c60a1ad2f978f77b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abaa41fa577de59e5c60a1ad2f978f77b">&#9670;&#160;</a></span>serialize() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename MemorySpace  = Kokkos::DefaultExecutionSpace::memory_space&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html">ippl::detail::ParticleAttribBase</a>&lt; MemorySpace &gt;::serialize </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1detail_1_1Archive.html">detail::Archive</a>&lt; <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a8bbbee7bcb6b611bbf2e74dbe5ed2009">memory_space</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>ar</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1detail_1_1ParticleAttribBase.html#a3f6b0b242ba2df58838e176a0f9e0307">hash_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>hash</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>

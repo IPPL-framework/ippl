@@ -88,6 +88,9 @@ $(function() {
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1ParticleSpatialLayout-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::ParticleSpatialLayout&lt; T, Dim, Mesh, PositionProperties &gt; Class Template Reference</div></div>
 </div><!--header-->
@@ -99,8 +102,8 @@ Inheritance diagram for ippl::ParticleSpatialLayout&lt; T, Dim, Mesh, PositionPr
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1ParticleSpatialLayout__inherit__graph.png" border="0" usemap="#aippl_1_1ParticleSpatialLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1ParticleSpatialLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_inherit__map" id="aippl_1_1ParticleSpatialLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="25,240,259,544"/>
-<area shape="rect" href="classippl_1_1ParticleSpatialOverlapLayout.html" title=" " alt="" coords="5,592,279,1145"/>
+<area shape="rect" title=" " alt="" coords="25,240,259,823"/>
+<area shape="rect" href="classippl_1_1ParticleSpatialOverlapLayout.html" title=" " alt="" coords="5,871,279,1424"/>
 <area shape="rect" href="classippl_1_1detail_1_1ParticleLayout.html" title=" " alt="" coords="40,5,244,192"/>
 </map>
 </div>
@@ -109,12 +112,13 @@ Collaboration diagram for ippl::ParticleSpatialLayout&lt; T, Dim, Mesh, Position
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1ParticleSpatialLayout__coll__graph.png" border="0" usemap="#aippl_1_1ParticleSpatialLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1ParticleSpatialLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_coll__map" id="aippl_1_1ParticleSpatialLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="237,695,471,969"/>
-<area shape="rect" href="classippl_1_1detail_1_1ParticleLayout.html" title=" " alt="" coords="5,394,209,581"/>
-<area shape="rect" href="classippl_1_1detail_1_1RegionLayout.html" title=" " alt="" coords="234,350,474,625"/>
-<area shape="rect" href="classippl_1_1NDRegion.html" title=" " alt="" coords="189,5,324,265"/>
-<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="349,108,551,163"/>
-<area shape="rect" href="classippl_1_1mpi_1_1rma_1_1Window.html" title=" " alt="" coords="499,343,652,632"/>
+<area shape="rect" title=" " alt="" coords="474,445,709,940"/>
+<area shape="rect" href="classippl_1_1detail_1_1ParticleLayout.html" title=" " alt="" coords="5,57,209,243"/>
+<area shape="rect" href="classippl_1_1mpi_1_1rma_1_1Window.html" title=" " alt="" coords="233,5,387,295"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="411,115,577,185"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="602,115,778,185"/>
+<area shape="rect" title=" " alt="" coords="803,130,863,170"/>
+<area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="887,123,1069,177"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -154,8 +158,8 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:aa1f2a763a9fdbe600971ca8166fde610"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aa1f2a763a9fdbe600971ca8166fde610">ParticleSpatialLayout</a> (<a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; Dim &gt; &amp;, <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;, bool fem=false)</td></tr>
-<tr class="separator:aa1f2a763a9fdbe600971ca8166fde610"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af30a9f7b572df53c26f73593658f9015"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#af30a9f7b572df53c26f73593658f9015">ParticleSpatialLayout</a> (<a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; Dim &gt; &amp;, <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;, bool fem=false, <a class="el" href="namespaceippl.html#a7e30277fc3356d1099abe0c22276ecea">CountExchange</a> mode=<a class="el" href="namespaceippl.html#a7e30277fc3356d1099abe0c22276eceaaab01e0096cd339dd513531e88796c911">CountExchange::RMA</a>)</td></tr>
+<tr class="separator:af30a9f7b572df53c26f73593658f9015"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a8e7e6cce658e7cbee4f7663442590f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a4a8e7e6cce658e7cbee4f7663442590f">ParticleSpatialLayout</a> ()</td></tr>
 <tr class="separator:a4a8e7e6cce658e7cbee4f7663442590f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae778d00b2eeb0c1e7ef121e504069ad6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#ae778d00b2eeb0c1e7ef121e504069ad6">~ParticleSpatialLayout</a> ()=default</td></tr>
@@ -167,20 +171,15 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3d5369b9c7167489e2081980a4ac1e2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af23b47004bf9d036843a01a92d6f334e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#afb7767c944e1049cd2bda41b55b7de70">RegionLayout_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#af23b47004bf9d036843a01a92d6f334e">getRegionLayout</a> () const</td></tr>
 <tr class="separator:af23b47004bf9d036843a01a92d6f334e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8f339f8e44b1d6338c706e96dabc127"><td class="memTemplParams" colspan="2">template&lt;typename ParticleContainer &gt; </td></tr>
-<tr class="memitem:ad8f339f8e44b1d6338c706e96dabc127"><td class="memTemplItemLeft" align="right" valign="top">std::pair&lt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a>, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#ad8f339f8e44b1d6338c706e96dabc127">locateParticles</a> (const ParticleContainer &amp;pc, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;ranks, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a5108e7a0ec58d61e64086ab632c21069">bool_type</a> &amp;invalid, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;nSends_dview, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;sends_dview) const</td></tr>
-<tr class="separator:ad8f339f8e44b1d6338c706e96dabc127"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a809a3019d1d2fd886b4cf6d1e6193428"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a809a3019d1d2fd886b4cf6d1e6193428">fillHash</a> (int rank, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;ranks, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#abb5f0eb581ecb03492e482a69c6a03f9">hash_type</a> &amp;hash)</td></tr>
-<tr class="separator:a809a3019d1d2fd886b4cf6d1e6193428"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1540b451a647c649a801755c56cecf15"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a1540b451a647c649a801755c56cecf15">numberOfSends</a> (int rank, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;ranks)</td></tr>
-<tr class="separator:a1540b451a647c649a801755c56cecf15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a8ed6353da0c2baf9a855f7bad4cc2c"><td class="memTemplParams" colspan="2">template&lt;typename ParticleContainer &gt; </td></tr>
+<tr class="memitem:a7a8ed6353da0c2baf9a855f7bad4cc2c"><td class="memTemplItemLeft" align="right" valign="top">size_t&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7a8ed6353da0c2baf9a855f7bad4cc2c">locateParticlesPacked</a> (const ParticleContainer &amp;pc)</td></tr>
+<tr class="separator:a7a8ed6353da0c2baf9a855f7bad4cc2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae48317066a2ef9f5a5b5e18c33c62f37"><td class="memTemplParams" colspan="2">template&lt;size_t... Idx&gt; </td></tr>
+<tr class="memitem:ae48317066a2ef9f5a5b5e18c33c62f37"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#ae48317066a2ef9f5a5b5e18c33c62f37">positionInRegionInclusive</a> (const std::index_sequence&lt; Idx... &gt; &amp;, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#af50426a8abc8622f3b0d2dd25990caf2">vector_type</a> &amp;pos, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7a3e0428b2ea35fce5cf9b0135103aa7">region_type</a> &amp;region)</td></tr>
+<tr class="separator:ae48317066a2ef9f5a5b5e18c33c62f37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08240deb40b3f5500d7aee30406579f7"><td class="memTemplParams" colspan="2">template&lt;size_t... Idx&gt; </td></tr>
 <tr class="memitem:a08240deb40b3f5500d7aee30406579f7"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a08240deb40b3f5500d7aee30406579f7">positionInRegion</a> (const std::index_sequence&lt; Idx... &gt; &amp;, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#af50426a8abc8622f3b0d2dd25990caf2">vector_type</a> &amp;pos, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7a3e0428b2ea35fce5cf9b0135103aa7">region_type</a> &amp;region)</td></tr>
 <tr class="separator:a08240deb40b3f5500d7aee30406579f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a47a5361e8684f1a4512c021d827ea489"><td class="memTemplParams" colspan="2">template&lt;typename ParticleContainer &gt; </td></tr>
-<tr class="memitem:a47a5361e8684f1a4512c021d827ea489"><td class="memTemplItemLeft" align="right" valign="top">std::pair&lt; <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">detail::size_type</a>, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">detail::size_type</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a47a5361e8684f1a4512c021d827ea489">locateParticles</a> (const ParticleContainer &amp;pc, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;ranks, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a5108e7a0ec58d61e64086ab632c21069">bool_type</a> &amp;invalid, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;nSends_dview, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;sends_dview) const</td></tr>
-<tr class="memdesc:a47a5361e8684f1a4512c021d827ea489"><td class="mdescLeft">&#160;</td><td class="mdescRight">This function determines to which rank particles need to be sent after the iteration step. It starts by first scanning direct rank neighbors, and only does a global scan if there are still unfound particles. It then calculates how many particles need to be sent to each rank and how many ranks are sent to in total.  <a href="classippl_1_1ParticleSpatialLayout.html#a47a5361e8684f1a4512c021d827ea489">More...</a><br /></td></tr>
-<tr class="separator:a47a5361e8684f1a4512c021d827ea489"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classippl_1_1detail_1_1ParticleLayout"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classippl_1_1detail_1_1ParticleLayout')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classippl_1_1detail_1_1ParticleLayout.html">ippl::detail::ParticleLayout&lt; T, Dim, PositionProperties... &gt;</a></td></tr>
 <tr class="memitem:ab641822a87ddad62e67d0bb4aebfef74 inherit pub_methods_classippl_1_1detail_1_1ParticleLayout"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1detail_1_1ParticleLayout.html#ab641822a87ddad62e67d0bb4aebfef74">ParticleLayout</a> ()</td></tr>
 <tr class="separator:ab641822a87ddad62e67d0bb4aebfef74 inherit pub_methods_classippl_1_1detail_1_1ParticleLayout"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -219,19 +218,92 @@ Static Protected Member Functions</h2></td></tr>
 <tr class="memitem:a5d116e56658efe00f49a50c514229d6d"><td class="memTemplParams" colspan="2">template&lt;size_t... Idx&gt; </td></tr>
 <tr class="memitem:a5d116e56658efe00f49a50c514229d6d"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION static constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a5d116e56658efe00f49a50c514229d6d">positionInRegion</a> (const std::index_sequence&lt; Idx... &gt; &amp;, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#af50426a8abc8622f3b0d2dd25990caf2">vector_type</a> &amp;pos, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7a3e0428b2ea35fce5cf9b0135103aa7">region_type</a> &amp;region)</td></tr>
 <tr class="separator:a5d116e56658efe00f49a50c514229d6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7cc351ad69b9f73cc0cf033e0adb9631"><td class="memTemplParams" colspan="2">template&lt;size_t... Idx&gt; </td></tr>
+<tr class="memitem:a7cc351ad69b9f73cc0cf033e0adb9631"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION static constexpr bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7cc351ad69b9f73cc0cf033e0adb9631">positionInRegionInclusive</a> (const std::index_sequence&lt; Idx... &gt; &amp;, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#af50426a8abc8622f3b0d2dd25990caf2">vector_type</a> &amp;pos, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7a3e0428b2ea35fce5cf9b0135103aa7">region_type</a> &amp;region)</td></tr>
+<tr class="separator:a7cc351ad69b9f73cc0cf033e0adb9631"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a1379cb4a04abf7a354e406c258c03cb2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#afb7767c944e1049cd2bda41b55b7de70">RegionLayout_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a1379cb4a04abf7a354e406c258c03cb2">rlayout_m</a></td></tr>
-<tr class="memdesc:a1379cb4a04abf7a354e406c258c03cb2"><td class="mdescLeft">&#160;</td><td class="mdescRight">The RegionLayout which determines where our particles go.  <a href="classippl_1_1ParticleSpatialLayout.html#a1379cb4a04abf7a354e406c258c03cb2">More...</a><br /></td></tr>
-<tr class="separator:a1379cb4a04abf7a354e406c258c03cb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90ceaedf8aa67c00c078e08018f20dce"><td class="memItemLeft" align="right" valign="top">std::shared_ptr&lt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html#afb7767c944e1049cd2bda41b55b7de70">RegionLayout_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a90ceaedf8aa67c00c078e08018f20dce">rlayout_m</a></td></tr>
+<tr class="memdesc:a90ceaedf8aa67c00c078e08018f20dce"><td class="mdescLeft">&#160;</td><td class="mdescRight">The RegionLayout which determines where our particles go.  <a href="classippl_1_1ParticleSpatialLayout.html#a90ceaedf8aa67c00c078e08018f20dce">More...</a><br /></td></tr>
+<tr class="separator:a90ceaedf8aa67c00c078e08018f20dce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afeb77e08a97933c1f11a256d89e75b75"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a78fab0f03a1ebbcf8e22fe0e18d0cd33">FieldLayout_t</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#afeb77e08a97933c1f11a256d89e75b75">flayout_m</a></td></tr>
 <tr class="memdesc:afeb77e08a97933c1f11a256d89e75b75"><td class="mdescLeft">&#160;</td><td class="mdescRight">The <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a> containing information on nearest neighbors.  <a href="classippl_1_1ParticleSpatialLayout.html#afeb77e08a97933c1f11a256d89e75b75">More...</a><br /></td></tr>
 <tr class="separator:afeb77e08a97933c1f11a256d89e75b75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa422d5cc403dac4dc43a4a92e8f28bbe"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceippl.html#a7e30277fc3356d1099abe0c22276ecea">CountExchange</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aa422d5cc403dac4dc43a4a92e8f28bbe">countExchangeMode_</a></td></tr>
+<tr class="memdesc:aa422d5cc403dac4dc43a4a92e8f28bbe"><td class="mdescLeft">&#160;</td><td class="mdescRight">How counts are exchanged.  <a href="classippl_1_1ParticleSpatialLayout.html#aa422d5cc403dac4dc43a4a92e8f28bbe">More...</a><br /></td></tr>
+<tr class="separator:aa422d5cc403dac4dc43a4a92e8f28bbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a191ca9574bbe84ca56d8a4613abeb7ad"><td class="memItemLeft" align="right" valign="top">std::vector&lt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a191ca9574bbe84ca56d8a4613abeb7ad">nRecvs_m</a></td></tr>
 <tr class="separator:a191ca9574bbe84ca56d8a4613abeb7ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a065d6293239ce1ecdf81fabca0897eed"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1mpi_1_1rma_1_1Window.html">mpi::rma::Window</a>&lt; <a class="el" href="namespaceippl_1_1mpi_1_1rma.html#a7c8ec1f9a2e1f800062e44f458edf5aaa242bf44b33b7eab2bdbd37fe24076b55">mpi::rma::Active</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a065d6293239ce1ecdf81fabca0897eed">window_m</a></td></tr>
 <tr class="separator:a065d6293239ce1ecdf81fabca0897eed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bc025324076f4f847cc6e47cea921a0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a9bc025324076f4f847cc6e47cea921a0">recvCounts_d_</a></td></tr>
+<tr class="separator:a9bc025324076f4f847cc6e47cea921a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a5be3b6504e3487efcd8ec093a9523510"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a5be3b6504e3487efcd8ec093a9523510">host_mem_space</a> = Kokkos::HostSpace</td></tr>
+<tr class="separator:a5be3b6504e3487efcd8ec093a9523510"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2498b28e39cf19019c7665781dd37927"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a2498b28e39cf19019c7665781dd37927">locate_host_type</a> = typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">detail::ViewType</a>&lt; int, 1, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a5be3b6504e3487efcd8ec093a9523510">host_mem_space</a> &gt;::view_type</td></tr>
+<tr class="separator:a2498b28e39cf19019c7665781dd37927"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:aeece66211081d6ea9dd8672aa57f5eff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aeece66211081d6ea9dd8672aa57f5eff">initScratch</a> (int nRanks)</td></tr>
+<tr class="separator:aeece66211081d6ea9dd8672aa57f5eff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9eaf9010d89289bb099c413f8e098e95"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a9eaf9010d89289bb099c413f8e098e95">ensureSendCapacity</a> (size_t nInvalid)</td></tr>
+<tr class="separator:a9eaf9010d89289bb099c413f8e098e95"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a636189fbd6111c7f6fe9f82531bc0e67"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a636189fbd6111c7f6fe9f82531bc0e67">ensureLeavingCapacity</a> (size_t nLocal)</td></tr>
+<tr class="separator:a636189fbd6111c7f6fe9f82531bc0e67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa9069375c820855ed21a5b929672698a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aa9069375c820855ed21a5b929672698a">ensureNeighborsCached</a> ()</td></tr>
+<tr class="separator:aa9069375c820855ed21a5b929672698a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a37bb6a1e9fa769b8a247de4530aefae7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a37bb6a1e9fa769b8a247de4530aefae7">countExchangeRMA</a> ()</td></tr>
+<tr class="separator:a37bb6a1e9fa769b8a247de4530aefae7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07222f4ef7f89b9716c5a316c7aa4c70"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a07222f4ef7f89b9716c5a316c7aa4c70">countExchangeP2P</a> ()</td></tr>
+<tr class="separator:a07222f4ef7f89b9716c5a316c7aa4c70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b664a57245117634d2345172608f1b7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7b664a57245117634d2345172608f1b7">countExchangeAlltoall</a> ()</td></tr>
+<tr class="separator:a7b664a57245117634d2345172608f1b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a7221804d580cad0d7ec51cb08929c883"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7221804d580cad0d7ec51cb08929c883">rankSendCount_d_</a></td></tr>
+<tr class="separator:a7221804d580cad0d7ec51cb08929c883"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae69713fd689d39774fef9a0b6266e39"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aae69713fd689d39774fef9a0b6266e39">sendOffsets_d_</a></td></tr>
+<tr class="separator:aae69713fd689d39774fef9a0b6266e39"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa638ec96c1389aa8c976e4bc3ec0246"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#abb5f0eb581ecb03492e482a69c6a03f9">hash_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aaa638ec96c1389aa8c976e4bc3ec0246">sendIds_d_</a></td></tr>
+<tr class="separator:aaa638ec96c1389aa8c976e4bc3ec0246"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22d9c6349c7834bc5be24f333725fff4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a22d9c6349c7834bc5be24f333725fff4">cursor_d_</a></td></tr>
+<tr class="separator:a22d9c6349c7834bc5be24f333725fff4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa737764878a256f8dfe36e0fddb31f20"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aa737764878a256f8dfe36e0fddb31f20">destRanks_d_</a></td></tr>
+<tr class="separator:aa737764878a256f8dfe36e0fddb31f20"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae759f52e7551fc1672203f72486dcb0b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a5108e7a0ec58d61e64086ab632c21069">bool_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#ae759f52e7551fc1672203f72486dcb0b">leaving_d_</a></td></tr>
+<tr class="separator:ae759f52e7551fc1672203f72486dcb0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf4bae1e2ca607c8fd7c4512f0dae7c6"><td class="memItemLeft" align="right" valign="top">Kokkos::View&lt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a>, <a class="el" href="classippl_1_1detail_1_1ParticleLayout.html#a4a5694686ce8572352d14e7e50ab6c69">position_memory_space</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aaf4bae1e2ca607c8fd7c4512f0dae7c6">nDest_d_</a></td></tr>
+<tr class="separator:aaf4bae1e2ca607c8fd7c4512f0dae7c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f907e2b1bf9e4b94f79b66bf3fbfbae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a0f907e2b1bf9e4b94f79b66bf3fbfbae">neighbors_d_</a></td></tr>
+<tr class="separator:a0f907e2b1bf9e4b94f79b66bf3fbfbae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92d4fe42f45c741cc4ae1c2ecf1ea91c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a92d4fe42f45c741cc4ae1c2ecf1ea91c">neighbors_host_</a></td></tr>
+<tr class="separator:a92d4fe42f45c741cc4ae1c2ecf1ea91c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa8f72ce70627bb6e2af153e05641810"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#afa8f72ce70627bb6e2af153e05641810">neighbors_dirty_</a> = true</td></tr>
+<tr class="separator:afa8f72ce70627bb6e2af153e05641810"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a063d59862607e0b0b33a1bb464c4740d"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a063d59862607e0b0b33a1bb464c4740d">neighbors_capacity_</a> = 0</td></tr>
+<tr class="separator:a063d59862607e0b0b33a1bb464c4740d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96a45a51fc21ab9ed24cab349f9ed5be"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a96a45a51fc21ab9ed24cab349f9ed5be">neighbors_used_</a> = 0</td></tr>
+<tr class="separator:a96a45a51fc21ab9ed24cab349f9ed5be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a251049f6dcddd5d3ed5ae378533dd5b8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a2498b28e39cf19019c7665781dd37927">locate_host_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a251049f6dcddd5d3ed5ae378533dd5b8">rankSendCount_h_</a></td></tr>
+<tr class="separator:a251049f6dcddd5d3ed5ae378533dd5b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac73382860bd51f7ab88959c1b82f4d5c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a2498b28e39cf19019c7665781dd37927">locate_host_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#ac73382860bd51f7ab88959c1b82f4d5c">sendOffsets_h_</a></td></tr>
+<tr class="separator:ac73382860bd51f7ab88959c1b82f4d5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9806ef4d9916c2054c7e4d75855b2e60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a2498b28e39cf19019c7665781dd37927">locate_host_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a9806ef4d9916c2054c7e4d75855b2e60">destRanks_h_</a></td></tr>
+<tr class="separator:a9806ef4d9916c2054c7e4d75855b2e60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab618f5c9054045265be3c615b0adc2c2"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#ab618f5c9054045265be3c615b0adc2c2">destinationRanks_host_</a></td></tr>
+<tr class="separator:ab618f5c9054045265be3c615b0adc2c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afaf9abec213be4c08b01013c9181f8b6"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#afaf9abec213be4c08b01013c9181f8b6">sendIds_capacity_</a> = 0</td></tr>
+<tr class="separator:afaf9abec213be4c08b01013c9181f8b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5e5b11e81c4abc3f737f8d720a4eacf"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#ae5e5b11e81c4abc3f737f8d720a4eacf">leaving_capacity_</a> = 0</td></tr>
+<tr class="separator:ae5e5b11e81c4abc3f737f8d720a4eacf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad70688d7a5dbec8149eb1d1490196313"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#ad70688d7a5dbec8149eb1d1490196313">nRanks_</a> = 0</td></tr>
+<tr class="separator:ad70688d7a5dbec8149eb1d1490196313"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -240,7 +312,7 @@ Additional Inherited Members</h2></td></tr>
 <tr class="separator:a0fd8f462e9e03de38184687b141a25a6 inherit pub_static_attribs_classippl_1_1detail_1_1ParticleLayout"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename T, unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt;<br />
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename T, unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, typename... PositionProperties&gt;<br />
 class ippl::ParticleSpatialLayout&lt; T, Dim, Mesh, PositionProperties &gt;</div><p ><a class="el" href="classippl_1_1ParticleSpatialLayout.html">ParticleSpatialLayout</a> class definition. </p><dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">T</td><td>value type </td></tr>
@@ -256,7 +328,7 @@ class ippl::ParticleSpatialLayout&lt; T, Dim, Mesh, PositionProperties &gt;</div
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::Base =  <a class="el" href="classippl_1_1detail_1_1ParticleLayout.html">detail::ParticleLayout</a>&lt;T, Dim, PositionProperties...&gt;</td>
@@ -272,7 +344,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::bool_type =  typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">detail::ViewType</a>&lt;bool, 1, <a class="el" href="classippl_1_1detail_1_1ParticleLayout.html#a4a5694686ce8572352d14e7e50ab6c69">position_memory_space</a>&gt;::view_type</td>
@@ -288,7 +360,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;<a class="el" href="datatypes_8h.html#a62775f861ae59098011e0a07b912f0e5">::FieldLayout_t</a> =  typename <a class="el" href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a>&lt;Dim&gt;</td>
@@ -304,12 +376,60 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::hash_type =  <a class="el" href="namespaceippl_1_1detail.html#a964f3ca3105d73edc2897efef3060fcb">detail::hash_type</a>&lt;<a class="el" href="classippl_1_1detail_1_1ParticleLayout.html#a4a5694686ce8572352d14e7e50ab6c69">position_memory_space</a>&gt;</td>
         </tr>
       </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5be3b6504e3487efcd8ec093a9523510" name="a5be3b6504e3487efcd8ec093a9523510"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5be3b6504e3487efcd8ec093a9523510">&#9670;&#160;</a></span>host_mem_space</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::host_mem_space =  Kokkos::HostSpace</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2498b28e39cf19019c7665781dd37927" name="a2498b28e39cf19019c7665781dd37927"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2498b28e39cf19019c7665781dd37927">&#9670;&#160;</a></span>locate_host_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::locate_host_type =  typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">detail::ViewType</a>&lt;int, 1, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a5be3b6504e3487efcd8ec093a9523510">host_mem_space</a>&gt;::view_type</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
@@ -320,7 +440,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::locate_type =  typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">detail::ViewType</a>&lt;int, 1, <a class="el" href="classippl_1_1detail_1_1ParticleLayout.html#a4a5694686ce8572352d14e7e50ab6c69">position_memory_space</a>&gt;::view_type</td>
@@ -336,7 +456,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -362,7 +482,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -388,7 +508,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -414,7 +534,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::RegionLayout_t =  typename <a class="el" href="classippl_1_1detail_1_1RegionLayout.html">detail::RegionLayout</a>&lt;T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, <a class="el" href="classippl_1_1detail_1_1ParticleLayout.html#a4a5694686ce8572352d14e7e50ab6c69">position_memory_space</a>&gt;::uniform_type</td>
@@ -430,7 +550,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;<a class="el" href="datatypes_8h.html#a117948da4a7f2c353ea5ef900c1762c4">::size_type</a> =  <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">detail::size_type</a></td>
@@ -446,7 +566,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::vector_type =  typename Base::vector_type</td>
@@ -457,8 +577,8 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="aa1f2a763a9fdbe600971ca8166fde610" name="aa1f2a763a9fdbe600971ca8166fde610"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa1f2a763a9fdbe600971ca8166fde610">&#9670;&#160;</a></span>ParticleSpatialLayout() <span class="overload">[1/2]</span></h2>
+<a id="af30a9f7b572df53c26f73593658f9015" name="af30a9f7b572df53c26f73593658f9015"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af30a9f7b572df53c26f73593658f9015">&#9670;&#160;</a></span>ParticleSpatialLayout() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -481,7 +601,13 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>fem</em> = <code>false</code>&#160;</td>
+          <td class="paramname"><em>fem</em> = <code>false</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceippl.html#a7e30277fc3356d1099abe0c22276ecea">CountExchange</a>&#160;</td>
+          <td class="paramname"><em>mode</em> = <code><a class="el" href="namespaceippl.html#a7e30277fc3356d1099abe0c22276eceaaab01e0096cd339dd513531e88796c911">CountExchange::RMA</a></code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -499,7 +625,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -526,7 +652,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -548,47 +674,155 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a809a3019d1d2fd886b4cf6d1e6193428" name="a809a3019d1d2fd886b4cf6d1e6193428"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a809a3019d1d2fd886b4cf6d1e6193428">&#9670;&#160;</a></span>fillHash()</h2>
+<a id="a7b664a57245117634d2345172608f1b7" name="a7b664a57245117634d2345172608f1b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b664a57245117634d2345172608f1b7">&#9670;&#160;</a></span>countExchangeAlltoall()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::fillHash </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>rank</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>ranks</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#abb5f0eb581ecb03492e482a69c6a03f9">hash_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>hash</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::countExchangeAlltoall</td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">rank</td><td>we sent to </td></tr>
-    <tr><td class="paramname">ranks</td><td>a container specifying where a particle at the i-th index should go. </td></tr>
-    <tr><td class="paramname">hash</td><td>a mapping to fill the send buffer contiguously </td></tr>
-  </table>
-  </dd>
-</dl>
+
+</div>
+</div>
+<a id="a07222f4ef7f89b9716c5a316c7aa4c70" name="a07222f4ef7f89b9716c5a316c7aa4c70"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a07222f4ef7f89b9716c5a316c7aa4c70">&#9670;&#160;</a></span>countExchangeP2P()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::countExchangeP2P</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a37bb6a1e9fa769b8a247de4530aefae7" name="a37bb6a1e9fa769b8a247de4530aefae7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a37bb6a1e9fa769b8a247de4530aefae7">&#9670;&#160;</a></span>countExchangeRMA()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::countExchangeRMA</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a636189fbd6111c7f6fe9f82531bc0e67" name="a636189fbd6111c7f6fe9f82531bc0e67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a636189fbd6111c7f6fe9f82531bc0e67">&#9670;&#160;</a></span>ensureLeavingCapacity()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::ensureLeavingCapacity </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>nLocal</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa9069375c820855ed21a5b929672698a" name="aa9069375c820855ed21a5b929672698a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa9069375c820855ed21a5b929672698a">&#9670;&#160;</a></span>ensureNeighborsCached()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::ensureNeighborsCached</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9eaf9010d89289bb099c413f8e098e95" name="a9eaf9010d89289bb099c413f8e098e95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9eaf9010d89289bb099c413f8e098e95">&#9670;&#160;</a></span>ensureSendCapacity()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::ensureSendCapacity </td>
+          <td>(</td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>nInvalid</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -633,7 +867,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -654,181 +888,54 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 
 </div>
 </div>
-<a id="ad8f339f8e44b1d6338c706e96dabc127" name="ad8f339f8e44b1d6338c706e96dabc127"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad8f339f8e44b1d6338c706e96dabc127">&#9670;&#160;</a></span>locateParticles() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
-<div class="memtemplate">
-template&lt;typename ParticleContainer &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">std::pair&lt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a>, <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a> &gt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::locateParticles </td>
-          <td>(</td>
-          <td class="paramtype">const ParticleContainer &amp;&#160;</td>
-          <td class="paramname"><em>pc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>ranks</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a5108e7a0ec58d61e64086ab632c21069">bool_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>invalid</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>nSends_dview</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>sends_dview</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p >For each particle in the bunch, determine the rank on which it should be stored based on its location </p><dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">ParticleContainer</td><td>the particle container type </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">pc</td><td>the particle container </td></tr>
-    <tr><td class="paramname">ranks</td><td>the integer view in which to store the destination ranks </td></tr>
-    <tr><td class="paramname">invalid</td><td>the boolean view in which to store whether each particle is invalidated, i.e. needs to be sent to another rank </td></tr>
-    <tr><td class="paramname">nSends_dview</td><td>the view storing per-rank send counts </td></tr>
-    <tr><td class="paramname">sends_dview</td><td>the view storing per-rank send offsets </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>The total number of invalidated particles </dd></dl>
-
-</div>
-</div>
-<a id="a47a5361e8684f1a4512c021d827ea489" name="a47a5361e8684f1a4512c021d827ea489"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a47a5361e8684f1a4512c021d827ea489">&#9670;&#160;</a></span>locateParticles() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
-<div class="memtemplate">
-template&lt;typename ParticleContainer &gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">std::pair&lt; <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">detail::size_type</a>, <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">detail::size_type</a> &gt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::locateParticles </td>
-          <td>(</td>
-          <td class="paramtype">const ParticleContainer &amp;&#160;</td>
-          <td class="paramname"><em>pc</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>ranks</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a5108e7a0ec58d61e64086ab632c21069">bool_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>invalid</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>nSends_dview</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>sends_dview</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>This function determines to which rank particles need to be sent after the iteration step. It starts by first scanning direct rank neighbors, and only does a global scan if there are still unfound particles. It then calculates how many particles need to be sent to each rank and how many ranks are sent to in total. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">pc</td><td>Particle Container </td></tr>
-    <tr><td class="paramname">ranks</td><td>A vector the length of the number of particles on the current rank, where each value refers to the new rank of the particle </td></tr>
-    <tr><td class="paramname">invalid</td><td>A vector marking the particles that need to be sent away, and thus locally deleted </td></tr>
-    <tr><td class="paramname">nSends_dview</td><td>Device view the length of number of ranks, where each value determines the number of particles sent to that rank from the current rank </td></tr>
-    <tr><td class="paramname">sends_dview</td><td>Device view for the number of ranks that are sent to from current rank</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>tuple with the number of particles sent away and the number of ranks sent to </dd></dl>
-<p >outsideIds: Container of particle IDs that travelled outside of the neighborhood.</p>
-<p >outsideCount: Tracks the number of particles that travelled outside of the neighborhood.</p>
-<p >invalidCount: Tracks the number of particles that need to be sent to other ranks.</p>
-<p >neighborSize: Size of a neighborhood in D dimentions.</p>
-<p >neighbors_view: <a class="el" href="namespaceKokkos.html">Kokkos</a> view with the IDs of the neighboring MPI ranks.</p>
-<p >Begin <a class="el" href="namespaceKokkos.html">Kokkos</a> loop: Step 1: search in current rank Step 2: search in neighbors Step 3: save information on whether the particle was located Step 4: run additional loop on non-located particles</p>
-<p >Step 2</p>
-<p >Step 3</p>
-<p >Step 4</p>
-<p >pID: (local) ID of the particle that is currently being searched.</p>
-<p >inRegion: Checks whether particle pID is inside region j.</p>
-
-</div>
-</div>
-<a id="a1540b451a647c649a801755c56cecf15" name="a1540b451a647c649a801755c56cecf15"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1540b451a647c649a801755c56cecf15">&#9670;&#160;</a></span>numberOfSends()</h2>
+<a id="aeece66211081d6ea9dd8672aa57f5eff" name="aeece66211081d6ea9dd8672aa57f5eff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeece66211081d6ea9dd8672aa57f5eff">&#9670;&#160;</a></span>initScratch()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">size_t <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::numberOfSends </td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::initScratch </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>rank</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramname"><em>nRanks</em></td><td>)</td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;&#160;</td>
-          <td class="paramname"><em>ranks</em>&#160;</td>
         </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7a8ed6353da0c2baf9a855f7bad4cc2c" name="a7a8ed6353da0c2baf9a855f7bad4cc2c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a8ed6353da0c2baf9a855f7bad4cc2c">&#9670;&#160;</a></span>locateParticlesPacked()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+<div class="memtemplate">
+template&lt;typename ParticleContainer &gt; </div>
+      <table class="memname">
         <tr>
+          <td class="memname">size_t <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::locateParticlesPacked </td>
+          <td>(</td>
+          <td class="paramtype">const ParticleContainer &amp;&#160;</td>
+          <td class="paramname"><em>pc</em></td><td>)</td>
           <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">rank</td><td>we sent to </td></tr>
-    <tr><td class="paramname">ranks</td><td>a container specifying where a particle at the i-th index should go. </td></tr>
-  </table>
-  </dd>
-</dl>
+<p >For each local particle, determine its destination rank, write the indices of leaving particles into <code>sendIds_d_</code>, populate the per-rank send-count and offset buffers, build a compacted list of destination ranks, and mark each particle's "is leaving" status in <code>leaving_d_</code> so the destroy pass doesn't have to recompute it. </p><dl class="section return"><dt>Returns</dt><dd>number of leaving particles on this rank </dd></dl>
 
 </div>
 </div>
@@ -838,7 +945,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
 <div class="memtemplate">
 template&lt;size_t... Idx&gt; </div>
 <table class="mlabels">
@@ -884,7 +991,7 @@ template&lt;size_t... Idx&gt; </div>
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
 <div class="memtemplate">
 template&lt;size_t... Idx&gt; </div>
 <table class="mlabels">
@@ -893,6 +1000,98 @@ template&lt;size_t... Idx&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">KOKKOS_INLINE_FUNCTION constexpr bool <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::positionInRegion </td>
+          <td>(</td>
+          <td class="paramtype">const std::index_sequence&lt; Idx... &gt; &amp;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#af50426a8abc8622f3b0d2dd25990caf2">vector_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>pos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7a3e0428b2ea35fce5cf9b0135103aa7">region_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>region</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7cc351ad69b9f73cc0cf033e0adb9631" name="a7cc351ad69b9f73cc0cf033e0adb9631"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7cc351ad69b9f73cc0cf033e0adb9631">&#9670;&#160;</a></span>positionInRegionInclusive() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<div class="memtemplate">
+template&lt;size_t... Idx&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION static constexpr bool <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::positionInRegionInclusive </td>
+          <td>(</td>
+          <td class="paramtype">const std::index_sequence&lt; Idx... &gt; &amp;&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#af50426a8abc8622f3b0d2dd25990caf2">vector_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>pos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a7a3e0428b2ea35fce5cf9b0135103aa7">region_type</a> &amp;&#160;</td>
+          <td class="paramname"><em>region</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae48317066a2ef9f5a5b5e18c33c62f37" name="ae48317066a2ef9f5a5b5e18c33c62f37"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae48317066a2ef9f5a5b5e18c33c62f37">&#9670;&#160;</a></span>positionInRegionInclusive() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<div class="memtemplate">
+template&lt;size_t... Idx&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION constexpr bool <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::positionInRegionInclusive </td>
           <td>(</td>
           <td class="paramtype">const std::index_sequence&lt; Idx... &gt; &amp;&#160;</td>
           <td class="paramname">, </td>
@@ -977,13 +1176,135 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="aa422d5cc403dac4dc43a4a92e8f28bbe" name="aa422d5cc403dac4dc43a4a92e8f28bbe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa422d5cc403dac4dc43a4a92e8f28bbe">&#9670;&#160;</a></span>countExchangeMode_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceippl.html#a7e30277fc3356d1099abe0c22276ecea">CountExchange</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::countExchangeMode_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>How counts are exchanged. </p>
+
+</div>
+</div>
+<a id="a22d9c6349c7834bc5be24f333725fff4" name="a22d9c6349c7834bc5be24f333725fff4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22d9c6349c7834bc5be24f333725fff4">&#9670;&#160;</a></span>cursor_d_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::cursor_d_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab618f5c9054045265be3c615b0adc2c2" name="ab618f5c9054045265be3c615b0adc2c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab618f5c9054045265be3c615b0adc2c2">&#9670;&#160;</a></span>destinationRanks_host_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;int&gt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::destinationRanks_host_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa737764878a256f8dfe36e0fddb31f20" name="aa737764878a256f8dfe36e0fddb31f20"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa737764878a256f8dfe36e0fddb31f20">&#9670;&#160;</a></span>destRanks_d_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::destRanks_d_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9806ef4d9916c2054c7e4d75855b2e60" name="a9806ef4d9916c2054c7e4d75855b2e60"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9806ef4d9916c2054c7e4d75855b2e60">&#9670;&#160;</a></span>destRanks_h_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a2498b28e39cf19019c7665781dd37927">locate_host_type</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::destRanks_h_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="afeb77e08a97933c1f11a256d89e75b75" name="afeb77e08a97933c1f11a256d89e75b75"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afeb77e08a97933c1f11a256d89e75b75">&#9670;&#160;</a></span>flayout_m</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -1003,13 +1324,229 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 
 </div>
 </div>
+<a id="ae5e5b11e81c4abc3f737f8d720a4eacf" name="ae5e5b11e81c4abc3f737f8d720a4eacf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5e5b11e81c4abc3f737f8d720a4eacf">&#9670;&#160;</a></span>leaving_capacity_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::leaving_capacity_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae759f52e7551fc1672203f72486dcb0b" name="ae759f52e7551fc1672203f72486dcb0b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae759f52e7551fc1672203f72486dcb0b">&#9670;&#160;</a></span>leaving_d_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a5108e7a0ec58d61e64086ab632c21069">bool_type</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::leaving_d_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aaf4bae1e2ca607c8fd7c4512f0dae7c6" name="aaf4bae1e2ca607c8fd7c4512f0dae7c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf4bae1e2ca607c8fd7c4512f0dae7c6">&#9670;&#160;</a></span>nDest_d_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Kokkos::View&lt;<a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a>, <a class="el" href="classippl_1_1detail_1_1ParticleLayout.html#a4a5694686ce8572352d14e7e50ab6c69">position_memory_space</a>&gt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::nDest_d_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a063d59862607e0b0b33a1bb464c4740d" name="a063d59862607e0b0b33a1bb464c4740d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a063d59862607e0b0b33a1bb464c4740d">&#9670;&#160;</a></span>neighbors_capacity_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::neighbors_capacity_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0f907e2b1bf9e4b94f79b66bf3fbfbae" name="a0f907e2b1bf9e4b94f79b66bf3fbfbae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f907e2b1bf9e4b94f79b66bf3fbfbae">&#9670;&#160;</a></span>neighbors_d_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::neighbors_d_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afa8f72ce70627bb6e2af153e05641810" name="afa8f72ce70627bb6e2af153e05641810"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa8f72ce70627bb6e2af153e05641810">&#9670;&#160;</a></span>neighbors_dirty_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::neighbors_dirty_ = true</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a92d4fe42f45c741cc4ae1c2ecf1ea91c" name="a92d4fe42f45c741cc4ae1c2ecf1ea91c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a92d4fe42f45c741cc4ae1c2ecf1ea91c">&#9670;&#160;</a></span>neighbors_host_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt;int&gt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::neighbors_host_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a96a45a51fc21ab9ed24cab349f9ed5be" name="a96a45a51fc21ab9ed24cab349f9ed5be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96a45a51fc21ab9ed24cab349f9ed5be">&#9670;&#160;</a></span>neighbors_used_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::neighbors_used_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad70688d7a5dbec8149eb1d1490196313" name="ad70688d7a5dbec8149eb1d1490196313"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad70688d7a5dbec8149eb1d1490196313">&#9670;&#160;</a></span>nRanks_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::nRanks_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a191ca9574bbe84ca56d8a4613abeb7ad" name="a191ca9574bbe84ca56d8a4613abeb7ad"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a191ca9574bbe84ca56d8a4613abeb7ad">&#9670;&#160;</a></span>nRecvs_m</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -1027,19 +1564,91 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 
 </div>
 </div>
-<a id="a1379cb4a04abf7a354e406c258c03cb2" name="a1379cb4a04abf7a354e406c258c03cb2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1379cb4a04abf7a354e406c258c03cb2">&#9670;&#160;</a></span>rlayout_m</h2>
+<a id="a7221804d580cad0d7ec51cb08929c883" name="a7221804d580cad0d7ec51cb08929c883"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7221804d580cad0d7ec51cb08929c883">&#9670;&#160;</a></span>rankSendCount_d_</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#afb7767c944e1049cd2bda41b55b7de70">RegionLayout_t</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::rlayout_m</td>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::rankSendCount_d_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a251049f6dcddd5d3ed5ae378533dd5b8" name="a251049f6dcddd5d3ed5ae378533dd5b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a251049f6dcddd5d3ed5ae378533dd5b8">&#9670;&#160;</a></span>rankSendCount_h_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a2498b28e39cf19019c7665781dd37927">locate_host_type</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::rankSendCount_h_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9bc025324076f4f847cc6e47cea921a0" name="a9bc025324076f4f847cc6e47cea921a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9bc025324076f4f847cc6e47cea921a0">&#9670;&#160;</a></span>recvCounts_d_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::recvCounts_d_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a90ceaedf8aa67c00c078e08018f20dce" name="a90ceaedf8aa67c00c078e08018f20dce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90ceaedf8aa67c00c078e08018f20dce">&#9670;&#160;</a></span>rlayout_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::shared_ptr&lt;<a class="el" href="classippl_1_1ParticleSpatialLayout.html#afb7767c944e1049cd2bda41b55b7de70">RegionLayout_t</a>&gt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::rlayout_m</td>
         </tr>
       </table>
   </td>
@@ -1053,13 +1662,109 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 
 </div>
 </div>
+<a id="afaf9abec213be4c08b01013c9181f8b6" name="afaf9abec213be4c08b01013c9181f8b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afaf9abec213be4c08b01013c9181f8b6">&#9670;&#160;</a></span>sendIds_capacity_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::sendIds_capacity_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aaa638ec96c1389aa8c976e4bc3ec0246" name="aaa638ec96c1389aa8c976e4bc3ec0246"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa638ec96c1389aa8c976e4bc3ec0246">&#9670;&#160;</a></span>sendIds_d_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#abb5f0eb581ecb03492e482a69c6a03f9">hash_type</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::sendIds_d_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aae69713fd689d39774fef9a0b6266e39" name="aae69713fd689d39774fef9a0b6266e39"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae69713fd689d39774fef9a0b6266e39">&#9670;&#160;</a></span>sendOffsets_d_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::sendOffsets_d_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac73382860bd51f7ab88959c1b82f4d5c" name="ac73382860bd51f7ab88959c1b82f4d5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac73382860bd51f7ab88959c1b82f4d5c">&#9670;&#160;</a></span>sendOffsets_h_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a2498b28e39cf19019c7665781dd37927">locate_host_type</a> <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::sendOffsets_h_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a065d6293239ce1ecdf81fabca0897eed" name="a065d6293239ce1ecdf81fabca0897eed"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a065d6293239ce1ecdf81fabca0897eed">&#9670;&#160;</a></span>window_m</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">

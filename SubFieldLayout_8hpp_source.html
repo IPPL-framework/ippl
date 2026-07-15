@@ -130,7 +130,7 @@ $(function() {
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span> </div>
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        <span class="comment">// Call the base class initialize method to set up the main domain and parallel</span></div>
 <div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>        <span class="comment">// decomposition</span></div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>        <a class="code hl_function" href="classippl_1_1FieldLayout.html#a53a3c32f6a8b8182d306da01041d6b59">FieldLayout&lt;Dim&gt;::initialize</a>(domain, isParallel, isAllPeriodic);</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>        <a class="code hl_function" href="classippl_1_1FieldLayout.html#af0aed2d9471f738fc67b6845cf761e68">FieldLayout&lt;Dim&gt;::initialize</a>(domain, isParallel, isAllPeriodic);</div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span> </div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>        <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> nRanks = this-&gt;comm.size();</div>
 <div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
@@ -153,7 +153,7 @@ $(function() {
 <div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>            this-&gt;hLocalDomains_m(rank) = this-&gt;hLocalDomains_m(rank).intersect(this-&gt;gDomain_m);</div>
 <div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        }</div>
 <div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span> </div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>        this-&gt;findNeighbors();</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>        this-&gt;findNeighbors(this-&gt;nghost_m);</div>
 <div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span> </div>
 <div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>        Kokkos::deep_copy(this-&gt;dLocalDomains_m, this-&gt;hLocalDomains_m);</div>
 <div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span> </div>
@@ -165,7 +165,7 @@ $(function() {
 <div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>                                         std::array&lt;bool, Dim&gt; isParallel, <span class="keywordtype">bool</span> isAllPeriodic) {</div>
 <div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        <span class="comment">// Call the base class initialize method to set up the main domain and parallel</span></div>
 <div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        <span class="comment">// decomposition</span></div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        <a class="code hl_function" href="classippl_1_1FieldLayout.html#a53a3c32f6a8b8182d306da01041d6b59">FieldLayout&lt;Dim&gt;::initialize</a>(domain, isParallel, isAllPeriodic);</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        <a class="code hl_function" href="classippl_1_1FieldLayout.html#af0aed2d9471f738fc67b6845cf761e68">FieldLayout&lt;Dim&gt;::initialize</a>(domain, isParallel, isAllPeriodic);</div>
 <div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span> </div>
 <div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>        originDomain_m = domain;</div>
 <div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>    }</div>
@@ -178,14 +178,14 @@ $(function() {
 <div class="ttc" id="aPAssert_8h_html_a718e6f44fb7a5898928459b897eee6e4"><div class="ttname"><a href="PAssert_8h.html#a718e6f44fb7a5898928459b897eee6e4">PAssert</a></div><div class="ttdeci">#define PAssert(c)</div><div class="ttdef"><b>Definition:</b> PAssert.h:116</div></div>
 <div class="ttc" id="aSubFieldLayout_8h_html"><div class="ttname"><a href="SubFieldLayout_8h.html">SubFieldLayout.h</a></div></div>
 <div class="ttc" id="aclassippl_1_1FieldLayout_html"><div class="ttname"><a href="classippl_1_1FieldLayout.html">ippl::FieldLayout</a></div><div class="ttdef"><b>Definition:</b> FieldLayout.h:166</div></div>
-<div class="ttc" id="aclassippl_1_1FieldLayout_html_a4089a93c74132863690cfe3ab3a49c04"><div class="ttname"><a href="classippl_1_1FieldLayout.html#a4089a93c74132863690cfe3ab3a49c04">ippl::FieldLayout::isParallel</a></div><div class="ttdeci">std::array&lt; bool, Dim &gt; isParallel() const</div><div class="ttdef"><b>Definition:</b> FieldLayout.h:258</div></div>
-<div class="ttc" id="aclassippl_1_1FieldLayout_html_a53a3c32f6a8b8182d306da01041d6b59"><div class="ttname"><a href="classippl_1_1FieldLayout.html#a53a3c32f6a8b8182d306da01041d6b59">ippl::FieldLayout::initialize</a></div><div class="ttdeci">void initialize(const NDIndex&lt; Dim &gt; &amp;domain, std::array&lt; bool, Dim &gt; decomp, bool isAllPeriodic=false)</div><div class="ttdef"><b>Definition:</b> FieldLayout.hpp:71</div></div>
+<div class="ttc" id="aclassippl_1_1FieldLayout_html_a4089a93c74132863690cfe3ab3a49c04"><div class="ttname"><a href="classippl_1_1FieldLayout.html#a4089a93c74132863690cfe3ab3a49c04">ippl::FieldLayout::isParallel</a></div><div class="ttdeci">std::array&lt; bool, Dim &gt; isParallel() const</div><div class="ttdef"><b>Definition:</b> FieldLayout.h:249</div></div>
+<div class="ttc" id="aclassippl_1_1FieldLayout_html_af0aed2d9471f738fc67b6845cf761e68"><div class="ttname"><a href="classippl_1_1FieldLayout.html#af0aed2d9471f738fc67b6845cf761e68">ippl::FieldLayout::initialize</a></div><div class="ttdeci">void initialize(const NDIndex&lt; Dim &gt; &amp;domain, std::array&lt; bool, Dim &gt; decomp, bool isAllPeriodic=false, int nghost=1)</div><div class="ttdef"><b>Definition:</b> FieldLayout.hpp:72</div></div>
 <div class="ttc" id="aclassippl_1_1NDIndex_html"><div class="ttname"><a href="classippl_1_1NDIndex.html">ippl::NDIndex</a></div><div class="ttdef"><b>Definition:</b> NDIndex.h:21</div></div>
 <div class="ttc" id="aclassippl_1_1NDIndex_html_ac1f68f57b8b6f87f11185b7fba7fd71e"><div class="ttname"><a href="classippl_1_1NDIndex.html#ac1f68f57b8b6f87f11185b7fba7fd71e">ippl::NDIndex::contains</a></div><div class="ttdeci">KOKKOS_INLINE_FUNCTION bool contains(const NDIndex&lt; Dim &gt; &amp;a) const</div><div class="ttdef"><b>Definition:</b> NDIndex.hpp:93</div></div>
 <div class="ttc" id="aclassippl_1_1SubFieldLayout_html_a6ac4bcea31bb98a56167ecc6b200f332"><div class="ttname"><a href="classippl_1_1SubFieldLayout.html#a6ac4bcea31bb98a56167ecc6b200f332">ippl::SubFieldLayout::SubFieldLayout</a></div><div class="ttdeci">SubFieldLayout(const mpi::Communicator &amp;=MPI_COMM_WORLD)</div><div class="ttdoc">Default constructor, which should only be used if you are going to call 'initialize' soon after (befo...</div><div class="ttdef"><b>Definition:</b> SubFieldLayout.hpp:28</div></div>
 <div class="ttc" id="aclassippl_1_1SubFieldLayout_html_af6b0fc3bf727cc6ecdd5c8c23563a922"><div class="ttname"><a href="classippl_1_1SubFieldLayout.html#af6b0fc3bf727cc6ecdd5c8c23563a922">ippl::SubFieldLayout::initialize</a></div><div class="ttdeci">void initialize(const NDIndex&lt; Dim &gt; &amp;domain, const NDIndex&lt; Dim &gt; &amp;subDomain, std::array&lt; bool, Dim &gt; decomp, bool isAllPeriodic=false)</div><div class="ttdoc">Initializes a SubFieldLayout with the sub-domain partitioned in the same way as the original FieldLay...</div><div class="ttdef"><b>Definition:</b> SubFieldLayout.hpp:80</div></div>
 <div class="ttc" id="aclassippl_1_1mpi_1_1Communicator_html"><div class="ttname"><a href="classippl_1_1mpi_1_1Communicator.html">ippl::mpi::Communicator</a></div><div class="ttdef"><b>Definition:</b> Communicator.h:31</div></div>
-<div class="ttc" id="anamespaceippl_html"><div class="ttname"><a href="namespaceippl.html">ippl</a></div><div class="ttdef"><b>Definition:</b> Archive.h:20</div></div>
+<div class="ttc" id="anamespaceippl_html"><div class="ttname"><a href="namespaceippl.html">ippl</a></div><div class="ttdef"><b>Definition:</b> Archive.h:29</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

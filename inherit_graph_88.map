@@ -1,21 +1,3 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="33,485,181,525"/>
-<area shape="rect" id="node2" href="$classippl_1_1BareField.html" title=" " alt="" coords="287,5,419,45"/>
-<area shape="rect" id="node3" href="$classippl_1_1BareField.html" title=" " alt="" coords="278,69,427,109"/>
-<area shape="rect" id="node4" href="$classippl_1_1BareField.html" title=" " alt="" coords="273,134,432,189"/>
-<area shape="rect" id="node5" href="$classippl_1_1ParticleAttrib.html" title=" " alt="" coords="256,933,449,973"/>
-<area shape="rect" id="node6" href="$classippl_1_1Vector.html" title=" " alt="" coords="293,213,413,253"/>
-<area shape="rect" id="node7" href="$classippl_1_1Vector.html" title=" " alt="" coords="283,277,422,317"/>
-<area shape="rect" id="node8" href="$classippl_1_1Vector.html" title=" " alt="" coords="276,342,429,397"/>
-<area shape="rect" id="node9" href="$classippl_1_1Vector.html" title=" " alt="" coords="295,421,410,461"/>
-<area shape="rect" id="node10" href="$classippl_1_1Vector.html" title=" " alt="" coords="289,485,416,525"/>
-<area shape="rect" id="node11" href="$classippl_1_1Vector.html" title=" " alt="" coords="294,549,411,589"/>
-<area shape="rect" id="node12" href="$classippl_1_1Vector.html" title=" " alt="" coords="289,613,416,653"/>
-<area shape="rect" id="node13" href="$classippl_1_1Vector.html" title=" " alt="" coords="289,677,416,717"/>
-<area shape="rect" id="node14" href="$classippl_1_1Vector.html" title=" " alt="" coords="293,741,413,781"/>
-<area shape="rect" id="node15" href="$classippl_1_1Vector.html" title=" " alt="" coords="281,805,424,845"/>
-<area shape="rect" id="node16" href="$classippl_1_1Vector.html" title=" " alt="" coords="281,869,424,909"/>
-<area shape="rect" id="node17" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,997,208,1067"/>
-<area shape="rect" id="node18" href="$classippl_1_1ParticleAttrib.html" title=" " alt="" coords="291,1004,414,1044"/>
-<area shape="rect" id="node19" title=" " alt="" coords="25,933,189,973"/>
+<area shape="rect" id="node1" href="$structippl_1_1detail_1_1ConstructVariant.html" title=" " alt="" coords="5,5,216,45"/>
 </map>
