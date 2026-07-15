@@ -31,7 +31,7 @@ public:
     using JField_t    = ippl::Field<ippl::Vector<T, Dim + 1>, Dim, Mesh_t, Centering_t>;
     using Layout_t    = ippl::FieldLayout<Dim>;
 
-    using playout_t   = ippl::ParticleSpatialLayout<T, Dim>;
+    using playout_t   = ippl::ParticleSpatialLayout<T, Dim, Mesh_t>;
     using bunch_t     = Bunch<playout_t>;
 
     static ippl::NDIndex<Dim> make_owned_nd(int nx) {
