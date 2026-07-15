@@ -261,7 +261,7 @@ namespace ippl {
     template <typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::internalCopy(const hash_type& indices) {
         auto copySize = indices.size();
-
+        using policy_type = Kokkos::RangePolicy<execution_space>;
         auto view       = this->getView();
         const auto size = this->getParticleCount();
 
