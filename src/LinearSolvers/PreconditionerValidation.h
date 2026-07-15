@@ -16,7 +16,7 @@ namespace ippl::preconditioner_validation {
             throw IpplException(caller_name.c_str(),
                                 ("Unknown preconditioner_type '" + preconditioner_type
                                  + "'. Supported types: jacobi, newton, chebyshev, richardson, "
-                                   "richardson_alt, gauss-seidel, ssor")
+                                   "richardson_alt, gauss-seidel, ssor, multigrid")
                                     .c_str());
         }
     }
@@ -24,7 +24,7 @@ namespace ippl::preconditioner_validation {
     inline void sanitizeParams(const std::string& preconditioner_type, Inform& warn, int& level,
                                int& degree, int& richardson_iterations, int& inner, int& outer,
                                double& omega, int* communication, int& mg_pre, int& mg_post,
-                               double& mg_omega, unsigned& mg_min_cells) {
+                               double& mg_omega, int& mg_min_cells) {
         auto warnAndDefault = [&](const std::string& what, const std::string& value,
                                   const std::string& default_value) {
             warn << "Invalid " << what << "='" << value << "' for preconditioner '"

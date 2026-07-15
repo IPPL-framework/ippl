@@ -101,6 +101,7 @@ int main(int argc, char* argv[]) {
         using bc_type              = ippl::BConds<field_type, dim>;
 
         Inform info("MultigridTest");
+        info.setOutputLevel(1);
 
         // Default parameters
         int Nx        = 32;

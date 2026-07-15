@@ -9,11 +9,20 @@
 //   that they have type char and thus contain raw bytes, unlike other typed buffers
 //   such as detail::FieldBufferData used by HaloCells.
 //
+// // Old?:   On CUDA/HIP the internal buffer is allocated directly via cudaMalloc/hipMalloc
+// //         so that the pointer is page-aligned (4K) and compatible with MPI IPC.
+
+//   On CUDA/HIP device-memory archives, the internal buffer is allocated directly
+//   via cudaMalloc/hipMalloc so that the pointer is compatible with MPI IPC.
+//   HIP device allocations are rounded to the 64 KiB HSA IPC granularity.
+//
 #ifndef IPPL_ARCHIVE_H
 #define IPPL_ARCHIVE_H
 
 #include "Types/IpplTypes.h"
 #include "Types/ViewTypes.h"
+
+#include <type_traits>
 
 #include "Types/Vector.h"
 
@@ -29,9 +38,11 @@ namespace ippl {
         class Archive {
         public:
             using buffer_type  = typename ViewType<char, 1, Properties...>::view_type;
+            using memory_space = typename buffer_type::memory_space;
             using pointer_type = typename buffer_type::pointer_type;
 
             Archive(size_type size = 0);
+            ~Archive();
 
             /*!
              * Serialize.
@@ -39,6 +50,10 @@ namespace ippl {
              */
             template <typename T, class... ViewArgs>
             void serialize(const Kokkos::View<T*, ViewArgs...>& view, size_type nsends);
+
+            template <typename T, class... ViewArgs, typename HashView>
+            void serialize(const Kokkos::View<T*, ViewArgs...>& view, const HashView& hash,
+                           size_type nsends);
 
             /*!
              * Serialize vector attributes
@@ -52,12 +67,24 @@ namespace ippl {
             void serialize(const Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view,
                            size_type nsends);
 
+            template <typename T, unsigned Dim, class... ViewArgs, typename HashView>
+            void serialize(const Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view,
+                           const HashView& hash, size_type nsends);
+
             /*!
              * Deserialize.
              * @param view to put data to
              */
             template <typename T, class... ViewArgs>
             void deserialize(Kokkos::View<T*, ViewArgs...>& view, size_type nrecvs);
+
+            template <typename T, class... ViewArgs>
+            void deserialize(Kokkos::View<T*, ViewArgs...>& view, size_type offset,
+                             size_type nrecvs);
+
+            template <typename T, unsigned Dim, class... ViewArgs>
+            void deserialize(Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view, size_type offset,
+                             size_type nrecvs);
 
             /*!
              * Deserialize vector attributes
@@ -71,33 +98,80 @@ namespace ippl {
             void deserialize(Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view, size_type nrecvs);
 
             /*!
-             * @returns a pointer to the data of the buffer
+             * @returns a pointer to the data of the buffer.
+             *          On GPU this is a page-aligned device pointer from cudaMalloc/hipMalloc.
              */
-            pointer_type getBuffer() { return buffer_m.data(); }
+            pointer_type getBuffer() { return bufferData(); }
 
             /*!
-             * @returns the size of the buffer
+             * @returns the number of bytes written so far
              */
             size_type getSize() const { return writepos_m; }
 
-            size_type getBufferSize() const { return buffer_m.size(); }
+            /*!
+             * @returns the total capacity of the buffer in bytes
+             */
+            size_type getBufferSize() const { return bufferSize(); }
 
-            void resizeBuffer(size_type size) { Kokkos::resize(buffer_m, size); }
-
-            void reallocBuffer(size_type size) { Kokkos::realloc(buffer_m, size); }
+            void resizeBuffer(size_type size);
+            void reallocBuffer(size_type size);
 
             void resetWritePos() { writepos_m = 0; }
             void resetReadPos() { readpos_m = 0; }
-
-            ~Archive() = default;
 
         private:
             //! write position for serialization
             size_type writepos_m;
             //! read position for deserialization
             size_type readpos_m;
-            //! serialized data
+
+#if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
+
+            //! Serialized data for host-accessible memory spaces.
             buffer_type buffer_m;
+
+            //! Raw device pointer from cudaMalloc/hipMalloc (page-aligned, IPC-safe)
+            pointer_type buffer_ptr_m = nullptr;
+            size_type buffer_size_m   = 0;
+
+            static constexpr bool useRawGpuBuffer() {
+#if defined(KOKKOS_ENABLE_CUDA)
+                if constexpr (std::is_same_v<memory_space, Kokkos::CudaSpace>) {
+                    return true;
+                }
+#endif
+#if defined(KOKKOS_ENABLE_HIP)
+                if constexpr (std::is_same_v<memory_space, Kokkos::HIPSpace>) {
+                    return true;
+                }
+#endif
+                return false;
+            }
+
+            pointer_type bufferData() const {
+                if constexpr (useRawGpuBuffer()) {
+                    return buffer_ptr_m;
+                } else {
+                    return buffer_m.data();
+                }
+            }
+            size_type bufferSize() const {
+                if constexpr (useRawGpuBuffer()) {
+                    return buffer_size_m;
+                } else {
+                    return buffer_m.size();
+                }
+            }
+
+            void gpuAlloc(size_type size);
+            void gpuFree();
+#else
+            //! serialized data (standard Kokkos view on CPU)
+            buffer_type buffer_m;
+
+            pointer_type bufferData() const { return buffer_m.data(); }
+            size_type bufferSize() const { return buffer_m.size(); }
+#endif
         };
     }  // namespace detail
 }  // namespace ippl

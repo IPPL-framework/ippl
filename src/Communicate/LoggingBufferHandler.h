@@ -1,7 +1,6 @@
 #ifndef IPPL_LOGGING_BUFFER_HANDLER_H
 #define IPPL_LOGGING_BUFFER_HANDLER_H
 
-#include <chrono>
 #include <map>
 #include <memory>
 #include <string>

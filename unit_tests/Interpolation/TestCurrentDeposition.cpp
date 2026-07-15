@@ -1,4 +1,5 @@
 #include "Ippl.h"
+
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
@@ -30,7 +31,7 @@ public:
     using JField_t    = ippl::Field<ippl::Vector<T, Dim + 1>, Dim, Mesh_t, Centering_t>;
     using Layout_t    = ippl::FieldLayout<Dim>;
 
-    using playout_t   = ippl::ParticleSpatialLayout<T, Dim>;
+    using playout_t   = ippl::ParticleSpatialLayout<T, Dim, Mesh_t>;
     using bunch_t     = Bunch<playout_t>;
 
     static ippl::NDIndex<Dim> make_owned_nd(int nx) {
@@ -61,31 +62,34 @@ class AssembleCurrentYeeTest;
 template <typename T, unsigned Dim>
 class AssembleCurrentYeeTest<Parameters<T, Rank<Dim>>> : public ::testing::Test {
 public:
-    using value_type   = T;
+    using value_type              = T;
     static constexpr unsigned dim = Dim;
 
-    using Mesh_t       = ippl::UniformCartesian<T, Dim>;
-    using Centering_t  = typename Mesh_t::DefaultCentering;
-    using JField_t     = ippl::Field<ippl::Vector<T, Dim>, Dim, Mesh_t, Centering_t>;
-    using Layout_t     = ippl::FieldLayout<Dim>;
+    using Mesh_t      = ippl::UniformCartesian<T, Dim>;
+    using Centering_t = typename Mesh_t::DefaultCentering;
+    using JField_t    = ippl::Field<ippl::Vector<T, Dim>, Dim, Mesh_t, Centering_t>;
+    using Layout_t    = ippl::FieldLayout<Dim>;
 
-    using playout_t    = ippl::ParticleSpatialLayout<T, Dim>;
-    using bunch_t      = Bunch<playout_t>;
+    using playout_t = ippl::ParticleSpatialLayout<T, Dim, Mesh_t>;
+    using bunch_t   = Bunch<playout_t>;
 
     static ippl::NDIndex<Dim> make_owned_nd(int nx) {
         ippl::Index I0(nx);
-        if constexpr (Dim == 1)      return ippl::NDIndex<1>(I0);
-        else if constexpr (Dim == 2) return ippl::NDIndex<2>(I0, I0);
-        else                         return ippl::NDIndex<3>(I0, I0, I0);
+        if constexpr (Dim == 1)
+            return ippl::NDIndex<1>(I0);
+        else if constexpr (Dim == 2)
+            return ippl::NDIndex<2>(I0, I0);
+        else
+            return ippl::NDIndex<3>(I0, I0, I0);
     }
 
     static Layout_t make_layout(const ippl::NDIndex<Dim>& owned) {
-        std::array<bool, Dim> par{}; par.fill(true);
+        std::array<bool, Dim> par{};
+        par.fill(true);
         return ippl::FieldLayout<Dim>(MPI_COMM_WORLD, owned, par);
     }
 
-    static Mesh_t make_mesh(const ippl::NDIndex<Dim>& owned,
-                            const ippl::Vector<T, Dim>& h,
+    static Mesh_t make_mesh(const ippl::NDIndex<Dim>& owned, const ippl::Vector<T, Dim>& h,
                             const ippl::Vector<T, Dim>& origin) {
         return Mesh_t(owned, h, origin);
     }
@@ -430,7 +434,7 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_VertexHit_3D) {
 }
 
 TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_ThreeCells_ExactValues) {
-    using T = typename TestFixture::value_type;
+    using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
 
     if constexpr (Dim != 2) {
@@ -457,14 +461,14 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_ThreeCells_ExactValues) {
         bunch_t bunch(playout);
         bunch.create(ippl::Comm->rank() == 0 ? 1 : 0);
         if (ippl::Comm->rank() == 0) {
-            auto R_host  = bunch.R.getHostMirror();
-            auto Rn_host = bunch.R_next.getHostMirror();
-            auto Q_host  = bunch.Q.getHostMirror();
+            auto R_host   = bunch.R.getHostMirror();
+            auto Rn_host  = bunch.R_next.getHostMirror();
+            auto Q_host   = bunch.Q.getHostMirror();
             R_host(0)[0]  = T(0.75);
             R_host(0)[1]  = T(0.50);
             Rn_host(0)[0] = T(1.50);
             Rn_host(0)[1] = T(1.25);
-            Q_host(0) = T(1.0);
+            Q_host(0)     = T(1.0);
             Kokkos::deep_copy(bunch.R.getView(), R_host);
             Kokkos::deep_copy(bunch.R_next.getView(), Rn_host);
             Kokkos::deep_copy(bunch.Q.getView(), Q_host);
@@ -472,9 +476,8 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_ThreeCells_ExactValues) {
         bunch.update();
 
         auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
-        T dt = T(1.0);
-        ippl::assemble_current_yee(mesh, bunch.Q, bunch.R, bunch.R_next,
-                                   J_field, policy, dt);
+        T dt        = T(1.0);
+        ippl::assemble_current_yee(mesh, bunch.Q, bunch.R, bunch.R_next, J_field, policy, dt);
         J_field.accumulateHalo();
 
         auto ldom  = J_field.getLayout().getLocalNDIndex();
@@ -490,10 +493,10 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_ThreeCells_ExactValues) {
         // Extract value on owning rank, broadcast to all via SUM so every rank asserts.
         auto check = [&](int gi, int gj, unsigned c, double expected) {
             double local_val = 0.0;
-            if (gi >= ldom.first()[0] && gi <= ldom.last()[0] &&
-                gj >= ldom.first()[1] && gj <= ldom.last()[1]) {
-                int li = gi - ldom.first()[0] + nghost;
-                int lj = gj - ldom.first()[1] + nghost;
+            if (gi >= ldom.first()[0] && gi <= ldom.last()[0] && gj >= ldom.first()[1]
+                && gj <= ldom.last()[1]) {
+                int li    = gi - ldom.first()[0] + nghost;
+                int lj    = gj - ldom.first()[1] + nghost;
                 local_val = static_cast<double>(view_host(li, lj)[c]);
             }
             double global_val = 0.0;
@@ -516,7 +519,7 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_ThreeCells_ExactValues) {
 }
 
 TYPED_TEST(AssembleCurrentYeeTest, SingleAxis_X_SameCell_ExactValues) {
-    using T = typename TestFixture::value_type;
+    using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
 
     using bunch_t   = typename TestFixture::bunch_t;
@@ -538,12 +541,15 @@ TYPED_TEST(AssembleCurrentYeeTest, SingleAxis_X_SameCell_ExactValues) {
     bunch_t bunch(playout);
     bunch.create(ippl::Comm->rank() == 0 ? 1 : 0);
     if (ippl::Comm->rank() == 0) {
-        auto R_host  = bunch.R.getHostMirror();
-        auto Rn_host = bunch.R_next.getHostMirror();
-        auto Q_host  = bunch.Q.getHostMirror();
+        auto R_host   = bunch.R.getHostMirror();
+        auto Rn_host  = bunch.R_next.getHostMirror();
+        auto Q_host   = bunch.Q.getHostMirror();
         R_host(0)[0]  = T(0.25);
         Rn_host(0)[0] = T(0.75);
-        for (unsigned d = 1; d < Dim; ++d) { R_host(0)[d] = T(0.50); Rn_host(0)[d] = T(0.50); }
+        for (unsigned d = 1; d < Dim; ++d) {
+            R_host(0)[d]  = T(0.50);
+            Rn_host(0)[d] = T(0.50);
+        }
         Q_host(0) = T(1.0);
         Kokkos::deep_copy(bunch.R.getView(), R_host);
         Kokkos::deep_copy(bunch.R_next.getView(), Rn_host);
@@ -552,12 +558,12 @@ TYPED_TEST(AssembleCurrentYeeTest, SingleAxis_X_SameCell_ExactValues) {
     bunch.update();
 
     auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
-    T dt = T(1.0);
+    T dt        = T(1.0);
     ippl::assemble_current_yee(mesh, bunch.Q, bunch.R, bunch.R_next, J_field, policy, dt);
     J_field.accumulateHalo();
 
     auto ldom      = J_field.getLayout().getLocalNDIndex();
-    int  nghost    = J_field.getNghost();
+    int nghost     = J_field.getNghost();
     auto view      = J_field.getView();
     auto view_host = Kokkos::create_mirror_view(view);
     Kokkos::deep_copy(view_host, view);
@@ -567,7 +573,8 @@ TYPED_TEST(AssembleCurrentYeeTest, SingleAxis_X_SameCell_ExactValues) {
 
     auto in_ldom = [&](const Kokkos::Array<int, Dim>& cell) {
         for (unsigned d = 0; d < Dim; ++d)
-            if (cell[d] < ldom.first()[d] || cell[d] > ldom.last()[d]) return false;
+            if (cell[d] < ldom.first()[d] || cell[d] > ldom.last()[d])
+                return false;
         return true;
     };
 
@@ -598,7 +605,7 @@ TYPED_TEST(AssembleCurrentYeeTest, SingleAxis_X_SameCell_ExactValues) {
 }
 
 TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_VertexHit_3D) {
-    using T = typename TestFixture::value_type;
+    using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
 
     if constexpr (Dim != 3) {
@@ -625,12 +632,16 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_VertexHit_3D) {
         // seg0 in cell (0,0,0), seg1 in cell (1,1,1)
         bunch.create(ippl::Comm->rank() == 0 ? 1 : 0);
         if (ippl::Comm->rank() == 0) {
-            auto R_host  = bunch.R.getHostMirror();
-            auto Rn_host = bunch.R_next.getHostMirror();
-            auto Q_host  = bunch.Q.getHostMirror();
-            R_host(0)[0]  = T(0.9); R_host(0)[1]  = T(0.9); R_host(0)[2]  = T(0.8);
-            Rn_host(0)[0] = T(1.1); Rn_host(0)[1] = T(1.1); Rn_host(0)[2] = T(1.2);
-            Q_host(0) = T(1.0);
+            auto R_host   = bunch.R.getHostMirror();
+            auto Rn_host  = bunch.R_next.getHostMirror();
+            auto Q_host   = bunch.Q.getHostMirror();
+            R_host(0)[0]  = T(0.9);
+            R_host(0)[1]  = T(0.9);
+            R_host(0)[2]  = T(0.8);
+            Rn_host(0)[0] = T(1.1);
+            Rn_host(0)[1] = T(1.1);
+            Rn_host(0)[2] = T(1.2);
+            Q_host(0)     = T(1.0);
             Kokkos::deep_copy(bunch.R.getView(), R_host);
             Kokkos::deep_copy(bunch.R_next.getView(), Rn_host);
             Kokkos::deep_copy(bunch.Q.getView(), Q_host);
@@ -638,12 +649,12 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_VertexHit_3D) {
         bunch.update();
 
         auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
-        T dt = T(1.0);
+        T dt        = T(1.0);
         ippl::assemble_current_yee(mesh, bunch.Q, bunch.R, bunch.R_next, J_field, policy, dt);
         J_field.accumulateHalo();
 
         auto ldom      = J_field.getLayout().getLocalNDIndex();
-        int  nghost    = J_field.getNghost();
+        int nghost     = J_field.getNghost();
         auto view      = J_field.getView();
         auto view_host = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(view_host, view);
@@ -653,7 +664,8 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_VertexHit_3D) {
 
         auto in_ldom = [&](const Kokkos::Array<int, Dim>& cell) {
             for (unsigned d = 0; d < Dim; ++d)
-                if (cell[d] < ldom.first()[d] || cell[d] > ldom.last()[d]) return false;
+                if (cell[d] < ldom.first()[d] || cell[d] > ldom.last()[d])
+                    return false;
             return true;
         };
 

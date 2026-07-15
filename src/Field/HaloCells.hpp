@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Utility/IpplException.h"
+#include "Utility/ParallelDispatch.h"
 
 #include "Communicate/Communicator.h"
 
@@ -89,8 +90,8 @@ namespace ippl {
         HaloCells<T, Dim, ViewArgs...>::HaloCells() {}
 
         template <typename T, unsigned Dim, class... ViewArgs>
-        void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view, Layout_t* layout) {
-            exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL);
+        void HaloCells<T, Dim, ViewArgs...>::accumulateHalo(view_type& view, Layout_t* layout, int nghost) {
+            exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL, nghost);
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
@@ -99,8 +100,8 @@ namespace ippl {
             exchangeBoundaries<lhs_plus_assign>(view, layout, HALO_TO_INTERNAL_NOGHOST, nghost);
         }
         template <typename T, unsigned Dim, class... ViewArgs>
-        void HaloCells<T, Dim, ViewArgs...>::fillHalo(view_type& view, Layout_t* layout) {
-            exchangeBoundaries<assign>(view, layout, INTERNAL_TO_HALO);
+        void HaloCells<T, Dim, ViewArgs...>::fillHalo(view_type& view, Layout_t* layout, int nghost) {
+            exchangeBoundaries<assign>(view, layout, INTERNAL_TO_HALO, nghost);
         }
 
         template <typename T, unsigned Dim, class... ViewArgs>
@@ -119,9 +120,9 @@ namespace ippl {
             auto ldom = layout->getLocalNDIndex();
             for (const auto& axis : ldom) {
                 if ((axis.length() == 1) && (Dim != 1)) {
-                    throw std::runtime_error(
-                        "HaloCells: Cannot do neighbour exchange when domain decomposition "
-                        "contains planes!");
+                    throw IpplException(
+                        "HaloCells::exchangeBoundaries",
+                        "Cannot do neighbour exchange when domain decomposition contains planes.");
                 }
             }
 

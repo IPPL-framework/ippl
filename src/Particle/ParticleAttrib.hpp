@@ -17,7 +17,14 @@
 
 #include "Communicate/DataTypes.h"
 
+#include "Utility/BufferView.h"
 #include "Utility/IpplTimings.h"
+
+#ifdef IPPL_ENABLE_FFT
+#include "FFT/FFT.h"
+#endif
+#include "Particle/ParticleSort.h"
+#include "Particle/SortBuffer.h"
 
 namespace ippl {
 
@@ -40,6 +47,13 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::alloc(size_type n) {
         int overalloc = Comm->getDefaultOverallocation();
         this->realloc(n * overalloc);
+    }
+
+    template <typename T, class... Properties>
+    void ParticleAttrib<T, Properties...>::reserve(size_type n) {
+        if (this->size() < n) {
+            this->resize(n);
+        }
     }
 
     template <typename T, class... Properties>
@@ -69,17 +83,12 @@ namespace ippl {
         Kokkos::parallel_for(
             "ParticleAttrib::pack()", policy_type(0, size),
             KOKKOS_LAMBDA(const size_t i) { buf(i) = dview(hash(i)); });
-        Kokkos::fence();
     }
 
     template <typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::unpack(size_type nrecvs) {
-        auto size          = dview_m.extent(0);
         size_type required = *(this->localNum_mp) + nrecvs;
-        if (size < required) {
-            int overalloc = Comm->getDefaultOverallocation();
-            this->resize(required * overalloc);
-        }
+        this->resize(required);
 
         size_type count   = *(this->localNum_mp);
         auto buf          = buf_m;
@@ -92,7 +101,6 @@ namespace ippl {
     }
 
     template <typename T, class... Properties>
-    // KOKKOS_INLINE_FUNCTION
     ParticleAttrib<T, Properties...>& ParticleAttrib<T, Properties...>::operator=(T x) {
         auto dview        = dview_m;
         using policy_type = Kokkos::RangePolicy<execution_space>;
@@ -104,7 +112,6 @@ namespace ippl {
 
     template <typename T, class... Properties>
     template <typename E, size_t N>
-    // KOKKOS_INLINE_FUNCTION
     ParticleAttrib<T, Properties...>& ParticleAttrib<T, Properties...>::operator=(
         detail::Expression<E, N> const& expr) {
         const E expr_ = static_cast<const E&>(expr);
@@ -159,7 +166,6 @@ namespace ippl {
                 // map index to possible hash_map
                 size_t mapped_idx = useHashView ? hash_array(idx) : idx;
 
-                // find nearest grid point
                 vector_type l                        = (ppview(mapped_idx) - origin) * invdx + 0.5;
                 Vector<int, Field::dim> index        = l;
                 Vector<PositionType, Field::dim> whi = l - index;
@@ -167,7 +173,6 @@ namespace ippl {
 
                 Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
 
-                // scatter
                 const value_type& val = dview(mapped_idx);
                 detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi,
                                        args, val);
@@ -216,7 +221,6 @@ namespace ippl {
         Kokkos::parallel_for(
             "ParticleAttrib::gather", policy_type(0, *(this->localNum_mp)),
             KOKKOS_LAMBDA(const size_t idx) {
-                // find nearest grid point
                 vector_type l                        = (ppview(idx) - origin) * invdx + 0.5;
                 Vector<int, Field::dim> index        = l;
                 Vector<PositionType, Field::dim> whi = l - index;
@@ -257,12 +261,12 @@ namespace ippl {
     template <typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::internalCopy(const hash_type& indices) {
         auto copySize = indices.size();
-        create(copySize);
-
+        using policy_type = Kokkos::RangePolicy<execution_space>;
         auto view       = this->getView();
         const auto size = this->getParticleCount();
 
-        using policy_type = Kokkos::RangePolicy<execution_space>;
+        create(copySize);  // localNum_mp becomes oldSize + copySize
+
         Kokkos::parallel_for(
             "Copy to temp", policy_type(0, copySize),
             KOKKOS_LAMBDA(const size_type& i) { view(size + i) = view(i); });
@@ -271,8 +275,7 @@ namespace ippl {
     }
 
     /*
-     * Non-class function
-     *
+     * Non-class functions
      */
 
     /**
@@ -369,4 +372,5 @@ namespace ippl {
     DefineParticleReduction(Max, max, if (myVal > valL) valL = myVal, std::greater)
     DefineParticleReduction(Min, min, if (myVal < valL) valL = myVal, std::less)
     DefineParticleReduction(Prod, prod, valL *= myVal, std::multiplies)
+
 }  // namespace ippl
