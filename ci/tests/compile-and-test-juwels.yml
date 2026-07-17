@@ -11,7 +11,7 @@ compile-and-test-juwels:
     SLURM_TIME: "00:40:00"
     SLURM_CPUS_PER_TASK: "6"
     CMAKE_BUILD_TYPE: "Release"
-    PROJECT_NAME: "hai_1073"
+    PROJECT_NAME: "cstma"
 
     RUN_TESTS: "true" # "true" → run tests; "false" → compile only
     PLATFORM: "cuda" # or "openmp"
@@ -21,14 +21,14 @@ compile-and-test-juwels:
   script: |
     set -Eeuo pipefail
 
-    if [[ -z "${SCRATCH_hai_1073:-}" ]]; then
-      echo "❌ ERROR: \$SCRATCH_hai_1073 not set after jutil activation." >&2
+    if [[ -z "${SCRATCH_cstma:-}" ]]; then
+      echo "❌ ERROR: \$SCRATCH_cstma not set after jutil activation." >&2
       exit 1
     fi
 
-    echo "📦 SCRATCH = ${SCRATCH_hai_1073}"
+    echo "📦 SCRATCH = ${SCRATCH_cstma}"
 
-    export BUILD_DIR="${SCRATCH_hai_1073}/.builds/${CI_PIPELINE_ID}/${CI_JOB_ID}"
+    export BUILD_DIR="${SCRATCH_cstma}/.builds/${CI_PIPELINE_ID}/${CI_JOB_ID}"
 
     echo "📁 BUILD_DIR = ${BUILD_DIR}"
 
