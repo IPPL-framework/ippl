@@ -21,14 +21,14 @@ compile-and-test-juwels:
   script: |
     set -Eeuo pipefail
 
-    if [[ -z "${SCRATCH_cstma:-}" ]]; then
+    if [[ -z "${SCRATCH_ccstma:-}" ]]; then
       echo "❌ ERROR: \$SCRATCH_cstma not set after jutil activation." >&2
       exit 1
     fi
 
-    echo "📦 SCRATCH = ${SCRATCH_cstma}"
+    echo "📦 SCRATCH = ${SCRATCH_ccstma}"
 
-    export BUILD_DIR="${SCRATCH_cstma}/.builds/${CI_PIPELINE_ID}/${CI_JOB_ID}"
+    export BUILD_DIR="${SCRATCH_ccstma}/.builds/${CI_PIPELINE_ID}/${CI_JOB_ID}"
 
     echo "📁 BUILD_DIR = ${BUILD_DIR}"
 
