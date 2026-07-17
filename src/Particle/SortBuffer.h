@@ -20,6 +20,7 @@ namespace ippl {
          *   bin_keys      uint64_t[n_particles]   sort keys (bin index per particle)
          *   permute       size_t  [n_particles]   identity → sorted particle order
          *   bin_offsets   size_t  [n_bins + 1]    start of each bin in permute
+         *   cursor        size_t  [n_bins]        per-bin write cursor (counting-sort)
          *   keys_out      uint64_t[n_particles]   CUB radix-sort output (CUDA only)
          *   perm_out      size_t  [n_particles]   CUB radix-sort output (CUDA only)
          *   temp_storage  char    [temp_bytes]    CUB device-temp (CUDA only)
@@ -61,6 +62,7 @@ namespace ippl {
                         std::max(static_cast<size_type>(n_bins_p1 * growth), n_bins_p1);
 
                     bin_offsets_ = Kokkos::View<size_type*, memory_space>("bin_offsets", cap);
+                    cursor_      = Kokkos::View<size_type*, memory_space>("cursor", cap);
                     bin_offset_capacity_ = cap;
                 }
             }
@@ -81,6 +83,7 @@ namespace ippl {
             Kokkos::View<uint64_t*, memory_space>& binKeys() { return bin_keys_; }
             Kokkos::View<size_type*, memory_space>& permute() { return permute_; }
             Kokkos::View<size_type*, memory_space>& binOffsets() { return bin_offsets_; }
+            Kokkos::View<size_type*, memory_space>& cursor() { return cursor_; }
             Kokkos::View<uint64_t*, memory_space>& keysOut() { return keys_out_; }
             Kokkos::View<size_type*, memory_space>& permOut() { return perm_out_; }
             Kokkos::View<char*, memory_space>& tempStorage() { return temp_storage_; }
@@ -96,6 +99,7 @@ namespace ippl {
                 return bin_keys_.span() * sizeof(uint64_t)
                        + permute_.span() * sizeof(size_type)
                        + bin_offsets_.span() * sizeof(size_type)
+                       + cursor_.span() * sizeof(size_type)
                        + keys_out_.span() * sizeof(uint64_t)
                        + perm_out_.span() * sizeof(size_type)
                        + temp_storage_.span();
@@ -105,6 +109,7 @@ namespace ippl {
                 bin_keys_            = {};
                 permute_             = {};
                 bin_offsets_         = {};
+                cursor_              = {};
                 keys_out_            = {};
                 perm_out_            = {};
                 temp_storage_        = {};
@@ -117,6 +122,7 @@ namespace ippl {
             Kokkos::View<uint64_t*, memory_space> bin_keys_;
             Kokkos::View<size_type*, memory_space> permute_;
             Kokkos::View<size_type*, memory_space> bin_offsets_;
+            Kokkos::View<size_type*, memory_space> cursor_;
             Kokkos::View<uint64_t*, memory_space> keys_out_;
             Kokkos::View<size_type*, memory_space> perm_out_;
             Kokkos::View<char*, memory_space> temp_storage_;

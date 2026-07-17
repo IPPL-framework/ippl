@@ -8,6 +8,15 @@ namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
         struct isExpression<Field<T, Dim, Mesh, Centering, ViewArgs...>> : std::true_type {};
+
+        template <typename Field>
+        struct FieldTraits;
+
+        template <typename FieldT, unsigned Dim, class Mesh, class Centering, class... ViewArgs>
+        struct FieldTraits<Field<FieldT, Dim, Mesh, Centering, ViewArgs...>> {
+            static constexpr unsigned dim = Dim;
+            using view_type = typename Field<FieldT, Dim, Mesh, Centering, ViewArgs...>::view_type;
+        };
     }  // namespace detail
 
     //////////////////////////////////////////////////////////////////////////
