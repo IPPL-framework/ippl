@@ -10,6 +10,7 @@
 #include <list>
 
 #include "Utility/IpplInfo.h"
+
 #include "Interpolation/Scatter/AutoTune.h"
 #include "Particle/SortBuffer.h"
 
@@ -90,7 +91,7 @@ namespace ippl {
             Info->setOutputLevel(infoLevel);
             Error->setOutputLevel(infoLevel);
             Warn->setOutputLevel(infoLevel);
-            
+
         } catch (const std::exception& e) {
             if (Comm->rank() == 0) {
                 std::cerr << e.what() << std::endl;
@@ -100,6 +101,8 @@ namespace ippl {
 
         Kokkos::initialize(argc, argv);
 
+        // Seed scatter/gather caches with per-exec-space defaults and, when
+        // IPPL_AUTO_TUNE is set, run the sweep.
         ippl::Interpolation::AutoTune::initialize();
     }
 

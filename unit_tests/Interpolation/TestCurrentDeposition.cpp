@@ -22,40 +22,45 @@ class AssembleCurrentTest;
 template <typename T, unsigned Dim>
 class AssembleCurrentTest<Parameters<T, Rank<Dim>>> : public ::testing::Test {
 public:
-    using value_type  = T;
+    using value_type              = T;
     static constexpr unsigned dim = Dim;
 
     using Mesh_t      = ippl::UniformCartesian<T, Dim>;
     using Centering_t = typename Mesh_t::DefaultCentering;
-    // Dim+1 components: [0] = scalar potential / charge density, [1..Dim] = Jx, Jy, Jz.
-    using JField_t    = ippl::Field<ippl::Vector<T, Dim + 1>, Dim, Mesh_t, Centering_t>;
-    using Layout_t    = ippl::FieldLayout<Dim>;
 
-    using playout_t   = ippl::ParticleSpatialLayout<T, Dim, Mesh_t>;
-    using bunch_t     = Bunch<playout_t>;
+    // Dim+1 components: [0] = scalar potential / charge density, [1..Dim] = Jx, Jy, Jz.
+    using JField_t = ippl::Field<ippl::Vector<T, Dim + 1>, Dim, Mesh_t, Centering_t>;
+    using Layout_t = ippl::FieldLayout<Dim>;
+
+    using playout_t = ippl::ParticleSpatialLayout<T, Dim, Mesh_t>;
+    using bunch_t   = Bunch<playout_t>;
 
     static ippl::NDIndex<Dim> make_owned_nd(int nx) {
         ippl::Index I0(nx);
-        if constexpr (Dim == 1)      return ippl::NDIndex<1>(I0);
-        else if constexpr (Dim == 2) return ippl::NDIndex<2>(I0, I0);
-        else                         return ippl::NDIndex<3>(I0, I0, I0);
+        if constexpr (Dim == 1)
+            return ippl::NDIndex<1>(I0);
+        else if constexpr (Dim == 2)
+            return ippl::NDIndex<2>(I0, I0);
+        else
+            return ippl::NDIndex<3>(I0, I0, I0);
     }
 
     static Layout_t make_layout(const ippl::NDIndex<Dim>& owned) {
-        std::array<bool, Dim> par{}; par.fill(true);
+        std::array<bool, Dim> par{};
+        par.fill(true);
         return ippl::FieldLayout<Dim>(MPI_COMM_WORLD, owned, par);
     }
 
-    static Mesh_t make_mesh(const ippl::NDIndex<Dim>& owned,
-                            const ippl::Vector<T, Dim>& h,
+    static Mesh_t make_mesh(const ippl::NDIndex<Dim>& owned, const ippl::Vector<T, Dim>& h,
                             const ippl::Vector<T, Dim>& origin) {
         return Mesh_t(owned, h, origin);
     }
 };
 
-// Fixture for the Yee-staggered deposition (assemble_current_yee). Uses a
-// Dim-component J field (index [c]), in contrast to the co-located fixture
-// above which reserves component [0] for the scalar slot (index [c+1]).
+// ada: master-side comment kept; PR501 would merge/remove this separate Yee fixture note.
+//  Fixture for the Yee-staggered deposition (assemble_current_yee). Uses a
+//  Dim-component J field (index [c]), in contrast to the co-located fixture
+//  above which reserves component [0] for the scalar slot (index [c+1]).
 template <typename>
 class AssembleCurrentYeeTest;
 
@@ -102,15 +107,16 @@ using Tests      = TestForTypes<CreateCombinations<Precisions, Ranks>::type>::ty
 TYPED_TEST_SUITE(AssembleCurrentTest, Tests);
 TYPED_TEST_SUITE(AssembleCurrentYeeTest, Tests);
 
-// Pure x-motion inside a single cell. The midpoint lies at the mesh cell centre.
-// assemble_current_collocated applies the same half-cell shift used by the
-// centered field gather, so this point lands exactly on node (0,...,0).
-// Verifies:
-//   - Jx is deposited at the shifted node location.
-//   - Jy (and Jz in 3D) remain exactly zero.
-//   - The scalar slot field[0] is untouched (remains zero).
+// ada: master-side comment kept; PR501 would remove this co-located exact-value test block.
+//  Pure x-motion inside a single cell. The midpoint lies at the mesh cell centre.
+//  assemble_current_collocated applies the same half-cell shift used by the
+//  centered field gather, so this point lands exactly on node (0,...,0).
+//  Verifies:
+//    - Jx is deposited at the shifted node location.
+//    - Jy (and Jz in 3D) remain exactly zero.
+//    - The scalar slot field[0] is untouched (remains zero).
 TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
-    using T = typename TestFixture::value_type;
+    using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
 
     using bunch_t   = typename TestFixture::bunch_t;
@@ -132,12 +138,15 @@ TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
     bunch_t bunch(playout);
     bunch.create(ippl::Comm->rank() == 0 ? 1 : 0);
     if (ippl::Comm->rank() == 0) {
-        auto R_host  = bunch.R.getHostMirror();
-        auto Rn_host = bunch.R_next.getHostMirror();
-        auto Q_host  = bunch.Q.getHostMirror();
+        auto R_host   = bunch.R.getHostMirror();
+        auto Rn_host  = bunch.R_next.getHostMirror();
+        auto Q_host   = bunch.Q.getHostMirror();
         R_host(0)[0]  = T(0.25);
         Rn_host(0)[0] = T(0.75);
-        for (unsigned d = 1; d < Dim; ++d) { R_host(0)[d] = T(0.50); Rn_host(0)[d] = T(0.50); }
+        for (unsigned d = 1; d < Dim; ++d) {
+            R_host(0)[d]  = T(0.50);
+            Rn_host(0)[d] = T(0.50);
+        }
         Q_host(0) = T(1.0);
         Kokkos::deep_copy(bunch.R.getView(), R_host);
         Kokkos::deep_copy(bunch.R_next.getView(), Rn_host);
@@ -146,13 +155,12 @@ TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
     bunch.update();
 
     auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
-    T dt = T(1.0);
-    ippl::assemble_current_collocated(mesh, bunch.Q, bunch.R, bunch.R_next,
-                                      J_field, policy, dt);
+    T dt        = T(1.0);
+    ippl::assemble_current_collocated(mesh, bunch.Q, bunch.R, bunch.R_next, J_field, policy, dt);
     J_field.accumulateHalo();
 
     auto ldom      = J_field.getLayout().getLocalNDIndex();
-    int  nghost    = J_field.getNghost();
+    int nghost     = J_field.getNghost();
     auto view      = J_field.getView();
     auto view_host = Kokkos::create_mirror_view(view);
     Kokkos::deep_copy(view_host, view);
@@ -162,7 +170,8 @@ TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
 
     auto in_ldom = [&](const Kokkos::Array<int, Dim>& cell) {
         for (unsigned d = 0; d < Dim; ++d)
-            if (cell[d] < ldom.first()[d] || cell[d] > ldom.last()[d]) return false;
+            if (cell[d] < ldom.first()[d] || cell[d] > ldom.last()[d])
+                return false;
         return true;
     };
 
@@ -197,12 +206,18 @@ TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
     // One segment. Mid=(0.5,0.5,...), shifted gp=(0,0,...), xi=(0,0,...),
     // dp=(0.5,0,...). The full Jx contribution lands on node (0,...,0).
     if constexpr (Dim == 2) {
-        check({0, 0}, 0, 0.5);   check({1, 0}, 0, 0.0);
-        check({0, 1}, 0, 0.0);   check({1, 1}, 0, 0.0);
-        check({0, 0}, 1, 0.0);   check({1, 0}, 1, 0.0);
-        check({0, 1}, 1, 0.0);   check({1, 1}, 1, 0.0);
-        check_scalar({0, 0}); check_scalar({1, 0});
-        check_scalar({0, 1}); check_scalar({1, 1});
+        check({0, 0}, 0, 0.5);
+        check({1, 0}, 0, 0.0);
+        check({0, 1}, 0, 0.0);
+        check({1, 1}, 0, 0.0);
+        check({0, 0}, 1, 0.0);
+        check({1, 0}, 1, 0.0);
+        check({0, 1}, 1, 0.0);
+        check({1, 1}, 1, 0.0);
+        check_scalar({0, 0});
+        check_scalar({1, 0});
+        check_scalar({0, 1});
+        check_scalar({1, 1});
     } else if constexpr (Dim == 3) {
         for (int i = 0; i <= 1; ++i)
             for (int j = 0; j <= 1; ++j)
@@ -215,18 +230,19 @@ TYPED_TEST(AssembleCurrentTest, SingleAxis_X_SameCell_ExactValues) {
     }
 }
 
-// Diagonal path crossing two cell boundaries (three segments). 2D only.
+// ada: master-side comment kept; PR501 would remove this co-located diagonal-path test block.
+//  Diagonal path crossing two cell boundaries (three segments). 2D only.
 //
-// Segments (GridPathSegmenter: x-cut t=1/3, y-cut t=2/3), evaluated with the
-// half-cell shifted coordinate gp=mid/h-0.5:
-//   seg0: xi=(0.375,0.125) dp=(0.25,0.25)
-//   seg1: xi=(0.625,0.375) dp=(0.25,0.25)
-//   seg2: xi=(0.875,0.625) dp=(0.25,0.25)
+//  Segments (GridPathSegmenter: x-cut t=1/3, y-cut t=2/3), evaluated with the
+//  half-cell shifted coordinate gp=mid/h-0.5:
+//    seg0: xi=(0.375,0.125) dp=(0.25,0.25)
+//    seg1: xi=(0.625,0.375) dp=(0.25,0.25)
+//    seg2: xi=(0.875,0.625) dp=(0.25,0.25)
 //
-// Because dp_x == dp_y for every segment, Jx == Jy at every node.
-// With h=1 (volume=1), q_over_dt_vol = 1.
+//  Because dp_x == dp_y for every segment, Jx == Jy at every node.
+//  With h=1 (volume=1), q_over_dt_vol = 1.
 TYPED_TEST(AssembleCurrentTest, DiagonalPath_ThreeCells_ExactValues) {
-    using T = typename TestFixture::value_type;
+    using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
 
     if constexpr (Dim != 2) {
@@ -257,9 +273,11 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_ThreeCells_ExactValues) {
             auto Rn_host = bunch.R_next.getHostMirror();
             auto Q_host  = bunch.Q.getHostMirror();
             for (int p = 0; p < 3; ++p) {
-                R_host(p)[0]  = T(0.75); R_host(p)[1]  = T(0.50);
-                Rn_host(p)[0] = T(1.50); Rn_host(p)[1] = T(1.25);
-                Q_host(p) = T(1.0);
+                R_host(p)[0]  = T(0.75);
+                R_host(p)[1]  = T(0.50);
+                Rn_host(p)[0] = T(1.50);
+                Rn_host(p)[1] = T(1.25);
+                Q_host(p)     = T(1.0);
             }
             Kokkos::deep_copy(bunch.R.getView(), R_host);
             Kokkos::deep_copy(bunch.R_next.getView(), Rn_host);
@@ -268,13 +286,13 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_ThreeCells_ExactValues) {
         bunch.update();
 
         auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
-        T dt = T(1.0);
-        ippl::assemble_current_collocated(mesh, bunch.Q, bunch.R, bunch.R_next,
-                                          J_field, policy, dt);
+        T dt        = T(1.0);
+        ippl::assemble_current_collocated(mesh, bunch.Q, bunch.R, bunch.R_next, J_field, policy,
+                                          dt);
         J_field.accumulateHalo();
 
         auto ldom      = J_field.getLayout().getLocalNDIndex();
-        int  nghost    = J_field.getNghost();
+        int nghost     = J_field.getNghost();
         auto view      = J_field.getView();
         auto view_host = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(view_host, view);
@@ -286,10 +304,10 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_ThreeCells_ExactValues) {
         // every MPI rank asserts regardless of domain decomposition.
         auto check = [&](int gi, int gj, unsigned c, double expected) {
             double local_val = 0.0;
-            if (gi >= ldom.first()[0] && gi <= ldom.last()[0] &&
-                gj >= ldom.first()[1] && gj <= ldom.last()[1]) {
-                int li = gi - ldom.first()[0] + nghost;
-                int lj = gj - ldom.first()[1] + nghost;
+            if (gi >= ldom.first()[0] && gi <= ldom.last()[0] && gj >= ldom.first()[1]
+                && gj <= ldom.last()[1]) {
+                int li    = gi - ldom.first()[0] + nghost;
+                int lj    = gj - ldom.first()[1] + nghost;
                 local_val = static_cast<double>(view_host(li, lj)[c + 1]);
             }
             double global_val = 0.0;
@@ -298,28 +316,37 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_ThreeCells_ExactValues) {
         };
 
         // All single-particle values scaled by 3 (three identical particles).
-        check(0, 0, 0, 0.62109375);  check(0, 0, 1, 0.62109375);
-        check(1, 0, 0, 0.78515625);  check(1, 0, 1, 0.78515625);
-        check(0, 1, 0, 0.22265625);  check(0, 1, 1, 0.22265625);
-        check(1, 1, 0, 0.62109375);  check(1, 1, 1, 0.62109375);
-        check(2, 0, 0, 0.0);         check(2, 0, 1, 0.0);
-        check(2, 1, 0, 0.0);         check(2, 1, 1, 0.0);
-        check(1, 2, 0, 0.0);         check(1, 2, 1, 0.0);
-        check(2, 2, 0, 0.0);         check(2, 2, 1, 0.0);
+        check(0, 0, 0, 0.62109375);
+        check(0, 0, 1, 0.62109375);
+        check(1, 0, 0, 0.78515625);
+        check(1, 0, 1, 0.78515625);
+        check(0, 1, 0, 0.22265625);
+        check(0, 1, 1, 0.22265625);
+        check(1, 1, 0, 0.62109375);
+        check(1, 1, 1, 0.62109375);
+        check(2, 0, 0, 0.0);
+        check(2, 0, 1, 0.0);
+        check(2, 1, 0, 0.0);
+        check(2, 1, 1, 0.0);
+        check(1, 2, 0, 0.0);
+        check(1, 2, 1, 0.0);
+        check(2, 2, 0, 0.0);
+        check(2, 2, 1, 0.0);
     }
 }
 
-// 3D path where all three axes are crossed simultaneously at t=0.5 (vertex hit).
-// Active segments after degenerate zero-length segments are skipped, evaluated
-// with the half-cell shifted coordinate gp=mid/h-0.5:
-//   seg0: xi=(0.45,0.45,0.4) dp=(0.1,0.1,0.2)
-//   seg3: xi=(0.55,0.55,0.6) dp=(0.1,0.1,0.2)
+// ada: master-side comment kept; PR501 would remove this co-located 3D vertex-hit test block.
+//  3D path where all three axes are crossed simultaneously at t=0.5 (vertex hit).
+//  Active segments after degenerate zero-length segments are skipped, evaluated
+//  with the half-cell shifted coordinate gp=mid/h-0.5:
+//    seg0: xi=(0.45,0.45,0.4) dp=(0.1,0.1,0.2)
+//    seg3: xi=(0.55,0.55,0.6) dp=(0.1,0.1,0.2)
 //
-// Symmetry used to reduce the number of assertions:
-//   Jy == Jx everywhere (dp_y == dp_x)
-//   Jz == 2*Jx everywhere (dp_z == 2*dp_x)
+//  Symmetry used to reduce the number of assertions:
+//    Jy == Jx everywhere (dp_y == dp_x)
+//    Jz == 2*Jx everywhere (dp_z == 2*dp_x)
 TYPED_TEST(AssembleCurrentTest, DiagonalPath_VertexHit_3D) {
-    using T = typename TestFixture::value_type;
+    using T                = typename TestFixture::value_type;
     constexpr unsigned Dim = TestFixture::dim;
 
     if constexpr (Dim != 3) {
@@ -344,12 +371,16 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_VertexHit_3D) {
         bunch_t bunch(playout);
         bunch.create(ippl::Comm->rank() == 0 ? 1 : 0);
         if (ippl::Comm->rank() == 0) {
-            auto R_host  = bunch.R.getHostMirror();
-            auto Rn_host = bunch.R_next.getHostMirror();
-            auto Q_host  = bunch.Q.getHostMirror();
-            R_host(0)[0]  = T(0.9); R_host(0)[1]  = T(0.9); R_host(0)[2]  = T(0.8);
-            Rn_host(0)[0] = T(1.1); Rn_host(0)[1] = T(1.1); Rn_host(0)[2] = T(1.2);
-            Q_host(0) = T(1.0);
+            auto R_host   = bunch.R.getHostMirror();
+            auto Rn_host  = bunch.R_next.getHostMirror();
+            auto Q_host   = bunch.Q.getHostMirror();
+            R_host(0)[0]  = T(0.9);
+            R_host(0)[1]  = T(0.9);
+            R_host(0)[2]  = T(0.8);
+            Rn_host(0)[0] = T(1.1);
+            Rn_host(0)[1] = T(1.1);
+            Rn_host(0)[2] = T(1.2);
+            Q_host(0)     = T(1.0);
             Kokkos::deep_copy(bunch.R.getView(), R_host);
             Kokkos::deep_copy(bunch.R_next.getView(), Rn_host);
             Kokkos::deep_copy(bunch.Q.getView(), Q_host);
@@ -357,13 +388,13 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_VertexHit_3D) {
         bunch.update();
 
         auto policy = Kokkos::RangePolicy<>(0, bunch.getLocalNum());
-        T dt = T(1.0);
-        ippl::assemble_current_collocated(mesh, bunch.Q, bunch.R, bunch.R_next,
-                                          J_field, policy, dt);
+        T dt        = T(1.0);
+        ippl::assemble_current_collocated(mesh, bunch.Q, bunch.R, bunch.R_next, J_field, policy,
+                                          dt);
         J_field.accumulateHalo();
 
         auto ldom      = J_field.getLayout().getLocalNDIndex();
-        int  nghost    = J_field.getNghost();
+        int nghost     = J_field.getNghost();
         auto view      = J_field.getView();
         auto view_host = Kokkos::create_mirror_view(view);
         Kokkos::deep_copy(view_host, view);
@@ -373,7 +404,8 @@ TYPED_TEST(AssembleCurrentTest, DiagonalPath_VertexHit_3D) {
 
         auto in_ldom = [&](const Kokkos::Array<int, Dim>& cell) {
             for (unsigned d = 0; d < Dim; ++d)
-                if (cell[d] < ldom.first()[d] || cell[d] > ldom.last()[d]) return false;
+                if (cell[d] < ldom.first()[d] || cell[d] > ldom.last()[d])
+                    return false;
             return true;
         };
 
@@ -514,7 +546,6 @@ TYPED_TEST(AssembleCurrentYeeTest, DiagonalPath_ThreeCells_ExactValues) {
         check(1, 2, 0, 0.03125);
         check(2, 0, 1, 0.03125);
         check(2, 1, 1, 0.09375);
-
     }
 }
 

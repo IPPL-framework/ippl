@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # src/Interpolation/CMakeLists.txt
 #
-# Adds particle-to-grid interpolation headers to the IPPL target.
+# Adds particle-to-grid interpolation sources/headers to the IPPL target.
 # -----------------------------------------------------------------------------
 
 target_sources(ippl PRIVATE Scatter/AutoTune.cpp Scatter/TileSizeCache.cpp)
