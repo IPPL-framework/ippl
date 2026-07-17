@@ -1,0 +1,2 @@
+method,kernel_width,tile_x,tile_y,tile_z,throughput_Mpts_s
+Atomic,2,1,1,1,8713.87
