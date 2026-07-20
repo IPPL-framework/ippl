@@ -4,6 +4,7 @@ var searchData=
   ['lagrangespace_3c_20tlhs_2c_20dim_2c_201_2c_20elementtype_2c_20quadraturetype_2c_20fieldlhs_2c_20fieldlhs_20_3e_1',['LagrangeSpace&lt; Tlhs, Dim, 1, ElementType, QuadratureType, FieldLHS, FieldLHS &gt;',['../classippl_1_1LagrangeSpace.html',1,'ippl']]],
   ['level_2',['Level',['../structippl_1_1multigrid_1_1Level.html',1,'ippl::multigrid']]],
   ['lhs_5fplus_5fassign_3',['lhs_plus_assign',['../structippl_1_1detail_1_1HaloCells_1_1lhs__plus__assign.html',1,'ippl::detail::HaloCells']]],
-  ['logentry_4',['LogEntry',['../structippl_1_1LogEntry.html',1,'ippl']]],
-  ['loggingbufferhandler_5',['LoggingBufferHandler',['../classippl_1_1LoggingBufferHandler.html',1,'ippl']]]
+  ['linearkernel_4',['LinearKernel',['../structippl_1_1Interpolation_1_1LinearKernel.html',1,'ippl::Interpolation']]],
+  ['logentry_5',['LogEntry',['../structippl_1_1LogEntry.html',1,'ippl']]],
+  ['loggingbufferhandler_6',['LoggingBufferHandler',['../classippl_1_1LoggingBufferHandler.html',1,'ippl']]]
 ];

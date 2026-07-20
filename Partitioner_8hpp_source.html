@@ -108,14 +108,14 @@ $(function() {
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>            <span class="comment">// Start with the whole domain.</span></div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>            domains_c[0] = domain;</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>            <span class="keywordtype">int</span> v;</div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span>            <span class="keywordtype">int</span> <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a>;</div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span>            <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> d = 0;</div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>            <span class="keywordtype">int</span> v1, v2, rm, vtot, vl, vr;</div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>            <span class="keywordtype">double</span> a, lmax, len;</div>
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>            <span class="keywordflow">for</span> (v = nSplits, rm = 0; v &gt; 1; v /= 2) {</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>                rm += (v % 2);</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>            <span class="keywordflow">for</span> (<a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a> = nSplits, rm = 0; <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a> &gt; 1; <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a> /= 2) {</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>                rm += (<a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a> % 2);</div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>            }</div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> </div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>            <span class="keywordflow">if</span> (rm == 0) {</div>
@@ -123,7 +123,7 @@ $(function() {
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span> </div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>                std::vector&lt;NDIndex_t&gt; copy_c(nSplits);</div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span> </div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>                <span class="keywordflow">for</span> (v = 1; v &lt; nSplits; v *= 2) {</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>                <span class="keywordflow">for</span> (<a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a> = 1; <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a> &lt; nSplits; <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a> *= 2) {</div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>                    <span class="comment">// Go to the next parallel dimension.</span></div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>                    <span class="keywordflow">while</span> (!isParallel[d])</div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>                        <span class="keywordflow">if</span> (++d == Dim)</div>
@@ -131,12 +131,12 @@ $(function() {
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>                    <span class="comment">// Split all the current nSplits.</span></div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>                    <span class="keywordtype">int</span> i, j;</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>                    <span class="keywordflow">for</span> (i = 0, j = 0; i &lt; v; ++i, j += 2) {</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>                    <span class="keywordflow">for</span> (i = 0, j = 0; i &lt; <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a>; ++i, j += 2) {</div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>                        <span class="comment">// Split to the left and to the right, saving both.</span></div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>                        domains_c[i].split(copy_c[j], copy_c[j + 1], d);</div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>                    }</div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>                    <span class="comment">// Copy back.</span></div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>                    std::copy(copy_c.begin(), copy_c.begin() + v * 2, domains_c.begin());</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>                    std::copy(copy_c.begin(), copy_c.begin() + <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a> * 2, domains_c.begin());</div>
 <div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>                    <span class="comment">// On to the next dimension.</span></div>
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>                    <span class="keywordflow">if</span> (++d == Dim)</div>
@@ -156,9 +156,9 @@ $(function() {
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span><span class="comment">                    and puts the results in node 5 and node 8. etc.</span></div>
 <div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span><span class="comment">                    The logic is kind of bizarre, but it works.</span></div>
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span><span class="comment">                */</span></div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>                <span class="keywordflow">for</span> (v = 1; v &lt; 2 * nSplits; ++v) {</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>                <span class="keywordflow">for</span> (<a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a> = 1; <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a> &lt; 2 * nSplits; ++<a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a>) {</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>                    <span class="comment">// kind of reverse the bits of v</span></div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>                    <span class="keywordflow">for</span> (v2 = v, v1 = 1; v2 &gt; 1; v2 /= 2) {</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>                    <span class="keywordflow">for</span> (v2 = <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a>, v1 = 1; v2 &gt; 1; v2 /= 2) {</div>
 <div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>                        v1 = 2 * v1 + (v2 % 2);</div>
 <div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>                    }</div>
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>                    vl = 0;</div>
@@ -197,11 +197,11 @@ $(function() {
 <div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                    }</div>
 <div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>                }</div>
 <div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span> </div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>                v = vtot;</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>                <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a> = vtot;</div>
 <div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>            }</div>
 <div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span> </div>
 <div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>            <span class="comment">// Make sure v is the same number of nSplits at this stage.</span></div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>            <a class="code hl_define" href="PAssert_8h.html#a373787183a57da0c3bea1eaa0b936e89">PAssert_EQ</a>(v, nSplits);</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>            <a class="code hl_define" href="PAssert_8h.html#a373787183a57da0c3bea1eaa0b936e89">PAssert_EQ</a>(<a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a>, nSplits);</div>
 <div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span> </div>
 <div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>            <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; domains_c.size(); ++i) {</div>
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>                view(i) = domains_c[i];</div>
@@ -209,6 +209,7 @@ $(function() {
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        }</div>
 <div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>    }  <span class="comment">// namespace detail</span></div>
 <div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>}  <span class="comment">// namespace ippl</span></div>
+<div class="ttc" id="aAutoTune_8cpp_html_a40ab092738bb9819e2c801f36d62a207"><div class="ttname"><a href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a></div><div class="ttdeci">std::array&lt; int, 5 &gt; v</div><div class="ttdef"><b>Definition:</b> AutoTune.cpp:760</div></div>
 <div class="ttc" id="aPAssert_8h_html_a373787183a57da0c3bea1eaa0b936e89"><div class="ttname"><a href="PAssert_8h.html#a373787183a57da0c3bea1eaa0b936e89">PAssert_EQ</a></div><div class="ttdeci">#define PAssert_EQ(a, b)</div><div class="ttdef"><b>Definition:</b> PAssert.h:123</div></div>
 <div class="ttc" id="aclassippl_1_1NDIndex_html"><div class="ttname"><a href="classippl_1_1NDIndex.html">ippl::NDIndex</a></div><div class="ttdef"><b>Definition:</b> NDIndex.h:21</div></div>
 <div class="ttc" id="aclassippl_1_1detail_1_1Partitioner_html_a767bdf449186f0f8e8f4102538108b58"><div class="ttname"><a href="classippl_1_1detail_1_1Partitioner.html#a767bdf449186f0f8e8f4102538108b58">ippl::detail::Partitioner::split</a></div><div class="ttdeci">void split(const NDIndex&lt; Dim &gt; &amp;domain, view_type &amp;view, const std::array&lt; bool, Dim &gt; &amp;isParallel, int nSplits) const</div><div class="ttdef"><b>Definition:</b> Partitioner.hpp:15</div></div>

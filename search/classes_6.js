@@ -1,11 +1,25 @@
 var searchData=
 [
-  ['gaussjacobiquadrature_0',['GaussJacobiQuadrature',['../classippl_1_1GaussJacobiQuadrature.html',1,'ippl']]],
-  ['gaussjacobiquadrature_3c_20t_2c_205_2c_20elementtype_20_3e_1',['GaussJacobiQuadrature&lt; T, 5, ElementType &gt;',['../classippl_1_1GaussJacobiQuadrature.html',1,'ippl']]],
-  ['gaussjacobiquadrature_3c_20tlhs_2c_205_2c_20elementtype_20_3e_2',['GaussJacobiQuadrature&lt; Tlhs, 5, ElementType &gt;',['../classippl_1_1GaussJacobiQuadrature.html',1,'ippl']]],
-  ['gausslegendrequadrature_3',['GaussLegendreQuadrature',['../classippl_1_1GaussLegendreQuadrature.html',1,'ippl']]],
-  ['getmpiopimpl_4',['getMpiOpImpl',['../structippl_1_1mpi_1_1getMpiOpImpl.html',1,'ippl::mpi']]],
-  ['getnontrivialmpiopimpl_5',['getNontrivialMpiOpImpl',['../structippl_1_1mpi_1_1getNontrivialMpiOpImpl.html',1,'ippl::mpi']]],
-  ['gridpathsegmenter_6',['GridPathSegmenter',['../structippl_1_1GridPathSegmenter.html',1,'ippl']]],
-  ['gs_5fpreconditioner_7',['gs_preconditioner',['../structippl_1_1gs__preconditioner.html',1,'ippl']]]
+  ['gather_0',['Gather',['../classippl_1_1Gather.html',1,'ippl']]],
+  ['gatherargumentsbase_1',['GatherArgumentsBase',['../structippl_1_1Interpolation_1_1detail_1_1GatherArgumentsBase.html',1,'ippl::Interpolation::detail']]],
+  ['gatherargumentsbase_3c_20arguments_2c_20types_20_3e_2',['GatherArgumentsBase&lt; Arguments, Types &gt;',['../structippl_1_1Interpolation_1_1detail_1_1GatherArgumentsBase.html',1,'ippl::Interpolation::detail']]],
+  ['gatherbinningresult_3',['GatherBinningResult',['../structippl_1_1Interpolation_1_1detail_1_1GatherBinningResult.html',1,'ippl::Interpolation::detail']]],
+  ['gathercache_4',['GatherCache',['../classippl_1_1Interpolation_1_1GatherCache.html',1,'ippl::Interpolation']]],
+  ['gathercacheentry_5',['GatherCacheEntry',['../structippl_1_1Interpolation_1_1GatherCacheEntry.html',1,'ippl::Interpolation']]],
+  ['gatherconfig_6',['GatherConfig',['../structippl_1_1Interpolation_1_1GatherConfig.html',1,'ippl::Interpolation']]],
+  ['gatherconfigdefault_7',['GatherConfigDefault',['../structippl_1_1Interpolation_1_1detail_1_1GatherConfigDefault.html',1,'ippl::Interpolation::detail']]],
+  ['gathertypes_8',['GatherTypes',['../structippl_1_1Interpolation_1_1detail_1_1GatherTypes.html',1,'ippl::Interpolation::detail']]],
+  ['gaussjacobiquadrature_9',['GaussJacobiQuadrature',['../classippl_1_1GaussJacobiQuadrature.html',1,'ippl']]],
+  ['gaussjacobiquadrature_3c_20t_2c_205_2c_20elementtype_20_3e_10',['GaussJacobiQuadrature&lt; T, 5, ElementType &gt;',['../classippl_1_1GaussJacobiQuadrature.html',1,'ippl']]],
+  ['gaussjacobiquadrature_3c_20tlhs_2c_205_2c_20elementtype_20_3e_11',['GaussJacobiQuadrature&lt; Tlhs, 5, ElementType &gt;',['../classippl_1_1GaussJacobiQuadrature.html',1,'ippl']]],
+  ['gausslegendrequadrature_12',['GaussLegendreQuadrature',['../classippl_1_1GaussLegendreQuadrature.html',1,'ippl']]],
+  ['getmpiopimpl_13',['getMpiOpImpl',['../structippl_1_1mpi_1_1getMpiOpImpl.html',1,'ippl::mpi']]],
+  ['getnontrivialmpiopimpl_14',['getNontrivialMpiOpImpl',['../structippl_1_1mpi_1_1getNontrivialMpiOpImpl.html',1,'ippl::mpi']]],
+  ['gpmodel_15',['GPModel',['../classippl_1_1detail_1_1GPModel.html',1,'ippl::detail']]],
+  ['gridparallelscatterimpl3d_16',['GridParallelScatterImpl3D',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterImpl3D.html',1,'ippl::Interpolation::detail']]],
+  ['gridparallelscatterimplnd_17',['GridParallelScatterImplND',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterImplND.html',1,'ippl::Interpolation::detail']]],
+  ['gridparallelscattertuning_18',['GridParallelScatterTuning',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterTuning.html',1,'ippl::Interpolation::detail']]],
+  ['gridparallelscattertuning_3c_20policy_2c_20std_3a_3avoid_5ft_3c_20decltype_28policy_3a_3afixed_5foversubscription_29_3e_20_3e_19',['GridParallelScatterTuning&lt; Policy, std::void_t&lt; decltype(Policy::fixed_oversubscription)&gt; &gt;',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterTuning_3_01Policy_00_01std_1_1void__98821bb8ef78c84bc0bb4ae6047f2ad9.html',1,'ippl::Interpolation::detail']]],
+  ['gridpathsegmenter_20',['GridPathSegmenter',['../structippl_1_1GridPathSegmenter.html',1,'ippl']]],
+  ['gs_5fpreconditioner_21',['gs_preconditioner',['../structippl_1_1gs__preconditioner.html',1,'ippl']]]
 ];

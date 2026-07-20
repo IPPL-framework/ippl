@@ -133,7 +133,7 @@ $(function() {
 <div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>        <a class="code hl_class" href="classippl_1_1FEMVector.html">FEMVector&lt;T&gt;</a>&amp; <a class="code hl_function" href="classippl_1_1FEMVector.html#a52a19b16759eebdf7e2aa02e95b26633">operator= </a>(<span class="keyword">const</span> <a class="code hl_struct" href="structippl_1_1detail_1_1Expression.html">detail::Expression&lt;E, N&gt;</a>&amp; expr);</div>
 <div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span> </div>
 <div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>        </div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>        <a class="code hl_class" href="classippl_1_1FEMVector.html">FEMVector&lt;T&gt;</a>&amp; <a class="code hl_function" href="classippl_1_1FEMVector.html#a52a19b16759eebdf7e2aa02e95b26633">operator= </a>(<span class="keyword">const</span> <a class="code hl_class" href="classippl_1_1FEMVector.html">FEMVector&lt;T&gt;</a>&amp; v);</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>        <a class="code hl_class" href="classippl_1_1FEMVector.html">FEMVector&lt;T&gt;</a>&amp; <a class="code hl_function" href="classippl_1_1FEMVector.html#a52a19b16759eebdf7e2aa02e95b26633">operator= </a>(<span class="keyword">const</span> <a class="code hl_class" href="classippl_1_1FEMVector.html">FEMVector&lt;T&gt;</a>&amp; <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a>);</div>
 <div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span> </div>
 <div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span> </div>
 <div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span> </div>
@@ -224,10 +224,10 @@ $(function() {
 <div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span>    }</div>
 <div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span> </div>
 <div class="line"><a id="l00426" name="l00426"></a><span class="lineno">  426</span>    <span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</div>
-<div class="line"><a id="l00427" name="l00427"></a><span class="lineno"><a class="line" href="namespaceippl.html#af70433d09417fa9b44a9c462cee641f7">  427</a></span>    T <a class="code hl_function" href="namespaceippl.html#af70433d09417fa9b44a9c462cee641f7">norm</a>(<span class="keyword">const</span> <a class="code hl_class" href="classippl_1_1FEMVector.html">FEMVector&lt;T&gt;</a>&amp; v, <span class="keywordtype">int</span> p = 2) {</div>
+<div class="line"><a id="l00427" name="l00427"></a><span class="lineno"><a class="line" href="namespaceippl.html#af70433d09417fa9b44a9c462cee641f7">  427</a></span>    T <a class="code hl_function" href="namespaceippl.html#af70433d09417fa9b44a9c462cee641f7">norm</a>(<span class="keyword">const</span> <a class="code hl_class" href="classippl_1_1FEMVector.html">FEMVector&lt;T&gt;</a>&amp; <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a>, <span class="keywordtype">int</span> p = 2) {</div>
 <div class="line"><a id="l00428" name="l00428"></a><span class="lineno">  428</span> </div>
 <div class="line"><a id="l00429" name="l00429"></a><span class="lineno">  429</span>        T local = 0;</div>
-<div class="line"><a id="l00430" name="l00430"></a><span class="lineno">  430</span>        <span class="keyword">auto</span> view = v.<a class="code hl_function" href="classippl_1_1FEMVector.html#a71b0fde79b67f8be8fca38bce6b2af5d">getView</a>();</div>
+<div class="line"><a id="l00430" name="l00430"></a><span class="lineno">  430</span>        <span class="keyword">auto</span> view = <a class="code hl_variable" href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a>.getView();</div>
 <div class="line"><a id="l00431" name="l00431"></a><span class="lineno">  431</span>        <span class="keywordtype">size_t</span> n = view.extent(0);</div>
 <div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span>        <span class="keywordflow">switch</span> (p) {</div>
 <div class="line"><a id="l00433" name="l00433"></a><span class="lineno">  433</span>            <span class="keywordflow">case</span> 0: {</div>
@@ -260,6 +260,7 @@ $(function() {
 <div class="line"><a id="l00460" name="l00460"></a><span class="lineno">  460</span><span class="preprocessor">#include &quot;<a class="code" href="FEMVector_8hpp.html">FEMVector.hpp</a>&quot;</span></div>
 <div class="line"><a id="l00461" name="l00461"></a><span class="lineno">  461</span> </div>
 <div class="line"><a id="l00462" name="l00462"></a><span class="lineno">  462</span><span class="preprocessor">#endif  </span><span class="comment">// IPPL_FEMVECTOR_H</span></div>
+<div class="ttc" id="aAutoTune_8cpp_html_a40ab092738bb9819e2c801f36d62a207"><div class="ttname"><a href="AutoTune_8cpp.html#a40ab092738bb9819e2c801f36d62a207">v</a></div><div class="ttdeci">std::array&lt; int, 5 &gt; v</div><div class="ttdef"><b>Definition:</b> AutoTune.cpp:760</div></div>
 <div class="ttc" id="aFEMVector_8hpp_html"><div class="ttname"><a href="FEMVector_8hpp.html">FEMVector.hpp</a></div></div>
 <div class="ttc" id="aHaloCells_8h_html"><div class="ttname"><a href="HaloCells_8h.html">HaloCells.h</a></div></div>
 <div class="ttc" id="aViewTypes_8h_html"><div class="ttname"><a href="ViewTypes_8h.html">ViewTypes.h</a></div></div>

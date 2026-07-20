@@ -10,5 +10,6 @@ var searchData=
   ['halounpackfunctor_7',['HaloUnpackFunctor',['../structippl_1_1detail_1_1HaloUnpackFunctor.html',1,'ippl::detail']]],
   ['hefftebackendtype_8',['HeffteBackendType',['../structippl_1_1detail_1_1HeffteBackendType.html',1,'ippl::detail']]],
   ['hefftebackendtype_3c_20kokkos_3a_3ahostspace_20_3e_9',['HeffteBackendType&lt; Kokkos::HostSpace &gt;',['../structippl_1_1detail_1_1HeffteBackendType_3_01Kokkos_1_1HostSpace_01_4.html',1,'ippl::detail']]],
-  ['hexahedralelement_10',['HexahedralElement',['../classippl_1_1HexahedralElement.html',1,'ippl']]]
+  ['hexahedralelement_10',['HexahedralElement',['../classippl_1_1HexahedralElement.html',1,'ippl']]],
+  ['histogram_11',['Histogram',['../structippl_1_1Interpolation_1_1detail_1_1TiledScatter_1_1Histogram.html',1,'ippl::Interpolation::detail::TiledScatter']]]
 ];

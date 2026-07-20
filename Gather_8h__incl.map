@@ -1,0 +1,52 @@
+<map id="Gather.h" name="Gather.h">
+<area shape="rect" id="node1" title="Public Gather facade dispatching to AtomicGather (sorted/unsorted)." alt="" coords="1641,5,1712,31"/>
+<area shape="rect" id="node2" href="$IpplException_8h.html" title=" " alt="" coords="1105,475,1251,500"/>
+<area shape="rect" id="node4" href="$Binning_8h.html" title="Particle&#45;to&#45;tile binning for tiled scatter / gather." alt="" coords="671,79,821,104"/>
+<area shape="rect" id="node21" href="$ParticleAttrib_8h.html" title=" " alt="" coords="1599,225,1754,251"/>
+<area shape="rect" id="node44" href="$GatherArgumentsBase_8h.html" title="Common type bundle and shared argument struct for gather functors." alt="" coords="2317,387,2485,427"/>
+<area shape="rect" id="node45" href="$GatherConfig_8h.html" title="User&#45;facing configuration knobs for gather operations and the density&#45;aware GatherCache singleton." alt="" coords="2738,387,2874,427"/>
+<area shape="rect" id="node49" href="$AtomicGather_8h.html" title="Per&#45;particle gather kernel." alt="" coords="2179,299,2315,339"/>
+<area shape="rect" id="node50" href="$WidthDispatcher_8h.html" title=" " alt="" coords="1215,394,1418,419"/>
+<area shape="rect" id="node3" title=" " alt="" coords="1205,548,1260,573"/>
+<area shape="rect" id="node5" title=" " alt="" coords="1981,548,2105,573"/>
+<area shape="rect" id="node6" title=" " alt="" coords="460,475,581,500"/>
+<area shape="rect" id="node7" href="$CoordinateTransform_8h.html" title=" " alt="" coords="2560,394,2713,419"/>
+<area shape="rect" id="node19" href="$ParticleLayout_8h.html" title=" " alt="" coords="231,152,394,177"/>
+<area shape="rect" id="node30" href="$SortBuffer_8h.html" title=" " alt="" coords="683,475,822,500"/>
+<area shape="rect" id="node8" href="$Vector_8h.html" title=" " alt="" coords="2591,475,2701,500"/>
+<area shape="rect" id="node17" href="$Index_8h.html" title=" " alt="" coords="2469,475,2567,500"/>
+<area shape="rect" id="node9" title=" " alt="" coords="2582,548,2678,573"/>
+<area shape="rect" id="node10" href="$IpplExpressions_8h.html" title=" " alt="" coords="2129,548,2320,573"/>
+<area shape="rect" id="node14" href="$Vector_8hpp.html" title=" " alt="" coords="2703,548,2787,573"/>
+<area shape="rect" id="node11" title=" " alt="" coords="1902,621,1985,647"/>
+<area shape="rect" id="node12" href="$IpplOperations_8h.html" title=" " alt="" coords="2133,621,2316,647"/>
+<area shape="rect" id="node13" title=" " alt="" coords="2109,695,2341,720"/>
+<area shape="rect" id="node15" title=" " alt="" coords="2711,621,2778,647"/>
+<area shape="rect" id="node16" title=" " alt="" coords="2509,621,2581,647"/>
+<area shape="rect" id="node18" href="$Index_8hpp.html" title=" " alt="" coords="2395,548,2507,573"/>
+<area shape="rect" id="node20" title=" " alt="" coords="236,475,283,500"/>
+<area shape="rect" id="node41" href="$ParticleBC_8h.html" title=" " alt="" coords="5,225,148,251"/>
+<area shape="rect" id="node43" href="$ParticleLayout_8hpp.html" title=" " alt="" coords="224,225,401,251"/>
+<area shape="rect" id="node22" title=" " alt="" coords="1727,394,1789,419"/>
+<area shape="rect" id="node23" href="$CIC_8h.html" title=" " alt="" coords="1924,306,2053,331"/>
+<area shape="rect" id="node25" href="$ParticleAttribBase_8h.html" title=" " alt="" coords="1715,306,1900,331"/>
+<area shape="rect" id="node34" href="$ParticleAttrib_8hpp.html" title=" " alt="" coords="967,306,1136,331"/>
+<area shape="rect" id="node24" href="$CIC_8hpp.html" title=" " alt="" coords="2099,394,2241,419"/>
+<area shape="rect" id="node26" href="$IpplTypes_8h.html" title=" " alt="" coords="1779,475,1905,500"/>
+<area shape="rect" id="node28" href="$ViewTypes_8h.html" title=" " alt="" coords="1981,475,2116,500"/>
+<area shape="rect" id="node29" href="$Archive_8h.html" title=" " alt="" coords="1863,394,2023,419"/>
+<area shape="rect" id="node27" title=" " alt="" coords="1643,548,1708,573"/>
+<area shape="rect" id="node31" title=" " alt="" coords="798,548,873,573"/>
+<area shape="rect" id="node32" title=" " alt="" coords="897,548,958,573"/>
+<area shape="rect" id="node33" title=" " alt="" coords="705,548,773,573"/>
+<area shape="rect" id="node35" href="$Ippl_8h.html" title=" " alt="" coords="1650,394,1703,419"/>
+<area shape="rect" id="node36" href="$DataTypes_8h.html" title=" " alt="" coords="962,394,1141,419"/>
+<area shape="rect" id="node37" href="$BufferView_8h.html" title=" " alt="" coords="1443,394,1575,419"/>
+<area shape="rect" id="node39" href="$IpplTimings_8h.html" title=" " alt="" coords="578,394,714,419"/>
+<area shape="rect" id="node40" href="$ParticleSort_8h.html" title=" " alt="" coords="789,394,937,419"/>
+<area shape="rect" id="node38" title=" " alt="" coords="1327,475,1405,500"/>
+<area shape="rect" id="node42" href="$NDRegion_8h.html" title=" " alt="" coords="11,306,145,331"/>
+<area shape="rect" id="node46" title=" " alt="" coords="2815,475,2866,500"/>
+<area shape="rect" id="node47" title=" " alt="" coords="2891,475,2948,500"/>
+<area shape="rect" id="node48" title=" " alt="" coords="2725,475,2791,500"/>
+</map>

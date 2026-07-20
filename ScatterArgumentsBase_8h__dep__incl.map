@@ -1,0 +1,7 @@
+<map id="ScatterArgumentsBase.h" name="ScatterArgumentsBase.h">
+<area shape="rect" id="node1" title="Common type bundle and shared argument struct for scatter functors." alt="" coords="74,5,241,31"/>
+<area shape="rect" id="node2" href="$AtomicScatter_8h.html" title="Per&#45;particle atomic&#45;scatter implementation used by Scatter::dispatch." alt="" coords="5,79,120,104"/>
+<area shape="rect" id="node3" href="$Scatter_8h.html" title="Public Scatter facade dispatching to atomic / tiled / output&#45;tile&#45;parallel backends based on the runt..." alt="" coords="120,152,195,177"/>
+<area shape="rect" id="node5" href="$TiledScatter_8h.html" title="Particle&#45;tile scatter: bin &#45;&gt; per&#45;team scratch histogram &#45;&gt; flush." alt="" coords="195,79,298,104"/>
+<area shape="rect" id="node4" href="$AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="106,225,209,251"/>
+</map>

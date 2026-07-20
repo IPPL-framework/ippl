@@ -1,0 +1,6 @@
+<map id="Binning.h" name="Binning.h">
+<area shape="rect" id="node1" title="Particle&#45;to&#45;tile binning for tiled scatter / gather." alt="" coords="51,5,126,31"/>
+<area shape="rect" id="node2" href="$Gather_8h.html" title="Public Gather facade dispatching to AtomicGather (sorted/unsorted)." alt="" coords="5,79,76,104"/>
+<area shape="rect" id="node4" href="$Scatter_8h.html" title="Public Scatter facade dispatching to atomic / tiled / output&#45;tile&#45;parallel backends based on the runt..." alt="" coords="101,79,175,104"/>
+<area shape="rect" id="node3" href="$AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="37,152,140,177"/>
+</map>

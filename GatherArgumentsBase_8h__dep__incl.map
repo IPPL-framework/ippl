@@ -1,0 +1,6 @@
+<map id="GatherArgumentsBase.h" name="GatherArgumentsBase.h">
+<area shape="rect" id="node1" title="Common type bundle and shared argument struct for gather functors." alt="" coords="26,5,190,31"/>
+<area shape="rect" id="node2" href="$AtomicGather_8h.html" title="Per&#45;particle gather kernel." alt="" coords="5,79,117,104"/>
+<area shape="rect" id="node3" href="$Gather_8h.html" title="Public Gather facade dispatching to AtomicGather (sorted/unsorted)." alt="" coords="73,152,143,177"/>
+<area shape="rect" id="node4" href="$AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="57,225,159,251"/>
+</map>

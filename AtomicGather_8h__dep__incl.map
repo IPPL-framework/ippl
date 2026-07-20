@@ -1,0 +1,5 @@
+<map id="AtomicGather.h" name="AtomicGather.h">
+<area shape="rect" id="node1" title="Per&#45;particle gather kernel." alt="" coords="5,5,117,31"/>
+<area shape="rect" id="node2" href="$Gather_8h.html" title="Public Gather facade dispatching to AtomicGather (sorted/unsorted)." alt="" coords="26,79,97,104"/>
+<area shape="rect" id="node3" href="$AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="10,152,113,177"/>
+</map>

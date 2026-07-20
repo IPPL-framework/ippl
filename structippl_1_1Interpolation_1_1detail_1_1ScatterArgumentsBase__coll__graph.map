@@ -1,0 +1,8 @@
+<map id="ippl::Interpolation::detail::ScatterArgumentsBase&lt; Derived, Types &gt;" name="ippl::Interpolation::detail::ScatterArgumentsBase&lt; Derived, Types &gt;">
+<area shape="rect" id="node1" title="CRTP base bundling per&#45;call inputs (views, mesh info, kernel) consumed by the scatter functors." alt="" coords="165,476,336,663"/>
+<area shape="rect" id="node2" href="$classippl_1_1Vector.html" title=" " alt="" coords="26,139,145,384"/>
+<area shape="rect" id="node3" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,157,89"/>
+<area shape="rect" id="node4" href="$classippl_1_1Vector.html" title=" " alt="" coords="171,139,330,384"/>
+<area shape="rect" id="node5" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="181,5,333,89"/>
+<area shape="rect" id="node6" title=" " alt="" coords="354,241,414,281"/>
+</map>

@@ -1,0 +1,23 @@
+<map id="TiledScatter.h" name="TiledScatter.h">
+<area shape="rect" id="node1" title="Particle&#45;tile scatter: bin &#45;&gt; per&#45;team scratch histogram &#45;&gt; flush." alt="" coords="152,5,255,31"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,240,129,265"/>
+<area shape="rect" id="node3" href="$CoordinateTransform_8h.html" title=" " alt="" coords="124,79,283,119"/>
+<area shape="rect" id="node21" href="$ScatterArgumentsBase_8h.html" title="Common type bundle and shared argument struct for scatter functors." alt="" coords="307,79,478,119"/>
+<area shape="rect" id="node4" href="$Vector_8h.html" title=" " alt="" coords="338,167,447,192"/>
+<area shape="rect" id="node14" href="$Index_8h.html" title=" " alt="" coords="159,167,258,192"/>
+<area shape="rect" id="node5" title=" " alt="" coords="341,240,437,265"/>
+<area shape="rect" id="node6" href="$IpplExpressions_8h.html" title=" " alt="" coords="569,240,760,265"/>
+<area shape="rect" id="node11" href="$Vector_8hpp.html" title=" " alt="" coords="461,240,545,265"/>
+<area shape="rect" id="node7" title=" " alt="" coords="774,313,857,339"/>
+<area shape="rect" id="node8" href="$IpplOperations_8h.html" title=" " alt="" coords="567,313,749,339"/>
+<area shape="rect" id="node9" title=" " alt="" coords="493,387,725,412"/>
+<area shape="rect" id="node10" title=" " alt="" coords="749,387,799,412"/>
+<area shape="rect" id="node12" title=" " alt="" coords="470,313,537,339"/>
+<area shape="rect" id="node13" title=" " alt="" coords="333,313,405,339"/>
+<area shape="rect" id="node15" href="$Index_8hpp.html" title=" " alt="" coords="154,240,266,265"/>
+<area shape="rect" id="node16" href="$PAssert_8h.html" title=" " alt="" coords="152,313,268,339"/>
+<area shape="rect" id="node17" title=" " alt="" coords="23,387,101,412"/>
+<area shape="rect" id="node18" title=" " alt="" coords="125,387,204,412"/>
+<area shape="rect" id="node19" title=" " alt="" coords="228,387,283,412"/>
+<area shape="rect" id="node20" href="$IpplInfo_8h.html" title=" " alt="" coords="307,387,419,412"/>
+</map>

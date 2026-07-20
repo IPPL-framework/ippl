@@ -1,0 +1,4 @@
+<map id="Scatter.h" name="Scatter.h">
+<area shape="rect" id="node1" title="Public Scatter facade dispatching to atomic / tiled / output&#45;tile&#45;parallel backends based on the runt..." alt="" coords="19,5,94,31"/>
+<area shape="rect" id="node2" href="$AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="5,79,108,104"/>
+</map>

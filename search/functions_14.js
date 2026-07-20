@@ -17,6 +17,7 @@ var searchData=
   ['updateparameters_14',['updateParameters',['../classippl_1_1ParticleInteractionBase.html#a9ff3ef67f5336d9b0a0d25b9db577784',1,'ippl::ParticleInteractionBase::updateParameters()'],['../classippl_1_1Poisson.html#ac81577029a8345555afccd846ab6924f',1,'ippl::Poisson::updateParameters()']]],
   ['upper_5fand_5flower_5flaplace_15',['upper_and_lower_laplace',['../namespaceippl.html#aea67149c70a536d46f1fdcce44a696cd',1,'ippl']]],
   ['upper_5fand_5flower_5flaplace_5fno_5fcomm_16',['upper_and_lower_laplace_no_comm',['../namespaceippl.html#a5b5894e85a1ae117f1bc2cdbc256b8d0',1,'ippl']]],
-  ['upper_5flaplace_17',['upper_laplace',['../namespaceippl.html#a52cff845ab6d061a095cf94b7b466008',1,'ippl']]],
-  ['upper_5flaplace_5fno_5fcomm_18',['upper_laplace_no_comm',['../namespaceippl.html#a78008363500315e47688deaec7d1ceac',1,'ippl']]]
+  ['upper_5fconfidence_5fbound_17',['upper_confidence_bound',['../classippl_1_1detail_1_1GPModel.html#a48d2f65891a7f6105e51df6c21df1a54',1,'ippl::detail::GPModel']]],
+  ['upper_5flaplace_18',['upper_laplace',['../namespaceippl.html#a52cff845ab6d061a095cf94b7b466008',1,'ippl']]],
+  ['upper_5flaplace_5fno_5fcomm_19',['upper_laplace_no_comm',['../namespaceippl.html#a78008363500315e47688deaec7d1ceac',1,'ippl']]]
 ];

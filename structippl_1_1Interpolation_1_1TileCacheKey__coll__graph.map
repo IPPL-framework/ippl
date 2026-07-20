@@ -1,0 +1,3 @@
+<map id="ippl::Interpolation::TileCacheKey" name="ippl::Interpolation::TileCacheKey">
+<area shape="rect" id="node1" title="Identifies a cached tile&#45;size entry (method + kernel width + complex)." alt="" coords="5,5,128,119"/>
+</map>

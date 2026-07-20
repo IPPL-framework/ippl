@@ -1,0 +1,4 @@
+<map id="Gather.h" name="Gather.h">
+<area shape="rect" id="node1" title="Public Gather facade dispatching to AtomicGather (sorted/unsorted)." alt="" coords="21,5,92,31"/>
+<area shape="rect" id="node2" href="$AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="5,79,108,104"/>
+</map>

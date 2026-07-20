@@ -1,0 +1,10 @@
+<map id="CoordinateTransform.h" name="CoordinateTransform.h">
+<area shape="rect" id="node1" title=" " alt="" coords="161,5,314,31"/>
+<area shape="rect" id="node2" href="$AtomicGather_8h.html" title="Per&#45;particle gather kernel." alt="" coords="5,79,117,104"/>
+<area shape="rect" id="node5" href="$AtomicScatter_8h.html" title="Per&#45;particle atomic&#45;scatter implementation used by Scatter::dispatch." alt="" coords="240,79,355,104"/>
+<area shape="rect" id="node7" href="$Binning_8h.html" title="Particle&#45;to&#45;tile binning for tiled scatter / gather." alt="" coords="141,79,216,104"/>
+<area shape="rect" id="node8" href="$TiledScatter_8h.html" title="Particle&#45;tile scatter: bin &#45;&gt; per&#45;team scratch histogram &#45;&gt; flush." alt="" coords="379,79,482,104"/>
+<area shape="rect" id="node3" href="$Gather_8h.html" title="Public Gather facade dispatching to AtomicGather (sorted/unsorted)." alt="" coords="143,152,214,177"/>
+<area shape="rect" id="node4" href="$AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="175,225,278,251"/>
+<area shape="rect" id="node6" href="$Scatter_8h.html" title="Public Scatter facade dispatching to atomic / tiled / output&#45;tile&#45;parallel backends based on the runt..." alt="" coords="249,152,324,177"/>
+</map>

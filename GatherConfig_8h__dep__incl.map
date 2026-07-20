@@ -1,0 +1,6 @@
+<map id="GatherConfig.h" name="GatherConfig.h">
+<area shape="rect" id="node1" title="User&#45;facing configuration knobs for gather operations and the density&#45;aware GatherCache singleton." alt="" coords="41,5,147,31"/>
+<area shape="rect" id="node2" href="$AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="5,152,108,177"/>
+<area shape="rect" id="node3" href="$Gather_8h.html" title="Public Gather facade dispatching to AtomicGather (sorted/unsorted)." alt="" coords="59,79,129,104"/>
+<area shape="rect" id="node4" href="$TileSizeCache_8cpp.html" title="CSV parsing and file IO for the singleton tile&#45;size cache." alt="" coords="153,79,283,104"/>
+</map>

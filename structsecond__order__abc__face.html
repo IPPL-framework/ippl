@@ -111,8 +111,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a46f4f61b477add82beae7273778cf4b8"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structsecond__order__abc__face.html#a46f4f61b477add82beae7273778cf4b8">operator()</a> (const view_type &amp;A_n, const view_type &amp;A_nm1, const view_type &amp;A_np1, const Coords &amp;c) const -&gt; typename view_type::value_type</td></tr>
 <tr class="memdesc:a46f4f61b477add82beae7273778cf4b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies the second-order ABC to the boundary of the field.  <a href="structsecond__order__abc__face.html#a46f4f61b477add82beae7273778cf4b8">More...</a><br /></td></tr>
 <tr class="separator:a46f4f61b477add82beae7273778cf4b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6a48a8c121f75ee908ed693d33fb97f1"><td class="memTemplParams" colspan="2">template&lt;typename value_type &gt; </td></tr>
-<tr class="memitem:a6a48a8c121f75ee908ed693d33fb97f1"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FUNCTION value_type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structsecond__order__abc__face.html#a6a48a8c121f75ee908ed693d33fb97f1">advanceBoundaryS</a> (const value_type &amp;v1, const value_type &amp;v2, const value_type &amp;v3, const value_type &amp;v4, const value_type &amp;v5, const value_type &amp;v6, const value_type &amp;v7, const value_type &amp;v8, const value_type &amp;v9, const value_type &amp;v10, const value_type &amp;v11, const value_type &amp;v12, const value_type &amp;v13) const noexcept</td></tr>
+<tr class="memitem:a6a48a8c121f75ee908ed693d33fb97f1"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &gt; </td></tr>
+<tr class="memitem:a6a48a8c121f75ee908ed693d33fb97f1"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structsecond__order__abc__face.html#a6a48a8c121f75ee908ed693d33fb97f1">advanceBoundaryS</a> (const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v1, const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v2, const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v3, const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v4, const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v5, const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v6, const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v7, const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v8, const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v9, const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v10, const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v11, const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v12, const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;v13) const noexcept</td></tr>
 <tr class="memdesc:a6a48a8c121f75ee908ed693d33fb97f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advances the boundary condition using the precomputed weights.  <a href="structsecond__order__abc__face.html#a6a48a8c121f75ee908ed693d33fb97f1">More...</a><br /></td></tr>
 <tr class="separator:a6a48a8c121f75ee908ed693d33fb97f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -209,87 +209,87 @@ template&lt;typename _scalar , unsigned _main_axis, unsigned... _side_axes&gt; <
 <div class="memtemplate">
 template&lt;typename _scalar , unsigned _main_axis, unsigned... _side_axes&gt; </div>
 <div class="memtemplate">
-template&lt;typename value_type &gt; </div>
+template&lt;typename <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">KOKKOS_FUNCTION value_type <a class="el" href="structsecond__order__abc__face.html">second_order_abc_face</a>&lt; _scalar, _main_axis, _side_axes &gt;::advanceBoundaryS </td>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> <a class="el" href="structsecond__order__abc__face.html">second_order_abc_face</a>&lt; _scalar, _main_axis, _side_axes &gt;::advanceBoundaryS </td>
           <td>(</td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v1</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v2</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v3</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v4</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v5</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v6</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v7</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v8</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v9</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v10</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v11</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v12</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const value_type &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">value_type</a> &amp;&#160;</td>
           <td class="paramname"><em>v13</em>&#160;</td>
         </tr>
         <tr>

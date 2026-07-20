@@ -73,10 +73,13 @@ var searchData=
   ['containerforallspaces_70',['ContainerForAllSpaces',['../structippl_1_1detail_1_1ContainerForAllSpaces.html',1,'ippl::detail']]],
   ['containerforallspaces_3c_20container_5ftype_20_3e_71',['ContainerForAllSpaces&lt; container_type &gt;',['../structippl_1_1detail_1_1ContainerForAllSpaces.html',1,'ippl::detail']]],
   ['containerforallspaces_3c_20detail_3a_3ahash_5ftype_20_3e_72',['ContainerForAllSpaces&lt; detail::hash_type &gt;',['../structippl_1_1detail_1_1ContainerForAllSpaces.html',1,'ippl::detail']]],
-  ['coords_73',['Coords',['../structippl_1_1detail_1_1Coords.html',1,'ippl::detail']]],
-  ['coords_3c_201_2c_20t_20_3e_74',['Coords&lt; 1, T &gt;',['../structippl_1_1detail_1_1Coords_3_011_00_01T_01_4.html',1,'ippl::detail']]],
-  ['cos1transform_75',['Cos1Transform',['../classippl_1_1Cos1Transform.html',1,'ippl']]],
-  ['costransform_76',['CosTransform',['../classippl_1_1CosTransform.html',1,'ippl']]],
-  ['createuniformtype_77',['CreateUniformType',['../structippl_1_1detail_1_1CreateUniformType.html',1,'ippl::detail']]],
-  ['cuttimes_78',['CutTimes',['../structippl_1_1CutTimes.html',1,'ippl']]]
+  ['coordinatetransform_73',['CoordinateTransform',['../structippl_1_1Interpolation_1_1CoordinateTransform.html',1,'ippl::Interpolation']]],
+  ['coordinatetransform_3c_20realtype_2c_20dim_20_3e_74',['CoordinateTransform&lt; RealType, Dim &gt;',['../structippl_1_1Interpolation_1_1CoordinateTransform.html',1,'ippl::Interpolation']]],
+  ['coords_75',['Coords',['../structippl_1_1detail_1_1Coords.html',1,'ippl::detail']]],
+  ['coords_3c_201_2c_20t_20_3e_76',['Coords&lt; 1, T &gt;',['../structippl_1_1detail_1_1Coords_3_011_00_01T_01_4.html',1,'ippl::detail']]],
+  ['cos1transform_77',['Cos1Transform',['../classippl_1_1Cos1Transform.html',1,'ippl']]],
+  ['costransform_78',['CosTransform',['../classippl_1_1CosTransform.html',1,'ippl']]],
+  ['createuniformtype_79',['CreateUniformType',['../structippl_1_1detail_1_1CreateUniformType.html',1,'ippl::detail']]],
+  ['cubickernel_80',['CubicKernel',['../structippl_1_1Interpolation_1_1CubicKernel.html',1,'ippl::Interpolation']]],
+  ['cuttimes_81',['CutTimes',['../structippl_1_1CutTimes.html',1,'ippl']]]
 ];

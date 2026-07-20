@@ -1,0 +1,7 @@
+<map id="ippl::Interpolation::detail::GatherArgumentsBase&lt; Derived, Types &gt;" name="ippl::Interpolation::detail::GatherArgumentsBase&lt; Derived, Types &gt;">
+<area shape="rect" id="node1" title="CRTP base bundling per&#45;call inputs (views, mesh info, kernel) consumed by the gather functors." alt="" coords="67,476,264,677"/>
+<area shape="rect" id="node2" href="$classippl_1_1Vector.html" title=" " alt="" coords="26,139,145,384"/>
+<area shape="rect" id="node3" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,157,89"/>
+<area shape="rect" id="node4" href="$classippl_1_1Vector.html" title=" " alt="" coords="175,139,334,384"/>
+<area shape="rect" id="node5" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="181,5,333,89"/>
+</map>

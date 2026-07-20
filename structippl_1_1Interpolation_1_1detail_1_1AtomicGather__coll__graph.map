@@ -1,0 +1,9 @@
+<map id="ippl::Interpolation::detail::AtomicGather&lt; W, Types, UseSorting &gt;" name="ippl::Interpolation::detail::AtomicGather&lt; W, Types, UseSorting &gt;">
+<area shape="rect" id="node1" title="Compile&#45;time&#45;width gather functor." alt="" coords="80,903,251,1031"/>
+<area shape="rect" id="node2" href="$structippl_1_1Interpolation_1_1detail_1_1AtomicGather_1_1Arguments.html" title=" " alt="" coords="86,727,245,840"/>
+<area shape="rect" id="node3" href="$structippl_1_1Interpolation_1_1detail_1_1GatherArgumentsBase.html" title=" " alt="" coords="67,476,264,677"/>
+<area shape="rect" id="node4" href="$classippl_1_1Vector.html" title=" " alt="" coords="26,139,145,384"/>
+<area shape="rect" id="node5" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,157,89"/>
+<area shape="rect" id="node6" href="$classippl_1_1Vector.html" title=" " alt="" coords="175,139,334,384"/>
+<area shape="rect" id="node7" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="181,5,333,89"/>
+</map>

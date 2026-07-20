@@ -1,6 +1,11 @@
 var searchData=
 [
   ['keepindex_5fm_0',['keepIndex_m',['../classippl_1_1ParticleBase.html#ad2b9bf9b2631b1195ccddca936696ceb',1,'ippl::ParticleBase']]],
-  ['keys_1',['keys',['../structippl_1_1detail_1_1ComputeMortonCodesFunctor.html#aafcec185914afac3f050ef8e43e8ddaf',1,'ippl::detail::ComputeMortonCodesFunctor']]],
-  ['keys_5fout_5f_2',['keys_out_',['../classippl_1_1detail_1_1BinSortBuffers.html#ac795f770eae67434f4b10f232bc79f53',1,'ippl::detail::BinSortBuffers']]]
+  ['ker_5fstride_1',['ker_stride',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterImpl3D.html#a12a398d72cde6c3816b25c76a902b839',1,'ippl::Interpolation::detail::GridParallelScatterImpl3D::ker_stride()'],['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterImplND.html#a6b399b02c69234ac3df03199e5adda40',1,'ippl::Interpolation::detail::GridParallelScatterImplND::ker_stride()']]],
+  ['kernel_2',['kernel',['../structippl_1_1Interpolation_1_1detail_1_1GatherArgumentsBase.html#a431c0995c887f4eb69d944df6d936201',1,'ippl::Interpolation::detail::GatherArgumentsBase::kernel()'],['../structippl_1_1Interpolation_1_1detail_1_1ScatterArgumentsBase.html#a1757fee78fd33f3d5702970d556a306e',1,'ippl::Interpolation::detail::ScatterArgumentsBase::kernel()']]],
+  ['kernel_5fm_3',['kernel_m',['../classippl_1_1Gather.html#a63133cbcf54eb8665f037c7bc7982c72',1,'ippl::Gather::kernel_m()'],['../classippl_1_1Scatter.html#a4f0f1d7dac06834e3041de9812fd9cdd',1,'ippl::Scatter::kernel_m()']]],
+  ['kernel_5fwidth_4',['kernel_width',['../structippl_1_1Interpolation_1_1detail_1_1BinComputer.html#a701dc2c3269f1e20c573fe8cab36a3b9',1,'ippl::Interpolation::detail::BinComputer::kernel_width()'],['../structippl_1_1Interpolation_1_1TileCacheKey.html#a428aff23226c78e38929ce0c6db325fc',1,'ippl::Interpolation::TileCacheKey::kernel_width()'],['../AutoTune_8cpp.html#a4c2f9eb6cce2658fa49aa3946a4ce9b3',1,'kernel_width():&#160;AutoTune.cpp']]],
+  ['keys_5',['keys',['../structippl_1_1detail_1_1ComputeMortonCodesFunctor.html#aafcec185914afac3f050ef8e43e8ddaf',1,'ippl::detail::ComputeMortonCodesFunctor']]],
+  ['keys_5fout_5f_6',['keys_out_',['../classippl_1_1detail_1_1BinSortBuffers.html#ac795f770eae67434f4b10f232bc79f53',1,'ippl::detail::BinSortBuffers']]],
+  ['kw_7',['kw',['../structippl_1_1Interpolation_1_1detail_1_1AtomicGather_1_1Stencil.html#a8045cb397194b61a03ba818631ea381b',1,'ippl::Interpolation::detail::AtomicGather::Stencil::kw()'],['../structippl_1_1Interpolation_1_1detail_1_1TiledScatter_1_1Stencil.html#a853aae3742e55d79e9642a739691e6f7',1,'ippl::Interpolation::detail::TiledScatter::Stencil::kw()']]]
 ];

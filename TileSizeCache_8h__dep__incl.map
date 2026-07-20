@@ -1,0 +1,6 @@
+<map id="TileSizeCache.h" name="TileSizeCache.h">
+<area shape="rect" id="node1" title=" " alt="" coords="37,5,151,31"/>
+<area shape="rect" id="node2" href="$AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="5,152,108,177"/>
+<area shape="rect" id="node3" href="$Scatter_8h.html" title="Public Scatter facade dispatching to atomic / tiled / output&#45;tile&#45;parallel backends based on the runt..." alt="" coords="57,79,131,104"/>
+<area shape="rect" id="node4" href="$TileSizeCache_8cpp.html" title="CSV parsing and file IO for the singleton tile&#45;size cache." alt="" coords="156,79,285,104"/>
+</map>

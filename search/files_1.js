@@ -8,9 +8,10 @@ var searchData=
   ['bconds_2ehpp_5',['BConds.hpp',['../BConds_8hpp.html',1,'']]],
   ['bctypes_2eh_6',['BcTypes.h',['../BcTypes_8h.html',1,'']]],
   ['bctypes_2ehpp_7',['BcTypes.hpp',['../BcTypes_8hpp.html',1,'']]],
-  ['bufferhandler_2eh_8',['BufferHandler.h',['../BufferHandler_8h.html',1,'']]],
-  ['bufferhandler_2ehpp_9',['BufferHandler.hpp',['../BufferHandler_8hpp.html',1,'']]],
-  ['buffers_2ecpp_10',['Buffers.cpp',['../Buffers_8cpp.html',1,'']]],
-  ['buffers_2ehpp_11',['Buffers.hpp',['../Buffers_8hpp.html',1,'']]],
-  ['bufferview_2eh_12',['BufferView.h',['../BufferView_8h.html',1,'']]]
+  ['binning_2eh_8',['Binning.h',['../Binning_8h.html',1,'']]],
+  ['bufferhandler_2eh_9',['BufferHandler.h',['../BufferHandler_8h.html',1,'']]],
+  ['bufferhandler_2ehpp_10',['BufferHandler.hpp',['../BufferHandler_8hpp.html',1,'']]],
+  ['buffers_2ecpp_11',['Buffers.cpp',['../Buffers_8cpp.html',1,'']]],
+  ['buffers_2ehpp_12',['Buffers.hpp',['../Buffers_8hpp.html',1,'']]],
+  ['bufferview_2eh_13',['BufferView.h',['../BufferView_8h.html',1,'']]]
 ];

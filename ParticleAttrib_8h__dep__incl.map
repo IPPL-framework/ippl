@@ -1,52 +1,52 @@
 <map id="ParticleAttrib.h" name="ParticleAttrib.h">
-<area shape="rect" id="node1" title=" " alt="" coords="645,5,752,31"/>
-<area shape="rect" id="node2" href="$OrthogonalRecursiveBisection_8h.html" title=" " alt="" coords="595,152,802,177"/>
-<area shape="rect" id="node49" href="$ParticleLayout_8h.html" title=" " alt="" coords="1933,79,2048,104"/>
-<area shape="rect" id="node3" href="$IpplCore_8h.html" title=" " alt="" coords="564,225,644,251"/>
-<area shape="rect" id="node31" href="$PicManager_8h.html" title=" " alt="" coords="1640,519,1741,544"/>
-<area shape="rect" id="node4" href="$Ippl_8h.html" title=" " alt="" coords="957,299,1011,324"/>
-<area shape="rect" id="node5" href="$BareField_8hpp.html" title=" " alt="" coords="696,519,797,544"/>
-<area shape="rect" id="node26" href="$Multigrid_8h.html" title=" " alt="" coords="178,885,259,911"/>
-<area shape="rect" id="node29" href="$BaseManager_8h.html" title=" " alt="" coords="784,372,896,397"/>
-<area shape="rect" id="node32" href="$Buffers_8cpp.html" title=" " alt="" coords="1071,372,1158,397"/>
-<area shape="rect" id="node33" href="$Environment_8cpp.html" title=" " alt="" coords="1182,372,1301,397"/>
-<area shape="rect" id="node34" href="$FieldLayout_8hpp.html" title=" " alt="" coords="595,372,709,397"/>
-<area shape="rect" id="node40" href="$SubFieldLayout_8hpp.html" title=" " alt="" coords="232,592,368,617"/>
-<area shape="rect" id="node41" href="$Inform_8cpp.html" title=" " alt="" coords="1325,372,1408,397"/>
-<area shape="rect" id="node42" href="$Ippl_8cpp.html" title=" " alt="" coords="1432,372,1499,397"/>
-<area shape="rect" id="node43" href="$IpplInfo_8cpp.html" title=" " alt="" coords="1523,372,1613,397"/>
-<area shape="rect" id="node44" href="$IpplTimings_8cpp.html" title=" " alt="" coords="1637,372,1750,397"/>
-<area shape="rect" id="node45" href="$ParallelDispatch_8h.html" title=" " alt="" coords="921,372,1047,397"/>
-<area shape="rect" id="node47" href="$ParticleSpatialLayout_8hpp.html" title=" " alt="" coords="1631,445,1801,471"/>
-<area shape="rect" id="node48" href="$ParticleAttrib_8hpp.html" title=" " alt="" coords="94,372,215,397"/>
-<area shape="rect" id="node6" href="$BareField_8h.html" title=" " alt="" coords="707,592,794,617"/>
-<area shape="rect" id="node7" href="$FFT_8hpp.html" title=" " alt="" coords="646,665,717,691"/>
-<area shape="rect" id="node12" href="$Field_8h.html" title=" " alt="" coords="746,812,806,837"/>
-<area shape="rect" id="node23" href="$UniformCartesian_8hpp.html" title=" " alt="" coords="792,665,939,691"/>
-<area shape="rect" id="node8" href="$FFT_8h.html" title=" " alt="" coords="648,885,704,911"/>
-<area shape="rect" id="node9" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="835,966,1005,991"/>
-<area shape="rect" id="node10" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="363,966,549,991"/>
-<area shape="rect" id="node11" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="624,959,811,999"/>
-<area shape="rect" id="node13" href="$AbsorbingBC_8h.html" title=" " alt="" coords="1294,885,1402,911"/>
-<area shape="rect" id="node17" href="$Maxwell_8h.html" title=" " alt="" coords="1191,885,1270,911"/>
-<area shape="rect" id="node19" href="$Poisson_8h.html" title=" " alt="" coords="494,885,573,911"/>
-<area shape="rect" id="node14" href="$FDTDSolverBase_8h.html" title=" " alt="" coords="1437,966,1571,991"/>
-<area shape="rect" id="node15" href="$NonStandardFDTDSolver_8h.html" title="Defines the NonStandardFDTDSolver class for solving Maxwell&#39;s equations using a non&#45;standard Finite&#45;D..." alt="" coords="1209,1047,1388,1072"/>
-<area shape="rect" id="node16" href="$StandardFDTDSolver_8h.html" title="Defines the StandardFDTDSolver class for solving Maxwell&#39;s equations using the FDTD method." alt="" coords="1479,1047,1633,1072"/>
-<area shape="rect" id="node18" href="$FEMMaxwellDiffusionSolver_8h.html" title=" " alt="" coords="834,1047,1027,1072"/>
-<area shape="rect" id="node20" href="$FEMPoissonSolver_8h.html" title=" " alt="" coords="406,1047,549,1072"/>
-<area shape="rect" id="node21" href="$PoissonCG_8h.html" title=" " alt="" coords="71,1127,169,1153"/>
-<area shape="rect" id="node22" href="$PreconditionedFEMPoissonSolver_8h.html" title=" " alt="" coords="277,1120,459,1160"/>
-<area shape="rect" id="node24" href="$UniformCartesian_8h.html" title=" " alt="" coords="981,739,1115,764"/>
-<area shape="rect" id="node25" href="$BcTypes_8h.html" title=" " alt="" coords="336,812,419,837"/>
-<area shape="rect" id="node27" href="$PCG_8h.html" title=" " alt="" coords="221,966,281,991"/>
-<area shape="rect" id="node28" href="$PreconditionerValidation_8h.html" title=" " alt="" coords="158,1047,330,1072"/>
-<area shape="rect" id="node30" href="$FieldSolverBase_8h.html" title=" " alt="" coords="1041,445,1167,471"/>
-<area shape="rect" id="node35" href="$FieldLayout_8h.html" title=" " alt="" coords="607,445,705,471"/>
-<area shape="rect" id="node36" href="$HaloCells_8h.html" title=" " alt="" coords="983,519,1071,544"/>
-<area shape="rect" id="node37" href="$ParticleSpatialLayout_8h.html" title=" " alt="" coords="1768,519,1923,544"/>
-<area shape="rect" id="node38" href="$ParticleSpatialOverlapLayout_8h.html" title=" " alt="" coords="2053,519,2253,544"/>
-<area shape="rect" id="node39" href="$SubFieldLayout_8h.html" title=" " alt="" coords="144,519,267,544"/>
-<area shape="rect" id="node46" href="$HaloCells_8hpp.html" title=" " alt="" coords="730,445,833,471"/>
-<area shape="rect" id="node50" href="$ParticleBase_8h.html" title=" " alt="" coords="1988,152,2095,177"/>
+<area shape="rect" id="node1" title=" " alt="" coords="2937,5,3044,31"/>
+<area shape="rect" id="node2" href="$AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="2658,739,2761,764"/>
+<area shape="rect" id="node3" href="$Gather_8h.html" title="Public Gather facade dispatching to AtomicGather (sorted/unsorted)." alt="" coords="3058,225,3129,251"/>
+<area shape="rect" id="node4" href="$OrthogonalRecursiveBisection_8h.html" title=" " alt="" coords="2525,152,2731,177"/>
+<area shape="rect" id="node47" href="$ParticleLayout_8h.html" title=" " alt="" coords="2859,79,2973,104"/>
+<area shape="rect" id="node49" href="$Scatter_8h.html" title="Public Scatter facade dispatching to atomic / tiled / output&#45;tile&#45;parallel backends based on the runt..." alt="" coords="2959,225,3033,251"/>
+<area shape="rect" id="node5" href="$IpplCore_8h.html" title=" " alt="" coords="1136,225,1216,251"/>
+<area shape="rect" id="node23" href="$PicManager_8h.html" title=" " alt="" coords="2323,519,2424,544"/>
+<area shape="rect" id="node6" href="$Ippl_8h.html" title=" " alt="" coords="1677,299,1731,324"/>
+<area shape="rect" id="node7" href="$BareField_8hpp.html" title=" " alt="" coords="1327,519,1428,544"/>
+<area shape="rect" id="node21" href="$BaseManager_8h.html" title=" " alt="" coords="2321,372,2433,397"/>
+<area shape="rect" id="node24" href="$Buffers_8cpp.html" title=" " alt="" coords="1866,372,1953,397"/>
+<area shape="rect" id="node25" href="$Environment_8cpp.html" title=" " alt="" coords="1977,372,2095,397"/>
+<area shape="rect" id="node26" href="$FieldLayout_8hpp.html" title=" " alt="" coords="974,372,1087,397"/>
+<area shape="rect" id="node29" href="$Multigrid_8h.html" title=" " alt="" coords="567,592,649,617"/>
+<area shape="rect" id="node37" href="$SubFieldLayout_8hpp.html" title=" " alt="" coords="673,592,809,617"/>
+<area shape="rect" id="node38" href="$Inform_8cpp.html" title=" " alt="" coords="1264,372,1347,397"/>
+<area shape="rect" id="node39" href="$Ippl_8cpp.html" title=" " alt="" coords="1371,372,1437,397"/>
+<area shape="rect" id="node40" href="$IpplInfo_8cpp.html" title=" " alt="" coords="1462,372,1551,397"/>
+<area shape="rect" id="node41" href="$IpplTimings_8cpp.html" title=" " alt="" coords="1575,372,1689,397"/>
+<area shape="rect" id="node42" href="$ParallelDispatch_8h.html" title=" " alt="" coords="2119,372,2246,397"/>
+<area shape="rect" id="node44" href="$ParticleSpatialLayout_8hpp.html" title=" " alt="" coords="2461,445,2630,471"/>
+<area shape="rect" id="node45" href="$ParticleAttrib_8hpp.html" title=" " alt="" coords="2559,372,2681,397"/>
+<area shape="rect" id="node46" href="$TileSizeCache_8cpp.html" title="CSV parsing and file IO for the singleton tile&#45;size cache." alt="" coords="1713,372,1842,397"/>
+<area shape="rect" id="node8" href="$BareField_8h.html" title=" " alt="" coords="1322,592,1409,617"/>
+<area shape="rect" id="node9" href="$FFT_8hpp.html" title=" " alt="" coords="1125,665,1195,691"/>
+<area shape="rect" id="node14" href="$Field_8h.html" title=" " alt="" coords="1414,665,1474,691"/>
+<area shape="rect" id="node20" href="$UniformCartesian_8hpp.html" title=" " alt="" coords="1271,739,1417,764"/>
+<area shape="rect" id="node10" href="$FFT_8h.html" title=" " alt="" coords="1136,739,1192,764"/>
+<area shape="rect" id="node11" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="1445,819,1616,845"/>
+<area shape="rect" id="node12" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="892,819,1079,845"/>
+<area shape="rect" id="node13" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="1103,812,1289,852"/>
+<area shape="rect" id="node15" href="$Maxwell_8h.html" title=" " alt="" coords="761,739,839,764"/>
+<area shape="rect" id="node16" href="$FDTDSolverBase_8h.html" title=" " alt="" coords="317,819,451,845"/>
+<area shape="rect" id="node17" href="$NonStandardFDTDSolver_8h.html" title="Defines the NonStandardFDTDSolver class for solving Maxwell&#39;s equations using a non&#45;standard Finite&#45;D..." alt="" coords="740,900,919,925"/>
+<area shape="rect" id="node18" href="$StandardFDTDSolver_8h.html" title="Defines the StandardFDTDSolver class for solving Maxwell&#39;s equations using the FDTD method." alt="" coords="255,900,409,925"/>
+<area shape="rect" id="node19" href="$FEMMaxwellDiffusionSolver_8h.html" title=" " alt="" coords="522,819,715,845"/>
+<area shape="rect" id="node22" href="$FieldSolverBase_8h.html" title=" " alt="" coords="2310,445,2437,471"/>
+<area shape="rect" id="node27" href="$FieldLayout_8h.html" title=" " alt="" coords="981,445,1080,471"/>
+<area shape="rect" id="node28" href="$BcTypes_8h.html" title=" " alt="" coords="567,519,649,544"/>
+<area shape="rect" id="node33" href="$HaloCells_8h.html" title=" " alt="" coords="1503,519,1591,544"/>
+<area shape="rect" id="node34" href="$ParticleSpatialLayout_8h.html" title=" " alt="" coords="2705,519,2860,544"/>
+<area shape="rect" id="node35" href="$ParticleSpatialOverlapLayout_8h.html" title=" " alt="" coords="43,519,243,544"/>
+<area shape="rect" id="node36" href="$SubFieldLayout_8h.html" title=" " alt="" coords="673,519,796,544"/>
+<area shape="rect" id="node30" href="$PCG_8h.html" title=" " alt="" coords="581,665,641,691"/>
+<area shape="rect" id="node31" href="$FEMPoissonSolver_8h.html" title=" " alt="" coords="542,739,685,764"/>
+<area shape="rect" id="node32" href="$PoissonCG_8h.html" title=" " alt="" coords="419,739,517,764"/>
+<area shape="rect" id="node43" href="$HaloCells_8hpp.html" title=" " alt="" coords="1787,445,1890,471"/>
+<area shape="rect" id="node48" href="$Binning_8h.html" title="Particle&#45;to&#45;tile binning for tiled scatter / gather." alt="" coords="2953,152,3028,177"/>
+<area shape="rect" id="node50" href="$ParticleBase_8h.html" title=" " alt="" coords="876,152,983,177"/>
 </map>
