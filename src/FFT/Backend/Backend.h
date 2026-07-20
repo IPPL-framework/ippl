@@ -11,5 +11,8 @@
 
 #include "FFT/Backend/Heffte.h"
 
+#if defined(IPPL_ENABLE_CUFFTMP) && defined(KOKKOS_ENABLE_CUDA)
+#include "FFT/Backend/CuFFTMp.h"
+#endif
 
 #endif  // IPPL_FFT_BACKEND_H

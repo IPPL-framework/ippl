@@ -266,8 +266,21 @@ endif()
 # - if the requested version is not found on the system
 # - if the requested version is found but doesn't have the features we requested
 # ------------------------------------------------------------------------------
+if(IPPL_ENABLE_CUFFTMP AND NOT IPPL_ENABLE_FFT)
+  message(FATAL_ERROR "IPPL_ENABLE_CUFFTMP requires IPPL_ENABLE_FFT=ON")
+endif()
+
 if(IPPL_ENABLE_FFT)
   add_compile_definitions(IPPL_ENABLE_FFT)
+
+  if(IPPL_ENABLE_CUFFTMP)
+    if(NOT "CUDA" IN_LIST IPPL_PLATFORMS)
+      message(FATAL_ERROR "IPPL_ENABLE_CUFFTMP requires CUDA in IPPL_PLATFORMS")
+    endif()
+
+    add_compile_definitions(IPPL_ENABLE_CUFFTMP)
+  endif()
+
   option(Heffte_ENABLE_GPU_AWARE_MPI "Is an issue ... " OFF)
 
   # set the default version of Heffte we will ask for if not already set
