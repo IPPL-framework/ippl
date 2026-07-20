@@ -260,11 +260,13 @@ namespace ippl {
 
     template <typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::internalCopy(const hash_type& indices) {
-        auto copySize = indices.size();
+        auto copySize     = indices.size();
         using policy_type = Kokkos::RangePolicy<execution_space>;
-        auto view       = this->getView();
-        const auto size = this->getParticleCount();
+        auto view         = this->getView();
+        const auto size   = this->getParticleCount();
 
+        // ada: PR501 comment not taken with logic hunk: snapshot count before create() increments
+        // localNum_mp.
         create(copySize);  // localNum_mp becomes oldSize + copySize
 
         Kokkos::parallel_for(

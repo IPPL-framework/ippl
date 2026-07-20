@@ -67,7 +67,9 @@ target_sources(ippl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Ippl.cpp)
 target_include_directories(
   ippl PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
               $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ippl>
-  PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+          # ada: PR501 comment-only hunk: generated IpplAutoTunePresets.h
+          ${CMAKE_BINARY_DIR}/include)
 
 add_subdirectory(Communicate)
 
