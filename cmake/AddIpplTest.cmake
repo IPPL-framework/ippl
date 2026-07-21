@@ -73,6 +73,10 @@ function(add_ippl_test TEST_NAME)
     target_link_libraries(${TEST_NAME} PRIVATE IPPL::ippl ${TEST_LINK_LIBS})
   endif()
 
+  if(TEST_LINK_LIBS AND NOT TEST_INTEGRATION)
+    target_link_libraries(${TEST_NAME} PRIVATE ${TEST_LINK_LIBS})
+  endif()
+
   if(TARGET ippl_build_flags)
     target_link_libraries(${TEST_NAME} PRIVATE ippl_build_flags)
   endif()

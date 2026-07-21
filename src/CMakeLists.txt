@@ -108,6 +108,10 @@ if(IPPL_ENABLE_FFT)
   target_link_libraries(ippl PUBLIC Heffte::Heffte)
 endif()
 
+if(IPPL_ENABLE_FINUFFT)
+  target_link_libraries(ippl PUBLIC ${IPPL_FINUFFT_TARGETS})
+endif()
+
 # this alias should be created after all target properties have been set
 add_library(IPPL::ippl ALIAS ippl)
 

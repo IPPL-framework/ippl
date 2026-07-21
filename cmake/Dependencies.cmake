@@ -270,6 +270,20 @@ if(IPPL_ENABLE_CUFFTMP AND NOT IPPL_ENABLE_FFT)
   message(FATAL_ERROR "IPPL_ENABLE_CUFFTMP requires IPPL_ENABLE_FFT=ON")
 endif()
 
+if(IPPL_ENABLE_FINUFFT AND NOT IPPL_ENABLE_FFT)
+  message(FATAL_ERROR "IPPL_ENABLE_FINUFFT requires IPPL_ENABLE_FFT=ON")
+endif()
+
+if(IPPL_ENABLE_CUFINUFFT AND NOT IPPL_ENABLE_FINUFFT)
+  message(FATAL_ERROR "IPPL_ENABLE_CUFINUFFT requires IPPL_ENABLE_FINUFFT=ON")
+endif()
+
+if(IPPL_ENABLE_CUFINUFFT)
+  if(NOT "CUDA" IN_LIST IPPL_PLATFORMS)
+    message(FATAL_ERROR "IPPL_ENABLE_CUFINUFFT requires CUDA in IPPL_PLATFORMS")
+  endif()
+endif()
+
 if(IPPL_ENABLE_FFT)
   add_compile_definitions(IPPL_ENABLE_FFT)
 
@@ -348,6 +362,80 @@ if(IPPL_ENABLE_FFT)
     add_library(Heffte::Heffte ALIAS Heffte)
     message(STATUS "🔗 Created ALIAS Heffte::Heffte for Heffte target.")
   endif()
+endif()
+
+# ------------------------------------------------------------------------------
+# FINUFFT / cuFINUFFT (only if explicitly enabled)
+# ------------------------------------------------------------------------------
+if(IPPL_ENABLE_FINUFFT)
+  if(NOT FINUFFT_VERSION_DEFAULT)
+    set(FINUFFT_VERSION_DEFAULT v2.5.0)
+  endif()
+
+  if(NOT FINUFFT_VERSION)
+    set(FINUFFT_VERSION ${FINUFFT_VERSION_DEFAULT})
+  endif()
+
+  find_package(finufft CONFIG QUIET)
+  if(NOT finufft_FOUND)
+    find_package(Finufft CONFIG QUIET)
+  endif()
+
+  if(finufft_FOUND OR Finufft_FOUND)
+    colour_message(STATUS ${Green} "✅ FINUFFT found externally")
+  else()
+    colour_message(STATUS ${Green} "✅ FINUFFT ${FINUFFT_VERSION} building from source")
+
+    set(FINUFFT_BUILD_TESTS OFF CACHE BOOL "Disable FINUFFT tests" FORCE)
+    set(FINUFFT_BUILD_EXAMPLES OFF CACHE BOOL "Disable FINUFFT examples" FORCE)
+    set(FINUFFT_USE_CPU ON CACHE BOOL "Enable CPU FINUFFT" FORCE)
+    set(FINUFFT_USE_DUCC0 ${IPPL_FINUFFT_USE_DUCC0} CACHE BOOL
+        "Use FINUFFT's bundled DUCC0 FFT backend" FORCE)
+
+    if(IPPL_ENABLE_CUFINUFFT)
+      set(FINUFFT_USE_CUDA ON CACHE BOOL "Enable CUDA cuFINUFFT" FORCE)
+    else()
+      set(FINUFFT_USE_CUDA OFF CACHE BOOL "Disable CUDA cuFINUFFT" FORCE)
+    endif()
+
+    set(_ippl_saved_build_shared_libs ${BUILD_SHARED_LIBS})
+    set(BUILD_SHARED_LIBS OFF)
+
+    FetchContent_Declare(
+      finufft
+      GIT_REPOSITORY https://github.com/flatironinstitute/finufft.git
+      GIT_TAG ${FINUFFT_VERSION}
+      GIT_SHALLOW ON
+      DOWNLOAD_EXTRACT_TIMESTAMP ON)
+    FetchContent_MakeAvailable(finufft)
+
+    set(BUILD_SHARED_LIBS ${_ippl_saved_build_shared_libs})
+  endif()
+
+  set(IPPL_FINUFFT_TARGETS)
+  if(TARGET finufft::finufft)
+    list(APPEND IPPL_FINUFFT_TARGETS finufft::finufft)
+  elseif(TARGET finufft)
+    list(APPEND IPPL_FINUFFT_TARGETS finufft)
+  endif()
+
+  if(IPPL_ENABLE_CUFINUFFT)
+    if(TARGET cufinufft::cufinufft)
+      list(APPEND IPPL_FINUFFT_TARGETS cufinufft::cufinufft)
+    elseif(TARGET cufinufft)
+      list(APPEND IPPL_FINUFFT_TARGETS cufinufft)
+    else()
+      message(FATAL_ERROR "IPPL_ENABLE_CUFINUFFT is ON, but no cuFINUFFT CMake target was found")
+    endif()
+
+    add_compile_definitions(ENABLE_GPU_NUFFT FINUFFT_USE_CUDA)
+  endif()
+
+  if(NOT IPPL_FINUFFT_TARGETS)
+    message(FATAL_ERROR "IPPL_ENABLE_FINUFFT is ON, but no FINUFFT CMake target was found")
+  endif()
+
+  add_compile_definitions(ENABLE_FINUFFT)
 endif()
 
 # ------------------------------------------------------------------------------
