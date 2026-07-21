@@ -328,6 +328,22 @@ namespace ippl {
     template <typename RealField>
     void FFT<NUFFTransform, RealField>::initFinufft(const ParameterList& params) {
 #ifdef ENABLE_FINUFFT
+#ifdef ENABLE_GPU_NUFFT
+        if (Comm->size() != 1) {
+            throw IpplException(
+                "FFT<NUFFTransform>",
+                "cuFINUFFT supports only single-rank execution; cuFINUFFT has no MPI "
+                "decomposition. Use native IPPL NUFFT for distributed runs.");
+        }
+
+        if constexpr (!detail::is_cufinufft_memory_space_v<MemSpace>) {
+            throw IpplException(
+                "FFT<NUFFTransform>",
+                "cuFINUFFT requires CUDA-backed IPPL/Kokkos memory. Host-only SERIAL fields "
+                "are not supported because no host-to-CUDA staging backend is provided.");
+        }
+#endif
+
         FinufftOpts_t opts;
         Traits_t::defaultOpts(&opts);
 

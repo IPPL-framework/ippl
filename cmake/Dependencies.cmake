@@ -280,7 +280,11 @@ endif()
 
 if(IPPL_ENABLE_CUFINUFFT)
   if(NOT "CUDA" IN_LIST IPPL_PLATFORMS)
-    message(FATAL_ERROR "IPPL_ENABLE_CUFINUFFT requires CUDA in IPPL_PLATFORMS")
+    message(
+      FATAL_ERROR
+        "IPPL_ENABLE_CUFINUFFT requires CUDA in IPPL_PLATFORMS. "
+        "cuFINUFFT is a single-rank GPU backend and this PR does not provide "
+        "a host-serial to CUDA staging backend.")
   endif()
 endif()
 
@@ -393,11 +397,18 @@ if(IPPL_ENABLE_FINUFFT)
         "Use FINUFFT's bundled DUCC0 FFT backend" FORCE)
 
     if(IPPL_ENABLE_CUFINUFFT)
+      set_cuda_architectures_from_kokkos()
       set(FINUFFT_USE_CUDA ON CACHE BOOL "Enable CUDA cuFINUFFT" FORCE)
+      colour_message(
+        STATUS ${Green}
+        "✅ cuFINUFFT enabled as a single-rank GPU NUFFT backend (no MPI decomposition)")
     else()
       set(FINUFFT_USE_CUDA OFF CACHE BOOL "Disable CUDA cuFINUFFT" FORCE)
     endif()
 
+    # cuFINUFFT's CUDA RDC fatbin registration can fail at startup when its
+    # device code is wrapped in a shared library. Force static for this
+    # FetchContent build regardless of the global BUILD_SHARED_LIBS setting.
     set(_ippl_saved_build_shared_libs ${BUILD_SHARED_LIBS})
     set(BUILD_SHARED_LIBS OFF)
 

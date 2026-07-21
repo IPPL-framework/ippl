@@ -201,6 +201,12 @@ public:
 using AccuracyTest3D = NUFFTAccuracyTest<double, 3>;
 
 TEST_F(AccuracyTest3D, ToleranceSweep) {
+#ifdef ENABLE_GPU_NUFFT
+    if (ippl::Comm->size() != 1) {
+        GTEST_SKIP() << "cuFINUFFT has no MPI decomposition; test requires one rank";
+    }
+#endif
+
     const size_t gridSize     = 16;
     const size_t numParticles = 10240;
 

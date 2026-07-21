@@ -12,6 +12,7 @@
 #include <array>
 #include <cmath>
 #include <memory>
+#include <type_traits>
 
 #include "Utility/IpplException.h"
 #include "Utility/ParameterList.h"
@@ -37,6 +38,17 @@ namespace ippl {
     namespace detail {
 
 #ifdef ENABLE_FINUFFT
+#ifdef ENABLE_GPU_NUFFT
+#ifdef KOKKOS_ENABLE_CUDA
+        template <typename MemSpace>
+        inline constexpr bool is_cufinufft_memory_space_v =
+            std::is_same_v<MemSpace, Kokkos::CudaSpace>;
+#else
+        template <typename MemSpace>
+        inline constexpr bool is_cufinufft_memory_space_v = false;
+#endif
+#endif
+
         /*!
          * @struct FinufftTraits
          * @brief Type traits for FINUFFT backend selection.

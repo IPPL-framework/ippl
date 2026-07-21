@@ -281,6 +281,14 @@ TYPED_TEST(NUFFT1Test, ToleranceSweep) {
 TYPED_TEST(NUFFT1Test, FINUFFT_NoUpsampling) {
     using T                = typename TestFixture::value_type;
     [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
+    if constexpr (Dim != 3) {
+        GTEST_SKIP() << "The FINUFFT/cuFINUFFT backend path is currently 3D-only";
+    }
+#ifdef ENABLE_GPU_NUFFT
+    if (ippl::Comm->size() != 1) {
+        GTEST_SKIP() << "cuFINUFFT has no MPI decomposition; test requires one rank";
+    }
+#endif
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
@@ -707,6 +715,14 @@ TYPED_TEST(NUFFT2Test, ToleranceSweep) {
 TYPED_TEST(NUFFT2Test, FINUFFT_NoUpsampling) {
     using T                = typename TestFixture::value_type;
     [[maybe_unused]] constexpr unsigned Dim = TestFixture::dim;
+    if constexpr (Dim != 3) {
+        GTEST_SKIP() << "The FINUFFT/cuFINUFFT backend path is currently 3D-only";
+    }
+#ifdef ENABLE_GPU_NUFFT
+    if (ippl::Comm->size() != 1) {
+        GTEST_SKIP() << "cuFINUFFT has no MPI decomposition; test requires one rank";
+    }
+#endif
     this->setupGrid(16);
     this->setupParticles(4096);
     this->generateRandomParticles();
