@@ -7,9 +7,12 @@ var searchData=
   ['umax_5fm_4',['umax_m',['../classippl_1_1random_1_1InverseTransformSampling.html#ab4fa97ec01241c26686787bf84996394',1,'ippl::random::InverseTransformSampling']]],
   ['umin_5fm_5',['umin_m',['../classippl_1_1random_1_1InverseTransformSampling.html#a7d94abebbb4c7871c7088c748ce03a02',1,'ippl::random::InverseTransformSampling']]],
   ['upper_5fand_5flower_5fm_6',['upper_and_lower_m',['../structippl_1_1richardson__preconditioner.html#ae8b3f13db68f31844bc70a9aee2f8589',1,'ippl::richardson_preconditioner']]],
-  ['upper_5fm_7',['upper_m',['../structippl_1_1gs__preconditioner.html#a196684e65555920a142a6f2889617454',1,'ippl::gs_preconditioner::upper_m()'],['../structippl_1_1ssor__preconditioner.html#a9100abd3dabd280d10f6b12e73227880',1,'ippl::ssor_preconditioner::upper_m()']]],
-  ['use_5fsorting_8',['use_sorting',['../structippl_1_1Interpolation_1_1detail_1_1UnsortedPolicy.html#acfd63047ca5532b62124320efc7f13c1',1,'ippl::Interpolation::detail::UnsortedPolicy::use_sorting()'],['../structippl_1_1Interpolation_1_1detail_1_1SortedPolicy.html#a6df406b5aef1fac88b77cb8616201941',1,'ippl::Interpolation::detail::SortedPolicy::use_sorting()']]],
-  ['used_5fbuffers_9',['used_buffers',['../classippl_1_1DefaultBufferHandler.html#a3852579bc0b4c2a9454073724172aaca',1,'ippl::DefaultBufferHandler']]],
-  ['usedsize_10',['usedSize',['../structippl_1_1LogEntry.html#a733d77a562dd2c5d6b9627586e1dd718',1,'ippl::LogEntry']]],
-  ['usedsize_5fm_11',['usedSize_m',['../classippl_1_1DefaultBufferHandler.html#a263471173e9de65385a6f6f09d3a42c6',1,'ippl::DefaultBufferHandler']]]
+  ['upper_5fin_5f_7',['upper_in_',['../classippl_1_1fft_1_1CuFFTMpC2C.html#aae52ddefc5362bfa47970398807f574c',1,'ippl::fft::CuFFTMpC2C']]],
+  ['upper_5fm_8',['upper_m',['../structippl_1_1gs__preconditioner.html#a196684e65555920a142a6f2889617454',1,'ippl::gs_preconditioner::upper_m()'],['../structippl_1_1ssor__preconditioner.html#a9100abd3dabd280d10f6b12e73227880',1,'ippl::ssor_preconditioner::upper_m()']]],
+  ['upper_5fout_5f_9',['upper_out_',['../classippl_1_1fft_1_1CuFFTMpC2C.html#a740b7c446c9f381bcf3fcda2f70c0613',1,'ippl::fft::CuFFTMpC2C']]],
+  ['use_5fcufftmp_5fv_10',['use_cufftmp_v',['../namespaceippl_1_1fft.html#a24cd474526e7aa21ae7b258e93925cb4',1,'ippl::fft']]],
+  ['use_5fsorting_11',['use_sorting',['../structippl_1_1Interpolation_1_1detail_1_1UnsortedPolicy.html#acfd63047ca5532b62124320efc7f13c1',1,'ippl::Interpolation::detail::UnsortedPolicy::use_sorting()'],['../structippl_1_1Interpolation_1_1detail_1_1SortedPolicy.html#a6df406b5aef1fac88b77cb8616201941',1,'ippl::Interpolation::detail::SortedPolicy::use_sorting()']]],
+  ['used_5fbuffers_12',['used_buffers',['../classippl_1_1DefaultBufferHandler.html#a3852579bc0b4c2a9454073724172aaca',1,'ippl::DefaultBufferHandler']]],
+  ['usedsize_13',['usedSize',['../structippl_1_1LogEntry.html#a733d77a562dd2c5d6b9627586e1dd718',1,'ippl::LogEntry']]],
+  ['usedsize_5fm_14',['usedSize_m',['../classippl_1_1DefaultBufferHandler.html#a263471173e9de65385a6f6f09d3a42c6',1,'ippl::DefaultBufferHandler']]]
 ];

@@ -156,7 +156,7 @@ Public Types</h2></td></tr>
 <tr class="separator:aef4d0197af3ef8a26c8a2c2a5ee769fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b2a9cb8711b3c3b9f6228bbdee16382"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a8b2a9cb8711b3c3b9f6228bbdee16382">Base</a> = <a class="el" href="classippl_1_1Poisson.html">Poisson</a>&lt; FieldLHS, FieldRHS &gt;</td></tr>
 <tr class="separator:a8b2a9cb8711b3c3b9f6228bbdee16382"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9cc56c843b6a193a3c3eeac6e22b7766"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1FFT.html">FFT</a>&lt; <a class="el" href="classippl_1_1RCTransform.html">RCTransform</a>, FieldRHS &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9cc56c843b6a193a3c3eeac6e22b7766">FFT_t</a></td></tr>
+<tr class="memitem:a9cc56c843b6a193a3c3eeac6e22b7766"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1FFT.html">FFT</a>&lt; <a class="el" href="structippl_1_1RCTransform.html">RCTransform</a>, FieldRHS &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9cc56c843b6a193a3c3eeac6e22b7766">FFT_t</a></td></tr>
 <tr class="separator:a9cc56c843b6a193a3c3eeac6e22b7766"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15fc74460aac62a7fab8e27ab1644df2"><td class="memItemLeft" align="right" valign="top">typedef FieldRHS&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a></td></tr>
 <tr class="separator:a15fc74460aac62a7fab8e27ab1644df2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -226,7 +226,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa450b3f8127dad563128e0a3f2e1bf9a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a1cfa5cdbb7ebd67b0ebc8f3bcbc5f49b">MField_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa450b3f8127dad563128e0a3f2e1bf9a">getHessian</a> () override</td></tr>
 <tr class="separator:aa450b3f8127dad563128e0a3f2e1bf9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5b32133c36164d4f571297c35b43bc86"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a5b32133c36164d4f571297c35b43bc86">greensFunction</a> ()</td></tr>
-<tr class="memdesc:a5b32133c36164d4f571297c35b43bc86"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute and cache the <a class="el" href="classippl_1_1FFT.html">FFT</a> of the selected Green function.  <a href="classippl_1_1FFTOpenPoissonSolver.html#a5b32133c36164d4f571297c35b43bc86">More...</a><br /></td></tr>
+<tr class="memdesc:a5b32133c36164d4f571297c35b43bc86"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute and cache the <a class="el" href="classippl_1_1FFT.html" title="Primary FFT template; specialized per transform tag in FFT/Transform/*.">FFT</a> of the selected Green function.  <a href="classippl_1_1FFTOpenPoissonSolver.html#a5b32133c36164d4f571297c35b43bc86">More...</a><br /></td></tr>
 <tr class="separator:a5b32133c36164d4f571297c35b43bc86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f1d8f484489eddce30070e8ddc55fbc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9f1d8f484489eddce30070e8ddc55fbc">shiftedGreensFunction</a> (const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; double, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt; &amp;shift)</td></tr>
 <tr class="memdesc:a9f1d8f484489eddce30070e8ddc55fbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace the cached kernel by a shifted Hockney Green function.  <a href="classippl_1_1FFTOpenPoissonSolver.html#a9f1d8f484489eddce30070e8ddc55fbc">More...</a><br /></td></tr>
@@ -337,7 +337,7 @@ Private Attributes</h2></td></tr>
 <tr class="separator:ac1bafe9d868891bb137dfba434d88ad8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa76013c9e042d480f3d0b2a6bb5c0a97"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa76013c9e042d480f3d0b2a6bb5c0a97">grnL_m</a></td></tr>
 <tr class="separator:aa76013c9e042d480f3d0b2a6bb5c0a97"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a848f2919b6140992791313f0e21c4f46"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFT.html">FFT</a>&lt; <a class="el" href="classippl_1_1CCTransform.html">CCTransform</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a848f2919b6140992791313f0e21c4f46">fft4n_m</a></td></tr>
+<tr class="memitem:a848f2919b6140992791313f0e21c4f46"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFT.html">FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a848f2919b6140992791313f0e21c4f46">fft4n_m</a></td></tr>
 <tr class="separator:a848f2919b6140992791313f0e21c4f46"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aadbc65b6b710ae48785f6a7d18f13b06"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aadbc65b6b710ae48785f6a7d18f13b06">mesh4_m</a></td></tr>
 <tr class="separator:aadbc65b6b710ae48785f6a7d18f13b06"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -347,7 +347,7 @@ Private Attributes</h2></td></tr>
 <tr class="separator:ad2afbfcccc8f3c7bc2b58581d3469484"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5eb92487ab7cd78f1368f02dc94ade8e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a5eb92487ab7cd78f1368f02dc94ade8e">grn2n1_m</a></td></tr>
 <tr class="separator:a5eb92487ab7cd78f1368f02dc94ade8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92757c778dcc50824dab95339715655b"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFT.html">FFT</a>&lt; <a class="el" href="classippl_1_1Cos1Transform.html">Cos1Transform</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a92757c778dcc50824dab95339715655b">fft2n1_m</a></td></tr>
+<tr class="memitem:a92757c778dcc50824dab95339715655b"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFT.html">FFT</a>&lt; <a class="el" href="structippl_1_1Cos1Transform.html">Cos1Transform</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a92757c778dcc50824dab95339715655b">fft2n1_m</a></td></tr>
 <tr class="separator:a92757c778dcc50824dab95339715655b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a171478835c48414f083fad1246490bd1"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa682906ee3e32d8f41d51bbe24a68903">mesh_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a171478835c48414f083fad1246490bd1">mesh2n1_m</a></td></tr>
 <tr class="separator:a171478835c48414f083fad1246490bd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -467,7 +467,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="el" href="classippl_1_1FFT.html">FFT</a>&lt;<a class="el" href="classippl_1_1RCTransform.html">RCTransform</a>, FieldRHS&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::FFT_t</td>
+          <td class="memname">typedef <a class="el" href="classippl_1_1FFT.html">FFT</a>&lt;<a class="el" href="structippl_1_1RCTransform.html">RCTransform</a>, FieldRHS&gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::FFT_t</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1081,7 +1081,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p>Compute and cache the <a class="el" href="classippl_1_1FFT.html">FFT</a> of the selected Green function. </p>
+<p>Compute and cache the <a class="el" href="classippl_1_1FFT.html" title="Primary FFT template; specialized per transform tag in FFT/Transform/*.">FFT</a> of the selected Green function. </p>
 <p >The selected kernel is controlled by the integer parameter <code>greens_function</code>, with values from GreenFunction. For Hockney, the real-space kernel is filled on the doubled convolution grid and then transformed into <code>grntr_m</code>. The default is <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbad60ea505c04fcdf124a6c9c9b00ddf42">GreenFunction::STANDARD</a> to preserve historical IPPL behavior. </p>
 
 </div>
@@ -1658,7 +1658,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFT.html">FFT</a>&lt;<a class="el" href="classippl_1_1Cos1Transform.html">Cos1Transform</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a>&gt; &gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::fft2n1_m</td>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFT.html">FFT</a>&lt;<a class="el" href="structippl_1_1Cos1Transform.html">Cos1Transform</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a15fc74460aac62a7fab8e27ab1644df2">Field_t</a>&gt; &gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::fft2n1_m</td>
         </tr>
       </table>
   </td>
@@ -1682,7 +1682,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFT.html">FFT</a>&lt;<a class="el" href="classippl_1_1CCTransform.html">CCTransform</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a>&gt; &gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::fft4n_m</td>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFT.html">FFT</a>&lt;<a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a>&gt; &gt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::fft4n_m</td>
         </tr>
       </table>
   </td>

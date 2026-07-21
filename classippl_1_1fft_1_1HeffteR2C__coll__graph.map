@@ -1,0 +1,4 @@
+<map id="ippl::fft::HeffteR2C&lt; T, Dim, MemSpace &gt;" name="ippl::fft::HeffteR2C&lt; T, Dim, MemSpace &gt;">
+<area shape="rect" id="node1" title="Wrapper around heffte::fft3d_r2c for real&#45;to&#45;complex transforms." alt="" coords="5,123,160,251"/>
+<area shape="rect" id="node2" title=" " alt="" coords="53,5,113,45"/>
+</map>

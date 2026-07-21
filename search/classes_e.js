@@ -29,5 +29,8 @@ var searchData=
   ['preconditionedfempoissonsolver_26',['PreconditionedFEMPoissonSolver',['../classippl_1_1PreconditionedFEMPoissonSolver.html',1,'ippl']]],
   ['preconditioner_27',['preconditioner',['../structippl_1_1preconditioner.html',1,'ippl']]],
   ['pregion_28',['PRegion',['../classippl_1_1PRegion.html',1,'ippl']]],
-  ['prod_29',['Prod',['../structKokkosCorrection_1_1Prod.html',1,'KokkosCorrection']]]
+  ['prod_29',['Prod',['../structKokkosCorrection_1_1Prod.html',1,'KokkosCorrection']]],
+  ['prunedcctransform_30',['PrunedCCTransform',['../structippl_1_1PrunedCCTransform.html',1,'ippl']]],
+  ['prunedrctransform_31',['PrunedRCTransform',['../structippl_1_1PrunedRCTransform.html',1,'ippl']]],
+  ['pruningparams_32',['PruningParams',['../structippl_1_1PruningParams.html',1,'ippl']]]
 ];

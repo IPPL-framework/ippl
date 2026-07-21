@@ -30,5 +30,7 @@ var searchData=
   ['preconditionervalidation_2eh_27',['PreconditionerValidation.h',['../PreconditionerValidation_8h.html',1,'']]],
   ['pregion_2eh_28',['PRegion.h',['../PRegion_8h.html',1,'']]],
   ['pregion_2ehpp_29',['PRegion.hpp',['../PRegion_8hpp.html',1,'']]],
-  ['projectcurrent_2ehpp_30',['ProjectCurrent.hpp',['../ProjectCurrent_8hpp.html',1,'']]]
+  ['projectcurrent_2ehpp_30',['ProjectCurrent.hpp',['../ProjectCurrent_8hpp.html',1,'']]],
+  ['prunedcc_2eh_31',['PrunedCC.h',['../PrunedCC_8h.html',1,'']]],
+  ['prunedrc_2eh_32',['PrunedRC.h',['../PrunedRC_8h.html',1,'']]]
 ];

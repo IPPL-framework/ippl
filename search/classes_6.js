@@ -16,10 +16,11 @@ var searchData=
   ['getmpiopimpl_13',['getMpiOpImpl',['../structippl_1_1mpi_1_1getMpiOpImpl.html',1,'ippl::mpi']]],
   ['getnontrivialmpiopimpl_14',['getNontrivialMpiOpImpl',['../structippl_1_1mpi_1_1getNontrivialMpiOpImpl.html',1,'ippl::mpi']]],
   ['gpmodel_15',['GPModel',['../classippl_1_1detail_1_1GPModel.html',1,'ippl::detail']]],
-  ['gridparallelscatterimpl3d_16',['GridParallelScatterImpl3D',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterImpl3D.html',1,'ippl::Interpolation::detail']]],
-  ['gridparallelscatterimplnd_17',['GridParallelScatterImplND',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterImplND.html',1,'ippl::Interpolation::detail']]],
-  ['gridparallelscattertuning_18',['GridParallelScatterTuning',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterTuning.html',1,'ippl::Interpolation::detail']]],
-  ['gridparallelscattertuning_3c_20policy_2c_20std_3a_3avoid_5ft_3c_20decltype_28policy_3a_3afixed_5foversubscription_29_3e_20_3e_19',['GridParallelScatterTuning&lt; Policy, std::void_t&lt; decltype(Policy::fixed_oversubscription)&gt; &gt;',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterTuning_3_01Policy_00_01std_1_1void__98821bb8ef78c84bc0bb4ae6047f2ad9.html',1,'ippl::Interpolation::detail']]],
-  ['gridpathsegmenter_20',['GridPathSegmenter',['../structippl_1_1GridPathSegmenter.html',1,'ippl']]],
-  ['gs_5fpreconditioner_21',['gs_preconditioner',['../structippl_1_1gs__preconditioner.html',1,'ippl']]]
+  ['gpufinufft_16',['GPUFinufft',['../structippl_1_1fft_1_1GPUFinufft.html',1,'ippl::fft']]],
+  ['gridparallelscatterimpl3d_17',['GridParallelScatterImpl3D',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterImpl3D.html',1,'ippl::Interpolation::detail']]],
+  ['gridparallelscatterimplnd_18',['GridParallelScatterImplND',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterImplND.html',1,'ippl::Interpolation::detail']]],
+  ['gridparallelscattertuning_19',['GridParallelScatterTuning',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterTuning.html',1,'ippl::Interpolation::detail']]],
+  ['gridparallelscattertuning_3c_20policy_2c_20std_3a_3avoid_5ft_3c_20decltype_28policy_3a_3afixed_5foversubscription_29_3e_20_3e_20',['GridParallelScatterTuning&lt; Policy, std::void_t&lt; decltype(Policy::fixed_oversubscription)&gt; &gt;',['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterTuning_3_01Policy_00_01std_1_1void__98821bb8ef78c84bc0bb4ae6047f2ad9.html',1,'ippl::Interpolation::detail']]],
+  ['gridpathsegmenter_21',['GridPathSegmenter',['../structippl_1_1GridPathSegmenter.html',1,'ippl']]],
+  ['gs_5fpreconditioner_22',['gs_preconditioner',['../structippl_1_1gs__preconditioner.html',1,'ippl']]]
 ];

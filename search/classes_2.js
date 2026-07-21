@@ -27,7 +27,7 @@ var searchData=
   ['cccenums_3c_203u_2c_209u_2c_200u_20_3e_24',['CCCEnums&lt; 3U, 9U, 0U &gt;',['../structCCCEnums_3_013U_00_019U_00_010U_01_4.html',1,'']]],
   ['cccenums_3c_203u_2c_209u_2c_201u_20_3e_25',['CCCEnums&lt; 3U, 9U, 1U &gt;',['../structCCCEnums_3_013U_00_019U_00_011U_01_4.html',1,'']]],
   ['cccenums_3c_203u_2c_209u_2c_202u_20_3e_26',['CCCEnums&lt; 3U, 9U, 2U &gt;',['../structCCCEnums_3_013U_00_019U_00_012U_01_4.html',1,'']]],
-  ['cctransform_27',['CCTransform',['../classippl_1_1CCTransform.html',1,'ippl']]],
+  ['cctransform_27',['CCTransform',['../structippl_1_1CCTransform.html',1,'ippl']]],
   ['cdf_28',['CDF',['../structippl_1_1random_1_1NormalDistributionFunctions_1_1CDF.html',1,'ippl::random::NormalDistributionFunctions']]],
   ['cell_29',['Cell',['../classCell.html',1,'']]],
   ['centering_30',['Centering',['../classCentering.html',1,'']]],
@@ -77,9 +77,13 @@ var searchData=
   ['coordinatetransform_3c_20realtype_2c_20dim_20_3e_74',['CoordinateTransform&lt; RealType, Dim &gt;',['../structippl_1_1Interpolation_1_1CoordinateTransform.html',1,'ippl::Interpolation']]],
   ['coords_75',['Coords',['../structippl_1_1detail_1_1Coords.html',1,'ippl::detail']]],
   ['coords_3c_201_2c_20t_20_3e_76',['Coords&lt; 1, T &gt;',['../structippl_1_1detail_1_1Coords_3_011_00_01T_01_4.html',1,'ippl::detail']]],
-  ['cos1transform_77',['Cos1Transform',['../classippl_1_1Cos1Transform.html',1,'ippl']]],
-  ['costransform_78',['CosTransform',['../classippl_1_1CosTransform.html',1,'ippl']]],
+  ['cos1transform_77',['Cos1Transform',['../structippl_1_1Cos1Transform.html',1,'ippl']]],
+  ['costransform_78',['CosTransform',['../structippl_1_1CosTransform.html',1,'ippl']]],
   ['createuniformtype_79',['CreateUniformType',['../structippl_1_1detail_1_1CreateUniformType.html',1,'ippl::detail']]],
   ['cubickernel_80',['CubicKernel',['../structippl_1_1Interpolation_1_1CubicKernel.html',1,'ippl::Interpolation']]],
-  ['cuttimes_81',['CutTimes',['../structippl_1_1CutTimes.html',1,'ippl']]]
+  ['cufft_81',['CuFFT',['../structippl_1_1fft_1_1CuFFT.html',1,'ippl::fft']]],
+  ['cufftmp_82',['CuFFTMp',['../structippl_1_1fft_1_1CuFFTMp.html',1,'ippl::fft']]],
+  ['cufftmpc2c_83',['CuFFTMpC2C',['../classippl_1_1fft_1_1CuFFTMpC2C.html',1,'ippl::fft']]],
+  ['cufftmpr2c_84',['CuFFTMpR2C',['../classippl_1_1fft_1_1CuFFTMpR2C.html',1,'ippl::fft']]],
+  ['cuttimes_85',['CutTimes',['../structippl_1_1CutTimes.html',1,'ippl']]]
 ];

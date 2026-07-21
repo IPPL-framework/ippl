@@ -6,7 +6,8 @@ var searchData=
   ['weights_5fm_3',['weights_m',['../classippl_1_1Quadrature.html#a59eacdd248549c11874725f7038886d6',1,'ippl::Quadrature']]],
   ['win_5fm_4',['win_m',['../classippl_1_1mpi_1_1rma_1_1Window.html#a3c08a56adb5d0269a13fcd15dae32f88',1,'ippl::mpi::rma::Window']]],
   ['window_5fm_5',['window_m',['../classippl_1_1ParticleSpatialLayout.html#a065d6293239ce1ecdf81fabca0897eed',1,'ippl::ParticleSpatialLayout']]],
-  ['workspace_5fm_6',['workspace_m',['../classippl_1_1FFTBase.html#a774c1a64890151f5c7ef447268030b08',1,'ippl::FFTBase']]],
-  ['wpos_7',['wpos',['../structippl_1_1detail_1_1SerializeHashFunctor.html#a87806a94ab2a698f7175844c4da92059',1,'ippl::detail::SerializeHashFunctor::wpos()'],['../structippl_1_1detail_1_1SerializeHashVectorFunctor.html#a8f7f851f56f02473d1887be1f43bb2ca',1,'ippl::detail::SerializeHashVectorFunctor::wpos()']]],
-  ['writepos_5fm_8',['writepos_m',['../classippl_1_1detail_1_1Archive.html#a819a368b360a9d2f8366f6110b5b3508',1,'ippl::detail::Archive']]]
+  ['worksize_5f_6',['worksize_',['../classippl_1_1fft_1_1CuFFTMpC2C.html#a897375125376b2a47b0a2a020eeea658',1,'ippl::fft::CuFFTMpC2C::worksize_()'],['../classippl_1_1fft_1_1CuFFTMpR2C.html#add900dbcbde8273f8cd280b0af58e0a9',1,'ippl::fft::CuFFTMpR2C::worksize_()']]],
+  ['workspace_5f_7',['workspace_',['../classippl_1_1fft_1_1HeffteC2C.html#a96471cc31b724d19de3b303bc389537a',1,'ippl::fft::HeffteC2C::workspace_()'],['../classippl_1_1fft_1_1HeffteR2C.html#a81acb9b0daadd1aa60474f5b21e713a2',1,'ippl::fft::HeffteR2C::workspace_()']]],
+  ['wpos_8',['wpos',['../structippl_1_1detail_1_1SerializeHashFunctor.html#a87806a94ab2a698f7175844c4da92059',1,'ippl::detail::SerializeHashFunctor::wpos()'],['../structippl_1_1detail_1_1SerializeHashVectorFunctor.html#a8f7f851f56f02473d1887be1f43bb2ca',1,'ippl::detail::SerializeHashVectorFunctor::wpos()']]],
+  ['writepos_5fm_9',['writepos_m',['../classippl_1_1detail_1_1Archive.html#a819a368b360a9d2f8366f6110b5b3508',1,'ippl::detail::Archive']]]
 ];

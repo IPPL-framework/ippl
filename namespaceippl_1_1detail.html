@@ -173,10 +173,6 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1HaloUnpackFunctor.html">HaloUnpackFunctor</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1HeffteBackendType.html">HeffteBackendType</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1HeffteBackendType_3_01Kokkos_1_1HostSpace_01_4.html">HeffteBackendType&lt; Kokkos::HostSpace &gt;</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1is__kokkos__complex.html">is_kokkos_complex</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1is__kokkos__complex_3_01Kokkos_1_1complex_3_01T_01_4_01_4.html">is_kokkos_complex&lt; Kokkos::complex&lt; T &gt; &gt;</a></td></tr>
@@ -300,6 +296,10 @@ Enumerations</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:ab8fae200613181bab495218ef81d5f5a"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#ab8fae200613181bab495218ef81d5f5a">copyBytes</a> (char *dst, const char *src, size_t size)</td></tr>
 <tr class="separator:ab8fae200613181bab495218ef81d5f5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac2447f0b7b87bc65cbd47b802b836c30"><td class="memTemplParams" colspan="2">template&lt;bool IsCPU, typename Func &gt; </td></tr>
+<tr class="memitem:ac2447f0b7b87bc65cbd47b802b836c30"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#ac2447f0b7b87bc65cbd47b802b836c30">runConcurrentBatch</a> (int count, Func &amp;&amp;func)</td></tr>
+<tr class="memdesc:ac2447f0b7b87bc65cbd47b802b836c30"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run <code>func(local)</code> for <code>local</code> in [0, count) with optional OpenMP outer parallelism.  <a href="namespaceippl_1_1detail.html#ac2447f0b7b87bc65cbd47b802b836c30">More...</a><br /></td></tr>
+<tr class="separator:ac2447f0b7b87bc65cbd47b802b836c30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade472a3d72f54c51cfbfc0d1c1aa8ade"><td class="memTemplParams" colspan="2">template&lt;typename <a class="el" href="classippl_1_1Field.html">Field</a> &gt; </td></tr>
 <tr class="memitem:ade472a3d72f54c51cfbfc0d1c1aa8ade"><td class="memTemplItemLeft" align="right" valign="top">std::ostream &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#ade472a3d72f54c51cfbfc0d1c1aa8ade">operator&lt;&lt;</a> (std::ostream &amp;, const <a class="el" href="classippl_1_1detail_1_1BCondBase.html">BCondBase</a>&lt; <a class="el" href="classippl_1_1Field.html">Field</a> &gt; &amp;)</td></tr>
 <tr class="separator:ade472a3d72f54c51cfbfc0d1c1aa8ade"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1901,6 +1901,53 @@ template&lt;typename F &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac2447f0b7b87bc65cbd47b802b836c30" name="ac2447f0b7b87bc65cbd47b802b836c30"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2447f0b7b87bc65cbd47b802b836c30">&#9670;&#160;</a></span>runConcurrentBatch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;bool IsCPU, typename Func &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ippl::detail::runConcurrentBatch </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>count</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Func &amp;&amp;&#160;</td>
+          <td class="paramname"><em>func</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Run <code>func(local)</code> for <code>local</code> in [0, count) with optional OpenMP outer parallelism. </p>
+<p >On CPU execution spaces the loop is serial (<a class="el" href="namespaceKokkos.html">Kokkos</a> already parallelizes the inner loops); on GPU execution spaces an OpenMP outer loop is used so independent stream launches can overlap.</p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">IsCPU</td><td>True when <a class="el" href="namespaceKokkos.html">Kokkos</a> is configured with an OpenMP-capable host execution space; false otherwise. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

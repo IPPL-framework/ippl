@@ -17,5 +17,6 @@ var searchData=
   ['normaldistributionfunctions_14',['NormalDistributionFunctions',['../structippl_1_1random_1_1NormalDistributionFunctions.html',1,'ippl::random']]],
   ['nptr_15',['NPtr',['../structippl_1_1detail_1_1NPtr.html',1,'ippl::detail']]],
   ['nptr_3c_20t_2c_201_20_3e_16',['NPtr&lt; T, 1 &gt;',['../structippl_1_1detail_1_1NPtr_3_01T_00_011_01_4.html',1,'ippl::detail']]],
-  ['nullsolver_17',['NullSolver',['../classippl_1_1NullSolver.html',1,'ippl']]]
+  ['nufftransform_17',['NUFFTransform',['../structippl_1_1NUFFTransform.html',1,'ippl']]],
+  ['nullsolver_18',['NullSolver',['../classippl_1_1NullSolver.html',1,'ippl']]]
 ];

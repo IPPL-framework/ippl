@@ -1,6 +1,3 @@
 <map id="ippl::FFT&lt; RCTransform, RealField &gt;" name="ippl::FFT&lt; RCTransform, RealField &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="212,108,380,236"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,13,235,53"/>
-<area shape="rect" id="node3" title=" " alt="" coords="259,13,333,53"/>
-<area shape="rect" id="node4" title=" " alt="" coords="357,5,547,60"/>
+<area shape="rect" id="node1" title="Real&#45;to&#45;complex / complex&#45;to&#45;real FFT over IPPL Fields." alt="" coords="5,5,173,177"/>
 </map>

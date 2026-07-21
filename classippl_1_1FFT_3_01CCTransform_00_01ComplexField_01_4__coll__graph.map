@@ -1,5 +1,3 @@
 <map id="ippl::FFT&lt; CCTransform, ComplexField &gt;" name="ippl::FFT&lt; CCTransform, ComplexField &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="149,108,317,207"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,269,60"/>
-<area shape="rect" id="node3" title=" " alt="" coords="293,13,368,53"/>
+<area shape="rect" id="node1" title="In&#45;place complex&#45;to&#45;complex FFT over a complex IPPL Field." alt="" coords="5,5,173,163"/>
 </map>

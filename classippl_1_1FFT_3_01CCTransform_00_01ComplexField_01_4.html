@@ -84,32 +84,24 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pri-types">Private Types</a> &#124;
-<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
+<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::FFT&lt; CCTransform, ComplexField &gt; Class Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
-<p><code>#include &lt;<a class="el" href="FFT_8h_source.html">FFT.h</a>&gt;</code></p>
-<div class="dynheader">
-Inheritance diagram for ippl::FFT&lt; CCTransform, ComplexField &gt;:</div>
-<div class="dyncontent">
-<div class="center"><img src="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4__inherit__graph.png" border="0" usemap="#aippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4_inherit__map" alt="Inheritance graph"/></div>
-<map name="aippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4_inherit__map" id="aippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="149,108,317,207"/>
-<area shape="rect" title=" " alt="" coords="5,5,269,60"/>
-<area shape="rect" title=" " alt="" coords="293,13,368,53"/>
-</map>
-</div>
+<p>In-place complex-to-complex <a class="el" href="classippl_1_1FFT.html" title="Primary FFT template; specialized per transform tag in FFT/Transform/*.">FFT</a> over a complex IPPL <a class="el" href="classippl_1_1Field.html">Field</a>.  
+ <a href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="CC_8h_source.html">CC.h</a>&gt;</code></p>
 <div class="dynheader">
 Collaboration diagram for ippl::FFT&lt; CCTransform, ComplexField &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4__coll__graph.png" border="0" usemap="#aippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4_coll__map" id="aippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="149,108,317,207"/>
-<area shape="rect" title=" " alt="" coords="5,5,269,60"/>
-<area shape="rect" title=" " alt="" coords="293,13,368,53"/>
+<area shape="rect" title="In&#45;place complex&#45;to&#45;complex FFT over a complex IPPL Field." alt="" coords="5,5,173,163"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -117,48 +109,73 @@ Collaboration diagram for ippl::FFT&lt; CCTransform, ComplexField &gt;:</div>
 Public Types</h2></td></tr>
 <tr class="memitem:ad7f25dad592ab32c610e92c4bd18b0b3"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ad7f25dad592ab32c610e92c4bd18b0b3">Complex_t</a> = typename ComplexField::value_type</td></tr>
 <tr class="separator:ad7f25dad592ab32c610e92c4bd18b0b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac87eb3ad397bb49a5d268fdcccb69315"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ac87eb3ad397bb49a5d268fdcccb69315">T</a> = typename Complex_t::value_type</td></tr>
+<tr class="separator:ac87eb3ad397bb49a5d268fdcccb69315"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9fac9fcef099155fba54636844dc935"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ad9fac9fcef099155fba54636844dc935">MemSpace</a> = typename ComplexField::memory_space</td></tr>
+<tr class="separator:ad9fac9fcef099155fba54636844dc935"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae42e02cd5cdac16d2e80d0276b2acd18"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ae42e02cd5cdac16d2e80d0276b2acd18">ExecSpace</a> = typename ComplexField::execution_space</td></tr>
+<tr class="separator:ae42e02cd5cdac16d2e80d0276b2acd18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81dc68ece1320443336fd02040bebf66"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a81dc68ece1320443336fd02040bebf66">Layout_t</a> = <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; <a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ab10630f3f62b21e0e5e8d9077587c177">Dim</a> &gt;</td></tr>
+<tr class="separator:a81dc68ece1320443336fd02040bebf66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae77f9eae00a4b26f2442c9dec0f7315d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ae77f9eae00a4b26f2442c9dec0f7315d">Backend_t</a> = <a class="el" href="classippl_1_1fft_1_1HeffteC2C.html">fft::HeffteC2C</a>&lt; <a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ac87eb3ad397bb49a5d268fdcccb69315">T</a>, <a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ab10630f3f62b21e0e5e8d9077587c177">Dim</a>, <a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ad9fac9fcef099155fba54636844dc935">MemSpace</a> &gt;</td></tr>
+<tr class="separator:ae77f9eae00a4b26f2442c9dec0f7315d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b946ae7c56868c9e34b28516adbce9e"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a3b946ae7c56868c9e34b28516adbce9e">heffteBackend</a> = typename <a class="el" href="structippl_1_1fft_1_1HeffteBackend.html">fft::HeffteBackend</a>&lt; <a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ad9fac9fcef099155fba54636844dc935">MemSpace</a> &gt;::c2c</td></tr>
+<tr class="separator:a3b946ae7c56868c9e34b28516adbce9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad6cc924b8ced6eaf62c940cf11a157c2"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ad6cc924b8ced6eaf62c940cf11a157c2">TempView_t</a> = typename Kokkos::View&lt; typename ComplexField::view_type::data_type, Kokkos::LayoutLeft, <a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ad9fac9fcef099155fba54636844dc935">MemSpace</a> &gt;::uniform_type</td></tr>
+<tr class="separator:ad6cc924b8ced6eaf62c940cf11a157c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a10c0e6af76e0cd43c096f73f77fdcf30"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a10c0e6af76e0cd43c096f73f77fdcf30">FFT</a> (const <a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a81dc68ece1320443336fd02040bebf66">Layout_t</a> &amp;layout, const <a class="el" href="classippl_1_1ParameterList.html">ParameterList</a> &amp;params)</td></tr>
+<tr class="memdesc:a10c0e6af76e0cd43c096f73f77fdcf30"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build the <a class="el" href="classippl_1_1FFT.html" title="Primary FFT template; specialized per transform tag in FFT/Transform/*.">FFT</a> plan for the local subdomain described by <code>layout</code>.  <a href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a10c0e6af76e0cd43c096f73f77fdcf30">More...</a><br /></td></tr>
+<tr class="separator:a10c0e6af76e0cd43c096f73f77fdcf30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69983a477f4aeb586f33e9135fdb97be"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a69983a477f4aeb586f33e9135fdb97be">warmup</a> (ComplexField &amp;f)</td></tr>
+<tr class="memdesc:a69983a477f4aeb586f33e9135fdb97be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Run a forward + backward pair on <code>f</code> to JIT compile / cache backend kernels.  <a href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a69983a477f4aeb586f33e9135fdb97be">More...</a><br /></td></tr>
 <tr class="separator:a69983a477f4aeb586f33e9135fdb97be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30e59939df7d10074fe62ac5cab1548c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a30e59939df7d10074fe62ac5cab1548c">transform</a> (<a class="el" href="namespaceippl.html#a12b1fb701e417c82f2d2249c31e30b02">TransformDirection</a> direction, ComplexField &amp;f)</td></tr>
+<tr class="memdesc:a30e59939df7d10074fe62ac5cab1548c"><td class="mdescLeft">&#160;</td><td class="mdescRight">In-place <a class="el" href="classippl_1_1FFT.html" title="Primary FFT template; specialized per transform tag in FFT/Transform/*.">FFT</a> of <code>f</code>.  <a href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a30e59939df7d10074fe62ac5cab1548c">More...</a><br /></td></tr>
 <tr class="separator:a30e59939df7d10074fe62ac5cab1548c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
-Private Types</h2></td></tr>
-<tr class="memitem:a3f3eb2533ba8295985f5be6feb269fba"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a3f3eb2533ba8295985f5be6feb269fba">Base</a> = <a class="el" href="FFT_8h.html#a8f9f25bdb6354b0e7bd7916c8ce8d9dd">IN_PLACE_FFT_BASE_CLASS</a>(ComplexField, backend)</td></tr>
-<tr class="separator:a3f3eb2533ba8295985f5be6feb269fba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
-Static Private Attributes</h2></td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
 <tr class="memitem:ab10630f3f62b21e0e5e8d9077587c177"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ab10630f3f62b21e0e5e8d9077587c177">Dim</a> = ComplexField::dim</td></tr>
 <tr class="separator:ab10630f3f62b21e0e5e8d9077587c177"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
+Private Member Functions</h2></td></tr>
+<tr class="memitem:a32437d777610c739d965a49bc7de5c84"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a32437d777610c739d965a49bc7de5c84">ensureTemp</a> (const ComplexField &amp;f)</td></tr>
+<tr class="separator:a32437d777610c739d965a49bc7de5c84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
+Private Attributes</h2></td></tr>
+<tr class="memitem:a2ae7307a39c0753b73f4b598f280e4f0"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ae77f9eae00a4b26f2442c9dec0f7315d">Backend_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a2ae7307a39c0753b73f4b598f280e4f0">backend_</a></td></tr>
+<tr class="separator:a2ae7307a39c0753b73f4b598f280e4f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac445657a66d522fba08f4396a9ee730d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ad6cc924b8ced6eaf62c940cf11a157c2">TempView_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ac445657a66d522fba08f4396a9ee730d">temp_</a></td></tr>
+<tr class="separator:ac445657a66d522fba08f4396a9ee730d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename ComplexField&gt;<br />
-class ippl::FFT&lt; CCTransform, ComplexField &gt;</div><p >complex-to-complex <a class="el" href="classippl_1_1FFT.html">FFT</a> class </p>
+class ippl::FFT&lt; CCTransform, ComplexField &gt;</div><p >In-place complex-to-complex <a class="el" href="classippl_1_1FFT.html" title="Primary FFT template; specialized per transform tag in FFT/Transform/*.">FFT</a> over a complex IPPL <a class="el" href="classippl_1_1Field.html">Field</a>. </p>
+<p >Selects cuFFTMp when <code>IPPL_ENABLE_CUFFTMP</code> is defined, otherwise the heFFTe C2C backend. The transform is performed on a contiguous LayoutLeft scratch view; ghost cells are stripped on the way in and restored on the way out.</p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">ComplexField</td><td><a class="el" href="classippl_1_1Field.html">Field</a> whose value_type is a Kokkos::complex. </td></tr>
+  </table>
+  </dd>
+</dl>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a3f3eb2533ba8295985f5be6feb269fba" name="a3f3eb2533ba8295985f5be6feb269fba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3f3eb2533ba8295985f5be6feb269fba">&#9670;&#160;</a></span>Base</h2>
+<a id="ae77f9eae00a4b26f2442c9dec0f7315d" name="ae77f9eae00a4b26f2442c9dec0f7315d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae77f9eae00a4b26f2442c9dec0f7315d">&#9670;&#160;</a></span>Backend_t</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename ComplexField &gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::Base =  <a class="el" href="FFT_8h.html#a8f9f25bdb6354b0e7bd7916c8ce8d9dd">IN_PLACE_FFT_BASE_CLASS</a>(ComplexField, backend)</td>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::Backend_t =  <a class="el" href="classippl_1_1fft_1_1HeffteC2C.html">fft::HeffteC2C</a>&lt;<a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ac87eb3ad397bb49a5d268fdcccb69315">T</a>, <a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ab10630f3f62b21e0e5e8d9077587c177">Dim</a>, <a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ad9fac9fcef099155fba54636844dc935">MemSpace</a>&gt;</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 </div>
@@ -172,16 +189,15 @@ template&lt;typename ComplexField &gt; </div>
 template&lt;typename ComplexField &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::Complex_t =  typename ComplexField::value_type</td>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::Complex_t =  typename ComplexField::value_type</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<h2 class="groupheader">Member Function Documentation</h2>
-<a id="a30e59939df7d10074fe62ac5cab1548c" name="a30e59939df7d10074fe62ac5cab1548c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a30e59939df7d10074fe62ac5cab1548c">&#9670;&#160;</a></span>transform()</h2>
+<a id="ae42e02cd5cdac16d2e80d0276b2acd18" name="ae42e02cd5cdac16d2e80d0276b2acd18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae42e02cd5cdac16d2e80d0276b2acd18">&#9670;&#160;</a></span>ExecSpace</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -189,7 +205,183 @@ template&lt;typename ComplexField &gt; </div>
 template&lt;typename ComplexField &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::transform </td>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::ExecSpace =  typename ComplexField::execution_space</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3b946ae7c56868c9e34b28516adbce9e" name="a3b946ae7c56868c9e34b28516adbce9e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b946ae7c56868c9e34b28516adbce9e">&#9670;&#160;</a></span>heffteBackend</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ComplexField &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::heffteBackend =  typename <a class="el" href="structippl_1_1fft_1_1HeffteBackend.html">fft::HeffteBackend</a>&lt;<a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ad9fac9fcef099155fba54636844dc935">MemSpace</a>&gt;::c2c</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a81dc68ece1320443336fd02040bebf66" name="a81dc68ece1320443336fd02040bebf66"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81dc68ece1320443336fd02040bebf66">&#9670;&#160;</a></span>Layout_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ComplexField &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::Layout_t =  <a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt;<a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ab10630f3f62b21e0e5e8d9077587c177">Dim</a>&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad9fac9fcef099155fba54636844dc935" name="ad9fac9fcef099155fba54636844dc935"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9fac9fcef099155fba54636844dc935">&#9670;&#160;</a></span>MemSpace</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ComplexField &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::MemSpace =  typename ComplexField::memory_space</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac87eb3ad397bb49a5d268fdcccb69315" name="ac87eb3ad397bb49a5d268fdcccb69315"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac87eb3ad397bb49a5d268fdcccb69315">&#9670;&#160;</a></span>T</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ComplexField &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::T =  typename Complex_t::value_type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad6cc924b8ced6eaf62c940cf11a157c2" name="ad6cc924b8ced6eaf62c940cf11a157c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad6cc924b8ced6eaf62c940cf11a157c2">&#9670;&#160;</a></span>TempView_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ComplexField &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::TempView_t =  typename Kokkos::View&lt;typename ComplexField::view_type::data_type, Kokkos::LayoutLeft, <a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ad9fac9fcef099155fba54636844dc935">MemSpace</a>&gt;::uniform_type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a10c0e6af76e0cd43c096f73f77fdcf30" name="a10c0e6af76e0cd43c096f73f77fdcf30"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a10c0e6af76e0cd43c096f73f77fdcf30">&#9670;&#160;</a></span>FFT()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ComplexField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::FFT </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#a81dc68ece1320443336fd02040bebf66">Layout_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>layout</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1ParameterList.html">ParameterList</a> &amp;&#160;</td>
+          <td class="paramname"><em>params</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Build the <a class="el" href="classippl_1_1FFT.html" title="Primary FFT template; specialized per transform tag in FFT/Transform/*.">FFT</a> plan for the local subdomain described by <code>layout</code>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">layout</td><td><a class="el" href="classippl_1_1Field.html">Field</a> layout giving the local <a class="el" href="classippl_1_1NDIndex.html">NDIndex</a> and MPI partition. </td></tr>
+    <tr><td class="paramname">params</td><td>FFT-tuning parameters forwarded to the backend. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a32437d777610c739d965a49bc7de5c84" name="a32437d777610c739d965a49bc7de5c84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a32437d777610c739d965a49bc7de5c84">&#9670;&#160;</a></span>ensureTemp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ComplexField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::ensureTemp </td>
+          <td>(</td>
+          <td class="paramtype">const ComplexField &amp;&#160;</td>
+          <td class="paramname"><em>f</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a30e59939df7d10074fe62ac5cab1548c" name="a30e59939df7d10074fe62ac5cab1548c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a30e59939df7d10074fe62ac5cab1548c">&#9670;&#160;</a></span>transform()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ComplexField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::transform </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceippl.html#a12b1fb701e417c82f2d2249c31e30b02">TransformDirection</a>&#160;</td>
           <td class="paramname"><em>direction</em>, </td>
@@ -206,15 +398,21 @@ template&lt;typename ComplexField &gt; </div>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
-<p >Perform in-place <a class="el" href="classippl_1_1FFT.html">FFT</a> </p><dl class="params"><dt>Parameters</dt><dd>
+
+<p>In-place <a class="el" href="classippl_1_1FFT.html" title="Primary FFT template; specialized per transform tag in FFT/Transform/*.">FFT</a> of <code>f</code>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">direction</td><td>Forward or backward transformation </td></tr>
-    <tr><td class="paramname">f</td><td><a class="el" href="classippl_1_1Field.html">Field</a> whose transformation to compute (and overwrite) </td></tr>
+    <tr><td class="paramname">direction</td><td>FORWARD or BACKWARD. </td></tr>
+    <tr><td class="paramname">f</td><td><a class="el" href="classippl_1_1Field.html">Field</a> to transform; modified in place. </td></tr>
   </table>
   </dd>
 </dl>
-<p >This copy to a temporary <a class="el" href="namespaceKokkos.html">Kokkos</a> view is needed because of following reasons: 1) heffte wants the input and output fields without ghost layers 2) heffte accepts data in layout left (by default) even though this can be changed during heffte box creation</p>
 
 </div>
 </div>
@@ -225,26 +423,54 @@ template&lt;typename ComplexField &gt; </div>
 <div class="memproto">
 <div class="memtemplate">
 template&lt;typename ComplexField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::warmup </td>
+          <td class="memname">void <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::warmup </td>
           <td>(</td>
           <td class="paramtype">ComplexField &amp;&#160;</td>
           <td class="paramname"><em>f</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
-<p >Warmup the <a class="el" href="classippl_1_1FFT.html">FFT</a> object by forward &amp; backward <a class="el" href="classippl_1_1FFT.html">FFT</a> on an empty field </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">f</td><td><a class="el" href="classippl_1_1Field.html">Field</a> whose transformation to compute (and overwrite) </td></tr>
-  </table>
-  </dd>
-</dl>
+
+<p>Run a forward + backward pair on <code>f</code> to JIT compile / cache backend kernels. </p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a2ae7307a39c0753b73f4b598f280e4f0" name="a2ae7307a39c0753b73f4b598f280e4f0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ae7307a39c0753b73f4b598f280e4f0">&#9670;&#160;</a></span>backend_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ComplexField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt;<a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ae77f9eae00a4b26f2442c9dec0f7315d">Backend_t</a>&gt; <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::backend_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ab10630f3f62b21e0e5e8d9077587c177" name="ab10630f3f62b21e0e5e8d9077587c177"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab10630f3f62b21e0e5e8d9077587c177">&#9670;&#160;</a></span>Dim</h2>
 
@@ -257,21 +483,44 @@ template&lt;typename ComplexField &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="classippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::Dim = ComplexField::dim</td>
+          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::Dim = ComplexField::dim</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<hr/>The documentation for this class was generated from the following files:<ul>
-<li><a class="el" href="FFT_8h_source.html">FFT.h</a></li>
-<li><a class="el" href="FFT_8hpp_source.html">FFT.hpp</a></li>
+<a id="ac445657a66d522fba08f4396a9ee730d" name="ac445657a66d522fba08f4396a9ee730d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac445657a66d522fba08f4396a9ee730d">&#9670;&#160;</a></span>temp_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename ComplexField &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFT_3_01CCTransform_00_01ComplexField_01_4.html#ad6cc924b8ced6eaf62c940cf11a157c2">TempView_t</a> <a class="el" href="classippl_1_1FFT.html">ippl::FFT</a>&lt; <a class="el" href="structippl_1_1CCTransform.html">CCTransform</a>, ComplexField &gt;::temp_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following file:<ul>
+<li><a class="el" href="CC_8h_source.html">CC.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

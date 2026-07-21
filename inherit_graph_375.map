@@ -1,0 +1,13 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" title=" " alt="" coords="5,263,111,288"/>
+<area shape="rect" id="node2" href="$structippl_1_1detail_1_1isExpression.html" title=" " alt="" coords="159,5,347,31"/>
+<area shape="rect" id="node3" href="$structippl_1_1detail_1_1is__kokkos__complex.html" title=" " alt="" coords="181,55,325,95"/>
+<area shape="rect" id="node4" href="$structippl_1_1fft_1_1is__available.html" title=" " alt="" coords="186,119,319,159"/>
+<area shape="rect" id="node5" href="$structippl_1_1is__complex.html" title=" " alt="" coords="181,184,324,209"/>
+<area shape="rect" id="node6" href="$structippl_1_1mpi_1_1always__false.html" title=" " alt="" coords="163,233,343,259"/>
+<area shape="rect" id="node7" href="$structippl_1_1mpi_1_1is__a__logger.html" title=" " alt="" coords="182,283,323,323"/>
+<area shape="rect" id="node8" href="$structippl_1_1mpi_1_1is__ippl__mpi__type.html" title=" " alt="" coords="185,347,320,387"/>
+<area shape="rect" id="node9" href="$structippl_1_1mpi_1_1is__serializable.html" title=" " alt="" coords="175,411,331,451"/>
+<area shape="rect" id="node10" href="$structippl_1_1mpi_1_1rma_1_1isActiveTarget.html" title=" " alt="" coords="177,475,328,515"/>
+<area shape="rect" id="node11" href="$structippl_1_1mpi_1_1rma_1_1isPassiveTarget.html" title=" " alt="" coords="173,539,333,579"/>
+</map>

@@ -1,0 +1,16 @@
+<map id="Common.h" name="Common.h">
+<area shape="rect" id="node1" title="Helpers shared by the FFT transform wrappers." alt="" coords="251,5,335,31"/>
+<area shape="rect" id="node2" href="$CC_8h.html" title="Complex&#45;to&#45;complex FFT specialization (CCTransform tag)." alt="" coords="59,79,109,104"/>
+<area shape="rect" id="node11" href="$PrunedCC_8h.html" title="Pruned complex&#45;to&#45;complex FFT (PrunedCCTransform tag)." alt="" coords="133,79,224,104"/>
+<area shape="rect" id="node12" href="$PrunedRC_8h.html" title="Pruned real&#45;to&#45;complex FFT (PrunedRCTransform tag)." alt="" coords="248,79,339,104"/>
+<area shape="rect" id="node13" href="$RC_8h.html" title="Real&#45;to&#45;complex FFT specialization (RCTransform tag)." alt="" coords="363,79,413,104"/>
+<area shape="rect" id="node14" href="$Trig_8h.html" title="Trigonometric (sine / cosine / cosine&#45;Type&#45;I) FFT specializations." alt="" coords="438,79,493,104"/>
+<area shape="rect" id="node3" href="$Transform_8h.html" title="Aggregate include of all IPPL FFT transform specializations." alt="" coords="248,152,339,177"/>
+<area shape="rect" id="node4" href="$FFT_8h.html" title=" " alt="" coords="265,225,321,251"/>
+<area shape="rect" id="node5" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="5,306,176,331"/>
+<area shape="rect" id="node9" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="200,306,387,331"/>
+<area shape="rect" id="node10" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="411,299,597,339"/>
+<area shape="rect" id="node6" href="$datatypes_8h.html" title=" " alt="" coords="249,387,337,412"/>
+<area shape="rect" id="node7" href="$FieldSolverBase_8h.html" title=" " alt="" coords="230,460,357,485"/>
+<area shape="rect" id="node8" href="$PicManager_8h.html" title=" " alt="" coords="243,533,344,559"/>
+</map>

@@ -1,0 +1,11 @@
+<map id="RC.h" name="RC.h">
+<area shape="rect" id="node1" title="Real&#45;to&#45;complex FFT specialization (RCTransform tag)." alt="" coords="268,5,319,31"/>
+<area shape="rect" id="node2" href="$Transform_8h.html" title="Aggregate include of all IPPL FFT transform specializations." alt="" coords="248,79,339,104"/>
+<area shape="rect" id="node3" href="$FFT_8h.html" title=" " alt="" coords="265,152,321,177"/>
+<area shape="rect" id="node4" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="5,233,176,258"/>
+<area shape="rect" id="node8" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="200,233,387,258"/>
+<area shape="rect" id="node9" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="411,225,597,265"/>
+<area shape="rect" id="node5" href="$datatypes_8h.html" title=" " alt="" coords="249,313,337,339"/>
+<area shape="rect" id="node6" href="$FieldSolverBase_8h.html" title=" " alt="" coords="230,387,357,412"/>
+<area shape="rect" id="node7" href="$PicManager_8h.html" title=" " alt="" coords="243,460,344,485"/>
+</map>

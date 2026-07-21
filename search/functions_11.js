@@ -34,7 +34,8 @@ var searchData=
   ['richardson_5fpreconditioner_31',['richardson_preconditioner',['../structippl_1_1richardson__preconditioner.html#a92767cf524db3e63adb4d9f5df46286a',1,'ippl::richardson_preconditioner']]],
   ['richardson_5fpreconditioner_5falt_32',['richardson_preconditioner_alt',['../structippl_1_1richardson__preconditioner__alt.html#a010a29f70eec959f8bb39d911ae90f3c',1,'ippl::richardson_preconditioner_alt']]],
   ['run_33',['run',['../structippl_1_1Interpolation_1_1detail_1_1AtomicGather.html#af6223b3e3494095487c0188966f1f53e',1,'ippl::Interpolation::detail::AtomicGather::run()'],['../structippl_1_1Interpolation_1_1detail_1_1AtomicScatter.html#a0a91d1c18df79948d1efff9ebc2f7fba',1,'ippl::Interpolation::detail::AtomicScatter::run()'],['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterImpl3D.html#a7e70bb86c640538e5345c95e4fade1ac',1,'ippl::Interpolation::detail::GridParallelScatterImpl3D::run()'],['../structippl_1_1Interpolation_1_1detail_1_1GridParallelScatterImplND.html#a1fbc260e4d8460edeec3fbfc7ecf36ed',1,'ippl::Interpolation::detail::GridParallelScatterImplND::run()'],['../structippl_1_1Interpolation_1_1detail_1_1TiledScatter.html#a7910508d7a1a027bbc9c40144f0ae512',1,'ippl::Interpolation::detail::TiledScatter::run()'],['../classippl_1_1BaseManager.html#a9300907fad46b9217f4231f5c46d71fb',1,'ippl::BaseManager::run()']]],
-  ['runforallspaces_34',['runForAllSpaces',['../namespaceippl_1_1detail.html#aeb0ea8b584dda433cfe4005e0056f022',1,'ippl::detail']]],
-  ['runonfirstuse_35',['runOnFirstUse',['../namespaceippl_1_1Interpolation_1_1AutoTune.html#a960c6f2f712c841f3a617449a0c25882',1,'ippl::Interpolation::AutoTune']]],
-  ['runsolver_36',['runSolver',['../classippl_1_1FieldSolverBase.html#a9980642f484ba57648724206d43f083e',1,'ippl::FieldSolverBase']]]
+  ['runconcurrentbatch_34',['runConcurrentBatch',['../namespaceippl_1_1detail.html#ac2447f0b7b87bc65cbd47b802b836c30',1,'ippl::detail']]],
+  ['runforallspaces_35',['runForAllSpaces',['../namespaceippl_1_1detail.html#aeb0ea8b584dda433cfe4005e0056f022',1,'ippl::detail']]],
+  ['runonfirstuse_36',['runOnFirstUse',['../namespaceippl_1_1Interpolation_1_1AutoTune.html#a960c6f2f712c841f3a617449a0c25882',1,'ippl::Interpolation::AutoTune']]],
+  ['runsolver_37',['runSolver',['../classippl_1_1FieldSolverBase.html#a9980642f484ba57648724206d43f083e',1,'ippl::FieldSolverBase']]]
 ];

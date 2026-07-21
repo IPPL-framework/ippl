@@ -14,7 +14,7 @@ var searchData=
   ['segment_11',['Segment',['../structippl_1_1Segment.html',1,'ippl']]],
   ['serializehashfunctor_12',['SerializeHashFunctor',['../structippl_1_1detail_1_1SerializeHashFunctor.html',1,'ippl::detail']]],
   ['serializehashvectorfunctor_13',['SerializeHashVectorFunctor',['../structippl_1_1detail_1_1SerializeHashVectorFunctor.html',1,'ippl::detail']]],
-  ['sinetransform_14',['SineTransform',['../classippl_1_1SineTransform.html',1,'ippl']]],
+  ['sinetransform_14',['SineTransform',['../structippl_1_1SineTransform.html',1,'ippl']]],
   ['sinkbc_15',['SinkBC',['../structippl_1_1detail_1_1SinkBC.html',1,'ippl::detail']]],
   ['solveralgorithm_16',['SolverAlgorithm',['../classippl_1_1SolverAlgorithm.html',1,'ippl']]],
   ['solveralgorithm_3c_20femvector_3c_20t_20_3e_2c_20femvector_3c_20t_20_3e_20_3e_17',['SolverAlgorithm&lt; FEMVector&lt; T &gt;, FEMVector&lt; T &gt; &gt;',['../classippl_1_1SolverAlgorithm.html',1,'ippl']]],
@@ -24,6 +24,7 @@ var searchData=
   ['standardfdtdsolver_21',['StandardFDTDSolver',['../classippl_1_1StandardFDTDSolver.html',1,'ippl']]],
   ['status_22',['Status',['../classippl_1_1mpi_1_1Status.html',1,'ippl::mpi']]],
   ['stencil_23',['Stencil',['../structippl_1_1Interpolation_1_1detail_1_1AtomicGather_1_1Stencil.html',1,'ippl::Interpolation::detail::AtomicGather&lt; W, Types, UseSorting &gt;::Stencil'],['../structippl_1_1Interpolation_1_1detail_1_1TiledScatter_1_1Stencil.html',1,'ippl::Interpolation::detail::TiledScatter&lt; W, Types, Policy &gt;::Stencil']]],
-  ['subfieldlayout_24',['SubFieldLayout',['../classippl_1_1SubFieldLayout.html',1,'ippl']]],
-  ['sum_25',['Sum',['../structKokkosCorrection_1_1Sum.html',1,'KokkosCorrection']]]
+  ['stream_24',['Stream',['../structippl_1_1fft_1_1Stream.html',1,'ippl::fft']]],
+  ['subfieldlayout_25',['SubFieldLayout',['../classippl_1_1SubFieldLayout.html',1,'ippl']]],
+  ['sum_26',['Sum',['../structKokkosCorrection_1_1Sum.html',1,'KokkosCorrection']]]
 ];

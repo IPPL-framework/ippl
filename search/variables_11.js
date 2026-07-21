@@ -2,9 +2,9 @@ var searchData=
 [
   ['r_0',['R',['../classippl_1_1ParticleBase.html#af28b1c693f7fb69f12ccd65e507ef22a',1,'ippl::ParticleBase']]],
   ['r_1',['r',['../classippl_1_1CG.html#ac38e371539660a4b63fa6026bc31ca2a',1,'ippl::CG']]],
-  ['r_5fm_2',['r_m',['../structippl_1_1ssor__preconditioner.html#a024bded42725402ea1b313494116d396',1,'ippl::ssor_preconditioner']]],
-  ['r_5fm_3',['R_m',['../classippl_1_1TruncatedGreenParticleInteraction.html#a999a5df169104fe31813cbb4562b6b37',1,'ippl::TruncatedGreenParticleInteraction']]],
-  ['r_5fm_4',['r_m',['../structippl_1_1gs__preconditioner.html#ad9940470290eeb588083c2bf48ca61ea',1,'ippl::gs_preconditioner']]],
+  ['r2c_5fdir_5f_2',['r2c_dir_',['../classippl_1_1FFT_3_01PrunedRCTransform_00_01RealField_01_4.html#ab08eea5e0042dc45cedb1077473595f8',1,'ippl::FFT&lt; PrunedRCTransform, RealField &gt;']]],
+  ['r_5fm_3',['r_m',['../structippl_1_1gs__preconditioner.html#ad9940470290eeb588083c2bf48ca61ea',1,'ippl::gs_preconditioner::r_m()'],['../structippl_1_1ssor__preconditioner.html#a024bded42725402ea1b313494116d396',1,'ippl::ssor_preconditioner::r_m()']]],
+  ['r_5fm_4',['R_m',['../classippl_1_1TruncatedGreenParticleInteraction.html#a999a5df169104fe31813cbb4562b6b37',1,'ippl::TruncatedGreenParticleInteraction']]],
   ['rand_5fpool_5',['rand_pool',['../structippl_1_1random_1_1randn.html#a55d072fee6d6c3a5850fd1da89c919c8',1,'ippl::random::randn::rand_pool()'],['../structippl_1_1random_1_1randu.html#a6eaf433f7513a6bebb72b09cb8f8e886',1,'ippl::random::randu::rand_pool()']]],
   ['rank_6',['rank',['../structippl_1_1LogEntry.html#ab1feeaa627af66fbde2defe291d8de12',1,'ippl::LogEntry::rank()'],['../structippl_1_1detail_1_1ExtractRank_3_01Kokkos_1_1RangePolicy_3_01T_8_8_8_01_4_01_4.html#aefc9071a189ead4d404f93c328aa21c6',1,'ippl::detail::ExtractRank&lt; Kokkos::RangePolicy&lt; T... &gt; &gt;::rank()'],['../structippl_1_1detail_1_1ExtractRank_3_01Kokkos_1_1MDRangePolicy_3_01T_8_8_8_01_4_01_4.html#a93a973229824988e2986275af06d4025',1,'ippl::detail::ExtractRank&lt; Kokkos::MDRangePolicy&lt; T... &gt; &gt;::rank()']]],
   ['rank_5fm_7',['rank_m',['../classippl_1_1mpi_1_1Communicator.html#a2aeaf56983bf8a8fa5708a6762c5fa86',1,'ippl::mpi::Communicator::rank_m()'],['../classippl_1_1LoggingBufferHandler.html#ad5b28912287a254458610ac8f683dd19',1,'ippl::LoggingBufferHandler::rank_m()']]],
