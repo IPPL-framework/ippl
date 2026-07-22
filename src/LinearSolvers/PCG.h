@@ -28,7 +28,7 @@ namespace ippl {
         inline constexpr int mg_pre_smooth     = 2;
         inline constexpr int mg_post_smooth    = 2;
         inline constexpr double mg_omega       = 0.8;
-        inline constexpr unsigned mg_min_cells = 4;
+        inline constexpr int mg_min_cells = 4;
         inline constexpr bool mg_communication = false;
 
         inline constexpr std::array<const char*, 8> valid_types = {
@@ -47,7 +47,7 @@ namespace ippl {
         using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
         typedef typename Base::lhs_type::value_type T;
 
-    public:
+      public:
         using typename Base::lhs_type, typename Base::rhs_type;
         using OperatorF    = std::function<OperatorRet(lhs_type&)>;
         using LowerF       = std::function<LowerRet(lhs_type&)>;
@@ -127,7 +127,7 @@ namespace ippl {
             [[maybe_unused]] double mg_omega =
                 pcg_preconditioner_defaults::mg_omega,  // This is a dummy default parameter, actual
                                                         // default parameter should be set in main
-            [[maybe_unused]] unsigned mg_min_cells_per_rank_per_dim =
+            [[maybe_unused]] int mg_min_cells_per_rank_per_dim =
                 pcg_preconditioner_defaults::mg_min_cells,
             [[maybe_unused]] bool mg_communication =
                 pcg_preconditioner_defaults::mg_communication) {}
@@ -234,7 +234,7 @@ namespace ippl {
 
         virtual T getResidue() const { return residueNorm; }
 
-    protected:
+      protected:
         OperatorF op_m;
         T residueNorm    = 0;
         int iterations_m = 0;
@@ -254,7 +254,7 @@ namespace ippl {
              FEMVector<T>> : public SolverAlgorithm<FEMVector<T>, FEMVector<T>> {
         using Base = SolverAlgorithm<FEMVector<T>, FEMVector<T>>;
 
-    public:
+      public:
         using typename Base::lhs_type, typename Base::rhs_type;
         using OperatorF    = std::function<OperatorRet(lhs_type&)>;
         using LowerF       = std::function<LowerRet(lhs_type&)>;
@@ -366,7 +366,7 @@ namespace ippl {
 
         virtual T getResidue() const { return residueNorm; }
 
-    protected:
+      protected:
         OperatorF op_m;
         T residueNorm    = 0;
         int iterations_m = 0;
@@ -380,7 +380,7 @@ namespace ippl {
         using Base = SolverAlgorithm<FieldLHS, FieldRHS>;
         typedef typename Base::lhs_type::value_type T;
 
-    public:
+      public:
         using typename Base::lhs_type, typename Base::rhs_type;
         using OperatorF    = std::function<OperatorRet(lhs_type&)>;
         using LowerF       = std::function<LowerRet(lhs_type&)>;
@@ -397,6 +397,18 @@ namespace ippl {
                  FieldRHS>()
             , preconditioner_m(nullptr) {};
 
+        /*
+         * Allocate the extra PCG work fields once, together with the CG
+         * work fields r, d, and q.
+         *
+         * s and pcond_out are scratch buffers for M^{-1} r. They intentionally
+         * keep the default NoBcFace boundary conditions. Only the search
+         * direction d gets the physical BCs after the preconditioner result has
+         * been copied into it. If these scratch fields inherited periodic BCs,
+         * assignments inside the preconditioner would call PeriodicFace::apply
+         * and add halo MPI exchanges that did not exist when the preconditioner
+         * returned fresh temporary NoBcFace fields.
+         */
         void initializeFields(mesh_type& mesh, layout_type& layout) override {
             CG<OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, DiagRet, FieldLHS,
                FieldRHS>::initializeFields(mesh, layout);
@@ -457,7 +469,7 @@ namespace ippl {
             double mg_omega =
                 pcg_preconditioner_defaults::mg_omega,  // This is a dummy default parameter, actual
                                                         // default parameter should be set in main
-            unsigned mg_min_cells_per_rank_per_dim = pcg_preconditioner_defaults::mg_min_cells,
+            int mg_min_cells_per_rank_per_dim = pcg_preconditioner_defaults::mg_min_cells,
             bool mg_communication = pcg_preconditioner_defaults::mg_communication) override {
             if (preconditioner_type == "jacobi") {
                 // Turn on damping parameter
@@ -602,18 +614,17 @@ namespace ippl {
             }
         }
 
-    protected:
+      protected:
         std::unique_ptr<preconditioner<FieldLHS>> preconditioner_m;
 
         /*
-         * Extends the CG workspace with the preconditioner result buffers s and
-         * pcond_out so operator() does not allocate per solve.
-         * Preconditioner result buffers, allocated once via initializeFields()
-         * pcond_out keeps its default NoBcFace BCs: the preconditioner's internal operator
-         * chain therefore never triggers PeriodicFace::apply MPI calls -- if it
-         * did, the global MPI sequence would diverge from the master code path
-         * (where the preconditioner returned a fresh NoBcFace field) and
-         * intermittent multi-rank halo deadlocks would follow.
+         * Persistent preconditioner output buffers. They are allocated in
+         * initializeFields() and reused on every solve to avoid per-iteration
+         * Field allocation.
+         *
+         * These buffers are scratch storage, not physical solution fields, so
+         * they must keep NoBcFace BCs. The physically meaningful BCs are applied
+         * only to d after copying pcond_out into it.
          */
 
         lhs_type s;

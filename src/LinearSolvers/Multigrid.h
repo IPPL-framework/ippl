@@ -132,7 +132,7 @@ namespace ippl {
          */
         multigrid_preconditioner(OperatorF&& op, unsigned pre_smooth_iters = 2,
                                  unsigned post_smooth_iters = 2, double omega_jacobi = 0.8,
-                                 unsigned min_cells_per_rank_per_dim = 4, bool communication = true)
+                                 int min_cells_per_rank_per_dim = 4, bool communication = true)
             : preconditioner<Field>("Multigrid")
             , op_(std::forward<OperatorF>(op))
             , nu1_(pre_smooth_iters)
@@ -480,7 +480,7 @@ namespace ippl {
         OperatorF op_;
         unsigned nu1_, nu2_;
         double omega_;
-        unsigned min_cells_per_rank_per_dim_;
+        int min_cells_per_rank_per_dim_;
         bool communication_;
         bool is_all_periodic_ = false;
 

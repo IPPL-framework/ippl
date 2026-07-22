@@ -17,8 +17,8 @@
 constexpr unsigned Dim = 3;
 
 // some typedefs
-typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
 typedef ippl::UniformCartesian<double, Dim> Mesh_t;
+typedef ippl::ParticleSpatialLayout<double, Dim, Mesh_t> PLayout_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
 
 template <typename T, unsigned Dim>
@@ -94,7 +94,7 @@ public:
     void dumpData(int iteration) {
         double Energy = 0.0;
 
-        ParticleAttrib<Vector_t>::view_type& view = P.getView();
+        auto view = P.getView();
         Inform csvout(NULL, "data/energy.csv", Inform::APPEND);
         csvout.precision(10);
         csvout.setf(std::ios::scientific, std::ios::floatfield);
@@ -223,9 +223,9 @@ int main(int argc, char* argv[]) {
             IpplTimings::startTimer(RandPTimer);
             std::mt19937_64 engP;
             engP.seed(42 + 10 * it + 100 * ippl::Comm->rank());
-            Kokkos::resize(P_host, P->P.size());
+            Kokkos::resize(P_host, P->getLocalNum());
             double sum_coord = 0.0;
-            Kokkos::resize(R_host, P->R.size());
+            Kokkos::resize(R_host, P->getLocalNum());
             Kokkos::deep_copy(R_host, P->R.getView());
             for (unsigned long int i = 0; i < P->getLocalNum(); i++) {
                 for (int d = 0; d < 3; d++) {

@@ -32,8 +32,8 @@ constexpr unsigned Dim          = DIM;
 constexpr const char* PROG_NAME = "PIC" xstr(DIM) "d";
 
 // some typedefs
-typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
 typedef ippl::UniformCartesian<double, Dim> Mesh_t;
+typedef ippl::ParticleSpatialLayout<double, Dim, Mesh_t> PLayout_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
 typedef Mesh_t::DefaultCentering Centering_t;
 
@@ -265,7 +265,7 @@ public:
     }
 
     void dumpData(int iteration) {
-        ParticleAttrib<Vector_t>::view_type& view = P.getView();
+        auto view = P.getView();
 
         double Energy = 0.0;
 

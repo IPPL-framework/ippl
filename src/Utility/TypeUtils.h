@@ -295,10 +295,9 @@ namespace ippl {
                 } else {
                     return spaceToIndex<Space, Idx + 1>();
                 }
-                // Silences incorrect nvcc warning: missing return statement at end of non-void
-                // function
-                throw IpplException("detail::MultispaceContainer::spaceToIndex",
-                                    "Unreachable state");
+                // Suppress nvcc "missing return" warning at the end of an
+                // exhaustive if constexpr chain.
+                __builtin_unreachable();
             }
 
             /*!
@@ -311,18 +310,16 @@ namespace ippl {
 
             /*!
              * Determine whether the element for a space should be initialized,
-             * possibly based on a predicate functor
+             * possibly based on a predicate functor. A nullptr_t Filter
+             * unconditionally enables the copy.
              */
-            template <typename MemorySpace, typename Filter,
-                      std::enable_if_t<std::is_null_pointer_v<std::decay_t<Filter>>, int> = 0>
-            constexpr bool copyToSpace(Filter&&) {
-                return true;
-            }
-
-            template <typename MemorySpace, typename Filter,
-                      std::enable_if_t<!std::is_null_pointer_v<std::decay_t<Filter>>, int> = 0>
+            template <typename MemorySpace, typename Filter>
             bool copyToSpace(Filter&& predicate) {
-                return predicate.template operator()<MemorySpace>();
+                if constexpr (std::is_null_pointer_v<std::decay_t<Filter>>) {
+                    return true;
+                } else {
+                    return predicate.template operator()<MemorySpace>();
+                }
             }
 
         public:
@@ -341,10 +338,22 @@ namespace ippl {
             template <typename DataType, typename Filter = std::nullptr_t>
             MultispaceContainer(const DataType& data, Filter&& predicate = nullptr)
                 : MultispaceContainer() {
-                using space = typename DataType::memory_space;
-                static_assert(std::is_same_v<DataType, Type<space>>);
+                static_assert(Kokkos::is_view<DataType>::value, "DataType must be a Kokkos::View");
 
-                elements_m[spaceToIndex<space>()] = data;
+                using space    = typename DataType::memory_space;
+                using expected = Type<space>;
+
+                static_assert(std::is_same_v<typename DataType::memory_space,
+                                             typename expected::memory_space>,
+                              "Hash view must live in the same memory_space as expected.");
+                static_assert(std::is_same_v<typename DataType::non_const_value_type,
+                                             typename expected::non_const_value_type>,
+                              "Hash view must have the same value_type as expected.");
+                static_assert(DataType::rank == expected::rank,
+                              "Hash view must have the same rank as expected.");
+
+                expected normalized = data;
+                elements_m[spaceToIndex<space>()] = normalized;
                 copyToOtherSpaces<space>(predicate);
             }
 
@@ -433,6 +442,40 @@ namespace ippl {
             runner(all_spaces{});
         }
     }  // namespace detail
+
+    template <typename T>
+    struct is_complex : std::false_type {};
+
+    template <typename T>
+    struct is_complex<Kokkos::complex<T>> : std::true_type {};
+
+    template <typename T>
+    inline constexpr bool is_complex_v = is_complex<T>::value;
+
+    template <typename T>
+    KOKKOS_FORCEINLINE_FUNCTION decltype(auto) real_part(T& val) {
+        if constexpr (is_complex_v<std::remove_cv_t<T>>) {
+            return val.real();
+        } else {
+            return val;
+        }
+    }
+
+    template <typename GridT, typename T>
+    KOKKOS_FORCEINLINE_FUNCTION decltype(auto) to_grid_value(T& val) {
+        if constexpr (is_complex_v<std::remove_cv_t<T>> && !is_complex_v<std::remove_cv_t<GridT>>) {
+            return val.real();
+        } else {
+            return val;
+        }
+    }
+
+    constexpr int int_pow(int base, int exp) {
+        int result = 1;
+        for (int i = 0; i < exp; ++i)
+            result *= base;
+        return result;
+    }
 }  // namespace ippl
 
 #endif

@@ -12,8 +12,10 @@
  * @tparam Dim Dimensionality of the configuration space (default is 3).
  */
 template <typename T, unsigned Dim = 3>
-class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>> {
-    using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+class ParticleContainer : public ippl::ParticleBase<
+                              ippl::ParticleSpatialLayout<T, Dim, ippl::UniformCartesian<T, Dim>>> {
+    using Base =
+        ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim, ippl::UniformCartesian<T, Dim>>>;
 
 public:
     /**

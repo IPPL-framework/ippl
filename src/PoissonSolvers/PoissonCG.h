@@ -88,9 +88,8 @@ namespace ippl {
                     "mg_post_smooth_iters", pcg_preconditioner_defaults::mg_post_smooth);
                 double mg_omega = this->params_m.template get<double>(
                     "mg_omega", pcg_preconditioner_defaults::mg_omega);
-                unsigned mg_min_cells = static_cast<unsigned>(this->params_m.template get<int>(
-                    "min_cells_per_rank_per_dim",
-                    static_cast<int>(pcg_preconditioner_defaults::mg_min_cells)));
+                int mg_min_cells = static_cast<int>(this->params_m.template get<int>(
+                    "min_cells_per_rank_per_dim",pcg_preconditioner_defaults::mg_min_cells));
                 bool mg_communication = communication;
 
                 Inform warn("PoissonCG");

@@ -107,7 +107,7 @@ namespace ippl {
             this->hLocalDomains_m(rank) = this->hLocalDomains_m(rank).intersect(this->gDomain_m);
         }
 
-        this->findNeighbors();
+        this->findNeighbors(this->nghost_m);
 
         Kokkos::deep_copy(this->dLocalDomains_m, this->hLocalDomains_m);
 
