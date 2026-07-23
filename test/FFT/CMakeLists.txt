@@ -13,3 +13,6 @@ add_ippl_integration_test(TestFFTRC LABELS integration fft)
 add_ippl_integration_test(TestSine LABELS integration fft)
 add_ippl_integration_test(TestCos LABELS integration fft)
 add_ippl_integration_test(TestCos1 LABELS integration fft)
+add_ippl_integration_test(TestGaussianNUFFT
+  ARGS 16 16 16 1024 2 1 native tiled
+  LABELS integration fft scaling)
