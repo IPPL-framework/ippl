@@ -6,7 +6,7 @@ var searchData=
   ['indx_3',['indx',['../classIpplTimerInfo.html#a832c89c3d7757f28b01e377a2c9fdea9',1,'IpplTimerInfo']]],
   ['info_4',['Info',['../namespaceippl.html#a1526ad55d99b9fc9f83fb538c6fddcc3',1,'ippl']]],
   ['init_5fflag_5f_5',['init_flag_',['../classippl_1_1Interpolation_1_1TileSizeCache.html#a59706db52d8baead6bc8ad830c6de495',1,'ippl::Interpolation::TileSizeCache']]],
-  ['initialized_5f_6',['initialized_',['../classippl_1_1TileSizeTuner.html#a203d821cd848428721ebb18482aa95bc',1,'ippl::TileSizeTuner']]],
+  ['initialized_5f_6',['initialized_',['../classippl_1_1nufft_1_1NativeNUFFT.html#a8b637fa3f424add077765c2977899360',1,'ippl::nufft::NativeNUFFT::initialized_()'],['../classippl_1_1TileSizeTuner.html#a203d821cd848428721ebb18482aa95bc',1,'ippl::TileSizeTuner::initialized_()']]],
   ['innerloops_5fm_7',['innerloops_m',['../structippl_1_1richardson__preconditioner.html#a6380ba3acfd3cbfcd0853e819375e3fb',1,'ippl::richardson_preconditioner::innerloops_m()'],['../structippl_1_1richardson__preconditioner__alt.html#a55868fe120b9a9c0b65844ae7658cd50',1,'ippl::richardson_preconditioner_alt::innerloops_m()'],['../structippl_1_1gs__preconditioner.html#af69007d092277e50c69beeecb158de56',1,'ippl::gs_preconditioner::innerloops_m()'],['../structippl_1_1ssor__preconditioner.html#ac9f22d2950815fb371436bc87583b262',1,'ippl::ssor_preconditioner::innerloops_m()']]],
   ['instance_8',['instance',['../classIpplTimings.html#aa7c6fd734d549357d9ea86aa5b19ccbd',1,'IpplTimings']]],
   ['integration_5fnodes_5fm_9',['integration_nodes_m',['../classippl_1_1Quadrature.html#a13784a9379f001e78faf96abbb302e2a',1,'ippl::Quadrature']]],

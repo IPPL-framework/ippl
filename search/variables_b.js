@@ -33,12 +33,13 @@ var searchData=
   ['localnum_5fmp_30',['localNum_mp',['../classippl_1_1detail_1_1ParticleAttribBase.html#a433bcdcece76a442a6cc5d3031fb7edf',1,'ippl::detail::ParticleAttribBase']]],
   ['localsize_5f_31',['localSize_',['../classippl_1_1fft_1_1HeffteC2C.html#ab3312858dede9a45bb9cfbffc8904d18',1,'ippl::fft::HeffteC2C']]],
   ['lock_5fmethod_32',['lock_method',['../structippl_1_1Interpolation_1_1ScatterConfig.html#ae2158d51ac5ecedd552adac9e7f4dd4f',1,'ippl::Interpolation::ScatterConfig']]],
-  ['log_5fl_5f_33',['log_l_',['../classippl_1_1detail_1_1GPModel.html#a3016c600178ab392f52fe36a8ab6e7f3',1,'ippl::detail::GPModel']]],
-  ['log_5fsigma_5ff_5f_34',['log_sigma_f_',['../classippl_1_1detail_1_1GPModel.html#ab6f29b3d062339378572004d91bbc526',1,'ippl::detail::GPModel']]],
-  ['log_5fsigma_5fn_5f_35',['log_sigma_n_',['../classippl_1_1detail_1_1GPModel.html#a6e6c24836d2564b1e009bfe2d100bc8f',1,'ippl::detail::GPModel']]],
-  ['logentries_5fm_36',['logEntries_m',['../classippl_1_1LoggingBufferHandler.html#aeb097286e797ffc2cea88cccff7d168a',1,'ippl::LoggingBufferHandler']]],
-  ['lowcomplexfull_5f_37',['lowComplexFull_',['../classippl_1_1FFT_3_01PrunedRCTransform_00_01RealField_01_4.html#a5e0a04bc35ddbfb11513dc2419b6f0c6',1,'ippl::FFT&lt; PrunedRCTransform, RealField &gt;']]],
-  ['lower_5fin_5f_38',['lower_in_',['../classippl_1_1fft_1_1CuFFTMpC2C.html#a9beb36eb1ddd5806c7c3ec4b741993e6',1,'ippl::fft::CuFFTMpC2C']]],
-  ['lower_5fm_39',['lower_m',['../structippl_1_1gs__preconditioner.html#a3e36bf4b42cf56654ade0877cfc11093',1,'ippl::gs_preconditioner::lower_m()'],['../structippl_1_1ssor__preconditioner.html#aac6aa7139fc48892c0959b4b6ecdb2f4',1,'ippl::ssor_preconditioner::lower_m()']]],
-  ['lower_5fout_5f_40',['lower_out_',['../classippl_1_1fft_1_1CuFFTMpC2C.html#a01fec5003c1c6f781d77bdc958ff1a79',1,'ippl::fft::CuFFTMpC2C']]]
+  ['lockmethod_5fm_33',['lockMethod_m',['../classippl_1_1FFT_3_01NUFFTransform_00_01RealField_01_4.html#a1631e28a7bcc555a6b85d0a2e5fc1784',1,'ippl::FFT&lt; NUFFTransform, RealField &gt;']]],
+  ['log_5fl_5f_34',['log_l_',['../classippl_1_1detail_1_1GPModel.html#a3016c600178ab392f52fe36a8ab6e7f3',1,'ippl::detail::GPModel']]],
+  ['log_5fsigma_5ff_5f_35',['log_sigma_f_',['../classippl_1_1detail_1_1GPModel.html#ab6f29b3d062339378572004d91bbc526',1,'ippl::detail::GPModel']]],
+  ['log_5fsigma_5fn_5f_36',['log_sigma_n_',['../classippl_1_1detail_1_1GPModel.html#a6e6c24836d2564b1e009bfe2d100bc8f',1,'ippl::detail::GPModel']]],
+  ['logentries_5fm_37',['logEntries_m',['../classippl_1_1LoggingBufferHandler.html#aeb097286e797ffc2cea88cccff7d168a',1,'ippl::LoggingBufferHandler']]],
+  ['lowcomplexfull_5f_38',['lowComplexFull_',['../classippl_1_1FFT_3_01PrunedRCTransform_00_01RealField_01_4.html#a5e0a04bc35ddbfb11513dc2419b6f0c6',1,'ippl::FFT&lt; PrunedRCTransform, RealField &gt;']]],
+  ['lower_5fin_5f_39',['lower_in_',['../classippl_1_1fft_1_1CuFFTMpC2C.html#a9beb36eb1ddd5806c7c3ec4b741993e6',1,'ippl::fft::CuFFTMpC2C']]],
+  ['lower_5fm_40',['lower_m',['../structippl_1_1gs__preconditioner.html#a3e36bf4b42cf56654ade0877cfc11093',1,'ippl::gs_preconditioner::lower_m()'],['../structippl_1_1ssor__preconditioner.html#aac6aa7139fc48892c0959b4b6ecdb2f4',1,'ippl::ssor_preconditioner::lower_m()']]],
+  ['lower_5fout_5f_41',['lower_out_',['../classippl_1_1fft_1_1CuFFTMpC2C.html#a01fec5003c1c6f781d77bdc958ff1a79',1,'ippl::fft::CuFFTMpC2C']]]
 ];

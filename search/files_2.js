@@ -14,6 +14,7 @@ var searchData=
   ['communicatorlogging_2ecpp_11',['CommunicatorLogging.cpp',['../CommunicatorLogging_8cpp.html',1,'']]],
   ['communicatorlogging_2ehpp_12',['CommunicatorLogging.hpp',['../CommunicatorLogging_8hpp.html',1,'']]],
   ['coordinatetransform_2eh_13',['CoordinateTransform.h',['../CoordinateTransform_8h.html',1,'']]],
-  ['cufftmp_2eh_14',['CuFFTMp.h',['../CuFFTMp_8h.html',1,'']]],
-  ['currentdeposition_2ehpp_15',['CurrentDeposition.hpp',['../CurrentDeposition_8hpp.html',1,'']]]
+  ['correction_2eh_14',['Correction.h',['../Correction_8h.html',1,'']]],
+  ['cufftmp_2eh_15',['CuFFTMp.h',['../CuFFTMp_8h.html',1,'']]],
+  ['currentdeposition_2ehpp_16',['CurrentDeposition.hpp',['../CurrentDeposition_8hpp.html',1,'']]]
 ];

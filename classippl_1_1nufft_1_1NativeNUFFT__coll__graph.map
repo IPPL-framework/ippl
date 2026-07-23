@@ -1,0 +1,9 @@
+<map id="ippl::nufft::NativeNUFFT&lt; Dim, T, ExecSpace &gt;" name="ippl::nufft::NativeNUFFT&lt; Dim, T, ExecSpace &gt;">
+<area shape="rect" id="node1" title="NUFFT implementation." alt="" coords="279,489,445,823"/>
+<area shape="rect" id="node2" href="$structippl_1_1nufft_1_1NativeNUFFT_1_1Config.html" title="NUFFT engine configuration knobs." alt="" coords="5,225,201,339"/>
+<area shape="rect" id="node3" href="$classippl_1_1nufft_1_1ESKernel.html" title=" " alt="" coords="226,152,378,412"/>
+<area shape="rect" id="node4" href="$classippl_1_1Vector.html" title=" " alt="" coords="403,167,527,397"/>
+<area shape="rect" id="node5" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="323,5,475,89"/>
+<area shape="rect" id="node6" title=" " alt="" coords="500,27,560,67"/>
+<area shape="rect" id="node7" href="$structippl_1_1nufft_1_1NativeNUFFT_1_1TimingInfo.html" title="Per&#45;stage cumulative timings (seconds), populated by the engine." alt="" coords="551,218,717,346"/>
+</map>

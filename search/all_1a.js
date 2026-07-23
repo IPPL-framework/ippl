@@ -17,7 +17,7 @@ var searchData=
   ['_7edistribution_14',['~Distribution',['../classippl_1_1random_1_1Distribution.html#a79289199ea9cf3d7b6bd57de7a8fcf56',1,'ippl::random::Distribution']]],
   ['_7eenvironment_15',['~Environment',['../classippl_1_1mpi_1_1Environment.html#af9c7d41be8fe37845ca8b0e319722aa1',1,'ippl::mpi::Environment']]],
   ['_7eextrapolateface_16',['~ExtrapolateFace',['../classippl_1_1ExtrapolateFace.html#a76df74ce2abcdfbed9623ec8e7cd8f73',1,'ippl::ExtrapolateFace']]],
-  ['_7efft_17',['~FFT',['../classippl_1_1FFT_3_01PrunedCCTransform_00_01ComplexField_01_4.html#a7bd5550213ce9daabe7d595d4ee249cc',1,'ippl::FFT&lt; PrunedCCTransform, ComplexField &gt;']]],
+  ['_7efft_17',['~FFT',['../classippl_1_1FFT_3_01NUFFTransform_00_01RealField_01_4.html#a40c655704766689514d8dc1611291937',1,'ippl::FFT&lt; NUFFTransform, RealField &gt;::~FFT()'],['../classippl_1_1FFT_3_01PrunedCCTransform_00_01ComplexField_01_4.html#a7bd5550213ce9daabe7d595d4ee249cc',1,'ippl::FFT&lt; PrunedCCTransform, ComplexField &gt;::~FFT()']]],
   ['_7efftopenpoissonsolver_18',['~FFTOpenPoissonSolver',['../classippl_1_1FFTOpenPoissonSolver.html#af8f55e7a320831db67220ac145ef8601',1,'ippl::FFTOpenPoissonSolver']]],
   ['_7effttruncatedgreenperiodicpoissonsolver_19',['~FFTTruncatedGreenPeriodicPoissonSolver',['../classippl_1_1FFTTruncatedGreenPeriodicPoissonSolver.html#a403343fbf4e1ca53ca35195fdeda7701',1,'ippl::FFTTruncatedGreenPeriodicPoissonSolver']]],
   ['_7efield_20',['~Field',['../classippl_1_1Field.html#a8c34293c2366e2b8ab65b04b65f3df9a',1,'ippl::Field']]],

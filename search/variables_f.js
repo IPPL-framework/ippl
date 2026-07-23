@@ -25,6 +25,7 @@ var searchData=
   ['preconditioner_5fm_22',['preconditioner_m',['../classippl_1_1PCG.html#aebbe17a4e11e48c98dcaeab46f6b4d2b',1,'ippl::PCG']]],
   ['printnode_23',['PrintNode',['../classInform.html#a365a619e4580b0df6e7912448ac8733b',1,'Inform']]],
   ['prod_24',['prod',['../namespaceippl.html#a4a18c8ae92048307dad2530aa3c2cb31',1,'ippl']]],
-  ['pruning_5f_25',['pruning_',['../classippl_1_1FFT_3_01PrunedCCTransform_00_01ComplexField_01_4.html#a16c14d4528d6488816044ca9370fbe4b',1,'ippl::FFT&lt; PrunedCCTransform, ComplexField &gt;::pruning_()'],['../classippl_1_1FFT_3_01PrunedRCTransform_00_01RealField_01_4.html#ade2766c2f4c844da038386f4bacd9bb2',1,'ippl::FFT&lt; PrunedRCTransform, RealField &gt;::pruning_()']]],
-  ['px_26',['px',['../classmy__auto__ptr.html#ad040b4d59a7327923d4772bdf63a00d4',1,'my_auto_ptr']]]
+  ['pruned_5ffft_5f_25',['pruned_fft_',['../classippl_1_1nufft_1_1NativeNUFFT.html#a59b45940fe48ec581d9e6370d1888de0',1,'ippl::nufft::NativeNUFFT']]],
+  ['pruning_5f_26',['pruning_',['../classippl_1_1FFT_3_01PrunedCCTransform_00_01ComplexField_01_4.html#a16c14d4528d6488816044ca9370fbe4b',1,'ippl::FFT&lt; PrunedCCTransform, ComplexField &gt;::pruning_()'],['../classippl_1_1FFT_3_01PrunedRCTransform_00_01RealField_01_4.html#ade2766c2f4c844da038386f4bacd9bb2',1,'ippl::FFT&lt; PrunedRCTransform, RealField &gt;::pruning_()']]],
+  ['px_27',['px',['../classmy__auto__ptr.html#ad040b4d59a7327923d4772bdf63a00d4',1,'my_auto_ptr']]]
 ];

@@ -1,9 +1,12 @@
 <map id="FFT.h" name="FFT.h">
-<area shape="rect" id="node1" title=" " alt="" coords="265,5,321,31"/>
+<area shape="rect" id="node1" title=" " alt="" coords="476,5,532,31"/>
 <area shape="rect" id="node2" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="5,86,176,111"/>
 <area shape="rect" id="node6" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="200,86,387,111"/>
 <area shape="rect" id="node7" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="411,79,597,119"/>
+<area shape="rect" id="node8" href="$NativeNUFFT_8h.html" title=" " alt="" coords="621,86,736,111"/>
 <area shape="rect" id="node3" href="$datatypes_8h.html" title=" " alt="" coords="249,167,337,192"/>
 <area shape="rect" id="node4" href="$FieldSolverBase_8h.html" title=" " alt="" coords="230,240,357,265"/>
 <area shape="rect" id="node5" href="$PicManager_8h.html" title=" " alt="" coords="243,313,344,339"/>
+<area shape="rect" id="node9" href="$NUFFT_8h.html" title="Non&#45;uniform FFT specialization (NUFFTransform tag)." alt="" coords="650,167,726,192"/>
+<area shape="rect" id="node10" href="$Transform_8h.html" title="Aggregate include of all IPPL FFT transform specializations." alt="" coords="689,240,780,265"/>
 </map>

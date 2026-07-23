@@ -1,0 +1,13 @@
+<map id="NUFFT.hpp" name="NUFFT.hpp">
+<area shape="rect" id="node1" title="Implementation of FFT&lt;NUFFTransform, RealField&gt; declared in NUFFT.h." alt="" coords="545,5,636,31"/>
+<area shape="rect" id="node2" href="$NUFFT_8h.html" title="Non&#45;uniform FFT specialization (NUFFTransform tag)." alt="" coords="553,79,629,104"/>
+<area shape="rect" id="node3" href="$Transform_8h.html" title="Aggregate include of all IPPL FFT transform specializations." alt="" coords="504,152,595,177"/>
+<area shape="rect" id="node4" href="$FFT_8h.html" title=" " alt="" coords="476,225,532,251"/>
+<area shape="rect" id="node5" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="5,306,176,331"/>
+<area shape="rect" id="node9" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="200,306,387,331"/>
+<area shape="rect" id="node10" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="411,299,597,339"/>
+<area shape="rect" id="node11" href="$NativeNUFFT_8h.html" title=" " alt="" coords="621,306,736,331"/>
+<area shape="rect" id="node6" href="$datatypes_8h.html" title=" " alt="" coords="249,387,337,412"/>
+<area shape="rect" id="node7" href="$FieldSolverBase_8h.html" title=" " alt="" coords="230,460,357,485"/>
+<area shape="rect" id="node8" href="$PicManager_8h.html" title=" " alt="" coords="243,533,344,559"/>
+</map>
