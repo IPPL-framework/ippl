@@ -217,10 +217,13 @@ public:
         fftParams2.add("nthreads", 0);
 #endif
 
-        fftParams1.add("use_finufft_defaults", false);
-        fftParams2.add("use_finufft_defaults", false);
-        fftParams1.add("use_kokkos_nufft", false);
-        fftParams2.add("use_kokkos_nufft", false);
+        bool useFinufft = false;
+        fftParams1.add("use_finufft", useFinufft);
+        fftParams2.add("use_finufft", useFinufft);
+        //Finufft does not work with upsampled inputs
+        if(useFinufft) {
+            useUpsampledInputs_m = false;
+        }
         fftParams1.add("use_upsampled_inputs", useUpsampledInputs_m);
         fftParams2.add("use_upsampled_inputs", useUpsampledInputs_m);
         // fftParams.add("use_cufinufft_defaults", true);

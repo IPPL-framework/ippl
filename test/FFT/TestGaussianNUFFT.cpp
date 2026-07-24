@@ -357,7 +357,6 @@ namespace {
         ippl::ParameterList params;
         params.add("tolerance", 1.0e-6);
         params.add("use_upsampled_inputs", false);
-        params.add("use_kokkos_nufft", false);
         params.add("sort", true);
         params.add("tile_size_3d", 6);
         params.add("z_tiles", 1);
@@ -375,7 +374,6 @@ namespace {
             }
 #endif
             params.add("use_finufft", true);
-            params.add("use_finufft_defaults", false);
 #endif
         } else {
             throw IpplException("TestGaussianNUFFT", "Unknown NUFFT backend");
