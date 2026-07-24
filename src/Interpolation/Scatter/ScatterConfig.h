@@ -183,7 +183,7 @@ namespace ippl {
             struct ScatterConfigDefault<Dim, Kokkos::Cuda> {
                 static ScatterConfig<Dim> get() {
                     ScatterConfig<Dim> config;
-                    config.method    = ScatterMethod::Atomic;
+                    config.method    = ScatterMethod::OutputFocused;
                     config.sort      = false;
                     config.team_size = 32;
 
