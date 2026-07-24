@@ -552,6 +552,17 @@ public:
         int order           = shapedegree_m + 1;
         const FieldLayout_t& layout = Sk_m.getLayout();
         const auto& lDom   = layout.getLocalNDIndex();
+        Vector_t dxShape;
+        //Actual mesh spacing is twice the upsampled one if we do not
+        //use pruned option
+        for (size_t d = 0; d < Dim; ++d) {
+            if(useUpsampledInputs_m) {
+                dxShape[d] = 2.0 * dx[d];
+            }
+            else {
+                dxShape[d] = dx[d];
+            }
+        }
         if (shapetype_m == "Gaussian") {
             throw IpplException("initializeShapeFunctionPIF",
                                 "Gaussian shape function not implemented yet");
@@ -573,8 +584,7 @@ public:
                         //kVec[d]        = 2 * pi / Len[d] * (iVec[d] - (N[d] / 2));
                         bool shift            = (iVec[d] > (N[d] / 2));
                         kVec[d]               = 2 * pi / Len[d] * (iVec[d] - shift * N[d]);
-                        //Actual mesh spacing is twice the upsampled one
-                        double khbytwo = (kVec[d] * dx[d] / 2) * 2;
+                        double khbytwo = kVec[d] * dxShape[d] / 2;
                         bool isNotZero = (khbytwo != 0.0);
                         double factor  = (1.0 / (khbytwo + ((!isNotZero) * 1.0)));
                         double arg =
