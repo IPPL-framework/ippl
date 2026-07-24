@@ -1,6 +1,6 @@
 // Electrostatic Landau damping test with Particle-in-Fourier schemes
 //   Usage:
-//     srun ./LandauDampingPIF <nx> <ny> <nz> <Np> <Nt> <dt> <ShapeType> <degree> <tol> --info 5
+//     srun ./LandauDampingPIF <nx> <ny> <nz> <Np> <Nt> <dt> <ShapeType> <degree> <tol> <output_type> --info 5
 //     nx       = No. of Fourier modes in the x-direction
 //     ny       = No. of Fourier modes in the y-direction
 //     nz       = No. of Fourier modes in the z-direction
@@ -10,6 +10,8 @@
 //     ShapeType = Shape function type B-spline only for the moment
 //     degree = B-spline degree (-1 for delta function)
 //     tol = tolerance of NUFFT
+//     output_type = optional output type argument which if set to 'pruned' returns the output on 
+//     original requested modes whereas by default it returns on an 2x upsampled modes 
 //     Example:
 //     srun ./LandauDampingPIF 32 32 32 655360 20 0.05 B-spline 1 1e-4 --info 5
 //
