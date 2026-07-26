@@ -37,3 +37,17 @@ add_ippl_integration_test(
   10
   --info
   10)
+
+add_ippl_integration_test(
+  benchmarkParticleUpdateScaling
+  LABELS
+  integration
+  particle
+  ARGS
+  128
+  128
+  128
+  10000
+  10
+  --info
+  10)
