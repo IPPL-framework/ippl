@@ -141,6 +141,7 @@ public:
     // NUFFT pipeline selector: true -> 2x-upsampled grid (default);
     // false -> "pruned" mode (only the lowest n_modes per axis transformed).
     bool useUpsampledInputs_m = true;
+    bool useFinufft_m = false;
 
     std::shared_ptr<ippl::FFT<ippl::NUFFTransform, Field_t>> nufftType1_mp, nufftType2_mp;
 
@@ -164,14 +165,15 @@ public:
 
     ChargedParticlesPIF(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
                         std::array<bool, Dim> decomp, double Q, size_type Np,
-                        bool useUpsampledInputs = true)
+                        bool useUpsampledInputs = true, bool useFinufft = false)
         : ippl::ParticleBase<PLayout>(pl)
         , hr_m(hr)
         , rmin_m(rmin)
         , rmax_m(rmax)
         , Q_m(Q)
         , Np_m(Np)
-        , useUpsampledInputs_m(useUpsampledInputs) {
+        , useUpsampledInputs_m(useUpsampledInputs) 
+        , useFinufft_m(useFinufft) {
         // register the particle attributes
         this->addAttribute(q);
         this->addAttribute(P);
@@ -191,21 +193,13 @@ public:
         fftParams1.add("tolerance", tol);
         fftParams2.add("tolerance", tol);
 #ifdef FINUFFT_USE_CUDA
-        fftParams1.add("gpu_method", 2);
+        fftParams1.add("gpu_method", 3);
         fftParams1.add("gpu_sort", 0);
         fftParams1.add("gpu_kerevalmeth", 1);
         fftParams1.add("gpu_binsizex", 8);
         fftParams1.add("gpu_binsizey", 8);
         fftParams1.add("gpu_binsizez", 2);
         fftParams1.add("gpu_maxsubprobsize", 1024);
-
-        fftParams2.add("gpu_method", 2);
-        fftParams2.add("gpu_sort", 0);
-        fftParams2.add("gpu_kerevalmeth", 1);
-        fftParams2.add("gpu_binsizex", 8);
-        fftParams2.add("gpu_binsizey", 8);
-        fftParams2.add("gpu_binsizez", 2);
-        fftParams2.add("gpu_maxsubprobsize", 1024);
 
 #else
         fftParams1.add("spread_kerevalmeth", 1);
@@ -216,17 +210,10 @@ public:
         fftParams2.add("spread_sort", 2);
         fftParams2.add("nthreads", 0);
 #endif
-
-        bool useFinufft = false;
-        fftParams1.add("use_finufft", useFinufft);
-        fftParams2.add("use_finufft", useFinufft);
-        //Finufft does not work with upsampled inputs
-        if(useFinufft) {
-            useUpsampledInputs_m = false;
-        }
+        fftParams1.add("use_finufft", useFinufft_m);
+        fftParams2.add("use_finufft", useFinufft_m);
         fftParams1.add("use_upsampled_inputs", useUpsampledInputs_m);
         fftParams2.add("use_upsampled_inputs", useUpsampledInputs_m);
-        // fftParams.add("use_cufinufft_defaults", true);
 
         nufftType1_mp = std::make_shared<ippl::FFT<ippl::NUFFTransform, Field_t>>(
             FL, this->getLocalNum(), 1, fftParams1);

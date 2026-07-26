@@ -346,7 +346,6 @@ namespace ippl {
 
         FinufftOpts_t opts;
         Traits_t::defaultOpts(&opts);
-        opts.modeord = 1;//Similar to Heffte ordering
 
 #ifdef ENABLE_GPU_NUFFT
         opts.gpu_method         = params.get<int>("gpu_method", opts.gpu_method);

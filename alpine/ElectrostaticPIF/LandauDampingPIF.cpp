@@ -1,6 +1,7 @@
 // Electrostatic Landau damping test with Particle-in-Fourier schemes
 //   Usage:
-//     srun ./LandauDampingPIF <nx> <ny> <nz> <Np> <Nt> <dt> <ShapeType> <degree> <tol> <output_type> --info 5
+//     srun ./LandauDampingPIF <nx> <ny> <nz> <Np> <Nt> <dt> <ShapeType> <degree> 
+//                             <tol> <output_type> <nufft_library> --info 5
 //     nx       = No. of Fourier modes in the x-direction
 //     ny       = No. of Fourier modes in the y-direction
 //     nz       = No. of Fourier modes in the z-direction
@@ -12,6 +13,10 @@
 //     tol = tolerance of NUFFT
 //     output_type = optional output type argument which if set to 'pruned' returns the output on 
 //     original requested modes whereas by default it returns on an 2x upsampled modes 
+//     nufft_library = optional argument to select the external FINUFFT library for NUFFTs 
+//     instead of the native version. If IPPL is built with FINUFFT and if the argument is 
+//     set to 'useFinufft' then FINUFFT will be used for the NUFFTs. If no argumet or any other 
+//     argument the native version will be used. 
 //     Example:
 //     srun ./LandauDampingPIF 32 32 32 655360 20 0.05 B-spline 1 1e-4 --info 5
 //
@@ -156,6 +161,17 @@ int main(int argc, char* argv[]) {
         //                             (default, matches the original example).
         const bool useUpsampledInputs =
             !(argc > 10 && std::string(argv[10]) == "pruned");
+        // Optional 11th positional argument selects the external FINUFFT 
+        // library for performing NUFFTs instead of the native path. But
+        // IPPL needs to be built with FINUFFT for this. 
+        const bool useFinufft = 
+            (argc > 11 && std::string(argv[11]) == "useFinufft");
+
+        if(useFinufft && useUpsampledInputs) {
+            throw IpplException("LandauDampingPIF",
+                                "Set the output type to be pruned with Finufft.");
+
+        }
 
         ippl::Vector<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
         ippl::Vector<int, Dim> nrOrig;
@@ -234,7 +250,8 @@ int main(int argc, char* argv[]) {
         // Q = -\int\int f dx dv
         double Q = -length[0] * length[1] * length[2];
         P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, isParallel, Q,
-                                                Total_particles, useUpsampledInputs);
+                                                Total_particles, 
+                                                useUpsampledInputs, useFinufft);
 
         P->nr_m = nr;
 
