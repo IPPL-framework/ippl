@@ -253,8 +253,6 @@ namespace ippl {
                 params.add("tolerance", tolerance);
                 params.add("use_upsampled_inputs", useUpsampling);
                 params.add("use_finufft", true);
-                params.add("use_finufft_defaults", false);
-                params.add("use_kokkos_nufft", false);
 
 #ifdef ENABLE_GPU_NUFFT
                 params.add("gpu_method", 1);
