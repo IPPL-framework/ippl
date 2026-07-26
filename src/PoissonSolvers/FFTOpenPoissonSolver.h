@@ -53,6 +53,45 @@ namespace ippl {
             DCT_VICO   = 0b100
         };
 
+        /**
+         * @brief Real-space Green-function model used by the Hockney open-boundary solver.
+         *
+         * `STANDARD` samples the free-space Green function at doubled-grid points:
+         * @f[
+         *   G(\mathbf{r}) = -\frac{1}{4\pi |\mathbf{r}|}.
+         * @f]
+         *
+         * `INTEGRATED` uses the cell-averaged Green function of Qiang et al.
+         * for a uniform charge density in each source cell:
+         * @f[
+         *   \overline{G}(\mathbf{r}) =
+         *   -\frac{1}{4\pi h_x h_y h_z}
+         *   \int_{-h_x/2}^{h_x/2}
+         *   \int_{-h_y/2}^{h_y/2}
+         *   \int_{-h_z/2}^{h_z/2}
+         *   \frac{dx' dy' dz'}
+         *        {\sqrt{(x-x')^2 + (y-y')^2 + (z-z')^2}}.
+         * @f]
+         *
+         * The integrated kernel is currently supported for 3D Hockney open
+         * boundary conditions only. It is intended for high-aspect-ratio beams
+         * where point sampling of @f$1/r@f$ can be inefficient near narrow
+         * dimensions.
+         *
+         * References:
+         * - J. Qiang, S. M. Lidia, R. D. Ryne, and C. Limborg-Deprey,
+         *   "Three-Dimensional Quasi-Static Model for High Brightness Beam
+         *   Dynamics Simulation," Phys. Rev. ST Accel. Beams 9, 044204 (2006),
+         *   https://doi.org/10.1103/PhysRevSTAB.9.044204.
+         * - J. Qiang et al., LBNL-59098,
+         *   http://repositories.cdlib.org/lbnl/LBNL-59098.
+         * - See also IPPL issue #556.
+         */
+        enum GreenFunction {
+            STANDARD   = 0,
+            INTEGRATED = 1
+        };
+
         // define a type for a 3 dimensional field (e.g. charge density field)
         // define a type of Field with integers to be used for the helper Green's function
         // also define a type for the Fourier transformed complex valued fields
@@ -107,29 +146,48 @@ namespace ippl {
             return &hess_m;
         }
 
-        // compute standard Green's function
+        /**
+         * @brief Compute and cache the FFT of the selected Green function.
+         *
+         * The selected kernel is controlled by the integer parameter
+         * `greens_function`, with values from GreenFunction. For Hockney, the
+         * real-space kernel is filled on the doubled convolution grid and then
+         * transformed into `grntr_m`. The default is GreenFunction::STANDARD to
+         * preserve historical IPPL behavior.
+         */
         void greensFunction();
 
-        // Replace the cached FFT Green's function (grntr_m) with the FFT of a
-        // free-space Green's function translated by `shift` in real space, i.e.
-        //   G(r) = -1 / (4 pi |r - shift|)
-        // using the same sign convention as greensFunction() (HOCKNEY). After
-        // this call, solve() will convolve rho with the shifted kernel instead
-        // of the standard one, up to the usual caveat that solve() recomputes
-        // greensFunction() if it detects a change in mesh spacing, so the
-        // caller should keep the mesh fixed between setup and solve().
-        //
-        // To restore the standard kernel, call greensFunction() explicitly.
-        //
-        // Intended use for Dirichlet boundary conditions via the method of
-        // images: pick `shift[d] = 2 * (plane[d] - domain_center[d])` for each
-        // axis with a Dirichlet plane, then call solve() and axis-flip the
-        // resulting potential in the active axes to obtain the image-charge
-        // contribution. The caller composes open-BC and image contributions
-        // additively. See test/solver/TestShiftedGreensFunction.cpp for the
-        // reference orchestration.
-        //
-        // Preconditions: algorithm = HOCKNEY (throws otherwise).
+        /**
+         * @brief Replace the cached kernel by a shifted Hockney Green function.
+         *
+         * For GreenFunction::STANDARD, the shifted kernel is
+         * @f[
+         *   G_s(\mathbf{r}) = -\frac{1}{4\pi |\mathbf{r}-\mathbf{s}|},
+         * @f]
+         * where @f$\mathbf{s}@f$ is `shift`.
+         *
+         * For GreenFunction::INTEGRATED, the same translation is applied before
+         * the cell average:
+         * @f[
+         *   \overline{G}_s(\mathbf{r}) =
+         *   -\frac{1}{4\pi h_x h_y h_z}
+         *   \int_{\mathrm{cell}}
+         *   \frac{d^3\mathbf{r}'}
+         *        {|\mathbf{r}-\mathbf{s}-\mathbf{r}'|}.
+         * @f]
+         *
+         * After this call, solve() convolves the RHS with the shifted kernel
+         * until greensFunction() is called again or the mesh spacing changes.
+         *
+         * Intended use for Dirichlet boundary conditions via the method of
+         * images: choose the shift from the plane location and domain center,
+         * solve with the shifted kernel, then let the caller flip/sign-compose
+         * the image contribution. See test/solver/TestShiftedGreensFunction.cpp
+         * for the reference orchestration.
+         *
+         * @pre `algorithm == HOCKNEY`.
+         * @pre GreenFunction::INTEGRATED additionally requires `Dim == 3`.
+         */
         void shiftedGreensFunction(const Vector<double, Dim>& shift);
 
         // function called in the constructor to initialize the fields
@@ -226,6 +284,43 @@ namespace ippl {
         // buffer for communication
         detail::FieldBufferData<Trhs> fd_m;
 
+        /**
+         * @brief Closed-form antiderivative for the integrated 3D Green kernel.
+         *
+         * Let @f$r=\sqrt{x^2+y^2+z^2}@f$. This evaluates
+         * @f[
+         * F(x,y,z) =
+         * -\frac{z^2}{2}\tan^{-1}\!\left(\frac{xy}{zr}\right)
+         * -\frac{y^2}{2}\tan^{-1}\!\left(\frac{xz}{yr}\right)
+         * -\frac{x^2}{2}\tan^{-1}\!\left(\frac{yz}{xr}\right)
+         * + yz\ln(x+r) + xz\ln(y+r) + xy\ln(z+r).
+         * @f]
+         * The integrated kernel is formed by the eight-corner difference of
+         * @f$F@f$ divided by the cell volume.
+         */
+        KOKKOS_INLINE_FUNCTION static scalar_type integratedGreenAntiderivative(
+            const scalar_type& x, const scalar_type& y, const scalar_type& z);
+
+        KOKKOS_INLINE_FUNCTION static scalar_type integratedGreenLogTerm(const scalar_type& a,
+                                                                         const scalar_type& b,
+                                                                         const scalar_type& c,
+                                                                         const scalar_type& r);
+
+        KOKKOS_INLINE_FUNCTION static scalar_type integratedGreenAtanTerm(
+            const scalar_type& numerator, const scalar_type& denominator);
+
+        /**
+         * @brief Cell average of @f$1/r@f$ over a cell centered at `(x,y,z)`.
+         *
+         * The returned value is the cell average without the Poisson prefactor;
+         * callers multiply by @f$-1/(4\pi)@f$ to match IPPL's Hockney sign
+         * convention.
+         */
+        KOKKOS_INLINE_FUNCTION static scalar_type integratedGreenAverage(const scalar_type& x,
+                                                                         const scalar_type& y,
+                                                                         const scalar_type& z,
+                                                                         const vector_type& h);
+
     protected:
         virtual void setDefaultParameters() override {
             using heffteBackend       = typename FFT_t::heffteBackend;
@@ -254,6 +349,7 @@ namespace ippl {
             }
 
             this->params_m.add("algorithm", HOCKNEY);
+            this->params_m.add("greens_function", STANDARD);
             this->params_m.add("hessian", false);
         }
     };

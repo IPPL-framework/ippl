@@ -5,12 +5,14 @@
 
 #include <Kokkos_MathematicalFunctions.hpp>
 
+#include "Utility/TypeUtils.h"
+
 namespace ippl {
     /*!
      * Computes the inner product of two fields
      * @param f1 first field
      * @param f2 second field
-     * @return Result of f1^T f2
+     * @return Result of f1^H f2 for complex fields, f1^T f2 otherwise
      */
     template <typename BareField>
     typename BareField::value_type innerProduct(const BareField& f1, const BareField& f2) {
@@ -36,7 +38,13 @@ namespace ippl {
         ippl::parallel_reduce(
             "Field::innerProduct(Field&, Field&)", f1.getFieldRangePolicy(),
             KOKKOS_LAMBDA(const index_array_type& args, T& val) {
-                val += apply(view1, args) * apply(view2, args);
+                (void)view1;
+                (void)view2;
+                if constexpr (is_complex_v<T>) {
+                    val += apply(view1, args) * Kokkos::conj(apply(view2, args));
+                } else {
+                    val += apply(view1, args) * apply(view2, args);
+                }
             },
             Kokkos::Sum<T>(sum));
 
@@ -44,7 +52,13 @@ namespace ippl {
         IpplTimings::startTimer(mpi_red);
 
         T globalSum = 0;
-        layout.comm.allreduce(sum, globalSum, 1, std::plus<T>());
+        if constexpr (is_complex_v<T>) {
+            using real_type = decltype(T{}.real());
+            layout.comm.allreduce(sum.real(), globalSum.real(), 1, std::plus<real_type>{});
+            layout.comm.allreduce(sum.imag(), globalSum.imag(), 1, std::plus<real_type>{});
+        } else {
+            layout.comm.allreduce(sum, globalSum, 1, std::plus<T>());
+        }
 
         IpplTimings::stopTimer(mpi_red);
 

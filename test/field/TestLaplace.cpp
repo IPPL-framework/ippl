@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
 
         int pt = std::stoi(argv[1]);
         ippl::Index I(pt);
-        ippl::NDIndex<dim> owned(I, I, I);
+        ippl::NDIndex<dim> global_domain(I, I, I);
 
         const int iterations = std::stoi(argv[2]);
 
@@ -23,13 +23,13 @@ int main(int argc, char* argv[]) {
         isParallel.fill(true);  // Specifies SERIAL, PARALLEL dims
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, global_domain, isParallel);
 
         // Unit box
         double dx                        = 2.0 / double(pt);
         ippl::Vector<double, dim> hx     = dx;
         ippl::Vector<double, dim> origin = -1;
-        Mesh_t mesh(owned, hx, origin);
+        Mesh_t mesh(global_domain, hx, origin);
 
         double pi = acos(-1.0);
 

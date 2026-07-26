@@ -7,8 +7,10 @@
 
 // Define the ParticlesContainer class
 template <typename T, unsigned Dim = 3>
-class ParticleContainer : public ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>> {
-    using Base = ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim>>;
+class ParticleContainer : public ippl::ParticleBase<
+                              ippl::ParticleSpatialLayout<T, Dim, ippl::UniformCartesian<T, Dim>>> {
+    using Base =
+        ippl::ParticleBase<ippl::ParticleSpatialLayout<T, Dim, ippl::UniformCartesian<T, Dim>>>;
 
 public:
     ippl::ParticleAttrib<double> q;           // charge
@@ -31,7 +33,7 @@ public:
     void setPL(std::shared_ptr<PLayout_t<T, Dim>>& pl) { pl_m = pl; }
 
     void registerAttributes() {
-        //only needed for vis
+        // only needed for vis
         P.set_name("velocity");
         q.set_name("charge");
         E.set_name("electric_field");

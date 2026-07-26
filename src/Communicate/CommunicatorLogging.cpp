@@ -7,8 +7,16 @@
 
 #include "Communicate/Communicator.h"
 #include "Communicate/LogEntry.h"
+#include "Communicate/LoggingBufferHandler.h"
 
 namespace ippl::mpi {
+
+    template <class MemorySpace>
+    struct is_a_logger : std::false_type {};
+
+    template <class MemorySpace>
+    struct is_a_logger<LoggingBufferHandler<MemorySpace>> : std::true_type {};
+
     void Communicator::printLogs(const std::string& filename) {
         std::vector<LogEntry> localLogs = gatherLocalLogs();
 
@@ -24,20 +32,17 @@ namespace ippl::mpi {
         }
     }
 
-    template <class MemorySpace>
-    struct is_a_logger : std::false_type {};
-
-    template <class MemorySpace>
-    struct is_a_logger<LoggingBufferHandler<MemorySpace> > : std::true_type {};
-
     std::vector<LogEntry> Communicator::gatherLocalLogs() {
         std::vector<LogEntry> localLogs;
-        if constexpr (is_a_logger<buffer_handler_type>::value) {
-            buffer_handlers_m->forAll([&](auto& loggingHandler) {
-                const auto& logs = loggingHandler.getLogs();
+
+        getBufferHandler().forAll([&](auto& handler) {
+            using handler_t = std::decay_t<decltype(handler)>;
+            if constexpr (is_a_logger<handler_t>::value) {
+                const auto& logs = handler.getLogs();
                 localLogs.insert(localLogs.end(), logs.begin(), logs.end());
-            });
-        }
+            }
+        });
+
         return localLogs;
     }
 
@@ -88,11 +93,9 @@ namespace ippl::mpi {
         size_t offset = 0;
 
         while (offset < buffer.size()) {
-            LogEntry logEntry = LogEntry::deserialize(buffer, offset);
-
-            logs.push_back(logEntry);
-
-            offset += logEntry.serialize().size();
+            // deserializeAdvance walks offset past the consumed bytes -
+            // avoids the O(N^2) blowup of re-serializing each entry
+            logs.push_back(LogEntry::deserializeAdvance(buffer, offset));
         }
         return logs;
     }

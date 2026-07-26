@@ -40,28 +40,31 @@ namespace ippl {
         return buffer;
     }
 
-    LogEntry LogEntry::deserialize(const std::vector<char>& buffer, size_t offset) {
+    LogEntry LogEntry::deserializeAdvance(const std::vector<char>& buffer, size_t& offset) {
         LogEntry entry;
-        size_t current_pos = offset;
 
-        entry.methodName  = deserializeString(buffer, current_pos);
-        entry.usedSize    = deserializeBasicType<size_t>(buffer, current_pos);
-        entry.freeSize    = deserializeBasicType<size_t>(buffer, current_pos);
-        entry.memorySpace = deserializeString(buffer, current_pos);
-        entry.rank        = deserializeBasicType<int>(buffer, current_pos);
+        entry.methodName  = deserializeString(buffer, offset);
+        entry.usedSize    = deserializeBasicType<size_t>(buffer, offset);
+        entry.freeSize    = deserializeBasicType<size_t>(buffer, offset);
+        entry.memorySpace = deserializeString(buffer, offset);
+        entry.rank        = deserializeBasicType<int>(buffer, offset);
 
-        auto duration   = deserializeBasicType<long long>(buffer, current_pos);
+        auto duration   = deserializeBasicType<long long>(buffer, offset);
         entry.timestamp = std::chrono::time_point<std::chrono::high_resolution_clock>(
             std::chrono::high_resolution_clock::duration(duration));
 
-        size_t mapSize = deserializeBasicType<size_t>(buffer, current_pos);
+        size_t mapSize = deserializeBasicType<size_t>(buffer, offset);
         for (size_t i = 0; i < mapSize; ++i) {
-            std::string key       = deserializeString(buffer, current_pos);
-            std::string value     = deserializeString(buffer, current_pos);
+            std::string key       = deserializeString(buffer, offset);
+            std::string value     = deserializeString(buffer, offset);
             entry.parameters[key] = value;
         }
 
         return entry;
+    }
+
+    LogEntry LogEntry::deserialize(const std::vector<char>& buffer, size_t offset) {
+        return deserializeAdvance(buffer, offset);
     }
 
 }  // namespace ippl

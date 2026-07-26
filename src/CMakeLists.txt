@@ -67,7 +67,9 @@ target_sources(ippl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Ippl.cpp)
 target_include_directories(
   ippl PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
               $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ippl>
-  PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+          # ada: PR501 comment-only hunk: generated IpplAutoTunePresets.h
+          ${CMAKE_BINARY_DIR}/include)
 
 add_subdirectory(Communicate)
 
@@ -104,6 +106,10 @@ target_link_libraries(ippl PUBLIC Kokkos::kokkos MPI::MPI_CXX)
 
 if(IPPL_ENABLE_FFT)
   target_link_libraries(ippl PUBLIC Heffte::Heffte)
+endif()
+
+if(IPPL_ENABLE_FINUFFT)
+  target_link_libraries(ippl PUBLIC ${IPPL_FINUFFT_TARGETS})
 endif()
 
 # this alias should be created after all target properties have been set

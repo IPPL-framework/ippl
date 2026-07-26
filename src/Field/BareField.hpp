@@ -146,7 +146,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::fillHalo() {
         if (layout_m->comm.size() > 1) {
-            halo_m.fillHalo(dview_m, layout_m);
+            halo_m.fillHalo(dview_m, layout_m, nghost_m);
         }
         if (layout_m->isAllPeriodic_m) {
             using Op = typename detail::HaloCells<T, Dim, ViewArgs...>::assign;
@@ -157,7 +157,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     void BareField<T, Dim, ViewArgs...>::accumulateHalo() {
         if (layout_m->comm.size() > 1) {
-            halo_m.accumulateHalo(dview_m, layout_m);
+            halo_m.accumulateHalo(dview_m, layout_m, nghost_m);
         }
         if (layout_m->isAllPeriodic_m) {
             using Op = typename detail::HaloCells<T, Dim, ViewArgs...>::rhs_plus_assign;
@@ -182,13 +182,13 @@ namespace ippl {
     template <typename E, size_t N>
     BareField<T, Dim, ViewArgs...>& BareField<T, Dim, ViewArgs...>::operator=(
         const detail::Expression<E, N>& expr) {
-        using capture_type     = detail::CapturedExpression<E, N>;
-        capture_type expr_     = reinterpret_cast<const capture_type&>(expr);
+        const E expr_          = static_cast<const E&>(expr);
+        auto view              = dview_m;
         using index_array_type = typename RangePolicy<Dim, execution_space>::index_array_type;
         ippl::parallel_for(
-            "BareField::operator=(const Expression&)", getRangePolicy(dview_m, nghost_m),
-            KOKKOS_CLASS_LAMBDA(const index_array_type& args) {
-                apply(dview_m, args) = apply(expr_, args);
+            "BareField::operator=(const Expression&)", getRangePolicy(view, nghost_m),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                apply(view, args) = apply(expr_, args);
             });
         return *this;
     }

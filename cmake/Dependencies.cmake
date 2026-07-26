@@ -109,7 +109,9 @@ function(set_kokkos_options)
   endforeach()
 
   if("CUDA" IN_LIST IPPL_PLATFORMS)
-    set(Kokkos_ENABLE_CUDA_LAMBDA ON)
+    if(Kokkos_VERSION VERSION_LESS 5.0.0)
+      set(Kokkos_ENABLE_CUDA_LAMBDA ON CACHE BOOL "Enable Kokkos CUDA lambda support" FORCE)
+    endif()
   endif()
 
   if("HIP" IN_LIST IPPL_PLATFORMS)
@@ -117,6 +119,49 @@ function(set_kokkos_options)
       set(KOKKOS_ENABLE_PROFILING ON CACHE BOOL "Enable Kokkos Profiling" FORCE)
       set(Kokkos_ENABLE_LIBDL ON CACHE BOOL "Enable LIBDL" FORCE)
     endif()
+  endif()
+endfunction()
+
+# -----------------------------------------------------------------------------
+# ~~~
+# utility function to set CMake CUDA architectures from Kokkos CUDA arch options
+# NB. Heffte relies on CMAKE_CUDA_ARCHITECTURES for its CUDA kernels.
+# ~~~
+# -----------------------------------------------------------------------------
+function(set_cuda_architectures_from_kokkos)
+  if(NOT "CUDA" IN_LIST IPPL_PLATFORMS)
+    return()
+  endif()
+
+  if(DEFINED CMAKE_CUDA_ARCHITECTURES AND NOT CMAKE_CUDA_ARCHITECTURES STREQUAL ""
+     AND NOT CMAKE_CUDA_ARCHITECTURES STREQUAL "native")
+    return()
+  endif()
+
+  # Kokkos sets Kokkos_ARCH_<Family><CC> cache booleans for each enabled CUDA architecture.  We scan
+  # all cache variables, extract the trailing digits (the compute capability) from any enabled
+  # Kokkos_ARCH_* entry, and use those digits directly.  This works for any existing or future
+  # Kokkos arch without an explicit mapping list.
+  set(cuda_architectures)
+
+  get_cmake_property(_cache_vars CACHE_VARIABLES)
+  foreach(_var IN LISTS _cache_vars)
+    if(_var MATCHES "^Kokkos_ARCH_[A-Z]+([0-9]+)$" AND ${_var})
+      list(APPEND cuda_architectures ${CMAKE_MATCH_1})
+    endif()
+  endforeach()
+  unset(_cache_vars)
+  unset(_var)
+
+  if(cuda_architectures)
+    list(REMOVE_DUPLICATES cuda_architectures)
+    list(SORT cuda_architectures)
+    set(CMAKE_CUDA_ARCHITECTURES "${cuda_architectures}"
+        CACHE STRING "CUDA architectures to compile, e.g., -DCMAKE_CUDA_ARCHITECTURES=70;72" FORCE)
+    message(
+      STATUS
+        "IPPL_PLATFORM set: CMAKE_CUDA_ARCHITECTURES '${CMAKE_CUDA_ARCHITECTURES}' from Kokkos CUDA architecture"
+    )
   endif()
 endfunction()
 
@@ -138,6 +183,7 @@ function(set_heffte_options)
   if(IPPL_ENABLE_FFT)
     set(Heffte_ENABLE_FFTW ON)
     if("CUDA" IN_LIST IPPL_PLATFORMS)
+      set_cuda_architectures_from_kokkos()
       set(Heffte_ENABLE_CUDA ON CACHE BOOL "Enable Heffte CUDA backend" FORCE)
     else()
       set(Heffte_ENABLE_CUDA OFF CACHE BOOL "Disable Heffte CUDA backend" FORCE)
@@ -225,8 +271,39 @@ endif()
 # - if the requested version is not found on the system
 # - if the requested version is found but doesn't have the features we requested
 # ------------------------------------------------------------------------------
+if(IPPL_ENABLE_CUFFTMP AND NOT IPPL_ENABLE_FFT)
+  message(FATAL_ERROR "IPPL_ENABLE_CUFFTMP requires IPPL_ENABLE_FFT=ON")
+endif()
+
+if(IPPL_ENABLE_FINUFFT AND NOT IPPL_ENABLE_FFT)
+  message(FATAL_ERROR "IPPL_ENABLE_FINUFFT requires IPPL_ENABLE_FFT=ON")
+endif()
+
+if(IPPL_ENABLE_CUFINUFFT AND NOT IPPL_ENABLE_FINUFFT)
+  message(FATAL_ERROR "IPPL_ENABLE_CUFINUFFT requires IPPL_ENABLE_FINUFFT=ON")
+endif()
+
+if(IPPL_ENABLE_CUFINUFFT)
+  if(NOT "CUDA" IN_LIST IPPL_PLATFORMS)
+    message(
+      FATAL_ERROR
+        "IPPL_ENABLE_CUFINUFFT requires CUDA in IPPL_PLATFORMS. "
+        "cuFINUFFT is a single-rank GPU backend and this PR does not provide "
+        "a host-serial to CUDA staging backend.")
+  endif()
+endif()
+
 if(IPPL_ENABLE_FFT)
   add_compile_definitions(IPPL_ENABLE_FFT)
+
+  if(IPPL_ENABLE_CUFFTMP)
+    if(NOT "CUDA" IN_LIST IPPL_PLATFORMS)
+      message(FATAL_ERROR "IPPL_ENABLE_CUFFTMP requires CUDA in IPPL_PLATFORMS")
+    endif()
+
+    add_compile_definitions(IPPL_ENABLE_CUFFTMP)
+  endif()
+
   option(Heffte_ENABLE_GPU_AWARE_MPI "Is an issue ... " OFF)
 
   # set the default version of Heffte we will ask for if not already set
@@ -297,6 +374,87 @@ if(IPPL_ENABLE_FFT)
 endif()
 
 # ------------------------------------------------------------------------------
+# FINUFFT / cuFINUFFT (only if explicitly enabled)
+# ------------------------------------------------------------------------------
+if(IPPL_ENABLE_FINUFFT)
+  if(NOT FINUFFT_VERSION_DEFAULT)
+    set(FINUFFT_VERSION_DEFAULT v2.5.0)
+  endif()
+
+  if(NOT FINUFFT_VERSION)
+    set(FINUFFT_VERSION ${FINUFFT_VERSION_DEFAULT})
+  endif()
+
+  find_package(finufft CONFIG QUIET)
+  if(NOT finufft_FOUND)
+    find_package(Finufft CONFIG QUIET)
+  endif()
+
+  if(finufft_FOUND OR Finufft_FOUND)
+    colour_message(STATUS ${Green} "✅ FINUFFT found externally")
+  else()
+    colour_message(STATUS ${Green} "✅ FINUFFT ${FINUFFT_VERSION} building from source")
+
+    set(FINUFFT_BUILD_TESTS OFF CACHE BOOL "Disable FINUFFT tests" FORCE)
+    set(FINUFFT_BUILD_EXAMPLES OFF CACHE BOOL "Disable FINUFFT examples" FORCE)
+    set(FINUFFT_USE_CPU ON CACHE BOOL "Enable CPU FINUFFT" FORCE)
+    set(FINUFFT_USE_DUCC0 ${IPPL_FINUFFT_USE_DUCC0} CACHE BOOL
+        "Use FINUFFT's bundled DUCC0 FFT backend" FORCE)
+
+    if(IPPL_ENABLE_CUFINUFFT)
+      set_cuda_architectures_from_kokkos()
+      set(FINUFFT_USE_CUDA ON CACHE BOOL "Enable CUDA cuFINUFFT" FORCE)
+      colour_message(
+        STATUS ${Green}
+        "✅ cuFINUFFT enabled as a single-rank GPU NUFFT backend (no MPI decomposition)")
+    else()
+      set(FINUFFT_USE_CUDA OFF CACHE BOOL "Disable CUDA cuFINUFFT" FORCE)
+    endif()
+
+    # cuFINUFFT's CUDA RDC fatbin registration can fail at startup when its
+    # device code is wrapped in a shared library. Force static for this
+    # FetchContent build regardless of the global BUILD_SHARED_LIBS setting.
+    set(_ippl_saved_build_shared_libs ${BUILD_SHARED_LIBS})
+    set(BUILD_SHARED_LIBS OFF)
+
+    FetchContent_Declare(
+      finufft
+      GIT_REPOSITORY https://github.com/flatironinstitute/finufft.git
+      GIT_TAG ${FINUFFT_VERSION}
+      GIT_SHALLOW ON
+      DOWNLOAD_EXTRACT_TIMESTAMP ON)
+    FetchContent_MakeAvailable(finufft)
+
+    set(BUILD_SHARED_LIBS ${_ippl_saved_build_shared_libs})
+  endif()
+
+  set(IPPL_FINUFFT_TARGETS)
+  if(TARGET finufft::finufft)
+    list(APPEND IPPL_FINUFFT_TARGETS finufft::finufft)
+  elseif(TARGET finufft)
+    list(APPEND IPPL_FINUFFT_TARGETS finufft)
+  endif()
+
+  if(IPPL_ENABLE_CUFINUFFT)
+    if(TARGET cufinufft::cufinufft)
+      list(APPEND IPPL_FINUFFT_TARGETS cufinufft::cufinufft)
+    elseif(TARGET cufinufft)
+      list(APPEND IPPL_FINUFFT_TARGETS cufinufft)
+    else()
+      message(FATAL_ERROR "IPPL_ENABLE_CUFINUFFT is ON, but no cuFINUFFT CMake target was found")
+    endif()
+
+    add_compile_definitions(ENABLE_GPU_NUFFT FINUFFT_USE_CUDA)
+  endif()
+
+  if(NOT IPPL_FINUFFT_TARGETS)
+    message(FATAL_ERROR "IPPL_ENABLE_FINUFFT is ON, but no FINUFFT CMake target was found")
+  endif()
+
+  add_compile_definitions(ENABLE_FINUFFT)
+endif()
+
+# ------------------------------------------------------------------------------
 # GoogleTest
 # ------------------------------------------------------------------------------
 if(IPPL_ENABLE_UNIT_TESTS)
@@ -323,4 +481,19 @@ if(IPPL_ENABLE_TESTS)
   file(DOWNLOAD https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
        "${DOWNLOADED_HEADERS_DIR}/stb_image_write.h")
   message(STATUS "✅ stb_image_write loaded for testing FDTD solver.")
+endif()
+
+# ------------------------------------------------------------------------------
+# FEL module header-only dependencies (nlohmann/json for config parsing,
+# stb_image_write for the Poynting-flux visualization).
+# ------------------------------------------------------------------------------
+if(IPPL_ENABLE_FEL)
+  set(DOWNLOADED_HEADERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloaded_headers")
+  file(DOWNLOAD
+       https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp
+       "${DOWNLOADED_HEADERS_DIR}/json.hpp")
+  file(DOWNLOAD
+       https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
+       "${DOWNLOADED_HEADERS_DIR}/stb_image_write.hpp")
+  message(STATUS "✅ nlohmann/json and stb_image_write loaded for the FEL module.")
 endif()

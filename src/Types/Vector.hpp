@@ -11,6 +11,15 @@ namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim>
         struct isExpression<Vector<T, Dim>> : std::true_type {};
+
+        template <typename T>
+        struct VectorTraits;
+
+        template <typename T, unsigned Dim>
+        struct VectorTraits<Vector<T, Dim>> {
+            using real_type               = T;
+            static constexpr unsigned dim = Dim;
+        };
     }  // namespace detail
 
     template <typename T, unsigned Dim>

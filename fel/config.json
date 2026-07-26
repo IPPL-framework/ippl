@@ -1,0 +1,32 @@
+{
+  "timestep-ratio": 1.0,
+  "mesh": {
+    "length-scale": "micrometers",
+    "time-scale": "picoseconds",
+    "extents": [3200.0, 3200.0, 280.0],
+    "resolution": [96, 96, 3000],
+    "total-time": 30000.0,
+    "space-charge": false
+  },
+  "bunch": {
+    "charge": 1.846e8,
+    "mass": 1.846e8,
+    "number-of-particles": 131072,
+    "gamma": 100.41,
+    "position": [0.0, 0.0, 0.0],
+    "sigma-position": [260.0, 260.0, 50.25],
+    "sigma-momentum": [1.0e-8, 1.0e-8, 100.41e-4],
+    "distribution-truncations": [1040.0, 1040.0, 90.0]
+  },
+  "undulator": {
+    "static-undulator": {
+      "undulator-parameter": 1.417,
+      "period": 30000.0,
+      "length": 9e6
+    }
+  },
+  "output": {
+    "rhythm": 30,
+    "path": "../renderdata"
+  }
+}

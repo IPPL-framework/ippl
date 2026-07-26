@@ -261,7 +261,7 @@ namespace ippl {
     KOKKOS_INLINE_FUNCTION Index Index::grow(int ncells) const {
         Index index;
 
-        index.first_m  = this->first_m - ncells;
+        index.first_m  = this->first_m - ncells * this->stride_m;
         index.length_m = this->length_m + 2 * ncells;
         index.stride_m = this->stride_m;
 

@@ -9,9 +9,7 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 #include <cstdlib>
-#include <iostream>
 #include <string>
-#include <typeinfo>
 
 #include "Utility/Inform.h"
 #include "Utility/IpplTimings.h"
@@ -222,6 +220,10 @@ int main(int argc, char* argv[]) {
         params.add("richardson_iterations", richardson_iterations);
         params.add("communication", communication);
         params.add("ssor_omega", ssor_omega);
+        params.add("mg_pre_smooth_iters", 2);
+        params.add("mg_post_smooth_iters", 2);
+        params.add("mg_omega", 0.8);
+        params.add("min_cells_per_rank_per_dim", 2);
 
         lapsolver.mergeParameters(params);
 

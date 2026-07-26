@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
             Inform msg(TestName);
             Inform msg2all(TestName, INFORM_ALL_NODES);
 
-            static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
+            static IpplTimings::TimerRef mainTimer       = IpplTimings::getTimer("total");
             static IpplTimings::TimerRef initializeTimer = IpplTimings::getTimer("initialize");
             IpplTimings::startTimer(mainTimer);
             IpplTimings::startTimer(initializeTimer);

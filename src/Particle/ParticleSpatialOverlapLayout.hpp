@@ -15,7 +15,6 @@
 //   determine if load balancing should be done or not.
 //
 #include <Kokkos_MathematicalFunctions.hpp>
-
 #include <numeric>
 #include <vector>
 
@@ -44,7 +43,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::initializeCells() {
         const auto rank          = Comm->rank();
-        const auto hLocalRegions = this->rlayout_m.gethLocalRegions();
+        const auto hLocalRegions = this->rlayout_m->gethLocalRegions();
         for (unsigned d = 0; d < Dim; ++d) {
             PAssert(rcutoff_m <= hLocalRegions(rank)[d].length() / 2 &&
                 "Cutoff is too big with respect to region. "
@@ -111,8 +110,7 @@ namespace ippl {
         /* Step 2. assign the cells at the correct locations of the permutations */
         const auto numLocalCells = numLocalCells_m;
         Kokkos::parallel_for(
-            "assign_permutations", policy_type(0, totalCells_m),
-            KOKKOS_LAMBDA(const size_type i) {
+            "assign_permutations", policy_type(0, totalCells_m), KOKKOS_LAMBDA(const size_type i) {
                 if (const auto cellIdx = toCellIndex(i, numCells);
                     isLocalCellIndex(is, cellIdx, numCells)) {
                     const size_type localIdx          = localPrefixSum(i);
@@ -190,9 +188,10 @@ namespace ippl {
         for (unsigned d = 0; d < Dim; ++d) {
             anyPeriodic = anyPeriodic || periodic[d];
         }
-        if (!anyPeriodic) return;
+        if (!anyPeriodic)
+            return;
 
-        const auto& globalRegion = this->rlayout_m.getDomain();
+        const auto& globalRegion = this->rlayout_m->getDomain();
         const auto overlap       = rcutoff_m;
         const auto numLoc        = pc.getLocalNum();
         const auto positions     = pc.R.getView();
@@ -259,7 +258,7 @@ namespace ippl {
         /* Apply Boundary Conditions */
         static IpplTimings::TimerRef ParticleBCTimer = IpplTimings::getTimer("particleBC");
         IpplTimings::startTimer(ParticleBCTimer);
-        this->applyBC(pc.R, this->rlayout_m.getDomain());
+        this->applyBC(pc.R, this->rlayout_m->getDomain());
         createPeriodicGhostParticles(pc);
         IpplTimings::stopTimer(ParticleBCTimer);
 
@@ -542,6 +541,33 @@ namespace ippl {
         return nonNeighborRanks;
     }
 
+    /*!
+     * We need this struct since Kokkos parallel_scan only accepts
+     * one variable of type ReturnType where to perform the reduction operation.
+     * For more details, see
+     * https://kokkos.github.io/kokkos-core-wiki/API/core/parallel-dispatch/parallel_scan.html.
+     */
+    struct increment_type {
+        size_t count[2];
+
+        KOKKOS_FUNCTION void init() {
+            count[0] = 0;
+            count[1] = 0;
+        }
+
+        KOKKOS_INLINE_FUNCTION increment_type& operator+=(bool* values) {
+            count[0] += values[0];
+            count[1] += values[1];
+            return *this;
+        }
+
+        KOKKOS_INLINE_FUNCTION increment_type& operator+=(increment_type values) {
+            count[0] += values.count[0];
+            count[1] += values.count[1];
+            return *this;
+        }
+    };
+
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <typename ParticleContainer>
     std::pair<detail::size_type, detail::size_type>
@@ -549,7 +575,7 @@ namespace ippl {
         const ParticleContainer& pc, locate_type& ranks, locate_type& rankOffsets,
         bool_type& invalid, locate_type& nSends_dview, locate_type& sends_dview) const {
         const auto positions = pc.R.getView();
-        const auto regions   = this->rlayout_m.getdLocalRegions();
+        const auto regions   = this->rlayout_m->getdLocalRegions();
         const auto myRank    = Comm->rank();
         const auto localNum  = pc.getLocalNum();
         const T overlap      = rcutoff_m;
@@ -729,8 +755,7 @@ namespace ippl {
         /* compute the number of sends to all ranks */
         Kokkos::deep_copy(nSends_dview, 0);
         Kokkos::parallel_for(
-            "Calculate nSends", policy_type(0, ranks.extent(0)),
-            KOKKOS_LAMBDA(const size_t i) {
+            "Calculate nSends", policy_type(0, ranks.extent(0)), KOKKOS_LAMBDA(const size_t i) {
                 size_type rank = ranks(i);
                 Kokkos::atomic_inc(&nSends_dview(rank));
             });
@@ -844,7 +869,7 @@ namespace ippl {
         const auto positions              = pc.R.getView();
         const auto totalCells             = totalCells_m;
         const auto numLocalCells          = numLocalCells_m;
-        const auto localRegion            = this->rlayout_m.gethLocalRegions()(rank);
+        const auto localRegion            = this->rlayout_m->getdLocalRegions()(rank);
         const auto& cellWidth             = cellWidth_m;
         const auto cellStrides            = cellStrides_m;
         const auto cellPermutationForward = cellPermutationForward_m;

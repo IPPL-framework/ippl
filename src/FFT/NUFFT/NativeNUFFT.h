@@ -1,0 +1,386 @@
+//
+// Native NUFFT Implementation
+//   NUFFT using kernel-based scatter/gather and heFFTe FFT.
+//   Does not depend on external NUFFT libraries.
+//
+#ifndef IPPL_NATIVE_NUFFT_H
+#define IPPL_NATIVE_NUFFT_H
+
+#include <Kokkos_Core.hpp>
+
+#include <Kokkos_Complex.hpp>
+#include <array>
+#include <bit>
+#include <cmath>
+
+#include "Types/Vector.h"
+
+#include "Utility/IpplTimings.h"
+
+#include "Field/Field.h"
+
+#include "Interpolation/Gather/Gather.h"
+#include "Interpolation/Scatter/Scatter.h"
+#include "Correction.h"
+#include "FFT/FFT.h"
+#include "FFT/NUFFT/ESKernel.h"
+#include "FFT/NUFFT/NUFFTUtilities.h"
+#include "Particle/ParticleAttrib.h"
+
+namespace ippl {
+    namespace nufft {
+
+        /**
+         * @brief NUFFT implementation.
+         *
+         * Type 1: Spread from nonuniform points to uniform Fourier modes
+         *         (scatter -> FFT -> deconvolution)
+         *
+         * Type 2: Interpolate uniform Fourier modes at nonuniform points
+         *         (correction -> FFT -> gather)
+         *
+         * @tparam Dim Number of dimensions
+         * @tparam T Floating point type
+         * @tparam ExecSpace Kokkos execution space
+         */
+        template <unsigned Dim, typename T = double,
+                  typename ExecSpace = Kokkos::DefaultExecutionSpace>
+        class NativeNUFFT {
+        public:
+            using execution_space = ExecSpace;
+            using memory_space    = typename ExecSpace::memory_space;
+            using complex_type    = Kokkos::complex<T>;
+            using size_type       = size_t;
+
+            // View types
+            using complex_view_1d = Kokkos::View<complex_type*, memory_space>;
+            using real_view_1d    = Kokkos::View<T*, memory_space>;
+
+            // Field types
+            using Mesh_t      = UniformCartesian<T, Dim>;
+            using Centering_t = Cell;
+            using ComplexField =
+                Field<complex_type, Dim, Mesh_t, Centering_t, ExecSpace>::uniform_type;
+            using Layout_t = FieldLayout<Dim>;
+
+            /*!
+             * @struct Config
+             * @brief NUFFT engine configuration knobs.
+             */
+            struct Config {
+                T tol   = T(1e-6);                                //!< Target relative error of the kernel.
+                T sigma = T(2.0);                                 //!< Oversampling factor for the upsampled grid.
+                Interpolation::ScatterConfig<Dim> scatter_config; //!< Scatter (Type 1) tuning.
+                Interpolation::GatherConfig<Dim> gather_config;   //!< Gather (Type 2) tuning.
+            };
+
+            /*!
+             * @struct TimingInfo
+             * @brief Per-stage cumulative timings (seconds), populated by the engine.
+             */
+            struct TimingInfo {
+                T spread  = 0; //!< Time spent in the scatter step.
+                T fft     = 0; //!< Time spent in the FFT step.
+                T correct = 0; //!< Time spent in the deconvolution / pre-correction step.
+                T total   = 0; //!< Sum of the above.
+            };
+
+        private:
+            Config cfg_;
+            ESKernel<T> kernel_;
+            Vector<size_t, Dim> n_modes_;
+            Vector<size_t, Dim> n_grid_;
+
+            // Deconvolution factors per dimension
+            std::array<complex_view_1d, Dim> factors_;
+
+            // Upsampled grid for FFT
+            std::unique_ptr<ComplexField> grid_field_;
+            std::unique_ptr<Layout_t> grid_layout_;
+            std::unique_ptr<Mesh_t> grid_mesh_;
+
+            // heFFTe FFT object
+            std::unique_ptr<FFT<CCTransform, ComplexField>> heffte_fft_;
+            std::unique_ptr<FFT<PrunedCCTransform, ComplexField>> pruned_fft_;
+
+            TimingInfo timing_;
+            bool initialized_   = false;
+            bool use_upsampled_ = false;
+
+        public:
+            /**
+             * @brief Construct NativeNUFFT with given mode counts.
+             *
+             * @param n_modes Number of Fourier modes per dimension
+             * @param cfg Configuration parameters
+             */
+            NativeNUFFT(const Vector<size_t, Dim>& n_modes, bool use_upsampled, Config cfg = {})
+                : cfg_(cfg)
+                , kernel_(cfg.tol)
+                , n_modes_(n_modes)
+                , use_upsampled_(use_upsampled) {
+                // Compute upsampled grid sizes
+                for (unsigned d = 0; d < Dim; ++d) {
+                    n_grid_[d] = std::bit_ceil<size_t>(
+                        std::max<size_t>(cfg_.sigma * n_modes_[d], 2 * kernel_.width()));
+                }
+                initialized_ = false;
+            }
+
+            /**
+             * @brief Initialize the NUFFT with a layout.
+             *
+             * Must be called before transform operations.
+             *
+             * @param comm MPI communicator
+             */
+            void initialize(const Layout_t& modes_layout, const MPI_Comm& comm = MPI_COMM_WORLD) {
+                if (initialized_)
+                    return;
+
+                static IpplTimings::TimerRef initTimer = IpplTimings::getTimer("NativeNUFFT::init");
+                IpplTimings::startTimer(initTimer);
+
+                // Create index domain for upsampled grid
+                NDIndex<Dim> domain;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    domain[d] = Index(n_grid_[d]);
+                }
+
+                // Create decomposition
+                std::array<bool, Dim> isParallel;
+                isParallel.fill(true);
+
+                // For uneven kernel width W, a point in the upper half of the last
+                // segment needs both the cell value at the end and the kernel support
+                // that extends w/2 into the halo, hence (W + 1) / 2 ghost layers.
+                const int nghost = (kernel_.width()) / 2 + 1;
+
+                grid_layout_ = std::make_unique<Layout_t>(comm, domain, isParallel, true, nghost);
+
+                // Create mesh for upsampled grid
+                Vector<T, Dim> origin, hx;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    origin[d] = 0;
+                    T extent  = T(2.0) * Kokkos::numbers::pi_v<T>;
+                    hx[d]     = extent / n_grid_[d];
+                }
+
+                grid_mesh_ = std::make_unique<Mesh_t>(domain, hx, origin);
+
+                // Native NUFFT uses field ghosts directly instead of creating an
+                // extended grid; carry kernel-width ghost cells on the field itself.
+                grid_field_ = std::make_unique<ComplexField>(*grid_mesh_, *grid_layout_, nghost);
+
+                // Initialize heFFTe FFT
+                if (use_upsampled_) {
+                    ParameterList fftParams;
+                    fftParams.add("use_heffte_defaults", false);
+                    fftParams.add("use_pencils", true);
+                    fftParams.add("use_reorder", false);
+                    fftParams.add("use_gpu_aware", true);
+                    fftParams.add("comm", 3);
+                    heffte_fft_ =
+                        std::make_unique<FFT<CCTransform, ComplexField>>(*grid_layout_, fftParams);
+                } else {
+                    ParameterList fftParams;
+                    fftParams.add("use_heffte_defaults", false);
+                    fftParams.add("use_pencils", true);
+                    fftParams.add("use_reorder", false);
+                    fftParams.add("use_gpu_aware", true);
+                    fftParams.add("comm", 2);
+                    fftParams.add("num_concurrent_ffts", 4);
+                    PruningParams<Dim> pruning_params;
+                    // Set pruning params to output the desired n_modes_, not n_grid_/2
+                    for (int d = 0; d < static_cast<int>(Dim); ++d) {
+                        pruning_params.n_modes[d] = n_modes_[d];
+                    }
+
+                    pruned_fft_ = std::make_unique<FFT<PrunedCCTransform, ComplexField>>(
+                        *grid_layout_, modes_layout, pruning_params, fftParams);
+                }
+
+                // Precompute deconvolution factors
+                ESKernel<T> nufft_kernel(cfg_.tol);
+                for (unsigned d = 0; d < Dim; ++d) {
+                    factors_[d] = complex_view_1d("deconv_factors", n_modes_[d]);
+
+                    ippl::nufft::compute_deconvolution_factors<ExecSpace, T>(
+                        factors_[d], static_cast<int64_t>(n_modes_[d]),
+                        static_cast<int64_t>(n_grid_[d]), nufft_kernel);
+                }
+
+                Kokkos::fence();
+
+                initialized_ = true;
+                IpplTimings::stopTimer(initTimer);
+            }
+
+            /**
+             * @brief Type 1 NUFFT: Spread from nonuniform points to uniform Fourier modes.
+             *
+             * Computes f_k = sum_j c_j * exp(i * k * x_j) for uniform k.
+             *
+             * @tparam Properties ParticleAttrib properties
+             * @tparam OutField Output field type
+             * @param R Particle positions in [0, 2*pi)^Dim
+             * @param Q Particle values (input)
+             * @param f Output Fourier modes field
+             * @param upsampled_output Whether the output field is the usampeld grid. Required on
+             * distributed for now
+             */
+            template <class... Properties, typename OutField>
+            void type1(const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
+                       const ParticleAttrib<T, Properties...>& Q, OutField& f,
+                       bool upsampled_output = false) {
+                if (!initialized_) {
+                    throw IpplException("NativeNUFFT::type1",
+                                        "NUFFT not initialized. Call initialize() first.");
+                }
+                static IpplTimings::TimerRef NativeNUFFT1Timer = IpplTimings::getTimer("NativeNUFFT1");
+                IpplTimings::startTimer(NativeNUFFT1Timer);
+
+
+                static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatterTimerNUFFT1");
+                IpplTimings::startTimer(scatterTimer);
+                Kokkos::deep_copy(grid_field_->getView(), 0.0);
+
+                auto scatter = ippl::Scatter(kernel_, cfg_.scatter_config);
+                scatter(*grid_field_, R, Q);
+                Kokkos::fence();
+                IpplTimings::stopTimer(scatterTimer);
+
+                static IpplTimings::TimerRef fftTimer = IpplTimings::getTimer("FFTNUFFT1");
+                IpplTimings::startTimer(fftTimer);
+                // Step 2: Inverse FFT
+                if (upsampled_output) {
+                    performFFT(-1);
+                } else {
+                    performPrunedFFT(1, f);
+                }
+                IpplTimings::stopTimer(fftTimer);
+
+                static IpplTimings::TimerRef deconvolutionTimer = IpplTimings::getTimer("deconvolutionNUFFT1");
+                IpplTimings::startTimer(deconvolutionTimer);
+                // Step 3: Deconvolution and truncation to output modes
+                if (upsampled_output) {
+                    applyDeconvolutionType1<decltype(*grid_field_), decltype(f), ExecSpace, T, Dim>(
+                        *grid_field_, factors_, f, n_modes_, n_grid_);
+                } else {
+                    applyDeconvolutionPruned<decltype(f), ExecSpace, T, Dim>(
+                        f, factors_, n_modes_, n_grid_);
+                }
+                IpplTimings::stopTimer(deconvolutionTimer);
+                IpplTimings::stopTimer(NativeNUFFT1Timer);
+
+            }
+
+
+            /*!
+             * @brief Type 2 NUFFT: Interpolate uniform Fourier modes at non-uniform points.
+             *
+             * Computes c_j = sum_k f_k * exp(-i k x_j) for non-uniform x_j.
+             * Pipeline: pre-correction -> inverse FFT (or pruned FFT) -> gather.
+             *
+             * @tparam InField    Field type holding the input Fourier modes.
+             * @param  f          Input Fourier-mode field.
+             * @param  R          Particle positions in [0, 2*pi)^Dim.
+             * @param  Q          Output particle values.
+             * @param  upsampled_output Use the full upsampled grid (true) or the
+             *                          pruned-FFT path (false; required on
+             *                          distributed runs).
+             */
+            template <typename InField, class... Properties>
+            void type2(InField& f, const ParticleAttrib<Vector<T, Dim>, Properties...>& R,
+                       ParticleAttrib<T, Properties...>& Q, bool upsampled_output = false) {
+                if (!initialized_) {
+                    throw IpplException("NativeNUFFT::type2",
+                                        "NUFFT not initialized. Call initialize() first.");
+                }
+                static IpplTimings::TimerRef NativeNUFFT2Timer = IpplTimings::getTimer("NativeNUFFT2");
+                IpplTimings::startTimer(NativeNUFFT2Timer);
+
+                // ============================================================
+                // Step 1: Apply pre-correction
+                // ============================================================
+                static IpplTimings::TimerRef PrecorrectionTimer = IpplTimings::getTimer("PrecorrectionNUFFT2");
+                IpplTimings::startTimer(PrecorrectionTimer);
+
+                if (upsampled_output) {
+                    applyPreCorrectionType2<decltype(f), decltype(*grid_field_), ExecSpace, T, Dim>(
+                        f, factors_, *grid_field_, n_modes_, n_grid_);
+                } else {
+                    applyPrecorrectionPruned<decltype(f), ExecSpace, T, Dim>(
+                        f, factors_, n_modes_, n_grid_);
+                }
+                IpplTimings::stopTimer(PrecorrectionTimer);
+
+                Kokkos::fence();
+
+                // ============================================================
+                // Step 2: Inverse FFT
+                // ============================================================
+                static IpplTimings::TimerRef FFTTimer = IpplTimings::getTimer("FFTNUFFT2");
+                IpplTimings::startTimer(FFTTimer);
+                if (upsampled_output) {
+                    performFFT(-1);  // operates on grid_field_
+                } else {
+                    performPrunedFFT(-1, f);  // writes into grid_field_
+                }
+                IpplTimings::stopTimer(FFTTimer);
+                Kokkos::fence();
+
+                // ============================================================
+                // Step 3: Gather/interpolate at particle positions
+                // ============================================================
+                static IpplTimings::TimerRef GatherTimer = IpplTimings::getTimer("GatherNUFFT2");
+                IpplTimings::startTimer(GatherTimer);
+                auto gather = ippl::Gather(kernel_, cfg_.gather_config);
+                gather(*grid_field_, R, Q);
+                IpplTimings::stopTimer(GatherTimer);
+                Kokkos::fence();
+                IpplTimings::stopTimer(NativeNUFFT2Timer);
+            }
+
+            //! @return Last-recorded per-stage timings.
+            const TimingInfo& timing() const { return timing_; }
+            //! @return The ES spreading kernel used internally.
+            const ESKernel<T>& kernel() const { return kernel_; }
+            //! @return Size of the upsampled grid actually transformed.
+            Vector<size_t, Dim> gridSize() const { return n_grid_; }
+            //! @return Number of Fourier modes the engine retains per axis.
+            Vector<size_t, Dim> numModes() const { return n_modes_; }
+
+            //! Reset accumulated timings back to zero.
+            void resetTimings() {
+                timing_ = TimingInfo{};
+            }
+
+            /*!
+             * @brief Perform the upsampled-grid FFT in place on @c grid_field_.
+             * @param sign +1 for forward, -1 for backward.
+             */
+            void performFFT(int sign) {
+                TransformDirection direction = (sign < 0) ? BACKWARD : FORWARD;
+                heffte_fft_->transform(direction, *grid_field_);
+            }
+
+            /*!
+             * @brief Perform the pruned FFT between @c grid_field_ and @p output_field.
+             * @param sign         +1 (forward, grid -> modes) or -1 (backward, modes -> grid).
+             * @param output_field Pruned-modes field on the output side.
+             */
+            void performPrunedFFT(int sign, auto& output_field) {
+                TransformDirection direction = (sign < 0) ? BACKWARD : FORWARD;
+                if (sign < 0) {
+                    pruned_fft_->transform(direction, output_field, *grid_field_, 1);
+                } else {
+                    pruned_fft_->transform(direction, *grid_field_, output_field, -1);
+                }
+            }
+        };
+
+    }  // namespace NUFFT
+}  // namespace ippl
+
+#endif  // IPPL_NATIVE_NUFFT_H
