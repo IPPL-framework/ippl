@@ -1,3 +1,20 @@
+//
+// TestFFTTruncatedGreenPeriodicPoissonSolver
+// This program tests the periodic long-range Ewald solver using the Fourier mode
+// rho(x) = sin(2*pi*x). It compares the computed screened potential and electric
+// field with their analytical solutions and reports their relative L2 errors.
+// All mesh dimensions must be even.
+//   Usage:
+//     srun ./TestFFTTruncatedGreenPeriodicPoissonSolver <nx> <ny> <nz> --info 5
+//     nx = No. cell-centered points in the x-direction
+//     ny = No. cell-centered points in the y-direction
+//     nz = No. cell-centered points in the z-direction
+//
+//     Example:
+//       srun ./TestFFTTruncatedGreenPeriodicPoissonSolver 16 16 16 --info 5
+//
+//
+
 #include "Ippl.h"
 
 #include <Kokkos_MathematicalConstants.hpp>

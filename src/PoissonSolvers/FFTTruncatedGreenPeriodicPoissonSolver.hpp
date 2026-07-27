@@ -5,7 +5,7 @@
 //      phi_hat(k) = -rho_hat(k) * 4*pi*forceConstant*exp(-k^2/(4*alpha^2))/k^2
 //   and E = -grad(phi). The zero mode is set to zero, corresponding to a neutral system or an
 //   implicit uniform neutralizing background. alpha controls the split between mesh and particle
-//   interactions; this is a screened P3M operator rather than the unsplit Poisson equation.
+//   interactions.
 //
 //
 
