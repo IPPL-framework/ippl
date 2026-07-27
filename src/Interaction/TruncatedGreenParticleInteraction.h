@@ -65,7 +65,8 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION static constexpr Vector_t fieldFromPair(const Vector_t& dist,
                                                                        Scalar_t r2, Scalar_t alpha,
                                                                        Scalar_t forceConstant,
-                                                                       Scalar_t qm);
+                                                                       Scalar_t qm,
+                                                                       Scalar_t reg);
 
         ///! The electric or gravitational field
         VectorAttribute& Field_m;
@@ -73,6 +74,8 @@ namespace ippl {
         const VectorAttribute& R_m;
         ///! Charge or Mass of the particles
         const ScalarAttribute& QM_m;
+
+        const Scalar_t regularization_m = 1e-9;  // regularization to avoid singularities
     };
 }  // namespace ippl
 
