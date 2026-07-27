@@ -869,7 +869,10 @@ namespace ippl {
         const auto positions              = pc.R.getView();
         const auto totalCells             = totalCells_m;
         const auto numLocalCells          = numLocalCells_m;
-        const auto localRegion            = this->rlayout_m->getdLocalRegions()(rank);
+        // This setup runs on the host. Copy the rank-local region from the host mirror before
+        // capturing it by value in the device kernels below; indexing the device view here is
+        // invalid for execution spaces such as CUDA.
+        const auto localRegion            = this->rlayout_m->gethLocalRegions()(rank);
         const auto& cellWidth             = cellWidth_m;
         const auto cellStrides            = cellStrides_m;
         const auto cellPermutationForward = cellPermutationForward_m;
