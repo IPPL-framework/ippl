@@ -124,3 +124,9 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/IPPLConfig.cmake"
 if(TARGET Heffte)
   install(TARGETS Heffte EXPORT ipplTargets DESTINATION lib)
 endif()
+
+foreach(_ippl_extern_dep IN ITEMS finufft finufft_common cufinufft)
+  if(TARGET ${_ippl_extern_dep})
+    install(TARGETS ${_ippl_extern_dep} EXPORT ipplTargets DESTINATION lib)
+  endif()
+endforeach()
