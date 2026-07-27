@@ -16,11 +16,10 @@ int main(int argc, char* argv[]) {
         using Centering_t      = Mesh_t::DefaultCentering;
         using Field_t          = ippl::Field<double, dim, Mesh_t, Centering_t>;
         using Vector_t         = ippl::Vector<double, dim>;
-        using VField_t = ippl::Field<Vector_t, dim, Mesh_t, Centering_t>;
-        using Solver_t = ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t, Field_t>;
+        using VField_t         = ippl::Field<Vector_t, dim, Mesh_t, Centering_t>;
+        using Solver_t         = ippl::FFTTruncatedGreenPeriodicPoissonSolver<VField_t, Field_t>;
 
-        ippl::Vector<int, dim> nr = {
-            std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
+        ippl::Vector<int, dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
         ippl::NDIndex<dim> owned;
         for (unsigned d = 0; d < dim; ++d) {
             owned[d] = ippl::Index(nr[d]);
@@ -36,7 +35,7 @@ int main(int argc, char* argv[]) {
         Field_t rho(mesh, layout);
         VField_t efield(mesh, layout);
 
-        constexpr double alpha = 2.0;
+        constexpr double alpha  = 2.0;
         const double pi         = Kokkos::numbers::pi_v<double>;
         const double waveNumber = 2.0 * pi;
         const double screening  = std::exp(-waveNumber * waveNumber / (4.0 * alpha * alpha));
@@ -47,8 +46,8 @@ int main(int argc, char* argv[]) {
         Kokkos::parallel_for(
             "Assign P3M periodic mode", ippl::getRangePolicy(rhoView, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                const int ig          = i + localDomain[0].first() - nghost;
-                const double x        = origin[0] + (ig + 0.5) * hr[0];
+                const int ig     = i + localDomain[0].first() - nghost;
+                const double x   = origin[0] + (ig + 0.5) * hr[0];
                 rhoView(i, j, k) = Kokkos::sin(waveNumber * x);
             });
 
@@ -65,7 +64,7 @@ int main(int argc, char* argv[]) {
         Solver_t solver(efield, rho, params);
         solver.solve();
 
-        auto eView = efield.getView();
+        auto eView           = efield.getView();
         double phiErrorLocal = 0.0;
         double phiNormLocal  = 0.0;
         double eErrorLocal   = 0.0;
@@ -74,10 +73,10 @@ int main(int argc, char* argv[]) {
         Kokkos::parallel_reduce(
             "P3M periodic potential error", ippl::getRangePolicy(rhoView, nghost),
             KOKKOS_LAMBDA(const int i, const int j, const int k, double& sum) {
-                const int ig       = i + localDomain[0].first() - nghost;
-                const double x     = origin[0] + (ig + 0.5) * hr[0];
-                const double exact = screening * Kokkos::sin(waveNumber * x)
-                                     / (waveNumber * waveNumber);
+                const int ig   = i + localDomain[0].first() - nghost;
+                const double x = origin[0] + (ig + 0.5) * hr[0];
+                const double exact =
+                    screening * Kokkos::sin(waveNumber * x) / (waveNumber * waveNumber);
                 const double diff = rhoView(i, j, k) - exact;
                 sum += diff * diff;
             },
@@ -85,10 +84,10 @@ int main(int argc, char* argv[]) {
         Kokkos::parallel_reduce(
             "P3M periodic potential norm", ippl::getRangePolicy(rhoView, nghost),
             KOKKOS_LAMBDA(const int i, const int, const int, double& sum) {
-                const int ig       = i + localDomain[0].first() - nghost;
-                const double x     = origin[0] + (ig + 0.5) * hr[0];
-                const double exact = screening * Kokkos::sin(waveNumber * x)
-                                     / (waveNumber * waveNumber);
+                const int ig   = i + localDomain[0].first() - nghost;
+                const double x = origin[0] + (ig + 0.5) * hr[0];
+                const double exact =
+                    screening * Kokkos::sin(waveNumber * x) / (waveNumber * waveNumber);
                 sum += exact * exact;
             },
             Kokkos::Sum<double>(phiNormLocal));

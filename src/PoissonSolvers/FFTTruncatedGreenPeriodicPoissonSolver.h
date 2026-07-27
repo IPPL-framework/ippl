@@ -1,11 +1,11 @@
 //
 // Class FFTTruncatedGreenPeriodicPoissonSolver
-//   Poisson solver for periodic boundaries, based on FFTs.
-//   Solves laplace(phi) = -rho, and E = -grad(phi).
-//
-//   Uses the periodic Ewald long-range Green's function in Fourier space:
-//      G_hat(k) = 4*pi*forceConstant*exp(-k^2/(4*alpha^2))/k^2,
-//         alpha = controls the split between mesh and particle interactions.
+//   FFT solver for the periodic long-range part of an Ewald split. For every nonzero Fourier mode,
+//   it computes
+//      phi_hat(k) = -rho_hat(k) * 4*pi*forceConstant*exp(-k^2/(4*alpha^2))/k^2
+//   and E = -grad(phi). The zero mode is set to zero, corresponding to a neutral system or an
+//   implicit uniform neutralizing background. alpha controls the split between mesh and particle
+//   interactions; this is a screened P3M operator rather than the unsplit Poisson equation.
 //
 //
 
@@ -62,9 +62,8 @@ namespace ippl {
         // function called in the constructor to initialize the fields
         void initializeFields();
 
-        // compute standard Green's function
+        // compute the periodic Ewald Green's function
         void greensFunction();
-
 
     private:
         CxField_t rhotr_m;
@@ -115,12 +114,13 @@ namespace ippl {
                     this->params_m.add("comm", p2p_pl);
                     break;
                 default:
-                    throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters",
-                                        "Unrecognized heffte communication type");
+                    throw IpplException(
+                        "FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters",
+                        "Unrecognized heffte communication type");
             }
         }
     };
 }  // namespace ippl
 
 #include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.hpp"
-#endif // IPPL_FFT_TRUNCATED_GREEN_PERIODIC_POISSON_SOLVER_H_SOLVER_H_
+#endif  // IPPL_FFT_TRUNCATED_GREEN_PERIODIC_POISSON_SOLVER_H_SOLVER_H_

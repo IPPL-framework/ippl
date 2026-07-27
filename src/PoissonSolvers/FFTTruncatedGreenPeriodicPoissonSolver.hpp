@@ -1,11 +1,11 @@
 //
 // Class FFTTruncatedGreenPeriodicPoissonSolver
-//   Poisson solver for periodic boundaries, based on FFTs.
-//   Solves laplace(phi) = -rho, and E = -grad(phi).
-//
-//   Uses the periodic Ewald long-range Green's function in Fourier space:
-//      G_hat(k) = 4*pi*forceConstant*exp(-k^2/(4*alpha^2))/k^2,
-//         alpha = controls the split between mesh and particle interactions.
+//   FFT solver for the periodic long-range part of an Ewald split. For every nonzero Fourier mode,
+//   it computes
+//      phi_hat(k) = -rho_hat(k) * 4*pi*forceConstant*exp(-k^2/(4*alpha^2))/k^2
+//   and E = -grad(phi). The zero mode is set to zero, corresponding to a neutral system or an
+//   implicit uniform neutralizing background. alpha controls the split between mesh and particle
+//   interactions; this is a screened P3M operator rather than the unsplit Poisson equation.
 //
 //
 
@@ -15,7 +15,8 @@ namespace ippl {
     // constructor and destructor
 
     template <typename FieldLHS, typename FieldRHS>
-    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver()
+    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS,
+                                           FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver()
         : Base()
         , mesh_mp(nullptr)
         , layout_mp(nullptr)
@@ -25,7 +26,9 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(rhs_type& rhs, ParameterList& params)
+    FFTTruncatedGreenPeriodicPoissonSolver<
+        FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(rhs_type& rhs,
+                                                                    ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
@@ -39,7 +42,9 @@ namespace ippl {
     }
 
     template <typename FieldLHS, typename FieldRHS>
-    FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs, ParameterList& params)
+    FFTTruncatedGreenPeriodicPoissonSolver<
+        FieldLHS, FieldRHS>::FFTTruncatedGreenPeriodicPoissonSolver(lhs_type& lhs, rhs_type& rhs,
+                                                                    ParameterList& params)
         : mesh_mp(nullptr)
         , layout_mp(nullptr)
         , meshComplex_m(nullptr)
@@ -63,7 +68,9 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::initializeFields() {
-        static_assert(Dim == 3, "Dimension other than 3 not supported in FFTTruncatedGreenPeriodicPoissonSolver!");
+        static_assert(
+            Dim == 3,
+            "Dimension other than 3 not supported in FFTTruncatedGreenPeriodicPoissonSolver!");
 
         // get layout and mesh
         layout_mp              = &(this->rhs_mp->getLayout());
@@ -122,9 +129,16 @@ namespace ippl {
     };
 
     /////////////////////////////////////////////////////////////////////////
-    // compute electric potential by solving Poisson's eq given a field rho and mesh spacings hr
+    // compute the periodic long-range Ewald potential and field from rho
     template <typename FieldLHS, typename FieldRHS>
     void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::solve() {
+        for (unsigned d = 0; d < Dim; ++d) {
+            if ((nr_m[d] % 2) != 0) {
+                throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::solve",
+                                    "Odd mesh sizes are unsupported by the spectral gradient");
+            }
+        }
+
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
 

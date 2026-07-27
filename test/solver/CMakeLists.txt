@@ -35,6 +35,7 @@ if(IPPL_ENABLE_FFT)
 
   # tests the FFTTruncatedGreenPeriodicPoissonSolver
   add_ippl_integration_test(TestFFTTruncatedGreenPeriodicPoissonSolver ARGS 16 16 16 LABELS solver integration)
+  add_ippl_integration_test(TestFFTTruncatedGreenPeriodicPoissonSolverOddMesh LABELS solver integration)
 
   # compile only
   add_ippl_integration_test(TestGaussian_convergence COMPILE_ONLY LABELS solver integration)
