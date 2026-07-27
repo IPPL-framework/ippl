@@ -3,9 +3,9 @@
 //   Poisson solver for periodic boundaries, based on FFTs.
 //   Solves laplace(phi) = -rho, and E = -grad(phi).
 //
-//   Uses a convolution with a Green's function given by:
-//      G(r) = forceConstant * erf(alpha * r) / r,
-//         alpha = controls long-range interaction.
+//   Uses the periodic Ewald long-range Green's function in Fourier space:
+//      G_hat(k) = 4*pi*forceConstant*exp(-k^2/(4*alpha^2))/k^2,
+//         alpha = controls the split between mesh and particle interactions.
 //
 //
 
@@ -38,11 +38,7 @@ namespace ippl {
         // define a type for the 3 dimensional real to complex Fourier transform
         typedef FFT<RCTransform, FieldRHS> FFT_t;
 
-        // define a type for a 3 dimensional field (e.g. charge density field)
-        // define a type of Field with integers to be used for the helper Green's function
-        // also define a type for the Fourier transformed complex valued fields
-        typedef FieldRHS Field_t;
-        typedef Field<int, Dim, mesh_type, typename FieldLHS::Centering_t> IField_t;
+        // define a type for the Fourier transformed complex valued fields
         typedef typename FFT_t::ComplexField CxField_t;
         typedef Vector<Trhs, Dim> Vector_t;
 
@@ -71,14 +67,9 @@ namespace ippl {
 
 
     private:
-        Field_t grn_m;  // the Green's function
-
         CxField_t rhotr_m;
         CxField_t grntr_m;
         CxField_t tempFieldComplex_m;
-
-        // fields that facilitate the calculation in greensFunction()
-        IField_t grnIField_m[Dim];
 
         // the FFT object
         std::unique_ptr<FFT_t> fft_m;
