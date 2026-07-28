@@ -1,52 +1,52 @@
 <map id="FFTTruncatedGreenPeriodicPoissonSolver.h" name="FFTTruncatedGreenPeriodicPoissonSolver.h">
-<area shape="rect" id="node1" title=" " alt="" coords="1879,5,2065,45"/>
-<area shape="rect" id="node2" href="$Vector_8h.html" title=" " alt="" coords="1935,915,2044,940"/>
-<area shape="rect" id="node10" href="$Field_8h.html" title=" " alt="" coords="1297,181,1389,207"/>
-<area shape="rect" id="node24" href="$FieldLayout_8h.html" title=" " alt="" coords="1141,695,1312,720"/>
-<area shape="rect" id="node36" href="$UniformCartesian_8h.html" title=" " alt="" coords="879,401,1062,427"/>
-<area shape="rect" id="node43" href="$FFT_8h.html" title=" " alt="" coords="2385,768,2469,793"/>
-<area shape="rect" id="node48" href="$Poisson_8h.html" title=" " alt="" coords="1933,101,2011,126"/>
-<area shape="rect" id="node50" href="$FFTTruncatedGreenPeriodicPoissonSolver_8hpp.html" title=" " alt="" coords="2323,93,2535,133"/>
-<area shape="rect" id="node3" title=" " alt="" coords="1831,988,1927,1013"/>
-<area shape="rect" id="node4" href="$IpplExpressions_8h.html" title=" " alt="" coords="2069,988,2259,1013"/>
-<area shape="rect" id="node7" href="$Vector_8hpp.html" title=" " alt="" coords="1951,988,2035,1013"/>
-<area shape="rect" id="node5" title=" " alt="" coords="2273,1061,2356,1087"/>
-<area shape="rect" id="node6" href="$IpplOperations_8h.html" title=" " alt="" coords="2066,1061,2249,1087"/>
-<area shape="rect" id="node8" title=" " alt="" coords="1840,1061,1907,1087"/>
-<area shape="rect" id="node9" title=" " alt="" coords="1439,1061,1511,1087"/>
-<area shape="rect" id="node11" href="$TypeUtils_8h.html" title=" " alt="" coords="1203,841,1327,867"/>
-<area shape="rect" id="node15" href="$BareField_8h.html" title=" " alt="" coords="707,548,826,573"/>
-<area shape="rect" id="node34" href="$BConds_8h.html" title=" " alt="" coords="1651,255,1762,280"/>
-<area shape="rect" id="node41" href="$Field_8hpp.html" title=" " alt="" coords="1289,255,1396,280"/>
-<area shape="rect" id="node42" href="$FieldOperations_8hpp.html" title=" " alt="" coords="1421,255,1590,280"/>
-<area shape="rect" id="node12" title=" " alt="" coords="494,915,618,940"/>
-<area shape="rect" id="node13" href="$Variant_8h.html" title=" " alt="" coords="1521,915,1633,940"/>
-<area shape="rect" id="node14" href="$IpplException_8h.html" title=" " alt="" coords="1192,915,1339,940"/>
-<area shape="rect" id="node16" title=" " alt="" coords="851,841,911,867"/>
-<area shape="rect" id="node17" href="$IpplTypes_8h.html" title=" " alt="" coords="1387,695,1514,720"/>
-<area shape="rect" id="node18" href="$IpplInfo_8h.html" title=" " alt="" coords="173,915,285,940"/>
-<area shape="rect" id="node19" href="$PAssert_8h.html" title=" " alt="" coords="145,841,261,867"/>
-<area shape="rect" id="node20" href="$ViewUtils_8h.html" title=" " alt="" coords="397,695,523,720"/>
-<area shape="rect" id="node22" href="$HaloCells_8h.html" title=" " alt="" coords="1289,621,1409,647"/>
-<area shape="rect" id="node32" href="$BareField_8hpp.html" title=" " alt="" coords="648,768,781,793"/>
-<area shape="rect" id="node33" href="$BareFieldOperations_8hpp.html" title=" " alt="" coords="858,621,1054,647"/>
-<area shape="rect" id="node21" href="$ViewTypes_8h.html" title=" " alt="" coords="489,768,623,793"/>
-<area shape="rect" id="node23" title=" " alt="" coords="1523,768,1573,793"/>
-<area shape="rect" id="node29" href="$NDIndex_8h.html" title=" " alt="" coords="1925,841,2043,867"/>
-<area shape="rect" id="node25" title=" " alt="" coords="1105,915,1151,940"/>
-<area shape="rect" id="node26" title=" " alt="" coords="1389,768,1448,793"/>
-<area shape="rect" id="node27" href="$Communicator_8h.html" title=" " alt="" coords="1165,768,1365,793"/>
-<area shape="rect" id="node30" href="$Partitioner_8h.html" title=" " alt="" coords="1801,768,1943,793"/>
-<area shape="rect" id="node31" href="$FieldLayout_8hpp.html" title=" " alt="" coords="856,768,1040,793"/>
-<area shape="rect" id="node28" title=" " alt="" coords="1513,841,1581,867"/>
-<area shape="rect" id="node35" href="$BcTypes_8h.html" title=" " alt="" coords="1321,328,1436,353"/>
-<area shape="rect" id="node40" href="$BConds_8hpp.html" title=" " alt="" coords="1682,328,1806,353"/>
-<area shape="rect" id="node37" href="$CartesianCentering_8h.html" title=" " alt="" coords="175,475,367,500"/>
-<area shape="rect" id="node38" href="$Mesh_8h.html" title=" " alt="" coords="1492,548,1607,573"/>
-<area shape="rect" id="node39" href="$UniformCartesian_8hpp.html" title=" " alt="" coords="668,475,865,500"/>
-<area shape="rect" id="node44" href="$Traits_8h.html" title="Compile&#45;time traits, tags and dispatch helpers for IPPL&#39;s FFT layer." alt="" coords="2614,841,2679,867"/>
-<area shape="rect" id="node46" href="$Backend_8h.html" title="Aggregate include for all FFT backends supported by IPPL." alt="" coords="2272,841,2411,867"/>
-<area shape="rect" id="node47" href="$Transform_8h.html" title="Aggregate include of all IPPL FFT transform specializations." alt="" coords="2435,841,2589,867"/>
-<area shape="rect" id="node45" title=" " alt="" coords="2599,915,2695,940"/>
-<area shape="rect" id="node49" href="$ParameterList_8h.html" title=" " alt="" coords="1605,841,1755,867"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1261,5,1448,45"/>
+<area shape="rect" id="node2" href="$Vector_8h.html" title=" " alt="" coords="259,695,368,720"/>
+<area shape="rect" id="node16" href="$Field_8h.html" title=" " alt="" coords="1203,181,1295,207"/>
+<area shape="rect" id="node29" href="$FieldLayout_8h.html" title=" " alt="" coords="745,548,916,573"/>
+<area shape="rect" id="node38" href="$UniformCartesian_8h.html" title=" " alt="" coords="1358,255,1541,280"/>
+<area shape="rect" id="node44" href="$FFT_8h.html" title=" " alt="" coords="2078,621,2162,647"/>
+<area shape="rect" id="node48" href="$Poisson_8h.html" title=" " alt="" coords="1315,101,1394,126"/>
+<area shape="rect" id="node50" href="$FFTTruncatedGreenPeriodicPoissonSolver_8hpp.html" title=" " alt="" coords="2091,93,2303,133"/>
+<area shape="rect" id="node3" title=" " alt="" coords="449,841,589,867"/>
+<area shape="rect" id="node4" title=" " alt="" coords="23,768,73,793"/>
+<area shape="rect" id="node5" title=" " alt="" coords="861,841,921,867"/>
+<area shape="rect" id="node6" title=" " alt="" coords="199,768,295,793"/>
+<area shape="rect" id="node7" title=" " alt="" coords="103,841,185,867"/>
+<area shape="rect" id="node8" title=" " alt="" coords="744,768,803,793"/>
+<area shape="rect" id="node9" href="$IpplExpressions_8h.html" title=" " alt="" coords="370,768,561,793"/>
+<area shape="rect" id="node12" href="$Vector_8hpp.html" title=" " alt="" coords="585,768,669,793"/>
+<area shape="rect" id="node10" href="$IpplOperations_8h.html" title=" " alt="" coords="242,841,425,867"/>
+<area shape="rect" id="node11" title=" " alt="" coords="511,915,743,940"/>
+<area shape="rect" id="node13" title=" " alt="" coords="665,841,807,867"/>
+<area shape="rect" id="node14" title=" " alt="" coords="1495,841,1561,867"/>
+<area shape="rect" id="node15" title=" " alt="" coords="1585,841,1657,867"/>
+<area shape="rect" id="node17" href="$TypeUtils_8h.html" title=" " alt="" coords="1258,695,1382,720"/>
+<area shape="rect" id="node21" href="$BareField_8h.html" title=" " alt="" coords="1242,401,1361,427"/>
+<area shape="rect" id="node37" href="$BConds_8h.html" title=" " alt="" coords="443,621,554,647"/>
+<area shape="rect" id="node42" href="$Field_8hpp.html" title=" " alt="" coords="1033,255,1140,280"/>
+<area shape="rect" id="node43" href="$FieldOperations_8hpp.html" title=" " alt="" coords="1165,255,1334,280"/>
+<area shape="rect" id="node18" title=" " alt="" coords="1082,768,1206,793"/>
+<area shape="rect" id="node19" href="$Variant_8h.html" title=" " alt="" coords="1419,768,1531,793"/>
+<area shape="rect" id="node20" href="$IpplException_8h.html" title=" " alt="" coords="1247,768,1393,793"/>
+<area shape="rect" id="node22" title=" " alt="" coords="1413,475,1483,500"/>
+<area shape="rect" id="node23" href="$IpplTypes_8h.html" title=" " alt="" coords="302,548,429,573"/>
+<area shape="rect" id="node24" href="$ViewTypes_8h.html" title=" " alt="" coords="905,621,1039,647"/>
+<area shape="rect" id="node25" href="$Inform_8h.html" title=" " alt="" coords="1785,768,1892,793"/>
+<area shape="rect" id="node26" href="$PAssert_8h.html" title=" " alt="" coords="1406,695,1522,720"/>
+<area shape="rect" id="node27" href="$ParallelDispatch_8h.html" title=" " alt="" coords="1323,621,1485,647"/>
+<area shape="rect" id="node28" href="$HaloCells_8h.html" title=" " alt="" coords="407,475,527,500"/>
+<area shape="rect" id="node33" href="$NDIndex_8h.html" title=" " alt="" coords="200,621,317,647"/>
+<area shape="rect" id="node35" href="$BareField_8hpp.html" title=" " alt="" coords="1772,695,1905,720"/>
+<area shape="rect" id="node36" href="$BareFieldOperations_8hpp.html" title=" " alt="" coords="1339,548,1535,573"/>
+<area shape="rect" id="node30" title=" " alt="" coords="1663,768,1710,793"/>
+<area shape="rect" id="node31" href="$Communicator_8h.html" title=" " alt="" coords="629,621,829,647"/>
+<area shape="rect" id="node34" href="$FieldLayout_8hpp.html" title=" " alt="" coords="1064,621,1248,647"/>
+<area shape="rect" id="node32" title=" " alt="" coords="679,695,747,720"/>
+<area shape="rect" id="node39" href="$CartesianCentering_8h.html" title=" " alt="" coords="1672,401,1864,427"/>
+<area shape="rect" id="node40" href="$Mesh_8h.html" title=" " alt="" coords="1005,328,1120,353"/>
+<area shape="rect" id="node41" href="$UniformCartesian_8hpp.html" title=" " alt="" coords="1229,328,1427,353"/>
+<area shape="rect" id="node45" href="$Traits_8h.html" title="Compile&#45;time traits, tags and dispatch helpers for IPPL&#39;s FFT layer." alt="" coords="1015,695,1081,720"/>
+<area shape="rect" id="node46" href="$Backend_8h.html" title="Aggregate include for all FFT backends supported by IPPL." alt="" coords="2260,695,2399,720"/>
+<area shape="rect" id="node47" href="$Transform_8h.html" title="Aggregate include of all IPPL FFT transform specializations." alt="" coords="2081,695,2236,720"/>
+<area shape="rect" id="node49" href="$ParameterList_8h.html" title=" " alt="" coords="1546,695,1697,720"/>
 </map>

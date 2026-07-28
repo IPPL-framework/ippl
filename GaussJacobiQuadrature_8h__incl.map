@@ -1,20 +1,25 @@
 <map id="GaussJacobiQuadrature.h" name="GaussJacobiQuadrature.h">
-<area shape="rect" id="node1" title=" " alt="" coords="127,5,299,31"/>
-<area shape="rect" id="node2" href="$Quadrature_8h.html" title=" " alt="" coords="227,86,421,111"/>
-<area shape="rect" id="node18" href="$GaussJacobiQuadrature_8hpp.html" title=" " alt="" coords="5,79,203,119"/>
-<area shape="rect" id="node3" title=" " alt="" coords="91,167,149,192"/>
-<area shape="rect" id="node4" href="$Vector_8h.html" title=" " alt="" coords="201,240,311,265"/>
-<area shape="rect" id="node14" href="$IpplException_8h.html" title=" " alt="" coords="424,167,571,192"/>
-<area shape="rect" id="node16" href="$Element_8h.html" title=" " alt="" coords="232,167,400,192"/>
-<area shape="rect" id="node17" href="$Quadrature_8hpp.html" title=" " alt="" coords="595,167,805,192"/>
-<area shape="rect" id="node5" title=" " alt="" coords="40,313,136,339"/>
-<area shape="rect" id="node6" href="$IpplExpressions_8h.html" title=" " alt="" coords="161,313,351,339"/>
-<area shape="rect" id="node11" href="$Vector_8hpp.html" title=" " alt="" coords="375,313,459,339"/>
-<area shape="rect" id="node7" title=" " alt="" coords="60,387,143,412"/>
-<area shape="rect" id="node8" href="$IpplOperations_8h.html" title=" " alt="" coords="167,387,350,412"/>
-<area shape="rect" id="node9" title=" " alt="" coords="60,460,292,485"/>
-<area shape="rect" id="node10" title=" " alt="" coords="316,460,367,485"/>
-<area shape="rect" id="node12" title=" " alt="" coords="380,387,447,412"/>
-<area shape="rect" id="node13" title=" " alt="" coords="471,387,543,412"/>
-<area shape="rect" id="node15" title=" " alt="" coords="470,240,525,265"/>
+<area shape="rect" id="node1" title=" " alt="" coords="233,5,405,31"/>
+<area shape="rect" id="node2" href="$Quadrature_8h.html" title=" " alt="" coords="370,86,565,111"/>
+<area shape="rect" id="node23" href="$GaussJacobiQuadrature_8hpp.html" title=" " alt="" coords="111,79,309,119"/>
+<area shape="rect" id="node3" title=" " alt="" coords="105,167,163,192"/>
+<area shape="rect" id="node4" href="$Vector_8h.html" title=" " alt="" coords="513,240,622,265"/>
+<area shape="rect" id="node19" href="$IpplException_8h.html" title=" " alt="" coords="665,167,811,192"/>
+<area shape="rect" id="node21" href="$Element_8h.html" title=" " alt="" coords="422,167,590,192"/>
+<area shape="rect" id="node22" href="$Quadrature_8hpp.html" title=" " alt="" coords="188,167,397,192"/>
+<area shape="rect" id="node5" title=" " alt="" coords="404,387,544,412"/>
+<area shape="rect" id="node6" title=" " alt="" coords="634,313,685,339"/>
+<area shape="rect" id="node7" title=" " alt="" coords="5,387,65,412"/>
+<area shape="rect" id="node8" title=" " alt="" coords="709,313,805,339"/>
+<area shape="rect" id="node9" title=" " alt="" coords="297,387,379,412"/>
+<area shape="rect" id="node10" title=" " alt="" coords="829,313,887,339"/>
+<area shape="rect" id="node11" href="$IpplExpressions_8h.html" title=" " alt="" coords="208,313,399,339"/>
+<area shape="rect" id="node15" href="$Vector_8hpp.html" title=" " alt="" coords="525,313,609,339"/>
+<area shape="rect" id="node12" href="$IpplOperations_8h.html" title=" " alt="" coords="89,387,272,412"/>
+<area shape="rect" id="node13" title=" " alt="" coords="347,460,579,485"/>
+<area shape="rect" id="node14" title=" " alt="" coords="155,460,206,485"/>
+<area shape="rect" id="node16" title=" " alt="" coords="620,387,763,412"/>
+<area shape="rect" id="node17" title=" " alt="" coords="787,387,854,412"/>
+<area shape="rect" id="node18" title=" " alt="" coords="878,387,950,412"/>
+<area shape="rect" id="node20" title=" " alt="" coords="711,240,765,265"/>
 </map>
