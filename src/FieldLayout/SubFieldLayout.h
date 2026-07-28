@@ -7,11 +7,6 @@
 #ifndef IPPL_SUB_FIELD_LAYOUT_H
 #define IPPL_SUB_FIELD_LAYOUT_H
 
-#include <array>
-#include <iostream>
-#include <map>
-#include <vector>
-
 #include "Types/ViewTypes.h"
 
 #include "Communicate/Communicator.h"
@@ -178,6 +173,8 @@ namespace ippl {
     };
 }  // namespace ippl
 
+#ifndef IPPL_SUB_FIELD_LAYOUT_HPP
 #include "FieldLayout/SubFieldLayout.hpp"
+#endif
 
 #endif
