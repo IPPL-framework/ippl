@@ -9,6 +9,7 @@ message(STATUS "🔧 Adding Particle integration tests from: ${_relPath}")
 
 add_ippl_integration_test(TestScatter LABELS integration particle)
 add_ippl_integration_test(TestGather LABELS integration particle)
+add_ippl_integration_test(TestTruncatedGreenParticleInteraction LABELS integration interaction particle)
 
 add_ippl_integration_test(
   PICnd
