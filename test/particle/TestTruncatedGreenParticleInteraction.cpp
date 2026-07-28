@@ -1,3 +1,15 @@
+//
+// TestTruncatedGreenParticleInteraction
+// This program tests the short-range Ewald particle interaction using two unit-charge particles in
+// a periodic ParticleSpatialOverlapLayout. It verifies that zero-distance pairs produce a finite
+// zero field with the default and an updated positive regularization cutoff, and that a
+// non-positive regularization cutoff is rejected.
+//
+//   Usage:
+//     srun -n 2 ./TestTruncatedGreenParticleInteraction --info 5
+//
+//
+
 #include "Ippl.h"
 
 #include <cmath>
