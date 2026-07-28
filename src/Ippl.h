@@ -10,7 +10,6 @@
 #include "Types/IpplTypes.h"
 
 #include "Utility/Inform.h"
-#include "Utility/ParallelDispatch.h"
 
 #include "Communicate/Communicator.h"
 #include "Communicate/Environment.h"
@@ -45,6 +44,8 @@ namespace ippl {
         T getNumericalOption(const char* arg);
     }  // namespace detail
 }  // namespace ippl
+
+#include "Utility/ParallelDispatch.h"
 
 // FIMXE remove (only for backwards compatibility)
 #include "IpplCore.h"

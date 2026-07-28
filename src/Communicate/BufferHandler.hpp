@@ -1,6 +1,8 @@
 #ifndef IPPL_BUFFER_HANDLER_HPP
 #define IPPL_BUFFER_HANDLER_HPP
 
+#include <algorithm>
+
 namespace ippl {
 
     template <typename MemorySpace>
@@ -10,6 +12,15 @@ namespace ippl {
     typename DefaultBufferHandler<MemorySpace>::buffer_type
     DefaultBufferHandler<MemorySpace>::getBuffer(size_type size, double overallocation) {
         size_type requiredSize = static_cast<size_type>(size * overallocation);
+
+        // Round up to page granularity to avoid 0-byte or tiny allocations
+        // and to align with the GPU-aware MPI registration cache.
+        constexpr size_type PAGE_SIZE = 4096;
+        if (requiredSize < PAGE_SIZE) {
+            requiredSize = PAGE_SIZE;
+        } else {
+            requiredSize = ((requiredSize + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
+        }
 
         auto freeBuffer = findFreeBuffer(requiredSize);
         if (freeBuffer != nullptr) {
@@ -120,17 +131,12 @@ namespace ippl {
     template <typename MemorySpace>
     typename DefaultBufferHandler<MemorySpace>::buffer_type
     DefaultBufferHandler<MemorySpace>::reallocateLargestFreeBuffer(size_type requiredSize) {
-        auto largest_it    = std::prev(free_buffers.end());
-        buffer_type buffer = *largest_it;
-
-        freeSize_m -= buffer->getBufferSize();
-        usedSize_m += requiredSize;
-
-        free_buffers.erase(buffer);
-        buffer->reallocBuffer(requiredSize);
-
-        used_buffers.insert(buffer);
-        return buffer;
+        // Always allocate a
+        // fresh buffer instead of reallocating the largest free one: a
+        // free + alloc cycle can release the device pointer that a GPU-aware
+        // MPI's registration cache still holds. Keeping the old buffers in the free
+        // pool and returning a new buffer at a new address sidesteps this.
+        return allocateNewBuffer(requiredSize);
     }
 
     template <typename MemorySpace>

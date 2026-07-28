@@ -85,8 +85,7 @@ namespace ippl {
         template <typename T, unsigned Dim, class... Properties>
         void write(const typename ViewType<T, Dim, Properties...>::view_type& view,
                    std::ostream& out = std::cout) {
-            using view_type = typename ViewType<T, Dim, Properties...>::view_type;
-            typename view_type::host_mirror_type hview = Kokkos::create_mirror_view(view);
+            auto hview = Kokkos::create_mirror_view(view);
             Kokkos::deep_copy(hview, view);
 
             nestedViewLoop(

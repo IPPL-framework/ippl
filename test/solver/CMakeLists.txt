@@ -12,7 +12,9 @@ add_ippl_integration_test(TestCGSolver ARGS 4 j LABELS solver integration)
 
 # compile only
 add_ippl_integration_test(TestSolverDesign COMPILE_ONLY LABELS solver integration)
-add_ippl_integration_test(TestCGSolver_convergence COMPILE_ONLY LABELS solver integration)
+add_ippl_integration_test(TestCGSolver_convergence_constant COMPILE_ONLY LABELS solver integration)
+add_ippl_integration_test(TestCGSolver_convergence_periodic COMPILE_ONLY LABELS solver integration)
+add_ippl_integration_test(TestPreconditionerValidation LABELS solver integration)
 
 if(IPPL_ENABLE_FFT)
   # tests FFTPeriodicPoissonSolver
@@ -20,9 +22,16 @@ if(IPPL_ENABLE_FFT)
 
   # tests FFTOpenPoissonSolver
   add_ippl_integration_test(TestGaussian ARGS 16 16 16 pencils a2a no-reorder HOCKNEY LABELS solver integration)
+  add_ippl_integration_test(TestGaussianIntegrated
+    SOURCES TestGaussian.cpp
+    ARGS 16 16 16 pencils a2a no-reorder HOCKNEY INTEGRATED
+    LABELS solver integration)
 
   # tests FFTOpenPoissonSolver::shiftedGreensFunction (Dirichlet image correction)
   add_ippl_integration_test(TestShiftedGreensFunction LABELS solver integration)
+
+  # tests FFTOpenPoissonSolver integrated and shifted integrated Green's functions
+  add_ippl_integration_test(TestIntegratedGreensFunction LABELS solver integration)
 
   # tests the FFTTruncatedGreenPeriodicPoissonSolver
   add_ippl_integration_test(TestFFTTruncatedGreenPeriodicPoissonSolver ARGS 16 16 16 LABELS solver integration)

@@ -23,10 +23,13 @@ namespace ippl {
 
             static bool finalized();
 
+            bool threadMultiple() noexcept { return threadMultiple_m; }
+
             void abort(int errorcode = -1) noexcept { MPI_Abort(comm_m, errorcode); }
 
         private:
             MPI_Comm comm_m;
+            bool threadMultiple_m;
         };
     }  // namespace mpi
 }  // namespace ippl

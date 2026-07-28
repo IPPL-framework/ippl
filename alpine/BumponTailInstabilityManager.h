@@ -274,10 +274,10 @@ public:
 
         this->pcontainer_m->create(nlocal);
 
-        view_type* R = &(this->pcontainer_m->R.getView());
-        samplingR.generate(*R, rand_pool64);
+        view_type R = this->pcontainer_m->R.getView();
+        samplingR.generate(R, rand_pool64);
 
-        view_type* P = &(this->pcontainer_m->P.getView());
+        view_type P = this->pcontainer_m->P.getView();
 
         double mu[Dim];
         double sd[Dim];
@@ -288,12 +288,12 @@ public:
         // sample first nlocBulk with muBulk as mean velocity
         mu[Dim - 1] = muBulk_m;
         Kokkos::parallel_for(Kokkos::RangePolicy<int>(0, nlocBulk),
-                             ippl::random::randn<double, Dim>(*P, rand_pool64, mu, sd));
+                             ippl::random::randn<double, Dim>(P, rand_pool64, mu, sd));
 
         // sample remaining with muBeam as mean velocity
         mu[Dim - 1] = muBeam_m;
         Kokkos::parallel_for(Kokkos::RangePolicy<int>(nlocBulk, nlocal),
-                             ippl::random::randn<double, Dim>(*P, rand_pool64, mu, sd));
+                             ippl::random::randn<double, Dim>(P, rand_pool64, mu, sd));
 
         Kokkos::fence();
         ippl::Comm->barrier();

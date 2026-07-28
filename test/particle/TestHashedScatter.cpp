@@ -18,9 +18,9 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
+        using Mesh_t = ippl::UniformCartesian<double, 3>;
+        typedef ippl::ParticleSpatialLayout<double, 3, Mesh_t> playout_type;
         typedef Bunch<playout_type> bunch_type;
-        using Mesh_t      = ippl::UniformCartesian<double, 3>;
         using Centering_t = Mesh_t::DefaultCentering;
 
         int pt = 512;

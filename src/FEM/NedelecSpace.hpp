@@ -425,7 +425,10 @@ namespace ippl {
             for (size_t j = 0; j < numElementDOFs; ++j) {
                 A[i][j] = 0.0;
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    A[i][j] += w[k] * evalFunction(i, j, curl_b_q[k], val_b_q[k]);
+                    A[i][j] += w[k] * evalFunction(
+                        i, j,
+                        QuadratureData<Vector<T, Dim>, Vector<T, Dim>, numElementDOFs>{val_b_q[k],
+                                                                                      curl_b_q[k]});
                 }
             }
         }

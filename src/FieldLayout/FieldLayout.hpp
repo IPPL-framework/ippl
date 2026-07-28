@@ -41,7 +41,8 @@ namespace ippl {
     FieldLayout<Dim>::FieldLayout(const mpi::Communicator& communicator)
         : comm(communicator)
         , dLocalDomains_m("local domains (device)", 0)
-        , hLocalDomains_m(Kokkos::create_mirror_view(dLocalDomains_m)) {
+        , hLocalDomains_m(Kokkos::create_mirror_view(dLocalDomains_m))
+        , nghost_m(1) {
         for (unsigned int d = 0; d < Dim; ++d) {
             minWidth_m[d] = 0;
         }
@@ -49,9 +50,9 @@ namespace ippl {
 
     template <unsigned Dim>
     FieldLayout<Dim>::FieldLayout(mpi::Communicator communicator, const NDIndex<Dim>& domain,
-                                  std::array<bool, Dim> isParallel, bool isAllPeriodic)
+                                  std::array<bool, Dim> isParallel, bool isAllPeriodic, int nghost)
         : FieldLayout(communicator) {
-        initialize(domain, isParallel, isAllPeriodic);
+        initialize(domain, isParallel, isAllPeriodic, nghost);
     }
 
     template <unsigned Dim>
@@ -64,7 +65,7 @@ namespace ippl {
             hLocalDomains_m(i) = domains[i];
         }
 
-        findNeighbors();
+        findNeighbors(nghost_m);
 
         Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
 
@@ -73,7 +74,7 @@ namespace ippl {
 
     template <unsigned Dim>
     void FieldLayout<Dim>::initialize(const NDIndex<Dim>& domain, std::array<bool, Dim> isParallel,
-                                      bool isAllPeriodic) {
+                                      bool isAllPeriodic, int nghost) {
         int nRanks = comm.size();
 
         gDomain_m = domain;
@@ -82,11 +83,17 @@ namespace ippl {
 
         isParallelDim_m = isParallel;
 
+        nghost_m = nghost;
+
         if (nRanks < 2) {
             Kokkos::resize(dLocalDomains_m, nRanks);
             Kokkos::resize(hLocalDomains_m, nRanks);
             hLocalDomains_m(0) = domain;
             Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
+            // Even on a single rank we must populate minWidth_m so that
+            // getDistribution(d) returns the right answer; without this the
+            // serial-build path silently reports every dim as parallel.
+            calcWidths();
             return;
         }
 
@@ -99,8 +106,11 @@ namespace ippl {
         }
 
         if (totparelems < nRanks) {
-            throw std::runtime_error("FieldLayout:initialize: domain can only be partitioned in to "
-                + std::to_string(totparelems) + " local domains, but there are " + std::to_string(nRanks) + " ranks, decrease the number of ranks or increase the domain.");
+            throw std::runtime_error(
+                "FieldLayout:initialize: domain can only be partitioned in to "
+                + std::to_string(totparelems) + " local domains, but there are "
+                + std::to_string(nRanks)
+                + " ranks, decrease the number of ranks or increase the domain.");
         }
 
         Kokkos::resize(dLocalDomains_m, nRanks);
@@ -109,7 +119,7 @@ namespace ippl {
         detail::Partitioner<Dim> partitioner;
         partitioner.split(domain, hLocalDomains_m, isParallel, nRanks);
 
-        findNeighbors();
+        findNeighbors(nghost);
 
         Kokkos::deep_copy(dLocalDomains_m, hLocalDomains_m);
 
@@ -292,7 +302,7 @@ namespace ippl {
             // 0 - touching the lower axis value
             // 1 - touching the upper axis value
             // 2 - parallel to the axis
-            if (intersect[d].length() == 1) {
+            if (intersect[d].length() == static_cast<size_t>(nghost)) {
                 if (gnd[d].first() != intersect[d].first()) {
                     index += digit;
                 }
@@ -320,8 +330,11 @@ namespace ippl {
          * Add "+1" to the upper bound since Kokkos loops always to "< extent".
          */
         for (size_t i = 0; i < Dim; ++i) {
-            intersect.lo[i] = overlap[i].first() - offset[i].first() /*offset*/ + nghost;
-            intersect.hi[i] = overlap[i].last() - offset[i].first() /*offset*/ + nghost + 1;
+            const int stride = offset[i].stride();
+
+            intersect.lo[i] = (overlap[i].first() - offset[i].first() /*offset*/) / stride + nghost;
+            intersect.hi[i] =
+                (overlap[i].last() - offset[i].first() /*offset*/) / stride + nghost + 1;
         }
 
         return intersect;
@@ -330,15 +343,16 @@ namespace ippl {
     template <unsigned Dim>
     int FieldLayout<Dim>::getPeriodicOffset(const NDIndex_t& nd, const unsigned int d,
                                             const int k) {
+        const int period = gDomain_m[d].length() * gDomain_m[d].stride();
         switch (k) {
             case 0:
                 if (nd[d].max() == gDomain_m[d].max()) {
-                    return -gDomain_m[d].length();
+                    return -period;
                 }
                 break;
             case 1:
                 if (nd[d].min() == gDomain_m[d].min()) {
-                    return gDomain_m[d].length();
+                    return period;
                 }
                 break;
             default:

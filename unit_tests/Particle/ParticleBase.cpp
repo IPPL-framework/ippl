@@ -78,6 +78,7 @@ TYPED_TEST(ParticleBaseTest, CreateAndDestroy) {
     pbase->destroy(invalid, 500);
 
     // Verify remaining indices
+    mirror = pbase->ID.getHostMirror();
     Kokkos::deep_copy(mirror, pbase->ID.getView());
     for (int i = 0; i < 500; ++i) {
         // The even indices contain the original particles

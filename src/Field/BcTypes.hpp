@@ -45,8 +45,14 @@ namespace ippl {
             const auto& domain     = layout.getDomain();
             int myRank             = field.getCommunicator().rank();
 
-            bool isBoundary = (lDomains[myRank][d].max() == domain[d].max())
-                              || (lDomains[myRank][d].min() == domain[d].min());
+            // Only apply the BC if this rank actually owns this face's global boundary.
+            // Lower face -> local min must match global min; upper face -> local max
+            // must match global max. Otherwise this side is an internal MPI interface
+            // and must be filled by halo exchange, not by the boundary update.
+            const bool isLowerFace = !(face & 1);
+
+            const bool isBoundary = isLowerFace ? (lDomains[myRank][d].min() == domain[d].min())
+                                                : (lDomains[myRank][d].max() == domain[d].max());
 
             if (!isBoundary) {
                 return;
@@ -165,12 +171,13 @@ namespace ippl {
                 auto gnd = nd.grow(nghost, d);
 
                 int offset;
+                const int period = domain[d].length() * domain[d].stride();
                 if (face & 1) {
                     // upper face
-                    offset = -domain[d].length();
+                    offset = -period;
                 } else {
                     // lower face
-                    offset = domain[d].length();
+                    offset = period;
                 }
                 // shift by offset
                 gnd[d] = gnd[d] + offset;
@@ -217,14 +224,15 @@ namespace ippl {
                 auto& nd = lDomains[myRank];
 
                 int offset, offsetRecv, matchtag;
+                const int period = domain[d].length() * domain[d].stride();
                 if (face & 1) {
                     // upper face
-                    offset     = -domain[d].length();
+                    offset     = -period;
                     offsetRecv = nghost;
                     matchtag   = comm.preceding_tag(mpi::tag::BC_PARALLEL_PERIODIC);
                 } else {
                     // lower face
-                    offset     = domain[d].length();
+                    offset     = period;
                     offsetRecv = -nghost;
                     matchtag   = comm.following_tag(mpi::tag::BC_PARALLEL_PERIODIC);
                 }
@@ -253,8 +261,10 @@ namespace ippl {
                     range_t range;
 
                     for (size_t j = 0; j < Dim; ++j) {
-                        range.lo[j] = overlap[j].first() - nd[j].first() + nghost;
-                        range.hi[j] = overlap[j].last() - nd[j].first() + nghost + 1;
+                        const int stride = nd[j].stride();
+
+                        range.lo[j] = (overlap[j].first() - nd[j].first()) / stride + nghost;
+                        range.hi[j] = (overlap[j].last() - nd[j].first()) / stride + nghost + 1;
                     }
 
                     rangeNeighbors.push_back(range);
@@ -357,12 +367,11 @@ namespace ippl {
             throw IpplException("PeriodicFace::apply", "face number wrong");
         }
 
-        bool upperFace = (face & 1);
+        bool upperFace  = (face & 1);
         bool isBoundary = ((ldom[d].max() == domain[d].max()) && upperFace)
-                           || ((ldom[d].min() == domain[d].min()) && !(upperFace));
+                          || ((ldom[d].min() == domain[d].min()) && !(upperFace));
 
         if (isBoundary) {
-
             auto N = view.extent(d) - 1;
 
             using exec_space = typename Field::execution_space;
@@ -376,8 +385,8 @@ namespace ippl {
             for (size_t i = 0; i < Dim; ++i) {
                 bool upperFace_i = (ldom[i].max() == domain[i].max());
                 bool lowerFace_i = (ldom[i].min() == domain[i].min());
-                end[i]   = view.extent(i) - nghost - (upperFace_i)*(isCorner);
-                begin[i] = nghost + (lowerFace_i)*(isCorner);
+                end[i]           = view.extent(i) - nghost - (upperFace_i) * (isCorner);
+                begin[i]         = nghost + (lowerFace_i) * (isCorner);
             }
             begin[d] = ((0 + nghost - 1) * (1 - upperFace)) + (N * upperFace);
             end[d]   = begin[d] + 1;
@@ -400,7 +409,7 @@ namespace ippl {
                     coords[d] += shift;
 
                     apply(view, coords) += right;
-            });
+                });
         }
     }
 
@@ -418,9 +427,9 @@ namespace ippl {
             throw IpplException("ExtrapolateFace::apply", "face number wrong");
         }
 
-        bool upperFace = (face & 1);
+        bool upperFace  = (face & 1);
         bool isBoundary = ((ldom[d].max() == domain[d].max()) && upperFace)
-                           || ((ldom[d].min() == domain[d].min()) && !(upperFace));
+                          || ((ldom[d].min() == domain[d].min()) && !(upperFace));
 
         if (isBoundary) {
             auto N = view.extent(d) - 1;
@@ -458,7 +467,7 @@ namespace ippl {
                     coords[d] += shift;
 
                     apply(view, coords) = right;
-            });
+                });
         }
     }
 }  // namespace ippl

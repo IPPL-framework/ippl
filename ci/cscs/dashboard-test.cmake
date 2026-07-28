@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 
+set(DASHBOARD_PROJECT "IPPL")
+
 if(NOT DEFINED BUILD_TYPE)
   set(BUILD_TYPE Debug)
 endif()
@@ -36,3 +38,15 @@ ctest_submit()
 if(test_result)
   message(FATAL_ERROR "CTest reported test failures")
 endif()
+
+string(ASCII 27 ESC)
+set(BLUE "${ESC}[34m")
+set(RESET "${ESC}[0m")
+message("${BLUE}# ---------------------------------${RESET}")
+message("${BLUE}To view ALL configure/build/test results and error logs visit: ${RESET}")
+message("${BLUE}https://my.cdash.org/index.php?project=${DASHBOARD_PROJECT}${RESET}")
+message("${BLUE}For this PR visit: ${RESET}")
+message(
+  "${BLUE}https://my.cdash.org/index.php?project=${DASHBOARD_PROJECT}&filtercount=1&showfilters=1&field1=buildname&compare1=63&value1=${CDASH_LABEL}${RESET}"
+)
+message("${BLUE}# ---------------------------------${RESET}")

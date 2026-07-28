@@ -1,176 +1,93 @@
-//   Usage:
-//     srun ./benchmarkParticleUpdate 128 128 128 10000 10 --info 10
 //
+// benchmarkParticleUpdate.cpp
 //
+// Per-phase IpplTimings benchmark for particle update with selectable
+// count-exchange mode (RMA / P2P / Alltoall) and warmup steps.
+//
+// Usage:
+//   srun ./benchmarkParticleUpdate Nx Ny Nz nParticles nSteps
+//       [--warmup N] [--exchange rma|p2p|alltoall]
+//       [--overallocate F] [--info N]
+//
+
 #include "Ippl.h"
 
-#include <chrono>
+#include <Kokkos_Random.hpp>
 #include <iostream>
 #include <random>
-#include <set>
 #include <string>
-#include <vector>
 
+#include "BenchParticles.h"
 #include "Utility/IpplTimings.h"
 
-// dimension of our positions
-constexpr unsigned Dim = 3;
-
-// some typedefs
-typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
-typedef ippl::UniformCartesian<double, Dim> Mesh_t;
-typedef ippl::FieldLayout<Dim> FieldLayout_t;
-
-template <typename T, unsigned Dim>
-using Vector = ippl::Vector<T, Dim>;
-
-template <typename T>
-using ParticleAttrib = ippl::ParticleAttrib<T>;
-
-typedef Vector<double, Dim> Vector_t;
-
-template <class PLayout>
-class ChargedParticles : public ippl::ParticleBase<PLayout> {
-public:
-    Vector<int, Dim> nr_m;
-
-    Vector_t hr_m;
-    Vector_t rmin_m;
-    Vector_t rmax_m;
-
-    std::array<bool, Dim> isParallel_m;
-
-    double Q_m;
-
-public:
-    ParticleAttrib<double> qm;                                       // charge-to-mass ratio
-    typename ippl::ParticleBase<PLayout>::particle_position_type P;  // particle velocity
-    typename ippl::ParticleBase<PLayout>::particle_position_type
-        E;  // electric field at particle position
-
-    ChargedParticles(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
-                     std::array<bool, Dim> isParallel, double Q)
-        : ippl::ParticleBase<PLayout>(pl)
-        , hr_m(hr)
-        , rmin_m(rmin)
-        , rmax_m(rmax)
-        , isParallel_m(isParallel)
-        , Q_m(Q) {
-        this->addAttribute(qm);
-        this->addAttribute(P);
-        this->addAttribute(E);
-        setupBCs();
-    }
-
-    ~ChargedParticles() {}
-
-    void setupBCs() { setBCAllPeriodic(); }
-
-    void gatherStatistics(unsigned int totalP, int iteration) {
-        unsigned int Total_particles = 0;
-        unsigned int local_particles = this->getLocalNum();
-
-        ippl::Comm->reduce(local_particles, Total_particles, 1, std::plus<unsigned int>());
-
-        if (ippl::Comm->rank() == 0) {
-            if (Total_particles != totalP) {
-                std::cout << "Total particles in the sim. " << totalP << " "
-                          << "after update: " << Total_particles << std::endl;
-                std::cout << "Total particles not matched after update in iteration:"
-                          << " " << iteration << std::endl;
-                exit(1);
-            }
-        }
-
-        ippl::Comm->barrier();
-
-        std::cout << "Rank " << ippl::Comm->rank() << " has " << local_particles << std::endl;
-    }
-
-    Vector_t getRMin() { return rmin_m; }
-    Vector_t getRMax() { return rmax_m; }
-    Vector_t getHr() { return hr_m; }
-
-    void dumpData(int iteration) {
-        double Energy = 0.0;
-
-        ParticleAttrib<Vector_t>::view_type& view = P.getView();
-        Inform csvout(NULL, "data/energy.csv", Inform::APPEND);
-        csvout.precision(10);
-        csvout.setf(std::ios::scientific, std::ios::floatfield);
-
-        Kokkos::parallel_reduce(
-            "Particle Energy", view.extent(0),
-            KOKKOS_LAMBDA(const int i, double& valL) {
-                double myVal = dot(view(i), view(i)).apply();
-                valL += myVal;
-            },
-            Kokkos::Sum<double>(Energy));
-
-        Energy *= 0.5;
-        csvout << iteration << " " << Energy << endl;
-    }
-
-private:
-    void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
-};
-
 int main(int argc, char* argv[]) {
+    using namespace bench;
     ippl::initialize(argc, argv);
     {
         Inform msg(argv[0]);
-        Inform msg2all(argv[0], INFORM_ALL_NODES);
+
+        if (argc < 6) {
+            if (ippl::Comm->rank() == 0)
+                std::cerr << "Usage: " << argv[0]
+                          << " Nx Ny Nz nParticles nSteps"
+                             " [--warmup N] [--exchange rma|p2p|alltoall]"
+                             " [--overallocate F] [--info N]\n";
+            ippl::finalize();
+            return 1;
+        }
 
         ippl::Vector<int, Dim> nr = {std::atoi(argv[1]), std::atoi(argv[2]), std::atoi(argv[3])};
-
-        static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("mainTimer");
-        IpplTimings::startTimer(mainTimer);
-        auto start                = std::chrono::high_resolution_clock::now();
         const unsigned int totalP = std::atoi(argv[4]);
         const unsigned int nt     = std::atoi(argv[5]);
 
-        msg << "benchmarkUpdate" << endl
-            << "nt " << nt << " Np= " << totalP << " grid = " << nr << endl;
+        int warmupSteps         = 5;
+        std::string exchangeStr = "alltoall";
+        int infoEvery           = 0;
 
-        using bunch_type = ChargedParticles<PLayout_t>;
+        for (int i = 6; i < argc; ++i) {
+            std::string flag = argv[i];
+            if (flag == "--warmup" && i + 1 < argc)
+                warmupSteps = std::stoi(argv[++i]);
+            else if (flag == "--exchange" && i + 1 < argc)
+                exchangeStr = argv[++i];
+            else if (flag == "--info" && i + 1 < argc)
+                infoEvery = std::stoi(argv[++i]);
+        }
 
-        std::unique_ptr<bunch_type> P;
+        const ippl::CountExchange exchangeMode = parseMode(exchangeStr);
+
+        msg << "benchmarkParticleUpdate" << endl
+            << "nt=" << nt << " Np=" << totalP << " grid=" << nr << " exchange=" << exchangeStr
+            << " warmup=" << warmupSteps << endl;
 
         ippl::NDIndex<Dim> domain;
-        for (unsigned i = 0; i < Dim; i++) {
+        for (unsigned i = 0; i < Dim; ++i)
             domain[i] = ippl::Index(nr[i]);
-        }
 
         std::array<bool, Dim> isParallel;
         isParallel.fill(true);
 
-        // create mesh and layout objects for this problem domain
-        Vector_t rmin(0.0);
-        Vector_t rmax(1.0);
+        Vector_t rmin(0.0), rmax(1.0);
         double dx       = rmax[0] / double(nr[0]);
         double dy       = rmax[1] / double(nr[1]);
         double dz       = rmax[2] / double(nr[2]);
         Vector_t hr     = {dx, dy, dz};
         Vector_t origin = {rmin[0], rmin[1], rmin[2]};
         double hr_min   = std::min({dx, dy, dz});
-        const double dt = 1.0;  // size of timestep
+        const double dt = 1.0;
 
         Mesh_t mesh(domain, hr, origin);
         FieldLayout_t FL(MPI_COMM_WORLD, domain, isParallel);
-        PLayout_t PL(FL, mesh);
+        PLayout_t PL(FL, mesh, /*fem=*/false, exchangeMode);
 
-        /*
-         * In case of periodic BC's define
-         * the domain with hr and rmin
-         */
-
-        double Q = 1e6;
-        P        = std::make_unique<bunch_type>(PL, hr, rmin, rmax, isParallel, Q);
+        using bunch_type = BenchParticles<PLayout_t>;
+        auto P           = std::make_unique<bunch_type>(PL, isParallel);
 
         unsigned long int nloc = totalP / ippl::Comm->size();
 
-        static IpplTimings::TimerRef particleCreation = IpplTimings::getTimer("particlesCreation");
-        IpplTimings::startTimer(particleCreation);
+        static IpplTimings::TimerRef tCreate = IpplTimings::getTimer("particlesCreation");
+        IpplTimings::startTimer(tCreate);
+
         P->create(nloc);
 
         std::mt19937_64 eng[Dim];
@@ -182,101 +99,95 @@ int main(int argc, char* argv[]) {
 
         typename bunch_type::particle_position_type::host_mirror_type R_host = P->R.getHostMirror();
 
-        double sum_coord = 0.0;
-        for (unsigned long int i = 0; i < nloc; i++) {
-            for (int d = 0; d < 3; d++) {
+        for (unsigned long int i = 0; i < nloc; ++i)
+            for (int d = 0; d < 3; ++d)
                 R_host(i)[d] = unif(eng[d]);
-                sum_coord += R_host(i)[d];
-            }
-        }
-        double global_sum_coord = 0.0;
-        ippl::Comm->reduce(sum_coord, global_sum_coord, 1, std::plus<double>());
-
-        if (ippl::Comm->rank() == 0) {
-            std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord << std::endl;
-        }
 
         Kokkos::deep_copy(P->R.getView(), R_host);
-        P->qm = P->Q_m / totalP;
-        IpplTimings::stopTimer(particleCreation);
-        P->E = 0.0;
+        P->qm = 1.0 / totalP;
+        P->E  = 0.0;
 
-        static IpplTimings::TimerRef UpdateTimer = IpplTimings::getTimer("ParticleUpdate");
-        IpplTimings::startTimer(UpdateTimer);
+        IpplTimings::stopTimer(tCreate);
+
+        static IpplTimings::TimerRef tUpdate = IpplTimings::getTimer("ParticleUpdate");
+        IpplTimings::startTimer(tUpdate);
         P->update();
-        IpplTimings::stopTimer(UpdateTimer);
+        IpplTimings::stopTimer(tUpdate);
 
-        msg << "particles created and initial conditions assigned " << endl;
+        if (ippl::Comm->rank() == 0)
+            std::cout << "Running " << warmupSteps << " warmup step(s)...\n";
 
-        std::uniform_real_distribution<double> unifP(0, hr_min);
-        typename bunch_type::particle_position_type::host_mirror_type P_host = P->P.getHostMirror();
+        Kokkos::Random_XorShift64_Pool<> pool(static_cast<uint64_t>(42 + 100 * ippl::Comm->rank()));
 
-        // begin main timestep loop
-        msg << "Starting iterations ..." << endl;
-        for (unsigned int it = 0; it < nt; it++) {
-            static IpplTimings::TimerRef gatherStat = IpplTimings::getTimer("gatherStatistics");
-            IpplTimings::startTimer(gatherStat);
-            P->gatherStatistics(totalP, it);
-            IpplTimings::stopTimer(gatherStat);
+        for (int w = 0; w < warmupSteps; ++w) {
+            auto P_view = P->P.getView();
+            Kokkos::parallel_for(
+                "warmup_randP", Kokkos::RangePolicy<>(0, (int)P->getLocalNum()),
+                KOKKOS_LAMBDA(const int i) {
+                    auto gen = pool.get_state();
+                    for (int d = 0; d < 3; ++d)
+                        P_view(i)[d] = gen.drand() * hr_min;
+                    pool.free_state(gen);
+                });
+            Kokkos::fence();
 
-            static IpplTimings::TimerRef RandPTimer = IpplTimings::getTimer("RandomP");
-            IpplTimings::startTimer(RandPTimer);
-            std::mt19937_64 engP;
-            engP.seed(42 + 10 * it + 100 * ippl::Comm->rank());
-            Kokkos::resize(P_host, P->P.size());
-            double sum_coord = 0.0;
-            Kokkos::resize(R_host, P->R.size());
-            Kokkos::deep_copy(R_host, P->R.getView());
-            for (unsigned long int i = 0; i < P->getLocalNum(); i++) {
-                for (int d = 0; d < 3; d++) {
-                    P_host(i)[d] = unifP(engP);
-                    sum_coord += R_host(i)[d];
-                }
-            }
-            double global_sum_coord = 0.0;
-            ippl::Comm->reduce(sum_coord, global_sum_coord, 1, std::plus<double>());
-            if (ippl::Comm->rank() == 0) {
-                std::cout << "Sum Coord: " << std::setprecision(16) << global_sum_coord
-                          << std::endl;
-            }
-            Kokkos::deep_copy(P->P.getView(), P_host);
-            IpplTimings::stopTimer(RandPTimer);
-            ippl::Comm->barrier();
-
-            // advance the particle positions
-            // basic leapfrogging timestep scheme.  velocities are offset
-            // by half a timestep from the positions.
-            static IpplTimings::TimerRef RTimer = IpplTimings::getTimer("positionUpdate");
-            IpplTimings::startTimer(RTimer);
             P->R = P->R + dt * P->P;
-            IpplTimings::stopTimer(RTimer);
-
-            IpplTimings::startTimer(UpdateTimer);
             P->update();
-            IpplTimings::stopTimer(UpdateTimer);
-
-            // advance the particle velocities
-            static IpplTimings::TimerRef PTimer = IpplTimings::getTimer("velocityUpdate");
-            IpplTimings::startTimer(PTimer);
             P->P = P->P + dt * P->qm * P->E;
-            IpplTimings::stopTimer(PTimer);
-            msg << "Finished iteration " << it << " - min/max r and h " << P->getRMin()
-                << P->getRMax() << P->getHr() << endl;
-
-            P->dumpData(it);
         }
 
-        msg << "Particle update test: End." << endl;
-        IpplTimings::stopTimer(mainTimer);
-        IpplTimings::print();
-        IpplTimings::print(std::string("timing.dat"));
-        auto end = std::chrono::high_resolution_clock::now();
+        IpplTimings::resetAllTimers();
 
-        std::chrono::duration<double> time_elapsed =
-            std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-        std::cout << "Elapsed time: " << time_elapsed.count() << std::endl;
+        if (ippl::Comm->rank() == 0)
+            std::cout << "Warmup done. Timers reset. Starting timed run.\n";
+
+        static IpplTimings::TimerRef tMain  = IpplTimings::getTimer("mainTimer");
+        static IpplTimings::TimerRef tRandP = IpplTimings::getTimer("RandomP");
+        static IpplTimings::TimerRef tPos   = IpplTimings::getTimer("positionUpdate");
+        static IpplTimings::TimerRef tVel   = IpplTimings::getTimer("velocityUpdate");
+        tUpdate = IpplTimings::getTimer("ParticleUpdate");
+
+        IpplTimings::startTimer(tMain);
+
+        for (unsigned int it = 0; it < nt; ++it) {
+            IpplTimings::startTimer(tRandP);
+            {
+                auto P_view = P->P.getView();
+                Kokkos::parallel_for(
+                    "randP", Kokkos::RangePolicy<>(0, (int)P->getLocalNum()),
+                    KOKKOS_LAMBDA(const int i) {
+                        auto gen = pool.get_state();
+                        for (int d = 0; d < 3; ++d)
+                            P_view(i)[d] = gen.drand() * hr_min;
+                        pool.free_state(gen);
+                    });
+                Kokkos::fence();
+            }
+            IpplTimings::stopTimer(tRandP);
+
+            IpplTimings::startTimer(tPos);
+            P->R = P->R + dt * P->P;
+            IpplTimings::stopTimer(tPos);
+
+            IpplTimings::startTimer(tUpdate);
+            P->update();
+            IpplTimings::stopTimer(tUpdate);
+
+            IpplTimings::startTimer(tVel);
+            P->P = P->P + dt * P->qm * P->E;
+            IpplTimings::stopTimer(tVel);
+
+            if (infoEvery > 0 && (it + 1) % infoEvery == 0 && ippl::Comm->rank() == 0) {
+                std::cout << "  step " << (it + 1) << "/" << nt
+                          << "  local particles: " << P->getLocalNum() << "\n";
+            }
+        }
+
+        IpplTimings::stopTimer(tMain);
+
+        IpplTimings::print();
+        IpplTimings::print(std::string("timing_") + exchangeStr + ".dat");
     }
     ippl::finalize();
-
     return 0;
 }

@@ -1,5 +1,5 @@
 ## CI/CD PR testing on ALPS @ CSCS
-Unit tests and Integration tests will be performed for each PR made to IPPL on ALPS at CSCS, currently, the (daint) gh200 nodes and (beverin) mi300a nodes are being used for tests (other architectures can/will be added on request and subject to availability). Each PR that is tested will receive either a green tick (pass), or a red cross (fail). 
+Unit tests and Integration tests will be performed for each PR made to IPPL on ALPS at CSCS, currently, the (daint) NVidia gh200 nodes, (beverin) AMD mi300a nodes and (eiger) AMD Zen2 multicore/OpenMP nodes are being used for tests (other architectures can/will be added on request and subject to availability). Each PR that is tested will receive either a green tick (pass), or a red cross (fail). 
 
 Clicking on the Tick/Cross will take you to the pipeline information page where you can drill down to see individual stages/steps
 * what stages/steps exist (and dependencies), currently there are
@@ -21,7 +21,7 @@ PRs **submitted via forks** can be tested by adding a comment of the form
 
 Example: run multiple testing pipelines 
 ```
-cscs-ci run cscs-ci-gh200,cscs-ci-mi300
+cscs-ci run cscs-ci-gh200,cscs-ci-mi300,cscs-ci-openmp
 ```
 Example: run only the gh200 testing pipeline 
 ```
@@ -68,6 +68,9 @@ ippl-root
         ├── cuda
         │   ├── build_sm90.yml
         │   └── run_sm90.yml
+        ├── openmp
+        │   ├── build_openmp.yml
+        │   └── run_openmp.yml
         └── rocm
             ├── build_rocm-6.3.yml
             └── run_rocm-6.3.yml
@@ -93,7 +96,14 @@ Essential information on how the yaml files are structured and what sections mea
 **CSCS CI admin console** 
 https://cicd-ext-mw.cscs.ch/ci/setup/ui?repo=2663791694469788 
 the ID 2663791694469788 refers to the internal project number granted to the IPPL projet to submit tasks to ALPS for testing. 
-On this pages, per mission can be set and pipeline properties can be changed. 
+On this pages, per mission can be set and pipeline properties can be changed. (Note: CSCS staff members can directly register a project by clicking on register new project at the bottom right of the CI overview page).
+
+**github settings webhooks**
+```
+payload url : https://cicd-ext-mw.cscs.ch/ci/webhook_ci?id=`XXXXXXX`
+payload type: application/json
+Secret      : issued when new CI/CD project created
+```
 
 Note that the pipeline names can be set via the admin console, the names **cscs-ci-gh200** and **cscs-ci-mi300** were chosen to represent the architectures that they are run on, but are otherwise completely arbitrary and if changed the adjusted names must be used to trigger pipeline checks when done manually as described above.
 
@@ -101,3 +111,20 @@ The pipeline entry points are set on the admin page to point to
 `ci/cscs/cscs-gh200.yml` and `ci/cscs/cscs-mi300.yml` if these yaml files are moved to renamed, the pipeline entry points must be edited accordingly. 
 
 For information on how to setup authorization keys for firecrest launching of CSCS jobs, please consult the pages above.
+
+**CSCS setup steps (for future reference)**
+ * Github: In the project settings setup an application/json webhook and set the payload url (eg `https://cicd-ext-mw.cscs.ch/ci/webhook_ci?id=0123456789012`). The secret is taken from the CSCS CI admin console when you created the CI testing project
+ * Github: Create a fine grained API token using your personal account, it might look like `github_pat_01234567890123456789abcdefabcdef`, it needs 
+   * Read access to metadata  
+   * Read/Write access to commit statuses 
+ * The API token will be pasted into the CSCS CI admin console under the global config "Notification token"
+ * Create an "Application" (eg named: ippl-testing or opalx-testing) in the developer.cscs.ch dev-portal console and add subscriptions to the firecrest interfaces for respective access
+   * firecrest-HPC (for daint/eiger)
+   * firecrest-beverin (mi300)
+ * Create OAuth tokens (key/secret) in the firecrest realm and paste those into the CI admin console in the admin section under firecrest key/secret entries. Set accounts for csstaff, project accounts, user names in permissions
+ * Setup pipelines like 'cscs-ci-gh200' to match the `ci/cscs/cscs-gh200.yml` yaml entrypoint
+ * On github check webhoos/response to see if PRs are triggering anything
+ * Check https://gitlab.com/cscs-ci/ci-testing/webhook-ci/mirrors/6151408209445194/694321096757981/ `build/pipelines` to see CI triggered activity
+ * On a PR, use `cscs-ci run` or `cscs-ci run cscs-ci-gh200, ...` to trigger a pipeline
+ * To retrigger master branch rebuild/test - got to main github page of project, locate red cross (or green tick) at top of project, it shows a list of failed or successful builds. Locate the pieline you want, and copy the link under "details", paste it into address bar, but remove `?iid=808&type=gitlab` and then page will show info. Click bottom right corner "login to restart jobs" and master branch CI will be triggered.
+

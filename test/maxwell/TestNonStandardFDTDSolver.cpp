@@ -55,6 +55,9 @@ int main(int argc, char* argv[]) {
         std::array<bool, 3> isParallel;
         isParallel.fill(true);
 
+        // periodic layout
+        bool isAllPeriodic = true;
+
         // unit box
         ippl::Vector<scalar, 3> extents{scalar(1), scalar(1), scalar(1)};
         ippl::Vector<scalar, 3> hx;
@@ -65,7 +68,7 @@ int main(int argc, char* argv[]) {
         ippl::UniformCartesian<scalar, 3> mesh(owned, hx, origin);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel);
+        ippl::FieldLayout<3> layout(MPI_COMM_WORLD, owned, isParallel, isAllPeriodic);
 
         // Define the source and field types
         SourceField source(mesh, layout);

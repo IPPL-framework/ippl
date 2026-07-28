@@ -36,6 +36,8 @@ variables:
     # reset custom build name for cdash
     - export CTEST_BUILD_NAME="${CDASH_LABEL}-${BUILD_ARCH}-${BUILD_TYPE}-${TEST_INFO}"
     - find $BUILD_PATH -type f -name \*.xml -exec sed -i "s|BuildName=.*|BuildName=\"${CTEST_BUILD_NAME}\"|g" {} \;
+    - find $BUILD_PATH -name \*wrapper\* -exec realpath {} +
+    - grep MPIEXEC $BUILD_PATH/CMakeCache.txt
     # ctest should now have valid file paths, (use srun to launch with uenv setup)
     - ctest -V --output-on-failure --timeout 60 $TEST_ARGS -S $CI_PROJECT_DIR/ci/cscs/dashboard-test.cmake
       -DCTEST_SITE="$CTEST_SITE"
@@ -87,13 +89,13 @@ ippl-test-rocm6_3-release-4-ranks:
 # ---------------------------------------------------------
 # 4 ranks release : known failing tests
 # ---------------------------------------------------------
-ippl-test-rocm6_3-release-failing-4-ranks:
-  needs: ["ippl-build-rocm6_3-release"]
-  extends: .ippl-test-rocm-common
-  variables:
-    SLURM_NTASKS: 4
-    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
-    BUILD_TYPE: Release
-    TEST_INFO: "4-ranks-known-failing"
-    TEST_ARGS: "-R known_fail"
-  allow_failure: true
+# ippl-test-rocm6_3-release-failing-4-ranks:
+#   needs: ["ippl-build-rocm6_3-release"]
+#   extends: .ippl-test-rocm-common
+#   variables:
+#     SLURM_NTASKS: 4
+#     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
+#     BUILD_TYPE: Release
+#     TEST_INFO: "4-ranks-known-failing"
+#     TEST_ARGS: "-R known_fail"
+#   allow_failure: true
