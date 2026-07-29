@@ -1,5 +1,9 @@
-file(RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-message(STATUS "Adding index test found in ${_relPath}")
+# -----------------------------------------------------------------------------
+# demos/collisions/CMakeLists.txt
+#
+# Collisions demo using a P3M (Particle-Particle Particle-Mesh) heating simulation.
+# -----------------------------------------------------------------------------
+message(STATUS "Configuring demos/collisions/")
 
 add_executable(P3MHeating P3MHeating.cpp)
 

@@ -1,5 +1,9 @@
-file(RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-message(STATUS "Adding index test found in ${_relPath}")
+# -----------------------------------------------------------------------------
+# demos/cosmology/CMakeLists.txt
+#
+# Cosmology demo for large-scale structure formation simulations.
+# -----------------------------------------------------------------------------
+message(STATUS "Configuring demos/cosmology/")
 
 add_executable(StructureFormation StructureFormation.cpp)
 
