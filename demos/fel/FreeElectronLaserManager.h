@@ -653,7 +653,13 @@ public:
         ippl::Comm->barrier();
     }
 
-protected:
+
+public:
+    // NOTE: depositChargeDensity and destroyOutOfBounds must be public, not
+    // protected/private, because they contain KOKKOS_LAMBDA expressions that
+    // expand to extended __host__ __device__ lambdas under CUDA (nvcc). NVCC
+    // forbids such lambdas inside protected or private member functions.
+    // See: https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#extended-lambda-restrictions
     // Deposit charge density (CIC) into component [0] of the four-current field,
     // needed only when space charge is enabled. Component [1..Dim] is filled by
     // assemble_current_collocated.

@@ -41,10 +41,6 @@
 
 #include "ChargedParticlesPIF.hpp"
 
-#ifdef ENABLE_CATALYST
-#include "CatalystAdaptor.h"
-#endif
-
 template <typename T>
 struct Newton1D {
     double tol   = 1e-12;
@@ -139,17 +135,6 @@ const char* TestName = "PenningTrapPIF";
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-#ifdef ENABLE_CATALYST
-        char* script = nullptr;
-        for (int i = 1; i < argc; ++i) {
-            if (std::string(argv[i]) == "--pvscript" && i + 1 < argc) {
-                script = argv[i + 1];
-                i++;
-            }
-        }
-        char* reducedArgv[] = {argv[0], script};
-        CatalystAdaptor::Initialize(2, reducedArgv);
-#endif
         Inform msg(TestName);
         Inform msg2all(TestName, INFORM_ALL_NODES);
 
@@ -303,13 +288,6 @@ int main(int argc, char* argv[]) {
 
         IpplTimings::startTimer(dumpDataTimer);
         // P->dumpEnergy();
-#ifdef ENABLE_CATALYST
-        P->rhoPIFreal_m = (1 / (hr[0] * hr[1] * hr[2])) * P->rhoPIFreal_m;
-        std::vector<CatalystAdaptor::FieldPair> fields = {
-            {"rhoK", CatalystAdaptor::FieldVariant(&P->rhoPIFFourierMag_m)},
-            {"rhoR", CatalystAdaptor::FieldVariant(&P->rhoPIFreal_m)}};
-        CatalystAdaptor::Execute(0, P->time_m, Ippl::Comm->rank(), P, fields);
-#endif
         IpplTimings::stopTimer(dumpDataTimer);
 
         double alpha = -0.5 * dt;
@@ -396,19 +374,11 @@ int main(int argc, char* argv[]) {
             P->time_m += dt;
             IpplTimings::startTimer(dumpDataTimer);
             // P->dumpEnergy();
-#ifdef ENABLE_CATALYST
-            P->rhoPIFreal_m = (1 / (hr[0] * hr[1] * hr[2])) * P->rhoPIFreal_m;
-            CatalystAdaptor::Execute(it, P->time_m, Ippl::Comm->rank(), P, fields);
-#endif
             IpplTimings::stopTimer(dumpDataTimer);
             msg << "Finished time step: " << it + 1 << " time: " << P->time_m << endl;
         }
 
         msg << TestName << " End." << endl;
-
-#ifdef ENABLE_CATALYST
-        CatalystAdaptor::Finalize();
-#endif
 
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();

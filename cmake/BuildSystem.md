@@ -30,8 +30,8 @@ The repository is organized so that build logic is separated from library code a
     GoogleTest-based unit tests added when `IPPL_ENABLE_UNIT_TESTS=ON`
 - `test/`
     Integration/system tests, added when `IPPL_ENABLE_TESTS=ON`
-- `alpine/`, `cosmology/`, `examples/`
-    Extra modules. Each is gated by its corresponding option.
+- `demos/`
+    Demo and application modules (`alpine/`, `cosmology/`, `fel/`, `collisions/`, `electrostaticPIF/`). Each is gated by its corresponding option (`IPPL_ENABLE_ALPINE`, etc.).
 
 ## Core library Target (`src/CMakeLists.txt`)
 The single library built by this project is `ippl` (alias `ippl::ippl`). All code under `src/` will be part of this one target. Downstream targets (projects that depend on IPPL) link **only** against `ippl::ippl`. One links against the alias since that is read-only and therefore won't accedentally be modified.

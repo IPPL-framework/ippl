@@ -1,8 +1,10 @@
 # -----------------------------------------------------------------------------
-# alpine/CMakeLists.txt
+# demos/alpine/CMakeLists.txt
 #
 # This module provides example physics applications using IPPL.
 # -----------------------------------------------------------------------------
+message(STATUS "Configuring demos/alpine/")
+
 
 add_subdirectory(ExamplesWithoutPicManager)
 
@@ -17,12 +19,12 @@ endfunction()
 if(IPPL_ENABLE_TESTS)
   # cmake-format: off
   # Landau will write a CSV file to the data directory that we will validate later
-  make_directory("${PROJECT_BINARY_DIR}/alpine/data")
+  make_directory("${PROJECT_BINARY_DIR}/demos/alpine/data")
   # Add the test
-  add_ippl_integration_test(LandauDamping 
+  add_ippl_integration_test(LandauDamping
     ARGS "16" "16" "16" "10000000" "25" "FFT" "0.01" "LeapFrog" "--overallocate" "2.0" "--info" "10"
     LABELS alpine integration
-    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/alpine/")
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/demos/alpine/")
   # cmake-format: on
 else()
   add_alpine_example(LandauDamping)
@@ -30,9 +32,5 @@ endif()
 
 add_alpine_example(PenningTrap)
 add_alpine_example(BumponTailInstability)
-
-if(IPPL_ENABLE_FFT)
-  add_subdirectory(ElectrostaticPIF)
-endif()
 
 add_subdirectory(validation)
