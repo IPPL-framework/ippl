@@ -28,6 +28,7 @@
         "IPPL_PLATFORMS": "SERIAL",
         "IPPL_ENABLE_FFT": "ON",
         "IPPL_ENABLE_ALPINE": "ON",
+        "IPPL_ENABLE_ESPIF": "ON",
         "IPPL_ENABLE_COSMOLOGY": "ON",
         "IPPL_ENABLE_COLLISIONS": "ON",
         "IPPL_ENABLE_FEL": "ON",

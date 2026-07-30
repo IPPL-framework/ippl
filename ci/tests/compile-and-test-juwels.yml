@@ -62,6 +62,7 @@ compile-and-test-juwels:
         -DIPPL_ENABLE_FFT=ON \
         -DIPPL_ENABLE_SOLVERS=ON \
         -DIPPL_ENABLE_ALPINE=ON \
+        -DIPPL_ENABLE_ESPIF=ON \
         -DIPPL_ENABLE_COLLISIONS=ON \
         -DIPPL_ENABLE_COSMOLOGY=ON \
         -DIPPL_ENABLE_FEL=ON \

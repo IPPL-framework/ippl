@@ -1,9 +1,10 @@
 # -----------------------------------------------------------------------------
-# demos/alpine/ElectrostaticPIF/CMakeLists.txt
+# demos/electrostaticPIF/CMakeLists.txt
 #
-# Alpine Electrostatic Particle-In-Fourier (PIF) examples, optionally using FINUFFT.
+# Electrostatic Particle-In-Fourier (PIF) examples, same mini applications as in
+# Alpine, but using the PIF approach, optionally using FINUFFT.
 # -----------------------------------------------------------------------------
-message(STATUS "Configuring demos/alpine/ElectrostaticPIF/")
+message(STATUS "Configuring demos/electrostaticPIF/")
 
 if(IPPL_ENABLE_FINUFFT)
     set(PIF_FINUFFT_LIBS finufft)

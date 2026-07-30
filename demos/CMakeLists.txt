@@ -13,6 +13,10 @@ if(IPPL_ENABLE_ALPINE)
   add_subdirectory(alpine)
 endif()
 
+if(IPPL_ENABLE_ESPIF AND IPPL_ENABLE_FFT)
+  add_subdirectory(electrostaticPIF)
+endif()
+
 if(IPPL_ENABLE_COSMOLOGY)
   add_subdirectory(cosmology)
 endif()
