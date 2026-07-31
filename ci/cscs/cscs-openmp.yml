@@ -1,3 +1,8 @@
+workflow:
+  rules:
+    # Temporarily disabled while validating the Kokkos 5.x update on GH200.
+    - when: never
+
 include:
   # CPU
   - local: "ci/cscs/openmp/build_openmp.yml"

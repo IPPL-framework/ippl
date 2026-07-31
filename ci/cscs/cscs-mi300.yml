@@ -1,3 +1,8 @@
+workflow:
+  rules:
+    # Temporarily disabled while validating the Kokkos 5.x update on GH200.
+    - when: never
+
 include:
   # AMD/MI300:
   - local: "ci/cscs/rocm/build_rocm-6.3.yml"
