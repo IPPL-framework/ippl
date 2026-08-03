@@ -102,8 +102,8 @@ function(set_kokkos_options)
       endif()
 
       if(NOT DEFINED AMDGPU_TARGETS)
-       set(AMDGPU_TARGETS "${CMAKE_HIP_ARCHITECTURES}" CACHE STRING
-        "AMDGPU targets for ROCm packages" FORCE)
+        set(AMDGPU_TARGETS "${CMAKE_HIP_ARCHITECTURES}"
+            CACHE STRING "AMDGPU targets for ROCm packages" FORCE)
       endif()
     endif()
   endforeach()
@@ -219,7 +219,7 @@ endfunction()
 # ------------------------------------------------------------------------------
 # set the default version of kokkos we will ask for if not already set
 if(NOT Kokkos_VERSION_DEFAULT)
-  set(Kokkos_VERSION_DEFAULT 5.0.2)
+  set(Kokkos_VERSION_DEFAULT 5.2.0)
 endif()
 # if the user has not asked for a specific version, we will use a default
 if(NOT Kokkos_VERSION)
@@ -398,8 +398,8 @@ if(IPPL_ENABLE_FINUFFT)
     set(FINUFFT_BUILD_TESTS OFF CACHE BOOL "Disable FINUFFT tests" FORCE)
     set(FINUFFT_BUILD_EXAMPLES OFF CACHE BOOL "Disable FINUFFT examples" FORCE)
     set(FINUFFT_USE_CPU ON CACHE BOOL "Enable CPU FINUFFT" FORCE)
-    set(FINUFFT_USE_DUCC0 ${IPPL_FINUFFT_USE_DUCC0} CACHE BOOL
-        "Use FINUFFT's bundled DUCC0 FFT backend" FORCE)
+    set(FINUFFT_USE_DUCC0 ${IPPL_FINUFFT_USE_DUCC0}
+        CACHE BOOL "Use FINUFFT's bundled DUCC0 FFT backend" FORCE)
 
     if(IPPL_ENABLE_CUFINUFFT)
       set_cuda_architectures_from_kokkos()
@@ -411,9 +411,9 @@ if(IPPL_ENABLE_FINUFFT)
       set(FINUFFT_USE_CUDA OFF CACHE BOOL "Disable CUDA cuFINUFFT" FORCE)
     endif()
 
-    # cuFINUFFT's CUDA RDC fatbin registration can fail at startup when its
-    # device code is wrapped in a shared library. Force static for this
-    # FetchContent build regardless of the global BUILD_SHARED_LIBS setting.
+    # cuFINUFFT's CUDA RDC fatbin registration can fail at startup when its device code is wrapped
+    # in a shared library. Force static for this FetchContent build regardless of the global
+    # BUILD_SHARED_LIBS setting.
     set(_ippl_saved_build_shared_libs ${BUILD_SHARED_LIBS})
     set(BUILD_SHARED_LIBS OFF)
 
@@ -484,16 +484,14 @@ if(IPPL_ENABLE_TESTS)
 endif()
 
 # ------------------------------------------------------------------------------
-# FEL module header-only dependencies (nlohmann/json for config parsing,
-# stb_image_write for the Poynting-flux visualization).
+# FEL module header-only dependencies (nlohmann/json for config parsing, stb_image_write for the
+# Poynting-flux visualization).
 # ------------------------------------------------------------------------------
 if(IPPL_ENABLE_FEL)
   set(DOWNLOADED_HEADERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloaded_headers")
-  file(DOWNLOAD
-       https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp
+  file(DOWNLOAD https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp
        "${DOWNLOADED_HEADERS_DIR}/json.hpp")
-  file(DOWNLOAD
-       https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
+  file(DOWNLOAD https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
        "${DOWNLOADED_HEADERS_DIR}/stb_image_write.hpp")
   message(STATUS "✅ nlohmann/json and stb_image_write loaded for the FEL module.")
 endif()
