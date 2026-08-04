@@ -255,6 +255,29 @@ else()
   set_kokkos_options()
   # Invoke cmake fetch/find
   FetchContent_Declare(Kokkos GIT_TAG ${KOKKOS_VERSION_GIT} GIT_REPOSITORY ${Kokkos_REPOSITORY})
+
+  # Kokkos's own CMake (kokkos_compiler_id.cmake and kokkos_functions.cmake) calls
+  # find_program(Kokkos_COMPILE_LAUNCHER) and find_program(Kokkos_NVCC_WRAPPER) with HINTS/PATHS =
+  # ${PROJECT_SOURCE_DIR}.  Because Kokkos never calls project() when built as a subdirectory,
+  # PROJECT_SOURCE_DIR is the IPPL top-level rather than Kokkos's source dir, so the search falls
+  # through to the system PATH and can pick up an unrelated installed Kokkos (e.g. a spack view of a
+  # different version) - leading to the wrong kokkos_launch_compiler/nvcc_wrapper being used to
+  # compile everything.
+  #
+  # Pin both scripts to the FetchContent source bin/ directory.  The download step of
+  # FetchContent_MakeAvailable runs before add_subdirectory (which is when Kokkos's find_program
+  # executes), so the scripts are guaranteed to exist by then - even on a first configure.
+  set(_kokkos_fetch_bin "${FETCHCONTENT_BASE_DIR}/kokkos-src/bin")
+  if(NOT Kokkos_COMPILE_LAUNCHER STREQUAL "${_kokkos_fetch_bin}/kokkos_launch_compiler")
+    set(Kokkos_COMPILE_LAUNCHER "${_kokkos_fetch_bin}/kokkos_launch_compiler"
+        CACHE FILEPATH "kokkos_launch_compiler pinned to FetchContent source" FORCE)
+  endif()
+  if(NOT Kokkos_NVCC_WRAPPER STREQUAL "${_kokkos_fetch_bin}/nvcc_wrapper")
+    set(Kokkos_NVCC_WRAPPER "${_kokkos_fetch_bin}/nvcc_wrapper"
+        CACHE FILEPATH "nvcc_wrapper pinned to FetchContent source" FORCE)
+  endif()
+  unset(_kokkos_fetch_bin)
+
   FetchContent_MakeAvailable(Kokkos)
 
   # get_git_tags(${Kokkos_REPOSITORY} KOKKOS_GIT_TAGS) if(NOT Kokkos_VERSION IN_LIST
