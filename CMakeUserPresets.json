@@ -140,7 +140,6 @@
         "Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE": "OFF",
         "Kokkos_ENABLE_DEBUG": "OFF",
         "Kokkos_ENABLE_DEBUG_BOUNDS_CHECK": "OFF",
-        "Kokkos_ENABLE_DEBUG_DUALVIEW_MODIFY_CHECK": "ON",
         "Kokkos_ENABLE_DEPRECATED_CODE": "OFF",
         "Kokkos_ENABLE_EXAMPLES": "OFF",
         "Kokkos_ENABLE_HPX_ASYNC_DISPATCH": "OFF",

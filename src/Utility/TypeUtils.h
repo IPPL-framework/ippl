@@ -222,8 +222,8 @@ namespace ippl {
 #endif
 #ifdef KOKKOS_ENABLE_SYCL
                 ,
-                Kokkos::Experimental::SYCLDeviceUSMSpace, Kokkos::Experimental::SYCLHostUSMSpace,
-                Kokkos::Experimental::SYCLSharedUSMSpace
+                Kokkos::SYCLDeviceUSMSpace, Kokkos::SYCLHostUSMSpace,
+                Kokkos::SYCLSharedUSMSpace
 #endif
                 >;
 
@@ -254,7 +254,7 @@ namespace ippl {
 #endif
 #ifdef KOKKOS_ENABLE_SYCL
                                                               ,
-                                                              Kokkos::Experimental::SYCL
+                                                              Kokkos::SYCL
 #endif
 #ifdef KOKKOS_ENABLE_HPX
                                                               ,
