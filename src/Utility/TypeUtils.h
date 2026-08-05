@@ -232,10 +232,6 @@ namespace ippl {
                                                               ,
                                                               Kokkos::OpenMP
 #endif
-#ifdef KOKKOS_ENABLE_OPENMPTARGET
-                                                              ,
-                                                              Kokkos::OpenMPTarget
-#endif
 #ifdef KOKKOS_ENABLE_THREADS
                                                               ,
                                                               Kokkos::Threads

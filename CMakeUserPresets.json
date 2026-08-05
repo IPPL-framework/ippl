@@ -133,7 +133,6 @@
         "Kokkos_ENABLE_SERIAL": "ON",
         "Kokkos_ENABLE_HIP": "ON",
         "Kokkos_ENABLE_SYCL": "OFF",
-        "Kokkos_ENABLE_OPENMPTARGET": "OFF",
         "Kokkos_ENABLE_AGGRESSIVE_VECTORIZATION": "OFF",
         "Kokkos_ENABLE_COMPILER_WARNINGS": "OFF",
         "Kokkos_ENABLE_COMPLEX_ALIGN": "ON",
