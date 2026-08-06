@@ -1,5 +1,9 @@
-file(RELATIVE_PATH _relPath "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-message(STATUS "Adding examples found in ${_relPath}")
+# -----------------------------------------------------------------------------
+# demos/alpine/ExamplesWithoutPicManager/CMakeLists.txt
+#
+# Alpine examples that do not use the PIC manager abstraction.
+# -----------------------------------------------------------------------------
+message(STATUS "Configuring demos/alpine/ExamplesWithoutPicManager/")
 
 # Needed for threading
 find_package(Threads REQUIRED)

@@ -196,7 +196,7 @@ namespace ippl {
             }
 
             // Write the result into the caller-provided buffer
-            Kokkos::deep_copy(result.getView(), L_[0].u.getView());
+            detail::deepCopyIfDifferent(result.getView(), L_[0].u.getView());
 
             IpplTimings::stopTimer(mg);
         }
