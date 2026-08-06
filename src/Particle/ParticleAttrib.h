@@ -137,14 +137,14 @@ namespace ippl {
          * particle range [0, size()).
          */
         view_type getView() {
-            return Kokkos::subview(dview_m,
-                                   Kokkos::make_pair(size_type(0),
-                                                     static_cast<size_type>(*(this->localNum_mp))));
+            return Kokkos::subview(
+                dview_m,
+                Kokkos::make_pair(size_type(0), static_cast<size_type>(*(this->localNum_mp))));
         }
         const view_type getView() const {
-            return Kokkos::subview(dview_m,
-                                   Kokkos::make_pair(size_type(0),
-                                                     static_cast<size_type>(*(this->localNum_mp))));
+            return Kokkos::subview(
+                dview_m,
+                Kokkos::make_pair(size_type(0), static_cast<size_type>(*(this->localNum_mp))));
         }
 
         host_mirror_type getHostMirror() const { return Kokkos::create_mirror(getView()); }
@@ -272,10 +272,6 @@ namespace ippl {
         void internalCopy(const hash_type& indices) override;
 
     private:
-        template <bool UseHashView, typename Field, typename P2, typename policy_type>
-        void scatterImpl(Field& f, const ParticleAttrib<Vector<P2, Field::dim>, Properties...>& pp,
-                         policy_type iteration_policy, hash_type hash_array) const;
-
         view_type dview_m{"ParticleAttrib::dview", 0};
         view_type buf_m{"ParticleAttrib::buf", 0};
     };
