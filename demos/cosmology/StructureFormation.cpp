@@ -5,11 +5,11 @@
 // interactions and dynamics of a large number of particles over time. The goal is to understand how
 // initial density fluctuations grow and evolve under the influence of gravity, leading to the
 // large-scale structure observed in the universe today. The old mc-4 initializer based in Zaria's
-// old and new initializer is added. 
+// old and new initializer is added.
 //
 //   Usage:
 //     srun ./StructureFormation
-//                  <inputfile> <tfFn> <outFn> <outDir> <fsType> 
+//                  <inputfile> <tfFn> <outFn> <outDir> <fsType>
 //                  <lbthres> <integrator> --overallocate <ovfactor> --info 10
 //     inputfile = describes the simulation
 //     tfFn      = transfer function
@@ -24,9 +24,11 @@
 //     ovfactor  = Over-allocation factor for the buffers used in the communication. Typical
 //                 values are 1.0, 2.0. Value 1.0 means no over-allocation.
 //     Example:
-//     srun StructureFormation input.par tf.dat out.data datadir FFT 1.0 LeapFrog --overallocate 1.0 --info 5
+//     srun StructureFormation input.par tf.dat out.data datadir FFT 1.0 LeapFrog --overallocate 1.0
+//     --info 5
 //
-//     more stuff and todos at: https://docs.google.com/document/d/1PhQ2Wo6QhdeS7U3lN1q2TEaJm2XjD4eXdjGCMKfPac4/edit?usp=sharing
+//     more stuff and todos at:
+//     https://docs.google.com/document/d/1PhQ2Wo6QhdeS7U3lN1q2TEaJm2XjD4eXdjGCMKfPac4/edit?usp=sharing
 
 /*  Example of an input file
 
@@ -56,15 +58,13 @@ TFFlag=2
 PrintFormat=0
 
 // new
-Omega_L=0.7  
+Omega_L=0.7
 
 // Read from file (0) or create (1)
 ReadInParticles=1
 
 
 */
-
-
 
 constexpr unsigned Dim = 3;
 using T                = double;
@@ -85,7 +85,6 @@ using T                = double;
 
 #include "Manager/PicManager.h"
 #include "StructureFormationManager.h"
-
 #include "mc-4-Initializer/DataBase.h"
 #include "mc-4-Initializer/InputParser.h"
 
@@ -103,38 +102,37 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
         IpplTimings::startTimer(mainTimer);
 
-	std::string indatName = argv[1];
-	std::string tfName = argv[2];
-	std::string outBase = argv[3];
+        std::string indatName = argv[1];
+        std::string tfName    = argv[2];
+        std::string outBase   = argv[3];
         std::string ic_folder = argv[4];
-       	
-	int arg = 5;
-	initializer::InputParser par(indatName);
-	initializer::GlobalStuff::instance().GetParameters(par);
 
-	size_t totalP;
-	if ((totalP=static_cast<std::size_t>(initializer::GlobalStuff::instance().ngrid) *
-	     static_cast<std::size_t>(initializer::GlobalStuff::instance().ngrid) *
-	     static_cast<std::size_t>(initializer::GlobalStuff::instance().ngrid)) >
-	    std::numeric_limits<std::size_t>::max()) {
-	  throw std::overflow_error("Index space exceeds size_t capacity");
-	}
-    
-	
-	// Number of gridpoints in each dimension
+        int arg = 5;
+        initializer::InputParser par(indatName);
+        initializer::GlobalStuff::instance().GetParameters(par);
+
+        size_t totalP;
+        if ((totalP = static_cast<std::size_t>(initializer::GlobalStuff::instance().ngrid)
+                      * static_cast<std::size_t>(initializer::GlobalStuff::instance().ngrid)
+                      * static_cast<std::size_t>(initializer::GlobalStuff::instance().ngrid))
+            > std::numeric_limits<std::size_t>::max()) {
+            throw std::overflow_error("Index space exceeds size_t capacity");
+        }
+
+        // Number of gridpoints in each dimension
         Vector_t<int, Dim> nr;
         for (unsigned d = 0; d < Dim; d++) {
-	  nr[d] = initializer::GlobalStuff::instance().ngrid;
+            nr[d] = initializer::GlobalStuff::instance().ngrid;
         }
-	
+
         // Number of time steps
         int nt = 0;
-	par.getByName("nt", nt);
+        par.getByName("nt", nt);
 
-	int readInParticles = 0;
-	par.getByName("ReadInParticles", readInParticles);
-	bool readICs = (readInParticles == 0);
-	
+        int readInParticles = 0;
+        par.getByName("ReadInParticles", readInParticles);
+        bool readICs = (readInParticles == 0);
+
         // Solver method
         std::string solver = argv[arg++];
         // Check if the solver type is valid
@@ -147,7 +145,8 @@ int main(int argc, char* argv[]) {
         std::string step_method = argv[arg++];
 
         // Create an instance of a manager for the considered application
-        StructureFormationManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method, par, tfName, readICs);
+        StructureFormationManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method, par,
+                                                  tfName, readICs);
 
         // set initial conditions folder
         manager.setIC(ic_folder);

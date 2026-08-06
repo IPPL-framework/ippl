@@ -68,7 +68,7 @@ namespace ippl {
          * @tparam View the field view type
          * @tparam T the field data type
          * @tparam IndexType the index type for accessing the field (default size_t)
-	 $ @tparam Val the type of the value to be interpolated to the grid
+         $ @tparam Val the type of the value to be interpolated to the grid
          * @param view the field view on which to scatter
          * @param wlo lower weights for interpolation
          * @param whi upper weights for interpolation

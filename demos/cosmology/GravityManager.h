@@ -12,7 +12,6 @@
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
-
 #include "mc-4-Initializer/InputParser.h"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
@@ -44,13 +43,13 @@ public:
      * @param lbt_ Load balance threshold.
      * @param solver_ Solver type.
      * @param stepMethod_ Time stepping method type.
-     * @param par_ Inputfile parser 
+     * @param par_ Inputfile parser
      */
     GravityManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
                    std::string& solver_, std::string& stepMethod_, initializer::InputParser par_)
         : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
                            LoadBalancer<T, Dim>>()
-	, parser_m(par_)
+        , parser_m(par_)
         , totalP_m(totalP_)
         , nt_m(nt_)
         , nr_m(nr_)
@@ -74,7 +73,6 @@ public:
      */
     initializer::InputParser parser_m;
 
-  
     /**
      * @brief Get the total number of particles.
      *
@@ -221,9 +219,9 @@ public:
      */
     void InitialiseTime() {
         Inform mes("Inititalise: ");
-	parser_m.getByName("Omega_m", this->O_m);
-	parser_m.getByName("Omega_L", this->O_L);
-	// this->O_m      = 0.3;       // \todo need to from input file
+        parser_m.getByName("Omega_m", this->O_m);
+        parser_m.getByName("Omega_L", this->O_L);
+        // this->O_m      = 0.3;       // \todo need to from input file
         // this->O_L      = 0.7;       // \todo need to from input file
         this->t_L      = 2 / (3 * this->Hubble0 * sqrt(this->O_L));
         this->a_m      = 1 / (1 + this->z_m);
@@ -253,8 +251,8 @@ public:
      * @brief Pre-step method called before each simulation step.
      */
     void pre_step() override {
-      //        Inform mes("Pre-step");
-      //  mes << "Done" << endl;
+        //        Inform mes("Pre-step");
+        //  mes << "Done" << endl;
     }
 
     /**
@@ -275,8 +273,8 @@ public:
         this->dt_m = this->Dloga / this->Hubble_m;
 
         mes << "Step: " << this->it_m;
-        mes << " comological time: " << this->time_m << ", dt: " << this->dt_m << ", z: " << this->z_m
-            << ", a: " << this->a_m << endl;
+        mes << " comological time: " << this->time_m << ", dt: " << this->dt_m
+            << ", z: " << this->z_m << ", a: " << this->a_m << endl;
     }
 
     // Grid to particle and particle to grid methods
@@ -322,7 +320,8 @@ public:
         ippl::Comm->reduce(localParticles, TotalParticles, 1, std::plus<size_type>());
 
         if (ippl::Comm->rank() == 0) {
-            if (TotalParticles != totalP_m || relError > 10.*Kokkos::Experimental::epsilon_v<float> ) {
+            if (TotalParticles != totalP_m
+                || relError > 10. * Kokkos::Experimental::epsilon_v<float>) {
                 mes << "Time step: " << it_m << endl;
                 mes << "Total particles in the sim. " << totalP_m << " "
                     << "after update: " << TotalParticles << endl;
@@ -362,8 +361,8 @@ protected:
     double Hubble0;                  ///< Hubble constant today (73.8 km/sec/Mpc).
     double G;                        ///< Gravitational constant. [kpc^3/(Msun s^2)]
     double rho_crit0;                ///< Critical density today. [Msun/kpc^3]
-    float  O_m;                      ///< Matter density parameter. [1]
-    float  O_L;                      ///< Dark energy density parameter. [1]
+    float O_m;                       ///< Matter density parameter. [1]
+    float O_L;                       ///< Dark energy density parameter. [1]
     double t_L;                      ///< Characteristic time scale. [s]
     double z_m;                      ///< Initial redshift. [1]
     double z_f;                      ///< Final redshift.   [1]

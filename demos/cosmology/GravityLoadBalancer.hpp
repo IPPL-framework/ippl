@@ -150,22 +150,21 @@ public:
             return false;
         }
 
-	int local = 0;
-	std::vector<int> res(ippl::Comm->size());
-	double equalPart = static_cast<double>(totalP) / ippl::Comm->size();
-	double dev = std::abs(static_cast<double>(pc_m->getLocalNum()) - equalPart) / totalP;
-	if (dev > loadbalancethreshold_m) {
-	  local = 1;
-	}
-	MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT,
-		      ippl::Comm->getCommunicator());
+        int local = 0;
+        std::vector<int> res(ippl::Comm->size());
+        double equalPart = static_cast<double>(totalP) / ippl::Comm->size();
+        double dev       = std::abs(static_cast<double>(pc_m->getLocalNum()) - equalPart) / totalP;
+        if (dev > loadbalancethreshold_m) {
+            local = 1;
+        }
+        MPI_Allgather(&local, 1, MPI_INT, res.data(), 1, MPI_INT, ippl::Comm->getCommunicator());
 
-	for (unsigned int i = 0; i < res.size(); i++) {
-	  if (res[i] == 1) {
-	    return true;
-	  }
-	}
-	return false;
+        for (unsigned int i = 0; i < res.size(); i++) {
+            if (res[i] == 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
 private:
