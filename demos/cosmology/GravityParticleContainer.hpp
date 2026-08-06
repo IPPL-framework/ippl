@@ -21,7 +21,7 @@ public:
     /**
      * @brief Mass of the particle.
      */
-    ippl::ParticleAttrib<double> m;
+    ippl::ParticleAttrib<float> m;
 
     /**
      * @brief Velocity of the particle.
