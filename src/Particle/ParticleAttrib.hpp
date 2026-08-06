@@ -42,6 +42,61 @@ namespace ippl {
                 return idx;
             }
         }
+
+        template <bool UseHashView, typename Field, typename ValuesView, typename PositionAttrib,
+                  typename policy_type, typename HashView>
+        void particleAttribScatterImpl(Field& f, const ValuesView& dview,
+                                       const PositionAttrib& pp, policy_type iteration_policy,
+                                       HashView hash_array) {
+            constexpr unsigned Dim = Field::dim;
+            using PositionType     = typename Field::Mesh_t::value_type;
+
+            static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
+            IpplTimings::startTimer(scatterTimer);
+            using view_type = typename Field::view_type;
+            view_type view  = f.getView();
+
+            using mesh_type       = typename Field::Mesh_t;
+            const mesh_type& mesh = f.get_mesh();
+
+            using vector_type = typename mesh_type::vector_type;
+            using value_type  = typename ValuesView::non_const_value_type;
+
+            const vector_type& dx     = mesh.getMeshSpacing();
+            const vector_type& origin = mesh.getOrigin();
+            const vector_type invdx   = 1.0 / dx;
+
+            const FieldLayout<Dim>& layout = f.getLayout();
+            const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
+            const int nghost               = f.getNghost();
+
+            auto ppview   = pp.getView();
+            auto hashView = hash_array;
+            Kokkos::parallel_for(
+                "ParticleAttrib::scatter", iteration_policy, KOKKOS_LAMBDA(const size_t idx) {
+                    // map index to possible hash_map
+                    const size_t mapped_idx =
+                        detail::scatterMappedIndex<UseHashView>(idx, hashView);
+
+                    vector_type l                        = (ppview(mapped_idx) - origin) * invdx + 0.5;
+                    Vector<int, Field::dim> index        = l;
+                    Vector<PositionType, Field::dim> whi = l - index;
+                    Vector<PositionType, Field::dim> wlo = 1.0 - whi;
+
+                    Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
+
+                    const value_type& val = dview(mapped_idx);
+                    detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo,
+                                           whi, args, val);
+                });
+            IpplTimings::stopTimer(scatterTimer);
+
+            static IpplTimings::TimerRef accumulateHaloTimer =
+                IpplTimings::getTimer("accumulateHalo");
+            IpplTimings::startTimer(accumulateHaloTimer);
+            f.accumulateHalo();
+            IpplTimings::stopTimer(accumulateHaloTimer);
+        }
     }  // namespace detail
 
     template <typename T, class... Properties>
@@ -155,65 +210,10 @@ namespace ippl {
         }
 
         if (useHashView) {
-            scatterImpl<true>(f, pp, iteration_policy, hash_array);
+            detail::particleAttribScatterImpl<true>(f, dview_m, pp, iteration_policy, hash_array);
         } else {
-            scatterImpl<false>(f, pp, iteration_policy, hash_array);
+            detail::particleAttribScatterImpl<false>(f, dview_m, pp, iteration_policy, hash_array);
         }
-    }
-
-    template <typename T, class... Properties>
-    template <bool UseHashView, typename Field, class PT, typename policy_type>
-    void ParticleAttrib<T, Properties...>::scatterImpl(
-        Field& f, const ParticleAttrib<Vector<PT, Field::dim>, Properties...>& pp,
-        policy_type iteration_policy, hash_type hash_array) const {
-        constexpr unsigned Dim = Field::dim;
-        using PositionType     = typename Field::Mesh_t::value_type;
-
-        static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
-        IpplTimings::startTimer(scatterTimer);
-        using view_type = typename Field::view_type;
-        view_type view  = f.getView();
-
-        using mesh_type       = typename Field::Mesh_t;
-        const mesh_type& mesh = f.get_mesh();
-
-        using vector_type = typename mesh_type::vector_type;
-        using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
-
-        const vector_type& dx     = mesh.getMeshSpacing();
-        const vector_type& origin = mesh.getOrigin();
-        const vector_type invdx   = 1.0 / dx;
-
-        const FieldLayout<Dim>& layout = f.getLayout();
-        const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
-        const int nghost               = f.getNghost();
-
-        auto dview    = dview_m;
-        auto ppview   = pp.getView();
-        auto hashView = hash_array;
-        Kokkos::parallel_for(
-            "ParticleAttrib::scatter", iteration_policy, KOKKOS_LAMBDA(const size_t idx) {
-                // map index to possible hash_map
-                const size_t mapped_idx =
-                    detail::scatterMappedIndex<UseHashView>(idx, hashView);
-
-                vector_type l                        = (ppview(mapped_idx) - origin) * invdx + 0.5;
-                Vector<int, Field::dim> index        = l;
-                Vector<PositionType, Field::dim> whi = l - index;
-                Vector<PositionType, Field::dim> wlo = 1.0 - whi;
-
-                Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
-
-                const value_type& val = dview(mapped_idx);
-                detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi,
-                                       args, val);
-            });
-        IpplTimings::stopTimer(scatterTimer);
-
-        static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("accumulateHalo");
-        IpplTimings::startTimer(accumulateHaloTimer);
-        f.accumulateHalo();
-        IpplTimings::stopTimer(accumulateHaloTimer);
     }
 
     template <typename T, class... Properties>
