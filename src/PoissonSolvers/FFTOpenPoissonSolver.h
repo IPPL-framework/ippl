@@ -89,7 +89,8 @@ namespace ippl {
          */
         enum GreenFunction {
             STANDARD   = 0,
-            INTEGRATED = 1
+            INTEGRATED = 1,
+            TRUNCATED  = 2
         };
 
         // define a type for a 3 dimensional field (e.g. charge density field)
@@ -156,6 +157,22 @@ namespace ippl {
          * preserve historical IPPL behavior.
          */
         void greensFunction();
+
+        /**
+         * @brief Compute and cache the open-boundary Ewald long-range Green function.
+         *
+         * On the doubled Hockney grid this evaluates
+         * @f[
+         *   G_L(\mathbf{r}) = C\frac{\operatorname{erf}(\alpha |\mathbf{r}|)}
+         *                                {|\mathbf{r}|},
+         * @f]
+         * using the `alpha` and `force_constant` parameters. The analytic value
+         * @f$2 C \alpha / \sqrt{\pi}@f$ is used at the origin. Calling this method
+         * selects GreenFunction::TRUNCATED for subsequent mesh-spacing updates.
+         *
+         * @pre `algorithm == HOCKNEY` and `Dim == 3`.
+         */
+        void truncatedGreensFunction();
 
         /**
          * @brief Replace the cached kernel by a shifted Hockney Green function.
@@ -350,6 +367,8 @@ namespace ippl {
 
             this->params_m.add("algorithm", HOCKNEY);
             this->params_m.add("greens_function", STANDARD);
+            this->params_m.template add<Trhs>("alpha", 1);
+            this->params_m.template add<Trhs>("force_constant", 1);
             this->params_m.add("hessian", false);
         }
     };
