@@ -438,6 +438,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a8c3e231c530014b6e02dd275fe0dd6fc"><td class="memTemplParams" colspan="2">template&lt;typename View , class Functor , typename Check  = std::nullptr_t&gt; </td></tr>
 <tr class="memitem:a8c3e231c530014b6e02dd275fe0dd6fc"><td class="memTemplItemLeft" align="right" valign="top">constexpr void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a8c3e231c530014b6e02dd275fe0dd6fc">nestedViewLoop</a> (View &amp;view, int shift, Functor &amp;&amp;body, Check &amp;&amp;check=nullptr)</td></tr>
 <tr class="separator:a8c3e231c530014b6e02dd275fe0dd6fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e969b62097e77ba4c474ea65a258de7"><td class="memTemplParams" colspan="2">template&lt;typename DstView , typename SrcView &gt; </td></tr>
+<tr class="memitem:a2e969b62097e77ba4c474ea65a258de7"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a2e969b62097e77ba4c474ea65a258de7">deepCopyIfDifferent</a> (const DstView &amp;dst, const SrcView &amp;src)</td></tr>
+<tr class="separator:a2e969b62097e77ba4c474ea65a258de7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a372eff27e4294d6466410ea662543a4f"><td class="memTemplParams" colspan="2">template&lt;typename T , unsigned Dim, class... Properties&gt; </td></tr>
 <tr class="memitem:a372eff27e4294d6466410ea662543a4f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a372eff27e4294d6466410ea662543a4f">write</a> (const typename <a class="el" href="structippl_1_1detail_1_1ViewType.html">ViewType</a>&lt; T, Dim, Properties... &gt;::view_type &amp;view, std::ostream &amp;out=std::cout)</td></tr>
 <tr class="separator:a372eff27e4294d6466410ea662543a4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -938,6 +941,38 @@ template&lt;unsigned Dim&gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>3^n </dd></dl>
+
+</div>
+</div>
+<a id="a2e969b62097e77ba4c474ea65a258de7" name="a2e969b62097e77ba4c474ea65a258de7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e969b62097e77ba4c474ea65a258de7">&#9670;&#160;</a></span>deepCopyIfDifferent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename DstView , typename SrcView &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void ippl::detail::deepCopyIfDifferent </td>
+          <td>(</td>
+          <td class="paramtype">const DstView &amp;&#160;</td>
+          <td class="paramname"><em>dst</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const SrcView &amp;&#160;</td>
+          <td class="paramname"><em>src</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Guard view-to-view copies against identical source and destination views.</p>
+<p ><a class="el" href="namespaceKokkos.html">Kokkos</a> 5.2 aborts on identical view arguments to Kokkos::deep_copy(). </p>
 
 </div>
 </div>

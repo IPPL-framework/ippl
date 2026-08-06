@@ -2,8 +2,8 @@ var searchData=
 [
   ['p0_0',['p0',['../structippl_1_1Segment.html#ae97f4f51f01c59a71f654fa08fff8f02',1,'ippl::Segment']]],
   ['p1_1',['p1',['../structippl_1_1Segment.html#aab85b6d023c0c938c3af6b26b5a12e1e',1,'ippl::Segment']]],
-  ['p2p_2',['p2p',['../namespaceippl.html#a235aa4bee4fa4bbd4b67985b87347f5bab79c9c6432e3cd8548b3dafc6a7a1701',1,'ippl']]],
-  ['p2p_3',['P2P',['../namespaceippl.html#a7e30277fc3356d1099abe0c22276eceaa27152da6774ecc7e4a15a8c00587d926',1,'ippl']]],
+  ['p2p_2',['P2P',['../namespaceippl.html#a7e30277fc3356d1099abe0c22276eceaa27152da6774ecc7e4a15a8c00587d926',1,'ippl']]],
+  ['p2p_3',['p2p',['../namespaceippl.html#a235aa4bee4fa4bbd4b67985b87347f5bab79c9c6432e3cd8548b3dafc6a7a1701',1,'ippl']]],
   ['p2p_5fpl_4',['p2p_pl',['../namespaceippl.html#a235aa4bee4fa4bbd4b67985b87347f5ba66ad0e607d1643061d2c55d95e0a216b',1,'ippl']]],
   ['p_5flayout_5fcycle_5',['P_LAYOUT_CYCLE',['../namespaceippl_1_1mpi_1_1tag.html#a15d567b75f6be9891166d172c200185aaeefa5ffa019d4857bd1cbcfd8f0f2c9e',1,'ippl::mpi::tag']]],
   ['p_5fspatial_5flayout_6',['P_SPATIAL_LAYOUT',['../namespaceippl_1_1mpi_1_1tag.html#a15d567b75f6be9891166d172c200185aa47b8a0d2ce0591f105b6801ce28c1cdc',1,'ippl::mpi::tag']]],
