@@ -16,7 +16,6 @@
 #include "Ippl.h"
 
 #include <Kokkos_MathematicalConstants.hpp>
-
 #include <cmath>
 
 #include "Communicate/DataTypes.h"
@@ -45,9 +44,8 @@ namespace ippl {
 
         template <bool UseHashView, typename Field, typename ValuesView, typename PositionAttrib,
                   typename policy_type, typename HashView>
-        void particleAttribScatterImpl(Field& f, const ValuesView& dview,
-                                       const PositionAttrib& pp, policy_type iteration_policy,
-                                       HashView hash_array) {
+        void particleAttribScatterImpl(Field& f, const ValuesView& dview, const PositionAttrib& pp,
+                                       policy_type iteration_policy, HashView hash_array) {
             constexpr unsigned Dim = Field::dim;
             using PositionType     = typename Field::Mesh_t::value_type;
 
@@ -78,8 +76,8 @@ namespace ippl {
                     const size_t mapped_idx =
                         detail::scatterMappedIndex<UseHashView>(idx, hashView);
 
-                    vector_type l                        = (ppview(mapped_idx) - origin) * invdx + 0.5;
-                    Vector<int, Field::dim> index        = l;
+                    vector_type l                 = (ppview(mapped_idx) - origin) * invdx + 0.5;
+                    Vector<int, Field::dim> index = l;
                     Vector<PositionType, Field::dim> whi = l - index;
                     Vector<PositionType, Field::dim> wlo = 1.0 - whi;
 
@@ -437,8 +435,7 @@ namespace ippl {
         Field<FT, Dim, M, C>& f, Field<ST, Dim, M, C>& Sk,
         const ParticleAttrib<Vector<PT, Dim>, Properties...>& pp,
         FFT<NUFFTransform, Field<ST, Dim, M, C>>* nufft, ParticleAttrib<PT, Properties...>& q) {
-        static IpplTimings::TimerRef gatherPIFNUFFTTimer =
-            IpplTimings::getTimer("GatherPIFNUFFT");
+        static IpplTimings::TimerRef gatherPIFNUFFTTimer = IpplTimings::getTimer("GatherPIFNUFFT");
         IpplTimings::startTimer(gatherPIFNUFFTTimer);
 
         typename Field<FT, Dim, M, C>::uniform_type tempField;
@@ -479,8 +476,7 @@ namespace ippl {
                 "Gather NUFFT",
                 mdrange_type(
                     {nghost, nghost, nghost},
-                    {fview.extent(0) - nghost, fview.extent(1) - nghost,
-                     fview.extent(2) - nghost}),
+                    {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     Vector<int, 3> iVec = {i, j, k};
                     for (unsigned d = 0; d < Dim; ++d) {
