@@ -31,6 +31,18 @@
 #include "Particle/SortBuffer.h"
 
 namespace ippl {
+    namespace detail {
+        template <bool UseHashView, typename HashView>
+        KOKKOS_INLINE_FUNCTION size_t scatterMappedIndex(const size_t idx,
+                                                         const HashView& hashView) {
+            if constexpr (UseHashView) {
+                return static_cast<size_t>(hashView(idx));
+            } else {
+                (void)hashView;
+                return idx;
+            }
+        }
+    }  // namespace detail
 
     template <typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::create(size_type n, bool non_destructive) {
@@ -133,6 +145,27 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::scatter(
         Field& f, const ParticleAttrib<Vector<PT, Field::dim>, Properties...>& pp,
         policy_type iteration_policy, hash_type hash_array) const {
+        const auto hashExtent = static_cast<decltype(iteration_policy.end())>(hash_array.extent(0));
+        const bool useHashView = hashExtent > 0;
+        if (useHashView && (iteration_policy.end() > hashExtent)) {
+            Inform m("scatter");
+            m << "Hash array was passed to scatter, but size does not match iteration policy."
+              << endl;
+            ippl::Comm->abort();
+        }
+
+        if (useHashView) {
+            scatterImpl<true>(f, pp, iteration_policy, hash_array);
+        } else {
+            scatterImpl<false>(f, pp, iteration_policy, hash_array);
+        }
+    }
+
+    template <typename T, class... Properties>
+    template <bool UseHashView, typename Field, class PT, typename policy_type>
+    void ParticleAttrib<T, Properties...>::scatterImpl(
+        Field& f, const ParticleAttrib<Vector<PT, Field::dim>, Properties...>& pp,
+        policy_type iteration_policy, hash_type hash_array) const {
         constexpr unsigned Dim = Field::dim;
         using PositionType     = typename Field::Mesh_t::value_type;
 
@@ -155,20 +188,14 @@ namespace ippl {
         const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
         const int nghost               = f.getNghost();
 
-        // using policy_type = Kokkos::RangePolicy<execution_space>;
-        const bool useHashView = hash_array.extent(0) > 0;
-        if (useHashView && (iteration_policy.end() > hash_array.extent(0))) {
-            Inform m("scatter");
-            m << "Hash array was passed to scatter, but size does not match iteration policy."
-              << endl;
-            ippl::Comm->abort();
-        }
-        auto dview  = dview_m;
-        auto ppview = pp.getView();
+        auto dview    = dview_m;
+        auto ppview   = pp.getView();
+        auto hashView = hash_array;
         Kokkos::parallel_for(
             "ParticleAttrib::scatter", iteration_policy, KOKKOS_LAMBDA(const size_t idx) {
                 // map index to possible hash_map
-                size_t mapped_idx = useHashView ? hash_array(idx) : idx;
+                const size_t mapped_idx =
+                    detail::scatterMappedIndex<UseHashView>(idx, hashView);
 
                 vector_type l                        = (ppview(mapped_idx) - origin) * invdx + 0.5;
                 Vector<int, Field::dim> index        = l;
