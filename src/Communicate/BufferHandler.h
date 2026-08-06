@@ -121,22 +121,22 @@ namespace ippl {
         void freeBuffer(buffer_type buffer) override;
 
         /**
-         * @copydoc BufferHandler::freeBuffer
+         * @copydoc BufferHandler::freeAllBuffers
          */
         void freeAllBuffers() override;
 
         /**
-         * @copydoc BufferHandler::freeBuffer
+         * @copydoc BufferHandler::deleteAllBuffers
          */
         void deleteAllBuffers() override;
 
         /**
-         * @copydoc BufferHandler::freeBuffer
+         * @copydoc BufferHandler::getUsedSize
          */
         size_type getUsedSize() const override;
 
         /**
-         * @copydoc BufferHandler::freeBuffer
+         * @copydoc BufferHandler::getFreeSize
          */
         size_type getFreeSize() const override;
 
@@ -154,8 +154,8 @@ namespace ippl {
         buffer_type reallocateLargestFreeBuffer(size_type requiredSize);
         buffer_type allocateNewBuffer(size_type requiredSize);
 
-        size_type usedSize_m;  ///< Total size of all allocated buffers
-        size_type freeSize_m;  ///< Total size of all free buffers
+        size_type usedSize_m = 0;  ///< Total size of all allocated buffers
+        size_type freeSize_m = 0;  ///< Total size of all free buffers
 
     protected:
         buffer_set_type used_buffers{

@@ -5,21 +5,21 @@
 #ifndef IPPL_BARE_FIELD_H
 #define IPPL_BARE_FIELD_H
 
-#include <Kokkos_Core.hpp>
+#include <cstdlib>  // for size_t
+#include <ostream>  // for std::ostream
 
-#include <cstdlib>
-#include <iostream>
+#include "Types/IpplTypes.h"  // for detail::size_type
+#include "Types/ViewTypes.h"  // for detail::ViewType
 
-#include "Types/IpplTypes.h"
+#include "Utility/Inform.h"            // for Inform
+#include "Utility/PAssert.h"           // for PAssert and PAssert_LE
+#include "Utility/ParallelDispatch.h"  // for RangePolicy
 
-#include "Utility/IpplInfo.h"
-#include "Utility/PAssert.h"
-#include "Utility/ViewUtils.h"
+#include "Expression/IpplExpressions.h"  // for detail::Expression
 
-#include "Expression/IpplExpressions.h"
-
-#include "Field/HaloCells.h"
-#include "FieldLayout/FieldLayout.h"
+#include "Field/HaloCells.h"          // for detail::HaloCells
+#include "FieldLayout/FieldLayout.h"  // for FieldLayout
+#include "Index/NDIndex.h"            // for NDIndex
 
 namespace ippl {
     class Index;
@@ -50,7 +50,7 @@ namespace ippl {
         using view_type = typename detail::ViewType<T, Dim, ViewArgs...>::view_type;
         typedef typename view_type::memory_space memory_space;
         typedef typename view_type::execution_space execution_space;
-        using HostMirror = typename view_type::host_mirror_type;
+        using host_mirror_type = typename view_type::host_mirror_type;
         template <class... PolicyArgs>
         using policy_type = typename RangePolicy<Dim, PolicyArgs...>::policy_type;
 
@@ -170,7 +170,7 @@ namespace ippl {
 
         const view_type& getView() const { return dview_m; }
 
-        HostMirror getHostMirror() const { return Kokkos::create_mirror(dview_m); }
+        host_mirror_type getHostMirror() const { return Kokkos::create_mirror(dview_m); }
 
         /*!
          * Generate the range policy for iterating over the field,
@@ -198,6 +198,27 @@ namespace ippl {
          * @param inf Inform object
          */
         void write(Inform& inf) const;
+
+        /*!
+         * Print the rank local BareField.
+         * @param out stream
+         */
+        void write_as_list(std::ostream& out = std::cout) const;
+
+        /*!
+         * Print the rank local BareField.
+         * @param inf Inform object
+         */
+        void write_as_list(Inform& inf) const;
+
+        /*!
+         * Stream opreator to print the rank local BareField.
+         */
+        friend std::ostream& operator<<(std::ostream& out,
+                                        const BareField<T, Dim, ViewArgs...>& field) {
+            field.write_as_list(out);
+            return out;
+        }
 
         T sum(int nghost = 0) const;
         T max(int nghost = 0) const;
@@ -227,7 +248,12 @@ namespace ippl {
 
 }  // namespace ippl
 
+#ifndef IPPL_BARE_FIELD_HPP
 #include "Field/BareField.hpp"
-#include "Field/BareFieldOperations.hpp"
+#endif  // IPPL_BARE_FIELD_HPP
 
-#endif
+#ifndef IPPL_BARE_FIELD_OPERATIONS_HPP
+#include "Field/BareFieldOperations.hpp"
+#endif  // IPPL_BARE_FIELD_OPERATIONS_HPP
+
+#endif  // IPPL_BARE_FIELD_H

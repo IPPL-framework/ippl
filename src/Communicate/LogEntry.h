@@ -20,6 +20,11 @@ namespace ippl {
 
         std::vector<char> serialize() const;
         static LogEntry deserialize(const std::vector<char>& buffer, size_t offset = 0);
+
+        /// Variant of deserialize() that advances the caller's offset past
+        /// the just-read entry. Lets callers walk a byte-stream of entries
+        /// without re-serializing each one to compute its size.
+        static LogEntry deserializeAdvance(const std::vector<char>& buffer, size_t& offset);
     };
 
     template <typename T>

@@ -25,7 +25,7 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
     double prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return prefactor * exp(-r2 / (2 * sigma * sigma));
+    return prefactor * Kokkos::exp(-r2 / (2 * sigma * sigma));
 }
 
 KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sigma = 0.05,
@@ -35,7 +35,7 @@ KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sig
     double r2 = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
     return (1 / (8.0 * pi))
-           * (sigma * Kokkos::sqrt(2.0 / pi) * exp(-r2 / (2 * sigma * sigma))
+           * (sigma * Kokkos::sqrt(2.0 / pi) * Kokkos::exp(-r2 / (2 * sigma * sigma))
               + Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma)) * (r + (sigma * sigma / r)));
 }
 
@@ -48,7 +48,7 @@ KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_grad(double x, double y, do
     ippl::Vector<double, 3> Efield = {(x - mu), (y - mu), (z - mu)};
     double factor =
         -(1.0 / r) * (1 / (8.0 * pi))
-        * ((sigma / r) * Kokkos::sqrt(2.0 / pi) * exp(-r2 / (2 * sigma * sigma))
+        * ((sigma / r) * Kokkos::sqrt(2.0 / pi) * Kokkos::exp(-r2 / (2 * sigma * sigma))
            + Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma)) * (1.0 - (sigma * sigma / (r * r))));
     return factor * Efield;
 }

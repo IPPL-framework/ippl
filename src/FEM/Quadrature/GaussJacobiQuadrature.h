@@ -28,7 +28,7 @@ namespace ippl {
     public:
         // a higher precision floating point number type used for the computation
         // of the quadrature nodes and weights
-        using scalar_t = long double;  // might be equivalant to double, depending on compiler
+        using scalar_t = double;  // might be equivalant to double, depending on compiler
 
         /**
          * @brief Construct a new Gauss Jacobi Quadrature rule object

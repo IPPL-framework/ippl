@@ -13,17 +13,20 @@
 
 #include "Ippl.h"
 
+#include <Kokkos_MathematicalConstants.hpp>
+#include <Kokkos_MathematicalFunctions.hpp>
+
 #include <array>
 #include <iostream>
 #include <typeinfo>
 
 KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigma = 1.0,
                                        double mu = 0.5) {
-    double pi        = std::acos(-1.0);
-    double prefactor = (1 / std::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
+    double pi        = Kokkos::numbers::pi_v<double>;
+    double prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return -prefactor * std::exp(-r2 / (2 * sigma * sigma));
+    return -prefactor * Kokkos::exp(-r2 / (2 * sigma * sigma));
 }
 
 int main(int argc, char* argv[]) {
@@ -36,14 +39,14 @@ int main(int argc, char* argv[]) {
         int pt         = std::atoi(argv[1]);
         bool gauss_fct = std::atoi(argv[2]);
         ippl::Index I(pt);
-        ippl::NDIndex<dim> owned(I, I, I);
+        ippl::NDIndex<dim> global_domain(I, I, I);
 
         // Specifies SERIAL, PARALLEL dims
         std::array<bool, dim> isParallel;
         isParallel.fill(true);
 
         // all parallel layout, standard domain, normal axis order
-        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, global_domain, isParallel);
 
         // type definitions
         typedef ippl::Vector<double, dim> Vector_t;
@@ -55,7 +58,7 @@ int main(int argc, char* argv[]) {
         double dx       = 1.0 / double(pt);
         Vector_t hx     = {dx, dx, dx};
         Vector_t origin = {0.0, 0.0, 0.0};
-        Mesh_t mesh(owned, hx, origin);
+        Mesh_t mesh(global_domain, hx, origin);
 
         Field_t field(mesh, layout, 1);
         MField_t result(mesh, layout, 1);

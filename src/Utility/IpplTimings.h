@@ -21,6 +21,14 @@
 //    4) print out the results:
 //       IpplTimings::print();
 //
+//    5) reset all timers (for warmup):
+//       IpplTimings::resetAllTimers();
+//    Clears all accumulated times and individual measurements.
+//
+//    6) export to CSV for violin plots:
+//       IpplTimings::dumpToCSV("output.csv");
+//    Exports all individual timing measurements for statistical analysis.
+//
 #ifndef IPPL_TIMINGS_H
 #define IPPL_TIMINGS_H
 
@@ -45,7 +53,8 @@ public:
     IpplTimerInfo()
         : name("")
         , wallTime(0.0)
-        , indx(std::numeric_limits<TimerRef>::max()) {
+        , indx(std::numeric_limits<TimerRef>::max())
+        , measurements() {
         clear();
     }
 
@@ -55,18 +64,19 @@ public:
     // timer operations
     void start() {
         if (!running) {
-            running = true;
-            t.stop();
-            t.clear();
+            t.clear();  // running was false, no need to stop first
             t.start();
+            running = true;
         }
     }
 
     void stop() {
         if (running) {
             t.stop();
-            running = false;
-            wallTime += t.elapsed();
+            running              = false;
+            const double elapsed = t.elapsed();
+            wallTime += elapsed;
+            measurements.push_back(elapsed);
         }
     }
 
@@ -74,6 +84,12 @@ public:
         t.stop();
         t.clear();
         running = false;
+    }
+
+    void clearAll() {
+        clear();
+        wallTime = 0.0;
+        measurements.clear();
     }
 
     // the IPPL timer that this object manages
@@ -90,6 +106,8 @@ public:
 
     // an index value for this timer
     TimerRef indx;
+
+    std::vector<double> measurements;
 };
 
 struct Timing {
@@ -126,6 +144,20 @@ struct Timing {
     // print the results to a file
     void print(const std::string& fn, const std::map<std::string, unsigned int>& problemSize);
 
+    void resetAllTimers();
+
+    // Format: timer_name,rank,measurement_id,duration
+    void dumpToCSV(const std::string& filename);
+
+    void dumpToCSV(const std::string& filename, const std::string& delimiter, bool includeHeader);
+
+    const std::vector<double>& getMeasurements(TimerRef t) const;
+    const std::vector<double>& getMeasurements(const std::string& name) const;
+
+    size_t getMeasurementCount(TimerRef t) const;
+
+    std::vector<std::string> getTimerNames() const;
+
     // type of storage for list of TimerInfo
     typedef std::vector<my_auto_ptr<TimerInfo> > TimerList_t;
     typedef std::map<std::string, TimerInfo*> TimerMap_t;
@@ -136,6 +168,9 @@ private:
 
     // a map of timers, keyed by string
     TimerMap_t TimerMap;
+
+    // Returned by reference when a requested timer is not found.
+    static const std::vector<double> emptyMeasurements;
 };
 
 class IpplTimings {
@@ -172,6 +207,36 @@ public:
 
     static void stash();
     static void pop();
+
+    // Use this after warmup iterations to get clean timing data
+    static void resetAllTimers() { instance->resetAllTimers(); }
+
+    // Format: timer_name,rank,measurement_id,duration_seconds
+    // Perfect for creating violin plots in Python/R
+    static void dumpToCSV(const std::string& filename) {
+        instance->dumpToCSV(filename);
+    }
+
+    static void dumpToCSV(const std::string& filename,
+                         const std::string& delimiter,
+                         bool includeHeader = true) {
+        instance->dumpToCSV(filename, delimiter, includeHeader);
+    }
+
+    static const std::vector<double>& getMeasurements(TimerRef t) {
+        return instance->getMeasurements(t);
+    }
+    static const std::vector<double>& getMeasurements(const std::string& name) {
+        return instance->getMeasurements(name);
+    }
+
+    static size_t getMeasurementCount(TimerRef t) {
+        return instance->getMeasurementCount(t);
+    }
+
+    static std::vector<std::string> getTimerNames() {
+        return instance->getTimerNames();
+    }
 
 private:
     // type of storage for list of TimerInfo

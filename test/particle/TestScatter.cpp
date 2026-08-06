@@ -22,9 +22,9 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
+        using Mesh_t = ippl::UniformCartesian<double, 3>;
+        typedef ippl::ParticleSpatialLayout<double, 3, Mesh_t> playout_type;
         typedef Bunch<playout_type> bunch_type;
-        using Mesh_t      = ippl::UniformCartesian<double, 3>;
         using Centering_t = Mesh_t::DefaultCentering;
 
         int pt = 512;
@@ -72,8 +72,9 @@ int main(int argc, char* argv[]) {
         eng.discard(nLoc * ippl::Comm->rank());
         std::uniform_real_distribution<double> unif(hx[0] / 2, 1 - (hx[0] / 2));
 
-        typename bunch_type::particle_position_type::HostMirror R_host = bunch.R.getHostMirror();
-        double sum_coord                                               = 0.0;
+        typename bunch_type::particle_position_type::host_mirror_type R_host =
+            bunch.R.getHostMirror();
+        double sum_coord = 0.0;
         for (unsigned int i = 0; i < nLoc; ++i) {
             ippl::Vector<double, 3> r = {unif(eng), unif(eng), unif(eng)};
             R_host(i)                 = r;

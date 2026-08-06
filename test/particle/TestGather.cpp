@@ -18,9 +18,9 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
-        typedef ippl::ParticleSpatialLayout<double, 3> playout_type;
+        using Mesh_t = ippl::UniformCartesian<double, 3>;
+        typedef ippl::ParticleSpatialLayout<double, 3, Mesh_t> playout_type;
         typedef Bunch<playout_type> bunch_type;
-        using Mesh_t      = ippl::UniformCartesian<double, 3>;
         using Centering_t = Mesh_t::DefaultCentering;
 
         Inform msg("TestGather");
@@ -50,8 +50,10 @@ int main(int argc, char* argv[]) {
         std::mt19937_64 eng;
         std::uniform_real_distribution<double> unif(0, 1);
 
-        typename bunch_type::particle_position_type::HostMirror R_host = bunch.R.getHostMirror();
-        typename bunch_type::charge_container_type::HostMirror Q_host  = bunch.Q.getHostMirror();
+        typename bunch_type::particle_position_type::host_mirror_type R_host =
+            bunch.R.getHostMirror();
+        typename bunch_type::charge_container_type::host_mirror_type Q_host =
+            bunch.Q.getHostMirror();
         for (int i = 0; i < n; ++i) {
             ippl::Vector<double, 3> r = {unif(eng), unif(eng), unif(eng)};
             R_host(i)                 = r;
@@ -72,11 +74,11 @@ int main(int argc, char* argv[]) {
 
         msg << "Testing addToAttribute=false. Expected output: 1" << endl;
         gather(bunch.Q, field, bunch.R);
-        
+
         // Should printout 1.0 for each particle
         bunch.Q.print();
 
-        ippl::Comm->barrier(); // so output of 1 and 2 is separated
+        ippl::Comm->barrier();  // so output of 1 and 2 is separated
 
         msg << "Testing addToAttribute=true. Expected output: 2" << endl;
         gather(bunch.Q, field, bunch.R, true);

@@ -64,6 +64,18 @@
 namespace ippl {
 
     /*!
+     * @class ParticleBaseBase
+     *
+     *  Minimal empty base class for all ParticleBase specializations.
+     *  Needed for e.g: c++20 constraints and concepts using std::derived_from
+     *
+     */
+    class ParticleBaseBase {
+    public:
+        virtual ~ParticleBaseBase() = default;
+    };
+
+    /*!
      * @class ParticleBase
      * @tparam PLayout the particle layout implementing an algorithm to
      * distribute the particles among MPI ranks
@@ -72,7 +84,7 @@ namespace ippl {
      * IDs will be disabled for the bunch)
      */
     template <class PLayout, typename... IDProperties>
-    class ParticleBase {
+    class ParticleBase : public ParticleBaseBase {
         constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
 
     public:
@@ -161,7 +173,7 @@ namespace ippl {
 
         /*!
          * Set all boundary conditions
-         * @param bc the boundary conditions
+         * @param bcs the boundary conditions
          */
         void setParticleBC(const bc_container_type& bcs) { layout_m->setParticleBC(bcs); }
 
@@ -234,11 +246,24 @@ namespace ippl {
         }
 
         /*!
-         * Create nLocal processor local particles. This is a collective call,
+         * Create nLocal rank local particles. This is a collective call,
          * i.e. all MPI ranks must call this.
-         * @param nLocal number of local particles to be created
+         *
+         * @param nLocal number of local particles to be created (delta, not total).
+         * @param non_destructive if true, preserve existing particle data when the
+         *        underlying views must grow (uses Kokkos::resize). Default false
+         *        keeps the destructive-on-grow behavior.
          */
-        void create(size_type nLocal);
+        void create(size_type nLocal, bool non_destructive = false);
+
+        /*!
+         * Pre-allocate capacity for nLocal particles on every attribute, without
+         * touching the logical particle count or assigning IDs. Caller is
+         * responsible for filling the entries. Overallocation is additionally applied.
+         *
+         * @param nLocal capacity (in particles) to allocate per attribute.
+         */
+        void alloc(size_type nLocal);
 
         /*!
          * Create a new particle with a given ID. This is a collective call. If a process
@@ -274,16 +299,24 @@ namespace ippl {
         /* This function does not alter the totalNum_m member function. It should only be called
          * during the update function where we know the number of particles remains the same.
          */
+        template <typename memory_space, typename execution_space, typename F,
+                  typename... Properties>
+        void internalDestroy(const F& invalid_functor, const size_type destroyNum);
         template <typename... Properties>
         void internalDestroy(const Kokkos::View<bool*, Properties...>& invalid,
-                             const size_type destroyNum);
+                             const size_type destroyNum) {
+            using view_type       = Kokkos::View<bool*, Properties...>;
+            using memory_space    = typename view_type::memory_space;
+            using execution_space = typename view_type::execution_space;
+            internalDestroy<memory_space, execution_space>(
+                KOKKOS_LAMBDA(size_t i) { return invalid(i); }, destroyNum);
+        }
 
         /*!
          * Sends particles to another rank
          * @tparam HashType the hash view type
          * @param rank the destination rank
          * @param tag the MPI tag
-         * @param sendNum the number of messages already sent (to distinguish the buffers)
          * @param requests destination vector in which to store the MPI requests for polling
          * purposes
          * @param hash a hash view indicating which particles need to be sent to which rank
@@ -292,18 +325,24 @@ namespace ippl {
         void sendToRank(int rank, int tag, std::vector<MPI_Request>& requests,
                         const HashType& hash);
 
+        template <typename HashType>
+        MPI_Request sendToRank(int rank, int tag, const HashType& hash);
+
         /*!
          * Receives particles from another rank
          * @param rank the source rank
          * @param tag the MPI tag
-         * @param recvNum the number of messages already received (to distinguish the buffers)
          * @param nRecvs the number of particles to receive
          */
         void recvFromRank(int rank, int tag, size_type nRecvs);
 
+        std::pair<MPI_Request, std::function<void(size_type)>> postRecvFromRank(int rank, int tag,
+                                                                                size_type nRecvs);
+
         /*!
          * Serialize to do MPI calls.
          * @param ar archive
+         * @param nsends number of particles to serialize
          */
         template <typename Archive>
         void serialize(Archive& ar, size_type nsends);
@@ -311,6 +350,7 @@ namespace ippl {
         /*!
          * Deserialize to do MPI calls.
          * @param ar archive
+         * @param nrecvs number of particles to deserialize
          */
         template <typename Archive>
         void deserialize(Archive& ar, size_type nrecvs);
@@ -327,14 +367,13 @@ namespace ippl {
     protected:
         /*!
          * Fill attributes of buffer.
-         * @param buffer to send
          * @param hash function to access index.
          */
         void pack(const hash_container_type& hash);
 
         /*!
          * Fill my attributes.
-         * @param buffer received
+         * @param nrecvs number of particles to unpack
          */
         void unpack(size_type nrecvs);
 

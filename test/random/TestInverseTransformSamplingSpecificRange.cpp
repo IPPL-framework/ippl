@@ -49,11 +49,12 @@ KOKKOS_FUNCTION void get_norm_dist_cent_moms(double stdev, const int P, double* 
     }
 }
 
-void get_moments_from_samples(view_type position, int d, int start, int end, const int P,
+void get_moments_from_samples(view_type position, int d, int start, int end, int P,
                               double* moms_p) {
     int d_      = d;
     double temp = 0.0, mean = 0.0;
-    double locmoms[P];
+    std::vector<double> locmoms(P, 0.0);
+
     int gNpart = 0, locNpart = end - start;
 
     for (int p = 0; p < P; p++) {
@@ -91,7 +92,7 @@ void get_moments_from_samples(view_type position, int d, int start, int end, con
         locmoms[p] = temp;
     }
 
-    MPI_Allreduce(locmoms, moms_p, P, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
+    MPI_Allreduce(locmoms.data(), moms_p, P, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
     ippl::Comm->barrier();
 
     for (int p = 0; p < P; p++) {

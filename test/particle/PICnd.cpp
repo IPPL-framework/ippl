@@ -32,8 +32,8 @@ constexpr unsigned Dim          = DIM;
 constexpr const char* PROG_NAME = "PIC" xstr(DIM) "d";
 
 // some typedefs
-typedef ippl::ParticleSpatialLayout<double, Dim> PLayout_t;
 typedef ippl::UniformCartesian<double, Dim> Mesh_t;
+typedef ippl::ParticleSpatialLayout<double, Dim, Mesh_t> PLayout_t;
 typedef ippl::FieldLayout<Dim> FieldLayout_t;
 typedef Mesh_t::DefaultCentering Centering_t;
 
@@ -265,7 +265,7 @@ public:
     }
 
     void dumpData(int iteration) {
-        ParticleAttrib<Vector_t>::view_type& view = P.getView();
+        auto view = P.getView();
 
         double Energy = 0.0;
 
@@ -297,7 +297,7 @@ public:
     //        0 -> gridpoints
     void initPositions(FieldLayout_t& fl, Vector_t& hr, unsigned int nloc, int tag = 2) {
         Inform m("initPositions ");
-        typename ippl::ParticleBase<PLayout>::particle_position_type::HostMirror R_host =
+        typename ippl::ParticleBase<PLayout>::particle_position_type::host_mirror_type R_host =
             this->R.getHostMirror();
 
         std::mt19937_64 eng[Dim];

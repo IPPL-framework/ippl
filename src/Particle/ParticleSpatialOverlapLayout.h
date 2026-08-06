@@ -302,7 +302,7 @@ namespace ippl {
         template <std::size_t... Idx>
         KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(
             const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region,
-            Vector<bool, Dim> periodic, T overlap);
+            Kokkos::Array<bool, Dim> periodic, T overlap);
 
         /*!
          * @brief convert a nd-cell-index to flat cell index
@@ -315,7 +315,7 @@ namespace ippl {
             hash_type cellPermutationForward);
 
         /*!
-         * @brieg compute the nd-cell-index from a flattened (non-permuted) index
+         * @brief compute the nd-cell-index from a flattened (non-permuted) index
          * @param nonPermutedIndex the flat index to transform
          * @param numCells in each dimension
          */

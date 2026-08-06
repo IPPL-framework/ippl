@@ -5,16 +5,6 @@
 
 namespace ippl {
 
-    /**
-     * @brief Constructor for the StandardFDTDSolver class.
-     *
-     * This constructor initializes the StandardFDTDSolver with the given source field and
-     * electromagnetic fields and initializes the solver.
-     *
-     * @param source The source field.
-     * @param E The electric field.
-     * @param B The magnetic field.
-     */
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
     StandardFDTDSolver<EMField, SourceField, boundary_conditions>::StandardFDTDSolver(
         SourceField& source, EMField& E, EMField& B)

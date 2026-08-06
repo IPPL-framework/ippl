@@ -4,20 +4,22 @@
 // The solve is iterated 5 times for the purpose of timing studies.
 //   Usage:
 //     srun ./TestGaussian <nx> <ny> <nz> <reshape> <comm> <reorder>
-//                         <algorithm> --info 5
-//     nx        = No. cell-centered points in the x-direction
-//     ny        = No. cell-centered points in the y-direction
-//     nz        = No. cell-centered points in the z-direction
-//     reshape   = "pencils" or "slabs" (heffte parameter)
-//     comm      = "a2a", "a2av", "p2p", "p2p_pl" (heffte parameter)
-//     reorder   = "reorder" or "no-reorder" (heffte parameter)
-//     algorithm = "HOCKNEY", "VICO", or "DCT_VICO", types of open BC algorithms
+//                         <algorithm> [green_function] --info 5
+//     nx             = No. cell-centered points in the x-direction
+//     ny             = No. cell-centered points in the y-direction
+//     nz             = No. cell-centered points in the z-direction
+//     reshape        = "pencils" or "slabs" (heffte parameter)
+//     comm           = "a2a", "a2av", "p2p", "p2p_pl" (heffte parameter)
+//     reorder        = "reorder" or "no-reorder" (heffte parameter)
+//     algorithm      = "HOCKNEY", "VICO", or "DCT_VICO", types of open BC algorithms
+//     green_function = "STANDARD" or "INTEGRATED" (optional; HOCKNEY only)
 //
 //     For more info on the heffte parameters, see:
 //     https://github.com/icl-utk-edu/heffte
 //
 //     Example:
 //       srun ./TestGaussian 64 64 64 pencils a2a no-reorder HOCKNEY --info 5
+//       srun ./TestGaussian 64 64 64 pencils a2a no-reorder HOCKNEY INTEGRATED --info 5
 //
 //
 
@@ -38,7 +40,7 @@ KOKKOS_INLINE_FUNCTION double gaussian(double x, double y, double z, double sigm
     double prefactor = (1 / Kokkos::sqrt(2 * 2 * 2 * pi * pi * pi)) * (1 / (sigma * sigma * sigma));
     double r2        = (x - mu) * (x - mu) + (y - mu) * (y - mu) + (z - mu) * (z - mu);
 
-    return prefactor * exp(-r2 / (2 * sigma * sigma));
+    return prefactor * Kokkos::exp(-r2 / (2 * sigma * sigma));
 }
 
 KOKKOS_INLINE_FUNCTION double exact_fct(double x, double y, double z, double sigma = 0.05,
@@ -56,7 +58,7 @@ KOKKOS_INLINE_FUNCTION ippl::Vector<double, 3> exact_E(double x, double y, doubl
     double factor =
         (1.0 / (4.0 * pi * r * r))
         * ((1.0 / r) * Kokkos::erf(r / (Kokkos::sqrt(2.0) * sigma))
-           - Kokkos::sqrt(2.0 / pi) * (1.0 / sigma) * exp(-r * r / (2 * sigma * sigma)));
+           - Kokkos::sqrt(2.0 / pi) * (1.0 / sigma) * Kokkos::exp(-r * r / (2 * sigma * sigma)));
 
     ippl::Vector<double, 3> Efield = {(x - mu), (y - mu), (z - mu)};
     return factor * Efield;
@@ -88,12 +90,14 @@ int main(int argc, char* argv[]) {
         std::string communication = argv[5];  // a2a or p2p
         std::string reordering    = argv[6];  // reorder or no-reorder
 
-        // get the algorithm to be used
-        std::string algorithm = argv[7];  // Hockney or Vico
+        // get the algorithm and Green function to be used
+        std::string algorithm      = argv[7];  // Hockney or Vico
+        std::string greensFunction = (argc > 8) ? argv[8] : "STANDARD";
 
         // print out info and title for the relative error (L2 norm)
         msg << "Test Gaussian, grid = " << nr << ", heffte params: " << reshape << " "
-            << communication << " " << reordering << ", algorithm = " << algorithm << endl;
+            << communication << " " << reordering << ", algorithm = " << algorithm
+            << ", Green function = " << greensFunction << endl;
         msg << "Spacing Error" << endl;  // ErrorEx ErrorEy ErrorEz" << endl;
 
         // domain
@@ -230,6 +234,19 @@ int main(int argc, char* argv[]) {
             params.add("algorithm", Solver_t::DCT_VICO);
         } else {
             throw IpplException("TestGaussian.cpp main()", "Unrecognized algorithm type");
+        }
+
+        // set the real-space Hockney Green function
+        if (greensFunction == "STANDARD") {
+            params.add("greens_function", Solver_t::STANDARD);
+        } else if (greensFunction == "INTEGRATED") {
+            if (algorithm != "HOCKNEY") {
+                throw IpplException("TestGaussian.cpp main()",
+                                    "INTEGRATED Green function is only supported with HOCKNEY");
+            }
+            params.add("greens_function", Solver_t::INTEGRATED);
+        } else {
+            throw IpplException("TestGaussian.cpp main()", "Unrecognized Green function type");
         }
 
         // add output type

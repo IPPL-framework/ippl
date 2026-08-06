@@ -7,20 +7,12 @@
 
 namespace ippl {
     template <typename T, unsigned Dim>
-    template <class... Args>
+    template <
+        class... Args,
+        typename std::enable_if<
+            sizeof...(Args) == Dim && (std::is_convertible_v<Args, PRegion<T>> && ...), bool>::type>
     KOKKOS_FUNCTION NDRegion<T, Dim>::NDRegion(const Args&... args)
-        : NDRegion({args...}) {
-        static_assert(Dim == sizeof...(args), "Wrong number of arguments.");
-    }
-
-    template <typename T, unsigned Dim>
-    KOKKOS_FUNCTION NDRegion<T, Dim>::NDRegion(std::initializer_list<PRegion<T>> regions) {
-        unsigned int i = 0;
-        for (auto& r : regions) {
-            regions_m[i] = r;
-            ++i;
-        }
-    }
+        : regions_m{args...} {}
 
     template <typename T, unsigned Dim>
     KOKKOS_INLINE_FUNCTION NDRegion<T, Dim>::NDRegion(const NDRegion<T, Dim>& nr) {

@@ -9,13 +9,13 @@ int main(int argc, char* argv[]) {
         constexpr unsigned int dim = 3;
 
         ippl::Index I(16);
-        ippl::NDIndex<dim> owned(I, I, I);
+        ippl::NDIndex<dim> global_domain(I, I, I);
 
         // Specifies SERIAL, PARALLEL dims
         std::array<bool, dim> isParallel;
         isParallel.fill(true);
 
-        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, owned, isParallel);
+        ippl::FieldLayout<dim> layout(MPI_COMM_WORLD, global_domain, isParallel);
 
         typedef ippl::BareField<double, dim, Kokkos::Cuda> cuda_field;
         typedef ippl::BareField<double, dim, Kokkos::OpenMP> omp_field;

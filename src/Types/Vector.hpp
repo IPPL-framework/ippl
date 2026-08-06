@@ -2,21 +2,43 @@
 // Class Vector
 //   Vector class used for vector fields and particle attributes like the coordinate.
 //
-// #include "Utility/PAssert.h"
 
-#include <iomanip>
-#include <iostream>
+#ifndef IPPL_VECTOR_HPP
+#define IPPL_VECTOR_HPP
+
+// clang-format off
+#ifndef IPPL_Vector_H
+// HACK: cyclic anitpattern, but necessary for proper LSP markup
+#include "Vector.h"
+#endif
+// clang-format on
+
+#include <Kokkos_MinMax.hpp>  // for max, min
+#include <iomanip>            // for operator<<, setw
+#include <iostream>           // for basic_ostream, char_traits
+
+#include "Kokkos_Macros.hpp"                 // for KOKKOS_INLINE_FUNCTION
+#include "Kokkos_MathematicalFunctions.hpp"  // for pow, abs
 
 namespace ippl {
     namespace detail {
         template <typename T, unsigned Dim>
         struct isExpression<Vector<T, Dim>> : std::true_type {};
+
+        template <typename T>
+        struct VectorTraits;
+
+        template <typename T, unsigned Dim>
+        struct VectorTraits<Vector<T, Dim>> {
+            using real_type               = T;
+            static constexpr unsigned dim = Dim;
+        };
     }  // namespace detail
 
     template <typename T, unsigned Dim>
     template <typename... Args, typename std::enable_if<sizeof...(Args) == Dim, bool>::type>
     KOKKOS_FUNCTION Vector<T, Dim>::Vector(const Args&... args)
-        : Vector({static_cast<T>(args)...}) {}
+        : data_m{static_cast<T>(args)...} {}
 
     template <typename T, unsigned Dim>
     template <typename E, size_t N>
@@ -34,7 +56,6 @@ namespace ippl {
 
     template <typename T, unsigned Dim>
     KOKKOS_FUNCTION Vector<T, Dim>::Vector(const std::initializer_list<T>& list) {
-        // PAssert(list.size() == Dim);
         unsigned int i = 0;
         for (auto& l : list) {
             data_m[i] = l;
@@ -233,6 +254,7 @@ namespace ippl {
     }
 }  // namespace ippl
 
+#endif  // IPPL_VECTOR_HPP
 // vi: set et ts=4 sw=4 sts=4:
 // Local Variables:
 // mode:c

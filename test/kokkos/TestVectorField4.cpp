@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
 
         Kokkos::fence();
 
-        vector_field_type::HostMirror host_view = Kokkos::create_mirror_view(vvfield);
+        vector_field_type::host_mirror_type host_view = Kokkos::create_mirror_view(vvfield);
         Kokkos::deep_copy(host_view, vvfield);
 
         for (int i = 0; i < length; ++i) {
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
 
         Kokkos::fence();
 
-        scalar_field_type::HostMirror host_sview = Kokkos::create_mirror_view(sfield);
+        scalar_field_type::host_mirror_type host_sview = Kokkos::create_mirror_view(sfield);
         Kokkos::deep_copy(host_sview, sfield);
 
         for (int i = 0; i < length; ++i) {

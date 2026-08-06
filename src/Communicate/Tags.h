@@ -41,7 +41,10 @@ namespace ippl {
                 VICO_SOLVER = 32001,
 
                 // FEMVector
-                FEMVECTOR = 40000
+                FEMVECTOR = 40000,
+
+                // Field mirror helper (see Field/FieldBufferOps.hpp / mirrorField)
+                FIELD_MIRROR = 40500
             };
         }  // namespace tag
     }      // namespace mpi

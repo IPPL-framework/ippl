@@ -14,6 +14,8 @@
 #ifndef IPPL_PARTICLE_ATTRIB_BASE_H
 #define IPPL_PARTICLE_ATTRIB_BASE_H
 
+#include <cstring>
+
 #include "Types/IpplTypes.h"
 #include "Types/ViewTypes.h"
 
@@ -21,6 +23,9 @@
 
 namespace ippl {
     namespace detail {
+        // Maximum length for attribute names (including null terminator)
+        constexpr size_t ATTRIB_NAME_MAX_LEN = 64;
+
         template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
         class ParticleAttribBase {
             template <class... Properties>
@@ -37,7 +42,33 @@ namespace ippl {
             template <typename... Properties>
             using with_properties = typename WithMemSpace<Properties...>::type;
 
-            virtual void create(size_type) = 0;
+            KOKKOS_FUNCTION
+            ParticleAttribBase() {
+                const char* default_name = "UNNAMED_attribute";
+                for (size_t i = 0; i < ATTRIB_NAME_MAX_LEN && default_name[i] != '\0'; ++i) {
+                    name_m[i] = default_name[i];
+                    if (i + 1 < ATTRIB_NAME_MAX_LEN) {
+                        name_m[i + 1] = '\0';
+                    }
+                }
+            }
+
+            virtual void set_name(const std::string& name_) = 0;
+
+            virtual std::string get_name() const = 0;
+
+            // Allocate internal capacity for N particles. Does NOT touch the logical
+            // particle count (localNum_m on ParticleBase). Existing data is not preserved.
+            virtual void alloc(size_type) = 0;
+
+            // non_destructive=false (default) keeps the historical destructive-on-grow
+            // behavior (Kokkos::realloc). non_destructive=true uses Kokkos::resize so
+            // prior entries survive a capacity grow.
+            virtual void create(size_type, bool non_destructive = false) = 0;
+
+            // Grow internal capacity to at least N particles while preserving existing
+            // entries. Does not shrink and does not touch the logical particle count.
+            virtual void reserve(size_type) = 0;
 
             virtual void destroy(const hash_type&, const hash_type&, size_type) = 0;
             virtual size_type packedSize(const size_type) const                 = 0;
@@ -46,22 +77,26 @@ namespace ippl {
 
             virtual void unpack(size_type) = 0;
 
-            virtual void serialize(Archive<memory_space>& ar, size_type nsends) = 0;
-
+            virtual void serialize(Archive<memory_space>& ar, size_type nsends)   = 0;
+            virtual void serialize(detail::Archive<memory_space>& ar, const hash_type& hash,
+                                   size_type nsends)                              = 0;
             virtual void deserialize(Archive<memory_space>& ar, size_type nrecvs) = 0;
+            virtual void deserialize(detail::Archive<memory_space>& ar, size_type offset,
+                                     size_type nrecvs)                            = 0;
 
             virtual size_type size() const = 0;
 
-            virtual ~ParticleAttribBase() = default;
+            KOKKOS_INLINE_FUNCTION virtual ~ParticleAttribBase() = default;
 
             void setParticleCount(size_type& num) { localNum_mp = &num; }
             size_type getParticleCount() const { return *localNum_mp; }
 
             virtual void applyPermutation(const hash_type&) = 0;
-            virtual void internalCopy(const hash_type&) = 0;
+            virtual void internalCopy(const hash_type&)     = 0;
 
         protected:
             const size_type* localNum_mp;
+            char name_m[ATTRIB_NAME_MAX_LEN];
         };
     }  // namespace detail
 }  // namespace ippl

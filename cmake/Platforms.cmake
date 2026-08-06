@@ -1,5 +1,6 @@
 # -----------------------------------------------------------------------------
 # Platforms.cmake
+# ~~~
 #
 # Handles platform/backend selection for IPPL: SERIAL, OPENMP, CUDA, or CUDA + OPENMP.
 #
@@ -10,77 +11,84 @@
 #
 # Not responsible for:
 #   - Selecting default CMake build type    → ProjectSetup.cmake
+#
+# ~~~
 # -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# platforms we do support
+# -----------------------------------------------------------------------------
+set(IPPL_SUPPORTED_PLATFORMS "SERIAL;OPENMP;CUDA;HIP;SYCL")
 
 # === Default to SERIAL if IPPL_PLATFORMS not set ===
 if(NOT IPPL_PLATFORMS)
-    set(IPPL_PLATFORMS "SERIAL")
-    message(STATUS "No IPPL_PLATFORMS specified — defaulting to SERIAL")
+  set(IPPL_PLATFORMS "SERIAL")
+  message(STATUS "No IPPL_PLATFORMS specified — defaulting to SERIAL")
 endif()
 
 # === Normalize to uppercase ===
 string(TOUPPER "${IPPL_PLATFORMS}" IPPL_PLATFORMS)
 
-# === Handle known platform combinations ===
-if("${IPPL_PLATFORMS}" STREQUAL "SERIAL")
-    set(Kokkos_ENABLE_SERIAL ON CACHE BOOL "Enable Kokkos Serial backend" FORCE)
-    set(Heffte_ENABLE_AVX2 ON CACHE BOOL "Enable AVX2 backend for Heffte" FORCE)
-    message(STATUS "🧩 Backend: SERIAL")
-
-elseif("${IPPL_PLATFORMS}" STREQUAL "OPENMP")
-    set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP backend" FORCE)
-    set(Heffte_ENABLE_AVX2 ON CACHE BOOL "Use Heffte Stock backend with AVX2" FORCE)
-    message(STATUS "🧩 Backend: OPENMP")
-
-elseif("${IPPL_PLATFORMS}" STREQUAL "CUDA")
-    set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA backend" FORCE)
-    set(Heffte_ENABLE_CUDA ON CACHE BOOL "Enable Heffte CUDA backend" FORCE)
-    message(STATUS "🧩 Backend: CUDA")
-
-elseif("${IPPL_PLATFORMS}" STREQUAL "HIP")
-    set(Heffte_ENABLE_ROCM ON CACHE BOOL "Set Heffte ROCM Backend" FORCE)
-    set(Kokkos_ENABLE_HIP ON CACHE BOOL "Enable Kokkos HIP Backend" FORCE)
-    message(STATUS "🧩 Backend: HIP")
-
-elseif("${IPPL_PLATFORMS}" STREQUAL "CUDA;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;CUDA")
-    set(Kokkos_ENABLE_CUDA ON CACHE BOOL "Enable Kokkos CUDA backend" FORCE)
-    set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP backend" FORCE)
-    set(Heffte_ENABLE_CUDA ON CACHE BOOL "Enable Heffte CUDA backend" FORCE)
-    message(STATUS "🧩 Backend: CUDA + OPENMP")
-
-elseif("${IPPL_PLATFORMS}" STREQUAL "HIP;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;HIP")
-    set(Heffte_ENABLE_ROCM ON CACHE BOOL "Set Heffte ROCM Backend" FORCE)
-    set(Kokkos_ENABLE_OPENMP ON CACHE BOOL "Enable Kokkos OpenMP Backend" FORCE)
-    set(Kokkos_ENABLE_HIP ON CACHE BOOL "Enable Kokkos HIP Backend" FORCE)
-    set(KOKKOS_ENABLE_PROFILING ON CACHE BOOL "Enable Kokkos Profiling" FORCE)
-    set(Kokkos_ENABLE_LIBDL ON CACHE BOOL "Enable LIBDL" FORCE)
-    message(STATUS "🧩 Backend: HIP + OPENMP")
-
-else()
-    message(FATAL_ERROR "Unknown or unsupported IPPL_PLATFORMS: '${IPPL_PLATFORMS}'")
+# === Declare a HIP profiler option ===
+if("HIP" IN_LIST IPPL_PLATFORMS)
+  option(IPPL_ENABLE_HIP_PROFILER "Enable HIP Systems Profiler" OFF)
 endif()
 
-if(NOT DEFINED Heffte_ENABLE_FFTW)
-    set(Heffte_ENABLE_FFTW OFF CACHE BOOL "Enable FFTW in Heffte" FORCE)
+if(NOT "SERIAL" IN_LIST IPPL_PLATFORMS AND NOT "OPENMP" IN_LIST IPPL_PLATFORMS)
+  list(APPEND IPPL_PLATFORMS "SERIAL")
+  message(STATUS "Appending SERIAL to IPPL_PLATFORMS as no HOST execution space set")
 endif()
 
+# -----------------------------------------------------------------------------
+# OpenMP section
+# -----------------------------------------------------------------------------
+if("OPENMP" IN_LIST IPPL_PLATFORMS)
+  include(ProcessorCount)
+  ProcessorCount(num_cores)
+  if(num_cores GREATER 0)
+    math(EXPR default_threads "${num_cores} / 4")
+  else()
+    set(default_threads 1)
+  endif()
+  set(IPPL_OPENMP_THREADS ${default_threads}
+      CACHE STRING "Default number of OpenMP threads to use when launching tests")
+endif()
 
+# -----------------------------------------------------------------------------
+# Sanity check for known platforms
+# -----------------------------------------------------------------------------
+set(unhandled_platforms_ ${IPPL_PLATFORMS})
+foreach(platform ${IPPL_SUPPORTED_PLATFORMS})
+  if(platform IN_LIST IPPL_PLATFORMS)
+    list(REMOVE_ITEM unhandled_platforms_ ${platform})
+  endif()
+endforeach()
+
+if(NOT unhandled_platforms_ STREQUAL "")
+  message(FATAL_ERROR "Unknown or unsupported IPPL_PLATFORMS requested: '${unhandled_platforms_}'")
+endif()
+
+if("HIP" IN_LIST IPPL_PLATFORMS AND "CUDA" IN_LIST IPPL_PLATFORMS)
+  message(FATAL_ERROR "CUDA and HIP should not both be present in IPPL_PLATFORMS")
+endif()
+
+# -----------------------------------------------------------------------------
 # Profiler section
-option (IPPL_ENABLE_HIP_PROFILER "Enable HIP Systems Profiler" OFF)
-if (IPPL_ENABLE_HIP_PROFILER)
-    if ("${IPPL_PLATFORMS}" STREQUAL "HIP" OR "${IPPL_PLATFORMS}" STREQUAL "HIP;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;HIP")
-       message (STATUS "Enabling HIP Profiler")
-       add_compile_definitions(-DIPPL_ENABLE_HIP_PROFILER)
-    else()
-        message (FATAL_ERROR "Cannot enable HIP Systems Profiler since platform is not HIP")
-    endif()
+# -----------------------------------------------------------------------------
+if(IPPL_ENABLE_HIP_PROFILER)
+  if("HIP" IN_LIST IPPL_PLATFORMS)
+    message(STATUS "🧩 Enabling HIP Profiler and KOKKOS profiliing")
+    add_compile_definitions(-DIPPL_ENABLE_HIP_PROFILER)
+  else()
+    message(FATAL_ERROR "Cannot enable HIP Systems Profiler since platform is not HIP")
+  endif()
 endif()
 
-if (IPPL_ENABLE_NSYS_PROFILER)
-    if ("${IPPL_PLATFORMS}" STREQUAL "CUDA" OR "${IPPL_PLATFORMS}" STREQUAL "CUDA;OPENMP" OR "${IPPL_PLATFORMS}" STREQUAL "OPENMP;CUDA")
-        message (STATUS "Enabling Nsys Profiler")
-        add_compile_definitions(-DIPPL_ENABLE_NSYS_PROFILER)    
-    else()
-        message (FATAL_ERROR "Cannot enable Nvidia Nsys Profiler since platform is not CUDA")
-    endif()
+if(IPPL_ENABLE_NSYS_PROFILER)
+  if("CUDA" IN_LIST IPPL_PLATFORMS)
+    message(STATUS "Enabling Nsys Profiler")
+    add_compile_definitions(-DIPPL_ENABLE_NSYS_PROFILER)
+  else()
+    message(FATAL_ERROR "Cannot enable Nvidia Nsys Profiler since platform is not CUDA")
+  endif()
 endif()

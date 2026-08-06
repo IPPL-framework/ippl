@@ -1,0 +1,4 @@
+include:
+  # AMD/MI300:
+  - local: "ci/cscs/rocm/build_rocm-6.3.yml"
+  - local: "ci/cscs/rocm/run_rocm-6.3.yml"

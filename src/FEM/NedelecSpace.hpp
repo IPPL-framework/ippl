@@ -85,7 +85,10 @@ namespace ippl {
 
         int upperBoundaryPoints = -1;
 
-        Kokkos::View<size_t*> points("ComputeMapping", npoints);
+        // We iterate over the local domain points, getting the corresponding elements,
+        // while tagging upper boundary points such that they can be removed after.
+        Kokkos::View<size_t*> points("npoints", npoints);
+        Kokkos::View<bool*> is_boundary("is_boundary", npoints);
         Kokkos::parallel_reduce(
             "ComputePoints", npoints,
             KOKKOS_CLASS_LAMBDA(const int i, int& local) {
@@ -100,24 +103,29 @@ namespace ippl {
                         isBoundary = true;
                     }
                 }
-                points(i) = (!isBoundary) * (this->getElementIndex(val));
+                is_boundary(i) = isBoundary;
+                points(i)      = this->getElementIndex(val);
                 local += isBoundary;
             },
             Kokkos::Sum<int>(upperBoundaryPoints));
         Kokkos::fence();
 
+        // The elementIndices will be the same array as computed above,
+        // with the tagged upper boundary points removed.
         int elementsPerRank = npoints - upperBoundaryPoints;
         elementIndices      = Kokkos::View<size_t*>("i", elementsPerRank);
         Kokkos::View<size_t> index("index");
 
-        Kokkos::parallel_for(
-            "RemoveNaNs", npoints, KOKKOS_CLASS_LAMBDA(const int i) {
-                if ((points(i) != 0) || (i == 0)) {
-                    const size_t idx    = Kokkos::atomic_fetch_add(&index(), 1);
-                    elementIndices(idx) = points(i);
-                }
-            }
-        );
+        if (elementsPerRank > 0) {
+            Kokkos::parallel_for(
+                "CompactElementIndices", npoints, KOKKOS_CLASS_LAMBDA(const int i) {
+                    if (!is_boundary(i)) {
+                        const size_t idx    = Kokkos::atomic_fetch_add(&index(), 1);
+                        elementIndices(idx) = points(i);
+                    }
+                });
+        }
+        Kokkos::fence();
     }
 
     ///////////////////////////////////////////////////////////////////////
@@ -153,7 +161,7 @@ namespace ippl {
 
         // Get all the global DOFs for the element
         const Vector<size_t, numElementDOFs> global_dofs =
-            this->getGlobalDOFIndices(elementIndex);
+            this->NedelecSpace::getGlobalDOFIndices(elementIndex);
 
         ippl::Vector<size_t, numElementDOFs> dof_mapping;
         if (Dim == 2) {
@@ -169,7 +177,9 @@ namespace ippl {
                 return dof_mapping[i];
             }
         }
-        return std::numeric_limits<size_t>::quiet_NaN();
+        // it would be good to throw an error in this case
+        // just like the comment in the LagrangeSpace::getLocalDOFIndex()
+        return 0;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
@@ -178,7 +188,7 @@ namespace ippl {
                             ::getGlobalDOFIndex(const size_t& elementIndex,
                                 const size_t& localDOFIndex) const {
 
-        const auto global_dofs = this->getGlobalDOFIndices(elementIndex);
+        const auto global_dofs = this->NedelecSpace::getGlobalDOFIndices(elementIndex);
 
         return global_dofs[localDOFIndex];
     }
@@ -415,7 +425,10 @@ namespace ippl {
             for (size_t j = 0; j < numElementDOFs; ++j) {
                 A[i][j] = 0.0;
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    A[i][j] += w[k] * evalFunction(i, j, curl_b_q[k], val_b_q[k]);
+                    A[i][j] += w[k] * evalFunction(
+                        i, j,
+                        QuadratureData<Vector<T, Dim>, Vector<T, Dim>, numElementDOFs>{val_b_q[k],
+                                                                                      curl_b_q[k]});
                 }
             }
         }
@@ -429,13 +442,12 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dof = this->getLocalDOFIndices();
+                const size_t elementIndex = elementIndices(index);
                 
                 // Here we now retrieve the global DOF indices and their
                 // position inside of the FEMVector
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
+                    this->NedelecSpace::getGlobalDOFIndices(elementIndex);
                 
                 const Vector<size_t, numElementDOFs> vectorIndices =
                     this->getFEMVectorDOFIndices(elementIndex, ldom);
@@ -539,10 +551,9 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
-                const size_t elementIndex                              = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dofs  = this->getLocalDOFIndices();
+                const size_t elementIndex                        = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
+                    this->NedelecSpace::getGlobalDOFIndices(elementIndex);
 
                 const Vector<size_t, numElementDOFs> vectorIndices =
                     this->getFEMVectorDOFIndices(elementIndex, ldom);
@@ -640,10 +651,9 @@ namespace ippl {
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
             KOKKOS_CLASS_LAMBDA(size_t index) {
-                const size_t elementIndex                              = elementIndices(index);
-                const Vector<size_t, numElementDOFs> local_dofs  = this->getLocalDOFIndices();
+                const size_t elementIndex                        = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
+                    this->NedelecSpace::getGlobalDOFIndices(elementIndex);
                 
                 const Vector<size_t, numElementDOFs> vectorIndices =
                     this->getFEMVectorDOFIndices(elementIndex, ldom);
@@ -850,7 +860,7 @@ namespace ippl {
                 // transformation gives back an element which is somewhat in the
                 // halo. In order to fix this we simply subtract one.
                 for (size_t d = 0; d < Dim; ++d) {
-                    if (elemIdx<:d:> >= ldom.last()<:d:>) {
+                    if (elemIdx<:d:> >= static_cast<size_t>(ldom.last()<:d:>)) {
                         elemIdx<:d:> -= 1;
                     }
                 }
@@ -947,7 +957,7 @@ namespace ippl {
             KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
                 const size_t elementIndex = elementIndices(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->getGlobalDOFIndices(elementIndex);
+                    this->NedelecSpace::getGlobalDOFIndices(elementIndex);
                 
                 const Vector<size_t, numElementDOFs> vectorIndices =
                     this->getFEMVectorDOFIndices(elementIndex, ldom);
@@ -1205,8 +1215,9 @@ namespace ippl {
 
         // Here we loop thought all the domains to figure out how we are related
         // to them and if we have to do any kind of exchange.
+        size_t myRank = Comm->rank();
         for (size_t i = 0; i < doms.extent(0); ++i) {
-            if (i == Comm->rank()) {
+            if (i == myRank) {
                 // We are looking at ourself
                 continue;
             }
@@ -1718,8 +1729,9 @@ namespace ippl {
 
         // Here we loop through all the domains to figure out how we are related
         // to them and if we have to do any kind of exchange.
+        size_t myRank = Comm->rank();
         for (size_t i = 0; i < doms.extent(0); ++i) {
-            if (i == Comm->rank()) {
+            if (i == myRank) {
                 // We are looking at ourself
                 continue;
             }

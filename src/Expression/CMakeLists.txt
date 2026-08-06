@@ -4,16 +4,5 @@
 # Adds expression-related headers to the IPPL target.
 # -----------------------------------------------------------------------------
 
-target_include_directories(ippl
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include>
-)
-
-# Install public headers
-install(FILES
-    IpplExpressions.h
-    IpplOperations.h
-    DESTINATION include/Expression
-)
-
+# Nothing to do: public headers in this folder are visible via target_include_directories(ippl ...
+# $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>) and are installed centrally by InstallIppl.cmake.

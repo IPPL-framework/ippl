@@ -5,17 +5,6 @@
 
 namespace ippl {
 
-    /**
-     * @brief Constructor for the NonStandardFDTDSolver class.
-     *
-     * This constructor initializes the NonStandardFDTDSolver with the given source field and
-     * electromagnetic fields. It checks the dispersion-free CFL condition and initializes the
-     * solver.
-     *
-     * @param source The source field.
-     * @param E The electric field.
-     * @param B The magnetic field.
-     */
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
     NonStandardFDTDSolver<EMField, SourceField, boundary_conditions>::NonStandardFDTDSolver(
         SourceField& source, EMField& E, EMField& B)

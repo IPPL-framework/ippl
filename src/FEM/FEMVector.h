@@ -6,6 +6,8 @@
 #ifndef IPPL_FEMVECTOR_H
 #define IPPL_FEMVECTOR_H
 
+#include <Kokkos_MathematicalFunctions.hpp>
+
 #include "Types/ViewTypes.h"
 #include "Field/HaloCells.h"
 
@@ -78,7 +80,7 @@ namespace ippl {
          * 
          * @param other The other vector we are copying from.
          */
-        FEMVector(const FEMVector<T>& other);
+        KOKKOS_FUNCTION FEMVector(const FEMVector<T>& other);
 
         
         /**
@@ -442,7 +444,7 @@ namespace ippl {
             default: {
                 Kokkos::parallel_reduce("FEMVector lp norm", n,
                     KOKKOS_LAMBDA(const size_t i, T& val) {
-                        val += std::pow(Kokkos::abs(view(i)), p);
+                        val += Kokkos::pow(Kokkos::abs(view(i)), p);
                     },
                     Kokkos::Sum<T>(local)
                 );

@@ -1,20 +1,10 @@
 # -----------------------------------------------------------------------------
 # src/Interpolation/CMakeLists.txt
 #
-# Adds particle-to-grid interpolation headers to the IPPL target.
+# Adds particle-to-grid interpolation sources/headers to the IPPL target.
 # -----------------------------------------------------------------------------
 
-# Make headers accessible via <Interpolation/...> if needed
-target_include_directories(ippl
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-        $<INSTALL_INTERFACE:include>
-)
+target_sources(ippl PRIVATE Scatter/AutoTune.cpp Scatter/TileSizeCache.cpp)
 
-# Install Interpolation-related headers
-install(FILES
-    CIC.h
-    CIC.hpp
-    DESTINATION include/Interpolation
-)
-
+# Public headers in this folder are visible via target_include_directories(ippl ...
+# $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>) and are installed centrally by InstallIppl.cmake.

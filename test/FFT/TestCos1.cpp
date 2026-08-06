@@ -51,8 +51,8 @@ int main(int argc, char* argv[]) {
 
         fft = std::make_unique<FFT_type>(layout, fftParams);
 
-        typename field_type::view_type& view       = field.getView();
-        typename field_type::HostMirror field_host = field.getHostMirror();
+        typename field_type::view_type& view             = field.getView();
+        typename field_type::host_mirror_type field_host = field.getHostMirror();
 
         const int nghost = field.getNghost();
         std::mt19937_64 eng(42 + ippl::Comm->rank());
