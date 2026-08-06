@@ -59,8 +59,8 @@ namespace ippl {
     template <typename EMField, typename SourceField, fdtd_bc boundary_conditions>
     void FDTDSolverBase<EMField, SourceField, boundary_conditions>::timeShift() {
         // Look into this, maybe cyclic swap is better
-        Kokkos::deep_copy(this->A_nm1.getView(), this->A_n.getView());
-        Kokkos::deep_copy(this->A_n.getView(), this->A_np1.getView());
+        detail::deepCopyIfDifferent(this->A_nm1.getView(), this->A_n.getView());
+        detail::deepCopyIfDifferent(this->A_n.getView(), this->A_np1.getView());
     }
 
     /**

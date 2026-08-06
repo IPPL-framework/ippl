@@ -35,7 +35,7 @@ namespace ippl {
     Field<T, Dim, Mesh, Centering, ViewArgs...>::deepCopy() const {
         Field<T, Dim, Mesh, Centering, ViewArgs...> copy(*mesh_m, this->getLayout(),
                                                          this->getNghost());
-        Kokkos::deep_copy(copy.getView(), this->getView());
+        detail::deepCopyIfDifferent(copy.getView(), this->getView());
 
         return copy;
     }

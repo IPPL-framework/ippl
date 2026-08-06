@@ -9,6 +9,7 @@ using std::size_t;
 #include "MaxwellSolvers/Maxwell.h"
 #include "Meshes/UniformCartesian.h"
 #include "Particle/ParticleBase.h"
+#include "Utility/ViewUtils.h"
 
 namespace ippl {
     enum fdtd_bc {
