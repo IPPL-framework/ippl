@@ -1,12 +1,15 @@
 # -----------------------------------------------------------------------------
-# validation check for LandauDamping test
+# demos/alpine/validation/CMakeLists.txt
+#
+# Correctness validation for the LandauDamping integration test.
 # -----------------------------------------------------------------------------
+message(STATUS "Configuring demos/alpine/validation/")
 
 if(BUILD_TESTING)
   # Build the C++ correctness validation test
   add_executable(LandauDampingCorrectness LandauDampingCorrectness.cpp)
 
-  message("Adding test: LandauDampingCorrectness")
+  message(STATUS "Adding test: LandauDampingCorrectness")
 
   # Keep the reference data in the build tree so test artifacts remain relocatable between CI jobs.
   set(LANDAU_DAMPING_REFERENCE_CSV
@@ -17,9 +20,9 @@ if(BUILD_TESTING)
   # command line params are : output, reference, tolerance
   add_test(
     NAME LandauDampingCorrectnessValidation
-    COMMAND LandauDampingCorrectness "${PROJECT_BINARY_DIR}/alpine/data/FieldLandau_2_manager.csv"
+    COMMAND LandauDampingCorrectness "${PROJECT_BINARY_DIR}/demos/alpine/data/FieldLandau_2_manager.csv"
             "${LANDAU_DAMPING_REFERENCE_CSV}" "4E-1"
-    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/alpine/")
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/demos/alpine/")
 
   set_tests_properties(
     LandauDampingCorrectnessValidation

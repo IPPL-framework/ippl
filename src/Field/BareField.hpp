@@ -103,7 +103,7 @@ namespace ippl {
     template <typename T, unsigned Dim, class... ViewArgs>
     BareField<T, Dim, ViewArgs...> BareField<T, Dim, ViewArgs...>::deepCopy() const {
         BareField<T, Dim, ViewArgs...> copy(*layout_m, nghost_m);
-        Kokkos::deep_copy(copy.dview_m, dview_m);
+        detail::deepCopyIfDifferent(copy.dview_m, dview_m);
         return copy;
     }
 

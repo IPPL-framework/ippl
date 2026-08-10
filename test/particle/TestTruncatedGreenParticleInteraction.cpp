@@ -19,22 +19,15 @@
 
 #include "Interaction/TruncatedGreenParticleInteraction.h"
 
-// ParticleSpatialOverlapLayout currently includes alpine/ParticleContainer.hpp, which expects
-// these application aliases to be visible first.
-template <unsigned D>
-using Mesh_t = ippl::UniformCartesian<double, D>;
-template <typename T, unsigned D>
-using PLayout_t = ippl::ParticleSpatialLayout<T, D, Mesh_t<D>>;
-template <unsigned D>
-using FieldLayout_t = ippl::FieldLayout<D>;
-
 #include "Particle/ParticleSpatialOverlapLayout.h"
 
 namespace {
     constexpr unsigned Dim  = 3;
     using Scalar_t          = double;
-    using TestMesh_t        = Mesh_t<Dim>;
-    using TestFieldLayout_t = FieldLayout_t<Dim>;
+    using Mesh_t            = ippl::UniformCartesian<Scalar_t, Dim>;
+    using FieldLayout_t     = ippl::FieldLayout<Dim>;
+    using TestMesh_t        = Mesh_t;
+    using TestFieldLayout_t = FieldLayout_t;
     using ParticleLayout_t  = ippl::ParticleSpatialOverlapLayout<Scalar_t, Dim, TestMesh_t>;
     using Vector_t          = ippl::Vector<Scalar_t, Dim>;
 

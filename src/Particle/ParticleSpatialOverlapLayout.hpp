@@ -20,7 +20,6 @@
 
 #include "Utility/IpplTimings.h"
 
-#include "../../alpine/ParticleContainer.hpp"
 #include "Communicate/Window.h"
 
 namespace ippl {

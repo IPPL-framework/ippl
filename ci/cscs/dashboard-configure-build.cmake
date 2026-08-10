@@ -90,6 +90,16 @@ message("Final CTest configure command: ${CTEST_CONFIGURE_COMMAND}")
 ctest_configure(RETURN_VALUE configure_result)
 ctest_build(RETURN_VALUE build_result)
 
+if(build_result)
+  file(GLOB build_logs "${CTEST_BINARY_DIRECTORY}/Testing/Temporary/LastBuild*.log")
+  foreach(build_log IN LISTS build_logs)
+    message("----- Begin failed build log: ${build_log} -----")
+    file(READ "${build_log}" build_log_contents)
+    message("${build_log_contents}")
+    message("----- End failed build log: ${build_log} -----")
+  endforeach()
+endif()
+
 # --- fail if any test failed ---
 # note that we don't submit, if all is ok, because the test phase will submit anyway
 if(configure_result OR build_result)
