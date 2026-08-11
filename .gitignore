@@ -26,3 +26,6 @@ build*/
 
 # lsp info
 compile_commands.json
+
+# local SciPy venv for regenerating Nodes1D oracles
+unit_tests/Nodes1D/.venv/
