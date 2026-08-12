@@ -3,6 +3,9 @@
 //   Ippl environment.
 //
 #include <Kokkos_Core.hpp>
+#if defined(KOKKOS_ENABLE_OPENMP)
+#include <omp.h>
+#endif
 #include "Ippl.h"
 
 #include <cstdlib>
@@ -99,23 +102,13 @@ namespace ippl {
             std::exit(0);
         }
 
-        /*
-          This is a fix needed above Kokkos 5.0.2 to avoid malloc
-          erros on higher nodecounts. What is actually does is to
-          initialize openmp.
-
-          This is most likely a Kokkos issue because in 5.1.0
-          OPENMP got a overhoul.
-        */
-
-#if defined(KOKKOS_ENABLE_OPENMP)
-        int ompThreads = 0;
-#pragma omp parallel
-        {
-#pragma omp atomic
-            ++ompThreads;
-        }
-        (void)ompThreads;
+#if defined(KOKKOS_ENABLE_OPENMP) && defined(KOKKOS_ENABLE_HIP)
+        // Initialize the host OpenMP runtime before Kokkos. With ROCm libomp,
+        // using omp_in_parallel() as the first OpenMP call can abort during
+        // Kokkos initialization; omp_get_max_threads() provides a lightweight
+        // first touch without creating an OpenMP worker team.
+        const int openmpMaxThreads = omp_get_max_threads();
+        (void)openmpMaxThreads;
 #endif
         Kokkos::initialize(argc, argv);
 
