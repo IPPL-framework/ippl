@@ -694,25 +694,35 @@ namespace detail {
         return true;
     }
 
-    /** @internal Collect Jacobi roots on (-1, 1) by uniform sampling + Brent on each sign change. */
+    /** @internal Sample count for the global Jacobi Brent fallback: max(512, 4*n). */
+    inline std::size_t jacobiBrentSampleCount(std::size_t n) {
+        const std::size_t scaled = 4 * n;
+        return (scaled > 512) ? scaled : 512;
+    }
+
+    /** @internal Collect Jacobi roots on (-1, 1) by theta-uniform sampling + Brent on each sign change. */
     template <typename Scalar>
     void collectJacobiRootsBySignChange(std::size_t n, Scalar alpha, Scalar beta,
-                                        std::vector<Scalar>& roots, int samples = 512) {
+                                        std::vector<Scalar>& roots) {
         roots.clear();
         const Scalar glo = Scalar(-1) + Scalar(1e-14);
         const Scalar ghi = Scalar(1) - Scalar(1e-14);
-        Scalar prev = glo;
+        const std::size_t samples = jacobiBrentSampleCount(n);
+        // x = -cos(theta): uniform in theta matches endpoint clustering of Jacobi zeros.
+        const Scalar t0 = Kokkos::acos(-glo);
+        const Scalar t1 = Kokkos::acos(-ghi);
+        Scalar prev     = glo;
         Scalar fprev, df;
         evalJacobiAndDeriv(n, alpha, beta, prev, fprev, df);
-        for (int s = 1; s <= samples; ++s) {
-            const Scalar x =
-                glo + (ghi - glo) * (static_cast<Scalar>(s) / static_cast<Scalar>(samples));
+        for (std::size_t s = 1; s <= samples; ++s) {
+            const Scalar theta =
+                t0 + (t1 - t0) * (static_cast<Scalar>(s) / static_cast<Scalar>(samples));
+            const Scalar x = -Kokkos::cos(theta);
             Scalar fx;
             evalJacobiAndDeriv(n, alpha, beta, x, fx, df);
             if (fprev * fx <= Scalar(0) && roots.size() < n) {
                 Scalar a = prev;
                 Scalar b = x;
-                // Shrink tiny brackets at endpoints if needed.
                 if (b > a) {
                     roots.push_back(brentJacobiRoot(n, alpha, beta, a, b));
                 }
