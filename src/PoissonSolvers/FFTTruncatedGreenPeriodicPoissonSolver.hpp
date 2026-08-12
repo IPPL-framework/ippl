@@ -53,6 +53,14 @@ namespace ippl {
         initializeFields();
     }
 
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::setLhs(lhs_type& lhs) {
+        Base::setLhs(lhs);
+        if (openSolver_m) {
+            openSolver_m->setLhs(lhs);
+        }
+    }
+
     /////////////////////////////////////////////////////////////////////////
     // initializeFields method, called in constructor
 
@@ -61,6 +69,40 @@ namespace ippl {
         static_assert(
             Dim == 3,
             "Dimension other than 3 not supported in FFTTruncatedGreenPeriodicPoissonSolver!");
+
+        const int configuredBoundary = this->params_m.template get<int>("boundary_type");
+        if ((configuredBoundary != BoundaryType::OPEN)
+            && (configuredBoundary != BoundaryType::PERIODIC)) {
+            throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::initializeFields",
+                                "boundary_type must be OPEN or PERIODIC");
+        }
+
+        const auto boundaryType = static_cast<BoundaryType>(configuredBoundary);
+        if (boundaryInitialized_m && boundaryType != boundaryType_m) {
+            throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::initializeFields",
+                                "boundary_type cannot be changed after solver initialization");
+        }
+        boundaryType_m        = boundaryType;
+        boundaryInitialized_m = true;
+
+        if (this->params_m.template get<Trhs>("alpha") <= 0) {
+            throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::initializeFields",
+                                "alpha must be greater than zero");
+        }
+
+        if (boundaryType_m == BoundaryType::OPEN) {
+            openSolver_m = std::make_unique<OpenSolver_t>();
+            openSolver_m->mergeParameters(this->params_m);
+            openSolver_m->updateParameter("algorithm", OpenSolver_t::HOCKNEY);
+            openSolver_m->updateParameter("greens_function", OpenSolver_t::TRUNCATED);
+            openSolver_m->setRhs(*this->rhs_mp);
+            if (this->lhs_mp != nullptr) {
+                openSolver_m->setLhs(*this->lhs_mp);
+            }
+            return;
+        }
+
+        openSolver_m.reset();
 
         // get layout and mesh
         layout_mp              = &(this->rhs_mp->getLayout());
@@ -122,6 +164,15 @@ namespace ippl {
     // compute the periodic long-range Ewald potential and field from rho
     template <typename FieldLHS, typename FieldRHS>
     void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::solve() {
+        if (boundaryType_m == BoundaryType::OPEN) {
+            if (!openSolver_m) {
+                throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::solve",
+                                    "Open-boundary solver was not initialized");
+            }
+            openSolver_m->solve();
+            return;
+        }
+
         for (unsigned d = 0; d < Dim; ++d) {
             if ((nr_m[d] % 2) != 0) {
                 throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::solve",
