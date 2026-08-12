@@ -1,3 +1,9 @@
+/**
+ * @file GaussLegendre1D.h
+ * @brief Gauss–Legendre quadrature on [-1, 1] (Jacobi with alpha = beta = 0).
+ *
+ * Weights sum to 2. Exact for polynomials of degree up to 2n-1 with weight 1.
+ */
 //
 // GaussLegendre1D — Gauss–Legendre (Jacobi α = β = 0) on [-1, 1].
 //
@@ -14,6 +20,20 @@
 namespace ippl {
 namespace nodes1d {
 
+    /**
+     * @brief Compute Gauss–Legendre nodes and weights on [-1, 1] (runtime n).
+     *
+     * Thin wrapper around computeGaussJacobi with alpha = beta = 0.
+     *
+     * @tparam Scalar Floating-point type (default double).
+     * @param n Number of quadrature points (n >= 1).
+     * @param nodes Output array of length n; ascending order.
+     * @param weights Output array of length n; sum = 2.
+     * @param maxNewtonIterations Passed to computeGaussJacobi (Newton backend).
+     * @param minNewtonIterations Passed to computeGaussJacobi (Newton backend).
+     * @param initialGuess Passed to computeGaussJacobi (Newton backend).
+     * @param method Root-finding backend.
+     */
     template <typename Scalar = double>
     void computeGaussLegendre(std::size_t n, Scalar* nodes, Scalar* weights,
                               std::size_t maxNewtonIterations = 40,
@@ -24,6 +44,18 @@ namespace nodes1d {
                            minNewtonIterations, initialGuess, method);
     }
 
+    /**
+     * @brief Compute Gauss–Legendre nodes and weights into fixed-size Vector s.
+     *
+     * @tparam T Element type stored in the vectors.
+     * @tparam N Number of quadrature points (compile-time).
+     * @param nodes Output nodes; size N.
+     * @param weights Output weights; size N.
+     * @param maxNewtonIterations See pointer overload.
+     * @param minNewtonIterations See pointer overload.
+     * @param initialGuess See pointer overload.
+     * @param method See pointer overload.
+     */
     template <typename T, unsigned N>
     void computeGaussLegendre(Vector<T, N>& nodes, Vector<T, N>& weights,
                               std::size_t maxNewtonIterations = 40,
@@ -34,6 +66,22 @@ namespace nodes1d {
                            initialGuess, method);
     }
 
+    /**
+     * @brief Compute Gauss–Legendre nodes and weights into Kokkos Views on device.
+     *
+     * Computes on the host, then deep-copies into nodes and weights. Extent is taken from
+     * nodes.extent(0) (not a separate n argument).
+     *
+     * @tparam ExecSpace Kokkos execution space for the destination views.
+     * @tparam RealType Element type of the views (default double).
+     * @param nodes Output node view; extent >= 1, must match weights.
+     * @param weights Output weight view; same extent as nodes.
+     * @param maxNewtonIterations Passed to computeGaussLegendre (Newton backend).
+     * @param minNewtonIterations Passed to computeGaussLegendre (Newton backend).
+     * @param initialGuess Passed to computeGaussLegendre (Newton backend).
+     * @param method Root-finding backend.
+     * @pre nodes.extent(0) == weights.extent(0) and >= 1.
+     */
     template <typename ExecSpace, typename RealType = double>
     void computeGaussLegendre(Kokkos::View<RealType*, typename ExecSpace::memory_space>& nodes,
                               Kokkos::View<RealType*, typename ExecSpace::memory_space>& weights,

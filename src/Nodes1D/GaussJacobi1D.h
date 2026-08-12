@@ -1,6 +1,11 @@
-//
-// GaussJacobi1D — 1D Gauss–Jacobi nodes and weights on [-1, 1].
-//
+/**
+ * @file GaussJacobi1D.h
+ * @brief Gauss–Jacobi quadrature nodes and weights on [-1, 1].
+ *
+ * Nodes are roots of P_n^(alpha,beta); weights integrate (1-x)^alpha (1+x)^beta.
+ * Requires alpha, beta > -1. For alpha = beta = -1/2, delegates to computeGaussChebyshev.
+ */
+ 
 #ifndef IPPL_NODES1D_GAUSS_JACOBI_1D_H
 #define IPPL_NODES1D_GAUSS_JACOBI_1D_H
 
@@ -16,18 +21,39 @@
 namespace ippl {
 namespace nodes1d {
 
+    /**
+     * @brief Initial guess for the Newton root-finder (RootFinderMethod::Newton only).
+     *
+     * Ignored by Golub–Welsch backends. When Newton fails with the primary guess, an internal
+     * retry ladder also tries Asymptotic and Chebyshev.
+     */
     enum class InitialGuessType {
-        /** Tricomi-style asymptotic for the k-th Jacobi zero (preferred Newton default). */
+        /** Tricomi-style asymptotic formula for the k-th ascending Jacobi zero. */
         Asymptotic,
+        /** chebyshevNode — good near alpha = beta = -1/2. */
         Chebyshev,
+        /** LehrFEM-style heuristic using previously accepted ascending nodes. */
         LehrFEM,
     };
 
     /**
      * @brief Compute Gauss–Jacobi nodes and weights on [-1, 1] (runtime n).
      *
-     * Default: tridiagonal Golub–Welsch. Alternative: Newton + Brent retry ladder.
-     * For α = β = −1/2, delegates to computeGaussChebyshev (closed form).
+     * Default backend: tridiagonal Golub–Welsch (RootFinderMethod::GolubWelsch).
+     * Alternative: per-root Newton with Brent fallback (RootFinderMethod::Newton).
+     *
+     * @tparam Scalar Floating-point type (default double).
+     * @param n Number of quadrature points (n >= 1).
+     * @param alpha Jacobi parameter alpha (> -1).
+     * @param beta Jacobi parameter beta (> -1).
+     * @param nodes Output array of length n; ascending order.
+     * @param weights Output array of length n; sum equals integral of weight on [-1, 1].
+     * @param maxNewtonIterations Maximum Newton iterations per root (Newton backend only).
+     * @param minNewtonIterations Minimum Newton iterations before convergence test (Newton only).
+     * @param initialGuess Primary initial guess (Newton only).
+     * @param method Root-finding backend.
+     * @pre n >= 1; alpha, beta > -1; nodes and weights non-null.
+     * @throws std::runtime_error Newton backend if n distinct roots cannot be isolated.
      */
     template <typename Scalar = double>
     void computeGaussJacobi(std::size_t n, Scalar alpha, Scalar beta, Scalar* nodes, Scalar* weights,
@@ -35,6 +61,20 @@ namespace nodes1d {
                             InitialGuessType initialGuess = InitialGuessType::Asymptotic,
                             RootFinderMethod method = RootFinderMethod::GolubWelsch);
 
+    /**
+     * @brief Compute Gauss–Jacobi nodes and weights into fixed-size Vector s.
+     *
+     * @tparam T Element type stored in the vectors.
+     * @tparam N Number of quadrature points (compile-time).
+     * @param nodes Output nodes; size N.
+     * @param weights Output weights; size N.
+     * @param alpha Jacobi parameter alpha.
+     * @param beta Jacobi parameter beta.
+     * @param maxNewtonIterations See pointer overload.
+     * @param minNewtonIterations See pointer overload.
+     * @param initialGuess See pointer overload.
+     * @param method See pointer overload.
+     */
     template <typename T, unsigned N>
     void computeGaussJacobi(Vector<T, N>& nodes, Vector<T, N>& weights, T alpha, T beta,
                             std::size_t maxNewtonIterations = 40, std::size_t minNewtonIterations = 1,

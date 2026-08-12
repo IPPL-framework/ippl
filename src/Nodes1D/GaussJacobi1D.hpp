@@ -1,3 +1,8 @@
+/**
+ * @file GaussJacobi1D.hpp
+ * @brief Implementation of computeGaussJacobi (Golub-Welsch and Newton backends).
+ * @internal Included by GaussJacobi1D.h; not for direct use.
+ */
 #ifndef IPPL_NODES1D_GAUSS_JACOBI_1D_HPP
 #define IPPL_NODES1D_GAUSS_JACOBI_1D_HPP
 
@@ -14,8 +19,10 @@
 
 namespace ippl {
 namespace nodes1d {
+/** @internal Helpers for Gauss-Jacobi node/weight computation. */
 namespace detail {
 
+    /** @internal Throw std::runtime_error when duplicate nodes are detected. */
     [[noreturn]] inline void throwDuplicateNodes(const char* context, std::size_t n,
                                                  std::size_t i, std::size_t j, double xi,
                                                  double xj) {
@@ -25,6 +32,10 @@ namespace detail {
         throw std::runtime_error(os.str());
     }
 
+    /**
+     * @internal Require strictly ascending nodes with gap > sepTol.
+     * @throws std::runtime_error via throwDuplicateNodes on failure.
+     */
     template <typename Scalar>
     void assertDistinctSortedNodes(const char* context, const Scalar* nodes, std::size_t n,
                                    Scalar sepTol = Scalar(1e-14)) {
@@ -37,6 +48,7 @@ namespace detail {
         }
     }
 
+    /** @internal True if z is within sepTol of any of the first count entries of nodes. */
     template <typename Scalar>
     bool isDuplicateAmong(const Scalar* nodes, std::size_t count, Scalar z, Scalar sepTol) {
         for (std::size_t j = 0; j < count; ++j) {
@@ -47,6 +59,7 @@ namespace detail {
         return false;
     }
 
+    /** @internal Diagonal a_k of the Jacobi companion matrix (Golub-Welsch). */
     template <typename Scalar>
     Scalar jacobiCompanionDiagonal(std::size_t k, Scalar alpha, Scalar beta) {
         const Scalar ab = alpha + beta;
@@ -60,6 +73,7 @@ namespace detail {
                / ((Scalar(2) * k + ab) * (Scalar(2) * k + ab + Scalar(2)));
     }
 
+    /** @internal Subdiagonal sqrt(b_k) of the Jacobi companion matrix (k >= 1). */
     template <typename Scalar>
     Scalar jacobiCompanionSubdiag(std::size_t k, Scalar alpha, Scalar beta) {
         const Scalar ab = alpha + beta;
@@ -73,8 +87,8 @@ namespace detail {
     }
 
     /**
-     * @brief Independent Tricomi-style asymptotic for the k-th ascending Jacobi root.
-     * k = 0 … n−1; k=0 near −1, k=n−1 near +1.
+     * @internal Tricomi-style asymptotic guess for the k-th ascending Jacobi root.
+     * k = 0 .. n-1 (k=0 near -1, k=n-1 near +1).
      */
     template <typename Scalar>
     Scalar asymptoticJacobiRoot(std::size_t k, std::size_t n, Scalar alpha, Scalar beta) {
@@ -86,7 +100,7 @@ namespace detail {
     }
 
     /**
-     * @brief Evaluate P_n^{(α,β)}(x) and its derivative via Bonnet recurrence (host).
+     * @internal Evaluate P_n^(alpha,beta)(x) and P_n' via Bonnet recurrence (host only).
      */
     template <typename Scalar>
     void evalJacobiAndDeriv(std::size_t n, Scalar alpha, Scalar beta, Scalar x, Scalar& p,
@@ -129,9 +143,9 @@ namespace detail {
     }
 
     /**
-     * @brief Implicit QL for symmetric tridiagonal (d,e) with eigenvectors in Z (columns).
-     * d: diagonal (n); e: subdiagonal (n), e[0] unused, e[1..n-1] = off-diagonals.
-     * Based on Numerical Recipes tqli / Golub–Van Loan.
+     * @internal Implicit QL eigen-solve for symmetric tridiagonal (d, e); eigenvectors in z.
+     * d is length n (diagonal); e[0] unused, e[1..n-1] off-diagonals. O(n^2).
+     * @throws std::runtime_error if QL does not converge within 100*n iterations.
      */
     template <typename Scalar>
     void tridiagonalQL(std::vector<Scalar>& d, std::vector<Scalar>& e, std::vector<Scalar>& z,
@@ -205,6 +219,7 @@ namespace detail {
         }
     }
 
+    /** @internal One Newton polish step on P_n at x, then clamp to open (-1, 1). */
     template <typename Scalar>
     void polishJacobiRoot(std::size_t n, Scalar alpha, Scalar beta, Scalar& x) {
         Scalar p, dp;
@@ -222,6 +237,10 @@ namespace detail {
         }
     }
 
+    /**
+     * @internal Sort GW eigenpairs, polish nodes, form weights from mu0 * v0^2, renormalize,
+     * and symmetrize when alpha == beta.
+     */
     template <typename Scalar>
     void finalizeGolubWelschResults(std::size_t n, Scalar alpha, Scalar beta, Scalar* nodes,
                                     Scalar* weights, const std::vector<Scalar>& evals,
@@ -266,6 +285,7 @@ namespace detail {
         }
     }
 
+    /** @internal Closed-form single-node Gauss-Jacobi rule (n == 1). */
     template <typename Scalar>
     void gaussJacobiMu0SingleNode(Scalar alpha, Scalar beta, Scalar* nodes, Scalar* weights) {
         nodes[0]   = (beta - alpha) / (alpha + beta + Scalar(2));
@@ -276,9 +296,8 @@ namespace detail {
     }
 
     /**
-     * @brief Cyclic Jacobi eigenvalue algorithm for a dense symmetric matrix (O(n³)).
-     * On entry A is destroyed; on exit diag(A) holds eigenvalues, V holds orthonormal
-     * eigenvectors as columns (V is n*n row-major).
+     * @internal Cyclic Jacobi eigen-solve for dense symmetric A (O(n^3)).
+     * A destroyed on entry; diag(A) holds eigenvalues, V holds column eigenvectors (row-major).
      */
     template <typename Scalar>
     void denseSymmetricEigenJacobi(std::vector<Scalar>& A, std::vector<Scalar>& V, std::size_t n,
@@ -342,6 +361,7 @@ namespace detail {
         }
     }
 
+    /** @internal Golub-Welsch via dense companion eigen-solve (DenseGolubWelsch backend). */
     template <typename Scalar>
     void computeGaussJacobiGolubWelschDense(std::size_t n, Scalar alpha, Scalar beta, Scalar* nodes,
                                             Scalar* weights) {
@@ -377,6 +397,7 @@ namespace detail {
         finalizeGolubWelschResults(n, alpha, beta, nodes, weights, evals, V, perm);
     }
 
+    /** @internal Golub-Welsch via tridiagonal companion QL (default GolubWelsch backend). */
     template <typename Scalar>
     void computeGaussJacobiGolubWelsch(std::size_t n, Scalar alpha, Scalar beta, Scalar* nodes,
                                        Scalar* weights) {
@@ -405,6 +426,7 @@ namespace detail {
         finalizeGolubWelschResults(n, alpha, beta, nodes, weights, d, z, perm);
     }
 
+    /** @internal LehrFEM-style Newton initial guess for the i-th ascending Jacobi root. */
     template <typename Scalar>
     Scalar lehrFEMInitialGuess(std::size_t i, std::size_t n, Scalar alpha, Scalar beta,
                                const Scalar* ascending_nodes_so_far) {
@@ -433,6 +455,10 @@ namespace detail {
         return z;
     }
 
+    /**
+     * @internal Bounded Newton on P_n^(alpha,beta) starting from z in (lo, hi).
+     * On success, writes recurrence state needed for Newton weights into the *_out args.
+     */
     template <typename Scalar>
     bool newtonOneRootBounded(std::size_t n, Scalar alpha, Scalar beta, Scalar& z, Scalar lo,
                               Scalar hi, std::size_t maxNewtonIterations,
@@ -498,6 +524,10 @@ namespace detail {
         return false;
     }
 
+    /**
+     * @internal Brent root finder for P_n on bracket [lo, hi].
+     * @throws std::runtime_error if the bracket endpoints have the same sign.
+     */
     template <typename Scalar>
     Scalar brentJacobiRoot(std::size_t n, Scalar alpha, Scalar beta, Scalar lo, Scalar hi,
                            std::size_t maxIter = 200) {
@@ -559,6 +589,10 @@ namespace detail {
         return b;
     }
 
+    /**
+     * @internal Sample P_n on [lo, hi] and return a sign-change bracket [a, b].
+     * @return false if no sign change is found among samples segments.
+     */
     template <typename Scalar>
     bool findSignChange(std::size_t n, Scalar alpha, Scalar beta, Scalar lo, Scalar hi, Scalar& a,
                         Scalar& b, int samples = 128) {
@@ -582,6 +616,7 @@ namespace detail {
         return false;
     }
 
+    /** @internal Pick a Newton initial guess for the k-th ascending Jacobi root. */
     template <typename Scalar>
     Scalar pickGuess(InitialGuessType kind, std::size_t k, std::size_t n, Scalar alpha, Scalar beta,
                      const Scalar* ascending_nodes) {
@@ -597,6 +632,7 @@ namespace detail {
         }
     }
 
+    /** @internal Collect Jacobi roots on (-1, 1) by uniform sampling + Brent on each sign change. */
     template <typename Scalar>
     void collectJacobiRootsBySignChange(std::size_t n, Scalar alpha, Scalar beta,
                                         std::vector<Scalar>& roots, int samples = 512) {
@@ -624,6 +660,10 @@ namespace detail {
         }
     }
 
+    /**
+     * @internal Newton (+ Brent fallback) backend for computeGaussJacobi.
+     * @throws std::runtime_error if n distinct roots cannot be isolated.
+     */
     template <typename Scalar>
     void computeGaussJacobiNewton(std::size_t n, Scalar alpha, Scalar beta, Scalar* nodes,
                                   Scalar* weights, std::size_t maxNewtonIterations,
@@ -718,6 +758,7 @@ namespace detail {
 
 }  // namespace detail
 
+    /** @copydoc computeGaussJacobi */
     template <typename Scalar>
     void computeGaussJacobi(std::size_t n, Scalar alpha, Scalar beta, Scalar* nodes, Scalar* weights,
                             std::size_t maxNewtonIterations, std::size_t minNewtonIterations,

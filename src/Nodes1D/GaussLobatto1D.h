@@ -1,3 +1,10 @@
+/**
+ * @file GaussLobatto1D.h
+ * @brief Gauss–Lobatto–Legendre (GLL) nodes and weights on [-1, 1].
+ *
+ * Endpoints +/-1 are fixed; n-2 interior nodes are roots of P_{n-1}'.
+ * An n-point GLL rule is exact for polynomials of degree up to 2n-3 (not 2n-1).
+ */
 //
 // GaussLobatto1D — Gauss–Lobatto–Legendre (GLL) nodes and weights on [-1, 1].
 //
@@ -14,6 +21,14 @@
 namespace ippl {
 namespace nodes1d {
 
+    /**
+     * @brief Evaluate the Legendre polynomial P_degree(x) by three-term recurrence.
+     *
+     * @tparam Scalar Floating-point type (default double).
+     * @param degree Polynomial degree (P_0 = 1, P_1 = x).
+     * @param x Evaluation point.
+     * @return P_degree(x).
+     */
     template <typename Scalar = double>
     KOKKOS_INLINE_FUNCTION Scalar evalLegendre(std::size_t degree, Scalar x) {
         if (degree == 0) {
@@ -35,10 +50,20 @@ namespace nodes1d {
     }
 
     /**
-     * @brief Runtime GLL nodes/weights on [-1, 1]. Requires n >= 2.
+     * @brief Compute GLL nodes and weights on [-1, 1] (runtime n).
      *
-     * Default: Golub–Welsch on Jacobi(1,1) interior nodes (n−2 points).
-     * Alternative: Newton on P'_{n-1} with duplicate detection (throws).
+     * Requires n >= 2. Default: Golub–Welsch on Jacobi (1,1) interior nodes (n-2 points).
+     * Alternative: Newton on P_{n-1}' with duplicate detection.
+     *
+     * @tparam Scalar Floating-point type (default double).
+     * @param n Number of quadrature points (n >= 2); includes +/-1.
+     * @param nodes Output array of length n; ascending order with nodes[0] = -1, nodes[n-1] = +1.
+     * @param weights Output array of length n; sum = 2.
+     * @param maxNewtonIterations Maximum Newton iterations per interior root (Newton backend).
+     * @param minNewtonIterations Minimum Newton iterations before convergence test (Newton only).
+     * @param method Root-finding backend (GLL ignores InitialGuessType).
+     * @pre n >= 2; nodes and weights non-null.
+     * @throws std::runtime_error Newton backend on bracket failure or duplicate interiors.
      */
     template <typename Scalar = double>
     void computeGaussLobatto(std::size_t n, Scalar* nodes, Scalar* weights,
@@ -46,6 +71,17 @@ namespace nodes1d {
                              std::size_t minNewtonIterations  = 1,
                              RootFinderMethod method = RootFinderMethod::GolubWelsch);
 
+    /**
+     * @brief Compute GLL nodes and weights into fixed-size Vector s.
+     *
+     * @tparam T Element type stored in the vectors.
+     * @tparam N Number of quadrature points (compile-time); must be >= 2.
+     * @param nodes Output nodes; size N.
+     * @param weights Output weights; size N.
+     * @param maxNewtonIterations See pointer overload.
+     * @param minNewtonIterations See pointer overload.
+     * @param method See pointer overload.
+     */
     template <typename T, unsigned N>
     void computeGaussLobatto(Vector<T, N>& nodes, Vector<T, N>& weights,
                              std::size_t maxNewtonIterations = 40,

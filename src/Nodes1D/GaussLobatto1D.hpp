@@ -1,3 +1,8 @@
+/**
+ * @file GaussLobatto1D.hpp
+ * @brief Implementation of computeGaussLobatto (Golub-Welsch and Newton backends).
+ * @internal Included by GaussLobatto1D.h; not for direct use.
+ */
 #ifndef IPPL_NODES1D_GAUSS_LOBATTO_1D_HPP
 #define IPPL_NODES1D_GAUSS_LOBATTO_1D_HPP
 
@@ -13,8 +18,10 @@
 
 namespace ippl {
 namespace nodes1d {
+/** @internal Helpers for GLL node/weight computation. */
 namespace detail {
 
+    /** @internal Evaluate P_n(x) and P_n'(x) by Legendre three-term recurrence. */
     template <typename Scalar>
     void legendreAndDeriv(std::size_t n, Scalar x, Scalar& p, Scalar& dp) {
         if (n == 0) {
@@ -41,6 +48,10 @@ namespace detail {
         dp               = static_cast<Scalar>(n) * (x * p - pm1) / (x * x - Scalar(1));
     }
 
+    /**
+     * @internal Form GLL weights from nodes: boundary 2/(n*(n-1)),
+     * interior 2/(n*(n-1)*P_{n-1}(x_i)^2). Requires nodes[0]=-1, nodes[n-1]=+1.
+     */
     template <typename Scalar>
     void fillGLLWeights(std::size_t n, Scalar* nodes, Scalar* weights) {
         const Scalar boundary = Scalar(2) / (static_cast<Scalar>(n) * static_cast<Scalar>(n - 1));
@@ -53,6 +64,10 @@ namespace detail {
         }
     }
 
+    /**
+     * @internal Brent root finder for P_deg'(x) on bracket (lo, hi).
+     * @throws std::runtime_error if the bracket does not change sign.
+     */
     template <typename Scalar>
     Scalar brentLegendreDerivRoot(std::size_t deg, Scalar lo, Scalar hi, std::size_t maxIter = 200) {
         // Find root of P'_deg on (lo, hi).
@@ -117,6 +132,10 @@ namespace detail {
         return b;
     }
 
+    /**
+     * @internal Golub-Welsch GLL: fix +/-1, Jacobi (1,1) interiors, then fillGLLWeights.
+     * @param dense If true, use dense companion eigen-solve for interior nodes.
+     */
     template <typename Scalar>
     void computeGaussLobattoGolubWelsch(std::size_t n, Scalar* nodes, Scalar* weights,
                                         bool dense) {
@@ -147,6 +166,10 @@ namespace detail {
                                   nodes, n);
     }
 
+    /**
+     * @internal Newton on P_{n-1}' for interior GLL nodes, with Brent bracket fallback.
+     * @throws std::runtime_error on bracket failure or duplicate interiors.
+     */
     template <typename Scalar>
     void computeGaussLobattoNewton(std::size_t n, Scalar* nodes, Scalar* weights,
                                    std::size_t maxNewtonIterations,
@@ -286,6 +309,7 @@ namespace detail {
 
 }  // namespace detail
 
+    /** @copydoc computeGaussLobatto */
     template <typename Scalar>
     void computeGaussLobatto(std::size_t n, Scalar* nodes, Scalar* weights,
                              std::size_t maxNewtonIterations, std::size_t minNewtonIterations,
