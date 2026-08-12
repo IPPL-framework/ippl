@@ -199,9 +199,9 @@ TEST(Nodes1DJacobi, AlphaBetaZeroMatchesLegendreAllMethods) {
     }
 }
 
-// Newton with Chebyshev (not Asymptotic) initial guesses: Jacobi(1,1) n=10
-// must still converge (via the retry/Brent ladder) and match GolubWelsch.
-// Oracle samples only exercise Asymptotic starts.
+// Newton with Chebyshev (not Asymptotic) as the primary guess: Jacobi(1,1) n=10
+// must still converge (Chebyshev stage, or later Asymptotic/Brent if needed)
+// and match GolubWelsch. Oracle samples only exercise Asymptotic starts.
 TEST(Nodes1DRootFinder, ChebyshevFirstNewtonJacobi11StillWorksViaLadder) {
     constexpr std::size_t n = 10;
     std::vector<double> x(n), w(n), xref(n), wref(n);
@@ -210,6 +210,18 @@ TEST(Nodes1DRootFinder, ChebyshevFirstNewtonJacobi11StillWorksViaLadder) {
     EXPECT_NO_THROW(computeGaussJacobi(n, 1.0, 1.0, x.data(), w.data(), 40, 1,
                                        InitialGuessType::Chebyshev, RootFinderMethod::Newton));
     expectArraysNear(x.data(), xref.data(), n, kTol, "JAC_11 Chebyshev-first Newton vs GW");
+}
+
+// Newton with StroudSecrest (not Asymptotic) as the primary guess: Jacobi(1,1) n=10
+// must still converge (StroudSecrest stage, then Asymptotic/Chebyshev/Brent if needed).
+TEST(Nodes1DRootFinder, StroudSecrestFirstNewtonJacobi11StillWorksViaLadder) {
+    constexpr std::size_t n = 10;
+    std::vector<double> x(n), w(n), xref(n), wref(n);
+    computeGaussJacobi(n, 1.0, 1.0, xref.data(), wref.data(), 40, 1, InitialGuessType::Asymptotic,
+                       RootFinderMethod::GolubWelsch);
+    EXPECT_NO_THROW(computeGaussJacobi(n, 1.0, 1.0, x.data(), w.data(), 40, 1,
+                                       InitialGuessType::StroudSecrest, RootFinderMethod::Newton));
+    expectArraysNear(x.data(), xref.data(), n, kTol, "JAC_11 StroudSecrest-first Newton vs GW");
 }
 
 // affineMapPoint/Weight maps GL from [-1,1] onto [0,1] (x'=(x+1)/2, w'=w/2)

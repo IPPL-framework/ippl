@@ -426,22 +426,33 @@ namespace detail {
         finalizeGolubWelschResults(n, alpha, beta, nodes, weights, d, z, perm);
     }
 
-    /** @internal LehrFEM-style Newton initial guess for the i-th ascending Jacobi root. */
+    /**
+     * @internal Stroud-Secrest-style Newton initial guess for the i-th ascending Jacobi root.
+     *
+     * Origin: Stroud and Secrest, Gaussian Quadrature Formulas (1966); Numerical Recipes
+     * gaujac. Taken into IPPL via LehrFEM++. Not the exact Stroud-Secrest method: the
+     * original scan is descending from +1 with five special cases plus cubic interior
+     * extrapolation. Here only the first two cases are kept, mirrored to -1, and later
+     * indices use the Tricomi asymptotic.
+     */
     template <typename Scalar>
-    Scalar lehrFEMInitialGuess(std::size_t i, std::size_t n, Scalar alpha, Scalar beta,
-                               const Scalar* ascending_nodes_so_far) {
-        // LehrFEM formulas were written for a descending-from-+1 scan. Map ascending index
-        // i to that convention via previously accepted ascending nodes when available.
+    Scalar stroudSecrestInitialGuess(std::size_t i, std::size_t n, Scalar alpha, Scalar beta,
+                                     const std::vector<Scalar>& uniqueSoFar) {
+        // Original formulas scan descending from +1. Map ascending index i via previously
+        // accepted ascending nodes when available.
         Scalar r1, r2, r3;
-        Scalar z = (i > 0) ? ascending_nodes_so_far[i - 1] : Scalar(0);
+        Scalar z = (i > 0 && uniqueSoFar.size() >= i) ? uniqueSoFar[i - 1] : Scalar(0);
 
         if (i == 0) {
             const Scalar an = alpha / static_cast<Scalar>(n);
             const Scalar bn = beta / static_cast<Scalar>(n);
             r1 = (1.0 + alpha) * (2.78 / (4.0 + n * n) + 0.768 * an / static_cast<Scalar>(n));
             r2 = 1.0 + 1.48 * an + 0.96 * bn + 0.452 * an * an + 0.83 * an * bn;
-            z  = -(1.0 - r1 / r2);  // mirror LehrFEM's first (+1)-side guess to −1 side
+            z  = -(1.0 - r1 / r2);  // mirror the first (+1)-side guess to the -1 side
         } else if (i == 1) {
+            if (uniqueSoFar.empty()) {
+                return asymptoticJacobiRoot(i, n, alpha, beta);
+            }
             r1 = (4.1 + beta) / ((1.0 + beta) * (1.0 + 0.156 * beta));
             r2 = 1.0 + 0.06 * (n - 8.0) * (1.0 + 0.12 * beta) / static_cast<Scalar>(n);
             r3 = 1.0 + 0.012 * alpha * (1.0 + 0.25 * Kokkos::abs(beta)) / static_cast<Scalar>(n);
@@ -619,17 +630,68 @@ namespace detail {
     /** @internal Pick a Newton initial guess for the k-th ascending Jacobi root. */
     template <typename Scalar>
     Scalar pickGuess(InitialGuessType kind, std::size_t k, std::size_t n, Scalar alpha, Scalar beta,
-                     const Scalar* ascending_nodes) {
+                     const std::vector<Scalar>& uniqueSoFar) {
         switch (kind) {
             case InitialGuessType::Asymptotic:
                 return asymptoticJacobiRoot(k, n, alpha, beta);
             case InitialGuessType::Chebyshev:
                 return chebyshevNode<Scalar>(k, n);
-            case InitialGuessType::LehrFEM:
-                return lehrFEMInitialGuess(k, n, alpha, beta, ascending_nodes);
+            case InitialGuessType::StroudSecrest:
+                return stroudSecrestInitialGuess(k, n, alpha, beta, uniqueSoFar);
             default:
                 return asymptoticJacobiRoot(k, n, alpha, beta);
         }
+    }
+
+    /** @internal Sort ascending and collapse points within sepTol. */
+    template <typename Scalar>
+    std::vector<Scalar> dedupeSorted(std::vector<Scalar> v, Scalar sepTol) {
+        std::sort(v.begin(), v.end());
+        std::vector<Scalar> unique;
+        unique.reserve(v.size());
+        for (Scalar z : v) {
+            if (unique.empty() || z - unique.back() > sepTol) {
+                unique.push_back(z);
+            }
+        }
+        return unique;
+    }
+
+    /**
+     * @internal Primary guess, then Asymptotic and Chebyshev if they were not the primary.
+     * StroudSecrest is never auto-appended.
+     */
+    inline std::vector<InitialGuessType> buildGuessLadder(InitialGuessType primary) {
+        std::vector<InitialGuessType> ladder;
+        ladder.push_back(primary);
+        if (primary != InitialGuessType::Asymptotic) {
+            ladder.push_back(InitialGuessType::Asymptotic);
+        }
+        if (primary != InitialGuessType::Chebyshev) {
+            ladder.push_back(InitialGuessType::Chebyshev);
+        }
+        return ladder;
+    }
+
+    /**
+     * @internal One Newton attempt for root index k with guess kind.
+     * On success, writes the candidate into z.
+     */
+    template <typename Scalar>
+    bool tryNewtonJacobiRoot(std::size_t k, InitialGuessType kind, std::size_t n, Scalar alpha,
+                             Scalar beta, const std::vector<Scalar>& uniqueSoFar,
+                             std::size_t maxNewtonIterations, std::size_t minNewtonIterations,
+                             Scalar glo, Scalar ghi, Scalar& z) {
+        z = pickGuess(kind, k, n, alpha, beta, uniqueSoFar);
+        Scalar p1, pp, p2, temp;
+        if (!newtonOneRootBounded(n, alpha, beta, z, glo, ghi, maxNewtonIterations,
+                                  minNewtonIterations, p1, pp, p2, temp)) {
+            return false;
+        }
+        if (Kokkos::abs(p1) > Scalar(1e-10)) {
+            return false;
+        }
+        return true;
     }
 
     /** @internal Collect Jacobi roots on (-1, 1) by uniform sampling + Brent on each sign change. */
@@ -662,6 +724,13 @@ namespace detail {
 
     /**
      * @internal Newton (+ Brent fallback) backend for computeGaussJacobi.
+     *
+     * Tries one InitialGuessType at a time: primary, then Asymptotic, then Chebyshev
+     * (skipping duplicates of the primary). After each stage, candidates are merged
+     * with previous stages and deduplicated. Later stages run only if fewer than n
+     * distinct roots have been found. StroudSecrest is never auto-appended. If the ladder
+     * is still incomplete, a global Brent scan of P_n is used.
+     *
      * @throws std::runtime_error if n distinct roots cannot be isolated.
      */
     template <typename Scalar>
@@ -678,52 +747,27 @@ namespace detail {
         const Scalar glo = Scalar(-1) + Scalar(1e-14);
         const Scalar ghi = Scalar(1) - Scalar(1e-14);
 
-        std::vector<InitialGuessType> ladder;
-        ladder.push_back(initialGuess);
-        if (initialGuess != InitialGuessType::Asymptotic) {
-            ladder.push_back(InitialGuessType::Asymptotic);
-        }
-        if (initialGuess != InitialGuessType::Chebyshev) {
-            ladder.push_back(InitialGuessType::Chebyshev);
-        }
-
-        std::vector<Scalar> cand;
-        cand.reserve(n * ladder.size());
-        for (std::size_t k = 0; k < n; ++k) {
-            for (InitialGuessType kind : ladder) {
-                Scalar z = pickGuess(kind, k, n, alpha, beta, nodes);
-                Scalar p1, pp, p2, temp;
-                if (!newtonOneRootBounded(n, alpha, beta, z, glo, ghi, maxNewtonIterations,
-                                          minNewtonIterations, p1, pp, p2, temp)) {
-                    continue;
-                }
-                if (Kokkos::abs(p1) > Scalar(1e-10)) {
-                    continue;
-                }
-                cand.push_back(z);
-            }
-        }
-
-        std::sort(cand.begin(), cand.end());
+        const std::vector<InitialGuessType> ladder = buildGuessLadder(initialGuess);
         std::vector<Scalar> unique;
-        for (Scalar z : cand) {
-            if (unique.empty() || z - unique.back() > sepTol) {
+
+        for (InitialGuessType kind : ladder) {
+            for (std::size_t k = 0; k < n; ++k) {
+                Scalar z;
+                if (!tryNewtonJacobiRoot(k, kind, n, alpha, beta, unique, maxNewtonIterations,
+                                         minNewtonIterations, glo, ghi, z)) {
+                    continue;
+                }
                 unique.push_back(z);
+            }
+            unique = dedupeSorted(std::move(unique), sepTol);
+            if (unique.size() == n) {
+                break;
             }
         }
 
         if (unique.size() != n) {
-            // Robust fallback: Brent on every sign-change of P_n on [-1,1].
             collectJacobiRootsBySignChange(n, alpha, beta, unique);
-            std::sort(unique.begin(), unique.end());
-            // Unique-ify again.
-            std::vector<Scalar> u2;
-            for (Scalar z : unique) {
-                if (u2.empty() || z - u2.back() > sepTol) {
-                    u2.push_back(z);
-                }
-            }
-            unique.swap(u2);
+            unique = dedupeSorted(std::move(unique), sepTol);
         }
 
         if (unique.size() != n) {

@@ -5,7 +5,7 @@
  * Nodes are roots of P_n^(alpha,beta); weights integrate (1-x)^alpha (1+x)^beta.
  * Requires alpha, beta > -1. For alpha = beta = -1/2, delegates to computeGaussChebyshev.
  */
- 
+
 #ifndef IPPL_NODES1D_GAUSS_JACOBI_1D_H
 #define IPPL_NODES1D_GAUSS_JACOBI_1D_H
 
@@ -24,23 +24,32 @@ namespace nodes1d {
     /**
      * @brief Initial guess for the Newton root-finder (RootFinderMethod::Newton only).
      *
-     * Ignored by Golub–Welsch backends. When Newton fails with the primary guess, an internal
-     * retry ladder also tries Asymptotic and Chebyshev.
+     * Ignored by Golub–Welsch backends. Newton tries the primary guess for all k first.
+     * If fewer than n distinct roots are found, later ladder steps (Asymptotic, then Chebyshev
+     * if they were not the primary) are merged in. StroudSecrest is never auto-appended. If the
+     * ladder is still incomplete, a global Brent scan of P_n is used.
      */
     enum class InitialGuessType {
-        /** Tricomi-style asymptotic formula for the k-th ascending Jacobi zero. */
+        /** Initial Newton guess for the k-th Jacobi root using a Tricomi-type large-n approximation. */
         Asymptotic,
-        /** chebyshevNode — good near alpha = beta = -1/2. */
+        /** Initial Newton guess for the k-th Jacobi root using a Chebyshev node. Good near alpha = beta = -1/2.*/
         Chebyshev,
-        /** LehrFEM-style heuristic using previously accepted ascending nodes. */
-        LehrFEM,
+        /**
+         * Empirical endpoint starts after Stroud and Secrest (1966), as in Numerical Recipes
+         * gaujac. The formulas were taken from LehrFEM++ (historical IPPL FEM quadrature).
+         * Not the exact Stroud-Secrest method: only the first two special cases, mirrored
+         * to an ascending scan from -1; later indices use the Tricomi asymptotic.
+         */
+        StroudSecrest,
     };
 
     /**
      * @brief Compute Gauss–Jacobi nodes and weights on [-1, 1] (runtime n).
      *
      * Default backend: tridiagonal Golub–Welsch (RootFinderMethod::GolubWelsch).
-     * Alternative: per-root Newton with Brent fallback (RootFinderMethod::Newton).
+     * Alternative (RootFinderMethod::Newton): staged Newton on P_n — primary
+     * InitialGuessType for all k, then Asymptotic and Chebyshev if needed, then global
+     * Brent on (-1, 1). See InitialGuessType for the ladder and StroudSecrest.
      *
      * @tparam Scalar Floating-point type (default double).
      * @param n Number of quadrature points (n >= 1).

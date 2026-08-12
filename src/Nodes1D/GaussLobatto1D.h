@@ -53,7 +53,10 @@ namespace nodes1d {
      * @brief Compute GLL nodes and weights on [-1, 1] (runtime n).
      *
      * Requires n >= 2. Default: Golub–Welsch on Jacobi (1,1) interior nodes (n-2 points).
-     * Alternative: Newton on P_{n-1}' with duplicate detection.
+     * Alternative (RootFinderMethod::Newton): find each interior root of P_{n-1}' left to
+     * right — Asymptotic Jacobi (1,1), then Chebyshev-Lobatto cosine, then local Brent in
+     * a bracket between previously accepted interiors (or widened toward +1). Endpoints +/-1
+     * are fixed; duplicate interiors are rejected.
      *
      * @tparam Scalar Floating-point type (default double).
      * @param n Number of quadrature points (n >= 2); includes +/-1.
@@ -61,7 +64,7 @@ namespace nodes1d {
      * @param weights Output array of length n; sum = 2.
      * @param maxNewtonIterations Maximum Newton iterations per interior root (Newton backend).
      * @param minNewtonIterations Minimum Newton iterations before convergence test (Newton only).
-     * @param method Root-finding backend (GLL ignores InitialGuessType).
+     * @param method Root-finding backend (GLL has no InitialGuessType parameter).
      * @pre n >= 2; nodes and weights non-null.
      * @throws std::runtime_error Newton backend on bracket failure or duplicate interiors.
      */

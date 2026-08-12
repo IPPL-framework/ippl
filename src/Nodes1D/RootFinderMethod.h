@@ -14,8 +14,8 @@ namespace nodes1d {
     /**
      * @brief Algorithm used to compute Gauss–Jacobi (and GLL interior) nodes and weights.
      *
-     * Passed to computeGaussJacobi and computeGaussLegendre. Applications should keep the
-     * default GolubWelsch unless cross-checking or debugging.
+     * Passed to computeGaussJacobi, computeGaussLegendre, and computeGaussLobatto.
+     * Applications should keep the default GolubWelsch unless cross-checking or debugging.
      */
     enum class RootFinderMethod {
         /**
@@ -29,9 +29,19 @@ namespace nodes1d {
          */
         DenseGolubWelsch,
         /**
-         * Independent Newton per root with configurable initial guesses and a Brent bracket
-         * fallback when the Newton ladder fails to isolate n distinct roots.
-         * @throws std::runtime_error on unresolved duplicates or non-convergence.
+         * Newton root-finding with Brent fallback.
+         *
+         * Jacobi / Legendre: staged guess ladder over all k (primary InitialGuessType, then
+         * Asymptotic, then Chebyshev if not already primary; StroudSecrest is never
+         * auto-appended), merge and dedupe after each stage, then a global Brent scan of P_n
+         * on (-1, 1) if still incomplete.
+         *
+         * GLL: sequential left-to-right on each interior root of P_{n-1}' (Asymptotic Jacobi
+         * (1,1), then Chebyshev-Lobatto cosine, then local Brent in a bracket bounded by
+         * previously accepted interiors). No InitialGuessType parameter.
+         *
+         * @throws std::runtime_error if n distinct roots (Jacobi) or all interiors (GLL)
+         *         cannot be isolated.
          */
         Newton,
     };

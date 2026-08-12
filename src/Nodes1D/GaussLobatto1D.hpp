@@ -167,13 +167,19 @@ namespace detail {
     }
 
     /**
-     * @internal Newton on P_{n-1}' for interior GLL nodes, with Brent bracket fallback.
+     * @internal Newton on P_{n-1}' for interior GLL nodes (sequential left-to-right).
+     *
+     * For each interior j = 0 .. n-3: try Asymptotic Jacobi (1,1), then Chebyshev-Lobatto
+     * cosine, then Brent on P_{n-1}' in (lo, hi) where lo is the previous accepted interior
+     * (or just above -1) and hi is derived from asymptotic guesses. Convergence requires
+     * at least minNewtonIterations steps, matching computeGaussJacobi.
+     *
      * @throws std::runtime_error on bracket failure or duplicate interiors.
      */
     template <typename Scalar>
     void computeGaussLobattoNewton(std::size_t n, Scalar* nodes, Scalar* weights,
                                    std::size_t maxNewtonIterations,
-                                   std::size_t /*minNewtonIterations*/) {
+                                   std::size_t minNewtonIterations) {
         nodes[0]     = Scalar(-1);
         nodes[n - 1] = Scalar(1);
 
@@ -234,7 +240,7 @@ namespace detail {
                     if (z > hi) {
                         z = hi;
                     }
-                    if (Kokkos::abs(delta) <= tol) {
+                    if (it >= minNewtonIterations && Kokkos::abs(delta) <= tol) {
                         converged = true;
                         break;
                     }
