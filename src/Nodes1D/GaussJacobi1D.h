@@ -9,6 +9,7 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 
+#include "Nodes1D/GaussChebyshev1D.h"
 #include "Nodes1D/RootFinderMethod.h"
 #include "Types/Vector.h"
 
@@ -23,18 +24,10 @@ namespace nodes1d {
     };
 
     /**
-     * @brief i-th Chebyshev node on [-1, 1], ascending in i (i=0 near −1).
-     */
-    template <typename Scalar = double>
-    KOKKOS_INLINE_FUNCTION Scalar chebyshevNode(std::size_t i, std::size_t numNodes) {
-        return -Kokkos::cos((2.0 * static_cast<Scalar>(i) + 1.0) * Kokkos::numbers::pi_v<Scalar>
-                            / (2.0 * static_cast<Scalar>(numNodes)));
-    }
-
-    /**
      * @brief Compute Gauss–Jacobi nodes and weights on [-1, 1] (runtime n).
      *
      * Default: tridiagonal Golub–Welsch. Alternative: Newton + Brent retry ladder.
+     * For α = β = −1/2, delegates to computeGaussChebyshev (closed form).
      */
     template <typename Scalar = double>
     void computeGaussJacobi(std::size_t n, Scalar alpha, Scalar beta, Scalar* nodes, Scalar* weights,

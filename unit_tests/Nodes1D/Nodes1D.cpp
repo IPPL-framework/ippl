@@ -161,6 +161,16 @@ TEST(Nodes1DJacobi, ChebyshevOracleSamplesAllMethods) {
     }
 }
 
+// computeGaussChebyshev (closed form) matches Jacobi(−1/2,−1/2) oracle for every n.
+TEST(Nodes1DChebyshev, ClosedFormMatchesOracle) {
+    for (const OracleSample& s : JAC_CHEB_SAMPLES) {
+        std::vector<double> x(s.n), w(s.n);
+        computeGaussChebyshev(s.n, x.data(), w.data());
+        expectArraysNear(x.data(), s.nodes, s.n, kTol, "Chebyshev closed-form nodes");
+        expectArraysNear(w.data(), s.weights, s.n, kTol, "Chebyshev closed-form weights");
+    }
+}
+
 // Gauss–Jacobi(α=β=1) vs SciPy (JAC_11_SAMPLES) for every RootFinderMethod.
 // These interiors also feed the GLL Golub–Welsch path.
 TEST(Nodes1DJacobi, Jacobi11OracleSamplesAllMethods) {

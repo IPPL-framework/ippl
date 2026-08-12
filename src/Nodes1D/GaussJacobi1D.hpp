@@ -727,6 +727,11 @@ namespace detail {
         assert(beta > -1.0);
         assert(nodes != nullptr && weights != nullptr);
 
+        if (alpha == Scalar(-0.5) && beta == Scalar(-0.5)) {
+            computeGaussChebyshev(n, nodes, weights);
+            return;
+        }
+
         if (method == RootFinderMethod::Newton) {
             detail::computeGaussJacobiNewton(n, alpha, beta, nodes, weights, maxNewtonIterations,
                                              minNewtonIterations, initialGuess);

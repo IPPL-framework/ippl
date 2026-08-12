@@ -6,6 +6,7 @@
 #define IPPL_NODES1D_H
 
 #include "Nodes1D/AffineMap.h"
+#include "Nodes1D/GaussChebyshev1D.h"
 #include "Nodes1D/GaussJacobi1D.h"
 #include "Nodes1D/GaussLegendre1D.h"
 #include "Nodes1D/GaussLobatto1D.h"
