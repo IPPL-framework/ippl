@@ -89,7 +89,7 @@ $(function() {
 <div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="comment">//   This class implements the short-range part of the Ewald Green function split by evaluating the</span></div>
 <div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="comment">//   gradient of forceConstant * erfc(alpha * r) / r. Below regularization_cutoff, the singular</span></div>
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="comment">//   Coulomb contribution is replaced by a linear force that matches continuously at the cutoff.</span></div>
-<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment">//   The long-range part is handled by FFTTruncatedGreenPeriodicPoissonSolver.</span></div>
+<div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="comment">//   The long-range part is handled by the periodic or open-boundary P3M mesh solver.</span></div>
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span><span class="comment">//</span></div>
 <div class="line"><a id="l00008" name="l00008"></a><span class="lineno">    8</span><span class="comment">//   It assumes that ParticleContainer implements a function forAllPairs() to iterate over all</span></div>
 <div class="line"><a id="l00009" name="l00009"></a><span class="lineno">    9</span><span class="comment">//   relevant particle pairs.</span></div>

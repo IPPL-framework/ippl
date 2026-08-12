@@ -1,6 +1,7 @@
 <map id="FFTOpenPoissonSolver.h" name="FFTOpenPoissonSolver.h">
-<area shape="rect" id="node1" title=" " alt="" coords="5,5,176,31"/>
-<area shape="rect" id="node2" href="$datatypes_8h.html" title=" " alt="" coords="47,79,135,104"/>
-<area shape="rect" id="node3" href="$FieldSolverBase_8h.html" title=" " alt="" coords="27,152,154,177"/>
-<area shape="rect" id="node4" href="$PicManager_8h.html" title=" " alt="" coords="40,225,141,251"/>
+<area shape="rect" id="node1" title=" " alt="" coords="79,5,249,31"/>
+<area shape="rect" id="node2" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="5,79,192,119"/>
+<area shape="rect" id="node3" href="$datatypes_8h.html" title=" " alt="" coords="120,167,208,192"/>
+<area shape="rect" id="node4" href="$FieldSolverBase_8h.html" title=" " alt="" coords="101,240,227,265"/>
+<area shape="rect" id="node5" href="$PicManager_8h.html" title=" " alt="" coords="113,313,215,339"/>
 </map>

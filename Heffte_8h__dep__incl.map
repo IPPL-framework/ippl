@@ -1,19 +1,19 @@
 <map id="Heffte.h" name="Heffte.h">
-<area shape="rect" id="node1" title=" " alt="" coords="253,5,320,31"/>
-<area shape="rect" id="node2" href="$Backend_8h.html" title="Aggregate include for all FFT backends supported by IPPL." alt="" coords="245,79,328,104"/>
-<area shape="rect" id="node3" href="$CC_8h.html" title="Complex&#45;to&#45;complex FFT specialization (CCTransform tag)." alt="" coords="5,152,56,177"/>
-<area shape="rect" id="node5" href="$FFT_8h.html" title=" " alt="" coords="449,299,505,324"/>
-<area shape="rect" id="node14" href="$PrunedCC_8h.html" title="Pruned complex&#45;to&#45;complex FFT (PrunedCCTransform tag)." alt="" coords="80,152,171,177"/>
-<area shape="rect" id="node15" href="$PrunedRC_8h.html" title="Pruned real&#45;to&#45;complex FFT (PrunedRCTransform tag)." alt="" coords="195,152,285,177"/>
-<area shape="rect" id="node16" href="$RC_8h.html" title="Real&#45;to&#45;complex FFT specialization (RCTransform tag)." alt="" coords="309,152,360,177"/>
-<area shape="rect" id="node17" href="$Trig_8h.html" title="Trigonometric (sine / cosine / cosine&#45;Type&#45;I) FFT specializations." alt="" coords="385,152,439,177"/>
-<area shape="rect" id="node4" href="$Transform_8h.html" title="Aggregate include of all IPPL FFT transform specializations." alt="" coords="195,225,285,251"/>
-<area shape="rect" id="node6" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="805,379,976,405"/>
-<area shape="rect" id="node10" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="384,379,571,405"/>
-<area shape="rect" id="node11" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="595,372,781,412"/>
-<area shape="rect" id="node12" href="$NativeNUFFT_8h.html" title=" " alt="" coords="245,379,360,405"/>
-<area shape="rect" id="node7" href="$datatypes_8h.html" title=" " alt="" coords="644,460,732,485"/>
-<area shape="rect" id="node8" href="$FieldSolverBase_8h.html" title=" " alt="" coords="625,533,751,559"/>
-<area shape="rect" id="node9" href="$PicManager_8h.html" title=" " alt="" coords="637,607,739,632"/>
-<area shape="rect" id="node13" href="$NUFFT_8h.html" title="Non&#45;uniform FFT specialization (NUFFTransform tag)." alt="" coords="218,460,294,485"/>
+<area shape="rect" id="node1" title=" " alt="" coords="413,5,480,31"/>
+<area shape="rect" id="node2" href="$Backend_8h.html" title="Aggregate include for all FFT backends supported by IPPL." alt="" coords="405,79,488,104"/>
+<area shape="rect" id="node3" href="$CC_8h.html" title="Complex&#45;to&#45;complex FFT specialization (CCTransform tag)." alt="" coords="269,152,320,177"/>
+<area shape="rect" id="node5" href="$FFT_8h.html" title=" " alt="" coords="245,299,301,324"/>
+<area shape="rect" id="node14" href="$PrunedCC_8h.html" title="Pruned complex&#45;to&#45;complex FFT (PrunedCCTransform tag)." alt="" coords="344,152,435,177"/>
+<area shape="rect" id="node15" href="$PrunedRC_8h.html" title="Pruned real&#45;to&#45;complex FFT (PrunedRCTransform tag)." alt="" coords="459,152,549,177"/>
+<area shape="rect" id="node16" href="$RC_8h.html" title="Real&#45;to&#45;complex FFT specialization (RCTransform tag)." alt="" coords="573,152,624,177"/>
+<area shape="rect" id="node17" href="$Trig_8h.html" title="Trigonometric (sine / cosine / cosine&#45;Type&#45;I) FFT specializations." alt="" coords="649,152,703,177"/>
+<area shape="rect" id="node4" href="$Transform_8h.html" title="Aggregate include of all IPPL FFT transform specializations." alt="" coords="439,225,529,251"/>
+<area shape="rect" id="node6" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="32,372,203,397"/>
+<area shape="rect" id="node7" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="24,445,211,485"/>
+<area shape="rect" id="node11" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="235,453,421,478"/>
+<area shape="rect" id="node12" href="$NativeNUFFT_8h.html" title=" " alt="" coords="332,372,447,397"/>
+<area shape="rect" id="node8" href="$datatypes_8h.html" title=" " alt="" coords="73,533,161,559"/>
+<area shape="rect" id="node9" href="$FieldSolverBase_8h.html" title=" " alt="" coords="54,607,181,632"/>
+<area shape="rect" id="node10" href="$PicManager_8h.html" title=" " alt="" coords="67,680,168,705"/>
+<area shape="rect" id="node13" href="$NUFFT_8h.html" title="Non&#45;uniform FFT specialization (NUFFTransform tag)." alt="" coords="446,453,522,478"/>
 </map>

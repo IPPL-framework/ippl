@@ -1,10 +1,10 @@
 <map id="ippl::Poisson&lt; FieldLHS, FieldRHS &gt;" name="ippl::Poisson&lt; FieldLHS, FieldRHS &gt;">
 <area shape="rect" id="node1" title=" " alt="" coords="696,5,865,309"/>
-<area shape="rect" id="node2" href="$classippl_1_1FEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="5,460,177,749"/>
-<area shape="rect" id="node3" href="$classippl_1_1FFTOpenPoissonSolver.html" title=" " alt="" coords="202,357,410,852"/>
-<area shape="rect" id="node4" href="$classippl_1_1FFTPeriodicPoissonSolver.html" title=" " alt="" coords="435,489,633,720"/>
-<area shape="rect" id="node5" href="$classippl_1_1FFTTruncatedGreenPeriodicPoissonSolver.html" title=" " alt="" coords="657,387,904,823"/>
-<area shape="rect" id="node6" href="$classippl_1_1NullSolver.html" title=" " alt="" coords="928,548,1111,661"/>
-<area shape="rect" id="node7" href="$classippl_1_1PoissonCG.html" title=" " alt="" coords="1135,504,1323,705"/>
-<area shape="rect" id="node8" href="$classippl_1_1PreconditionedFEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="1347,453,1559,757"/>
+<area shape="rect" id="node2" href="$classippl_1_1FEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="5,467,177,757"/>
+<area shape="rect" id="node3" href="$classippl_1_1FFTOpenPoissonSolver.html" title=" " alt="" coords="202,357,410,867"/>
+<area shape="rect" id="node4" href="$classippl_1_1FFTPeriodicPoissonSolver.html" title=" " alt="" coords="435,497,633,727"/>
+<area shape="rect" id="node5" href="$classippl_1_1FFTTruncatedGreenPeriodicPoissonSolver.html" title=" " alt="" coords="657,365,904,859"/>
+<area shape="rect" id="node6" href="$classippl_1_1NullSolver.html" title=" " alt="" coords="928,555,1111,669"/>
+<area shape="rect" id="node7" href="$classippl_1_1PoissonCG.html" title=" " alt="" coords="1135,511,1323,713"/>
+<area shape="rect" id="node8" href="$classippl_1_1PreconditionedFEMPoissonSolver.html" title="A solver for the poisson equation using finite element methods and Conjugate Gradient (CG)" alt="" coords="1347,460,1559,764"/>
 </map>
