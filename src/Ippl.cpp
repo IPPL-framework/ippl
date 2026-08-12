@@ -99,6 +99,24 @@ namespace ippl {
             std::exit(0);
         }
 
+        /*
+          This is a fix needed above Kokkos 5.0.2 to avoid malloc
+          erros on higher nodecounts. What is actually does is to
+          initialize openmp.
+
+          This is most likely a Kokkos issue because in 5.1.0
+          OPENMP got a overhoul.
+        */
+
+#if defined(KOKKOS_ENABLE_OPENMP)
+        int ompThreads = 0;
+#pragma omp parallel
+        {
+#pragma omp atomic
+            ++ompThreads;
+        }
+        (void)ompThreads;
+#endif
         Kokkos::initialize(argc, argv);
 
         // Seed scatter/gather caches with per-exec-space defaults and, when
