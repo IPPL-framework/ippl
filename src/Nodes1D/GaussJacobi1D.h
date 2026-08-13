@@ -17,9 +17,11 @@
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 
+#include <Kokkos_Core.hpp>
+
 #include "Nodes1D/GaussChebyshev1D.h"
 #include "Nodes1D/RootFinderMethod.h"
-#include "Types/Vector.h"
+#include "Nodes1D/Nodes1DDetail.hpp"
 
 namespace ippl {
 namespace nodes1d {
@@ -74,34 +76,36 @@ namespace nodes1d {
                             RootFinderMethod method = RootFinderMethod::GolubWelsch);
 
     /**
-     * @brief Compute Gauss–Jacobi nodes and weights into fixed-size Vector s.
+     * @brief Compute Gauss–Jacobi nodes and weights into Kokkos Views.
      *
-     * @tparam T Element type stored in the vectors.
-     * @tparam N Number of quadrature points (compile-time).
-     * @param nodes Output nodes; size N.
-     * @param weights Output weights; size N.
+     * Computes on the host, then deep-copies into nodes and weights. Extent is taken from
+     * nodes.extent(0) (not a separate n argument).
+     *
+     * @tparam ExecSpace Kokkos execution space for the destination views.
+     * @tparam RealType Element type of the views (default double).
+     * @param nodes Output node view; extent >= 1, must match weights.
+     * @param weights Output weight view; same extent as nodes.
      * @param alpha Jacobi parameter alpha.
      * @param beta Jacobi parameter beta.
      * @param maxNewtonIterations See pointer overload.
      * @param minNewtonIterations See pointer overload.
      * @param initialGuess See pointer overload.
      * @param method See pointer overload.
+     * @pre nodes.extent(0) == weights.extent(0) and >= 1; alpha, beta > -1.
      */
-    template <typename T, unsigned N>
-    void computeGaussJacobi(Vector<T, N>& nodes, Vector<T, N>& weights, T alpha, T beta,
-                            std::size_t maxNewtonIterations = 40, std::size_t minNewtonIterations = 1,
+    template <typename ExecSpace, typename RealType = double>
+    void computeGaussJacobi(Kokkos::View<RealType*, typename ExecSpace::memory_space>& nodes,
+                            Kokkos::View<RealType*, typename ExecSpace::memory_space>& weights,
+                            RealType alpha, RealType beta,
+                            std::size_t maxNewtonIterations = 40,
+                            std::size_t minNewtonIterations = 1,
                             InitialGuessType initialGuess = InitialGuessType::Asymptotic,
                             RootFinderMethod method = RootFinderMethod::GolubWelsch) {
-        using Scalar = double;
-        Scalar nbuf[N];
-        Scalar wbuf[N];
-        computeGaussJacobi<Scalar>(N, static_cast<Scalar>(alpha), static_cast<Scalar>(beta), nbuf,
-                                   wbuf, maxNewtonIterations, minNewtonIterations, initialGuess,
-                                   method);
-        for (unsigned i = 0; i < N; ++i) {
-            nodes[i]   = static_cast<T>(nbuf[i]);
-            weights[i] = static_cast<T>(wbuf[i]);
-        }
+        detail::fillHostThenDeepCopy<ExecSpace>(
+            nodes, weights, [&](std::size_t n, RealType* x, RealType* w) {
+                computeGaussJacobi(n, alpha, beta, x, w, maxNewtonIterations, minNewtonIterations,
+                                   initialGuess, method);
+            });
     }
 
 }  // namespace nodes1d

@@ -16,13 +16,12 @@
 
 #include <cassert>
 #include <cstddef>
-#include <vector>
 
 #include <Kokkos_Core.hpp>
 #include <Kokkos_MathematicalConstants.hpp>
 #include <Kokkos_MathematicalFunctions.hpp>
 
-#include "Types/Vector.h"
+#include "Nodes1D/Nodes1DDetail.hpp"
 
 namespace ippl {
 namespace nodes1d {
@@ -69,55 +68,23 @@ namespace nodes1d {
     }
 
     /**
-     * @brief Compute Gauss–Chebyshev nodes and weights into fixed-size Vector s.
+     * @brief Compute Gauss–Chebyshev nodes and weights into Kokkos Views.
      *
-     * @tparam T Element type stored in the vectors.
-     * @tparam N Number of quadrature points (compile-time).
-     * @param nodes Output nodes; size N.
-     * @param weights Output weights; size N.
-     */
-    template <typename T, unsigned N>
-    void computeGaussChebyshev(Vector<T, N>& nodes, Vector<T, N>& weights) {
-        using Scalar = double;
-        Scalar nbuf[N];
-        Scalar wbuf[N];
-        computeGaussChebyshev<Scalar>(N, nbuf, wbuf);
-        for (unsigned i = 0; i < N; ++i) {
-            nodes[i]   = static_cast<T>(nbuf[i]);
-            weights[i] = static_cast<T>(wbuf[i]);
-        }
-    }
-
-    /**
-     * @brief Compute Gauss–Chebyshev nodes and weights into Kokkos Views on device.
+     * Computes on the host, then deep-copies into nodes and weights. Extent is taken from
+     * nodes.extent(0) (not a separate n argument).
      *
-     * Computes on the host, then deep-copies into nodes and weights.
-     *
-     * @tparam ExecSpace Kokkos execution space used for the destination views.
+     * @tparam ExecSpace Kokkos execution space for the destination views.
      * @tparam RealType Element type of the views (default double).
-     * @param nodes Output node view; extent must equal that of weights and be >= 1.
+     * @param nodes Output node view; extent >= 1, must match weights.
      * @param weights Output weight view; same extent as nodes.
      * @pre nodes.extent(0) == weights.extent(0) and >= 1.
      */
     template <typename ExecSpace, typename RealType = double>
     void computeGaussChebyshev(Kokkos::View<RealType*, typename ExecSpace::memory_space>& nodes,
                                Kokkos::View<RealType*, typename ExecSpace::memory_space>& weights) {
-        const int n = static_cast<int>(nodes.extent(0));
-        assert(weights.extent(0) == nodes.extent(0));
-        assert(n >= 1);
-
-        auto h_nodes   = Kokkos::create_mirror_view(Kokkos::HostSpace(), nodes);
-        auto h_weights = Kokkos::create_mirror_view(Kokkos::HostSpace(), weights);
-
-        std::vector<RealType> nbuf(static_cast<std::size_t>(n));
-        std::vector<RealType> wbuf(static_cast<std::size_t>(n));
-        computeGaussChebyshev(static_cast<std::size_t>(n), nbuf.data(), wbuf.data());
-        for (int i = 0; i < n; ++i) {
-            h_nodes(i)   = nbuf[static_cast<std::size_t>(i)];
-            h_weights(i) = wbuf[static_cast<std::size_t>(i)];
-        }
-        Kokkos::deep_copy(nodes, h_nodes);
-        Kokkos::deep_copy(weights, h_weights);
+        detail::fillHostThenDeepCopy<ExecSpace>(
+            nodes, weights,
+            [&](std::size_t n, RealType* x, RealType* w) { computeGaussChebyshev(n, x, w); });
     }
 
 }  // namespace nodes1d

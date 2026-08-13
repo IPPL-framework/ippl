@@ -16,10 +16,11 @@
 
 #include <cstddef>
 
+#include <Kokkos_Core.hpp>
 #include <Kokkos_Macros.hpp>
 
 #include "Nodes1D/RootFinderMethod.h"
-#include "Types/Vector.h"
+#include "Nodes1D/Nodes1DDetail.hpp"
 
 namespace ippl {
 namespace nodes1d {
@@ -78,30 +79,30 @@ namespace nodes1d {
                              RootFinderMethod method = RootFinderMethod::GolubWelsch);
 
     /**
-     * @brief Compute GLL nodes and weights into fixed-size Vector s.
+     * @brief Compute GLL nodes and weights into Kokkos Views.
      *
-     * @tparam T Element type stored in the vectors.
-     * @tparam N Number of quadrature points (compile-time); must be >= 2.
-     * @param nodes Output nodes; size N.
-     * @param weights Output weights; size N.
+     * Computes on the host, then deep-copies into nodes and weights. Extent is taken from
+     * nodes.extent(0) (not a separate n argument).
+     *
+     * @tparam ExecSpace Kokkos execution space for the destination views.
+     * @tparam RealType Element type of the views (default double).
+     * @param nodes Output node view; extent >= 2, must match weights.
+     * @param weights Output weight view; same extent as nodes.
      * @param maxNewtonIterations See pointer overload.
      * @param minNewtonIterations See pointer overload.
      * @param method See pointer overload.
+     * @pre nodes.extent(0) == weights.extent(0) and >= 2.
      */
-    template <typename T, unsigned N>
-    void computeGaussLobatto(Vector<T, N>& nodes, Vector<T, N>& weights,
+    template <typename ExecSpace, typename RealType = double>
+    void computeGaussLobatto(Kokkos::View<RealType*, typename ExecSpace::memory_space>& nodes,
+                             Kokkos::View<RealType*, typename ExecSpace::memory_space>& weights,
                              std::size_t maxNewtonIterations = 40,
                              std::size_t minNewtonIterations  = 1,
                              RootFinderMethod method = RootFinderMethod::GolubWelsch) {
-        static_assert(N >= 2, "Gauss–Lobatto requires at least 2 nodes");
-        using Scalar = double;
-        Scalar nbuf[N];
-        Scalar wbuf[N];
-        computeGaussLobatto<Scalar>(N, nbuf, wbuf, maxNewtonIterations, minNewtonIterations, method);
-        for (unsigned i = 0; i < N; ++i) {
-            nodes[i]   = static_cast<T>(nbuf[i]);
-            weights[i] = static_cast<T>(wbuf[i]);
-        }
+        detail::fillHostThenDeepCopy<ExecSpace>(
+            nodes, weights, [&](std::size_t n, RealType* x, RealType* w) {
+                computeGaussLobatto(n, x, w, maxNewtonIterations, minNewtonIterations, method);
+            });
     }
 
 }  // namespace nodes1d

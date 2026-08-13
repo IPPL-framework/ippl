@@ -12,11 +12,6 @@
 #ifndef IPPL_NODES1D_GAUSS_LEGENDRE_1D_H
 #define IPPL_NODES1D_GAUSS_LEGENDRE_1D_H
 
-#include <cassert>
-#include <vector>
-
-#include <Kokkos_Core.hpp>
-
 #include "Nodes1D/GaussJacobi1D.h"
 
 namespace ippl {
@@ -47,29 +42,7 @@ namespace nodes1d {
     }
 
     /**
-     * @brief Compute Gauss–Legendre nodes and weights into fixed-size Vector s.
-     *
-     * @tparam T Element type stored in the vectors.
-     * @tparam N Number of quadrature points (compile-time).
-     * @param nodes Output nodes; size N.
-     * @param weights Output weights; size N.
-     * @param maxNewtonIterations See pointer overload.
-     * @param minNewtonIterations See pointer overload.
-     * @param initialGuess See pointer overload.
-     * @param method See pointer overload.
-     */
-    template <typename T, unsigned N>
-    void computeGaussLegendre(Vector<T, N>& nodes, Vector<T, N>& weights,
-                              std::size_t maxNewtonIterations = 40,
-                              std::size_t minNewtonIterations  = 1,
-                              InitialGuessType initialGuess = InitialGuessType::Asymptotic,
-                              RootFinderMethod method = RootFinderMethod::GolubWelsch) {
-        computeGaussJacobi(nodes, weights, T(0), T(0), maxNewtonIterations, minNewtonIterations,
-                           initialGuess, method);
-    }
-
-    /**
-     * @brief Compute Gauss–Legendre nodes and weights into Kokkos Views on device.
+     * @brief Compute Gauss–Legendre nodes and weights into Kokkos Views.
      *
      * Computes on the host, then deep-copies into nodes and weights. Extent is taken from
      * nodes.extent(0) (not a separate n argument).
@@ -91,23 +64,11 @@ namespace nodes1d {
                               std::size_t minNewtonIterations  = 1,
                               InitialGuessType initialGuess = InitialGuessType::Asymptotic,
                               RootFinderMethod method = RootFinderMethod::GolubWelsch) {
-        const int n = static_cast<int>(nodes.extent(0));
-        assert(weights.extent(0) == nodes.extent(0));
-        assert(n >= 1);
-
-        auto h_nodes   = Kokkos::create_mirror_view(Kokkos::HostSpace(), nodes);
-        auto h_weights = Kokkos::create_mirror_view(Kokkos::HostSpace(), weights);
-
-        std::vector<RealType> nbuf(static_cast<std::size_t>(n));
-        std::vector<RealType> wbuf(static_cast<std::size_t>(n));
-        computeGaussLegendre(static_cast<std::size_t>(n), nbuf.data(), wbuf.data(),
-                             maxNewtonIterations, minNewtonIterations, initialGuess, method);
-        for (int i = 0; i < n; ++i) {
-            h_nodes(i)   = nbuf[static_cast<std::size_t>(i)];
-            h_weights(i) = wbuf[static_cast<std::size_t>(i)];
-        }
-        Kokkos::deep_copy(nodes, h_nodes);
-        Kokkos::deep_copy(weights, h_weights);
+        detail::fillHostThenDeepCopy<ExecSpace>(
+            nodes, weights, [&](std::size_t n, RealType* x, RealType* w) {
+                computeGaussLegendre(n, x, w, maxNewtonIterations, minNewtonIterations,
+                                     initialGuess, method);
+            });
     }
 
 }  // namespace nodes1d
