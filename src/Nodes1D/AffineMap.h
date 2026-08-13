@@ -4,6 +4,10 @@
  *
  * Classical Nodes1D rules are defined on [-1, 1]. Use these helpers to map nodes and weights
  * onto another interval [dstA, dstB] while preserving quadrature exactness.
+ *
+ * Host-only module (see Nodes1D.h). affineMapPoint and affineMapWeight are marked
+ * KOKKOS_INLINE_FUNCTION for header inlining only; nothing here is called from a device
+ * kernel currently. affineMapNodesWeights is an ordinary host helper.
  */
  
 #ifndef IPPL_NODES1D_AFFINE_MAP_H

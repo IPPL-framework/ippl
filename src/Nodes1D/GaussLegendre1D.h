@@ -3,6 +3,8 @@
  * @brief Gauss–Legendre quadrature on [-1, 1] (Jacobi with alpha = beta = 0).
  *
  * Weights sum to 2. Exact for polynomials of degree up to 2n-1 with weight 1.
+ *
+ * Host-only module (see Nodes1D.h): thin wrapper around computeGaussJacobi.
  */
 //
 // GaussLegendre1D — Gauss–Legendre (Jacobi α = β = 0) on [-1, 1].

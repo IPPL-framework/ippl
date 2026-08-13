@@ -4,7 +4,13 @@
  *
  * Provides Gauss–Legendre, Gauss–Chebyshev, Gauss–Jacobi, and Gauss–Lobatto–Legendre (GLL)
  * nodes and weights on the native interval [-1, 1], plus affine maps to other intervals.
- * All computation is serial on the host unless a Kokkos View overload copies results to device.
+ *
+ * Host-only: all Node computation runs serially on the host (meant to be computed once 
+ * and saved not rerun each iteration step). Kokkos View overloads
+ * compute on the host and deep-copy into device-accessible memory; they do not launch
+ * parallel_for (or other Kokkos kernels) for node/weight setup. A few small helpers use
+ * KOKKOS_INLINE_FUNCTION for IPPL-style header inlining only; nothing in this module is
+ * invoked from a device lambda currently.
  */
 //
 // Nodes1D — freestanding 1D node/weight finders for quadrature and interpolation.

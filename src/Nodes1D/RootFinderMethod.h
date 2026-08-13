@@ -1,6 +1,9 @@
 /**
  * @file RootFinderMethod.h
  * @brief Backend selector for Gauss–Jacobi and GLL node computation.
+ *
+ * All backends run host-side only (see Nodes1D.h); this enum selects serial setup code,
+ * not a Kokkos execution-space dispatch.
  */
 //
 // RootFinderMethod — node/weight computation backend for Nodes1D.
@@ -23,11 +26,13 @@ namespace nodes1d {
          * (implicit QL eigen-solve, O(n^2)) plus one Newton polish per node. Default.
          */
         GolubWelsch,
+
         /**
          * Golub–Welsch via the full dense symmetric companion matrix
          * (cyclic Jacobi eigen-solve, O(n^3)). Reference / cross-check backend.
          */
         DenseGolubWelsch,
+        
         /**
          * Newton root-finding with Brent fallback.
          *

@@ -4,6 +4,9 @@
  *
  * Gauss–Chebyshev is Gauss–Jacobi with alpha = beta = -1/2. The rule is exact for polynomials
  * of degree up to 2n-1 with weight (1-x^2)^(-1/2).
+ *
+ * Host-only module (see Nodes1D.h). chebyshevNode uses KOKKOS_INLINE_FUNCTION for header
+ * inlining only; computeGaussChebyshev and View overloads run on the host.
  */
 //
 // GaussChebyshev1D — Gauss–Chebyshev (Jacobi α = β = −1/2) on [-1, 1], closed form.

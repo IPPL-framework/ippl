@@ -2,6 +2,9 @@
  * @file GaussJacobi1D.hpp
  * @brief Implementation of computeGaussJacobi (Golub-Welsch and Newton backends).
  * @internal Included by GaussJacobi1D.h; not for direct use.
+ *
+ * Host-only implementation: uses std::vector, exceptions, and serial linear algebra.
+ * Not suitable for Kokkos parallel_for or device kernels.
  */
 #ifndef IPPL_NODES1D_GAUSS_JACOBI_1D_HPP
 #define IPPL_NODES1D_GAUSS_JACOBI_1D_HPP

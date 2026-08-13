@@ -4,6 +4,9 @@
  *
  * Nodes are roots of P_n^(alpha,beta); weights integrate (1-x)^alpha (1+x)^beta.
  * Requires alpha, beta > -1. For alpha = beta = -1/2, delegates to computeGaussChebyshev.
+ *
+ * Host-only module (see Nodes1D.h): Golub-Welsch, Newton, and Brent backends all run
+ * serially on the host. View overloads deep-copy results to device memory only.
  */
 
 #ifndef IPPL_NODES1D_GAUSS_JACOBI_1D_H

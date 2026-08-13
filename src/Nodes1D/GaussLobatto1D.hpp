@@ -2,6 +2,9 @@
  * @file GaussLobatto1D.hpp
  * @brief Implementation of computeGaussLobatto (Golub-Welsch and Newton backends).
  * @internal Included by GaussLobatto1D.h; not for direct use.
+ *
+ * Host-only implementation: uses std::vector, exceptions, and serial root-finding.
+ * Not suitable for Kokkos parallel_for or device kernels.
  */
 #ifndef IPPL_NODES1D_GAUSS_LOBATTO_1D_HPP
 #define IPPL_NODES1D_GAUSS_LOBATTO_1D_HPP

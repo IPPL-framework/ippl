@@ -4,6 +4,9 @@
  *
  * Endpoints +/-1 are fixed; n-2 interior nodes are roots of P_{n-1}'.
  * An n-point GLL rule is exact for polynomials of degree up to 2n-3 (not 2n-1).
+ *
+ * Host-only module (see Nodes1D.h). evalLegendre uses KOKKOS_INLINE_FUNCTION for header
+ * inlining only; computeGaussLobatto and View overloads run on the host.
  */
 //
 // GaussLobatto1D — Gauss–Lobatto–Legendre (GLL) nodes and weights on [-1, 1].
