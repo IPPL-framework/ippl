@@ -18,7 +18,7 @@
 #include <vector>
 
 #include <Kokkos_Core.hpp>
-#include <stb_image_write.hpp>
+#include <stb_image_write.h>
 
 #include "Config.h"
 #include "LorentzTransform.h"
