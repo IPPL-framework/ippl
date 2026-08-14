@@ -187,8 +187,10 @@ namespace ippl {
         for (unsigned d = 0; d < Dim; ++d) {
             anyPeriodic = anyPeriodic || periodic[d];
         }
-        if (!anyPeriodic)
+        if (!anyPeriodic) {
+            IpplTimings::stopTimer(timer);
             return;
+        }
 
         const auto& globalRegion = this->rlayout_m->getDomain();
         const auto overlap       = rcutoff_m;
@@ -207,6 +209,7 @@ namespace ippl {
             },
             Kokkos::Sum<size_type>(numBoundaryParticles));
         if (numBoundaryParticles == 0) {
+            IpplTimings::stopTimer(timer);
             return;
         }
 

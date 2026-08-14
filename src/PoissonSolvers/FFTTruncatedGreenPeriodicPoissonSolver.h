@@ -1,7 +1,8 @@
 //
 // Class FFTTruncatedGreenPeriodicPoissonSolver
-//   FFT solver for the periodic long-range part of an Ewald split. For every nonzero Fourier mode,
-//   it computes
+//   P3M long-range solver retaining its historical class name. PERIODIC uses the native spectral
+//   Ewald path; OPEN delegates to FFTOpenPoissonSolver with a doubled-grid Hockney convolution.
+//   For every nonzero periodic Fourier mode, it computes
 //      phi_hat(k) = -rho_hat(k) * 4*pi*forceConstant*exp(-k^2/(4*alpha^2))/k^2
 //   and E = -grad(phi). The zero mode is set to zero, corresponding to a neutral system or an
 //   implicit uniform neutralizing background. alpha controls the split between mesh and particle
@@ -20,6 +21,7 @@
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
 #include "Poisson.h"
+#include "PoissonSolvers/FFTOpenPoissonSolver.h"
 
 namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
@@ -45,6 +47,13 @@ namespace ippl {
         // define type for field layout
         typedef FieldLayout<Dim> FieldLayout_t;
 
+        enum BoundaryType {
+            OPEN     = 0,
+            PERIODIC = 1
+        };
+
+        using OpenSolver_t = FFTOpenPoissonSolver<FieldLHS, FieldRHS>;
+
         // constructor and destructor
         FFTTruncatedGreenPeriodicPoissonSolver();
         FFTTruncatedGreenPeriodicPoissonSolver(rhs_type& rhs, ParameterList& params);
@@ -54,6 +63,9 @@ namespace ippl {
         // override the setRhs function of the Solver class
         // since we need to call initializeFields()
         void setRhs(rhs_type& rhs) override;
+
+        // Keep the delegated open solver bound to the same output field.
+        void setLhs(lhs_type& lhs) override;
 
         // solve the Poisson equation
         // more specifically, compute the scalar potential given a density field rho
@@ -72,6 +84,12 @@ namespace ippl {
 
         // the FFT object
         std::unique_ptr<FFT_t> fft_m;
+
+        // Reuse the existing Hockney implementation for open-boundary P3M.
+        std::unique_ptr<OpenSolver_t> openSolver_m;
+
+        BoundaryType boundaryType_m = PERIODIC;
+        bool boundaryInitialized_m  = false;
 
         // mesh and layout objects for rho_m (RHS)
         mesh_type* mesh_mp;
@@ -99,6 +117,7 @@ namespace ippl {
             this->params_m.add("r2c_direction", 0);
             this->params_m.template add<Trhs>("alpha", 1);
             this->params_m.template add<Trhs>("force_constant", 1);
+            this->params_m.add("boundary_type", PERIODIC);
 
             switch (opts.algorithm) {
                 case heffte::reshape_algorithm::alltoall:

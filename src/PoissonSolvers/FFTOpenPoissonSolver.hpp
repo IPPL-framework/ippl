@@ -134,10 +134,11 @@ namespace ippl {
         }
 
         if ((greensFunctionType != GreenFunction::STANDARD)
-            && (greensFunctionType != GreenFunction::INTEGRATED)) {
+            && (greensFunctionType != GreenFunction::INTEGRATED)
+            && (greensFunctionType != GreenFunction::TRUNCATED)) {
             throw IpplException("FFTOpenPoissonSolver::initializeFields()",
-                                "Currently only STANDARD and INTEGRATED Green's functions are "
-                                "supported for open BCs");
+                                "Currently only STANDARD, INTEGRATED, and TRUNCATED Green's "
+                                "functions are supported for open BCs");
         }
 
         if ((greensFunctionType == GreenFunction::INTEGRATED)
@@ -145,6 +146,19 @@ namespace ippl {
             throw IpplException("FFTOpenPoissonSolver::initializeFields()",
                                 "The integrated Green's function is currently only implemented "
                                 "for 3D HOCKNEY open BCs");
+        }
+
+        if ((greensFunctionType == GreenFunction::TRUNCATED)
+            && ((alg != Algorithm::HOCKNEY) || (Dim != 3))) {
+            throw IpplException("FFTOpenPoissonSolver::initializeFields()",
+                                "The truncated Green's function is only implemented for 3D "
+                                "HOCKNEY open BCs");
+        }
+
+        if ((greensFunctionType == GreenFunction::TRUNCATED)
+            && (this->params_m.template get<Trhs>("alpha") <= 0)) {
+            throw IpplException("FFTOpenPoissonSolver::initializeFields()",
+                                "The truncated Green's function requires alpha > 0");
         }
 
         // check dimension
@@ -1025,6 +1039,11 @@ namespace ippl {
         const int alg                = this->params_m.template get<int>("algorithm");
         const int greensFunctionType = this->params_m.template get<int>("greens_function");
 
+        if (greensFunctionType == GreenFunction::TRUNCATED) {
+            truncatedGreensFunction();
+            return;
+        }
+
         using index_array_type = typename RangePolicy<Dim>::index_array_type;
 
         if (alg == Algorithm::VICO || alg == Algorithm::BIHARMONIC) {
@@ -1397,6 +1416,62 @@ namespace ippl {
 
         IpplTimings::stopTimer(fftg);
     };
+
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::truncatedGreensFunction() {
+        const int alg = this->params_m.template get<int>("algorithm");
+        if ((alg != Algorithm::HOCKNEY) || (Dim != 3)) {
+            throw IpplException("FFTOpenPoissonSolver::truncatedGreensFunction()",
+                                "The truncated Green's function is only implemented for 3D "
+                                "HOCKNEY open BCs");
+        }
+
+        const Trhs alpha         = this->params_m.template get<Trhs>("alpha");
+        const Trhs forceConstant = this->params_m.template get<Trhs>("force_constant");
+        if (alpha <= 0) {
+            throw IpplException("FFTOpenPoissonSolver::truncatedGreensFunction()",
+                                "The truncated Green's function requires alpha > 0");
+        }
+
+        this->params_m.update("greens_function", GreenFunction::TRUNCATED);
+        grn_mr = 0.0;
+
+        const scalar_type pi      = Kokkos::numbers::pi_v<scalar_type>;
+        auto view                 = grn_mr.getView();
+        const int nghost          = grn_mr.getNghost();
+        const auto& ldom          = layout2_m->getLocalNDIndex();
+        const Vector<int, Dim> nr = nr_m;
+        const vector_type hs      = hr_m;
+
+        using index_array_type = typename RangePolicy<Dim>::index_array_type;
+        ippl::parallel_for(
+            "Truncated open Green's function", grn_mr.getFieldRangePolicy(),
+            KOKKOS_LAMBDA(const index_array_type& args) {
+                Vector<int, Dim> igVec = args - nghost;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    igVec[d] += ldom[d].first();
+                }
+
+                scalar_type r2 = 0;
+                for (unsigned d = 0; d < Dim; ++d) {
+                    const int signedIndex    = (igVec[d] < nr[d]) ? igVec[d] : igVec[d] - 2 * nr[d];
+                    const scalar_type offset = static_cast<scalar_type>(signedIndex) * hs[d];
+                    r2 += offset * offset;
+                }
+
+                const bool isOrigin           = (r2 == 0);
+                const scalar_type r           = Kokkos::sqrt(r2);
+                const scalar_type safeR       = r + static_cast<scalar_type>(isOrigin);
+                const scalar_type regular     = forceConstant * Kokkos::erf(alpha * r) / safeR;
+                const scalar_type originValue = forceConstant * 2 * alpha / Kokkos::sqrt(pi);
+                apply(view, args)             = isOrigin ? originValue : regular;
+            });
+
+        static IpplTimings::TimerRef fftg = IpplTimings::getTimer("FFT: Green");
+        IpplTimings::startTimer(fftg);
+        fft_m->transform(FORWARD, grn_mr, grntr_m);
+        IpplTimings::stopTimer(fftg);
+    }
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::communicateVico(
@@ -2226,6 +2301,10 @@ namespace ippl {
         if ((greensFunctionType == GreenFunction::INTEGRATED) && (Dim != 3)) {
             throw IpplException("FFTOpenPoissonSolver::shiftedGreensFunction",
                                 "Shifted integrated Green's function is only implemented for 3D.");
+        }
+        if (greensFunctionType == GreenFunction::TRUNCATED) {
+            throw IpplException("FFTOpenPoissonSolver::shiftedGreensFunction",
+                                "Shifted truncated Green's functions are not supported.");
         }
 
         // Sync mesh spacing with the current RHS mesh (same logic as solve()'s

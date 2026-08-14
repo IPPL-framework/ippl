@@ -18,8 +18,8 @@
 
 #include "units.h"
 
-#define JSON_HAS_RANGES 0  
-#include <json.hpp>
+#define JSON_HAS_RANGES 0
+#include <nlohmann/json.hpp>
 
 struct config {
     using scalar = double;
