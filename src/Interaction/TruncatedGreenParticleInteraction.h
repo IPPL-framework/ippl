@@ -3,7 +3,7 @@
 //   This class implements the short-range part of the Ewald Green function split by evaluating the
 //   gradient of forceConstant * erfc(alpha * r) / r. Below regularization_cutoff, the singular
 //   Coulomb contribution is replaced by a linear force that matches continuously at the cutoff.
-//   The long-range part is handled by FFTTruncatedGreenPeriodicPoissonSolver.
+//   The long-range part is handled by the periodic or open-boundary P3M mesh solver.
 //
 //   It assumes that ParticleContainer implements a function forAllPairs() to iterate over all
 //   relevant particle pairs.

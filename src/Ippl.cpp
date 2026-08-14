@@ -3,6 +3,9 @@
 //   Ippl environment.
 //
 #include <Kokkos_Core.hpp>
+#if defined(KOKKOS_ENABLE_OPENMP)
+#include <omp.h>
+#endif
 #include "Ippl.h"
 
 #include <cstdlib>
@@ -99,6 +102,14 @@ namespace ippl {
             std::exit(0);
         }
 
+#if defined(KOKKOS_ENABLE_OPENMP) && defined(KOKKOS_ENABLE_HIP)
+        // Initialize the host OpenMP runtime before Kokkos. With ROCm libomp,
+        // using omp_in_parallel() as the first OpenMP call can abort during
+        // Kokkos initialization; omp_get_max_threads() provides a lightweight
+        // first touch without creating an OpenMP worker team.
+        const int openmpMaxThreads = omp_get_max_threads();
+        (void)openmpMaxThreads;
+#endif
         Kokkos::initialize(argc, argv);
 
         // Seed scatter/gather caches with per-exec-space defaults and, when
