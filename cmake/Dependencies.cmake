@@ -499,22 +499,21 @@ if(IPPL_ENABLE_UNIT_TESTS)
   endif()
 endif()
 
-if(IPPL_ENABLE_TESTS)
-  set(DOWNLOADED_HEADERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloaded_headers")
-  file(DOWNLOAD https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
-       "${DOWNLOADED_HEADERS_DIR}/stb_image_write.h")
-  message(STATUS "✅ stb_image_write loaded for testing FDTD solver.")
-endif()
-
 # ------------------------------------------------------------------------------
 # FEL module header-only dependencies (nlohmann/json for config parsing, stb_image_write for the
 # Poynting-flux visualization).
 # ------------------------------------------------------------------------------
 if(IPPL_ENABLE_FEL)
-  set(DOWNLOADED_HEADERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloaded_headers")
-  file(DOWNLOAD https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp
-       "${DOWNLOADED_HEADERS_DIR}/json.hpp")
-  file(DOWNLOAD https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
-       "${DOWNLOADED_HEADERS_DIR}/stb_image_write.hpp")
-  message(STATUS "✅ nlohmann/json and stb_image_write loaded for the FEL module.")
+  # Fetch the CMake package instead of downloading the release header directly.  CMake's
+  # file(DOWNLOAD) does not fail by default and can leave a zero-byte json.hpp behind when a
+  # release-asset host is unavailable, which only surfaces later as a confusing compile error.
+  set(JSON_BuildTests OFF CACHE BOOL "Disable nlohmann/json tests" FORCE)
+  FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
+    GIT_SHALLOW ON)
+  FetchContent_MakeAvailable(nlohmann_json)
+
+  message(STATUS "✅ nlohmann/json loaded for the FEL module.")
 endif()
