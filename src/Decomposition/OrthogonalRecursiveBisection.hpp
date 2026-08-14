@@ -1,3 +1,5 @@
+#include <type_traits>
+
 #include "Utility/IpplTimings.h"
 
 namespace ippl {
@@ -294,7 +296,7 @@ namespace ippl {
                 Vector<size_t, Dim> args = index - lDom.first() + nghost;
 
                 // Scatter
-                scatterToField(std::make_index_sequence<1 << Dim>{}, view, wlo, whi, args);
+                scatterToField(std::make_index_sequence<1 << Dim>{}, view, wlo, whi, args, 1);
             });
 
         bf_m.accumulateHalo();

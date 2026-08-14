@@ -12,6 +12,7 @@
 #include "Random/InverseTransformSampling.h"
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
+#include "mc-4-Initializer/InputParser.h"
 
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
@@ -42,11 +43,13 @@ public:
      * @param lbt_ Load balance threshold.
      * @param solver_ Solver type.
      * @param stepMethod_ Time stepping method type.
+     * @param par_ Inputfile parser
      */
     GravityManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_, double lbt_,
-                   std::string& solver_, std::string& stepMethod_)
+                   std::string& solver_, std::string& stepMethod_, initializer::InputParser par_)
         : ippl::PicManager<T, Dim, ParticleContainer<T, Dim>, FieldContainer<T, Dim>,
                            LoadBalancer<T, Dim>>()
+        , parser_m(par_)
         , totalP_m(totalP_)
         , nt_m(nt_)
         , nr_m(nr_)
@@ -64,6 +67,11 @@ public:
      * @brief Folder for initial conditions.
      */
     std::string folder;
+
+    /**
+     * @brief Access to the input file with constants and simulation parameters.
+     */
+    initializer::InputParser parser_m;
 
     /**
      * @brief Get the total number of particles.
@@ -211,8 +219,10 @@ public:
      */
     void InitialiseTime() {
         Inform mes("Inititalise: ");
-        this->O_m      = 0.3;
-        this->O_L      = 0.7;
+        parser_m.getByName("Omega_m", this->O_m);
+        parser_m.getByName("Omega_L", this->O_L);
+        // this->O_m      = 0.3;       // \todo need to from input file
+        // this->O_L      = 0.7;       // \todo need to from input file
         this->t_L      = 2 / (3 * this->Hubble0 * sqrt(this->O_L));
         this->a_m      = 1 / (1 + this->z_m);
         this->Dloga    = 1. / (this->nt_m) * log((1 + this->z_m) / (1 + this->z_f));
@@ -241,8 +251,8 @@ public:
      * @brief Pre-step method called before each simulation step.
      */
     void pre_step() override {
-        Inform mes("Pre-step");
-        mes << "Done" << endl;
+        //        Inform mes("Pre-step");
+        //  mes << "Done" << endl;
     }
 
     /**
@@ -262,9 +272,9 @@ public:
         // dynamic time step
         this->dt_m = this->Dloga / this->Hubble_m;
 
-        mes << "Finished time step: " << this->it_m << endl;
-        mes << " time: " << this->time_m << ", timestep: " << this->dt_m << ", z: " << this->z_m
-            << ", a: " << this->a_m << endl;
+        mes << "Step: " << this->it_m;
+        mes << " comological time: " << this->time_m << ", dt: " << this->dt_m
+            << ", z: " << this->z_m << ", a: " << this->a_m << endl;
     }
 
     // Grid to particle and particle to grid methods
@@ -291,10 +301,10 @@ public:
      */
     void scatterCIC() {
         Inform mes("scatter ");
-        mes << "starting ..." << endl;
+
         this->fcontainer_m->getRho() = 0.0;
 
-        ippl::ParticleAttrib<double>* m          = &this->pcontainer_m->m;
+        ippl::ParticleAttrib<float>* m           = &this->pcontainer_m->m;
         typename Base::particle_position_type* R = &this->pcontainer_m->R;
         Field_t<Dim>* rho                        = &this->fcontainer_m->getRho();
         Vector_t<double, Dim> rmin               = rmin_m;
@@ -303,7 +313,6 @@ public:
 
         scatter(*m, *rho, *R);
         double relError = std::fabs((M_m - (*rho).sum()) / M_m);
-        mes << "relative error: " << relError << endl;
 
         size_type TotalParticles = 0;
         size_type localParticles = this->pcontainer_m->getLocalNum();
@@ -311,7 +320,8 @@ public:
         ippl::Comm->reduce(localParticles, TotalParticles, 1, std::plus<size_type>());
 
         if (ippl::Comm->rank() == 0) {
-            if (TotalParticles != totalP_m || relError > 1e-10) {
+            if (TotalParticles != totalP_m
+                || relError > 10. * Kokkos::Experimental::epsilon_v<float>) {
                 mes << "Time step: " << it_m << endl;
                 mes << "Total particles in the sim. " << totalP_m << " "
                     << "after update: " << TotalParticles << endl;
@@ -351,8 +361,8 @@ protected:
     double Hubble0;                  ///< Hubble constant today (73.8 km/sec/Mpc).
     double G;                        ///< Gravitational constant. [kpc^3/(Msun s^2)]
     double rho_crit0;                ///< Critical density today. [Msun/kpc^3]
-    double O_m;                      ///< Matter density parameter. [1]
-    double O_L;                      ///< Dark energy density parameter. [1]
+    float O_m;                       ///< Matter density parameter. [1]
+    float O_L;                       ///< Dark energy density parameter. [1]
     double t_L;                      ///< Characteristic time scale. [s]
     double z_m;                      ///< Initial redshift. [1]
     double z_f;                      ///< Final redshift.   [1]
