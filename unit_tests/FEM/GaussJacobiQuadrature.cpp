@@ -1,6 +1,7 @@
 
 #include "Ippl.h"
 
+#include "Nodes1D/GaussChebyshev1D.h"
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
@@ -21,12 +22,12 @@ public:
     GaussJacobiQuadratureTest()
         : ref_element()
         , gaussLegendreQuadrature(ref_element, 10, 1)
-        , chebyshevGaussQuadrature(ref_element, 10, 1) {}
+        , gaussChebyshevQuadrature(ref_element, 10, 1) {}
 
     const ElementType ref_element;
 
     const ippl::GaussLegendreQuadrature<T, NumNodes1D, ElementType> gaussLegendreQuadrature;
-    const ippl::ChebyshevGaussQuadrature<T, NumNodes1D, ElementType> chebyshevGaussQuadrature;
+    const ippl::GaussChebyshevQuadrature<T, NumNodes1D, ElementType> gaussChebyshevQuadrature;
 };
 
 using Precisions = TestParams::Precisions;
@@ -126,23 +127,23 @@ TYPED_TEST(GaussJacobiQuadratureTest, GaussLegendreQuadrature) {
     }
 }
 
-TYPED_TEST(GaussJacobiQuadratureTest, ChebyshevGaussQuadrature) {
-    // Chebyshev-Gauss gaussLegendreQuadrature
+TYPED_TEST(GaussJacobiQuadratureTest, GaussChebyshevQuadrature) {
+    // Gauss-Chebyshev quadrature
     using T = typename TestFixture::value_t;
 
-    const auto& chebyshevGaussQuadrature = this->chebyshevGaussQuadrature;
-    const std::size_t& numNodes1D        = this->chebyshevGaussQuadrature.numNodes1D;
+    const auto& gaussChebyshevQuadrature = this->gaussChebyshevQuadrature;
+    const std::size_t& numNodes1D          = this->gaussChebyshevQuadrature.numNodes1D;
 
     const T& tol = std::numeric_limits<T>::epsilon() * 20;
 
-    // Chebyshev-Gauss Quadrature
-    const auto& q = chebyshevGaussQuadrature.getIntegrationNodes1D(-1.0, 1.0);
-    const auto& w = chebyshevGaussQuadrature.getWeights1D(-1.0, 1.0);
+    // Gauss-Chebyshev quadrature
+    const auto& q = gaussChebyshevQuadrature.getIntegrationNodes1D(-1.0, 1.0);
+    const auto& w = gaussChebyshevQuadrature.getWeights1D(-1.0, 1.0);
 
     T x;
     T w_k = Kokkos::numbers::pi_v<T> / numNodes1D;
     for (unsigned k = 0; k < numNodes1D; ++k) {
-        x = chebyshevGaussQuadrature.getChebyshevNodes(k);
+        x = ippl::nodes1d::chebyshevNode<T>(k, numNodes1D);
 
         EXPECT_NEAR(q[k], x, tol);
         EXPECT_NEAR(w[k], w_k, tol);

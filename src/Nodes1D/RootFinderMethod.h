@@ -36,10 +36,9 @@ namespace nodes1d {
         /**
          * Newton root-finding with Brent fallback.
          *
-         * Jacobi / Legendre: staged guess ladder over all k (primary InitialGuessType, then
-         * Asymptotic, then Chebyshev if not already primary; StroudSecrest is never
-         * auto-appended), merge and dedupe after each stage, then a global Brent scan of P_n
-         * on (-1, 1) if still incomplete.
+         * Jacobi/Legendre: staged guess ladder over all k (InitialGuessType/Asymptotic/Chebyshev
+         * StroudSecrest is never auto-appended), merge and dedupe after each stage, then a global
+         * Brent scan of P_n on (-1, 1) if still incomplete.
          *
          * GLL: sequential left-to-right on each interior root of P_{n-1}' (Asymptotic Jacobi
          * (1,1), then Chebyshev-Lobatto cosine, then local Brent in a bracket bounded by

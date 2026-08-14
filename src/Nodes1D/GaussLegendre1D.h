@@ -71,6 +71,25 @@ namespace nodes1d {
             });
     }
 
+    /**
+     * @brief Compute Gauss–Legendre nodes and weights into fixed-size Vectors (compile-time N).
+     *
+     * Thin wrapper around computeGaussJacobi with alpha = beta = 0; n is N.
+     *
+     * @tparam T Element type stored in the vectors.
+     * @tparam N Number of quadrature points (compile-time, N >= 1).
+     * @tparam Scalar Working precision for the internal computation (default double).
+     */
+    template <typename T, unsigned N, typename Scalar = double>
+    void computeGaussLegendre(Vector<T, N>& nodes, Vector<T, N>& weights,
+                              std::size_t maxNewtonIterations = 40,
+                              std::size_t minNewtonIterations  = 1,
+                              InitialGuessType initialGuess = InitialGuessType::Asymptotic,
+                              RootFinderMethod method = RootFinderMethod::GolubWelsch) {
+        computeGaussJacobi(nodes, weights, Scalar(0), Scalar(0), maxNewtonIterations,
+                           minNewtonIterations, initialGuess, method);
+    }
+
 }  // namespace nodes1d
 }  // namespace ippl
 

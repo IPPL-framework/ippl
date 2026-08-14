@@ -87,6 +87,25 @@ namespace nodes1d {
             [&](std::size_t n, RealType* x, RealType* w) { computeGaussChebyshev(n, x, w); });
     }
 
+    /**
+     * @brief Compute Gauss–Chebyshev nodes and weights into fixed-size Vectors (compile-time N).
+     *
+     * Thin wrapper around the pointer overload; n is N.
+     *
+     * @tparam T Element type stored in the vectors.
+     * @tparam N Number of quadrature points (compile-time, N >= 1).
+     * @tparam Scalar Working precision for the internal computation (default double).
+     * @param nodes Output nodes; size N.
+     * @param weights Output weights; size N.
+     */
+    template <typename T, unsigned N, typename Scalar = double>
+    void computeGaussChebyshev(Vector<T, N>& nodes, Vector<T, N>& weights) {
+        static_assert(N >= 1, "Gauss-Chebyshev quadrature requires N >= 1");
+        detail::fillFixedVectors<T, N, Scalar>(
+            nodes, weights,
+            [](std::size_t n, Scalar* x, Scalar* w) { computeGaussChebyshev(n, x, w); });
+    }
+
 }  // namespace nodes1d
 }  // namespace ippl
 

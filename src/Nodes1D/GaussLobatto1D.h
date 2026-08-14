@@ -105,6 +105,27 @@ namespace nodes1d {
             });
     }
 
+    /**
+     * @brief Compute GLL nodes and weights into fixed-size Vectors (compile-time N).
+     *
+     * Thin wrapper around the pointer overload; n is N.
+     *
+     * @tparam T Element type stored in the vectors.
+     * @tparam N Number of quadrature points (compile-time, N >= 2).
+     * @tparam Scalar Working precision for the internal computation (default double).
+     */
+    template <typename T, unsigned N, typename Scalar = double>
+    void computeGaussLobatto(Vector<T, N>& nodes, Vector<T, N>& weights,
+                             std::size_t maxNewtonIterations = 40,
+                             std::size_t minNewtonIterations  = 1,
+                             RootFinderMethod method = RootFinderMethod::GolubWelsch) {
+        static_assert(N >= 2, "Gauss-Lobatto quadrature requires N >= 2");
+        detail::fillFixedVectors<T, N, Scalar>(
+            nodes, weights, [&](std::size_t n, Scalar* x, Scalar* w) {
+                computeGaussLobatto(n, x, w, maxNewtonIterations, minNewtonIterations, method);
+            });
+    }
+
 }  // namespace nodes1d
 }  // namespace ippl
 
