@@ -1,0 +1,71 @@
+// Class GaussLobattoQuadrature
+//   Gauss-Lobatto-Legendre (GLL) quadrature on [-1, 1]. Node/weight generation delegates to ippl::nodes1d.
+
+#ifndef IPPL_GAUSSLOBATTOQUADRATURE_H
+#define IPPL_GAUSSLOBATTOQUADRATURE_H
+
+#include <cassert>
+
+#include "FEM/Quadrature/Quadrature.h"
+#include "Nodes1D/GaussLobatto1D.h"
+
+namespace ippl {
+
+    /**
+     * @brief Gauss-Lobatto-Legendre quadrature on a reference element.
+     *
+     * Endpoints +/-1 are fixed; n-2 interior nodes are roots of P_{n-1}'.
+     * An n-point GLL rule is exact for polynomials of degree up to 2n-3.
+     *
+     * @tparam T floating point number type of the quadrature nodes and weights
+     * @tparam NumNodes1D number of quadrature nodes for one dimension (>= 2)
+     * @tparam ElementType element type for which the quadrature rule is defined
+     */
+    template <typename T, unsigned NumNodes1D, typename ElementType>
+    class GaussLobattoQuadrature : public Quadrature<T, NumNodes1D, ElementType> {
+    public:
+        static_assert(NumNodes1D >= 2, "Gauss-Lobatto quadrature requires NumNodes1D >= 2");
+
+        /**
+         * @brief Construct a Gauss-Lobatto quadrature rule on [-1, 1].
+         *
+         * @param ref_element reference element to compute the quadrature nodes on
+         * @param max_newton_itersations maximum Newton iterations (Nodes1D Newton backend only)
+         * @param min_newton_iterations minimum Newton iterations (Nodes1D Newton backend only)
+         */
+        GaussLobattoQuadrature(const ElementType& ref_element,
+                               const size_t& max_newton_itersations = 40,
+                               const size_t& min_newton_iterations  = 1)
+            : Quadrature<T, NumNodes1D, ElementType>(ref_element)
+            , max_newton_iterations_m(max_newton_itersations)
+            , min_newton_iterations_m(min_newton_iterations) {
+            assert(max_newton_iterations_m >= 1 && "max_newton_iterations >= 1 is not satisfied");
+            assert(min_newton_iterations_m >= 1 && "min_newton_iterations_m >= 1 is not satisfied");
+            assert(min_newton_iterations_m <= max_newton_iterations_m
+                   && "min_newton_iterations_m <= max_newton_iterations_m is not satisfied");
+
+            this->degree_m = 2 * NumNodes1D - 3;
+
+            this->a_m = -1.0;
+            this->b_m = 1.0;
+
+            this->integration_nodes_m = Vector<T, NumNodes1D>();
+            this->weights_m           = Vector<T, NumNodes1D>();
+
+            computeNodesAndWeights();
+        }
+
+        /** @brief Fill integration_nodes_m and weights_m via nodes1d::computeGaussLobatto. */
+        void computeNodesAndWeights() override {
+            nodes1d::computeGaussLobatto(this->integration_nodes_m, this->weights_m,
+                                         max_newton_iterations_m, min_newton_iterations_m);
+        }
+
+    private:
+        const size_t max_newton_iterations_m;
+        const size_t min_newton_iterations_m;
+    };
+
+}  // namespace ippl
+
+#endif

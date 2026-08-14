@@ -45,6 +45,7 @@
 
 // // FEM Quadrature
 #include "FEM/Quadrature/GaussJacobiQuadrature.h"
+#include "FEM/Quadrature/GaussLobattoQuadrature.h"
 #include "FEM/Quadrature/MidpointQuadrature.h"
 
 // // FEM Spaces
