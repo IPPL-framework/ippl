@@ -51,7 +51,7 @@ variables:
 # ---------------------------------------------------------
 # cuda build debug
 # ---------------------------------------------------------
-ippl-build-cuda12-sm90-debug:
+ippl-build-cuda13-sm90-debug:
   extends: .ippl-build-cuda-common
   variables:
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug"
@@ -60,7 +60,7 @@ ippl-build-cuda12-sm90-debug:
 # ---------------------------------------------------------
 # cuda build release
 # ---------------------------------------------------------
-ippl-build-cuda12-sm90-release:
+ippl-build-cuda13-sm90-release:
   extends: .ippl-build-cuda-common
   variables:
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
