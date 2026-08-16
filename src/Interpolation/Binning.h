@@ -148,7 +148,7 @@ namespace ippl {
 
                 {
                     auto offsets_zero = Kokkos::subview(
-                        bin_offsets, std::make_pair(size_t(0), n_bins + 1));
+                        bin_offsets, Kokkos::pair<size_t, size_t>{size_t(0), n_bins + 1});
                     Kokkos::deep_copy(ExecSpace(), offsets_zero,
                                       typename OffsetViewType::value_type(0));
                 }
@@ -194,10 +194,10 @@ namespace ippl {
                 IpplTimings::startTimer(offsetTimer);
 
                 if (n_particles > 0) {
-                    auto cursor_sub  = Kokkos::subview(cursor,
-                                                       std::make_pair(size_t(0), n_bins));
-                    auto offsets_sub = Kokkos::subview(bin_offsets,
-                                                       std::make_pair(size_t(0), n_bins));
+                    auto cursor_sub = Kokkos::subview(
+                        cursor, Kokkos::pair<size_t, size_t>{size_t(0), n_bins});
+                    auto offsets_sub = Kokkos::subview(
+                        bin_offsets, Kokkos::pair<size_t, size_t>{size_t(0), n_bins});
                     Kokkos::deep_copy(ExecSpace(), cursor_sub, offsets_sub);
 
                     Kokkos::parallel_for(

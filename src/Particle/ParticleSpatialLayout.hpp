@@ -154,8 +154,10 @@ namespace ippl {
         if (nDest > 0) {
             Kokkos::deep_copy(
                 position_execution_space{},
-                Kokkos::subview(destRanks_h_, std::make_pair(size_t(0), size_t(nDest))),
-                Kokkos::subview(destRanks_d_, std::make_pair(size_t(0), size_t(nDest))));
+                Kokkos::subview(destRanks_h_,
+                                Kokkos::pair<size_t, size_t>{size_t(0), size_t(nDest)}),
+                Kokkos::subview(destRanks_d_,
+                                Kokkos::pair<size_t, size_t>{size_t(0), size_t(nDest)}));
         }
 
         // counts + offsets
@@ -203,8 +205,9 @@ namespace ippl {
             if (count == 0)
                 continue;
             const size_type begin = static_cast<size_type>(sendOffsets_h_(rank));
-            auto ids_sub =
-                Kokkos::subview(sendIds_d_, std::make_pair((size_t)begin, (size_t)(begin + count)));
+            auto ids_sub = Kokkos::subview(
+                sendIds_d_, Kokkos::pair<size_t, size_t>{static_cast<size_t>(begin),
+                                                         static_cast<size_t>(begin + count)});
             requests.push_back(pc.sendToRank(rank, tag, ids_sub));
         }
 
@@ -538,8 +541,10 @@ namespace ippl {
         }
 
         Kokkos::deep_copy(
-            Kokkos::subview(neighbors_d_, std::make_pair(size_t(0), size_t(neighborSize))),
-            Kokkos::subview(neighbors_h, std::make_pair(size_t(0), size_t(neighborSize))));
+            Kokkos::subview(neighbors_d_,
+                            Kokkos::pair<size_t, size_t>{size_t(0), size_t(neighborSize)}),
+            Kokkos::subview(neighbors_h,
+                            Kokkos::pair<size_t, size_t>{size_t(0), size_t(neighborSize)}));
 
         neighbors_dirty_ = false;
     }
