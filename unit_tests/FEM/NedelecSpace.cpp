@@ -35,7 +35,7 @@ public:
                             std::conditional_t<Dim == 2, ippl::QuadrilateralElement<T>,
                                 ippl::HexahedralElement<T>>>;
 
-    using QuadratureType = ippl::GaussJacobiQuadrature<T, 5, ElementType>;
+    using QuadratureType = ippl::GaussLegendreQuadrature<T, 5, ElementType>;
     using FieldType            = ippl::Field<T, Dim, MeshType, typename MeshType::DefaultCentering>;
     using BCType               = ippl::BConds<FieldType, Dim>;
     using Layout               = ippl::FieldLayout<Dim>;
@@ -48,7 +48,7 @@ public:
             ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
         , meshSmall(ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(3)),
             ippl::Vector<T, Dim>(1.0), ippl::Vector<T, Dim>(0.0))
-        , quadrature(ref_element, 0.0, 0.0)
+        , quadrature(ref_element)
         , layout(MPI_COMM_WORLD, ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(5)),
                                                std::array<bool, Dim>{true})
         , layoutSmall(MPI_COMM_WORLD, ippl::NDIndex<Dim>(ippl::Vector<unsigned, Dim>(3)),
