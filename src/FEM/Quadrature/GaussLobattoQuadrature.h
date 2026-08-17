@@ -30,14 +30,14 @@ namespace ippl {
          * @brief Construct a Gauss-Lobatto quadrature rule on [-1, 1].
          *
          * @param ref_element reference element to compute the quadrature nodes on
-         * @param max_newton_itersations maximum Newton iterations (Nodes1D Newton backend only)
+         * @param max_newton_iterations maximum Newton iterations (Nodes1D Newton backend only)
          * @param min_newton_iterations minimum Newton iterations (Nodes1D Newton backend only)
          */
         GaussLobattoQuadrature(const ElementType& ref_element,
-                               const size_t& max_newton_itersations = 40,
+                               const size_t& max_newton_iterations = 40,
                                const size_t& min_newton_iterations  = 1)
             : Quadrature<T, NumNodes1D, ElementType>(ref_element)
-            , max_newton_iterations_m(max_newton_itersations)
+            , max_newton_iterations_m(max_newton_iterations)
             , min_newton_iterations_m(min_newton_iterations) {
             assert(max_newton_iterations_m >= 1 && "max_newton_iterations >= 1 is not satisfied");
             assert(min_newton_iterations_m >= 1 && "min_newton_iterations_m >= 1 is not satisfied");

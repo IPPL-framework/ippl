@@ -54,14 +54,14 @@ namespace ippl {
          * @brief Construct a Gauss-Legendre quadrature rule on [-1, 1].
          *
          * @param ref_element reference element to compute the quadrature nodes on
-         * @param max_newton_itersations maximum Newton iterations (Nodes1D Newton backend only)
+         * @param max_newton_iterations maximum Newton iterations (Nodes1D Newton backend only)
          * @param min_newton_iterations minimum Newton iterations (Nodes1D Newton backend only)
          */
         GaussLegendreQuadrature(const ElementType& ref_element,
-                                const size_t& max_newton_itersations = 40,
+                                const size_t& max_newton_iterations = 40,
                                 const size_t& min_newton_iterations  = 1)
             : Quadrature<T, NumNodes1D, ElementType>(ref_element)
-            , max_newton_iterations_m(max_newton_itersations)
+            , max_newton_iterations_m(max_newton_iterations)
             , min_newton_iterations_m(min_newton_iterations) {
             assert(max_newton_iterations_m >= 1 && "max_newton_iterations >= 1 is not satisfied");
             assert(min_newton_iterations_m >= 1 && "min_newton_iterations_m >= 1 is not satisfied");
@@ -114,11 +114,11 @@ namespace ippl {
     //      * @param ref_element reference element to compute the quadrature nodes on
     //      * @param alpha first Jacobi parameter alpha (> -1)
     //      * @param beta second Jacobi parameter beta (> -1)
-    //      * @param max_newton_itersations maximum Newton iterations (Nodes1D Newton backend only)
+    //      * @param max_newton_iterations maximum Newton iterations (Nodes1D Newton backend only)
     //      * @param min_newton_iterations minimum Newton iterations (Nodes1D Newton backend only)
     //      */
     //     GaussJacobiQuadrature(const ElementType& ref_element, const T& alpha, const T& beta,
-    //                           const size_t& max_newton_itersations = 10,
+    //                           const size_t& max_newton_iterations = 10,
     //                           const size_t& min_newton_iterations  = 1);
     //
     //     /** @brief Fill integration_nodes_m and weights_m via nodes1d::computeGaussJacobi. */
@@ -152,14 +152,14 @@ namespace ippl {
     //      * @brief Gauss-Legendre quadrature (Jacobi with alpha = beta = 0).
     //      *
     //      * @param ref_element reference element to compute the quadrature nodes on
-    //      * @param max_newton_itersations maximum Newton iterations (Nodes1D Newton backend only)
+    //      * @param max_newton_iterations maximum Newton iterations (Nodes1D Newton backend only)
     //      * @param min_newton_iterations minimum Newton iterations (Nodes1D Newton backend only)
     //      */
     //     GaussLegendreQuadrature(const ElementType& ref_element,
-    //                             const size_t& max_newton_itersations = 10,
+    //                             const size_t& max_newton_iterations = 10,
     //                             const size_t& min_newton_iterations  = 1)
     //         : GaussJacobiQuadrature<T, NumNodes1D, ElementType>(
-    //             ref_element, 0.0, 0.0, max_newton_itersations, min_newton_iterations) {}
+    //             ref_element, 0.0, 0.0, max_newton_iterations, min_newton_iterations) {}
     // };
     //
     // /**
@@ -179,14 +179,14 @@ namespace ippl {
     //      * @brief Construct a Gauss-Chebyshev quadrature rule on [-1, 1].
     //      *
     //      * @param ref_element reference element to compute the quadrature nodes on
-    //      * @param max_newton_itersations maximum Newton iterations (Nodes1D Newton backend only)
+    //      * @param max_newton_iterations maximum Newton iterations (Nodes1D Newton backend only)
     //      * @param min_newton_iterations minimum Newton iterations (Nodes1D Newton backend only)
     //      */
     //     GaussChebyshevQuadrature(const ElementType& ref_element,
-    //                              const size_t& max_newton_itersations = 10,
+    //                              const size_t& max_newton_iterations = 10,
     //                              const size_t& min_newton_iterations  = 1)
     //         : GaussJacobiQuadrature<T, NumNodes1D, ElementType>(
-    //             ref_element, -0.5, -0.5, max_newton_itersations, min_newton_iterations) {}
+    //             ref_element, -0.5, -0.5, max_newton_iterations, min_newton_iterations) {}
     // };
     //
     // template <typename T, unsigned NumNodes1D, typename ElementType>
