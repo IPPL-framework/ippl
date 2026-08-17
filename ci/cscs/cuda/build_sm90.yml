@@ -42,6 +42,8 @@ variables:
       -DMPIEXEC_MAX_NUMPROCS=4
     - echo "Build directory size (before cleanup):" $(du -sh $BUILD_PATH | cut -f1)
     - find $BUILD_PATH -name \*.o -delete
+    - find $BUILD_PATH/bin -type f -exec strip {} +
+    - find $BUILD_PATH/lib -type f -exec strip {} +
     - echo "Build directory size (cleaned for artefacts):" $(du -sh $BUILD_PATH | cut -f1)
   artifacts:
     paths:
