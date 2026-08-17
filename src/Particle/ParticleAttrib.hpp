@@ -18,6 +18,7 @@
 #include <Kokkos_MathematicalConstants.hpp>
 
 #include <cmath>
+#include <utility>
 
 #include "Communicate/DataTypes.h"
 
@@ -157,7 +158,7 @@ namespace ippl {
 
         // using policy_type = Kokkos::RangePolicy<execution_space>;
         const bool useHashView = hash_array.extent(0) > 0;
-        if (useHashView && (iteration_policy.end() > hash_array.extent(0))) {
+        if (useHashView && std::cmp_greater(iteration_policy.end(), hash_array.extent(0))) {
             Inform m("scatter");
             m << "Hash array was passed to scatter, but size does not match iteration policy."
               << endl;
