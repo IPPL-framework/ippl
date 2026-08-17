@@ -20,6 +20,7 @@ variables:
   image: "${CUDA_UENV}"
   variables:
     SLURM_JOB_NUM_NODES: 1
+    SLURM_TIMELIMIT: "0:30:00"
   before_script:
     - !reference [.pr-number-extractor, before_script]
     - export BUILD_PATH=$(pwd)/$BUILD_DIR
