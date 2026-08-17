@@ -13,5 +13,6 @@ add_ippl_test(FEMVector)
 add_ippl_test(LocateElement)
 add_ippl_test(AssembleRHS)
 add_ippl_test(InterpolateDiracs)
+add_ippl_test(RefShapeFunctionData)
 
 add_subdirectory(Quadrature)

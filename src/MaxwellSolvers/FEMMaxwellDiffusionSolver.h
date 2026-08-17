@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <iostream>
 
-#include "FEM/FEMQuadratureData.h"
+#include "FEM/RefShapeFunctionData.h"
 #include "LinearSolvers/PCG.h"
 #include "Maxwell.h"
 

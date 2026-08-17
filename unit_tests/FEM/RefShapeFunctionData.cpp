@@ -1,6 +1,6 @@
 #include "Ippl.h"
 
-#include "FEM/FEMQuadratureData.h"
+#include "FEM/ShapeFunctionData.h"
 
 #include "gtest/gtest.h"
 

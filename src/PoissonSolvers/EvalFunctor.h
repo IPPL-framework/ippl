@@ -9,7 +9,7 @@
 #ifndef IPPL_EVALFUNCTOR_H
 #define IPPL_EVALFUNCTOR_H
 
-#include "FEM/FEMQuadratureData.h"
+#include "FEM/RefShapeFunctionData.h"
 
 namespace ippl {
     template <typename Tlhs, unsigned Dim, unsigned numElemDOFs>
