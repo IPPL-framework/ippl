@@ -342,10 +342,8 @@ namespace ippl {
                 "Archive::deserialize()", mdrange_t({0, 0}, {(long int)nrecvs, Dim}),
                 KOKKOS_LAMBDA(const size_type i, const size_t d) {
                     const char* src = base + (Dim * i + d) * size + readpos;
-                    T value{};
-                    char* dst = reinterpret_cast<char*>(&value);
+                    char* dst       = reinterpret_cast<char*>(&view.data()[i](d));
                     copyBytes(dst, src, size);
-                    view.data()[i](d) = value;
                 });
             Kokkos::fence();
             readpos_m += Dim * size * nrecvs;
@@ -399,10 +397,8 @@ namespace ippl {
                 "Archive::deserialize(offset, vector)", mdrange_t({0, 0}, {(long int)nrecvs, Dim}),
                 KOKKOS_LAMBDA(const size_type i, const size_t d) {
                     const char* src = base + (Dim * i + d) * size + readpos;
-                    T value{};
-                    char* dst = reinterpret_cast<char*>(&value);
+                    char* dst = reinterpret_cast<char*>(&view.data()[offset + i](d));
                     copyBytes(dst, src, size);
-                    view.data()[offset + i](d) = value;
                 });
             Kokkos::fence();
             readpos_m += Dim * size * nrecvs;

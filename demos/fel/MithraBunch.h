@@ -155,7 +155,7 @@ struct Charge {
      * flag can be used for better boosting the bunch to the moving frame. We need to consider it to
      * be double, because this flag needs to be communicated during bunch update.
      */
-    Double e;
+    Double e = 0.0;
 };
 template <typename scalar>
 using ChargeVector = std::list<Charge<scalar>>;
@@ -183,7 +183,9 @@ void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Do
     FieldVector<Double> t(0.0);
     Double t0;  //, g;
     Double zmin = 1e100;
-    Double bF = 0.0;
+    Double Ne;
+    Double bF = bunchInit.bF_;
+    Double bFi;
     unsigned int bmi;
     std::vector<Double> randomNumbers;
 
