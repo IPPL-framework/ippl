@@ -11,6 +11,7 @@
 #include "Utility/IpplException.h"
 
 #include "FEM/Elements/Element.h"
+#include "Nodes1D/AffineMap.h"
 
 // own power function since Kokkos::pow is not constexpr
 template <typename T>

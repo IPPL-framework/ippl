@@ -58,6 +58,48 @@ namespace nodes1d {
     }
 
     /**
+     * @brief Affine map of a fixed-size vector of points from [srcA, srcB] onto [dstA, dstB].
+     *
+     * Elementwise counterpart of the scalar affineMapPoint, returning a new vector.
+     *
+     * @tparam T Scalar type (typically double).
+     * @tparam N Number of points.
+     * @param x Points in the source interval.
+     * @param srcA Source interval left endpoint.
+     * @param srcB Source interval right endpoint.
+     * @param dstA Destination interval left endpoint.
+     * @param dstB Destination interval right endpoint.
+     * @return Mapped points in the destination interval.
+     * @pre srcB != srcA (non-degenerate source interval).
+     */
+    template <typename T, unsigned N>
+    KOKKOS_INLINE_FUNCTION Vector<T, N> affineMapPoint(const Vector<T, N>& x, T srcA, T srcB, T dstA,
+                                                       T dstB) {
+        return dstA + (x - srcA) * (dstB - dstA) / (srcB - srcA);
+    }
+
+    /**
+     * @brief Scale a fixed-size vector of quadrature weights for an affinely mapped interval.
+     *
+     * Elementwise counterpart of the scalar affineMapWeight, returning a new vector.
+     *
+     * @tparam T Scalar type (typically double).
+     * @tparam N Number of weights.
+     * @param w Weights on the source interval.
+     * @param srcA Source interval left endpoint.
+     * @param srcB Source interval right endpoint.
+     * @param dstA Destination interval left endpoint.
+     * @param dstB Destination interval right endpoint.
+     * @return Weights on the destination interval.
+     * @pre srcB != srcA.
+     */
+    template <typename T, unsigned N>
+    KOKKOS_INLINE_FUNCTION Vector<T, N> affineMapWeight(const Vector<T, N>& w, T srcA, T srcB, T dstA,
+                                                        T dstB) {
+        return w * (dstB - dstA) / (srcB - srcA);
+    }
+
+    /**
      * @brief In-place affine map of nodes and weights from [srcA, srcB] to [dstA, dstB].
      *
      * @tparam T Element type stored in the vectors.
