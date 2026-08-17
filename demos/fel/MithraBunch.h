@@ -183,9 +183,7 @@ void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Do
     FieldVector<Double> t(0.0);
     Double t0;  //, g;
     Double zmin = 1e100;
-    Double Ne;
     Double bF = bunchInit.bF_;
-    Double bFi;
     unsigned int bmi;
     std::vector<Double> randomNumbers;
 
