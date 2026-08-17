@@ -24,8 +24,6 @@
 #ifndef IPPL_GAUSSLEGENDREQUADRATURE_H
 #define IPPL_GAUSSLEGENDREQUADRATURE_H
 
-#include <cassert>
-
 #include "FEM/Quadrature/Quadrature.h"
 #include "Nodes1D/GaussLegendre1D.h"
 
@@ -53,21 +51,14 @@ namespace ippl {
         /**
          * @brief Construct a Gauss-Legendre quadrature rule on [-1, 1].
          *
+         * Node/weight generation uses the Nodes1D default backend
+         * (RootFinderMethod::GolubWelsch). Callers that need a different root-finding backend
+         * should use ippl::nodes1d::computeGaussLegendre directly.
+         *
          * @param ref_element reference element to compute the quadrature nodes on
-         * @param max_newton_iterations maximum Newton iterations (Nodes1D Newton backend only)
-         * @param min_newton_iterations minimum Newton iterations (Nodes1D Newton backend only)
          */
-        GaussLegendreQuadrature(const ElementType& ref_element,
-                                const size_t& max_newton_iterations = 40,
-                                const size_t& min_newton_iterations  = 1)
-            : Quadrature<T, NumNodes1D, ElementType>(ref_element)
-            , max_newton_iterations_m(max_newton_iterations)
-            , min_newton_iterations_m(min_newton_iterations) {
-            assert(max_newton_iterations_m >= 1 && "max_newton_iterations >= 1 is not satisfied");
-            assert(min_newton_iterations_m >= 1 && "min_newton_iterations_m >= 1 is not satisfied");
-            assert(min_newton_iterations_m <= max_newton_iterations_m
-                   && "min_newton_iterations_m <= max_newton_iterations_m is not satisfied");
-
+        GaussLegendreQuadrature(const ElementType& ref_element)
+            : Quadrature<T, NumNodes1D, ElementType>(ref_element) {
             this->degree_m = 2 * NumNodes1D - 1;
 
             this->a_m = -1.0;
@@ -81,13 +72,8 @@ namespace ippl {
 
         /** @brief Fill integration_nodes_m and weights_m via nodes1d::computeGaussLegendre. */
         void computeNodesAndWeights() override {
-            nodes1d::computeGaussLegendre(this->integration_nodes_m, this->weights_m,
-                                          max_newton_iterations_m, min_newton_iterations_m);
+            nodes1d::computeGaussLegendre(this->integration_nodes_m, this->weights_m);
         }
-
-    private:
-        const size_t max_newton_iterations_m;
-        const size_t min_newton_iterations_m;
     };
 
     // =============================================================================================

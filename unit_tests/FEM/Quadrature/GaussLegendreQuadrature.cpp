@@ -17,7 +17,7 @@ TEST(GaussLegendreQuadrature, MatchesNodes1D) {
     using ElementType = ippl::EdgeElement<double>;
     const ElementType ref;
     constexpr unsigned N = 7;
-    const ippl::GaussLegendreQuadrature<double, N, ElementType> fem(ref, 10, 1);
+    const ippl::GaussLegendreQuadrature<double, N, ElementType> fem(ref);
     double nodes[N], weights[N];
     ippl::nodes1d::computeGaussLegendre(N, nodes, weights);
     const auto& q = fem.getIntegrationNodes1D(-1.0, 1.0);
@@ -44,7 +44,7 @@ public:
 
     GaussLegendreQuadratureTest()
         : ref_element()
-        , gaussLegendreQuadrature(ref_element, 10, 1) {}
+        , gaussLegendreQuadrature(ref_element) {}
 
     const ElementType ref_element;
 
