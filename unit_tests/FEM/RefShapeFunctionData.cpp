@@ -1,10 +1,10 @@
 #include "Ippl.h"
 
-#include "FEM/ShapeFunctionData.h"
+#include "FEM/RefShapeFunctionData.h"
 
 #include "gtest/gtest.h"
 
-TEST(FEMQuadratureDataTest, DataAccess) {
+TEST(RefShapeFunctionDataTest, DataAccess) {
     using T = double;
     constexpr unsigned Dim       = 2;
     constexpr unsigned numDOFs   = 4;
@@ -22,7 +22,7 @@ TEST(FEMQuadratureDataTest, DataAccess) {
     deriv[2] = point_t(-1.0, 2.0);
     deriv[3] = point_t(0.5, -0.5);
 
-    const ippl::QuadratureData<T, point_t, numDOFs> qd{val, deriv};
+    const ippl::RefShapeFunctionData<T, point_t, numDOFs> qd{val, deriv};
 
     EXPECT_DOUBLE_EQ(qd.val_q[0], 0.1);
     EXPECT_DOUBLE_EQ(qd.val_q[2], 0.3);
@@ -31,6 +31,7 @@ TEST(FEMQuadratureDataTest, DataAccess) {
     EXPECT_DOUBLE_EQ(qd.deriv_q[3](0), 0.5);
     EXPECT_DOUBLE_EQ(qd.deriv_q[3](1), -0.5);
 
+    // Members are held by reference: mutating the sources is visible through the struct.
     val[2] = 0.35;
     deriv[0] = point_t(2.0, 3.0);
     EXPECT_DOUBLE_EQ(qd.val_q[2], 0.35);

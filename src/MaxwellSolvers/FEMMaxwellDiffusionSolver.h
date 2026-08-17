@@ -69,7 +69,7 @@ namespace ippl {
          */
         KOKKOS_FUNCTION auto operator()(
             size_t i, size_t j,
-            const QuadratureData<Vector<T, Dim>, Vector<T, Dim>, numElementDOFs>& qd) const {
+            const RefShapeFunctionData<Vector<T, Dim>, Vector<T, Dim>, numElementDOFs>& qd) const {
             T curlTerm = dot(DPhiInvT * qd.deriv_q[j], DPhiInvT * qd.deriv_q[i]).apply();
             T massTerm = dot(qd.val_q[j], qd.val_q[i]).apply();
             return (curlTerm + massTerm) * absDetDPhi;
