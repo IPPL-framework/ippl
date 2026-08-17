@@ -89,9 +89,10 @@ namespace ippl {
         // while tagging upper boundary points such that they can be removed after.
         Kokkos::View<size_t*> points("npoints", npoints);
         Kokkos::View<bool*> is_boundary("is_boundary", npoints);
+        const DeviceStruct space = getDeviceMirror();
         Kokkos::parallel_reduce(
             "ComputePoints", npoints,
-            KOKKOS_CLASS_LAMBDA(const int i, int& local) {
+            KOKKOS_LAMBDA(const int i, int& local) {
                 int idx = i;
                 indices_t val;
                 bool isBoundary = false;
@@ -104,7 +105,7 @@ namespace ippl {
                     }
                 }
                 is_boundary(i) = isBoundary;
-                points(i)      = this->getElementIndex(val);
+                points(i)      = space.getElementIndex(val);
                 local += isBoundary;
             },
             Kokkos::Sum<int>(upperBoundaryPoints));
@@ -114,14 +115,15 @@ namespace ippl {
         // with the tagged upper boundary points removed.
         int elementsPerRank = npoints - upperBoundaryPoints;
         elementIndices      = Kokkos::View<size_t*>("i", elementsPerRank);
+        auto elementIndicesView = elementIndices;
         Kokkos::View<size_t> index("index");
 
         if (elementsPerRank > 0) {
             Kokkos::parallel_for(
-                "CompactElementIndices", npoints, KOKKOS_CLASS_LAMBDA(const int i) {
+                "CompactElementIndices", npoints, KOKKOS_LAMBDA(const int i) {
                     if (!is_boundary(i)) {
                         const size_t idx    = Kokkos::atomic_fetch_add(&index(), 1);
-                        elementIndices(idx) = points(i);
+                        elementIndicesView(idx) = points(i);
                     }
                 });
         }
@@ -348,6 +350,331 @@ namespace ippl {
     }
 
 
+    ///////////////////////////////////////////////////////////////////////
+    /// Device-safe kernel snapshot ///////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    typename NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>::DeviceStruct
+    NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>::getDeviceMirror() const {
+        DeviceStruct space;
+        space.nr_m          = this->nr_m;
+        space.hr_m          = this->hr_m;
+        space.origin_m      = this->origin_m;
+        space.ref_element_m = this->ref_element_m;
+        return space;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION typename NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                                           FieldType>::indices_t
+    NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                  FieldType>::DeviceStruct::getElementNDIndex(const size_t& elementIndex) const {
+        size_t index = elementIndex;
+        indices_t elementNDIndex;
+        const Vector<size_t, Dim> cellsPerDim = nr_m - 1;
+
+        size_t remainingCells = 1;
+        for (const size_t cells : cellsPerDim) {
+            remainingCells *= cells;
+        }
+
+        for (int d = Dim - 1; d >= 0; --d) {
+            remainingCells /= cellsPerDim[d];
+            elementNDIndex[d] = index / remainingCells;
+            index -= elementNDIndex[d] * remainingCells;
+        }
+        return elementNDIndex;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION size_t
+    NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                  FieldType>::DeviceStruct::getElementIndex(const indices_t& elementIndex) const {
+        size_t flatIndex = 0;
+        const Vector<size_t, Dim> cellsPerDim = nr_m - 1;
+        size_t stride = 1;
+
+        for (unsigned d = 0; d < Dim; ++d) {
+            flatIndex += elementIndex[d] * stride;
+            stride *= cellsPerDim[d];
+        }
+        return flatIndex;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION typename NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                                           FieldType>::DeviceStruct::indices_list_t
+    NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                  FieldType>::DeviceStruct::getElementMeshVertexNDIndices(
+        const indices_t& elementIndex) const {
+        indices_list_t vertices;
+        for (size_t i = 0; i < numElementVertices; ++i) {
+            vertices[i] = elementIndex;
+            for (size_t d = 0; d < Dim; ++d) {
+                vertices[i][d] += (i >> d) & 1;
+            }
+        }
+        return vertices;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION typename NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                                           FieldType>::DeviceStruct::vertex_points_t
+    NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                  FieldType>::DeviceStruct::getElementMeshVertexPoints(
+        const indices_t& elementIndex) const {
+        vertex_points_t points;
+        const indices_list_t vertices = getElementMeshVertexNDIndices(elementIndex);
+        for (size_t i = 0; i < numElementVertices; ++i) {
+            for (size_t d = 0; d < Dim; ++d) {
+                points[i][d] = vertices[i][d] * hr_m[d] + origin_m[d];
+            }
+        }
+        return points;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION Vector<size_t, NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                                                  FieldType>::DeviceStruct::numElementDOFs>
+    NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                  FieldType>::DeviceStruct::getGlobalDOFIndices(
+        const indices_t& elementIndex) const {
+        Vector<size_t, numElementDOFs> globalDOFs(0);
+        Vector<size_t, Dim> stride(1);
+
+        if constexpr (Dim == 2) {
+            const size_t nx = nr_m[0];
+            stride(1)       = 2 * nx - 1;
+        } else if constexpr (Dim == 3) {
+            const size_t nx = nr_m[0];
+            const size_t ny = nr_m[1];
+            stride(1)       = 2 * nx - 1;
+            stride(2)       = 3 * nx * ny - nx - ny;
+        }
+
+        const size_t nx = nr_m[0];
+        globalDOFs(0)    = stride.dot(elementIndex);
+        globalDOFs(1)    = globalDOFs(0) + nx - 1;
+        globalDOFs(2)    = globalDOFs(1) + nx;
+        globalDOFs(3)    = globalDOFs(1) + 1;
+
+        if constexpr (Dim == 3) {
+            const size_t ny = nr_m[1];
+            globalDOFs(4) = stride(2) * elementIndex(2) + 2 * nx * ny - nx - ny
+                            + elementIndex(1) * nx + elementIndex(0);
+            globalDOFs(5)  = globalDOFs(4) + 1;
+            globalDOFs(6)  = globalDOFs(4) + nx + 1;
+            globalDOFs(7)  = globalDOFs(4) + nx;
+            globalDOFs(8)  = globalDOFs(0) + 3 * nx * ny - nx - ny;
+            globalDOFs(9)  = globalDOFs(8) + nx - 1;
+            globalDOFs(10) = globalDOFs(9) + nx;
+            globalDOFs(11) = globalDOFs(9) + 1;
+        }
+        return globalDOFs;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION Vector<size_t, NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                                                  FieldType>::DeviceStruct::numElementDOFs>
+    NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                  FieldType>::DeviceStruct::getGlobalDOFIndices(
+        const size_t& elementIndex) const {
+        return getGlobalDOFIndices(getElementNDIndex(elementIndex));
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION Vector<size_t, NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                                                  FieldType>::DeviceStruct::numElementDOFs>
+    NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                  FieldType>::DeviceStruct::getFEMVectorDOFIndices(indices_t elementIndex,
+                                                                   NDIndex<Dim> ldom) const {
+        Vector<size_t, numElementDOFs> vectorDOFs(0);
+
+        elementIndex -= ldom.first();
+        elementIndex += 1;
+
+        indices_t extent = ldom.last() - ldom.first();
+        extent += 3;  // Include the final owned point and one ghost point on each side.
+
+        Vector<size_t, Dim> stride(1);
+        if constexpr (Dim == 2) {
+            const size_t nx = extent[0];
+            stride(1)       = 2 * nx - 1;
+        } else if constexpr (Dim == 3) {
+            const size_t nx = extent[0];
+            const size_t ny = extent[1];
+            stride(1)       = 2 * nx - 1;
+            stride(2)       = 3 * nx * ny - nx - ny;
+        }
+
+        const size_t nx = extent[0];
+        vectorDOFs(0)    = stride.dot(elementIndex);
+        vectorDOFs(1)    = vectorDOFs(0) + nx - 1;
+        vectorDOFs(2)    = vectorDOFs(1) + nx;
+        vectorDOFs(3)    = vectorDOFs(1) + 1;
+
+        if constexpr (Dim == 3) {
+            const size_t ny = extent[1];
+            vectorDOFs(4) = stride(2) * elementIndex(2) + 2 * nx * ny - nx - ny
+                            + elementIndex(1) * nx + elementIndex(0);
+            vectorDOFs(5)  = vectorDOFs(4) + 1;
+            vectorDOFs(6)  = vectorDOFs(4) + nx + 1;
+            vectorDOFs(7)  = vectorDOFs(4) + nx;
+            vectorDOFs(8)  = vectorDOFs(0) + 3 * nx * ny - nx - ny;
+            vectorDOFs(9)  = vectorDOFs(8) + nx - 1;
+            vectorDOFs(10) = vectorDOFs(9) + nx;
+            vectorDOFs(11) = vectorDOFs(9) + 1;
+        }
+        return vectorDOFs;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION Vector<size_t, NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                                                  FieldType>::DeviceStruct::numElementDOFs>
+    NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                  FieldType>::DeviceStruct::getFEMVectorDOFIndices(
+        const size_t& elementIndex, NDIndex<Dim> ldom) const {
+        return getFEMVectorDOFIndices(getElementNDIndex(elementIndex), ldom);
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION typename NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                                           FieldType>::point_t
+    NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                  FieldType>::DeviceStruct::evaluateRefElementShapeFunction(
+        const size_t& localDOF, const point_t& localPoint) const {
+        assert(localDOF < numElementDOFs && "The local edge index is invalid");
+        assert(ref_element_m.isPointInRefElement(localPoint)
+               && "Point is not in reference element");
+
+        point_t result(0);
+        if constexpr (Dim == 2) {
+            const T x = localPoint(0);
+            const T y = localPoint(1);
+            switch (localDOF) {
+                case 0: result(0) = 1 - y; break;
+                case 1: result(1) = 1 - x; break;
+                case 2: result(0) = y; break;
+                case 3: result(1) = x; break;
+            }
+        } else if constexpr (Dim == 3) {
+            const T x = localPoint(0);
+            const T y = localPoint(1);
+            const T z = localPoint(2);
+            switch (localDOF) {
+                case 0: result(0) = y * z - y - z + 1; break;
+                case 1: result(1) = x * z - x - z + 1; break;
+                case 2: result(0) = y * (1 - z); break;
+                case 3: result(1) = x * (1 - z); break;
+                case 4: result(2) = x * y - x - y + 1; break;
+                case 5: result(2) = x * (1 - y); break;
+                case 6: result(2) = x * y; break;
+                case 7: result(2) = y * (1 - x); break;
+                case 8: result(0) = z * (1 - y); break;
+                case 9: result(1) = z * (1 - x); break;
+                case 10: result(0) = y * z; break;
+                case 11: result(1) = x * z; break;
+            }
+        }
+        return result;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION typename NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                                           FieldType>::point_t
+    NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                  FieldType>::DeviceStruct::evaluateRefElementShapeFunctionCurl(
+        const size_t& localDOF, const point_t& localPoint) const {
+        point_t result(0);
+        if constexpr (Dim == 2) {
+            switch (localDOF) {
+                case 0: result(0) = 1; break;
+                case 1: result(0) = -1; break;
+                case 2: result(0) = -1; break;
+                case 3: result(0) = 1; break;
+            }
+        } else {
+            const T x = localPoint(0);
+            const T y = localPoint(1);
+            const T z = localPoint(2);
+            switch (localDOF) {
+                case 0: result(0) = 0; result(1) = -1 + y; result(2) = 1 - z; break;
+                case 1: result(0) = 1 - x; result(1) = 0; result(2) = -1 + z; break;
+                case 2: result(0) = 0; result(1) = -y; result(2) = -1 + z; break;
+                case 3: result(0) = x; result(1) = 0; result(2) = 1 - z; break;
+                case 4: result(0) = -1 + x; result(1) = 1 - y; result(2) = 0; break;
+                case 5: result(0) = -x; result(1) = -1 + y; result(2) = 0; break;
+                case 6: result(0) = x; result(1) = -y; result(2) = 0; break;
+                case 7: result(0) = 1 - x; result(1) = y; result(2) = 0; break;
+                case 8: result(0) = 0; result(1) = 1 - y; result(2) = z; break;
+                case 9: result(0) = -1 + x; result(1) = 0; result(2) = -z; break;
+                case 10: result(0) = 0; result(1) = y; result(2) = -z; break;
+                case 11: result(0) = -x; result(1) = 0; result(2) = z; break;
+            }
+        }
+        return result;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldType>
+    KOKKOS_FUNCTION bool
+    NedelecSpace<T, Dim, Order, ElementType, QuadratureType,
+                  FieldType>::DeviceStruct::isDOFOnBoundary(const size_t& dofIdx) const {
+        bool onBoundary = false;
+        if constexpr (Dim == 2) {
+            const size_t nx = nr_m[0];
+            const size_t ny = nr_m[1];
+            onBoundary = onBoundary || dofIdx < nx - 1;
+            onBoundary = onBoundary || dofIdx > nx * (ny - 1) + ny * (nx - 1) - nx;
+            onBoundary = onBoundary
+                         || (dofIdx >= nx - 1 && (dofIdx - (nx - 1)) % (2 * nx - 1) == 0);
+            onBoundary = onBoundary
+                         || (dofIdx >= 2 * nx - 2
+                             && (dofIdx - 2 * nx + 2) % (2 * nx - 1) == 0);
+        } else if constexpr (Dim == 3) {
+            const size_t nx = nr_m[0];
+            const size_t ny = nr_m[1];
+            const size_t nz = nr_m[2];
+            const size_t planeSize = nx * (ny - 1) + ny * (nx - 1) + nx * ny;
+            const size_t zOffset   = dofIdx / planeSize;
+
+            if (dofIdx - planeSize * zOffset >= nx * (ny - 1) + ny * (nx - 1)) {
+                const size_t offset = dofIdx - planeSize * zOffset
+                                      - (nx * (ny - 1) + ny * (nx - 1));
+                const size_t yOffset = offset / nx;
+                const size_t xOffset = offset % nx;
+                onBoundary = onBoundary || yOffset == 0 || yOffset == ny - 1;
+                onBoundary = onBoundary || xOffset == 0 || xOffset == nx - 1;
+            } else {
+                onBoundary = onBoundary || zOffset == 0 || zOffset == nz - 1;
+                const size_t offset  = dofIdx - planeSize * zOffset;
+                const size_t yOffset = offset / (2 * nx - 1);
+                size_t xOffset       = offset - (2 * nx - 1) * yOffset;
+
+                if (xOffset < nx - 1) {
+                    onBoundary = onBoundary || yOffset == 0 || yOffset == ny - 1;
+                } else {
+                    xOffset -= nx - 1;
+                    onBoundary = onBoundary || xOffset == 0 || xOffset == nx - 1;
+                }
+            }
+        }
+        return onBoundary;
+    }
+
+
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldType>
     KOKKOS_FUNCTION typename NedelecSpace<T, Dim, Order, ElementType, QuadratureType, FieldType>::point_t
@@ -438,19 +765,22 @@ namespace ippl {
         IpplTimings::TimerRef timerAxLoop = IpplTimings::getTimer("Ax Loop");
         IpplTimings::startTimer(timerAxLoop);
 
+        const DeviceStruct space = getDeviceMirror();
+        auto elementIndicesView  = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex = elementIndices(index);
+            KOKKOS_LAMBDA(const size_t index) {
+                const size_t elementIndex = elementIndicesView(index);
                 
                 // Here we now retrieve the global DOF indices and their
                 // position inside of the FEMVector
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->NedelecSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
                 
                 const Vector<size_t, numElementDOFs> vectorIndices =
-                    this->getFEMVectorDOFIndices(elementIndex, ldom);
+                    space.getFEMVectorDOFIndices(elementIndex, ldom);
                 
 
                 // local DOF indices
@@ -464,7 +794,7 @@ namespace ippl {
                     I = global_dofs[i];
 
                     // Skip boundary DOFs (Zero Dirichlet BCs)
-                    if (this->isDOFOnBoundary(I)) {
+                    if (space.isDOFOnBoundary(I)) {
                         continue;
                     }
 
@@ -472,7 +802,7 @@ namespace ippl {
                         J = global_dofs[j];
 
                         // Skip boundary DOFs (Zero Dirichlet BCs)        
-                        if (this->isDOFOnBoundary(J)) {
+                        if (space.isDOFOnBoundary(J)) {
                             continue;
                         }
 
@@ -547,22 +877,25 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        const DeviceStruct space = getDeviceMirror();
+        auto elementIndicesView  = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+            KOKKOS_LAMBDA(size_t index) {
+                const size_t elementIndex                        = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->NedelecSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
 
                 const Vector<size_t, numElementDOFs> vectorIndices =
-                    this->getFEMVectorDOFIndices(elementIndex, ldom);
+                    space.getFEMVectorDOFIndices(elementIndex, ldom);
 
                 size_t i;
 
                 for (i = 0; i < numElementDOFs; ++i) {
                     size_t I = global_dofs[i];
-                    if (this->isDOFOnBoundary(I)) {
+                    if (space.isDOFOnBoundary(I)) {
                         continue;
                     }
                         
@@ -645,18 +978,20 @@ namespace ippl {
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
-        
+
+        const DeviceStruct space = getDeviceMirror();
+        auto elementIndicesView  = elementIndices;
 
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+            KOKKOS_LAMBDA(size_t index) {
+                const size_t elementIndex                        = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->NedelecSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
                 
                 const Vector<size_t, numElementDOFs> vectorIndices =
-                    this->getFEMVectorDOFIndices(elementIndex, ldom);
+                    space.getFEMVectorDOFIndices(elementIndex, ldom);
                 
 
                 size_t i, I;
@@ -665,7 +1000,7 @@ namespace ippl {
                     I = global_dofs[i];
 
                     
-                    if (this->isDOFOnBoundary(I)) {
+                    if (space.isDOFOnBoundary(I)) {
                         continue;
                     }
                     
@@ -673,9 +1008,10 @@ namespace ippl {
                     T contrib = 0;
                     for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                         // Get the global position of the quadrature point                        
-                        point_t pos = this->ref_element_m.localToGlobal(
-                            this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)),
-                            q[k]); 
+                        point_t pos = space.ref_element_m.localToGlobal(
+                            space.getElementMeshVertexPoints(
+                                space.getElementNDIndex(elementIndex)),
+                            q[k]);
                         
                         // evaluate the rhs function at this global position
                         point_t interpolatedVal = f(pos);
@@ -845,13 +1181,14 @@ namespace ippl {
         auto coefView = coef.getView();
 
         Kokkos::View<point_t*> outView("reconstructed Func values at points", positions.extent(0));
+        const DeviceStruct space = getDeviceMirror();
 
         Kokkos::parallel_for("reconstructToPoints", positions.extent(0),
-            KOKKOS_CLASS_LAMBDA(size_t i) {
+            KOKKOS_LAMBDA(size_t i) {
                 // get the current position and for it figure out to which
                 // element it belongs
                 point_t pos = positions<:i:>;
-                indices_t elemIdx = ((pos - this->origin_m) / domainSize) * gextent;
+                indices_t elemIdx = ((pos - space.origin_m) / domainSize) * gextent;
 
             
                 // next up we have to handle the case of when a position that
@@ -868,12 +1205,12 @@ namespace ippl {
 
                 // get correct indices
                 const Vector<size_t, numElementDOFs> vectorIndices =
-                    this->getFEMVectorDOFIndices(elemIdx, ldom);
+                    space.getFEMVectorDOFIndices(elemIdx, ldom);
 
                 
                 // figure out position inside of the reference element
-                point_t locPos = pos - (elemIdx * this->hr_m + this->origin_m);
-                locPos /= this->hr_m;
+                point_t locPos = pos - (elemIdx * space.hr_m + space.origin_m);
+                locPos /= space.hr_m;
 
                 // because of numerical instabilities it might happen then when
                 // a point is on an edge this becomes marginally larger that 1 
@@ -889,7 +1226,7 @@ namespace ippl {
                 // basis functions.
                 point_t val(0);
                 for (size_t j = 0; j < numElementDOFs; ++j) {
-                    point_t funcVal = this->evaluateRefElementShapeFunction(j, locPos);
+                    point_t funcVal = space.evaluateRefElementShapeFunction(j, locPos);
                     val += funcVal*coefView(vectorIndices<:j:>);
                 }
                 outView(i) = val;
@@ -949,18 +1286,20 @@ namespace ippl {
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
         auto view = u_h.getView();
+        const DeviceStruct space = getDeviceMirror();
+        auto elementIndicesView  = elementIndices;
 
     
         // Loop over elements to compute contributions
         Kokkos::parallel_reduce("Compute error over elements",
             policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
-                const size_t elementIndex = elementIndices(index);
+            KOKKOS_LAMBDA(size_t index, double& local) {
+                const size_t elementIndex = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->NedelecSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
                 
                 const Vector<size_t, numElementDOFs> vectorIndices =
-                    this->getFEMVectorDOFIndices(elementIndex, ldom);
+                    space.getFEMVectorDOFIndices(elementIndex, ldom);
 
 
                 // contribution of this element to the error
@@ -968,9 +1307,9 @@ namespace ippl {
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
                     // Evaluate the analystical solution at the global position
                     // of the quadrature point
-                    point_t val_u_sol = u_sol(this->ref_element_m.localToGlobal(
-                        this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)),
-                            q[k]));
+                    point_t val_u_sol = u_sol(space.ref_element_m.localToGlobal(
+                        space.getElementMeshVertexPoints(space.getElementNDIndex(elementIndex)),
+                        q[k]));
                     
                     // Here we now reconstruct the solution given the basis
                     // functions.
