@@ -156,8 +156,10 @@ namespace ippl {
         locate_type destRanks_d_;      // [nRanks] (compacted list)
         bool_type leaving_d_;          // [capacity >= max nLocal seen] mask
 
-        // Single scalar on device to count destinations
-        Kokkos::View<size_type, position_memory_space> nDest_d_;
+        // One-element views used to count destinations. A rank-1 view avoids
+        // Kokkos' deprecated legacy conversion path for rank-0 View deep copies.
+        Kokkos::View<size_type*, position_memory_space> nDest_d_;
+        Kokkos::View<size_type*, Kokkos::HostSpace> nDest_h_;
 
         // Neigbour cache
         locate_type neighbors_d_;          // [neighborSize] cached device neighbors list

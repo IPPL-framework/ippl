@@ -254,13 +254,21 @@ namespace ippl {
                 Kokkos::realloc(buffer, size * overalloc);
             }
 
-            using index_array_type =
-                typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
+            using exec_space       = typename view_type::execution_space;
+            using range_type       = RangePolicy<Dim, exec_space>;
+            using index_type       = typename range_type::index_type;
+            using index_array_type = typename range_type::index_array_type;
             using buffer_view_type = typename databuffer_type::view_type;
             using functor_type =
                 HaloPackFunctor<decltype(subview), buffer_view_type, index_array_type, Dim>;
-            ippl::parallel_for("HaloCells::pack()", getRangePolicy(subview),
-                               functor_type{subview, buffer});
+
+            Kokkos::Array<index_type, Dim> begin{};
+            Kokkos::Array<index_type, Dim> end{};
+            for (unsigned d = 0; d < Dim; ++d) {
+                end[d] = static_cast<index_type>(subview.extent(d));
+            }
+            auto policy = createRangePolicy<Dim, exec_space>(begin, end);
+            ippl::parallel_for("HaloCells::pack()", policy, functor_type{subview, buffer});
             Kokkos::fence();
         }
 
@@ -275,11 +283,20 @@ namespace ippl {
             // https://stackoverflow.com/questions/3735398/operator-as-template-parameter
             Op op;
 
-            using index_array_type =
-                typename RangePolicy<Dim, typename view_type::execution_space>::index_array_type;
+            using exec_space       = typename view_type::execution_space;
+            using range_type       = RangePolicy<Dim, exec_space>;
+            using index_type       = typename range_type::index_type;
+            using index_array_type = typename range_type::index_array_type;
             using functor_type =
                 HaloUnpackFunctor<decltype(subview), decltype(buffer), Op, index_array_type, Dim>;
-            ippl::parallel_for("HaloCells::unpack()", getRangePolicy(subview),
+
+            Kokkos::Array<index_type, Dim> begin{};
+            Kokkos::Array<index_type, Dim> end{};
+            for (unsigned d = 0; d < Dim; ++d) {
+                end[d] = static_cast<index_type>(subview.extent(d));
+            }
+            auto policy = createRangePolicy<Dim, exec_space>(begin, end);
+            ippl::parallel_for("HaloCells::unpack()", policy,
                                functor_type{subview, buffer, op});
             Kokkos::fence();
         }
@@ -288,8 +305,9 @@ namespace ippl {
         auto HaloCells<T, Dim, ViewArgs...>::makeSubview(const view_type& view,
                                                          const bound_type& intersect) {
             auto makeSub = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
-                return Kokkos::subview(view,
-                                       Kokkos::make_pair(intersect.lo[Idx], intersect.hi[Idx])...);
+                return Kokkos::submdspan(
+                    view.to_mdspan(),
+                    Kokkos::make_pair(intersect.lo[Idx], intersect.hi[Idx])...);
             };
             return makeSub(std::make_index_sequence<Dim>{});
         }

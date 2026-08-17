@@ -147,8 +147,8 @@ namespace ippl {
         const size_type nInvalid = locateParticlesPacked(pc);
 
         // Copy metadata to host
-        size_type nDest = 0;
-        Kokkos::deep_copy(position_execution_space{}, nDest, nDest_d_);
+        Kokkos::deep_copy(nDest_h_, nDest_d_);
+        const size_type nDest = nDest_h_(0);
 
         // destRanks prefix
         if (nDest > 0) {
@@ -457,7 +457,7 @@ namespace ippl {
                 if ((size_type)r == myRank)
                     return;
                 if (rankSendCount_d(r) > 0) {
-                    const size_type idx = Kokkos::atomic_fetch_add(&nDest_d(), size_type(1));
+                    const size_type idx = Kokkos::atomic_fetch_add(&nDest_d(0), size_type(1));
                     destRanks_d(idx)    = static_cast<int>(r);
                 }
             });
@@ -474,8 +474,9 @@ namespace ippl {
         Kokkos::realloc(destRanks_d_, nRanks);
         Kokkos::realloc(recvCounts_d_, nRanks);
 
-        // scalar counter
-        nDest_d_ = Kokkos::View<size_type, position_memory_space>("nDest_d");
+        // One-element device counter and its persistent host mirror
+        Kokkos::realloc(nDest_d_, 1);
+        Kokkos::realloc(nDest_h_, 1);
 
         // Host mirrors
         Kokkos::realloc(rankSendCount_h_, nRanks);
