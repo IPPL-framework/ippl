@@ -44,7 +44,7 @@
 #include "FEM/Elements/QuadrilateralElement.h"
 
 // // FEM Quadrature
-#include "FEM/Quadrature/GaussJacobiQuadrature.h"
+#include "FEM/Quadrature/GaussLegendreQuadrature.h"
 #include "FEM/Quadrature/GaussLobattoQuadrature.h"
 #include "FEM/Quadrature/MidpointQuadrature.h"
 
