@@ -4,6 +4,7 @@
 #ifndef IPPL_QUADRATURE_H
 #define IPPL_QUADRATURE_H
 
+#include <cassert>
 #include <cmath>
 
 #include "Types/Vector.h"
@@ -45,12 +46,21 @@ namespace ippl {
         static constexpr unsigned numElementNodes =
             getNumElementNodes(NumNodes1D, ElementType::dim);
 
+        static_assert(NumNodes1D >= 1, "Quadrature requires NumNodes1D >= 1");
+        static_assert(ElementType::dim >= 1, "Quadrature requires ElementType::dim >= 1");
+
         /**
          * @brief Construct a new Quadrature object
          *
          * @param ref_element reference element to compute the quadrature nodes on
+         * @param degree degree of exactness of the quadrature rule
+         * @param a source interval start the nodes/weights are computed on
+         * @param b source interval end the nodes/weights are computed on
          */
-        Quadrature(const ElementType& ref_element);
+        Quadrature(const ElementType& ref_element, unsigned degree, T a, T b);
+
+        /** @brief Virtual destructor so derived rules can be destroyed through a Quadrature*. */
+        virtual ~Quadrature() = default;
 
         /**
          * @brief Returns the order of the quadrature rule. (order = degree + 1)

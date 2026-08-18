@@ -24,12 +24,7 @@ namespace ippl {
          * @param ref_element reference element to compute the quadrature nodes on
          */
         MidpointQuadrature(const ElementType& ref_element)
-            : Quadrature<T, NumNodes1D, ElementType>(ref_element) {
-            this->degree_m = 1;
-
-            this->a_m = 0.0;
-            this->b_m = 1.0;
-
+            : Quadrature<T, NumNodes1D, ElementType>(ref_element, 1, T(0), T(1)) {
             computeNodesAndWeights();
         }
 

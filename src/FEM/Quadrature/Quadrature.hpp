@@ -1,8 +1,16 @@
 
 namespace ippl {
     template <typename T, unsigned NumNodes1D, typename ElementType>
-    Quadrature<T, NumNodes1D, ElementType>::Quadrature(const ElementType& ref_element)
-        : ref_element_m(ref_element) {}
+    Quadrature<T, NumNodes1D, ElementType>::Quadrature(const ElementType& ref_element,
+                                                       unsigned degree, T a, T b)
+        : degree_m(degree)
+        , ref_element_m(ref_element)
+        , a_m(a)
+        , b_m(b) {
+        assert(degree >= 1 && "degree >= 1 is not satisfied");
+        assert(b > a && "b > a is not satisfied");
+    }
+
 
     template <typename T, unsigned NumNodes1D, typename ElementType>
     size_t Quadrature<T, NumNodes1D, ElementType>::getOrder() const {

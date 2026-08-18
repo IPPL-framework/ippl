@@ -58,15 +58,7 @@ namespace ippl {
          * @param ref_element reference element to compute the quadrature nodes on
          */
         GaussLegendreQuadrature(const ElementType& ref_element)
-            : Quadrature<T, NumNodes1D, ElementType>(ref_element) {
-            this->degree_m = 2 * NumNodes1D - 1;
-
-            this->a_m = -1.0;
-            this->b_m = 1.0;
-
-            this->integration_nodes_m = Vector<T, NumNodes1D>();
-            this->weights_m           = Vector<T, NumNodes1D>();
-
+            : Quadrature<T, NumNodes1D, ElementType>(ref_element, 2 * NumNodes1D - 1, T(-1), T(1)) {
             computeNodesAndWeights();
         }
 
