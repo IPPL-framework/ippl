@@ -20,6 +20,7 @@ variables:
   image: "${CUDA_UENV}"
   variables:
     SLURM_JOB_NUM_NODES: 1
+    SLURM_TIMELIMIT: "0:30:00"
   before_script:
     - !reference [.pr-number-extractor, before_script]
     - export BUILD_PATH=$(pwd)/$BUILD_DIR
@@ -42,6 +43,8 @@ variables:
       -DMPIEXEC_MAX_NUMPROCS=4
     - echo "Build directory size (before cleanup):" $(du -sh $BUILD_PATH | cut -f1)
     - find $BUILD_PATH -name \*.o -delete
+    - find $BUILD_PATH/bin -type f -exec strip {} +
+    - find $BUILD_PATH/lib -type f -exec strip {} +
     - echo "Build directory size (cleaned for artefacts):" $(du -sh $BUILD_PATH | cut -f1)
   artifacts:
     paths:
@@ -51,7 +54,7 @@ variables:
 # ---------------------------------------------------------
 # cuda build debug
 # ---------------------------------------------------------
-ippl-build-cuda12-sm90-debug:
+ippl-build-cuda13-sm90-debug:
   extends: .ippl-build-cuda-common
   variables:
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug"
@@ -60,7 +63,7 @@ ippl-build-cuda12-sm90-debug:
 # ---------------------------------------------------------
 # cuda build release
 # ---------------------------------------------------------
-ippl-build-cuda12-sm90-release:
+ippl-build-cuda13-sm90-release:
   extends: .ippl-build-cuda-common
   variables:
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
