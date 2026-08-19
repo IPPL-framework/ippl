@@ -392,6 +392,152 @@ namespace ippl {
          */
         KOKKOS_FUNCTION int getBoundarySide(const size_t& dofIdx) const;
 
+        /**
+         * @brief Non-owning, device-copyable snapshot used by Nedelec assembly kernels.
+         *
+         * `NedelecSpace` is a host-side owner. In addition to the finite-element geometry, it
+         * stores `layout_m`, which owns MPI-decomposition metadata and has host-only lifetime
+         * operations. Capturing the complete space with `KOKKOS_CLASS_LAMBDA` therefore places
+         * host-owned state in the kernel closure. CUDA compilers must generate construction and
+         * destruction paths for that closure and can consequently diagnose an illegal device
+         * call to `FieldLayout::~FieldLayout`, even though the kernel never reads the layout.
+         *
+         * `DeviceStruct` is the explicit boundary between that host owner and device execution.
+         * It snapshots only the immutable values required by Nedelec kernels: mesh vertex counts,
+         * mesh spacing, physical origin, and the device-copyable reference element. From those
+         * values it reproduces flattened/N-dimensional element conversion, element geometry,
+         * edge-degree-of-freedom mappings, FEMVector indices, boundary detection, and Nedelec
+         * basis/curl evaluation.
+         *
+         * A host operation obtains a fresh value with getDeviceMirror() and captures it by value
+         * in `KOKKOS_LAMBDA`. Kokkos views holding element indices, coefficients, and output data
+         * are captured separately. The mirror performs no allocation, MPI communication, field
+         * copy, or synchronization, and it deliberately excludes `layout_m`, mesh and quadrature
+         * references, FEMVector ownership, and every other host-oriented object.
+         *
+         * "Lightweight" means this is a read-only value snapshot, not another finite-element
+         * space and not an automatically synchronized replica. If the host mesh or reference
+         * element changes, callers must obtain a new mirror before launching a kernel. When a
+         * future kernel needs more Nedelec functionality, add only the smallest device-copyable
+         * state and algorithm here; do not restore capture of the parent `NedelecSpace`.
+         *
+         * Element flattening uses dimension zero as the fastest-varying dimension. Nedelec DOFs
+         * retain the edge ordering used by the host class, so global and ghosted FEMVector index
+         * calculations remain identical on host and device.
+         */
+        struct DeviceStruct {
+            static constexpr unsigned numElementDOFs = NedelecSpace::numElementDOFs;
+            static constexpr unsigned numElementVertices = NedelecSpace::numElementVertices;
+
+            using indices_list_t  = Vector<indices_t, numElementVertices>;
+            using vertex_points_t = Vector<point_t, numElementVertices>;
+
+            Vector<size_t, Dim> nr_m;      ///< Number of mesh vertices in each dimension.
+            Vector<double, Dim> hr_m;      ///< Uniform mesh spacing in each dimension.
+            Vector<double, Dim> origin_m;  ///< Physical coordinate of mesh vertex index zero.
+            ElementType ref_element_m;     ///< Device-copyable reference-element description.
+
+            /**
+             * @brief Convert a flattened element index to its N-dimensional mesh index.
+             * @param elementIndex Zero-based flattened element index.
+             * @return N-dimensional index of the element's lower mesh vertex.
+             */
+            KOKKOS_FUNCTION indices_t getElementNDIndex(const size_t& elementIndex) const;
+
+            /**
+             * @brief Flatten an N-dimensional element index.
+             * @param elementIndex Index of the element's lower mesh vertex.
+             * @return Zero-based element index with dimension zero varying fastest.
+             */
+            KOKKOS_FUNCTION size_t getElementIndex(const indices_t& elementIndex) const;
+
+            /**
+             * @brief Return the mesh indices of all vertices belonging to an element.
+             * @param elementIndex Index of the element's lower mesh vertex.
+             * @return Vertex indices in the reference element's binary local ordering.
+             */
+            KOKKOS_FUNCTION indices_list_t
+            getElementMeshVertexNDIndices(const indices_t& elementIndex) const;
+
+            /**
+             * @brief Return physical coordinates of all vertices belonging to an element.
+             * @param elementIndex Index of the element's lower mesh vertex.
+             * @return Physical vertex coordinates in local reference-element order.
+             */
+            KOKKOS_FUNCTION vertex_points_t
+            getElementMeshVertexPoints(const indices_t& elementIndex) const;
+
+            /**
+             * @brief Map a flattened element to its global edge DOF indices.
+             * @param elementIndex Zero-based flattened element index.
+             * @return Global edge indices in local Nedelec basis order.
+             */
+            KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getGlobalDOFIndices(
+                const size_t& elementIndex) const;
+
+            /**
+             * @brief Map an N-dimensional element to its global edge DOF indices.
+             * @param elementIndex Index of the element's lower mesh vertex.
+             * @return Global edge indices in local Nedelec basis order.
+             */
+            KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getGlobalDOFIndices(
+                const indices_t& elementIndex) const;
+
+            /**
+             * @brief Map a flattened element to ghosted FEMVector storage indices.
+             * @param elementIndex Zero-based flattened element index.
+             * @param ldom Local mesh domain owned by the current MPI rank.
+             * @return Indices into the rank-local FEMVector including its ghost layer.
+             */
+            KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getFEMVectorDOFIndices(
+                const size_t& elementIndex, NDIndex<Dim> ldom) const;
+
+            /**
+             * @brief Map an N-dimensional element to ghosted FEMVector storage indices.
+             * @param elementIndex Index of the element's lower mesh vertex.
+             * @param ldom Local mesh domain owned by the current MPI rank.
+             * @return Indices into the rank-local FEMVector including its ghost layer.
+             */
+            KOKKOS_FUNCTION Vector<size_t, numElementDOFs> getFEMVectorDOFIndices(
+                indices_t elementIndex, NDIndex<Dim> ldom) const;
+
+            /**
+             * @brief Evaluate a local Nedelec basis function in the reference element.
+             * @param localDOF Local edge-basis index.
+             * @param localPoint Point in reference-element coordinates.
+             * @return Vector value of the requested basis function.
+             */
+            KOKKOS_FUNCTION point_t evaluateRefElementShapeFunction(
+                const size_t& localDOF, const point_t& localPoint) const;
+
+            /**
+             * @brief Evaluate the curl of a local Nedelec basis function.
+             * @param localDOF Local edge-basis index.
+             * @param localPoint Point in reference-element coordinates.
+             * @return Curl in the representation used by the host NedelecSpace.
+             */
+            KOKKOS_FUNCTION point_t evaluateRefElementShapeFunctionCurl(
+                const size_t& localDOF, const point_t& localPoint) const;
+
+            /**
+             * @brief Test whether a global edge DOF lies on the physical mesh boundary.
+             * @param dofIdx Global Nedelec edge index.
+             * @return `true` when the edge belongs to any boundary face.
+             */
+            KOKKOS_FUNCTION bool isDOFOnBoundary(const size_t& dofIdx) const;
+        };
+
+        /**
+         * @brief Create the device-safe snapshot captured by Nedelec kernels.
+         *
+         * The returned value is independent of the host object's lifetime and contains no
+         * `FieldLayout` or MPI ownership. It is valid until a kernel needs mesh or reference-
+         * element state newer than the state copied by this call.
+         *
+         * @return Device-copyable geometry and edge-indexing snapshot.
+         */
+        DeviceStruct getDeviceMirror() const;
+
     private:
         /**
          * @brief Implementation of the \c NedelecSpace::createFEMVector
