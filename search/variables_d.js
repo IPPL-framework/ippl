@@ -55,7 +55,7 @@ var searchData=
   ['numnodes1d_52',['numNodes1D',['../classippl_1_1Quadrature.html#a667f52ecf501b53c2229754dc240752f',1,'ippl::Quadrature']]],
   ['numnodes_5fm_53',['numNodes_m',['../classippl_1_1ParticleBase.html#ad2b4cf5416a10ecbd693e4e50a9b8236',1,'ippl::ParticleBase']]],
   ['numsubffts_54',['NumSubFFTs',['../classippl_1_1FFT_3_01PrunedCCTransform_00_01ComplexField_01_4.html#a0b161e4cac20d86f3983e71539144512',1,'ippl::FFT&lt; PrunedCCTransform, ComplexField &gt;']]],
-  ['numvertices_55',['numVertices',['../classippl_1_1Element.html#a2f176e2447f6a48a83398250d9288e5e',1,'ippl::Element']]],
-  ['numvertices_56',['NumVertices',['../classippl_1_1EdgeElement.html#a709865403a4f5c323549b5b4afb8aa6b',1,'ippl::EdgeElement::NumVertices()'],['../classippl_1_1HexahedralElement.html#ad4bf71da4c41d445fec3fc77f8b263fc',1,'ippl::HexahedralElement::NumVertices()'],['../classippl_1_1QuadrilateralElement.html#abf85717d5589529380e6aaab015314b1',1,'ippl::QuadrilateralElement::NumVertices()']]],
+  ['numvertices_55',['NumVertices',['../classippl_1_1EdgeElement.html#a709865403a4f5c323549b5b4afb8aa6b',1,'ippl::EdgeElement::NumVertices()'],['../classippl_1_1HexahedralElement.html#ad4bf71da4c41d445fec3fc77f8b263fc',1,'ippl::HexahedralElement::NumVertices()'],['../classippl_1_1QuadrilateralElement.html#abf85717d5589529380e6aaab015314b1',1,'ippl::QuadrilateralElement::NumVertices()']]],
+  ['numvertices_56',['numVertices',['../classippl_1_1Element.html#a2f176e2447f6a48a83398250d9288e5e',1,'ippl::Element']]],
   ['nx_57',['nx',['../structippl_1_1multigrid_1_1Level.html#ae5ab7ce98b857e3df2d3ea1d99bcb36b',1,'ippl::multigrid::Level']]]
 ];

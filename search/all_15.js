@@ -4,7 +4,7 @@ var searchData=
   ['v_5fm_1',['v_m',['../structippl_1_1detail_1_1meta__dot.html#a3bb957e54ffe5fff4fe061b58dc2e6b7',1,'ippl::detail::meta_dot::v_m()'],['../structippl_1_1detail_1_1meta__cross.html#a5e987f8099e51839deb7bb7192953ebc',1,'ippl::detail::meta_cross::v_m()']]],
   ['val_2',['val',['../structippl_1_1TupleImpl_3_01i_00_01N_00_01T_01_4.html#ac697c3b2dbe13c99e37d8b8723ddfed8',1,'ippl::TupleImpl&lt; i, N, T &gt;::val()'],['../structippl_1_1TupleImpl_3_01i_00_01N_00_01T_00_01R_00_01Ts_8_8_8_01_4.html#a6eea2a49f4fa08bf9fc93eddec1dbc83',1,'ippl::TupleImpl&lt; i, N, T, R, Ts... &gt;::val()']]],
   ['val_5fm_3',['val_m',['../structippl_1_1detail_1_1Scalar.html#a409285c0e5ea8ed19c75d2d2c26dc017',1,'ippl::detail::Scalar']]],
-  ['val_5fq_4',['val_q',['../structippl_1_1QuadratureData.html#abfc190d0ee687fc81e5a66f164ee7bc2',1,'ippl::QuadratureData']]],
+  ['val_5fq_4',['val_q',['../structippl_1_1RefShapeFunctionData.html#ac7123d2c69f1f5b7167ead2e04ab1499',1,'ippl::RefShapeFunctionData']]],
   ['valid_5ftypes_5',['valid_types',['../namespaceippl_1_1pcg__preconditioner__defaults.html#a942da6c93f761001960ccd0c78860c93',1,'ippl::pcg_preconditioner_defaults']]],
   ['validatepermutation_6',['validatePermutation',['../namespaceippl_1_1detail.html#a1d66496296fff7cc0b70c60b8efee3da',1,'ippl::detail']]],
   ['vall_7',['valL',['../namespaceippl.html#a8f7e4fb4eed1e301eff1ad5d8b35df33',1,'ippl']]],

@@ -98,7 +98,7 @@ $(function() {
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &quot;<a class="code" href="ParallelDispatch_8h.html">Utility/ParallelDispatch.h</a>&quot;</span></div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &quot;<a class="code" href="ESKernel_8h.html">FFT/NUFFT/ESKernel.h</a>&quot;</span></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#include &quot;<a class="code" href="NUFFTUtilities_8h.html">FFT/NUFFT/NUFFTUtilities.h</a>&quot;</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#include &quot;<a class="code" href="GaussLegendre1D_8h.html">Nodes1D/GaussLegendre1D.h</a>&quot;</span></div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span> </div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceippl.html">ippl</a> {</div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="namespaceippl_1_1nufft.html">   34</a></span>    <span class="keyword">namespace </span>nufft {</div>
@@ -136,7 +136,7 @@ $(function() {
 <div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>            <span class="keyword">auto</span> nodes      = Kokkos::View&lt;RealType*, typename ExecSpace::memory_space&gt;(<span class="stringliteral">&quot;nodes&quot;</span>, q);</div>
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>            <span class="keyword">auto</span> weights = Kokkos::View&lt;RealType*, typename ExecSpace::memory_space&gt;(<span class="stringliteral">&quot;weights&quot;</span>, q);</div>
 <div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>            gauss_legendre&lt;ExecSpace&gt;(q, nodes, weights);</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>            ippl::nodes1d::computeGaussLegendre&lt;ExecSpace&gt;(nodes, weights);</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span> </div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>            <span class="keyword">const</span> RealType alpha = Kokkos::numbers::pi_v&lt;RealType&gt; * kernel.<a class="code hl_function" href="classippl_1_1nufft_1_1ESKernel.html#a5fe236135a026e6fb74c684befd3f379">width</a>() / n_grid;</div>
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>            <span class="keyword">const</span> RealType beta  = kernel.<a class="code hl_function" href="classippl_1_1nufft_1_1ESKernel.html#a59a43ccc3fda967af8cd1db043002397">beta</a>();</div>
@@ -427,7 +427,7 @@ $(function() {
 <div class="line"><a id="l00386" name="l00386"></a><span class="lineno">  386</span> </div>
 <div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span><span class="preprocessor">#endif  </span><span class="comment">// IPPL_NUFFT_CORRECTION_H</span></div>
 <div class="ttc" id="aESKernel_8h_html"><div class="ttname"><a href="ESKernel_8h.html">ESKernel.h</a></div><div class="ttdoc">Exponential-of-Semicircle (ES) spreading kernel for NUFFT.</div></div>
-<div class="ttc" id="aNUFFTUtilities_8h_html"><div class="ttname"><a href="NUFFTUtilities_8h.html">NUFFTUtilities.h</a></div><div class="ttdoc">NUFFT utility helpers used by the native Kokkos NUFFT engine.</div></div>
+<div class="ttc" id="aGaussLegendre1D_8h_html"><div class="ttname"><a href="GaussLegendre1D_8h.html">GaussLegendre1D.h</a></div><div class="ttdoc">Gauss–Legendre quadrature on [-1, 1] (Jacobi with alpha = beta = 0).</div></div>
 <div class="ttc" id="aParallelDispatch_8h_html"><div class="ttname"><a href="ParallelDispatch_8h.html">ParallelDispatch.h</a></div></div>
 <div class="ttc" id="aViewTypes_8h_html"><div class="ttname"><a href="ViewTypes_8h.html">ViewTypes.h</a></div></div>
 <div class="ttc" id="aclassippl_1_1Vector_html"><div class="ttname"><a href="classippl_1_1Vector.html">ippl::Vector</a></div><div class="ttdef"><b>Definition:</b> Vector.h:28</div></div>

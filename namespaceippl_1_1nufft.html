@@ -164,10 +164,6 @@ Functions</h2></td></tr>
 <tr class="memitem:ab2a876b2f753668fce22f05e6ce89def"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1nufft.html#ab2a876b2f753668fce22f05e6ce89def">es_kernel_eval</a> (T x)</td></tr>
 <tr class="memdesc:ab2a876b2f753668fce22f05e6ce89def"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compile-time width dispatch for ES kernel evaluation.  <a href="namespaceippl_1_1nufft.html#ab2a876b2f753668fce22f05e6ce89def">More...</a><br /></td></tr>
 <tr class="separator:ab2a876b2f753668fce22f05e6ce89def"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a20edcbaa3c609726dd57865a56df004e"><td class="memTemplParams" colspan="2">template&lt;typename ExecSpace , typename RealType  = double&gt; </td></tr>
-<tr class="memitem:a20edcbaa3c609726dd57865a56df004e"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1nufft.html#a20edcbaa3c609726dd57865a56df004e">gauss_legendre</a> (int n, Kokkos::View&lt; RealType *, typename ExecSpace::memory_space &gt; &amp;nodes, Kokkos::View&lt; RealType *, typename ExecSpace::memory_space &gt; &amp;weights)</td></tr>
-<tr class="memdesc:a20edcbaa3c609726dd57865a56df004e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes Gauss-Legendre quadrature nodes and weights on [-1, 1].  <a href="namespaceippl_1_1nufft.html#a20edcbaa3c609726dd57865a56df004e">More...</a><br /></td></tr>
-<tr class="separator:a20edcbaa3c609726dd57865a56df004e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="ae41211389dd06d331cdd568d906c2610" name="ae41211389dd06d331cdd568d906c2610"></a>
@@ -736,45 +732,6 @@ template&lt;typename T &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-
-</div>
-</div>
-<a id="a20edcbaa3c609726dd57865a56df004e" name="a20edcbaa3c609726dd57865a56df004e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a20edcbaa3c609726dd57865a56df004e">&#9670;&#160;</a></span>gauss_legendre()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename ExecSpace , typename RealType  = double&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">void ippl::nufft::gauss_legendre </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>n</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Kokkos::View&lt; RealType *, typename ExecSpace::memory_space &gt; &amp;&#160;</td>
-          <td class="paramname"><em>nodes</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Kokkos::View&lt; RealType *, typename ExecSpace::memory_space &gt; &amp;&#160;</td>
-          <td class="paramname"><em>weights</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Computes Gauss-Legendre quadrature nodes and weights on [-1, 1]. </p>
-<p >Runs on host and copies results to the device-accessible views. </p>
 
 </div>
 </div>

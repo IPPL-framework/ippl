@@ -12,7 +12,7 @@ var searchData=
   ['degree_5fm_9',['degree_m',['../structippl_1_1polynomial__chebyshev__preconditioner.html#aa62e65afd2cfec96020683a689baf26a',1,'ippl::polynomial_chebyshev_preconditioner::degree_m()'],['../classippl_1_1Quadrature.html#aece90741df9344a8b3f0eb6d80b773d3',1,'ippl::Quadrature::degree_m()']]],
   ['deleteindex_5fm_10',['deleteIndex_m',['../classippl_1_1ParticleBase.html#add592024834896751110bee461fe6dae',1,'ippl::ParticleBase']]],
   ['delta_5fm_11',['delta_m',['../structippl_1_1polynomial__chebyshev__preconditioner.html#a96fb607944289d9aff039d29ff293da9',1,'ippl::polynomial_chebyshev_preconditioner']]],
-  ['deriv_5fq_12',['deriv_q',['../structippl_1_1QuadratureData.html#a8bebcc29d7856d934a1f614838d743b3',1,'ippl::QuadratureData']]],
+  ['deriv_5fq_12',['deriv_q',['../structippl_1_1RefShapeFunctionData.html#a07c024ca550eba01c4c25393d8001dcc',1,'ippl::RefShapeFunctionData']]],
   ['desc_5f_13',['desc_',['../classippl_1_1fft_1_1CuFFTMpC2C.html#af4dd32251b30b1deb5dc20355881c6a0',1,'ippl::fft::CuFFTMpC2C::desc_()'],['../classippl_1_1fft_1_1CuFFTMpR2C.html#a8bcd0a5b4742607beea0a40ddeb574c5',1,'ippl::fft::CuFFTMpR2C::desc_()']]],
   ['descr_5f_14',['descr_',['../classIpplException.html#ab9879a083daff319f8eca436030dd7bf',1,'IpplException']]],
   ['destinationranks_5fhost_5f_15',['destinationRanks_host_',['../classippl_1_1ParticleSpatialLayout.html#ab618f5c9054045265be3c615b0adc2c2',1,'ippl::ParticleSpatialLayout']]],

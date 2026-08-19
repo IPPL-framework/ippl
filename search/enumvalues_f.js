@@ -7,5 +7,6 @@ var searchData=
   ['solver_5frecv_4',['SOLVER_RECV',['../namespaceippl_1_1mpi_1_1tag.html#a15d567b75f6be9891166d172c200185aa6eb67bf33352d33d9b8d199a15ce4b47',1,'ippl::mpi::tag']]],
   ['solver_5fsend_5',['SOLVER_SEND',['../namespaceippl_1_1mpi_1_1tag.html#a15d567b75f6be9891166d172c200185aa2f2886600ba0b8f30cd54638b1e73540',1,'ippl::mpi::tag']]],
   ['standard_6',['STANDARD',['../classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbad60ea505c04fcdf124a6c9c9b00ddf42',1,'ippl::FFTOpenPoissonSolver']]],
-  ['sum_7',['SUM',['../namespaceippl_1_1mpi.html#af4f4f1044f97b9c23c582bf914d74a0fa6970bdc2201030b9c03fbdcf3973858a',1,'ippl::mpi']]]
+  ['stroudsecrest_7',['StroudSecrest',['../namespaceippl_1_1nodes1d.html#a1e96861fc28b05d5cdd9a68fe279f6a1aa4210c07dad6560d3baef2c37598745e',1,'ippl::nodes1d']]],
+  ['sum_8',['SUM',['../namespaceippl_1_1mpi.html#af4f4f1044f97b9c23c582bf914d74a0fa6970bdc2201030b9c03fbdcf3973858a',1,'ippl::mpi']]]
 ];

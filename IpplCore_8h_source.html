@@ -130,25 +130,26 @@ $(function() {
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span><span class="preprocessor">#include &quot;<a class="code" href="QuadrilateralElement_8h.html">FEM/Elements/QuadrilateralElement.h</a>&quot;</span></div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><span class="comment">// // FEM Quadrature</span></div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="preprocessor">#include &quot;<a class="code" href="GaussJacobiQuadrature_8h.html">FEM/Quadrature/GaussJacobiQuadrature.h</a>&quot;</span></div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><span class="preprocessor">#include &quot;<a class="code" href="MidpointQuadrature_8h.html">FEM/Quadrature/MidpointQuadrature.h</a>&quot;</span></div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span><span class="comment">// // FEM Spaces</span></div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="preprocessor">#include &quot;<a class="code" href="LagrangeSpace_8h.html">FEM/LagrangeSpace.h</a>&quot;</span></div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="preprocessor">#include &quot;<a class="code" href="NedelecSpace_8h.html">FEM/NedelecSpace.h</a>&quot;</span></div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="comment">// // FEM Vector</span></div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="preprocessor">#include &quot;<a class="code" href="FEMVector_8h.html">FEM/FEMVector.h</a>&quot;</span></div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="comment">// FEM Operators</span></div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span><span class="preprocessor">#include &quot;<a class="code" href="FEMInterpolate_8hpp.html">FEM/FEMInterpolate.hpp</a>&quot;</span></div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="preprocessor">#include &quot;<a class="code" href="GridPathSegmenter_8h.html">FEM/GridPathSegmenter.h</a>&quot;</span></div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span><span class="preprocessor">#include &quot;<a class="code" href="ProjectCurrent_8hpp.html">FEM/ProjectCurrent.hpp</a>&quot;</span></div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span><span class="comment">// Interpolation</span></div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span><span class="preprocessor">#include &quot;<a class="code" href="CurrentDeposition_8hpp.html">Interpolation/CurrentDeposition.hpp</a>&quot;</span></div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="preprocessor">#include &quot;<a class="code" href="GaussLegendreQuadrature_8h.html">FEM/Quadrature/GaussLegendreQuadrature.h</a>&quot;</span></div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><span class="preprocessor">#include &quot;<a class="code" href="GaussLobattoQuadrature_8h.html">FEM/Quadrature/GaussLobattoQuadrature.h</a>&quot;</span></div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span><span class="preprocessor">#include &quot;<a class="code" href="MidpointQuadrature_8h.html">FEM/Quadrature/MidpointQuadrature.h</a>&quot;</span></div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="comment">// // FEM Spaces</span></div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="preprocessor">#include &quot;<a class="code" href="LagrangeSpace_8h.html">FEM/LagrangeSpace.h</a>&quot;</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="preprocessor">#include &quot;<a class="code" href="NedelecSpace_8h.html">FEM/NedelecSpace.h</a>&quot;</span></div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="comment">// // FEM Vector</span></div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><span class="preprocessor">#include &quot;<a class="code" href="FEMVector_8h.html">FEM/FEMVector.h</a>&quot;</span></div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span> </div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span><span class="comment">// FEM Operators</span></div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="preprocessor">#include &quot;<a class="code" href="FEMInterpolate_8hpp.html">FEM/FEMInterpolate.hpp</a>&quot;</span></div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span><span class="preprocessor">#include &quot;<a class="code" href="GridPathSegmenter_8h.html">FEM/GridPathSegmenter.h</a>&quot;</span></div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span><span class="preprocessor">#include &quot;<a class="code" href="ProjectCurrent_8hpp.html">FEM/ProjectCurrent.hpp</a>&quot;</span></div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span> </div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span><span class="comment">// Interpolation</span></div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span><span class="preprocessor">#include &quot;<a class="code" href="CurrentDeposition_8hpp.html">Interpolation/CurrentDeposition.hpp</a>&quot;</span></div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span> </div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="aBConds_8h_html"><div class="ttname"><a href="BConds_8h.html">BConds.h</a></div></div>
 <div class="ttc" id="aBareField_8h_html"><div class="ttname"><a href="BareField_8h.html">BareField.h</a></div></div>
 <div class="ttc" id="aCurrentDeposition_8hpp_html"><div class="ttname"><a href="CurrentDeposition_8hpp.html">CurrentDeposition.hpp</a></div></div>
@@ -158,7 +159,8 @@ $(function() {
 <div class="ttc" id="aFFT_8h_html"><div class="ttname"><a href="FFT_8h.html">FFT.h</a></div></div>
 <div class="ttc" id="aFieldLayout_8h_html"><div class="ttname"><a href="FieldLayout_8h.html">FieldLayout.h</a></div></div>
 <div class="ttc" id="aField_8h_html"><div class="ttname"><a href="Field_8h.html">Field.h</a></div></div>
-<div class="ttc" id="aGaussJacobiQuadrature_8h_html"><div class="ttname"><a href="GaussJacobiQuadrature_8h.html">GaussJacobiQuadrature.h</a></div></div>
+<div class="ttc" id="aGaussLegendreQuadrature_8h_html"><div class="ttname"><a href="GaussLegendreQuadrature_8h.html">GaussLegendreQuadrature.h</a></div></div>
+<div class="ttc" id="aGaussLobattoQuadrature_8h_html"><div class="ttname"><a href="GaussLobattoQuadrature_8h.html">GaussLobattoQuadrature.h</a></div></div>
 <div class="ttc" id="aGridPathSegmenter_8h_html"><div class="ttname"><a href="GridPathSegmenter_8h.html">GridPathSegmenter.h</a></div></div>
 <div class="ttc" id="aHexahedralElement_8h_html"><div class="ttname"><a href="HexahedralElement_8h.html">HexahedralElement.h</a></div></div>
 <div class="ttc" id="aIpplInfo_8h_html"><div class="ttname"><a href="IpplInfo_8h.html">IpplInfo.h</a></div></div>

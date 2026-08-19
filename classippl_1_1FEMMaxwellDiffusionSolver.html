@@ -111,25 +111,25 @@ Collaboration diagram for ippl::FEMMaxwellDiffusionSolver&lt; FieldType &gt;:</d
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FEMMaxwellDiffusionSolver__coll__graph.png" border="0" usemap="#aippl_1_1FEMMaxwellDiffusionSolver_3_01FieldType_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1FEMMaxwellDiffusionSolver_3_01FieldType_01_4_coll__map" id="aippl_1_1FEMMaxwellDiffusionSolver_3_01FieldType_01_4_coll__map">
-<area shape="rect" title="A solver for the electric diffusion equation given by &#160;and &#160;using the Nédélec basis functions." alt="" coords="328,1325,533,1571"/>
+<area shape="rect" title="A solver for the electric diffusion equation given by &#160;and &#160;using the Nédélec basis functions." alt="" coords="331,1325,536,1571"/>
 <area shape="rect" href="classippl_1_1Maxwell.html" title=" " alt="" coords="5,981,176,1197"/>
 <area shape="rect" href="classippl_1_1ParameterList.html" title=" " alt="" coords="23,577,158,779"/>
 <area shape="rect" href="classippl_1_1CG.html" title=" " alt="" coords="200,944,427,1233"/>
-<area shape="rect" href="classippl_1_1SolverAlgorithm.html" title=" " alt="" coords="229,643,392,713"/>
-<area shape="rect" href="classippl_1_1GaussJacobiQuadrature.html" title=" " alt="" coords="451,1017,650,1160"/>
-<area shape="rect" href="classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules." alt="" coords="416,533,616,823"/>
-<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="231,174,441,405"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="409,5,581,104"/>
-<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="465,174,615,405"/>
-<area shape="rect" title=" " alt="" coords="654,35,714,75"/>
-<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="925,174,1049,405"/>
-<area shape="rect" href="classippl_1_1NedelecSpace.html" title=" " alt="" coords="679,915,870,1263"/>
-<area shape="rect" href="classippl_1_1FiniteElementSpace.html" title=" " alt="" coords="869,504,1105,852"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="905,13,1057,97"/>
-<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="1082,167,1225,412"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="1081,13,1233,97"/>
-<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="714,563,835,793"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="748,247,900,331"/>
+<area shape="rect" href="classippl_1_1SolverAlgorithm.html" title=" " alt="" coords="232,643,395,713"/>
+<area shape="rect" href="classippl_1_1GaussLegendreQuadrature.html" title=" " alt="" coords="451,1047,659,1131"/>
+<area shape="rect" href="classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules." alt="" coords="455,526,655,830"/>
+<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="450,174,659,405"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="542,5,714,104"/>
+<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="683,174,834,405"/>
+<area shape="rect" href="classippl_1_1NedelecSpace.html" title=" " alt="" coords="683,915,874,1263"/>
+<area shape="rect" href="classippl_1_1FiniteElementSpace.html" title=" " alt="" coords="858,504,1094,852"/>
+<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="858,174,982,405"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="751,13,903,97"/>
+<area shape="rect" title=" " alt="" coords="927,35,987,75"/>
+<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="1183,167,1326,412"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="1179,13,1331,97"/>
+<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="713,563,834,793"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="1007,247,1159,331"/>
 </map>
 </div>
 <table class="memberdecls">
@@ -143,9 +143,9 @@ Public Types</h2></td></tr>
 <tr class="separator:ae298df835344e8307afbb3549eb59bbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae96e81a1630da9ca1099afeac22362ec"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#ae96e81a1630da9ca1099afeac22362ec">ElementType</a> = std::conditional_t&lt; <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a779c30ae6fb28b1fcf9b446bfaa83278">Dim</a>==2, <a class="el" href="classippl_1_1QuadrilateralElement.html">ippl::QuadrilateralElement</a>&lt; <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#aa4f71e7341c2b640ddc58c63d9e7494a">T</a> &gt;, <a class="el" href="classippl_1_1HexahedralElement.html">ippl::HexahedralElement</a>&lt; <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#aa4f71e7341c2b640ddc58c63d9e7494a">T</a> &gt; &gt;</td></tr>
 <tr class="separator:ae96e81a1630da9ca1099afeac22362ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4efb26460a5d6a8b0c9e04cd83dc465c"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a4efb26460a5d6a8b0c9e04cd83dc465c">QuadratureType</a> = <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">GaussJacobiQuadrature</a>&lt; <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#aa4f71e7341c2b640ddc58c63d9e7494a">T</a>, 5, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#ae96e81a1630da9ca1099afeac22362ec">ElementType</a> &gt;</td></tr>
-<tr class="separator:a4efb26460a5d6a8b0c9e04cd83dc465c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d43fe9b1c50d732348eb104b8258646"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a0d43fe9b1c50d732348eb104b8258646">NedelecType</a> = <a class="el" href="classippl_1_1NedelecSpace.html">NedelecSpace</a>&lt; <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#aa4f71e7341c2b640ddc58c63d9e7494a">T</a>, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a779c30ae6fb28b1fcf9b446bfaa83278">Dim</a>, 1, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#ae96e81a1630da9ca1099afeac22362ec">ElementType</a>, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a4efb26460a5d6a8b0c9e04cd83dc465c">QuadratureType</a>, FieldType &gt;</td></tr>
+<tr class="memitem:acd3396c35f75a94bc57caaabef5307ca"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#acd3396c35f75a94bc57caaabef5307ca">QuadratureType</a> = <a class="el" href="classippl_1_1GaussLegendreQuadrature.html">GaussLegendreQuadrature</a>&lt; <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#aa4f71e7341c2b640ddc58c63d9e7494a">T</a>, 5, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#ae96e81a1630da9ca1099afeac22362ec">ElementType</a> &gt;</td></tr>
+<tr class="separator:acd3396c35f75a94bc57caaabef5307ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0d43fe9b1c50d732348eb104b8258646"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a0d43fe9b1c50d732348eb104b8258646">NedelecType</a> = <a class="el" href="classippl_1_1NedelecSpace.html">NedelecSpace</a>&lt; <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#aa4f71e7341c2b640ddc58c63d9e7494a">T</a>, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a779c30ae6fb28b1fcf9b446bfaa83278">Dim</a>, 1, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#ae96e81a1630da9ca1099afeac22362ec">ElementType</a>, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#acd3396c35f75a94bc57caaabef5307ca">QuadratureType</a>, FieldType &gt;</td></tr>
 <tr class="separator:a0d43fe9b1c50d732348eb104b8258646"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
@@ -206,7 +206,7 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:ac350fa3b6dd7315a4ea08759df6afd0f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#ae96e81a1630da9ca1099afeac22362ec">ElementType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#ac350fa3b6dd7315a4ea08759df6afd0f">refElement_m</a></td></tr>
 <tr class="memdesc:ac350fa3b6dd7315a4ea08759df6afd0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">the reference element we have.  <a href="classippl_1_1FEMMaxwellDiffusionSolver.html#ac350fa3b6dd7315a4ea08759df6afd0f">More...</a><br /></td></tr>
 <tr class="separator:ac350fa3b6dd7315a4ea08759df6afd0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8327c7a0f0d313d6cba802312c290326"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a4efb26460a5d6a8b0c9e04cd83dc465c">QuadratureType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a8327c7a0f0d313d6cba802312c290326">quadrature_m</a></td></tr>
+<tr class="memitem:a8327c7a0f0d313d6cba802312c290326"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#acd3396c35f75a94bc57caaabef5307ca">QuadratureType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a8327c7a0f0d313d6cba802312c290326">quadrature_m</a></td></tr>
 <tr class="memdesc:a8327c7a0f0d313d6cba802312c290326"><td class="mdescLeft">&#160;</td><td class="mdescRight">The quadrature rule we use.  <a href="classippl_1_1FEMMaxwellDiffusionSolver.html#a8327c7a0f0d313d6cba802312c290326">More...</a><br /></td></tr>
 <tr class="separator:a8327c7a0f0d313d6cba802312c290326"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc8c0d2cd7be80a191b800b0c1bbfa15"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a0d43fe9b1c50d732348eb104b8258646">NedelecType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#acc8c0d2cd7be80a191b800b0c1bbfa15">nedelecSpace_m</a></td></tr>
@@ -307,7 +307,7 @@ template&lt;typename FieldType &gt; </div>
 template&lt;typename FieldType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html">ippl::FEMMaxwellDiffusionSolver</a>&lt; FieldType &gt;::NedelecType =  <a class="el" href="classippl_1_1NedelecSpace.html">NedelecSpace</a>&lt;<a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#aa4f71e7341c2b640ddc58c63d9e7494a">T</a>, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a779c30ae6fb28b1fcf9b446bfaa83278">Dim</a>, 1, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#ae96e81a1630da9ca1099afeac22362ec">ElementType</a>, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a4efb26460a5d6a8b0c9e04cd83dc465c">QuadratureType</a>, FieldType&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html">ippl::FEMMaxwellDiffusionSolver</a>&lt; FieldType &gt;::NedelecType =  <a class="el" href="classippl_1_1NedelecSpace.html">NedelecSpace</a>&lt;<a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#aa4f71e7341c2b640ddc58c63d9e7494a">T</a>, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a779c30ae6fb28b1fcf9b446bfaa83278">Dim</a>, 1, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#ae96e81a1630da9ca1099afeac22362ec">ElementType</a>, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#acd3396c35f75a94bc57caaabef5307ca">QuadratureType</a>, FieldType&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -354,8 +354,8 @@ template&lt;typename FieldType &gt; </div>
 
 </div>
 </div>
-<a id="a4efb26460a5d6a8b0c9e04cd83dc465c" name="a4efb26460a5d6a8b0c9e04cd83dc465c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4efb26460a5d6a8b0c9e04cd83dc465c">&#9670;&#160;</a></span>QuadratureType</h2>
+<a id="acd3396c35f75a94bc57caaabef5307ca" name="acd3396c35f75a94bc57caaabef5307ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd3396c35f75a94bc57caaabef5307ca">&#9670;&#160;</a></span>QuadratureType</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -363,7 +363,7 @@ template&lt;typename FieldType &gt; </div>
 template&lt;typename FieldType &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html">ippl::FEMMaxwellDiffusionSolver</a>&lt; FieldType &gt;::QuadratureType =  <a class="el" href="classippl_1_1GaussJacobiQuadrature.html">GaussJacobiQuadrature</a>&lt;<a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#aa4f71e7341c2b640ddc58c63d9e7494a">T</a>, 5, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#ae96e81a1630da9ca1099afeac22362ec">ElementType</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html">ippl::FEMMaxwellDiffusionSolver</a>&lt; FieldType &gt;::QuadratureType =  <a class="el" href="classippl_1_1GaussLegendreQuadrature.html">GaussLegendreQuadrature</a>&lt;<a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#aa4f71e7341c2b640ddc58c63d9e7494a">T</a>, 5, <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#ae96e81a1630da9ca1099afeac22362ec">ElementType</a>&gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -815,7 +815,7 @@ template&lt;typename FieldType &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#a4efb26460a5d6a8b0c9e04cd83dc465c">QuadratureType</a> <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html">ippl::FEMMaxwellDiffusionSolver</a>&lt; FieldType &gt;::quadrature_m</td>
+          <td class="memname"><a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html#acd3396c35f75a94bc57caaabef5307ca">QuadratureType</a> <a class="el" href="classippl_1_1FEMMaxwellDiffusionSolver.html">ippl::FEMMaxwellDiffusionSolver</a>&lt; FieldType &gt;::quadrature_m</td>
         </tr>
       </table>
   </td>

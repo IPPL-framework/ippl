@@ -1,9 +1,8 @@
 <map id="ippl::Quadrature&lt; T, NumNodes1D, ElementType &gt;" name="ippl::Quadrature&lt; T, NumNodes1D, ElementType &gt;">
-<area shape="rect" id="node1" title="This is the base class for all quadrature rules." alt="" coords="345,5,545,324"/>
-<area shape="rect" id="node2" href="$classippl_1_1GaussJacobiQuadrature.html" title=" " alt="" coords="5,372,204,544"/>
-<area shape="rect" id="node3" href="$classippl_1_1GaussJacobiQuadrature.html" title=" " alt="" coords="228,372,427,544"/>
-<area shape="rect" id="node4" href="$classippl_1_1GaussJacobiQuadrature.html" title="This is class represents the Gauss&#45;Jacobi quadrature rule on a reference element." alt="" coords="451,372,673,544"/>
-<area shape="rect" id="node7" href="$classippl_1_1MidpointQuadrature.html" title="This is a class representing the midpoint quadrature rule." alt="" coords="697,416,920,500"/>
-<area shape="rect" id="node5" href="$classippl_1_1ChebyshevGaussQuadrature.html" title="This is class represents the Chebyshev&#45;Gauss quadrature rule. It is a special case of the Gauss&#45;Jacob..." alt="" coords="327,592,549,661"/>
-<area shape="rect" id="node6" href="$classippl_1_1GaussLegendreQuadrature.html" title="This is class represents the Gauss&#45;Legendre quadrature rule. It is a special case of the Gauss&#45;Jacobi..." alt="" coords="573,592,796,661"/>
+<area shape="rect" id="node1" title="This is the base class for all quadrature rules." alt="" coords="481,5,681,339"/>
+<area shape="rect" id="node2" href="$classippl_1_1GaussLegendreQuadrature.html" title=" " alt="" coords="5,387,213,471"/>
+<area shape="rect" id="node3" href="$classippl_1_1GaussLegendreQuadrature.html" title=" " alt="" coords="237,387,445,471"/>
+<area shape="rect" id="node4" href="$classippl_1_1GaussLegendreQuadrature.html" title="Gauss&#45;Legendre quadrature (Gauss&#45;Jacobi with alpha = beta = 0) on a reference element." alt="" coords="470,387,693,471"/>
+<area shape="rect" id="node5" href="$classippl_1_1GaussLobattoQuadrature.html" title="Gauss&#45;Lobatto&#45;Legendre quadrature on a reference element." alt="" coords="717,387,939,471"/>
+<area shape="rect" id="node6" href="$classippl_1_1MidpointQuadrature.html" title="This is a class representing the midpoint quadrature rule." alt="" coords="963,387,1186,471"/>
 </map>

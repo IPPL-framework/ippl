@@ -99,13 +99,12 @@ Inheritance diagram for ippl::Quadrature&lt; T, NumNodes1D, ElementType &gt;:</d
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1Quadrature__inherit__graph.png" border="0" usemap="#aippl_1_1Quadrature_3_01T_00_01NumNodes1D_00_01ElementType_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1Quadrature_3_01T_00_01NumNodes1D_00_01ElementType_01_4_inherit__map" id="aippl_1_1Quadrature_3_01T_00_01NumNodes1D_00_01ElementType_01_4_inherit__map">
-<area shape="rect" title="This is the base class for all quadrature rules." alt="" coords="345,5,545,324"/>
-<area shape="rect" href="classippl_1_1GaussJacobiQuadrature.html" title=" " alt="" coords="5,372,204,544"/>
-<area shape="rect" href="classippl_1_1GaussJacobiQuadrature.html" title=" " alt="" coords="228,372,427,544"/>
-<area shape="rect" href="classippl_1_1GaussJacobiQuadrature.html" title="This is class represents the Gauss&#45;Jacobi quadrature rule on a reference element." alt="" coords="451,372,673,544"/>
-<area shape="rect" href="classippl_1_1MidpointQuadrature.html" title="This is a class representing the midpoint quadrature rule." alt="" coords="697,416,920,500"/>
-<area shape="rect" href="classippl_1_1ChebyshevGaussQuadrature.html" title="This is class represents the Chebyshev&#45;Gauss quadrature rule. It is a special case of the Gauss&#45;Jacob..." alt="" coords="327,592,549,661"/>
-<area shape="rect" href="classippl_1_1GaussLegendreQuadrature.html" title="This is class represents the Gauss&#45;Legendre quadrature rule. It is a special case of the Gauss&#45;Jacobi..." alt="" coords="573,592,796,661"/>
+<area shape="rect" title="This is the base class for all quadrature rules." alt="" coords="481,5,681,339"/>
+<area shape="rect" href="classippl_1_1GaussLegendreQuadrature.html" title=" " alt="" coords="5,387,213,471"/>
+<area shape="rect" href="classippl_1_1GaussLegendreQuadrature.html" title=" " alt="" coords="237,387,445,471"/>
+<area shape="rect" href="classippl_1_1GaussLegendreQuadrature.html" title="Gauss&#45;Legendre quadrature (Gauss&#45;Jacobi with alpha = beta = 0) on a reference element." alt="" coords="470,387,693,471"/>
+<area shape="rect" href="classippl_1_1GaussLobattoQuadrature.html" title="Gauss&#45;Lobatto&#45;Legendre quadrature on a reference element." alt="" coords="717,387,939,471"/>
+<area shape="rect" href="classippl_1_1MidpointQuadrature.html" title="This is a class representing the midpoint quadrature rule." alt="" coords="963,387,1186,471"/>
 </map>
 </div>
 <div class="dynheader">
@@ -113,7 +112,7 @@ Collaboration diagram for ippl::Quadrature&lt; T, NumNodes1D, ElementType &gt;:<
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1Quadrature__coll__graph.png" border="0" usemap="#aippl_1_1Quadrature_3_01T_00_01NumNodes1D_00_01ElementType_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1Quadrature_3_01T_00_01NumNodes1D_00_01ElementType_01_4_coll__map" id="aippl_1_1Quadrature_3_01T_00_01NumNodes1D_00_01ElementType_01_4_coll__map">
-<area shape="rect" title="This is the base class for all quadrature rules." alt="" coords="10,476,210,765"/>
+<area shape="rect" title="This is the base class for all quadrature rules." alt="" coords="10,476,210,780"/>
 <area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="5,153,215,384"/>
 <area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="24,5,196,104"/>
 </map>
@@ -121,9 +120,12 @@ Collaboration diagram for ippl::Quadrature&lt; T, NumNodes1D, ElementType &gt;:<
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ad0cdd78559face6a747400440d2c6fac"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Quadrature.html#ad0cdd78559face6a747400440d2c6fac">Quadrature</a> (const ElementType &amp;ref_element)</td></tr>
-<tr class="memdesc:ad0cdd78559face6a747400440d2c6fac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new <a class="el" href="classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules.">Quadrature</a> object.  <a href="classippl_1_1Quadrature.html#ad0cdd78559face6a747400440d2c6fac">More...</a><br /></td></tr>
-<tr class="separator:ad0cdd78559face6a747400440d2c6fac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f0a2068183840bedd11e9ab626e4846"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Quadrature.html#a1f0a2068183840bedd11e9ab626e4846">Quadrature</a> (const ElementType &amp;ref_element, unsigned degree, T a, T b)</td></tr>
+<tr class="memdesc:a1f0a2068183840bedd11e9ab626e4846"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new <a class="el" href="classippl_1_1Quadrature.html" title="This is the base class for all quadrature rules.">Quadrature</a> object.  <a href="classippl_1_1Quadrature.html#a1f0a2068183840bedd11e9ab626e4846">More...</a><br /></td></tr>
+<tr class="separator:a1f0a2068183840bedd11e9ab626e4846"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a147b453dcc7f5a829370b681d641add6"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Quadrature.html#a147b453dcc7f5a829370b681d641add6">~Quadrature</a> ()=default</td></tr>
+<tr class="memdesc:a147b453dcc7f5a829370b681d641add6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Virtual destructor so derived rules can be destroyed through a Quadrature*.  <a href="classippl_1_1Quadrature.html#a147b453dcc7f5a829370b681d641add6">More...</a><br /></td></tr>
+<tr class="separator:a147b453dcc7f5a829370b681d641add6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa58f4368884b05b3b620d630a0c6e5f3"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Quadrature.html#aa58f4368884b05b3b620d630a0c6e5f3">getOrder</a> () const</td></tr>
 <tr class="memdesc:aa58f4368884b05b3b620d630a0c6e5f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the order of the quadrature rule. (order = degree + 1)  <a href="classippl_1_1Quadrature.html#aa58f4368884b05b3b620d630a0c6e5f3">More...</a><br /></td></tr>
 <tr class="separator:aa58f4368884b05b3b620d630a0c6e5f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -182,8 +184,8 @@ class ippl::Quadrature&lt; T, NumNodes1D, ElementType &gt;</div><p >This is the 
   </dd>
 </dl>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ad0cdd78559face6a747400440d2c6fac" name="ad0cdd78559face6a747400440d2c6fac"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad0cdd78559face6a747400440d2c6fac">&#9670;&#160;</a></span>Quadrature()</h2>
+<a id="a1f0a2068183840bedd11e9ab626e4846" name="a1f0a2068183840bedd11e9ab626e4846"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f0a2068183840bedd11e9ab626e4846">&#9670;&#160;</a></span>Quadrature()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -194,8 +196,30 @@ template&lt;typename T , unsigned NumNodes1D, typename ElementType &gt; </div>
           <td class="memname"><a class="el" href="classippl_1_1Quadrature.html">ippl::Quadrature</a>&lt; T, NumNodes1D, ElementType &gt;::Quadrature </td>
           <td>(</td>
           <td class="paramtype">const ElementType &amp;&#160;</td>
-          <td class="paramname"><em>ref_element</em></td><td>)</td>
+          <td class="paramname"><em>ref_element</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>degree</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">T&#160;</td>
+          <td class="paramname"><em>b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -204,9 +228,41 @@ template&lt;typename T , unsigned NumNodes1D, typename ElementType &gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">ref_element</td><td>reference element to compute the quadrature nodes on </td></tr>
+    <tr><td class="paramname">degree</td><td>degree of exactness of the quadrature rule </td></tr>
+    <tr><td class="paramname">a</td><td>source interval start the nodes/weights are computed on </td></tr>
+    <tr><td class="paramname">b</td><td>source interval end the nodes/weights are computed on </td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a147b453dcc7f5a829370b681d641add6" name="a147b453dcc7f5a829370b681d641add6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a147b453dcc7f5a829370b681d641add6">&#9670;&#160;</a></span>~Quadrature()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned NumNodes1D, typename ElementType &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual <a class="el" href="classippl_1_1Quadrature.html">ippl::Quadrature</a>&lt; T, NumNodes1D, ElementType &gt;::~<a class="el" href="classippl_1_1Quadrature.html">Quadrature</a> </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span><span class="mlabel">default</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Virtual destructor so derived rules can be destroyed through a Quadrature*. </p>
 
 </div>
 </div>
@@ -238,7 +294,7 @@ template&lt;typename T , unsigned NumNodes1D, typename ElementType &gt; </div>
 
 <p>Pure virtual function that computes the local quadrature nodes and weights. (Needs to be implemented in derived classes) </p>
 
-<p>Implemented in <a class="el" href="classippl_1_1GaussJacobiQuadrature.html#afe827561c6d1b3146ae178c725a87162">ippl::GaussJacobiQuadrature&lt; T, NumNodes1D, ElementType &gt;</a>, <a class="el" href="classippl_1_1GaussJacobiQuadrature.html#afe827561c6d1b3146ae178c725a87162">ippl::GaussJacobiQuadrature&lt; T, 5, ElementType &gt;</a>, <a class="el" href="classippl_1_1GaussJacobiQuadrature.html#afe827561c6d1b3146ae178c725a87162">ippl::GaussJacobiQuadrature&lt; Tlhs, 5, ElementType &gt;</a>, and <a class="el" href="classippl_1_1MidpointQuadrature.html#a6960c427506f864e22eec674bbc8e40a">ippl::MidpointQuadrature&lt; T, NumNodes1D, ElementType &gt;</a>.</p>
+<p>Implemented in <a class="el" href="classippl_1_1GaussLegendreQuadrature.html#a18c87c7a53ba5849a23b21db5d75de29">ippl::GaussLegendreQuadrature&lt; T, NumNodes1D, ElementType &gt;</a>, <a class="el" href="classippl_1_1GaussLegendreQuadrature.html#a18c87c7a53ba5849a23b21db5d75de29">ippl::GaussLegendreQuadrature&lt; T, 5, ElementType &gt;</a>, <a class="el" href="classippl_1_1GaussLegendreQuadrature.html#a18c87c7a53ba5849a23b21db5d75de29">ippl::GaussLegendreQuadrature&lt; Tlhs, 5, ElementType &gt;</a>, <a class="el" href="classippl_1_1GaussLobattoQuadrature.html#aa77dd8b65173f4a8601736a33022f47a">ippl::GaussLobattoQuadrature&lt; T, NumNodes1D, ElementType &gt;</a>, and <a class="el" href="classippl_1_1MidpointQuadrature.html#a6960c427506f864e22eec674bbc8e40a">ippl::MidpointQuadrature&lt; T, NumNodes1D, ElementType &gt;</a>.</p>
 
 </div>
 </div>
@@ -542,7 +598,7 @@ template&lt;typename T , unsigned NumNodes1D, typename ElementType &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">            <a class="code hl_function" href="Quadrature_8h.html#ad1209d92692cdd4d6f52a41964b0c36d">getNumElementNodes</a>(NumNodes1D, ElementType::dim)</div>
-<div class="ttc" id="aQuadrature_8h_html_ad1209d92692cdd4d6f52a41964b0c36d"><div class="ttname"><a href="Quadrature_8h.html#ad1209d92692cdd4d6f52a41964b0c36d">getNumElementNodes</a></div><div class="ttdeci">constexpr unsigned getNumElementNodes(unsigned NumNodes1D, unsigned Dim)</div><div class="ttdef"><b>Definition:</b> Quadrature.h:21</div></div>
+<div class="ttc" id="aQuadrature_8h_html_ad1209d92692cdd4d6f52a41964b0c36d"><div class="ttname"><a href="Quadrature_8h.html#ad1209d92692cdd4d6f52a41964b0c36d">getNumElementNodes</a></div><div class="ttdeci">constexpr unsigned getNumElementNodes(unsigned NumNodes1D, unsigned Dim)</div><div class="ttdef"><b>Definition:</b> Quadrature.h:23</div></div>
 </div><!-- fragment -->
 </div>
 </div>

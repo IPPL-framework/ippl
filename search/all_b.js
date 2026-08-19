@@ -30,7 +30,7 @@ var searchData=
   ['ldom_5fm_27',['ldom_m',['../structippl_1_1detail_1_1meta__lower__laplace.html#af418653f974605b9932e840cb3a7cfee',1,'ippl::detail::meta_lower_laplace::ldom_m()'],['../structippl_1_1detail_1_1meta__upper__laplace.html#afaa3d15a95d39710844bd8022d05c441',1,'ippl::detail::meta_upper_laplace::ldom_m()']]],
   ['leaving_5fcapacity_5f_28',['leaving_capacity_',['../classippl_1_1ParticleSpatialLayout.html#ae5e5b11e81c4abc3f737f8d720a4eacf',1,'ippl::ParticleSpatialLayout']]],
   ['leaving_5fd_5f_29',['leaving_d_',['../classippl_1_1ParticleSpatialLayout.html#ae759f52e7551fc1672203f72486dcb0b',1,'ippl::ParticleSpatialLayout']]],
-  ['lehrfem_30',['LehrFEM',['../namespaceippl.html#ae5668da1fffa028ce4a727cc38f30beea211e004a2f37b84c97c396e946904ff0',1,'ippl']]],
+  ['legendreandderiv_30',['legendreAndDeriv',['../namespaceippl_1_1nodes1d_1_1detail.html#a36237a9c23f2afb0021dbd8a84b9c5a0',1,'ippl::nodes1d::detail']]],
   ['length_31',['length',['../classippl_1_1PRegion.html#ae2ed9a72c96664a380d828676481658b',1,'ippl::PRegion::length()'],['../classippl_1_1NDIndex.html#acdbe14ad31f8a6188d2921f39e227405',1,'ippl::NDIndex::length()'],['../classippl_1_1Index.html#aa2800ffb252a191b52ecd1ca72f7fcfd',1,'ippl::Index::length() const noexcept']]],
   ['length_5fm_32',['length_m',['../classippl_1_1Index.html#ae43f6334d3ee08a37e40bd37dd6d40ce',1,'ippl::Index']]],
   ['lengthscales_33',['lengthscales',['../classippl_1_1detail_1_1GPModel.html#a74ae2da496cd417fe7fa67a2b438d271',1,'ippl::detail::GPModel']]],

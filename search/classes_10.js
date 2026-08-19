@@ -7,10 +7,11 @@ var searchData=
   ['rctransform_4',['RCTransform',['../structippl_1_1RCTransform.html',1,'ippl']]],
   ['reduction_5fidentity_3c_20ippl_3a_3avector_3c_20t_2c_20dim_20_3e_20_3e_5',['reduction_identity&lt; ippl::Vector&lt; T, Dim &gt; &gt;',['../structKokkos_1_1reduction__identity_3_01ippl_1_1Vector_3_01T_00_01Dim_01_4_01_4.html',1,'Kokkos']]],
   ['reflectivebc_6',['ReflectiveBC',['../structippl_1_1detail_1_1ReflectiveBC.html',1,'ippl::detail']]],
-  ['regionlayout_7',['RegionLayout',['../classippl_1_1detail_1_1RegionLayout.html',1,'ippl::detail']]],
-  ['request_8',['Request',['../classippl_1_1mpi_1_1Request.html',1,'ippl::mpi']]],
-  ['rhs_5fplus_5fassign_9',['rhs_plus_assign',['../structippl_1_1detail_1_1HaloCells_1_1rhs__plus__assign.html',1,'ippl::detail::HaloCells']]],
-  ['richardson_5fpreconditioner_10',['richardson_preconditioner',['../structippl_1_1richardson__preconditioner.html',1,'ippl']]],
-  ['richardson_5fpreconditioner_5falt_11',['richardson_preconditioner_alt',['../structippl_1_1richardson__preconditioner__alt.html',1,'ippl']]],
-  ['rocfft_12',['RocFFT',['../structippl_1_1fft_1_1RocFFT.html',1,'ippl::fft']]]
+  ['refshapefunctiondata_7',['RefShapeFunctionData',['../structippl_1_1RefShapeFunctionData.html',1,'ippl']]],
+  ['regionlayout_8',['RegionLayout',['../classippl_1_1detail_1_1RegionLayout.html',1,'ippl::detail']]],
+  ['request_9',['Request',['../classippl_1_1mpi_1_1Request.html',1,'ippl::mpi']]],
+  ['rhs_5fplus_5fassign_10',['rhs_plus_assign',['../structippl_1_1detail_1_1HaloCells_1_1rhs__plus__assign.html',1,'ippl::detail::HaloCells']]],
+  ['richardson_5fpreconditioner_11',['richardson_preconditioner',['../structippl_1_1richardson__preconditioner.html',1,'ippl']]],
+  ['richardson_5fpreconditioner_5falt_12',['richardson_preconditioner_alt',['../structippl_1_1richardson__preconditioner__alt.html',1,'ippl']]],
+  ['rocfft_13',['RocFFT',['../structippl_1_1fft_1_1RocFFT.html',1,'ippl::fft']]]
 ];

@@ -1,0 +1,12 @@
+<map id="GaussJacobi1D.hpp" name="GaussJacobi1D.hpp">
+<area shape="rect" id="node1" title="Implementation of computeGaussJacobi (Golub&#45;Welsch and Newton backends)." alt="" coords="341,5,480,31"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,79,80,104"/>
+<area shape="rect" id="node3" title=" " alt="" coords="105,79,170,104"/>
+<area shape="rect" id="node4" title=" " alt="" coords="195,79,253,104"/>
+<area shape="rect" id="node5" title=" " alt="" coords="277,79,347,104"/>
+<area shape="rect" id="node6" title=" " alt="" coords="371,79,450,104"/>
+<area shape="rect" id="node7" title=" " alt="" coords="474,79,529,104"/>
+<area shape="rect" id="node8" title=" " alt="" coords="553,79,612,104"/>
+<area shape="rect" id="node9" title=" " alt="" coords="636,79,871,104"/>
+<area shape="rect" id="node10" title=" " alt="" coords="895,79,1127,104"/>
+</map>

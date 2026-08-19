@@ -100,6 +100,9 @@ Namespaces</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceippl_1_1multigrid"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1multigrid.html">multigrid</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceippl_1_1nodes1d"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1nodes1d.html">nodes1d</a></td></tr>
+<tr class="memdesc:namespaceippl_1_1nodes1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">1D quadrature and interpolation nodes and weights. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceippl_1_1nufft"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1nufft.html">nufft</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:namespaceippl_1_1pcg__preconditioner__defaults"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1pcg__preconditioner__defaults.html">pcg_preconditioner_defaults</a></td></tr>
@@ -136,9 +139,6 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG.html">CG</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1CG_3_01OperatorRet_00_01LowerRet_00_01UpperRet_00_01UpperLowerRet_00_01InverseDiagR1aeb04630d191cc1c271d88db5e47b23.html">CG&lt; OperatorRet, LowerRet, UpperRet, UpperLowerRet, InverseDiagRet, FEMVector&lt; T &gt;, FEMVector&lt; T &gt; &gt;</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ChebyshevGaussQuadrature.html">ChebyshevGaussQuadrature</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is class represents the Chebyshev-Gauss quadrature rule. It is a special case of the Gauss-Jacobi quadrature rule with alpha = beta = -0.5.  <a href="classippl_1_1ChebyshevGaussQuadrature.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ConstantFace.html">ConstantFace</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -221,11 +221,11 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Gather.html">Gather</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Public functor that interpolates a <a class="el" href="classippl_1_1Field.html">Field</a> at particle positions.  <a href="classippl_1_1Gather.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussJacobiQuadrature.html">GaussJacobiQuadrature</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is class represents the Gauss-Jacobi quadrature rule on a reference element.  <a href="classippl_1_1GaussJacobiQuadrature.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussLegendreQuadrature.html">GaussLegendreQuadrature</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is class represents the Gauss-Legendre quadrature rule. It is a special case of the Gauss-Jacobi quadrature rule with alpha = beta = 0.0.  <a href="classippl_1_1GaussLegendreQuadrature.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gauss-Legendre quadrature (Gauss-Jacobi with alpha = beta = 0) on a reference element.  <a href="classippl_1_1GaussLegendreQuadrature.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1GaussLobattoQuadrature.html">GaussLobattoQuadrature</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gauss-Lobatto-Legendre quadrature on a reference element.  <a href="classippl_1_1GaussLobattoQuadrature.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1GridPathSegmenter.html">GridPathSegmenter</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -330,9 +330,6 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1Quadrature.html">Quadrature</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is the base class for all quadrature rules.  <a href="classippl_1_1Quadrature.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1QuadratureData.html">QuadratureData</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-quadrature-node basis data passed to evaluateAx evaluator functors.  <a href="structippl_1_1QuadratureData.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1QuadrilateralElement.html">QuadrilateralElement</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1RangePolicy.html">RangePolicy</a></td></tr>
@@ -341,6 +338,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1RCTransform.html">RCTransform</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Real-to-complex (and inverse).  <a href="structippl_1_1RCTransform.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1RefShapeFunctionData.html">RefShapeFunctionData</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reference-element shape-function data at a single quadrature node.  <a href="structippl_1_1RefShapeFunctionData.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1richardson__preconditioner.html">richardson_preconditioner</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -410,10 +410,6 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:ae5668da1fffa028ce4a727cc38f30bee"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl.html#ae5668da1fffa028ce4a727cc38f30bee">InitialGuessType</a> { <a class="el" href="namespaceippl.html#ae5668da1fffa028ce4a727cc38f30beeab3e733650c556744ec0e934d1bb2d377">Chebyshev</a>
-, <a class="el" href="namespaceippl.html#ae5668da1fffa028ce4a727cc38f30beea211e004a2f37b84c97c396e946904ff0">LehrFEM</a>
- }</td></tr>
-<tr class="separator:ae5668da1fffa028ce4a727cc38f30bee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a12b1fb701e417c82f2d2249c31e30b02"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl.html#a12b1fb701e417c82f2d2249c31e30b02">TransformDirection</a> { <a class="el" href="namespaceippl.html#a12b1fb701e417c82f2d2249c31e30b02a94a1c1d486fcecd6f86646b8ace721eb">FORWARD</a>
 , <a class="el" href="namespaceippl.html#a12b1fb701e417c82f2d2249c31e30b02ab4d57d0e5e5de2de6a68b7d324356e62">BACKWARD</a>
  }</td></tr>
@@ -991,24 +987,6 @@ template&lt;std::size_t Idx, typename... Ts&gt; </div>
 <tr><td class="fieldname"><a id="abb55e9cae54ba42c7332594098b30e42a38bc1bad970fb948ef4f68713e837545" name="abb55e9cae54ba42c7332594098b30e42a38bc1bad970fb948ef4f68713e837545"></a>ZERO_FACE&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="abb55e9cae54ba42c7332594098b30e42afe1ed6aa7ac063c62bac2b876a3a610e" name="abb55e9cae54ba42c7332594098b30e42afe1ed6aa7ac063c62bac2b876a3a610e"></a>EXTRAPOLATE_FACE&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="abb55e9cae54ba42c7332594098b30e42a12a96ff65d9cce384e267b5959f84650" name="abb55e9cae54ba42c7332594098b30e42a12a96ff65d9cce384e267b5959f84650"></a>NO_FACE&#160;</td><td class="fielddoc"></td></tr>
-</table>
-
-</div>
-</div>
-<a id="ae5668da1fffa028ce4a727cc38f30bee" name="ae5668da1fffa028ce4a727cc38f30bee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae5668da1fffa028ce4a727cc38f30bee">&#9670;&#160;</a></span>InitialGuessType</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="namespaceippl.html#ae5668da1fffa028ce4a727cc38f30bee">ippl::InitialGuessType</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ae5668da1fffa028ce4a727cc38f30beeab3e733650c556744ec0e934d1bb2d377" name="ae5668da1fffa028ce4a727cc38f30beeab3e733650c556744ec0e934d1bb2d377"></a>Chebyshev&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ae5668da1fffa028ce4a727cc38f30beea211e004a2f37b84c97c396e946904ff0" name="ae5668da1fffa028ce4a727cc38f30beea211e004a2f37b84c97c396e946904ff0"></a>LehrFEM&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 </div>
