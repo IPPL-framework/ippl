@@ -47,3 +47,35 @@ add_alpine_example(PenningTrap)
 add_alpine_example(BumponTailInstability)
 
 add_subdirectory(validation)
+
+if(IPPL_ENABLE_BENCHMARK)
+  include(AddIpplBenchmark)
+
+  add_ippl_benchmark(
+    LandauDampingBench
+    SOURCES
+    LandauDampingBench.cpp
+    REPORT_TIMERS
+    solve
+    pushVelocity
+    pushPosition
+    update
+    loadBalance
+    ARGS
+    "16"
+    "16"
+    "16"
+    "100000"
+    "5"
+    "FFT"
+    "0.01"
+    "LeapFrog"
+    "--overallocate"
+    "2.0"
+    "--info"
+    "10"
+    NUM_PROCS
+    2
+    LABELS
+    alpine)
+endif()
