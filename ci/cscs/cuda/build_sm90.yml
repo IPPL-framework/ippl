@@ -41,6 +41,7 @@ variables:
       -DMPIEXEC_EXECUTABLE=/usr/bin/srun
       -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"
       -DMPIEXEC_MAX_NUMPROCS=4
+      -DIPPL_ENABLE_BENCHMARK=ON
     - echo "Build directory size (before cleanup):" $(du -sh $BUILD_PATH | cut -f1)
     - find $BUILD_PATH -name \*.o -delete
     - find $BUILD_PATH/bin -type f -exec strip {} +

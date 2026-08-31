@@ -57,6 +57,7 @@ option(IPPL_MARK_FAILING_TESTS
        "Prefix names of tests that are known to fail with 'known_fail' for filtering with ctest"
        OFF)
 option(IPPL_ENABLE_SCRIPTS "Generate job script templates for some benchmarks/tests" OFF)
+option(IPPL_ENABLE_BENCHMARK "Enable Google Benchmark-based benchmarks" OFF)
 
 # "Build IPPL as a shared library (ON) or static library (OFF)" OFF) if(IPPL_DYL)
 # set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE) message(WARNING "IPPL_DYL is deprecated; use
@@ -136,4 +137,8 @@ add_subdirectory(demos)
 
 if(IPPL_ENABLE_SCRIPTS)
   add_subdirectory(scripts)
+endif()
+
+if(IPPL_ENABLE_BENCHMARK)
+  add_subdirectory(benchmarks)
 endif()
