@@ -156,8 +156,9 @@ namespace ippl {
         locate_type destRanks_d_;      // [nRanks] (compacted list)
         bool_type leaving_d_;          // [capacity >= max nLocal seen] mask
 
-        // One-element views used to count destinations. A rank-1 view avoids
-        // Kokkos' deprecated legacy conversion path for rank-0 View deep copies.
+        // Note: A rank-1 view avoids Kokkos' deprecated legacy conversion
+        // for rank-0 View deep copies.
+        // Rank-1 views used to count destinations.
         Kokkos::View<size_type*, position_memory_space> nDest_d_;
         Kokkos::View<size_type*, Kokkos::HostSpace> nDest_h_;
 

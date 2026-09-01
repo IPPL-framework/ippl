@@ -421,12 +421,9 @@ namespace ippl {
          * future kernel needs more Nedelec functionality, add only the smallest device-copyable
          * state and algorithm here; do not restore capture of the parent `NedelecSpace`.
          *
-         * Element flattening uses dimension zero as the fastest-varying dimension. Nedelec DOFs
-         * retain the edge ordering used by the host class, so global and ghosted FEMVector index
-         * calculations remain identical on host and device.
          */
         struct DeviceStruct {
-            static constexpr unsigned numElementDOFs = NedelecSpace::numElementDOFs;
+            static constexpr unsigned numElementDOFs     = NedelecSpace::numElementDOFs;
             static constexpr unsigned numElementVertices = NedelecSpace::numElementVertices;
 
             using indices_list_t  = Vector<indices_t, numElementVertices>;

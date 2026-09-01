@@ -137,10 +137,8 @@ namespace ippl {
     void BareField<T, Dim, ViewArgs...>::setup() {
         owned_m = layout_m->getLocalNDIndex();
 
-        // A new layout establishes new local storage; updateLayout does not
-        // redistribute or preserve field values. Allocate directly instead of
-        // asking Kokkos::resize to remap the previous allocation through its
-        // deprecated legacy subview path.
+        // Reallocate field to correspond to sizes of new updated layout.
+        // Does not preserve field data.
         auto reallocate = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
             Kokkos::realloc(dview_m, (owned_m[Idx].length() + 2 * nghost_m)...);
         };

@@ -319,13 +319,14 @@ namespace ippl {
          *   host creates the structure before launching a kernel; capture-by-value places it in
          *   the Kokkos kernel closure, which Kokkos makes available in the selected execution
          *   space. getDeviceMirror() itself performs no field allocation or field-data copy.
-         * - It intentionally excludes owning or host-oriented state such as `resultField`, field
-         *   and layout objects, MPI decomposition objects, and the `elementIndices` allocation.
-         *   A kernel captures only the Kokkos views and scalar values needed for that invocation,
-         *   separately from this geometry/indexing snapshot.
+         * - It does not contain field objects, field layouts, MPI decomposition state, or other
+         *   host-owned infrastructure. Before each kernel launch, the host extracts the required
+         *   device-accessible Kokkos views—such as the `resultField` data view and
+         *   `elementIndices`—and captures those view handles separately from this geometry and
+         *   indexing snapshot.
          * - It removes the need to capture `this`. Consequently, constructing and destroying the
          *   device closure never requires the host-only lifetime operations of `LagrangeSpace` or
-         *   `Field`, which is the source of the GH200 CUDA diagnostic addressed by this design.
+         *   `Field`, which would cause issues when using GPUs.
          *
          * "Lightweight" therefore means that this is neither a second owning finite-element space
          * nor an automatically synchronized copy of one. It is a small, non-owning value snapshot
@@ -340,17 +341,14 @@ namespace ippl {
          * be created after changing any mirrored mesh or reference-element state on the host.
          * During a kernel invocation the snapshot is read-only and may be shared by all threads.
          *
-         * Element and vertex indices use the same flattened ordering as `LagrangeSpace`:
-         * dimension zero varies fastest. An element's N-dimensional index identifies its lower
-         * mesh vertex.
          */
         struct DeviceStruct {
             // members we need to copy for the following functions:
             // works since numElementDOFs in LagrangeSpace is static constexpr
-            static constexpr unsigned numElementDOFs = LagrangeSpace::numElementDOFs;
+            static constexpr unsigned numElementDOFs     = LagrangeSpace::numElementDOFs;
             static constexpr unsigned numElementVertices = LagrangeSpace::numElementVertices;
-            using indices_list_t = Vector<indices_t, numElementVertices>;
-            using vertex_points_t = Vector<point_t, numElementVertices>;
+            using indices_list_t                         = Vector<indices_t, numElementVertices>;
+            using vertex_points_t                        = Vector<point_t, numElementVertices>;
 
             Vector<size_t, Dim> nr_m;      ///< Number of mesh vertices in each dimension.
             Vector<double, Dim> hr_m;      ///< Uniform mesh spacing in each dimension.
