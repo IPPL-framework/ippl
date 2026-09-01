@@ -30,9 +30,10 @@ endif()
 # cmake-format: off
 # Adds GCC/Clang gcov instrumentation to IPPL targets.
 # -fprofile-arcs / -ftest-coverage : generate .gcno files at build time and .gcda files at runtime
-# -fprofile-abs-path (GCC only)    : embed absolute source paths so gcov can still find the
-#                                    sources when the build and test stages run in different dirs
 # -g                               : keep line-number debug info
+# Note: we intentionally do NOT use -fprofile-abs-path. With CI build artifacts the build and test
+# jobs may run in different absolute directories; relative paths from the build tree keep the
+# .gcno/.gcda files and source files correctly aligned.
 # The resulting data can be consumed by CTest/CDash (ctest_coverage) or by gcov/lcov manually.
 # cmake-format: on
 if(IPPL_ENABLE_COVERAGE)
@@ -61,9 +62,6 @@ if(IPPL_ENABLE_COVERAGE)
 
   if(coverageSupported)
     message(STATUS "${ColorYellow}Code coverage enabled.${ColorReset}")
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-      add_compile_options(-fprofile-abs-path)
-    endif()
     add_compile_options(-fprofile-arcs -ftest-coverage -g)
     add_link_options(-fprofile-arcs -ftest-coverage)
   endif()

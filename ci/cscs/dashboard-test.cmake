@@ -28,6 +28,22 @@ set(CTEST_GROUP "Experimental")
 # --- append to the existing dashboard entry ---
 ctest_start(Experimental GROUP "${CTEST_GROUP}" APPEND)
 
+# --- redirect .gcda files into the test job's build directory ---
+# The executables were built in a different CI job with a different absolute path. gcov writes .gcda
+# files next to the absolute .gcno path by default, so without this redirection CTest coverage would
+# find no .gcda files.
+if(ENABLE_COVERAGE)
+  set(ENV{GCOV_PREFIX} "${CTEST_BINARY_DIRECTORY}")
+  string(REPLACE "/" ";" _gcovPrefixList "${CTEST_BINARY_DIRECTORY}")
+  list(LENGTH _gcovPrefixList _gcovPrefixLen)
+  math(EXPR _gcovPrefixStrip "${_gcovPrefixLen} - 1")
+  set(ENV{GCOV_PREFIX_STRIP} "${_gcovPrefixStrip}")
+  message(
+    STATUS
+      "Redirecting .gcda files to ${CTEST_BINARY_DIRECTORY} (GCOV_PREFIX_STRIP=${_gcovPrefixStrip})"
+  )
+endif()
+
 # --- run tests : we use srun and already control parallelism
 ctest_test(PARALLEL_LEVEL 1 RETURN_VALUE test_result)
 
