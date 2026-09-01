@@ -33,6 +33,7 @@ ctest_test(PARALLEL_LEVEL 1 RETURN_VALUE test_result)
 
 # --- collect coverage if requested ---
 if(ENABLE_COVERAGE)
+  message(STATUS "Collecting coverage with gcov")
   ctest_read_custom_files("${CTEST_SOURCE_DIRECTORY}")
   set(CTEST_COVERAGE_COMMAND "gcov")
   ctest_coverage(RETURN_VALUE cov_result)

@@ -43,6 +43,7 @@ variables:
       -DBUILD_TYPE=$BUILD_TYPE
       -DBUILD_DIR=$BUILD_PATH
       -DBUILD_ARCH=$BUILD_ARCH
+      -DENABLE_COVERAGE=$ENABLE_COVERAGE
 
 # ---------------------------------------------------------
 # 1 rank debug
