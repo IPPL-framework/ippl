@@ -530,13 +530,13 @@ namespace ippl {
         Kokkos::fence();
 
         // Step 2. Fill remaining ranks
-        Kokkos::View<size_type, position_memory_space> counter("counter");
-        Kokkos::deep_copy(counter, 0);
+        Kokkos::View<size_type*, position_memory_space> counter("counter", 1);
+        Kokkos::deep_copy(counter, size_type{0});
         Kokkos::fence();
         Kokkos::parallel_for(
             "fill_remaining", policy_type(0, total_ranks), KOKKOS_LAMBDA(const size_t& i) {
                 if (is_remaining(i)) {
-                    const size_type idx   = Kokkos::atomic_fetch_inc(&counter());
+                    const size_type idx   = Kokkos::atomic_fetch_inc(&counter(0));
                     nonNeighborRanks(idx) = i;
                 }
             });
@@ -764,20 +764,20 @@ namespace ippl {
         Kokkos::fence();
 
         /* compute the ranks to send to and the number of ranks to send to*/
-        Kokkos::View<size_type, position_memory_space> rankSends(
-            "Number of Ranks we need to send to");
+        Kokkos::View<size_type*, position_memory_space> rankSends(
+            "Number of Ranks we need to send to", 1);
         Kokkos::parallel_for(
             "Calculate sends", policy_type(0, nSends_dview.extent(0)),
             KOKKOS_LAMBDA(const size_t rank) {
                 if (nSends_dview(rank) != 0) {
-                    size_type index    = Kokkos::atomic_fetch_inc(&rankSends());
+                    size_type index    = Kokkos::atomic_fetch_inc(&rankSends(0));
                     sends_dview(index) = rank;
                 }
             });
         Kokkos::fence();
-        size_type temp;
-        Kokkos::deep_copy(temp, rankSends);
-        Kokkos::fence();
+        const auto rankSendsHost =
+            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), rankSends);
+        const size_type temp = rankSendsHost(0);
 
         return {invalidCount, temp};
     }
@@ -1135,7 +1135,7 @@ namespace ippl {
 
                 /* iterate over all cell neighbors */
                 Kokkos::parallel_for(
-                    Kokkos::TeamThreadRange(team, numCellNeighbors), [&](const size_t& n) {
+                    Kokkos::TeamThreadRange(team, numCellNeighbors), [=](const size_t& n) {
                         const auto neighborCellIdx            = cellNeighbors[n];
                         const auto neighborCellParticleOffset = cellStartingIdx(neighborCellIdx);
                         const auto numNeighborCellParticles   = cellParticleCount(neighborCellIdx);
@@ -1145,7 +1145,7 @@ namespace ippl {
                          */
                         Kokkos::parallel_for(Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(
                                                  team, numCellParticles, numNeighborCellParticles),
-                                             [&](const size_t& i, const size_t& j) {
+                                             [=](const size_t& i, const size_t& j) {
                                                  const auto particleIdx = cellParticleOffset + i;
                                                  const auto neighborIdx =
                                                      neighborCellParticleOffset + j;

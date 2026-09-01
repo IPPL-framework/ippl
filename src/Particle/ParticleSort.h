@@ -274,8 +274,11 @@ namespace ippl {
                 auto& bufs = ippl::detail::getDefaultBinSortBuffers<memory_space>();
                 bufs.ensureCapacity(n, /*n_bins_p1=*/1);
 
-                Kokkos::deep_copy(Kokkos::subview(bufs.permute(), std::make_pair(size_t(0), n)),
-                                  Kokkos::subview(permute_host, std::make_pair(size_t(0), n)));
+                Kokkos::deep_copy(
+                    Kokkos::subview(bufs.permute(),
+                                    Kokkos::pair<size_t, size_t>{size_t(0), n}),
+                    Kokkos::subview(permute_host,
+                                    Kokkos::pair<size_t, size_t>{size_t(0), n}));
 
                 return bufs.permute();
             }
