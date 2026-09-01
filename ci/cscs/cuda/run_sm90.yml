@@ -20,7 +20,7 @@ variables:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_CPUS_PER_TASK: 64
-    SLURM_TIMELIMIT: "0:15:00"
+    SLURM_TIMELIMIT: "0:30:00"
   before_script:
     - !reference [.pr-number-extractor, before_script]
     - pwd
