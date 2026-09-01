@@ -70,6 +70,36 @@ if(@IPPL_ENABLE_FFT@)
 endif()
 
 # -----------------------------------------------------------------------------
+# Conduit Relay IO
+# -----------------------------------------------------------------------------
+if(@IPPL_ENABLE_CONDUIT_IO@)
+    if(@Conduit_FOUND@)
+        message(STATUS "Finding IPPL dependency : external Conduit")
+        set(Conduit_DIR @Conduit_DIR@)
+        find_dependency(Conduit REQUIRED)
+    else()
+        message(STATUS "Using Conduit built with IPPL (targets exported via IPPL::ippl)")
+    endif()
+    message(STATUS "Conduit version ${CONDUIT_VERSION}")
+endif()
+
+# -----------------------------------------------------------------------------
+# Catalyst
+# -----------------------------------------------------------------------------
+if(@IPPL_ENABLE_CATALYST@)
+    if(@catalyst_FOUND@)
+        message(STATUS "Finding IPPL dependency : external Catalyst")
+        set(catalyst_DIR @catalyst_DIR@)
+        find_dependency(catalyst REQUIRED)
+    else()
+        message(STATUS "Using Catalyst built with IPPL (targets exported via IPPL::ippl)")
+    endif()
+    if(DEFINED catalyst_VERSION)
+        message(STATUS "Catalyst version ${catalyst_VERSION}")
+    endif()
+endif()
+
+# -----------------------------------------------------------------------------
 # MAke sure IPPL targets are setup
 # -----------------------------------------------------------------------------
 include("${CMAKE_CURRENT_LIST_DIR}/IPPLTargets.cmake")

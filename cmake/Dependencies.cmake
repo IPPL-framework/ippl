@@ -2,11 +2,13 @@
 # Dependencies.cmake
 # ~~~
 #
-# Resolves third-party libraries: Kokkos and Heffte.
+# Resolves third-party libraries: Kokkos, Heffte, Conduit, and Catalyst.
 #
 # Responsibilities:
 #   - Fetch or find Kokkos, using version and backends from Platforms.cmake
 #   - Fetch Heffte if IPPL_ENABLE_FFT is ON, using CUDA or AVX2 based on platform
+#   - Fetch or find Conduit when IPPL_ENABLE_CONDUIT_IO is ON
+#   - Fetch or find Catalyst when IPPL_ENABLE_CATALYST is ON
 #
 # Not responsible for:
 #   - Selecting platform backends            → Platforms.cmake
@@ -205,6 +207,126 @@ function(set_heffte_options)
     set(Heffte_ENABLE_FFTW OFF CACHE BOOL "Enable FFTW in Heffte" FORCE)
   endif()
 
+endfunction()
+
+# -----------------------------------------------------------------------------
+# Conduit helpers (FetchContent builds do not export conduit:: imported targets)
+# -----------------------------------------------------------------------------
+function(ippl_find_hdf5_dir out_var)
+  # Conduit's CMake requires HDF5_DIR (install prefix). Honor explicit user/env hints first.
+  if(DEFINED HDF5_DIR AND HDF5_DIR AND EXISTS "${HDF5_DIR}")
+    set(${out_var} "${HDF5_DIR}" PARENT_SCOPE)
+    return()
+  endif()
+
+  if(DEFINED ENV{HDF5_ROOT} AND EXISTS "$ENV{HDF5_ROOT}")
+    set(${out_var} "$ENV{HDF5_ROOT}" PARENT_SCOPE)
+    return()
+  endif()
+
+  find_package(HDF5 QUIET COMPONENTS C)
+  if(NOT HDF5_FOUND)
+    set(${out_var} "" PARENT_SCOPE)
+    return()
+  endif()
+
+  # Derive the install prefix from the library path (handles split include/lib layouts).
+  set(_hdf5_lib "")
+  if(HDF5_C_LIBRARIES)
+    list(GET HDF5_C_LIBRARIES 0 _hdf5_lib)
+  elseif(HDF5_LIBRARIES)
+    list(GET HDF5_LIBRARIES 0 _hdf5_lib)
+  elseif(HDF5_LIBRARY)
+    set(_hdf5_lib "${HDF5_LIBRARY}")
+  endif()
+
+  if(_hdf5_lib)
+    get_filename_component(_libdir "${_hdf5_lib}" REALPATH)
+    get_filename_component(_libdir "${_libdir}" DIRECTORY)
+    if(_libdir MATCHES "/lib(64)?$")
+      get_filename_component(_hdf5_root "${_libdir}" DIRECTORY)
+      set(${out_var} "${_hdf5_root}" PARENT_SCOPE)
+      return()
+    endif()
+  endif()
+
+  # Fallback: infer from include dir (typical Homebrew /usr/local layouts).
+  if(HDF5_C_INCLUDE_DIR)
+    get_filename_component(_hdf5_root "${HDF5_C_INCLUDE_DIR}" DIRECTORY)
+    if(_hdf5_root MATCHES "/include$")
+      get_filename_component(_hdf5_root "${_hdf5_root}" DIRECTORY)
+    endif()
+    set(${out_var} "${_hdf5_root}" PARENT_SCOPE)
+    return()
+  endif()
+
+  set(${out_var} "" PARENT_SCOPE)
+endfunction()
+
+function(ippl_register_conduit_targets)
+  if(NOT TARGET conduit)
+    message(FATAL_ERROR "ippl_register_conduit_targets: expected in-tree Conduit target 'conduit'")
+  endif()
+
+  if(NOT TARGET ippl_conduit_bundle)
+    add_library(ippl_conduit_bundle INTERFACE)
+    target_link_libraries(ippl_conduit_bundle INTERFACE conduit conduit_relay conduit_blueprint)
+    add_library(conduit::conduit ALIAS ippl_conduit_bundle)
+  endif()
+
+  # In-tree Conduit keeps C API headers under src/libs/*/c; installed layout uses include/conduit/.
+  target_include_directories(
+    ippl_conduit_bundle
+    INTERFACE
+      $<BUILD_INTERFACE:${conduit_SOURCE_DIR}/src/libs/conduit/c>
+      $<BUILD_INTERFACE:${conduit_SOURCE_DIR}/src/libs/relay/c>
+      $<BUILD_INTERFACE:${conduit_SOURCE_DIR}/src/libs/blueprint/c>
+      $<BUILD_INTERFACE:${conduit_BINARY_DIR}/libs/conduit>
+      $<BUILD_INTERFACE:${conduit_BINARY_DIR}/libs/relay>
+      $<BUILD_INTERFACE:${conduit_BINARY_DIR}/libs/blueprint>)
+
+  if(TARGET conduit_relay_mpi_io AND NOT TARGET ippl_conduit_mpi_bundle)
+    add_library(ippl_conduit_mpi_bundle INTERFACE)
+    target_link_libraries(
+      ippl_conduit_mpi_bundle
+      INTERFACE
+        conduit::conduit
+        conduit_relay_mpi
+        conduit_relay_mpi_io
+        conduit_blueprint_mpi)
+    add_library(conduit::conduit_mpi ALIAS ippl_conduit_mpi_bundle)
+    set(CONDUIT_RELAY_MPI_ENABLED
+        TRUE
+        PARENT_SCOPE)
+  else()
+    set(CONDUIT_RELAY_MPI_ENABLED
+        FALSE
+        PARENT_SCOPE)
+  endif()
+
+  set(CONDUIT_RELAY_HDF5_ENABLED
+      TRUE
+      PARENT_SCOPE)
+endfunction()
+
+# Conduit's BLT (and optionally Catalyst) set global CMAKE output directory cache entries
+# pointing at their FetchContent build trees; restore ippl's layout before add_subdirectory(src).
+function(ippl_restore_output_directories)
+  if(IPPL_USE_STANDARD_FOLDERS)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin"
+        CACHE PATH "Single Directory for all Executables." FORCE)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib"
+        CACHE PATH "Single Directory for all Libraries" FORCE)
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib"
+        CACHE PATH "Single Directory for all static libraries." FORCE)
+  else()
+    unset(CMAKE_RUNTIME_OUTPUT_DIRECTORY CACHE)
+    unset(CMAKE_LIBRARY_OUTPUT_DIRECTORY CACHE)
+    unset(CMAKE_ARCHIVE_OUTPUT_DIRECTORY CACHE)
+    unset(LIBRARY_OUTPUT_PATH CACHE)
+    unset(EXECUTABLE_OUTPUT_PATH CACHE)
+    unset(CMAKE_Fortran_MODULE_DIRECTORY CACHE)
+  endif()
 endfunction()
 
 # ------------------------------------------------------------------------------
@@ -478,6 +600,147 @@ if(IPPL_ENABLE_FINUFFT)
 endif()
 
 # ------------------------------------------------------------------------------
+# Conduit (Relay IO / HDF5 — separate from Catalyst's internal Conduit)
+# ------------------------------------------------------------------------------
+if(IPPL_ENABLE_CONDUIT_IO)
+  if(CMAKE_VERSION VERSION_LESS "3.26")
+    message(
+      FATAL_ERROR
+        "IPPL_ENABLE_CONDUIT_IO requires CMake 3.26+ (Conduit ${Conduit_VERSION_DEFAULT}).")
+  endif()
+
+  enable_language(C)
+  find_package(MPI COMPONENTS C REQUIRED)
+
+  if(NOT Conduit_VERSION_DEFAULT)
+    set(Conduit_VERSION_DEFAULT 0.9.7)
+  endif()
+  if(NOT Conduit_VERSION)
+    set(Conduit_VERSION ${Conduit_VERSION_DEFAULT})
+  endif()
+
+  extract_git_label(Conduit_VERSION CONDUIT_VERSION_GIT)
+  set(Conduit_REPOSITORY "https://github.com/LLNL/conduit.git")
+
+  set(_conduit_hints "")
+  if(DEFINED CONDUIT_DIR AND CONDUIT_DIR AND EXISTS "${CONDUIT_DIR}")
+    list(APPEND _conduit_hints "${CONDUIT_DIR}" "${CONDUIT_DIR}/lib/cmake/conduit")
+  endif()
+
+  if(NOT CONDUIT_VERSION_GIT)
+    find_package(Conduit ${Conduit_VERSION} QUIET HINTS ${_conduit_hints})
+    set(CONDUIT_VERSION_GIT "v${Conduit_VERSION}")
+  endif()
+
+  if(Conduit_FOUND)
+    colour_message(STATUS ${Green} "✅ Conduit ${Conduit_VERSION} found externally")
+  else()
+    colour_message(STATUS ${Green} "✅ Conduit ${CONDUIT_VERSION_GIT} building from source")
+
+    function(set_conduit_options)
+      set(ENABLE_MPI ON CACHE BOOL "" FORCE)
+      set(ENABLE_FORTRAN OFF CACHE BOOL "" FORCE)
+      set(ENABLE_PYTHON OFF CACHE BOOL "" FORCE)
+      set(ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+      set(ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
+      set(ENABLE_UTILS OFF CACHE BOOL "" FORCE)
+      set(ENABLE_DOCS OFF CACHE BOOL "" FORCE)
+      set(ENABLE_RELAY_WEBSERVER OFF CACHE BOOL "" FORCE)
+      set(CONDUIT_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+
+      ippl_find_hdf5_dir(_ippl_hdf5_dir)
+      if(NOT _ippl_hdf5_dir)
+        message(
+          FATAL_ERROR
+            "Could not find HDF5 (required for Conduit Relay IO).\n"
+            "Install HDF5 development files, set -DHDF5_DIR=/path/to/hdf5/prefix, "
+            "or export HDF5_ROOT.")
+      endif()
+      set(HDF5_DIR "${_ippl_hdf5_dir}" CACHE PATH "HDF5 location for Conduit" FORCE)
+      message(STATUS "Conduit FetchContent: HDF5_DIR=${HDF5_DIR}")
+    endfunction()
+
+    set_conduit_options()
+    FetchContent_Declare(
+      conduit
+      GIT_REPOSITORY ${Conduit_REPOSITORY}
+      GIT_TAG ${CONDUIT_VERSION_GIT}
+      SOURCE_SUBDIR src
+      GIT_SHALLOW ON
+      DOWNLOAD_EXTRACT_TIMESTAMP ON)
+    FetchContent_MakeAvailable(conduit)
+
+    ippl_register_conduit_targets()
+    set(Conduit_FOUND FALSE)
+    set(CONDUIT_VERSION "${Conduit_VERSION}")
+    set(CONDUIT_INSTALL_PREFIX "${conduit_BINARY_DIR}")
+  endif()
+  unset(_conduit_hints)
+endif()
+
+# ------------------------------------------------------------------------------
+# Catalyst (libcatalyst SDK — use internal Conduit to match ParaView binaries)
+# ------------------------------------------------------------------------------
+if(IPPL_ENABLE_CATALYST)
+  if(CMAKE_VERSION VERSION_LESS "3.26")
+    message(
+      FATAL_ERROR
+        "IPPL_ENABLE_CATALYST requires CMake 3.26+ (Catalyst ${Catalyst_VERSION_DEFAULT}).")
+  endif()
+
+  if(NOT Catalyst_VERSION_DEFAULT)
+    set(Catalyst_VERSION_DEFAULT 2.1.0)
+  endif()
+  if(NOT Catalyst_VERSION)
+    set(Catalyst_VERSION ${Catalyst_VERSION_DEFAULT})
+  endif()
+
+  extract_git_label(Catalyst_VERSION CATALYST_VERSION_GIT)
+  set(Catalyst_REPOSITORY "https://gitlab.kitware.com/paraview/catalyst.git")
+
+  set(_catalyst_hints "")
+  if(DEFINED CATALYST_HINT_PATH AND CATALYST_HINT_PATH AND EXISTS "${CATALYST_HINT_PATH}")
+    list(APPEND _catalyst_hints "${CATALYST_HINT_PATH}")
+  endif()
+
+  if(NOT CATALYST_VERSION_GIT)
+    find_package(catalyst ${Catalyst_VERSION} QUIET HINTS ${_catalyst_hints})
+    set(CATALYST_VERSION_GIT "v${Catalyst_VERSION}")
+  endif()
+
+  if(catalyst_FOUND)
+    colour_message(STATUS ${Green} "✅ Catalyst ${Catalyst_VERSION} found externally")
+  else()
+    colour_message(STATUS ${Green} "✅ Catalyst ${CATALYST_VERSION_GIT} building from source")
+
+    function(set_catalyst_options)
+      set(CATALYST_BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+      set(CATALYST_BUILD_STUB_IMPLEMENTATION ON CACHE BOOL "" FORCE)
+      set(CATALYST_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+      set(CATALYST_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+      set(CATALYST_WRAP_PYTHON OFF CACHE BOOL "" FORCE)
+      set(CATALYST_WRAP_FORTRAN OFF CACHE BOOL "" FORCE)
+      set(CATALYST_WITH_EXTERNAL_CONDUIT OFF CACHE BOOL "" FORCE)
+    endfunction()
+
+    set_catalyst_options()
+    FetchContent_Declare(
+      catalyst
+      GIT_REPOSITORY ${Catalyst_REPOSITORY}
+      GIT_TAG ${CATALYST_VERSION_GIT}
+      GIT_SHALLOW ON
+      DOWNLOAD_EXTRACT_TIMESTAMP ON)
+    FetchContent_MakeAvailable(catalyst)
+
+    set(catalyst_FOUND FALSE)
+    if(NOT TARGET catalyst::catalyst)
+      message(FATAL_ERROR "Catalyst FetchContent did not provide catalyst::catalyst")
+    endif()
+  endif()
+  unset(_catalyst_hints)
+endif()
+
+# ------------------------------------------------------------------------------
 # GoogleTest
 # ------------------------------------------------------------------------------
 if(IPPL_ENABLE_UNIT_TESTS)
@@ -517,3 +780,6 @@ if(IPPL_ENABLE_FEL)
 
   message(STATUS "✅ nlohmann/json loaded for the FEL module.")
 endif()
+
+# Restore output dirs after any FetchContent subproject (Conduit BLT is the main offender).
+ippl_restore_output_directories()

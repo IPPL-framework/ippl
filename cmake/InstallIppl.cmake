@@ -125,6 +125,29 @@ if(TARGET Heffte)
   install(TARGETS Heffte EXPORT ipplTargets DESTINATION lib)
 endif()
 
+if(TARGET catalyst AND NOT catalyst_FOUND)
+  install(TARGETS catalyst EXPORT ipplTargets DESTINATION lib)
+endif()
+
+if(TARGET conduit AND NOT Conduit_FOUND)
+  foreach(
+    _ippl_conduit_dep
+    IN
+    ITEMS
+    ippl_conduit_bundle
+    ippl_conduit_mpi_bundle
+    conduit
+    conduit_relay
+    conduit_blueprint
+    conduit_relay_mpi
+    conduit_relay_mpi_io
+    conduit_blueprint_mpi)
+    if(TARGET ${_ippl_conduit_dep})
+      install(TARGETS ${_ippl_conduit_dep} EXPORT ipplTargets DESTINATION lib)
+    endif()
+  endforeach()
+endif()
+
 foreach(_ippl_extern_dep IN ITEMS finufft finufft_common cufinufft)
   if(TARGET ${_ippl_extern_dep})
     install(TARGETS ${_ippl_extern_dep} EXPORT ipplTargets DESTINATION lib)

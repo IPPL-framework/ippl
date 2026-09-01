@@ -36,6 +36,10 @@
 #include "Stream/InSitu/ProxyWriter.h"
 #include "Stream/Registry/RegistryHelper.h"
 
+#ifdef IPPL_ENABLE_CONDUIT_IO
+#include "Stream/IO/ConduitIOWriter.h"
+#endif
+
 
 namespace ippl{
 

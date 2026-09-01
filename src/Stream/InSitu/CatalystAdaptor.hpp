@@ -1131,6 +1131,13 @@ void CatalystAdaptor::Execute( int cycle, double time, int rank /* default = ipp
     }
 
 
+#ifdef IPPL_ENABLE_CONDUIT_IO
+    static IpplTimings::TimerRef TMRconduit_hdf5_save = IpplTimings::getTimer("conduit_hdf5_save");
+    IpplTimings::startTimer(TMRconduit_hdf5_save);
+    ConduitIOWriter::saveFromCatalystNode(node_m, cycle, time, rank, catalystInfo_m);
+    IpplTimings::stopTimer(TMRconduit_hdf5_save);
+#endif
+
         viewRegistry_m.clear();
         ghostMaskCache_m.clear();
         node_m.reset();
