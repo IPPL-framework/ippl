@@ -27,11 +27,46 @@ if(IPPL_USE_ALTERNATIVE_VARIANT)
 endif()
 
 # === Code coverage options ===
-if(IPPL_ENABLE_COVERAGE AND (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"))
-  message(STATUS "${ColorYellow}Code coverage enabled.${ColorReset}")
-  add_compile_options(-fprofile-arcs -ftest-coverage -g)
-  add_link_options(-fprofile-arcs -ftest-coverage)
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-coverage")
+# cmake-format: off
+# Adds GCC/Clang gcov instrumentation to IPPL targets.
+# -fprofile-arcs / -ftest-coverage : generate .gcno files at build time and .gcda files at runtime
+# -fprofile-abs-path (GCC only)    : embed absolute source paths so gcov can still find the
+#                                    sources when the build and test stages run in different dirs
+# -g                               : keep line-number debug info
+# The resulting data can be consumed by CTest/CDash (ctest_coverage) or by gcov/lcov manually.
+# cmake-format: on
+if(IPPL_ENABLE_COVERAGE)
+  set(coverageSupported TRUE)
+
+  if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    message(WARNING "IPPL_ENABLE_COVERAGE is only supported with GNU or Clang compilers.")
+    set(coverageSupported FALSE)
+  endif()
+
+  if(IPPL_PLATFORMS MATCHES "(^|;)CUDA($|;)|(^|;)HIP($|;)")
+    message(
+      WARNING
+        "IPPL_ENABLE_COVERAGE is requested with GPU platforms (${IPPL_PLATFORMS}). "
+        "GPU device code is not instrumented by gcov; use a CPU-only build for meaningful coverage."
+    )
+    set(coverageSupported FALSE)
+  endif()
+
+  if(CMAKE_BUILD_TYPE AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(
+      WARNING
+        "IPPL_ENABLE_COVERAGE is enabled with CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}. "
+        "Compiler optimization may produce misleading coverage; use Debug for accurate results.")
+  endif()
+
+  if(coverageSupported)
+    message(STATUS "${ColorYellow}Code coverage enabled.${ColorReset}")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      add_compile_options(-fprofile-abs-path)
+    endif()
+    add_compile_options(-fprofile-arcs -ftest-coverage -g)
+    add_link_options(-fprofile-arcs -ftest-coverage)
+  endif()
 endif()
 
 # === Compiler-specific warning suppressions ===

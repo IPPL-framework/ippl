@@ -31,7 +31,14 @@ ctest_start(Experimental GROUP "${CTEST_GROUP}" APPEND)
 # --- run tests : we use srun and already control parallelism
 ctest_test(PARALLEL_LEVEL 1 RETURN_VALUE test_result)
 
-# --- submit test results ---
+# --- collect coverage if requested ---
+if(ENABLE_COVERAGE)
+  ctest_read_custom_files("${CTEST_SOURCE_DIRECTORY}")
+  set(CTEST_COVERAGE_COMMAND "gcov")
+  ctest_coverage(RETURN_VALUE cov_result)
+endif()
+
+# --- submit test (and coverage) results ---
 ctest_submit()
 
 # --- fail if any test failed ---

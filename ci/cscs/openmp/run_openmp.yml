@@ -57,6 +57,7 @@ ippl-test-openmp-debug-1-rank:
     BUILD_TYPE: Debug
     TEST_INFO: "1-rank"
     TEST_ARGS: "-E known_fail"
+    ENABLE_COVERAGE: "ON"
 
 # ---------------------------------------------------------
 # 1 rank release

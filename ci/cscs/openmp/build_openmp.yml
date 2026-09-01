@@ -61,6 +61,7 @@ ippl-build-openmp-debug:
   variables:
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug"
     BUILD_TYPE: Debug
+    ENABLE_COVERAGE: "ON"
 
 # ---------------------------------------------------------
 # openmp build release
