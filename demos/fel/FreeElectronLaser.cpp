@@ -17,12 +17,19 @@
 constexpr unsigned Dim = 3;
 using T                = double;
 
+const char* TestName   = "FreeElectronLaser";
+
 #include "Ippl.h"
 
 #include <Kokkos_Core.hpp>
 #include <string>
 
 #include "Utility/IpplTimings.h"
+
+
+#ifdef IPPL_ENABLE_CATALYST
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
 
 // stb_image_write's implementation must be emitted in exactly one translation
 // unit; define the macro before the (transitive) include of the header.
@@ -59,6 +66,10 @@ int main(int argc, char* argv[]) {
         manager.run(manager.getNt());
 
         msg << "End." << endl;
+
+        #ifdef IPPL_ENABLE_CATALYST
+        manager.cat_vis.Finalize();
+        #endif
 
         IpplTimings::stopTimer(mainTimer);
         IpplTimings::print();

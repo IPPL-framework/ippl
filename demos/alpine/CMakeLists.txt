@@ -45,5 +45,6 @@ endif()
 
 add_alpine_example(PenningTrap)
 add_alpine_example(BumponTailInstability)
+add_alpine_example(AlpineSight)
 
 add_subdirectory(validation)

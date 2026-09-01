@@ -96,8 +96,12 @@ protected:
     int rp_Nf_m       = 0;         ///< DFT window length [time steps] (~3 resonant cycles)
     double rp_omega_m = 0.0;       ///< resonant angular frequency [1/unit_time], c = 1
     Kokkos::View<T****> rp_fdt_m;  ///< ring buffer [Nf][nx][ny][4] = (Ex,Ey,Bx,By)_lab
-
+ 
 public:
+    #ifdef IPPL_ENABLE_CATALYST
+        ippl::CatalystAdaptor cat_vis;
+    #endif
+
     size_type getTotalP() const { return totalP_m; }
     void setTotalP(size_type totalP_) { totalP_m = totalP_; }
 
@@ -131,7 +135,7 @@ public:
     void post_step() override {
         this->time_m += this->dt_m;
         this->it_m++;
-        this->dump();
+        // this->dump();
 
         Inform m("Post-step:");
         m << "Finished time step: " << this->it_m << " time: " << this->time_m << endl;
@@ -304,10 +308,34 @@ public:
 
         initializeParticles();
 
-        // Open the ffmpeg pipe (rank 0, only if periodic output was requested).
-        video_m.open(this->m_config);
+        #ifdef IPPL_ENABLE_CATALYST
+        m << "Catalyst is enabled" << endl; 
 
-        this->dump();
+            std::shared_ptr<ippl::VisRegistryRuntime> runtime_vis_registry   = ippl::MakeVisRegistryRuntimePtr(
+                // "density",          this->fcontainer_m->getRho()
+            );
+
+            std::shared_ptr<ippl::VisRegistryRuntime> runtime_steer_registry   = ippl::MakeVisRegistryRuntimePtr(
+            );
+
+            runtime_vis_registry->add("ions",             this->pcontainer_m );
+            runtime_vis_registry->add("electrostatic",    this->fcontainer_m->getE() );
+                                        
+
+            static IpplTimings::TimerRef CAinit = IpplTimings::getTimer("CAinit");
+            IpplTimings::startTimer(CAinit);
+            cat_vis.Initialize(runtime_vis_registry, runtime_steer_registry);
+            IpplTimings::startTimer(CAinit);
+
+        #endif
+
+
+
+
+        // Open the ffmpeg pipe (rank 0, only if periodic output was requested).
+        // video_m.open(this->m_config);
+
+        // this->dump();
 
         m << "Done" << endl;
     }
@@ -353,6 +381,15 @@ public:
 
         // 2. Advance the electromagnetic field one FDTD step.
         this->solver_m->solve();
+
+        #ifdef IPPL_ENABLE_CATALYST
+        static IpplTimings::TimerRef TMR_CAexecute    = IpplTimings::getTimer("CAexecute");
+        cat_vis.rememberNow("electrostatic");
+
+        IpplTimings::startTimer(TMR_CAexecute);
+        cat_vis.Execute(this->it_m, this->time_m);
+        IpplTimings::stopTimer(TMR_CAexecute); 
+        #endif
 
         // 3. Push particles with the self-consistent field plus the undulator
         //    field transformed into the co-moving frame.
