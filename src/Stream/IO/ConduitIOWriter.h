@@ -1,6 +1,6 @@
 /**
  * @file ConduitIOWriter.h
- * @brief Serial Conduit Relay HDF5 export from Catalyst Blueprint channels.
+ * @brief Conduit Relay HDF5 export from Catalyst Blueprint channels.
  */
 #ifndef ConduitIOWriter_h
 #define ConduitIOWriter_h
@@ -14,12 +14,18 @@ class Node;
 namespace ippl {
 
 /**
- * @brief Writes per-rank HDF5 files from populated Catalyst channel nodes.
+ * @brief Writes HDF5 from populated Catalyst channel nodes.
  *
  * Controlled at runtime via:
  *   IPPL_CONDUIT_HDF5=ON|OFF          (default OFF)
  *   IPPL_CONDUIT_HDF5_PATH=<dir>        (default ./conduit_out)
  *   IPPL_CONDUIT_HDF5_EVERY=<N>         (default 1)
+ *   IPPL_CONDUIT_HDF5_MPI=ON|OFF        (default ON when built with MPI IO)
+ *
+ * MPI mode (default): parallel single-file Blueprint HDF5 per channel/cycle via
+ *   conduit::relay::mpi::io::blueprint::save_mesh
+ * Catalyst multimesh channels (particles): exports assembly/main mesh (block_main).
+ * Serial fallback: per-rank files cycle_NNNNN_rank_R.hdf5
  */
 class ConduitIOWriter {
 public:

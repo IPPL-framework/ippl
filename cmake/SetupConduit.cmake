@@ -39,6 +39,18 @@ else()
   set(_ippl_conduit_link_target "conduit::conduit")
 endif()
 
+# Compile Relay IO in a separate TU so Catalyst's bundled Conduit headers cannot
+# shadow the full Conduit install used for HDF5 export.
+add_library(
+  ippl_conduit_relay OBJECT
+  ${CMAKE_CURRENT_LIST_DIR}/../src/Stream/IO/ConduitIOWriterRelay.cpp)
+target_include_directories(ippl_conduit_relay PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../src)
+target_link_libraries(ippl_conduit_relay PRIVATE ${_ippl_conduit_link_target})
+if(CONDUIT_RELAY_MPI_ENABLED)
+  target_compile_definitions(ippl_conduit_relay PRIVATE IPPL_CONDUIT_MPI_IO)
+endif()
+target_sources(ippl PRIVATE $<TARGET_OBJECTS:ippl_conduit_relay>)
+
 # ---------------------------------------------------------------------------
 # Optional: verify Catalyst + Conduit can be linked together (no symbol clash)
 # ---------------------------------------------------------------------------
