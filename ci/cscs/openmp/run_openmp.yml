@@ -36,7 +36,7 @@ variables:
     - export CTEST_BUILD_NAME="${CDASH_LABEL}-${BUILD_ARCH}-${BUILD_TYPE}-${TEST_INFO}"
     - find $BUILD_PATH -type f -name \*.xml -exec sed -i "s|BuildName=.*|BuildName=\"${CTEST_BUILD_NAME}\"|g" {} \;
     # ctest should now have valid file paths, (use srun to launch with uenv setup)
-    - ctest -V --output-on-failure --timeout 60 $TEST_ARGS -S $CI_PROJECT_DIR/ci/cscs/dashboard-test.cmake
+    - ctest -V --output-on-failure --timeout ${TEST_TIMEOUT:-60} $TEST_ARGS -S $CI_PROJECT_DIR/ci/cscs/dashboard-test.cmake
       -DCTEST_SITE="$CTEST_SITE"
       -DCTEST_BUILD_NAME="$CTEST_BUILD_NAME"
       -DCDASH_LABEL=$CDASH_LABEL
@@ -59,6 +59,7 @@ ippl-test-openmp-debug-1-rank:
     TEST_INFO: "1-rank"
     TEST_ARGS: "-E known_fail"
     ENABLE_COVERAGE: "ON"
+    TEST_TIMEOUT: "120"
 
 # ---------------------------------------------------------
 # 1 rank release
