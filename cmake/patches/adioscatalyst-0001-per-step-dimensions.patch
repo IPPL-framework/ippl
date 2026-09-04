@@ -1,0 +1,70 @@
+diff --git a/AdiosCatalyst/AdiosPipeline.cxx b/AdiosCatalyst/AdiosPipeline.cxx
+index 5fc83c5..e6cfc35 100644
+--- a/AdiosCatalyst/AdiosPipeline.cxx
++++ b/AdiosCatalyst/AdiosPipeline.cxx
+@@ -177,6 +177,16 @@ bool AdiosPipeline::Execute(const conduit_cpp::Node& root)
+ 
+     this->FirstExecute = false;
+   }
++  // ---- ippl per-step dimensions patch --------------------------------------------------------
++  // Variables are defined once (above), but their global shape and per-rank selection can change
++  // every step for dynamic data (e.g. particles migrating between ranks). Refresh the dimension
++  // map here; Put() re-applies SetShape/SetSelection from it before writing each global array.
++  else if (!this->DetermineDimensions(root))
++  {
++    std::cerr << "Can't refresh variable dimensions." << std::endl;
++    return false;
++  }
++  // ---- end ippl per-step dimensions patch ----------------------------------------------------
+ 
+   return this->Put(root);
+ }
+@@ -314,6 +324,13 @@ bool AdiosPipeline::InitializeVariables(const conduit_cpp::Node& channel)
+ //----------------------------------------------------------------------------
+ bool AdiosPipeline::DetermineDimensions(const conduit_cpp::Node& entry)
+ {
++  // ---- ippl per-step dimensions patch --------------------------------------------------------
++  // DetermineDimensions is re-run every step (see Execute) so that variables whose parallel
++  // decomposition changes over time - e.g. particles migrating between MPI ranks - get fresh
++  // shape/start/count. std::map::emplace never overwrites, so clear stale entries first.
++  this->DimensionMap->clear();
++  // ---- end ippl per-step dimensions patch ----------------------------------------------------
++
+   std::set<std::string> leaves = ::ExtractLeafPaths(entry, "");
+   std::uint64_t nLeaves = leaves.size();
+ 
+@@ -844,7 +861,7 @@ bool AdiosPipeline::PreparePutVariables(
+ bool AdiosPipeline::PutVariables(
+   std::shared_ptr<AdiosData> data, const conduit_cpp::Node& values, const std::string& name)
+ {
+-  auto put_var = [&writer = this->Writer, &values, &name](auto& var, const auto* data_ptr)
++  auto put_var = [this, &writer = this->Writer, &values, &name](auto& var, const auto* data_ptr)
+   {
+     if constexpr (std::is_same_v<decltype(data_ptr), const char*>)
+     {
+@@ -860,6 +877,25 @@ bool AdiosPipeline::PutVariables(
+       {
+         throw std::runtime_error(name + " value is not compact.");
+       }
++      // ---- ippl per-step dimensions patch ----------------------------------------------------
++      // Global arrays (field/coordset "values", topology connectivity/offsets/sizes/shapes) are
++      // the only variables defined with a distributed shape. Their per-rank size can change every
++      // step (particles), so re-apply the freshly determined shape/selection before Put. Local
++      // value / scalar variables (metadata, mesh spacing, ...) are left untouched.
++      const bool isGlobalArray = name.find("values") != std::string::npos ||
++        name.find("connectivity") != std::string::npos ||
++        name.find("offsets") != std::string::npos || name.find("sizes") != std::string::npos ||
++        name.find("shapes") != std::string::npos;
++      if (isGlobalArray)
++      {
++        auto dimIt = this->DimensionMap->find(name);
++        if (dimIt != this->DimensionMap->end())
++        {
++          var.SetShape(dimIt->second.Shape);
++          var.SetSelection({ dimIt->second.Start, dimIt->second.Count });
++        }
++      }
++      // ---- end ippl per-step dimensions patch ------------------------------------------------
+       writer.Put(var, data_ptr);
+     }
+   };

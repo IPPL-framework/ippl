@@ -84,12 +84,28 @@ if(@IPPL_ENABLE_CONDUIT_IO@)
 endif()
 
 # -----------------------------------------------------------------------------
+# ADIOS2 (AdiosCatalyst track — resolved but not linked into libippl)
+# -----------------------------------------------------------------------------
+if(@IPPL_ENABLE_ADIOS2@)
+    if(@ADIOS2_FOUND@)
+        message(STATUS "Finding IPPL dependency : external ADIOS2")
+        set(ADIOS2_DIR "@ADIOS2_PACKAGE_DIR@")
+        find_dependency(ADIOS2 CONFIG REQUIRED)
+    else()
+        message(STATUS "Using ADIOS2 built with IPPL (not linked into IPPL::ippl)")
+    endif()
+    if("@IPPL_ADIOSCATALYST_IMPL_DIR@")
+        message(STATUS "AdiosCatalyst implementation dir @IPPL_ADIOSCATALYST_IMPL_DIR@")
+    endif()
+endif()
+
+# -----------------------------------------------------------------------------
 # Catalyst
 # -----------------------------------------------------------------------------
 if(@IPPL_ENABLE_CATALYST@)
     if(@catalyst_FOUND@)
         message(STATUS "Finding IPPL dependency : external Catalyst")
-        set(catalyst_DIR @catalyst_DIR@)
+        set(catalyst_DIR "@Catalyst_PACKAGE_DIR@")
         find_dependency(catalyst REQUIRED)
     else()
         message(STATUS "Using Catalyst built with IPPL (targets exported via IPPL::ippl)")

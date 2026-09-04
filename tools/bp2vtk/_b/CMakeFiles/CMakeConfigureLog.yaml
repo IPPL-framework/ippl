@@ -1,0 +1,2100 @@
+
+---
+events:
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineSystem.cmake:12 (find_program)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_UNAME"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "uname"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/lib64/mpich/sbin/"
+      - "/usr/lib64/mpich/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/uname"
+      - "/usr/lib64/mpich/sbin/uname"
+      - "/usr/lib64/mpich/uname"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/uname"
+      - "/home/klappi/.local/bin/uname"
+      - "/home/klappi/bin/uname"
+      - "/usr/lib64/mpich/bin/uname"
+      - "/usr/share/Modules/bin/uname"
+      - "/condabin/uname"
+      - "/usr/local/bin/uname"
+    found: "/usr/bin/uname"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineSystem.cmake:212 (message)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      The system is: Linux - 7.1.4-200.fc44.x86_64 - x86_64
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeUnixFindMake.cmake:5 (find_program)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_MAKE_PROGRAM"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "gmake"
+      - "make"
+      - "smake"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/lib64/mpich/sbin/"
+      - "/usr/lib64/mpich/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/gmake"
+      - "/usr/lib64/mpich/sbin/gmake"
+      - "/usr/lib64/mpich/gmake"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gmake"
+      - "/home/klappi/.local/bin/gmake"
+      - "/home/klappi/bin/gmake"
+      - "/usr/lib64/mpich/bin/gmake"
+      - "/usr/share/Modules/bin/gmake"
+      - "/condabin/gmake"
+      - "/usr/local/bin/gmake"
+    found: "/usr/bin/gmake"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:468 (find_file)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:506 (CMAKE_DETERMINE_COMPILER_ID_WRITE)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:8 (CMAKE_DETERMINE_COMPILER_ID_BUILD)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:125 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "file"
+    variable: "src_in"
+    description: "Path to a file."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "CMakeCXXCompilerId.cpp.in"
+    candidate_directories:
+      - "/usr/share/cmake/Modules/"
+    found: "/usr/share/cmake/Modules/CMakeCXXCompilerId.cpp.in"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:125 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+      Compiler: /usr/lib64/mpich/bin/mpicxx 
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      
+      
+      Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.out"
+      
+      The CXX compiler identification is GNU, found in:
+        /home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/4.3.0/CompilerIdCXX/a.out
+      
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeFindBinUtils.cmake:243 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_AR"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "ar"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/ar"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/ar"
+      - "/home/klappi/.local/bin/ar"
+      - "/home/klappi/bin/ar"
+      - "/usr/share/Modules/bin/ar"
+      - "/condabin/ar"
+      - "/usr/local/bin/ar"
+    found: "/usr/bin/ar"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeFindBinUtils.cmake:243 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_RANLIB"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "ranlib"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/ranlib"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/ranlib"
+      - "/home/klappi/.local/bin/ranlib"
+      - "/home/klappi/bin/ranlib"
+      - "/usr/share/Modules/bin/ranlib"
+      - "/condabin/ranlib"
+      - "/usr/local/bin/ranlib"
+    found: "/usr/bin/ranlib"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeFindBinUtils.cmake:243 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_STRIP"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "strip"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/strip"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/strip"
+      - "/home/klappi/.local/bin/strip"
+      - "/home/klappi/bin/strip"
+      - "/usr/share/Modules/bin/strip"
+      - "/condabin/strip"
+      - "/usr/local/bin/strip"
+    found: "/usr/bin/strip"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeFindBinUtils.cmake:243 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_LINKER"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "ld"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/ld"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/ld"
+      - "/home/klappi/.local/bin/ld"
+      - "/home/klappi/bin/ld"
+      - "/usr/share/Modules/bin/ld"
+      - "/condabin/ld"
+      - "/usr/local/bin/ld"
+    found: "/usr/bin/ld"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeFindBinUtils.cmake:243 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_NM"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "nm"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/nm"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/nm"
+      - "/home/klappi/.local/bin/nm"
+      - "/home/klappi/bin/nm"
+      - "/usr/share/Modules/bin/nm"
+      - "/condabin/nm"
+      - "/usr/local/bin/nm"
+    found: "/usr/bin/nm"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeFindBinUtils.cmake:243 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_OBJDUMP"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "objdump"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/objdump"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/objdump"
+      - "/home/klappi/.local/bin/objdump"
+      - "/home/klappi/bin/objdump"
+      - "/usr/share/Modules/bin/objdump"
+      - "/condabin/objdump"
+      - "/usr/local/bin/objdump"
+    found: "/usr/bin/objdump"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeFindBinUtils.cmake:243 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_OBJCOPY"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "objcopy"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/objcopy"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/objcopy"
+      - "/home/klappi/.local/bin/objcopy"
+      - "/home/klappi/bin/objcopy"
+      - "/usr/share/Modules/bin/objcopy"
+      - "/condabin/objcopy"
+      - "/usr/local/bin/objcopy"
+    found: "/usr/bin/objcopy"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeFindBinUtils.cmake:243 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_READELF"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "readelf"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/readelf"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/readelf"
+      - "/home/klappi/.local/bin/readelf"
+      - "/home/klappi/bin/readelf"
+      - "/usr/share/Modules/bin/readelf"
+      - "/condabin/readelf"
+      - "/usr/local/bin/readelf"
+    found: "/usr/bin/readelf"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeFindBinUtils.cmake:243 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_DLLTOOL"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "dlltool"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/dlltool"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/dlltool"
+      - "/home/klappi/.local/bin/dlltool"
+      - "/home/klappi/bin/dlltool"
+      - "/usr/share/Modules/bin/dlltool"
+      - "/condabin/dlltool"
+      - "/usr/local/bin/dlltool"
+      - "/usr/bin/dlltool"
+      - "/bin/dlltool"
+    found: false
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeFindBinUtils.cmake:243 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_ADDR2LINE"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "addr2line"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/addr2line"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/addr2line"
+      - "/home/klappi/.local/bin/addr2line"
+      - "/home/klappi/bin/addr2line"
+      - "/usr/share/Modules/bin/addr2line"
+      - "/condabin/addr2line"
+      - "/usr/local/bin/addr2line"
+    found: "/usr/bin/addr2line"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeFindBinUtils.cmake:243 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:206 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_TAPI"
+    description: "Path to a program."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "tapi"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/tapi"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/tapi"
+      - "/home/klappi/.local/bin/tapi"
+      - "/home/klappi/bin/tapi"
+      - "/usr/share/Modules/bin/tapi"
+      - "/condabin/tapi"
+      - "/usr/local/bin/tapi"
+      - "/usr/bin/tapi"
+      - "/bin/tapi"
+    found: false
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/Compiler/GNU-FindBinUtils.cmake:18 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:207 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_CXX_COMPILER_AR"
+    description: "A wrapper around 'ar' adding the appropriate '--plugin' option for the GCC compiler"
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "gcc-ar-16.1"
+      - "gcc-ar-16"
+      - "gcc-ar16"
+      - "gcc-ar"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/gcc-ar-16.1"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ar-16.1"
+      - "/home/klappi/.local/bin/gcc-ar-16.1"
+      - "/home/klappi/bin/gcc-ar-16.1"
+      - "/usr/share/Modules/bin/gcc-ar-16.1"
+      - "/condabin/gcc-ar-16.1"
+      - "/usr/local/bin/gcc-ar-16.1"
+      - "/usr/bin/gcc-ar-16.1"
+      - "/bin/gcc-ar-16.1"
+      - "/usr/lib64/mpich/bin/gcc-ar-16"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ar-16"
+      - "/home/klappi/.local/bin/gcc-ar-16"
+      - "/home/klappi/bin/gcc-ar-16"
+      - "/usr/share/Modules/bin/gcc-ar-16"
+      - "/condabin/gcc-ar-16"
+      - "/usr/local/bin/gcc-ar-16"
+      - "/usr/bin/gcc-ar-16"
+      - "/bin/gcc-ar-16"
+      - "/usr/lib64/mpich/bin/gcc-ar16"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ar16"
+      - "/home/klappi/.local/bin/gcc-ar16"
+      - "/home/klappi/bin/gcc-ar16"
+      - "/usr/share/Modules/bin/gcc-ar16"
+      - "/condabin/gcc-ar16"
+      - "/usr/local/bin/gcc-ar16"
+      - "/usr/bin/gcc-ar16"
+      - "/bin/gcc-ar16"
+      - "/usr/lib64/mpich/bin/gcc-ar"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ar"
+      - "/home/klappi/.local/bin/gcc-ar"
+      - "/home/klappi/bin/gcc-ar"
+      - "/usr/share/Modules/bin/gcc-ar"
+      - "/condabin/gcc-ar"
+      - "/usr/local/bin/gcc-ar"
+    found: "/usr/bin/gcc-ar"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/Compiler/GNU-FindBinUtils.cmake:30 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCXXCompiler.cmake:207 (include)"
+      - "CMakeLists.txt:2 (project)"
+    mode: "program"
+    variable: "CMAKE_CXX_COMPILER_RANLIB"
+    description: "A wrapper around 'ranlib' adding the appropriate '--plugin' option for the GCC compiler"
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "gcc-ranlib-16.1"
+      - "gcc-ranlib-16"
+      - "gcc-ranlib16"
+      - "gcc-ranlib"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/gcc-ranlib-16.1"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ranlib-16.1"
+      - "/home/klappi/.local/bin/gcc-ranlib-16.1"
+      - "/home/klappi/bin/gcc-ranlib-16.1"
+      - "/usr/share/Modules/bin/gcc-ranlib-16.1"
+      - "/condabin/gcc-ranlib-16.1"
+      - "/usr/local/bin/gcc-ranlib-16.1"
+      - "/usr/bin/gcc-ranlib-16.1"
+      - "/bin/gcc-ranlib-16.1"
+      - "/usr/lib64/mpich/bin/gcc-ranlib-16"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ranlib-16"
+      - "/home/klappi/.local/bin/gcc-ranlib-16"
+      - "/home/klappi/bin/gcc-ranlib-16"
+      - "/usr/share/Modules/bin/gcc-ranlib-16"
+      - "/condabin/gcc-ranlib-16"
+      - "/usr/local/bin/gcc-ranlib-16"
+      - "/usr/bin/gcc-ranlib-16"
+      - "/bin/gcc-ranlib-16"
+      - "/usr/lib64/mpich/bin/gcc-ranlib16"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ranlib16"
+      - "/home/klappi/.local/bin/gcc-ranlib16"
+      - "/home/klappi/bin/gcc-ranlib16"
+      - "/usr/share/Modules/bin/gcc-ranlib16"
+      - "/condabin/gcc-ranlib16"
+      - "/usr/local/bin/gcc-ranlib16"
+      - "/usr/bin/gcc-ranlib16"
+      - "/bin/gcc-ranlib16"
+      - "/usr/lib64/mpich/bin/gcc-ranlib"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ranlib"
+      - "/home/klappi/.local/bin/gcc-ranlib"
+      - "/home/klappi/bin/gcc-ranlib"
+      - "/usr/share/Modules/bin/gcc-ranlib"
+      - "/condabin/gcc-ranlib"
+      - "/usr/local/bin/gcc-ranlib"
+    found: "/usr/bin/gcc-ranlib"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:83 (try_compile)"
+      - "/usr/share/cmake/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    checks:
+      - "Detecting CXX compiler ABI info"
+    directories:
+      source: "/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-Wqholl"
+      binary: "/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-Wqholl"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_CXX_SCAN_FOR_MODULES: "OFF"
+      CMAKE_CXX_STDLIB_MODULES_JSON: ""
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "CMAKE_CXX_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-Wqholl'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_afebb/fast
+        /usr/bin/gmake  -f CMakeFiles/cmTC_afebb.dir/build.make CMakeFiles/cmTC_afebb.dir/build
+        gmake[1]: Entering directory '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-Wqholl'
+        Building CXX object CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o
+        /usr/lib64/mpich/bin/mpicxx   -v -o CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+        mpicxx for MPICH version 4.2.2
+        Using built-in specs.
+        COLLECT_GCC=g++
+        OFFLOAD_TARGET_NAMES=nvptx-none:amdgcn-amdhsa
+        OFFLOAD_TARGET_DEFAULT=1
+        Target: x86_64-redhat-linux
+        Configured with: ../configure --enable-bootstrap --enable-languages=c,c++,fortran,objc,obj-c++,ada,go,d,m2,cobol,algol68,lto --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=https://bugzilla.redhat.com/ --enable-shared --enable-threads=posix --enable-checking=release --enable-multilib --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --enable-libstdcxx-backtrace --with-libstdcxx-zoneinfo=/usr/share/zoneinfo --with-linker-hash-style=gnu --enable-plugin --enable-initfini-array --with-isl=/builddir/build/BUILD/gcc-16.1.1-build/gcc-16.1.1-20260515/obj-x86_64-redhat-linux/isl-install --enable-offload-targets=nvptx-none,amdgcn-amdhsa --enable-offload-defaulted --without-cuda-driver --enable-gnu-indirect-function --enable-cet --with-tune=generic --with-tls=gnu2 --with-arch_32=i686 --build=x86_64-redhat-linux --with-build-config=bootstrap-lto --enable-link-serialization=1 --disable-libssp
+        Thread model: posix
+        Supported LTO compression algorithms: zlib zstd
+        gcc version 16.1.1 20260515 (Red Hat 16.1.1-2) (GCC) 
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-I' '/usr/include/mpich-x86_64' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'CMakeFiles/cmTC_afebb.dir/'
+         /usr/libexec/gcc/x86_64-redhat-linux/16/cc1plus -quiet -v -I /usr/include/mpich-x86_64 -D_GNU_SOURCE /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp -quiet -dumpdir CMakeFiles/cmTC_afebb.dir/ -dumpbase CMakeCXXCompilerABI.cpp.cpp -dumpbase-ext .cpp -mtune=generic -march=x86-64 -mtls-dialect=gnu2 -version -o /tmp/ccBC5g1Y.s
+        GNU C++20 (GCC) version 16.1.1 20260515 (Red Hat 16.1.1-2) (x86_64-redhat-linux)
+        	compiled by GNU C version 16.1.1 20260515 (Red Hat 16.1.1-2), GMP version 6.3.0, MPFR version 4.2.2, MPC version 1.4.1, isl version isl-0.24-GMP
+        
+        GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+        ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/16/include-fixed"
+        ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/16/../../../../x86_64-redhat-linux/include"
+        #include "..." search starts here:
+        #include <...> search starts here:
+         /usr/include/mpich-x86_64
+         /usr/lib/gcc/x86_64-redhat-linux/16/../../../../include/c++/16
+         /usr/lib/gcc/x86_64-redhat-linux/16/../../../../include/c++/16/x86_64-redhat-linux
+         /usr/lib/gcc/x86_64-redhat-linux/16/../../../../include/c++/16/backward
+         /usr/lib/gcc/x86_64-redhat-linux/16/include
+         /usr/local/include
+         /usr/include
+        End of search list.
+        Compiler executable checksum: f7f3cb99b253d13f382d2bbd7f6c1fbf
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-I' '/usr/include/mpich-x86_64' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'CMakeFiles/cmTC_afebb.dir/'
+         as -v -I /usr/include/mpich-x86_64 --64 -o CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccBC5g1Y.s
+        GNU assembler version 2.46.1 (x86_64-redhat-linux) using BFD version version 2.46.1-1.fc44
+        COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/
+        LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../:/lib/:/usr/lib/
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-I' '/usr/include/mpich-x86_64' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.'
+        Linking CXX executable cmTC_afebb
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_afebb.dir/link.txt --verbose=1
+        mpicxx for MPICH version 4.2.2
+        Using built-in specs.
+        COLLECT_GCC=g++
+        COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper
+        OFFLOAD_TARGET_NAMES=nvptx-none:amdgcn-amdhsa
+        OFFLOAD_TARGET_DEFAULT=1
+        Target: x86_64-redhat-linux
+        Configured with: ../configure --enable-bootstrap --enable-languages=c,c++,fortran,objc,obj-c++,ada,go,d,m2,cobol,algol68,lto --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=https://bugzilla.redhat.com/ --enable-shared --enable-threads=posix --enable-checking=release --enable-multilib --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --enable-libstdcxx-backtrace --with-libstdcxx-zoneinfo=/usr/share/zoneinfo --with-linker-hash-style=gnu --enable-plugin --enable-initfini-array --with-isl=/builddir/build/BUILD/gcc-16.1.1-build/gcc-16.1.1-20260515/obj-x86_64-redhat-linux/isl-install --enable-offload-targets=nvptx-none,amdgcn-amdhsa --enable-offload-defaulted --without-cuda-driver --enable-gnu-indirect-function --enable-cet --with-tune=generic --with-tls=gnu2 --with-arch_32=i686 --build=x86_64-redhat-linux --with-build-config=bootstrap-lto --enable-link-serialization=1 --disable-libssp
+        Thread model: posix
+        Supported LTO compression algorithms: zlib zstd
+        gcc version 16.1.1 20260515 (Red Hat 16.1.1-2) (GCC) 
+        COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/
+        LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../:/lib/:/usr/lib/
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_afebb' '-I' '/usr/include/mpich-x86_64' '-L/usr/lib64/mpich/lib' '-foffload-options=-l_GCC_stdc++' '-foffload-options=-l_GCC_m' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'cmTC_afebb.'
+         /usr/libexec/gcc/x86_64-redhat-linux/16/collect2 -plugin /usr/libexec/gcc/x86_64-redhat-linux/16/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper -plugin-opt=-fresolution=/tmp/ccQC3M7R.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_afebb /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o -L/usr/lib64/mpich/lib -L/usr/lib/gcc/x86_64-redhat-linux/16 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o -lmpicxx -rpath /usr/lib64/mpich/lib --enable-new-dtags -lmpi -lstdc++ -lm -lgcc_s -lgcc -latomic_asneeded -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-redhat-linux/16/crtend.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o
+        collect2 version 16.1.1 20260515 (Red Hat 16.1.1-2)
+        /usr/bin/ld -plugin /usr/libexec/gcc/x86_64-redhat-linux/16/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper -plugin-opt=-fresolution=/tmp/ccQC3M7R.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_afebb /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o -L/usr/lib64/mpich/lib -L/usr/lib/gcc/x86_64-redhat-linux/16 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o -lmpicxx -rpath /usr/lib64/mpich/lib --enable-new-dtags -lmpi -lstdc++ -lm -lgcc_s -lgcc -latomic_asneeded -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-redhat-linux/16/crtend.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o
+        GNU ld version 2.46.1-1.fc44
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_afebb' '-I' '/usr/include/mpich-x86_64' '-L/usr/lib64/mpich/lib' '-foffload-options=-l_GCC_stdc++' '-foffload-options=-l_GCC_m' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'cmTC_afebb.'
+        /usr/lib64/mpich/bin/mpicxx  -v -Wl,-v CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_afebb
+        gmake[1]: Leaving directory '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-Wqholl'
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:217 (message)"
+      - "/usr/share/cmake/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed CXX implicit include dir info: rv=done
+        found start of include info
+        found start of implicit include info
+          add: [/usr/include/mpich-x86_64]
+          add: [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../include/c++/16]
+          add: [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../include/c++/16/x86_64-redhat-linux]
+          add: [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../include/c++/16/backward]
+          add: [/usr/lib/gcc/x86_64-redhat-linux/16/include]
+          add: [/usr/local/include]
+          add: [/usr/include]
+        end of search list found
+        collapse include dir [/usr/include/mpich-x86_64] ==> [/usr/include/mpich-x86_64]
+        collapse include dir [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../include/c++/16] ==> [/usr/include/c++/16]
+        collapse include dir [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../include/c++/16/x86_64-redhat-linux] ==> [/usr/include/c++/16/x86_64-redhat-linux]
+        collapse include dir [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../include/c++/16/backward] ==> [/usr/include/c++/16/backward]
+        collapse include dir [/usr/lib/gcc/x86_64-redhat-linux/16/include] ==> [/usr/lib/gcc/x86_64-redhat-linux/16/include]
+        collapse include dir [/usr/local/include] ==> [/usr/local/include]
+        collapse include dir [/usr/include] ==> [/usr/include]
+        implicit include dirs: [/usr/include/mpich-x86_64;/usr/include/c++/16;/usr/include/c++/16/x86_64-redhat-linux;/usr/include/c++/16/backward;/usr/lib/gcc/x86_64-redhat-linux/16/include;/usr/local/include;/usr/include]
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:253 (message)"
+      - "/usr/share/cmake/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed CXX implicit link information:
+        link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        linker tool regex: [^[ 	]*(->|"|[0-9]+>[ 	-]*Build:[ 	0-9]+ ms[ 	]*)?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)))("|,| |$)]
+        ignore line: [Change Dir: '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-Wqholl']
+        ignore line: []
+        ignore line: [Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_afebb/fast]
+        ignore line: [/usr/bin/gmake  -f CMakeFiles/cmTC_afebb.dir/build.make CMakeFiles/cmTC_afebb.dir/build]
+        ignore line: [gmake[1]: Entering directory '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-Wqholl']
+        ignore line: [Building CXX object CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o]
+        ignore line: [/usr/lib64/mpich/bin/mpicxx   -v -o CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [mpicxx for MPICH version 4.2.2]
+        ignore line: [Using built-in specs.]
+        ignore line: [COLLECT_GCC=g++]
+        ignore line: [OFFLOAD_TARGET_NAMES=nvptx-none:amdgcn-amdhsa]
+        ignore line: [OFFLOAD_TARGET_DEFAULT=1]
+        ignore line: [Target: x86_64-redhat-linux]
+        ignore line: [Configured with: ../configure --enable-bootstrap --enable-languages=c c++ fortran objc obj-c++ ada go d m2 cobol algol68 lto --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=https://bugzilla.redhat.com/ --enable-shared --enable-threads=posix --enable-checking=release --enable-multilib --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --enable-libstdcxx-backtrace --with-libstdcxx-zoneinfo=/usr/share/zoneinfo --with-linker-hash-style=gnu --enable-plugin --enable-initfini-array --with-isl=/builddir/build/BUILD/gcc-16.1.1-build/gcc-16.1.1-20260515/obj-x86_64-redhat-linux/isl-install --enable-offload-targets=nvptx-none amdgcn-amdhsa --enable-offload-defaulted --without-cuda-driver --enable-gnu-indirect-function --enable-cet --with-tune=generic --with-tls=gnu2 --with-arch_32=i686 --build=x86_64-redhat-linux --with-build-config=bootstrap-lto --enable-link-serialization=1 --disable-libssp]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib zstd]
+        ignore line: [gcc version 16.1.1 20260515 (Red Hat 16.1.1-2) (GCC) ]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-I' '/usr/include/mpich-x86_64' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'CMakeFiles/cmTC_afebb.dir/']
+        ignore line: [ /usr/libexec/gcc/x86_64-redhat-linux/16/cc1plus -quiet -v -I /usr/include/mpich-x86_64 -D_GNU_SOURCE /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp -quiet -dumpdir CMakeFiles/cmTC_afebb.dir/ -dumpbase CMakeCXXCompilerABI.cpp.cpp -dumpbase-ext .cpp -mtune=generic -march=x86-64 -mtls-dialect=gnu2 -version -o /tmp/ccBC5g1Y.s]
+        ignore line: [GNU C++20 (GCC) version 16.1.1 20260515 (Red Hat 16.1.1-2) (x86_64-redhat-linux)]
+        ignore line: [	compiled by GNU C version 16.1.1 20260515 (Red Hat 16.1.1-2)  GMP version 6.3.0  MPFR version 4.2.2  MPC version 1.4.1  isl version isl-0.24-GMP]
+        ignore line: []
+        ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+        ignore line: [ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/16/include-fixed"]
+        ignore line: [ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/16/../../../../x86_64-redhat-linux/include"]
+        ignore line: [#include "..." search starts here:]
+        ignore line: [#include <...> search starts here:]
+        ignore line: [ /usr/include/mpich-x86_64]
+        ignore line: [ /usr/lib/gcc/x86_64-redhat-linux/16/../../../../include/c++/16]
+        ignore line: [ /usr/lib/gcc/x86_64-redhat-linux/16/../../../../include/c++/16/x86_64-redhat-linux]
+        ignore line: [ /usr/lib/gcc/x86_64-redhat-linux/16/../../../../include/c++/16/backward]
+        ignore line: [ /usr/lib/gcc/x86_64-redhat-linux/16/include]
+        ignore line: [ /usr/local/include]
+        ignore line: [ /usr/include]
+        ignore line: [End of search list.]
+        ignore line: [Compiler executable checksum: f7f3cb99b253d13f382d2bbd7f6c1fbf]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-I' '/usr/include/mpich-x86_64' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'CMakeFiles/cmTC_afebb.dir/']
+        ignore line: [ as -v -I /usr/include/mpich-x86_64 --64 -o CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccBC5g1Y.s]
+        ignore line: [GNU assembler version 2.46.1 (x86_64-redhat-linux) using BFD version version 2.46.1-1.fc44]
+        ignore line: [COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/]
+        ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../:/lib/:/usr/lib/]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-I' '/usr/include/mpich-x86_64' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.']
+        ignore line: [Linking CXX executable cmTC_afebb]
+        ignore line: [/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_afebb.dir/link.txt --verbose=1]
+        ignore line: [mpicxx for MPICH version 4.2.2]
+        ignore line: [Using built-in specs.]
+        ignore line: [COLLECT_GCC=g++]
+        ignore line: [COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper]
+        ignore line: [OFFLOAD_TARGET_NAMES=nvptx-none:amdgcn-amdhsa]
+        ignore line: [OFFLOAD_TARGET_DEFAULT=1]
+        ignore line: [Target: x86_64-redhat-linux]
+        ignore line: [Configured with: ../configure --enable-bootstrap --enable-languages=c c++ fortran objc obj-c++ ada go d m2 cobol algol68 lto --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=https://bugzilla.redhat.com/ --enable-shared --enable-threads=posix --enable-checking=release --enable-multilib --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --enable-libstdcxx-backtrace --with-libstdcxx-zoneinfo=/usr/share/zoneinfo --with-linker-hash-style=gnu --enable-plugin --enable-initfini-array --with-isl=/builddir/build/BUILD/gcc-16.1.1-build/gcc-16.1.1-20260515/obj-x86_64-redhat-linux/isl-install --enable-offload-targets=nvptx-none amdgcn-amdhsa --enable-offload-defaulted --without-cuda-driver --enable-gnu-indirect-function --enable-cet --with-tune=generic --with-tls=gnu2 --with-arch_32=i686 --build=x86_64-redhat-linux --with-build-config=bootstrap-lto --enable-link-serialization=1 --disable-libssp]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib zstd]
+        ignore line: [gcc version 16.1.1 20260515 (Red Hat 16.1.1-2) (GCC) ]
+        ignore line: [COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/]
+        ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../:/lib/:/usr/lib/]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_afebb' '-I' '/usr/include/mpich-x86_64' '-L/usr/lib64/mpich/lib' '-foffload-options=-l_GCC_stdc++' '-foffload-options=-l_GCC_m' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'cmTC_afebb.']
+        link line: [ /usr/libexec/gcc/x86_64-redhat-linux/16/collect2 -plugin /usr/libexec/gcc/x86_64-redhat-linux/16/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper -plugin-opt=-fresolution=/tmp/ccQC3M7R.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_afebb /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o -L/usr/lib64/mpich/lib -L/usr/lib/gcc/x86_64-redhat-linux/16 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o -lmpicxx -rpath /usr/lib64/mpich/lib --enable-new-dtags -lmpi -lstdc++ -lm -lgcc_s -lgcc -latomic_asneeded -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-redhat-linux/16/crtend.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o]
+          arg [/usr/libexec/gcc/x86_64-redhat-linux/16/collect2] ==> ignore
+          arg [-plugin] ==> ignore
+          arg [/usr/libexec/gcc/x86_64-redhat-linux/16/liblto_plugin.so] ==> ignore
+          arg [-plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper] ==> ignore
+          arg [-plugin-opt=-fresolution=/tmp/ccQC3M7R.res] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+          arg [-plugin-opt=-pass-through=-latomic_asneeded] ==> ignore
+          arg [-plugin-opt=-pass-through=-lc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+          arg [--build-id] ==> ignore
+          arg [--no-add-needed] ==> ignore
+          arg [--eh-frame-hdr] ==> ignore
+          arg [--hash-style=gnu] ==> ignore
+          arg [-m] ==> ignore
+          arg [elf_x86_64] ==> ignore
+          arg [-dynamic-linker] ==> ignore
+          arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+          arg [-o] ==> ignore
+          arg [cmTC_afebb] ==> ignore
+          arg [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o]
+          arg [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o]
+          arg [/usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o]
+          arg [-L/usr/lib64/mpich/lib] ==> dir [/usr/lib64/mpich/lib]
+          arg [-L/usr/lib/gcc/x86_64-redhat-linux/16] ==> dir [/usr/lib/gcc/x86_64-redhat-linux/16]
+          arg [-L/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64] ==> dir [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64]
+          arg [-L/lib/../lib64] ==> dir [/lib/../lib64]
+          arg [-L/usr/lib/../lib64] ==> dir [/usr/lib/../lib64]
+          arg [-L/usr/lib/gcc/x86_64-redhat-linux/16/../../..] ==> dir [/usr/lib/gcc/x86_64-redhat-linux/16/../../..]
+          arg [-L/lib] ==> dir [/lib]
+          arg [-L/usr/lib] ==> dir [/usr/lib]
+          arg [-v] ==> ignore
+          arg [CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+          arg [-lmpicxx] ==> lib [mpicxx]
+          arg [-rpath] ==> ignore
+          arg [/usr/lib64/mpich/lib] ==> ignore
+          arg [--enable-new-dtags] ==> ignore
+          arg [-lmpi] ==> lib [mpi]
+          arg [-lstdc++] ==> lib [stdc++]
+          arg [-lm] ==> lib [m]
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [-lgcc] ==> lib [gcc]
+          arg [-latomic_asneeded] ==> lib [atomic_asneeded]
+          arg [-lc] ==> lib [c]
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [-lgcc] ==> lib [gcc]
+          arg [/usr/lib/gcc/x86_64-redhat-linux/16/crtend.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/16/crtend.o]
+          arg [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o]
+        ignore line: [collect2 version 16.1.1 20260515 (Red Hat 16.1.1-2)]
+        ignore line: [/usr/bin/ld -plugin /usr/libexec/gcc/x86_64-redhat-linux/16/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper -plugin-opt=-fresolution=/tmp/ccQC3M7R.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_afebb /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o -L/usr/lib64/mpich/lib -L/usr/lib/gcc/x86_64-redhat-linux/16 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_afebb.dir/CMakeCXXCompilerABI.cpp.o -lmpicxx -rpath /usr/lib64/mpich/lib --enable-new-dtags -lmpi -lstdc++ -lm -lgcc_s -lgcc -latomic_asneeded -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-redhat-linux/16/crtend.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o]
+        linker tool for 'CXX': /usr/bin/ld
+        collapse obj [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o] ==> [/usr/lib64/crt1.o]
+        collapse obj [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o] ==> [/usr/lib64/crti.o]
+        collapse obj [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o] ==> [/usr/lib64/crtn.o]
+        collapse library dir [/usr/lib64/mpich/lib] ==> [/usr/lib64/mpich/lib]
+        collapse library dir [/usr/lib/gcc/x86_64-redhat-linux/16] ==> [/usr/lib/gcc/x86_64-redhat-linux/16]
+        collapse library dir [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64] ==> [/usr/lib64]
+        collapse library dir [/lib/../lib64] ==> [/lib64]
+        collapse library dir [/usr/lib/../lib64] ==> [/usr/lib64]
+        collapse library dir [/usr/lib/gcc/x86_64-redhat-linux/16/../../..] ==> [/usr/lib]
+        collapse library dir [/lib] ==> [/lib]
+        collapse library dir [/usr/lib] ==> [/usr/lib]
+        implicit libs: [mpicxx;mpi;stdc++;m;gcc_s;gcc;atomic_asneeded;c;gcc_s;gcc]
+        implicit objs: [/usr/lib64/crt1.o;/usr/lib64/crti.o;/usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o;/usr/lib/gcc/x86_64-redhat-linux/16/crtend.o;/usr/lib64/crtn.o]
+        implicit dirs: [/usr/lib64/mpich/lib;/usr/lib/gcc/x86_64-redhat-linux/16;/usr/lib64;/lib64;/usr/lib;/lib]
+        implicit fwks: []
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/Internal/CMakeDetermineLinkerId.cmake:38 (message)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:299 (cmake_determine_linker_id)"
+      - "/usr/share/cmake/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Running the CXX compiler's linker: "/usr/bin/ld" "-v"
+      GNU ld version 2.46.1-1.fc44
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindPkgConfig.cmake:517 (find_program)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:431 (find_package)"
+      - "CMakeLists.txt:7 (find_package)"
+    mode: "program"
+    variable: "PKG_CONFIG_EXECUTABLE"
+    description: "pkg-config executable"
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "pkg-config"
+      - "pkgconf"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/lib64/mpich/sbin/"
+      - "/usr/lib64/mpich/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+      - "/usr/local/bin/"
+      - "/usr/local/sbin/"
+      - "/usr/local/"
+      - "/usr/bin/"
+      - "/usr/sbin/"
+      - "/usr/"
+      - "/bin/"
+      - "/sbin/"
+      - "/usr/X11R6/bin/"
+      - "/usr/X11R6/sbin/"
+      - "/usr/X11R6/"
+      - "/usr/pkg/bin/"
+      - "/usr/pkg/sbin/"
+      - "/usr/pkg/"
+      - "/opt/bin/"
+      - "/opt/sbin/"
+      - "/opt/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/pkg-config"
+      - "/usr/lib64/mpich/bin/pkgconf"
+      - "/usr/lib64/mpich/sbin/pkg-config"
+      - "/usr/lib64/mpich/sbin/pkgconf"
+      - "/usr/lib64/mpich/pkg-config"
+      - "/usr/lib64/mpich/pkgconf"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/pkg-config"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/pkgconf"
+      - "/home/klappi/.local/bin/pkg-config"
+      - "/home/klappi/.local/bin/pkgconf"
+      - "/home/klappi/bin/pkg-config"
+      - "/home/klappi/bin/pkgconf"
+      - "/usr/lib64/mpich/bin/pkg-config"
+      - "/usr/lib64/mpich/bin/pkgconf"
+      - "/usr/share/Modules/bin/pkg-config"
+      - "/usr/share/Modules/bin/pkgconf"
+      - "/condabin/pkg-config"
+      - "/condabin/pkgconf"
+      - "/usr/local/bin/pkg-config"
+      - "/usr/local/bin/pkgconf"
+    found: "/usr/bin/pkg-config"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+      CMAKE_INSTALL_PREFIX: "/usr/local"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "/usr/local"
+        - "/usr"
+        - "/"
+        - "/usr"
+        - "/usr/local"
+        - "/usr/X11R6"
+        - "/usr/pkg"
+        - "/opt"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1535 (find_program)"
+      - "CMakeLists.txt:7 (find_package)"
+    mode: "program"
+    variable: "MPIEXEC_EXECUTABLE"
+    description: "Executable for running MPI programs."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "mpiexec"
+      - "mpiexec.hydra"
+      - "mpiexec.mpd"
+      - "mpirun"
+      - "lamexec"
+      - "srun"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/bin/"
+      - "/usr/lib64/mpich/bin/sbin/"
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/lib64/mpich/sbin/bin/"
+      - "/usr/lib64/mpich/sbin/sbin/"
+      - "/usr/lib64/mpich/sbin/"
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/lib64/mpich/sbin/"
+      - "/usr/lib64/mpich/"
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/lib64/mpich/sbin/"
+      - "/usr/lib64/mpich/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/sbin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/bin/"
+      - "/home/klappi/.local/bin/sbin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/bin/"
+      - "/home/klappi/bin/sbin/"
+      - "/home/klappi/bin/"
+      - "/usr/lib64/mpich/bin/bin/"
+      - "/usr/lib64/mpich/bin/sbin/"
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/Modules/bin/bin/"
+      - "/usr/share/Modules/bin/sbin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/bin/"
+      - "/condabin/sbin/"
+      - "/condabin/"
+      - "/usr/local/bin/bin/"
+      - "/usr/local/bin/sbin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/bin/"
+      - "/usr/bin/sbin/"
+      - "/usr/bin/"
+      - "/bin/bin/"
+      - "/bin/sbin/"
+      - "/bin/"
+      - "/usr/local/bin/bin/"
+      - "/usr/local/bin/sbin/"
+      - "/usr/local/bin/"
+      - "/usr/local/sbin/bin/"
+      - "/usr/local/sbin/sbin/"
+      - "/usr/local/sbin/"
+      - "/usr/local/bin/"
+      - "/usr/local/sbin/"
+      - "/usr/local/"
+      - "/usr/bin/bin/"
+      - "/usr/bin/sbin/"
+      - "/usr/bin/"
+      - "/usr/sbin/bin/"
+      - "/usr/sbin/sbin/"
+      - "/usr/sbin/"
+      - "/usr/bin/"
+      - "/usr/sbin/"
+      - "/usr/"
+      - "/bin/bin/"
+      - "/bin/sbin/"
+      - "/bin/"
+      - "/sbin/bin/"
+      - "/sbin/sbin/"
+      - "/sbin/"
+      - "/usr/X11R6/bin/bin/"
+      - "/usr/X11R6/bin/sbin/"
+      - "/usr/X11R6/bin/"
+      - "/usr/X11R6/sbin/bin/"
+      - "/usr/X11R6/sbin/sbin/"
+      - "/usr/X11R6/sbin/"
+      - "/usr/X11R6/bin/"
+      - "/usr/X11R6/sbin/"
+      - "/usr/X11R6/"
+      - "/usr/pkg/bin/bin/"
+      - "/usr/pkg/bin/sbin/"
+      - "/usr/pkg/bin/"
+      - "/usr/pkg/sbin/bin/"
+      - "/usr/pkg/sbin/sbin/"
+      - "/usr/pkg/sbin/"
+      - "/usr/pkg/bin/"
+      - "/usr/pkg/sbin/"
+      - "/usr/pkg/"
+      - "/opt/bin/bin/"
+      - "/opt/bin/sbin/"
+      - "/opt/bin/"
+      - "/opt/sbin/bin/"
+      - "/opt/sbin/sbin/"
+      - "/opt/sbin/"
+      - "/opt/bin/"
+      - "/opt/sbin/"
+      - "/opt/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/bin/mpiexec"
+      - "/usr/lib64/mpich/bin/sbin/mpiexec"
+    found: "/usr/lib64/mpich/bin/mpiexec"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+      CMAKE_INSTALL_PREFIX: "/usr/local"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "/usr/local"
+        - "/usr"
+        - "/"
+        - "/usr"
+        - "/usr/local"
+        - "/usr/X11R6"
+        - "/usr/pkg"
+        - "/opt"
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1447 (try_compile)"
+      - "/usr/share/cmake/Modules/FindMPI.cmake:1841 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-yEGV3q"
+      binary: "/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-yEGV3q"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_CXX_STDLIB_MODULES_JSON: ""
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-yEGV3q'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_7e454/fast
+        /usr/bin/gmake  -f CMakeFiles/cmTC_7e454.dir/build.make CMakeFiles/cmTC_7e454.dir/build
+        gmake[1]: Entering directory '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-yEGV3q'
+        Building CXX object CMakeFiles/cmTC_7e454.dir/test_mpi.cpp.o
+        /usr/lib64/mpich/bin/mpicxx   -std=gnu++17 -o CMakeFiles/cmTC_7e454.dir/test_mpi.cpp.o -c /home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-yEGV3q/test_mpi.cpp
+        Linking CXX executable cmTC_7e454
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_7e454.dir/link.txt --verbose=1
+        /usr/lib64/mpich/bin/mpicxx CMakeFiles/cmTC_7e454.dir/test_mpi.cpp.o -o cmTC_7e454
+        gmake[1]: Leaving directory '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-yEGV3q'
+        
+      exitCode: 0
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:468 (find_file)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:506 (CMAKE_DETERMINE_COMPILER_ID_WRITE)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:8 (CMAKE_DETERMINE_COMPILER_ID_BUILD)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCCompiler.cmake:122 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config-common.cmake:76 (enable_language)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config.cmake:22 (include)"
+      - "CMakeLists.txt:8 (find_package)"
+    mode: "file"
+    variable: "src_in"
+    description: "Path to a file."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "CMakeCCompilerId.c.in"
+    candidate_directories:
+      - "/usr/share/cmake/Modules/"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-src/cmake/"
+    found: "/usr/share/cmake/Modules/CMakeCCompilerId.c.in"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+      CMAKE_INSTALL_PREFIX: "/usr/local"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "/usr/local"
+        - "/usr"
+        - "/"
+        - "/usr"
+        - "/usr/local"
+        - "/usr/X11R6"
+        - "/usr/pkg"
+        - "/opt"
+      CMAKE_SYSTEM_INCLUDE_PATH:
+        - "/usr/include/X11"
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCCompiler.cmake:122 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config-common.cmake:76 (enable_language)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config.cmake:22 (include)"
+      - "CMakeLists.txt:8 (find_package)"
+    message: |
+      Compiling the C compiler identification source file "CMakeCCompilerId.c" succeeded.
+      Compiler: /usr/lib64/mpich/bin/mpicc 
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      
+      
+      Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
+      
+      The C compiler identification is GNU, found in:
+        /home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/4.3.0/CompilerIdC/a.out
+      
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/Compiler/GNU-FindBinUtils.cmake:18 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCCompiler.cmake:201 (include)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config-common.cmake:76 (enable_language)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config.cmake:22 (include)"
+      - "CMakeLists.txt:8 (find_package)"
+    mode: "program"
+    variable: "CMAKE_C_COMPILER_AR"
+    description: "A wrapper around 'ar' adding the appropriate '--plugin' option for the GCC compiler"
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "gcc-ar-16.1"
+      - "gcc-ar-16"
+      - "gcc-ar16"
+      - "gcc-ar"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+      - "/usr/local/bin/"
+      - "/usr/local/sbin/"
+      - "/usr/local/"
+      - "/usr/bin/"
+      - "/usr/sbin/"
+      - "/usr/"
+      - "/bin/"
+      - "/sbin/"
+      - "/usr/X11R6/bin/"
+      - "/usr/X11R6/sbin/"
+      - "/usr/X11R6/"
+      - "/usr/pkg/bin/"
+      - "/usr/pkg/sbin/"
+      - "/usr/pkg/"
+      - "/opt/bin/"
+      - "/opt/sbin/"
+      - "/opt/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/gcc-ar-16.1"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ar-16.1"
+      - "/home/klappi/.local/bin/gcc-ar-16.1"
+      - "/home/klappi/bin/gcc-ar-16.1"
+      - "/usr/share/Modules/bin/gcc-ar-16.1"
+      - "/condabin/gcc-ar-16.1"
+      - "/usr/local/bin/gcc-ar-16.1"
+      - "/usr/bin/gcc-ar-16.1"
+      - "/bin/gcc-ar-16.1"
+      - "/usr/local/bin/gcc-ar-16.1"
+      - "/usr/local/sbin/gcc-ar-16.1"
+      - "/usr/local/gcc-ar-16.1"
+      - "/usr/bin/gcc-ar-16.1"
+      - "/usr/sbin/gcc-ar-16.1"
+      - "/usr/gcc-ar-16.1"
+      - "/bin/gcc-ar-16.1"
+      - "/sbin/gcc-ar-16.1"
+      - "/usr/X11R6/bin/gcc-ar-16.1"
+      - "/usr/X11R6/sbin/gcc-ar-16.1"
+      - "/usr/X11R6/gcc-ar-16.1"
+      - "/usr/pkg/bin/gcc-ar-16.1"
+      - "/usr/pkg/sbin/gcc-ar-16.1"
+      - "/usr/pkg/gcc-ar-16.1"
+      - "/opt/bin/gcc-ar-16.1"
+      - "/opt/sbin/gcc-ar-16.1"
+      - "/opt/gcc-ar-16.1"
+      - "/usr/lib64/mpich/bin/gcc-ar-16"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ar-16"
+      - "/home/klappi/.local/bin/gcc-ar-16"
+      - "/home/klappi/bin/gcc-ar-16"
+      - "/usr/share/Modules/bin/gcc-ar-16"
+      - "/condabin/gcc-ar-16"
+      - "/usr/local/bin/gcc-ar-16"
+      - "/usr/bin/gcc-ar-16"
+      - "/bin/gcc-ar-16"
+      - "/usr/local/bin/gcc-ar-16"
+      - "/usr/local/sbin/gcc-ar-16"
+      - "/usr/local/gcc-ar-16"
+      - "/usr/bin/gcc-ar-16"
+      - "/usr/sbin/gcc-ar-16"
+      - "/usr/gcc-ar-16"
+      - "/bin/gcc-ar-16"
+      - "/sbin/gcc-ar-16"
+      - "/usr/X11R6/bin/gcc-ar-16"
+      - "/usr/X11R6/sbin/gcc-ar-16"
+      - "/usr/X11R6/gcc-ar-16"
+      - "/usr/pkg/bin/gcc-ar-16"
+      - "/usr/pkg/sbin/gcc-ar-16"
+      - "/usr/pkg/gcc-ar-16"
+      - "/opt/bin/gcc-ar-16"
+      - "/opt/sbin/gcc-ar-16"
+      - "/opt/gcc-ar-16"
+      - "/usr/lib64/mpich/bin/gcc-ar16"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ar16"
+      - "/home/klappi/.local/bin/gcc-ar16"
+      - "/home/klappi/bin/gcc-ar16"
+      - "/usr/share/Modules/bin/gcc-ar16"
+      - "/condabin/gcc-ar16"
+      - "/usr/local/bin/gcc-ar16"
+      - "/usr/bin/gcc-ar16"
+      - "/bin/gcc-ar16"
+      - "/usr/local/bin/gcc-ar16"
+      - "/usr/local/sbin/gcc-ar16"
+      - "/usr/local/gcc-ar16"
+      - "/usr/bin/gcc-ar16"
+      - "/usr/sbin/gcc-ar16"
+      - "/usr/gcc-ar16"
+      - "/bin/gcc-ar16"
+      - "/sbin/gcc-ar16"
+      - "/usr/X11R6/bin/gcc-ar16"
+      - "/usr/X11R6/sbin/gcc-ar16"
+      - "/usr/X11R6/gcc-ar16"
+      - "/usr/pkg/bin/gcc-ar16"
+      - "/usr/pkg/sbin/gcc-ar16"
+      - "/usr/pkg/gcc-ar16"
+      - "/opt/bin/gcc-ar16"
+      - "/opt/sbin/gcc-ar16"
+      - "/opt/gcc-ar16"
+      - "/usr/lib64/mpich/bin/gcc-ar"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ar"
+      - "/home/klappi/.local/bin/gcc-ar"
+      - "/home/klappi/bin/gcc-ar"
+      - "/usr/share/Modules/bin/gcc-ar"
+      - "/condabin/gcc-ar"
+      - "/usr/local/bin/gcc-ar"
+    found: "/usr/bin/gcc-ar"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+      CMAKE_INSTALL_PREFIX: "/usr/local"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "/usr/local"
+        - "/usr"
+        - "/"
+        - "/usr"
+        - "/usr/local"
+        - "/usr/X11R6"
+        - "/usr/pkg"
+        - "/opt"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/Compiler/GNU-FindBinUtils.cmake:30 (find_program)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCCompiler.cmake:201 (include)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config-common.cmake:76 (enable_language)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config.cmake:22 (include)"
+      - "CMakeLists.txt:8 (find_package)"
+    mode: "program"
+    variable: "CMAKE_C_COMPILER_RANLIB"
+    description: "A wrapper around 'ranlib' adding the appropriate '--plugin' option for the GCC compiler"
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: false
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: false
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "gcc-ranlib-16.1"
+      - "gcc-ranlib-16"
+      - "gcc-ranlib16"
+      - "gcc-ranlib"
+    candidate_directories:
+      - "/usr/lib64/mpich/bin/"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/"
+      - "/home/klappi/.local/bin/"
+      - "/home/klappi/bin/"
+      - "/usr/share/Modules/bin/"
+      - "/condabin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/bin/"
+      - "/usr/local/bin/"
+      - "/usr/local/sbin/"
+      - "/usr/local/"
+      - "/usr/bin/"
+      - "/usr/sbin/"
+      - "/usr/"
+      - "/bin/"
+      - "/sbin/"
+      - "/usr/X11R6/bin/"
+      - "/usr/X11R6/sbin/"
+      - "/usr/X11R6/"
+      - "/usr/pkg/bin/"
+      - "/usr/pkg/sbin/"
+      - "/usr/pkg/"
+      - "/opt/bin/"
+      - "/opt/sbin/"
+      - "/opt/"
+    searched_directories:
+      - "/usr/lib64/mpich/bin/gcc-ranlib-16.1"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ranlib-16.1"
+      - "/home/klappi/.local/bin/gcc-ranlib-16.1"
+      - "/home/klappi/bin/gcc-ranlib-16.1"
+      - "/usr/share/Modules/bin/gcc-ranlib-16.1"
+      - "/condabin/gcc-ranlib-16.1"
+      - "/usr/local/bin/gcc-ranlib-16.1"
+      - "/usr/bin/gcc-ranlib-16.1"
+      - "/bin/gcc-ranlib-16.1"
+      - "/usr/local/bin/gcc-ranlib-16.1"
+      - "/usr/local/sbin/gcc-ranlib-16.1"
+      - "/usr/local/gcc-ranlib-16.1"
+      - "/usr/bin/gcc-ranlib-16.1"
+      - "/usr/sbin/gcc-ranlib-16.1"
+      - "/usr/gcc-ranlib-16.1"
+      - "/bin/gcc-ranlib-16.1"
+      - "/sbin/gcc-ranlib-16.1"
+      - "/usr/X11R6/bin/gcc-ranlib-16.1"
+      - "/usr/X11R6/sbin/gcc-ranlib-16.1"
+      - "/usr/X11R6/gcc-ranlib-16.1"
+      - "/usr/pkg/bin/gcc-ranlib-16.1"
+      - "/usr/pkg/sbin/gcc-ranlib-16.1"
+      - "/usr/pkg/gcc-ranlib-16.1"
+      - "/opt/bin/gcc-ranlib-16.1"
+      - "/opt/sbin/gcc-ranlib-16.1"
+      - "/opt/gcc-ranlib-16.1"
+      - "/usr/lib64/mpich/bin/gcc-ranlib-16"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ranlib-16"
+      - "/home/klappi/.local/bin/gcc-ranlib-16"
+      - "/home/klappi/bin/gcc-ranlib-16"
+      - "/usr/share/Modules/bin/gcc-ranlib-16"
+      - "/condabin/gcc-ranlib-16"
+      - "/usr/local/bin/gcc-ranlib-16"
+      - "/usr/bin/gcc-ranlib-16"
+      - "/bin/gcc-ranlib-16"
+      - "/usr/local/bin/gcc-ranlib-16"
+      - "/usr/local/sbin/gcc-ranlib-16"
+      - "/usr/local/gcc-ranlib-16"
+      - "/usr/bin/gcc-ranlib-16"
+      - "/usr/sbin/gcc-ranlib-16"
+      - "/usr/gcc-ranlib-16"
+      - "/bin/gcc-ranlib-16"
+      - "/sbin/gcc-ranlib-16"
+      - "/usr/X11R6/bin/gcc-ranlib-16"
+      - "/usr/X11R6/sbin/gcc-ranlib-16"
+      - "/usr/X11R6/gcc-ranlib-16"
+      - "/usr/pkg/bin/gcc-ranlib-16"
+      - "/usr/pkg/sbin/gcc-ranlib-16"
+      - "/usr/pkg/gcc-ranlib-16"
+      - "/opt/bin/gcc-ranlib-16"
+      - "/opt/sbin/gcc-ranlib-16"
+      - "/opt/gcc-ranlib-16"
+      - "/usr/lib64/mpich/bin/gcc-ranlib16"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ranlib16"
+      - "/home/klappi/.local/bin/gcc-ranlib16"
+      - "/home/klappi/bin/gcc-ranlib16"
+      - "/usr/share/Modules/bin/gcc-ranlib16"
+      - "/condabin/gcc-ranlib16"
+      - "/usr/local/bin/gcc-ranlib16"
+      - "/usr/bin/gcc-ranlib16"
+      - "/bin/gcc-ranlib16"
+      - "/usr/local/bin/gcc-ranlib16"
+      - "/usr/local/sbin/gcc-ranlib16"
+      - "/usr/local/gcc-ranlib16"
+      - "/usr/bin/gcc-ranlib16"
+      - "/usr/sbin/gcc-ranlib16"
+      - "/usr/gcc-ranlib16"
+      - "/bin/gcc-ranlib16"
+      - "/sbin/gcc-ranlib16"
+      - "/usr/X11R6/bin/gcc-ranlib16"
+      - "/usr/X11R6/sbin/gcc-ranlib16"
+      - "/usr/X11R6/gcc-ranlib16"
+      - "/usr/pkg/bin/gcc-ranlib16"
+      - "/usr/pkg/sbin/gcc-ranlib16"
+      - "/usr/pkg/gcc-ranlib16"
+      - "/opt/bin/gcc-ranlib16"
+      - "/opt/sbin/gcc-ranlib16"
+      - "/opt/gcc-ranlib16"
+      - "/usr/lib64/mpich/bin/gcc-ranlib"
+      - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin/gcc-ranlib"
+      - "/home/klappi/.local/bin/gcc-ranlib"
+      - "/home/klappi/bin/gcc-ranlib"
+      - "/usr/share/Modules/bin/gcc-ranlib"
+      - "/condabin/gcc-ranlib"
+      - "/usr/local/bin/gcc-ranlib"
+    found: "/usr/bin/gcc-ranlib"
+    search_context:
+      ENV{CMAKE_PREFIX_PATH}:
+        - "/usr/lib64/mpich"
+      ENV{PATH}:
+        - "/usr/share/cursor/resources/app/node_modules/@vscode/ripgrep/bin"
+        - "/home/klappi/.local/bin"
+        - "/home/klappi/bin"
+        - "/usr/lib64/mpich/bin"
+        - "/usr/share/Modules/bin"
+        - "/condabin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/bin"
+      CMAKE_INSTALL_PREFIX: "/usr/local"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "/usr/local"
+        - "/usr"
+        - "/"
+        - "/usr"
+        - "/usr/local"
+        - "/usr/X11R6"
+        - "/usr/pkg"
+        - "/opt"
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:83 (try_compile)"
+      - "/usr/share/cmake/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config-common.cmake:76 (enable_language)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config.cmake:22 (include)"
+      - "CMakeLists.txt:8 (find_package)"
+    checks:
+      - "Detecting C compiler ABI info"
+    directories:
+      source: "/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-wRtdxX"
+      binary: "/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-wRtdxX"
+    cmakeVariables:
+      CMAKE_CXX_STDLIB_MODULES_JSON: ""
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-src/cmake"
+    buildResult:
+      variable: "CMAKE_C_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-wRtdxX'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_9b577/fast
+        /usr/bin/gmake  -f CMakeFiles/cmTC_9b577.dir/build.make CMakeFiles/cmTC_9b577.dir/build
+        gmake[1]: Entering directory '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-wRtdxX'
+        Building C object CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o
+        /usr/lib64/mpich/bin/mpicc   -v -o CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c
+        mpicc for MPICH version 4.2.2
+        Using built-in specs.
+        COLLECT_GCC=gcc
+        OFFLOAD_TARGET_NAMES=nvptx-none:amdgcn-amdhsa
+        OFFLOAD_TARGET_DEFAULT=1
+        Target: x86_64-redhat-linux
+        Configured with: ../configure --enable-bootstrap --enable-languages=c,c++,fortran,objc,obj-c++,ada,go,d,m2,cobol,algol68,lto --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=https://bugzilla.redhat.com/ --enable-shared --enable-threads=posix --enable-checking=release --enable-multilib --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --enable-libstdcxx-backtrace --with-libstdcxx-zoneinfo=/usr/share/zoneinfo --with-linker-hash-style=gnu --enable-plugin --enable-initfini-array --with-isl=/builddir/build/BUILD/gcc-16.1.1-build/gcc-16.1.1-20260515/obj-x86_64-redhat-linux/isl-install --enable-offload-targets=nvptx-none,amdgcn-amdhsa --enable-offload-defaulted --without-cuda-driver --enable-gnu-indirect-function --enable-cet --with-tune=generic --with-tls=gnu2 --with-arch_32=i686 --build=x86_64-redhat-linux --with-build-config=bootstrap-lto --enable-link-serialization=1 --disable-libssp
+        Thread model: posix
+        Supported LTO compression algorithms: zlib zstd
+        gcc version 16.1.1 20260515 (Red Hat 16.1.1-2) (GCC) 
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o' '-c' '-I' '/usr/include/mpich-x86_64' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'CMakeFiles/cmTC_9b577.dir/'
+         /usr/libexec/gcc/x86_64-redhat-linux/16/cc1 -quiet -v -I /usr/include/mpich-x86_64 /usr/share/cmake/Modules/CMakeCCompilerABI.c -quiet -dumpdir CMakeFiles/cmTC_9b577.dir/ -dumpbase CMakeCCompilerABI.c.c -dumpbase-ext .c -mtune=generic -march=x86-64 -mtls-dialect=gnu2 -version -o /tmp/ccTIq81H.s
+        GNU C23 (GCC) version 16.1.1 20260515 (Red Hat 16.1.1-2) (x86_64-redhat-linux)
+        	compiled by GNU C version 16.1.1 20260515 (Red Hat 16.1.1-2), GMP version 6.3.0, MPFR version 4.2.2, MPC version 1.4.1, isl version isl-0.24-GMP
+        
+        GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+        ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/16/include-fixed"
+        ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/16/../../../../x86_64-redhat-linux/include"
+        #include "..." search starts here:
+        #include <...> search starts here:
+         /usr/include/mpich-x86_64
+         /usr/lib/gcc/x86_64-redhat-linux/16/include
+         /usr/local/include
+         /usr/include
+        End of search list.
+        Compiler executable checksum: 02fd4c3bc0302122b50e730803efc7d8
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o' '-c' '-I' '/usr/include/mpich-x86_64' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'CMakeFiles/cmTC_9b577.dir/'
+         as -v -I /usr/include/mpich-x86_64 --64 -o CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o /tmp/ccTIq81H.s
+        GNU assembler version 2.46.1 (x86_64-redhat-linux) using BFD version version 2.46.1-1.fc44
+        COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/
+        LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../:/lib/:/usr/lib/
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o' '-c' '-I' '/usr/include/mpich-x86_64' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.'
+        Linking C executable cmTC_9b577
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_9b577.dir/link.txt --verbose=1
+        mpicc for MPICH version 4.2.2
+        Using built-in specs.
+        COLLECT_GCC=gcc
+        COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper
+        OFFLOAD_TARGET_NAMES=nvptx-none:amdgcn-amdhsa
+        OFFLOAD_TARGET_DEFAULT=1
+        Target: x86_64-redhat-linux
+        Configured with: ../configure --enable-bootstrap --enable-languages=c,c++,fortran,objc,obj-c++,ada,go,d,m2,cobol,algol68,lto --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=https://bugzilla.redhat.com/ --enable-shared --enable-threads=posix --enable-checking=release --enable-multilib --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --enable-libstdcxx-backtrace --with-libstdcxx-zoneinfo=/usr/share/zoneinfo --with-linker-hash-style=gnu --enable-plugin --enable-initfini-array --with-isl=/builddir/build/BUILD/gcc-16.1.1-build/gcc-16.1.1-20260515/obj-x86_64-redhat-linux/isl-install --enable-offload-targets=nvptx-none,amdgcn-amdhsa --enable-offload-defaulted --without-cuda-driver --enable-gnu-indirect-function --enable-cet --with-tune=generic --with-tls=gnu2 --with-arch_32=i686 --build=x86_64-redhat-linux --with-build-config=bootstrap-lto --enable-link-serialization=1 --disable-libssp
+        Thread model: posix
+        Supported LTO compression algorithms: zlib zstd
+        gcc version 16.1.1 20260515 (Red Hat 16.1.1-2) (GCC) 
+        COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/
+        LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../:/lib/:/usr/lib/
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_9b577' '-I' '/usr/include/mpich-x86_64' '-L/usr/lib64/mpich/lib' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'cmTC_9b577.'
+         /usr/libexec/gcc/x86_64-redhat-linux/16/collect2 -plugin /usr/libexec/gcc/x86_64-redhat-linux/16/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper -plugin-opt=-fresolution=/tmp/ccnzyDVX.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_9b577 /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o -L/usr/lib64/mpich/lib -L/usr/lib/gcc/x86_64-redhat-linux/16 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o -rpath /usr/lib64/mpich/lib --enable-new-dtags -lmpi -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-redhat-linux/16/crtend.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o
+        collect2 version 16.1.1 20260515 (Red Hat 16.1.1-2)
+        /usr/bin/ld -plugin /usr/libexec/gcc/x86_64-redhat-linux/16/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper -plugin-opt=-fresolution=/tmp/ccnzyDVX.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_9b577 /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o -L/usr/lib64/mpich/lib -L/usr/lib/gcc/x86_64-redhat-linux/16 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o -rpath /usr/lib64/mpich/lib --enable-new-dtags -lmpi -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-redhat-linux/16/crtend.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o
+        GNU ld version 2.46.1-1.fc44
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_9b577' '-I' '/usr/include/mpich-x86_64' '-L/usr/lib64/mpich/lib' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'cmTC_9b577.'
+        /usr/lib64/mpich/bin/mpicc  -v -Wl,-v CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o -o cmTC_9b577
+        gmake[1]: Leaving directory '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-wRtdxX'
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:217 (message)"
+      - "/usr/share/cmake/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config-common.cmake:76 (enable_language)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config.cmake:22 (include)"
+      - "CMakeLists.txt:8 (find_package)"
+    message: |
+      Parsed C implicit include dir info: rv=done
+        found start of include info
+        found start of implicit include info
+          add: [/usr/include/mpich-x86_64]
+          add: [/usr/lib/gcc/x86_64-redhat-linux/16/include]
+          add: [/usr/local/include]
+          add: [/usr/include]
+        end of search list found
+        collapse include dir [/usr/include/mpich-x86_64] ==> [/usr/include/mpich-x86_64]
+        collapse include dir [/usr/lib/gcc/x86_64-redhat-linux/16/include] ==> [/usr/lib/gcc/x86_64-redhat-linux/16/include]
+        collapse include dir [/usr/local/include] ==> [/usr/local/include]
+        collapse include dir [/usr/include] ==> [/usr/include]
+        implicit include dirs: [/usr/include/mpich-x86_64;/usr/lib/gcc/x86_64-redhat-linux/16/include;/usr/local/include;/usr/include]
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:253 (message)"
+      - "/usr/share/cmake/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config-common.cmake:76 (enable_language)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config.cmake:22 (include)"
+      - "CMakeLists.txt:8 (find_package)"
+    message: |
+      Parsed C implicit link information:
+        link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        linker tool regex: [^[ 	]*(->|"|[0-9]+>[ 	-]*Build:[ 	0-9]+ ms[ 	]*)?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)))("|,| |$)]
+        ignore line: [Change Dir: '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-wRtdxX']
+        ignore line: []
+        ignore line: [Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_9b577/fast]
+        ignore line: [/usr/bin/gmake  -f CMakeFiles/cmTC_9b577.dir/build.make CMakeFiles/cmTC_9b577.dir/build]
+        ignore line: [gmake[1]: Entering directory '/home/klappi/Documents/phd/io/ipplADIOS/tools/bp2vtk/_b/CMakeFiles/CMakeScratch/TryCompile-wRtdxX']
+        ignore line: [Building C object CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o]
+        ignore line: [/usr/lib64/mpich/bin/mpicc   -v -o CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c]
+        ignore line: [mpicc for MPICH version 4.2.2]
+        ignore line: [Using built-in specs.]
+        ignore line: [COLLECT_GCC=gcc]
+        ignore line: [OFFLOAD_TARGET_NAMES=nvptx-none:amdgcn-amdhsa]
+        ignore line: [OFFLOAD_TARGET_DEFAULT=1]
+        ignore line: [Target: x86_64-redhat-linux]
+        ignore line: [Configured with: ../configure --enable-bootstrap --enable-languages=c c++ fortran objc obj-c++ ada go d m2 cobol algol68 lto --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=https://bugzilla.redhat.com/ --enable-shared --enable-threads=posix --enable-checking=release --enable-multilib --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --enable-libstdcxx-backtrace --with-libstdcxx-zoneinfo=/usr/share/zoneinfo --with-linker-hash-style=gnu --enable-plugin --enable-initfini-array --with-isl=/builddir/build/BUILD/gcc-16.1.1-build/gcc-16.1.1-20260515/obj-x86_64-redhat-linux/isl-install --enable-offload-targets=nvptx-none amdgcn-amdhsa --enable-offload-defaulted --without-cuda-driver --enable-gnu-indirect-function --enable-cet --with-tune=generic --with-tls=gnu2 --with-arch_32=i686 --build=x86_64-redhat-linux --with-build-config=bootstrap-lto --enable-link-serialization=1 --disable-libssp]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib zstd]
+        ignore line: [gcc version 16.1.1 20260515 (Red Hat 16.1.1-2) (GCC) ]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o' '-c' '-I' '/usr/include/mpich-x86_64' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'CMakeFiles/cmTC_9b577.dir/']
+        ignore line: [ /usr/libexec/gcc/x86_64-redhat-linux/16/cc1 -quiet -v -I /usr/include/mpich-x86_64 /usr/share/cmake/Modules/CMakeCCompilerABI.c -quiet -dumpdir CMakeFiles/cmTC_9b577.dir/ -dumpbase CMakeCCompilerABI.c.c -dumpbase-ext .c -mtune=generic -march=x86-64 -mtls-dialect=gnu2 -version -o /tmp/ccTIq81H.s]
+        ignore line: [GNU C23 (GCC) version 16.1.1 20260515 (Red Hat 16.1.1-2) (x86_64-redhat-linux)]
+        ignore line: [	compiled by GNU C version 16.1.1 20260515 (Red Hat 16.1.1-2)  GMP version 6.3.0  MPFR version 4.2.2  MPC version 1.4.1  isl version isl-0.24-GMP]
+        ignore line: []
+        ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+        ignore line: [ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/16/include-fixed"]
+        ignore line: [ignoring nonexistent directory "/usr/lib/gcc/x86_64-redhat-linux/16/../../../../x86_64-redhat-linux/include"]
+        ignore line: [#include "..." search starts here:]
+        ignore line: [#include <...> search starts here:]
+        ignore line: [ /usr/include/mpich-x86_64]
+        ignore line: [ /usr/lib/gcc/x86_64-redhat-linux/16/include]
+        ignore line: [ /usr/local/include]
+        ignore line: [ /usr/include]
+        ignore line: [End of search list.]
+        ignore line: [Compiler executable checksum: 02fd4c3bc0302122b50e730803efc7d8]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o' '-c' '-I' '/usr/include/mpich-x86_64' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'CMakeFiles/cmTC_9b577.dir/']
+        ignore line: [ as -v -I /usr/include/mpich-x86_64 --64 -o CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o /tmp/ccTIq81H.s]
+        ignore line: [GNU assembler version 2.46.1 (x86_64-redhat-linux) using BFD version version 2.46.1-1.fc44]
+        ignore line: [COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/]
+        ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../:/lib/:/usr/lib/]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o' '-c' '-I' '/usr/include/mpich-x86_64' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.']
+        ignore line: [Linking C executable cmTC_9b577]
+        ignore line: [/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_9b577.dir/link.txt --verbose=1]
+        ignore line: [mpicc for MPICH version 4.2.2]
+        ignore line: [Using built-in specs.]
+        ignore line: [COLLECT_GCC=gcc]
+        ignore line: [COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper]
+        ignore line: [OFFLOAD_TARGET_NAMES=nvptx-none:amdgcn-amdhsa]
+        ignore line: [OFFLOAD_TARGET_DEFAULT=1]
+        ignore line: [Target: x86_64-redhat-linux]
+        ignore line: [Configured with: ../configure --enable-bootstrap --enable-languages=c c++ fortran objc obj-c++ ada go d m2 cobol algol68 lto --prefix=/usr --mandir=/usr/share/man --infodir=/usr/share/info --with-bugurl=https://bugzilla.redhat.com/ --enable-shared --enable-threads=posix --enable-checking=release --enable-multilib --with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions --enable-gnu-unique-object --enable-linker-build-id --with-gcc-major-version-only --enable-libstdcxx-backtrace --with-libstdcxx-zoneinfo=/usr/share/zoneinfo --with-linker-hash-style=gnu --enable-plugin --enable-initfini-array --with-isl=/builddir/build/BUILD/gcc-16.1.1-build/gcc-16.1.1-20260515/obj-x86_64-redhat-linux/isl-install --enable-offload-targets=nvptx-none amdgcn-amdhsa --enable-offload-defaulted --without-cuda-driver --enable-gnu-indirect-function --enable-cet --with-tune=generic --with-tls=gnu2 --with-arch_32=i686 --build=x86_64-redhat-linux --with-build-config=bootstrap-lto --enable-link-serialization=1 --disable-libssp]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib zstd]
+        ignore line: [gcc version 16.1.1 20260515 (Red Hat 16.1.1-2) (GCC) ]
+        ignore line: [COMPILER_PATH=/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/16/:/usr/libexec/gcc/x86_64-redhat-linux/:/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/]
+        ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/16/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/16/../../../:/lib/:/usr/lib/]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_9b577' '-I' '/usr/include/mpich-x86_64' '-L/usr/lib64/mpich/lib' '-mtune=generic' '-march=x86-64' '-mtls-dialect=gnu2' '-dumpdir' 'cmTC_9b577.']
+        link line: [ /usr/libexec/gcc/x86_64-redhat-linux/16/collect2 -plugin /usr/libexec/gcc/x86_64-redhat-linux/16/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper -plugin-opt=-fresolution=/tmp/ccnzyDVX.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_9b577 /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o -L/usr/lib64/mpich/lib -L/usr/lib/gcc/x86_64-redhat-linux/16 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o -rpath /usr/lib64/mpich/lib --enable-new-dtags -lmpi -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-redhat-linux/16/crtend.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o]
+          arg [/usr/libexec/gcc/x86_64-redhat-linux/16/collect2] ==> ignore
+          arg [-plugin] ==> ignore
+          arg [/usr/libexec/gcc/x86_64-redhat-linux/16/liblto_plugin.so] ==> ignore
+          arg [-plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper] ==> ignore
+          arg [-plugin-opt=-fresolution=/tmp/ccnzyDVX.res] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc_s_asneeded] ==> ignore
+          arg [-plugin-opt=-pass-through=-latomic_asneeded] ==> ignore
+          arg [-plugin-opt=-pass-through=-lc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc_s_asneeded] ==> ignore
+          arg [--build-id] ==> ignore
+          arg [--no-add-needed] ==> ignore
+          arg [--eh-frame-hdr] ==> ignore
+          arg [--hash-style=gnu] ==> ignore
+          arg [-m] ==> ignore
+          arg [elf_x86_64] ==> ignore
+          arg [-dynamic-linker] ==> ignore
+          arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+          arg [-o] ==> ignore
+          arg [cmTC_9b577] ==> ignore
+          arg [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o]
+          arg [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o]
+          arg [/usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o]
+          arg [-L/usr/lib64/mpich/lib] ==> dir [/usr/lib64/mpich/lib]
+          arg [-L/usr/lib/gcc/x86_64-redhat-linux/16] ==> dir [/usr/lib/gcc/x86_64-redhat-linux/16]
+          arg [-L/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64] ==> dir [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64]
+          arg [-L/lib/../lib64] ==> dir [/lib/../lib64]
+          arg [-L/usr/lib/../lib64] ==> dir [/usr/lib/../lib64]
+          arg [-L/usr/lib/gcc/x86_64-redhat-linux/16/../../..] ==> dir [/usr/lib/gcc/x86_64-redhat-linux/16/../../..]
+          arg [-L/lib] ==> dir [/lib]
+          arg [-L/usr/lib] ==> dir [/usr/lib]
+          arg [-v] ==> ignore
+          arg [CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o] ==> ignore
+          arg [-rpath] ==> ignore
+          arg [/usr/lib64/mpich/lib] ==> ignore
+          arg [--enable-new-dtags] ==> ignore
+          arg [-lmpi] ==> lib [mpi]
+          arg [-lgcc] ==> lib [gcc]
+          arg [-lgcc_s_asneeded] ==> lib [gcc_s_asneeded]
+          arg [-latomic_asneeded] ==> lib [atomic_asneeded]
+          arg [-lc] ==> lib [c]
+          arg [-lgcc] ==> lib [gcc]
+          arg [-lgcc_s_asneeded] ==> lib [gcc_s_asneeded]
+          arg [/usr/lib/gcc/x86_64-redhat-linux/16/crtend.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/16/crtend.o]
+          arg [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o] ==> obj [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o]
+        ignore line: [collect2 version 16.1.1 20260515 (Red Hat 16.1.1-2)]
+        ignore line: [/usr/bin/ld -plugin /usr/libexec/gcc/x86_64-redhat-linux/16/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-redhat-linux/16/lto-wrapper -plugin-opt=-fresolution=/tmp/ccnzyDVX.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded -plugin-opt=-pass-through=-latomic_asneeded -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_s_asneeded --build-id --no-add-needed --eh-frame-hdr --hash-style=gnu -m elf_x86_64 -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_9b577 /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o /usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o -L/usr/lib64/mpich/lib -L/usr/lib/gcc/x86_64-redhat-linux/16 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/usr/lib/gcc/x86_64-redhat-linux/16/../../.. -L/lib -L/usr/lib -v CMakeFiles/cmTC_9b577.dir/CMakeCCompilerABI.c.o -rpath /usr/lib64/mpich/lib --enable-new-dtags -lmpi -lgcc -lgcc_s_asneeded -latomic_asneeded -lc -lgcc -lgcc_s_asneeded /usr/lib/gcc/x86_64-redhat-linux/16/crtend.o /usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o]
+        linker tool for 'C': /usr/bin/ld
+        collapse obj [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crt1.o] ==> [/usr/lib64/crt1.o]
+        collapse obj [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crti.o] ==> [/usr/lib64/crti.o]
+        collapse obj [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64/crtn.o] ==> [/usr/lib64/crtn.o]
+        collapse library dir [/usr/lib64/mpich/lib] ==> [/usr/lib64/mpich/lib]
+        collapse library dir [/usr/lib/gcc/x86_64-redhat-linux/16] ==> [/usr/lib/gcc/x86_64-redhat-linux/16]
+        collapse library dir [/usr/lib/gcc/x86_64-redhat-linux/16/../../../../lib64] ==> [/usr/lib64]
+        collapse library dir [/lib/../lib64] ==> [/lib64]
+        collapse library dir [/usr/lib/../lib64] ==> [/usr/lib64]
+        collapse library dir [/usr/lib/gcc/x86_64-redhat-linux/16/../../..] ==> [/usr/lib]
+        collapse library dir [/lib] ==> [/lib]
+        collapse library dir [/usr/lib] ==> [/usr/lib]
+        implicit libs: [mpi;gcc;gcc_s_asneeded;atomic_asneeded;c;gcc;gcc_s_asneeded]
+        implicit objs: [/usr/lib64/crt1.o;/usr/lib64/crti.o;/usr/lib/gcc/x86_64-redhat-linux/16/crtbegin.o;/usr/lib/gcc/x86_64-redhat-linux/16/crtend.o;/usr/lib64/crtn.o]
+        implicit dirs: [/usr/lib64/mpich/lib;/usr/lib/gcc/x86_64-redhat-linux/16;/usr/lib64;/lib64;/usr/lib;/lib]
+        implicit fwks: []
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake/Modules/Internal/CMakeDetermineLinkerId.cmake:38 (message)"
+      - "/usr/share/cmake/Modules/CMakeDetermineCompilerABI.cmake:299 (cmake_determine_linker_id)"
+      - "/usr/share/cmake/Modules/CMakeTestCCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config-common.cmake:76 (enable_language)"
+      - "/home/klappi/Documents/phd/io/ipplADIOS/build/_deps/adios2-build/adios2-config.cmake:22 (include)"
+      - "CMakeLists.txt:8 (find_package)"
+    message: |
+      Running the C compiler's linker: "/usr/bin/ld" "-v"
+      GNU ld version 2.46.1-1.fc44
+...

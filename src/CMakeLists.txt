@@ -109,6 +109,10 @@ if(IPPL_ENABLE_CATALYST)
   include(${PROJECT_SOURCE_DIR}/cmake/SetupCatalyst.cmake)
 endif()
 
+if(IPPL_ENABLE_ADIOS2)
+  include(${PROJECT_SOURCE_DIR}/cmake/SetupAdios2.cmake)
+endif()
+
 if(IPPL_ENABLE_CONDUIT_IO)
     include(${PROJECT_SOURCE_DIR}/cmake/SetupConduit.cmake)
 endif()

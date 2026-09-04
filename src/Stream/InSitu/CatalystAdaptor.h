@@ -198,6 +198,9 @@ private:
     const char* catalystVerbosity_m;
     const char* catalystGhostMask_m  ;
     const char* proxyOption_m;
+    const char* catalystBackend_m;
+    const char* adiosXml_m;
+    const char* adiosOutput_m;
     
     const bool visEnabled_m;
     const bool liveEnabled_m;
@@ -206,6 +209,13 @@ private:
     const bool vtkExtracts_m ;
     const int  outputLevel_m  ; 
     const bool useGhostMasks_m;
+    const bool adiosBackend_m;
+
+    // Name of the single Catalyst-2 "multimesh" channel that aggregates every visualization
+    // channel for the ADIOS backend. AdiosCatalyst serializes only one channel per step, so all
+    // fields/particles are folded into this channel as separate mesh blocks. The ParaView backend
+    // keeps the classic one-channel-per-field layout instead.
+    static constexpr const char* adiosAggregateChannel_m = "ippl_multimesh";
     
     // std::string associate_m;
     const std::filesystem::path sourceDir_m;
@@ -230,6 +240,9 @@ public:
                 catalystVerbosity_m(std::getenv("IPPL_CATALYST_VERBOSITY")),
                 catalystGhostMask_m(std::getenv("IPPL_CATALYST_GHOST_MASKS")),
                 proxyOption_m(std::getenv("IPPL_CATALYST_PROXY_OPTION")),
+                catalystBackend_m(std::getenv("IPPL_CATALYST_BACKEND")),
+                adiosXml_m(std::getenv("IPPL_ADIOS2_XML")),
+                adiosOutput_m(std::getenv("IPPL_ADIOS2_OUTPUT")),
                 visEnabled_m( ! (catalystVis_m        && std::string(catalystVis_m)    == "OFF") ),
                 liveEnabled_m(   catalystLive_m       && std::string(catalystLive_m)   == "ON"),
                 steerEnabled_m(  catalystSteer_m      && std::string(catalystSteer_m)  == "ON"),
@@ -237,6 +250,7 @@ public:
                 vtkExtracts_m(   catalystVtk_m        && std::string(catalystVtk_m)    == "ON"),
                 outputLevel_m(   catalystVerbosity_m  ? std::stoi(catalystVerbosity_m) : ippl::Info->getOutputLevel()),
                 useGhostMasks_m(catalystGhostMask_m && std::string(catalystGhostMask_m) == "ON"),
+                adiosBackend_m(  catalystBackend_m    && std::string(catalystBackend_m) == "ADIOS"),
                 sourceDir_m(std::filesystem::path(CATALYST_ADAPTOR_ABS_DIR) / "Stream" / "InSitu")
     {
         // associate_m="element";
@@ -268,6 +282,9 @@ public:
         if  (steerEnabled_m) 
             { catalystInfo_m << "::CatalystAdaptor()   Steering       ACTIVATED"   << endl;}
         else{ catalystInfo_m << "::CatalystAdaptor()   Steering       DEACTIVATED" << endl;}
+        if  (adiosBackend_m)
+            { catalystInfo_m << "::CatalystAdaptor()   Backend        ADIOS (AdiosCatalyst -> ADIOS2)" << endl;}
+        else{ catalystInfo_m << "::CatalystAdaptor()   Backend        PARAVIEW" << endl;}
 
     }
 

@@ -9,6 +9,8 @@
 #   - Fetch Heffte if IPPL_ENABLE_FFT is ON, using CUDA or AVX2 based on platform
 #   - Fetch or find Conduit when IPPL_ENABLE_CONDUIT_IO is ON
 #   - Fetch or find Catalyst when IPPL_ENABLE_CATALYST is ON
+#   - Fetch or find ADIOS2 when IPPL_ENABLE_ADIOS2 is ON
+#   - Fetch or find AdiosCatalyst when IPPL_ENABLE_ADIOS2 is ON
 #
 # Not responsible for:
 #   - Selecting platform backends            → Platforms.cmake
@@ -63,6 +65,18 @@ function(extract_git_label VERSION_STRING RESULT_VAR)
     set(${RESULT_VAR} "${CMAKE_MATCH_1}" PARENT_SCOPE)
   else()
     unset(${RESULT_VAR} PARENT_SCOPE)
+  endif()
+endfunction()
+
+# ------------------------------------------------------------------------------
+# Utility function to reduce a version request to a plain numeric version, e.g. "git.v2.12.1" or
+# "v2.12.1" -> "2.12.1". Falls back to DEFAULT_VERSION for branch names such as "git.main".
+# ------------------------------------------------------------------------------
+function(ippl_numeric_version VERSION_REQUEST DEFAULT_VERSION RESULT_VAR)
+  if("${VERSION_REQUEST}" MATCHES "([0-9]+(\\.[0-9]+)*)")
+    set(${RESULT_VAR} "${CMAKE_MATCH_1}" PARENT_SCOPE)
+  else()
+    set(${RESULT_VAR} "${DEFAULT_VERSION}" PARENT_SCOPE)
   endif()
 endfunction()
 
@@ -698,19 +712,88 @@ if(IPPL_ENABLE_CATALYST)
   extract_git_label(Catalyst_VERSION CATALYST_VERSION_GIT)
   set(Catalyst_REPOSITORY "https://gitlab.kitware.com/paraview/catalyst.git")
 
+  # Collect candidate catalyst package directories: a prefix may be given directly, or the versioned
+  # lib/cmake/catalyst-<ver> subdirectory has to be globbed out of it.
+  function(ippl_append_catalyst_hints _prefix _hints_var)
+    if(NOT _prefix OR NOT EXISTS "${_prefix}")
+      return()
+    endif()
+    list(APPEND ${_hints_var} "${_prefix}")
+    file(
+      GLOB
+      _cfg_dirs
+      LIST_DIRECTORIES
+      true
+      "${_prefix}/lib64/cmake/catalyst-*"
+      "${_prefix}/lib/cmake/catalyst-*")
+    list(APPEND ${_hints_var} ${_cfg_dirs})
+    set(${_hints_var} "${${_hints_var}}" PARENT_SCOPE)
+  endfunction()
+
+  # Locate the catalyst package directory generated for an in-tree (FetchContent) Catalyst build.
+  function(ippl_resolve_catalyst_package_dir _out_var)
+    file(
+      GLOB
+      _cfg_dirs
+      LIST_DIRECTORIES
+      true
+      "${PROJECT_BINARY_DIR}/lib64/cmake/catalyst-*"
+      "${PROJECT_BINARY_DIR}/lib/cmake/catalyst-*")
+    foreach(_cfg_dir IN LISTS _cfg_dirs)
+      if(EXISTS "${_cfg_dir}/catalyst-macros.cmake")
+        set(${_out_var} "${_cfg_dir}" PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+  endfunction()
+
   set(_catalyst_hints "")
-  if(DEFINED CATALYST_HINT_PATH AND CATALYST_HINT_PATH AND EXISTS "${CATALYST_HINT_PATH}")
-    list(APPEND _catalyst_hints "${CATALYST_HINT_PATH}")
-  endif()
+  ippl_append_catalyst_hints("${CATALYST_HINT_PATH}" _catalyst_hints)
+  foreach(_ippl_catalyst_prefix IN LISTS CMAKE_PREFIX_PATH catalyst_ROOT)
+    ippl_append_catalyst_hints("${_ippl_catalyst_prefix}" _catalyst_hints)
+  endforeach()
+  unset(_ippl_catalyst_prefix)
+
+  # catalyst-config.cmake pushes a policy scope that CMake refuses inside an already-configured
+  # project, so import the exported targets directly instead of going through find_package.
+  # Package dirs inside our own build tree are skipped: those targets come from add_subdirectory.
+  function(ippl_load_external_catalyst _cfg_dir)
+    if(NOT _cfg_dir OR NOT EXISTS "${_cfg_dir}/catalyst-targets.cmake")
+      return()
+    endif()
+    string(FIND "${_cfg_dir}" "${PROJECT_BINARY_DIR}" _cfg_dir_in_build_tree)
+    if(NOT _cfg_dir_in_build_tree EQUAL -1)
+      return()
+    endif()
+    if(NOT TARGET catalyst::catalyst)
+      include("${_cfg_dir}/catalyst-targets.cmake")
+    endif()
+    if(TARGET catalyst::catalyst)
+      set(catalyst_FOUND TRUE PARENT_SCOPE)
+      set(Catalyst_PACKAGE_DIR "${_cfg_dir}" PARENT_SCOPE)
+    endif()
+  endfunction()
 
   if(NOT CATALYST_VERSION_GIT)
-    find_package(catalyst ${Catalyst_VERSION} QUIET HINTS ${_catalyst_hints})
-    set(CATALYST_VERSION_GIT "v${Catalyst_VERSION}")
+    if(DEFINED catalyst_DIR AND catalyst_DIR)
+      ippl_load_external_catalyst("${catalyst_DIR}")
+    endif()
+    if(NOT catalyst_FOUND)
+      foreach(_ippl_catalyst_hint IN LISTS _catalyst_hints)
+        ippl_load_external_catalyst("${_ippl_catalyst_hint}")
+        if(catalyst_FOUND)
+          break()
+        endif()
+      endforeach()
+    endif()
   endif()
 
   if(catalyst_FOUND)
     colour_message(STATUS ${Green} "✅ Catalyst ${Catalyst_VERSION} found externally")
   else()
+    if(NOT CATALYST_VERSION_GIT)
+      set(CATALYST_VERSION_GIT "v${Catalyst_VERSION}")
+    endif()
     colour_message(STATUS ${Green} "✅ Catalyst ${CATALYST_VERSION_GIT} building from source")
 
     function(set_catalyst_options)
@@ -721,6 +804,7 @@ if(IPPL_ENABLE_CATALYST)
       set(CATALYST_WRAP_PYTHON OFF CACHE BOOL "" FORCE)
       set(CATALYST_WRAP_FORTRAN OFF CACHE BOOL "" FORCE)
       set(CATALYST_WITH_EXTERNAL_CONDUIT OFF CACHE BOOL "" FORCE)
+      set(CATALYST_USE_MPI ON CACHE BOOL "" FORCE)
     endfunction()
 
     set_catalyst_options()
@@ -733,11 +817,330 @@ if(IPPL_ENABLE_CATALYST)
     FetchContent_MakeAvailable(catalyst)
 
     set(catalyst_FOUND FALSE)
+    ippl_resolve_catalyst_package_dir(Catalyst_PACKAGE_DIR)
+
+    # An in-tree Catalyst produces libcatalyst.so.<abi>, the same SONAME a distro package may
+    # install (Fedora's catalyst-mpich lands in MPI's library directory). MPI contributes its own
+    # -Wl,-rpath early on the link line, ahead of the RPATH CMake manages, so the packaged loader
+    # would win at runtime. Put the in-tree directory first via the linker flags, which CMake emits
+    # before any target link options.
+    get_target_property(_ippl_catalyst_libdir catalyst::catalyst LIBRARY_OUTPUT_DIRECTORY)
+    if(NOT _ippl_catalyst_libdir)
+      set(_ippl_catalyst_libdir "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}")
+    endif()
+    foreach(
+      _ippl_linker_flags_var
+      IN
+      ITEMS
+      CMAKE_EXE_LINKER_FLAGS
+      CMAKE_SHARED_LINKER_FLAGS
+      CMAKE_MODULE_LINKER_FLAGS)
+      set(${_ippl_linker_flags_var}
+          "-Wl,-rpath,${_ippl_catalyst_libdir} ${${_ippl_linker_flags_var}}")
+    endforeach()
+    unset(_ippl_catalyst_libdir)
+    unset(_ippl_linker_flags_var)
+
     if(NOT TARGET catalyst::catalyst)
       message(FATAL_ERROR "Catalyst FetchContent did not provide catalyst::catalyst")
     endif()
   endif()
   unset(_catalyst_hints)
+  unset(_ippl_catalyst_cfg_dirs)
+endif()
+
+# ------------------------------------------------------------------------------
+# ADIOS2 (dependency for AdiosCatalyst — not linked into libippl)
+# ------------------------------------------------------------------------------
+if(IPPL_ENABLE_ADIOS2)
+  if(NOT IPPL_ENABLE_CATALYST)
+    message(FATAL_ERROR "IPPL_ENABLE_ADIOS2 requires IPPL_ENABLE_CATALYST=ON")
+  endif()
+
+  if(NOT ADIOS2_VERSION_DEFAULT)
+    set(ADIOS2_VERSION_DEFAULT 2.12.1)
+  endif()
+  if(NOT ADIOS2_VERSION)
+    set(ADIOS2_VERSION ${ADIOS2_VERSION_DEFAULT})
+  endif()
+
+  extract_git_label(ADIOS2_VERSION ADIOS2_VERSION_GIT)
+  set(ADIOS2_REPOSITORY "https://github.com/ornladios/ADIOS2.git")
+
+  function(ippl_append_adios2_hints _prefix _hints_var)
+    if(NOT _prefix OR NOT EXISTS "${_prefix}")
+      return()
+    endif()
+    list(APPEND ${_hints_var} "${_prefix}")
+    foreach(
+      _subdir
+      IN
+      ITEMS
+      lib64/cmake/adios2
+      lib/cmake/adios2)
+      if(EXISTS "${_prefix}/${_subdir}/adios2-config.cmake")
+        list(APPEND ${_hints_var} "${_prefix}/${_subdir}")
+      endif()
+    endforeach()
+    if(EXISTS "${_prefix}/adios2-config.cmake")
+      list(APPEND ${_hints_var} "${_prefix}")
+    endif()
+    set(${_hints_var} "${${_hints_var}}" PARENT_SCOPE)
+  endfunction()
+
+  function(set_adios2_options)
+    # Minimal MPI + SST build for AdiosCatalyst / BP5 disk I/O. Disable optional
+    # AUTO features so a broken system ZLIB/PNG cmake config (e.g. Fedora without
+    # zlib-devel static lib) does not fail configuration.
+    set(ADIOS2_USE_MPI ON CACHE STRING "" FORCE)
+    set(ADIOS2_USE_SST ON CACHE STRING "" FORCE)
+    set(ADIOS2_USE_HDF5 OFF CACHE STRING "" FORCE)
+    set(ADIOS2_USE_Fortran OFF CACHE STRING "" FORCE)
+    set(ADIOS2_USE_Python OFF CACHE STRING "" FORCE)
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(ADIOS2_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    foreach(
+      _ippl_adios2_opt
+      IN
+      ITEMS
+      BigWhoop
+      Blosc2
+      BZip2
+      Caliper
+      Campaign
+      Catalyst
+      CURL
+      DAOS
+      DataMan
+      DataSpaces
+      HDF5_VOL
+      IME
+      LIBPRESSIO
+      MGARD
+      MHS
+      OpenSSL
+      PNG
+      PRODM
+      Profiling
+      Sodium
+      SZ
+      SZ3
+      SysVShMem
+      UCX
+      XRootD
+      ZeroMQ
+      ZFP)
+      set(ADIOS2_USE_${_ippl_adios2_opt} OFF CACHE STRING "" FORCE)
+    endforeach()
+    unset(_ippl_adios2_opt)
+  endfunction()
+
+  set(_adios2_hints "")
+  ippl_append_adios2_hints("${ADIOS2_DIR}" _adios2_hints)
+
+  if(NOT ADIOS2_VERSION_GIT)
+    find_package(ADIOS2 ${ADIOS2_VERSION} QUIET CONFIG HINTS ${_adios2_hints})
+  endif()
+
+  if(ADIOS2_FOUND)
+    colour_message(STATUS ${Green} "✅ ADIOS2 ${ADIOS2_VERSION} found externally")
+    set(ADIOS2_PACKAGE_DIR "${ADIOS2_DIR}")
+    if(NOT ADIOS2_PACKAGE_DIR AND DEFINED adios2_DIR AND adios2_DIR)
+      set(ADIOS2_PACKAGE_DIR "${adios2_DIR}")
+    endif()
+    if(ADIOS2_PACKAGE_DIR AND EXISTS "${ADIOS2_PACKAGE_DIR}/adios2-config.cmake")
+      get_filename_component(ADIOS2_INSTALL_PREFIX "${ADIOS2_PACKAGE_DIR}/../../.." ABSOLUTE)
+    elseif(ADIOS2_PACKAGE_DIR)
+      set(ADIOS2_INSTALL_PREFIX "${ADIOS2_PACKAGE_DIR}")
+    endif()
+  else()
+    if(NOT ADIOS2_VERSION_GIT)
+      set(ADIOS2_VERSION_GIT "v${ADIOS2_VERSION}")
+    endif()
+    colour_message(STATUS ${Green} "✅ ADIOS2 ${ADIOS2_VERSION_GIT} building from source")
+    enable_language(C)
+    set_adios2_options()
+    FetchContent_Declare(
+      adios2
+      GIT_REPOSITORY ${ADIOS2_REPOSITORY}
+      GIT_TAG ${ADIOS2_VERSION_GIT}
+      GIT_SHALLOW ON
+      DOWNLOAD_EXTRACT_TIMESTAMP ON
+      PATCH_COMMAND
+        bash -c
+        "f='<SOURCE_DIR>/thirdparty/yaml-cpp/yaml-cpp/src/emitterutils.cpp'; test -f \"$$f\" && ! grep -q '#include <cstdint>' \"$$f\" && sed -i '/#include <algorithm>/a #include <cstdint>' \"$$f\" || true")
+    FetchContent_MakeAvailable(adios2)
+
+    set(ADIOS2_FOUND FALSE)
+    if(NOT TARGET adios2::cxx_mpi AND NOT TARGET adios2::cxx)
+      message(FATAL_ERROR "ADIOS2 FetchContent did not provide adios2::cxx_mpi or adios2::cxx")
+    endif()
+    # Report the generated build-tree package, but never write it to ADIOS2_DIR: that cache entry is
+    # the user's hint for an external install, and seeding it would make the next configure "find"
+    # this build tree instead of adding ADIOS2 as a subdirectory again.
+    set(ADIOS2_INSTALL_PREFIX "${adios2_BINARY_DIR}")
+    foreach(
+      _ippl_adios2_pkg_dir
+      IN
+      ITEMS
+      "${adios2_BINARY_DIR}/lib64/cmake/adios2"
+      "${adios2_BINARY_DIR}/lib/cmake/adios2"
+      "${adios2_BINARY_DIR}")
+      if(EXISTS "${_ippl_adios2_pkg_dir}/adios2-config.cmake")
+        set(ADIOS2_PACKAGE_DIR "${_ippl_adios2_pkg_dir}")
+        break()
+      endif()
+    endforeach()
+    unset(_ippl_adios2_pkg_dir)
+  endif()
+
+  unset(_adios2_hints)
+
+  # --------------------------------------------------------------------------
+  # AdiosCatalyst (runtime Catalyst implementation — not linked into libippl)
+  # --------------------------------------------------------------------------
+  if(NOT AdiosCatalyst_VERSION_DEFAULT)
+    # Pinned so the per-step-dimensions patch below applies against a known tree. AdiosCatalyst
+    # ships no versioned tags, so we pin a commit; bump this together with the patch if you
+    # refresh it. (Was tracking `main`.)
+    set(AdiosCatalyst_VERSION_DEFAULT 54746a8)
+  endif()
+  if(NOT AdiosCatalyst_VERSION)
+    set(AdiosCatalyst_VERSION ${AdiosCatalyst_VERSION_DEFAULT})
+  endif()
+
+  extract_git_label(AdiosCatalyst_VERSION ADIOSCATALYST_VERSION_GIT)
+  set(AdiosCatalyst_REPOSITORY "https://gitlab.kitware.com/paraview/adioscatalyst.git")
+
+  function(ippl_resolve_adioscatalyst_impl_dir _prefix _out_var)
+    if(NOT _prefix OR NOT EXISTS "${_prefix}")
+      return()
+    endif()
+    foreach(_ippl_ac_subdir IN ITEMS lib64/catalyst lib/catalyst catalyst)
+      if(EXISTS "${_prefix}/${_ippl_ac_subdir}/libcatalyst-adios.so")
+        set(${_out_var} "${_prefix}/${_ippl_ac_subdir}" PARENT_SCOPE)
+        return()
+      endif()
+    endforeach()
+  endfunction()
+
+  function(set_adioscatalyst_options)
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(BUILD_PV_PLUGIN OFF CACHE BOOL "" FORCE)
+  endfunction()
+
+  # AdiosCatalyst calls find_package(ADIOS2) and find_package(catalyst COMPONENTS SDK). Re-running
+  # the upstream config files inside this build would try to import targets that already exist, so
+  # generate shim packages that map onto the targets ippl has already resolved.
+  function(ippl_write_adioscatalyst_shims _catalyst_pkg_dir _out_adios2_dir _out_catalyst_dir)
+    set(_shim_root "${PROJECT_BINARY_DIR}/ippl-cmake-shims")
+    set(_adios2_shim "${_shim_root}/adios2")
+    set(_catalyst_shim "${_shim_root}/catalyst")
+    file(MAKE_DIRECTORY "${_adios2_shim}")
+    file(MAKE_DIRECTORY "${_catalyst_shim}")
+
+    # Version requests may be plain (2.12.1) or git labels (git.v2.12.1); the shims only need a
+    # numeric fallback because AdiosCatalyst calls find_package without a version.
+    ippl_numeric_version("${ADIOS2_VERSION}" 2.12.1 _adios2_shim_version)
+    ippl_numeric_version("${Catalyst_VERSION}" 2.1.0 CATALYST_VERSION)
+    set(CATALYST_MACROS_DIR "${_catalyst_pkg_dir}")
+
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/templates/adios2-superbuild-config.cmake.in"
+                   "${_adios2_shim}/adios2-config.cmake" @ONLY)
+    file(WRITE "${_adios2_shim}/adios2-config-version.cmake"
+         "set(PACKAGE_VERSION \"${_adios2_shim_version}\")\nset(PACKAGE_VERSION_COMPATIBLE TRUE)\n")
+
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/templates/catalyst-superbuild-config.cmake.in"
+                   "${_catalyst_shim}/catalyst-config.cmake" @ONLY)
+    file(WRITE "${_catalyst_shim}/catalyst-config-version.cmake"
+         "set(PACKAGE_VERSION \"${CATALYST_VERSION}\")\nset(PACKAGE_VERSION_COMPATIBLE TRUE)\n")
+
+    set(${_out_adios2_dir} "${_adios2_shim}" PARENT_SCOPE)
+    set(${_out_catalyst_dir} "${_catalyst_shim}" PARENT_SCOPE)
+  endfunction()
+
+  set(AdiosCatalyst_FOUND FALSE)
+  set(IPPL_ADIOSCATALYST_IMPL_DIR "" CACHE PATH "AdiosCatalyst Catalyst implementation directory")
+
+  if(NOT ADIOSCATALYST_VERSION_GIT AND AdiosCatalyst_DIR)
+    ippl_resolve_adioscatalyst_impl_dir("${AdiosCatalyst_DIR}" _ippl_ac_impl_dir)
+    if(_ippl_ac_impl_dir)
+      set(IPPL_ADIOSCATALYST_IMPL_DIR "${_ippl_ac_impl_dir}" CACHE PATH "" FORCE)
+      set(AdiosCatalyst_FOUND TRUE)
+      set(AdiosCatalyst_INSTALL_PREFIX "${AdiosCatalyst_DIR}" CACHE PATH "" FORCE)
+      colour_message(STATUS ${Green} "✅ AdiosCatalyst found externally")
+    endif()
+    unset(_ippl_ac_impl_dir)
+  endif()
+
+  if(NOT AdiosCatalyst_FOUND)
+    if(NOT ADIOSCATALYST_VERSION_GIT)
+      set(ADIOSCATALYST_VERSION_GIT "${AdiosCatalyst_VERSION}")
+    endif()
+    colour_message(STATUS ${Green} "✅ AdiosCatalyst ${ADIOSCATALYST_VERSION_GIT} building from source")
+
+    if(NOT Catalyst_PACKAGE_DIR OR NOT EXISTS "${Catalyst_PACKAGE_DIR}/catalyst-macros.cmake")
+      message(
+        FATAL_ERROR
+          "AdiosCatalyst needs the Catalyst SDK macros; set -DCATALYST_HINT_PATH=/path/to/catalyst "
+          "or allow Catalyst FetchContent.")
+    endif()
+    if(NOT TARGET adios2::cxx_mpi AND NOT TARGET adios2::cxx)
+      message(FATAL_ERROR "AdiosCatalyst requires ADIOS2 but no adios2 C++ target was resolved.")
+    endif()
+
+    set_adioscatalyst_options()
+    ippl_write_adioscatalyst_shims("${Catalyst_PACKAGE_DIR}" _ippl_ac_adios2_dir
+                                   _ippl_ac_catalyst_dir)
+
+    # Everything below is scoped to AdiosCatalyst's add_subdirectory: it builds its own shared libs
+    # plus a Catalyst MODULE, and must see the shim packages rather than the cached ones. Plain
+    # variables shadow the cache for this directory and its children only, so ippl and the other
+    # in-tree dependencies keep the caller's linkage and package paths.
+    set(_ippl_saved_build_shared_libs ${BUILD_SHARED_LIBS})
+    set(BUILD_SHARED_LIBS ON)
+    set(ADIOS2_DIR "${_ippl_ac_adios2_dir}")
+    set(catalyst_DIR "${_ippl_ac_catalyst_dir}")
+
+    # AdiosCatalyst serializes only the first Catalyst channel and freezes each variable's parallel
+    # decomposition on the first execute. ippl's adaptor aggregates all channels into one multimesh
+    # channel and compacts strided arrays adaptor-side; this patch adds the remaining upstream piece
+    # by refreshing every global array's shape/selection each step, so particles that migrate
+    # between MPI ranks (time-varying per-rank counts) are written correctly. Applied idempotently
+    # (same mechanism as the yaml-cpp patch) so re-configures over an already-patched tree are safe.
+    # GIT_SHALLOW is OFF because we pin a specific commit rather than a branch tip.
+    set(_ippl_adioscatalyst_patch
+        "${CMAKE_CURRENT_LIST_DIR}/patches/adioscatalyst-0001-per-step-dimensions.patch")
+    FetchContent_Declare(
+      adioscatalyst
+      GIT_REPOSITORY ${AdiosCatalyst_REPOSITORY}
+      GIT_TAG ${ADIOSCATALYST_VERSION_GIT}
+      GIT_SHALLOW OFF
+      DOWNLOAD_EXTRACT_TIMESTAMP ON
+      PATCH_COMMAND
+        bash -c
+        "git apply --reverse --check '${_ippl_adioscatalyst_patch}' 2>/dev/null || git apply '${_ippl_adioscatalyst_patch}'")
+    FetchContent_MakeAvailable(adioscatalyst)
+
+    set(BUILD_SHARED_LIBS ${_ippl_saved_build_shared_libs})
+    unset(_ippl_saved_build_shared_libs)
+    unset(ADIOS2_DIR)
+    unset(catalyst_DIR)
+    unset(_ippl_ac_adios2_dir)
+    unset(_ippl_ac_catalyst_dir)
+
+    set(AdiosCatalyst_FOUND FALSE)
+    set(AdiosCatalyst_INSTALL_PREFIX "${adioscatalyst_BINARY_DIR}" CACHE PATH "" FORCE)
+    set(
+      IPPL_ADIOSCATALYST_IMPL_DIR
+      "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/catalyst"
+      CACHE PATH "" FORCE)
+
+    if(NOT TARGET catalyst-adios)
+      message(FATAL_ERROR "AdiosCatalyst FetchContent did not provide catalyst-adios target")
+    endif()
+  endif()
 endif()
 
 # ------------------------------------------------------------------------------

@@ -61,10 +61,15 @@ option(IPPL_ENABLE_SCRIPTS "Generate job script templates for some benchmarks/te
 
 option(IPPL_ENABLE_CATALYST "Enable ParaView Catalyst" OFF)
 option(IPPL_ENABLE_CONDUIT_IO "Enable Conduit Relay IO (HDF5/ADIOS2)" OFF)
+option(IPPL_ENABLE_ADIOS2 "Resolve ADIOS2 for the AdiosCatalyst I/O track" OFF)
 set(CONDUIT_DIR "" CACHE PATH "Conduit install prefix or lib/cmake/conduit directory")
 set(CATALYST_HINT_PATH "" CACHE PATH "Catalyst cmake package directory or install prefix")
+set(ADIOS2_DIR "" CACHE PATH "ADIOS2 install prefix or lib/cmake/adios2 directory")
+set(AdiosCatalyst_DIR "" CACHE PATH "AdiosCatalyst install prefix (runtime Catalyst implementation)")
 set(Conduit_VERSION "" CACHE STRING "Conduit version or git.<tag/branch/sha> (default 0.9.7)")
 set(Catalyst_VERSION "" CACHE STRING "Catalyst version or git.<tag/branch/sha> (default 2.1.0)")
+set(ADIOS2_VERSION "" CACHE STRING "ADIOS2 version or git.<tag/branch/sha> (default 2.12.1)")
+set(AdiosCatalyst_VERSION "" CACHE STRING "AdiosCatalyst version or git.<tag/branch/sha> (default main)")
 # "Build IPPL as a shared library (ON) or static library (OFF)" OFF) if(IPPL_DYL)
 # set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE) message(WARNING "IPPL_DYL is deprecated; use
 # -DBUILD_SHARED_LIBS=ON instead.") endif()

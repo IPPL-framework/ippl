@@ -26,12 +26,14 @@ target_compile_definitions(
 target_link_libraries(ippl PUBLIC catalyst::catalyst)
 
 message(STATUS "Catalyst Summary:")
-message(STATUS "  Found: ${catalyst_FOUND}")
-if(DEFINED catalyst_VERSION)
+message(STATUS "  External install: ${catalyst_FOUND}")
+if(catalyst_VERSION)
   message(STATUS "  Version: ${catalyst_VERSION}")
+elseif(Catalyst_VERSION)
+  message(STATUS "  Version: ${Catalyst_VERSION}")
 endif()
-if(catalyst_DIR)
-  message(STATUS "  CMake config dir: ${catalyst_DIR}")
+if(Catalyst_PACKAGE_DIR)
+  message(STATUS "  CMake config dir: ${Catalyst_PACKAGE_DIR}")
 endif()
 
 get_target_property(_cat_type catalyst::catalyst TYPE)

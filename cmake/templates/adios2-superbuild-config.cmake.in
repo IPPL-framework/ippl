@@ -1,0 +1,26 @@
+# Shim ADIOS2 package for ippl superbuilds.
+#
+# ADIOS2 is already available by the time AdiosCatalyst is added, either by the in-tree FetchContent
+# build or by ippl importing an external install. AdiosCatalyst links the aggregate adios2::adios2
+# target, which the in-tree build does not create, so alias it onto the C++ target here.
+
+if(NOT TARGET adios2::adios2)
+  if(TARGET adios2::cxx_mpi)
+    set(_ippl_adios2_shim_target adios2::cxx_mpi)
+  elseif(TARGET adios2::cxx)
+    set(_ippl_adios2_shim_target adios2::cxx)
+  else()
+    set("${CMAKE_FIND_PACKAGE_NAME}_FOUND" 0)
+    set("${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE"
+        "ippl ADIOS2 shim: expected the adios2::cxx_mpi or adios2::cxx target to already exist.")
+    return()
+  endif()
+
+  add_library(adios2::adios2 INTERFACE IMPORTED GLOBAL)
+  set_target_properties(adios2::adios2 PROPERTIES INTERFACE_LINK_LIBRARIES
+                                                  "${_ippl_adios2_shim_target}")
+  unset(_ippl_adios2_shim_target)
+endif()
+
+set("${CMAKE_FIND_PACKAGE_NAME}_FOUND" 1)
+set(ADIOS2_HAVE_MPI TRUE)

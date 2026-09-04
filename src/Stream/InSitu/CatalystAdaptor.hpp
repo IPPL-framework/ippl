@@ -265,14 +265,28 @@ void CatalystAdaptor::ExecVizChannel(const Field<T, Dim, ViewArgs...>& entry, co
             return;
         }
 
-        // channel for this field of type mesh adheres to conduits mesh blueprint
-        auto channel = node_m["catalyst/channels/"+ channelName];
-        auto channel_state = channel["state"];
+        // Backend split (visualization channels):
+        //  - ParaView Catalyst: one Conduit "mesh" channel per field (classic multi-channel).
+        //  - AdiosCatalyst    : fold every field into ONE shared "multimesh" channel as a block,
+        //                       because AdiosCatalyst serializes only a single channel per step.
+        // Both cases build the identical mesh-blueprint subtree below, rooted at `data`.
+        conduit_cpp::Node data;
+        if (adiosBackend_m) {
+            const std::string agg       = adiosAggregateChannel_m;
+            const std::string aggPath   = "catalyst/channels/" + agg;
+            const std::string blockName = "block_" + channelName;
+            node_m[aggPath + "/type"].set_string("multimesh");
+            node_m[aggPath + "/assembly/" + channelName].set_string(blockName);
+            data = node_m[aggPath + "/data/" + blockName];
+            data["type"].set_string("mesh");
+        } else {
+            // channel for this field of type mesh adheres to conduits mesh blueprint
+            const std::string channelPath = "catalyst/channels/" + channelName;
+            (void)node_m[channelPath + "/state"];
+            node_m[channelPath + "/type"].set_string("mesh");
+            data = node_m[channelPath + "/data"];
+        }
 
-        channel["type"].set_string("mesh");
-        auto data   = channel["data"];
-        
-        
         auto fields = data["fields"];
         field_node = fields[label];
         data["topologies/fmesh_topo/type"].set_string("uniform");
@@ -608,17 +622,31 @@ void CatalystAdaptor::ExecVizChannel(const T& entry, const std::string label)
         // channel of type mesh adheres to conduits mesh blueprint
 
 
-        auto channel = node_m["catalyst/channels/"+ channelName];
+        // Backend split (visualization channels): particle sets are already a Conduit "multimesh"
+        // (a main block plus a bounding-box helper block).
+        //  - ParaView Catalyst: this particle set gets its own multimesh channel.
+        //  - AdiosCatalyst    : its blocks are folded into the shared aggregate multimesh channel
+        //                       (unique, channel-qualified block names avoid collisions).
+        std::string basePath, mainBlock, helpBlock;
+        if (adiosBackend_m) {
+            const std::string agg = adiosAggregateChannel_m;
+            basePath  = "catalyst/channels/" + agg;
+            mainBlock = "block_" + channelName + "_main";
+            helpBlock = "block_" + channelName + "_help";
+            node_m[basePath + "/type"].set_string("multimesh");
+            node_m[basePath + "/assembly/" + channelName + "_main"].set_string(mainBlock);
+            node_m[basePath + "/assembly/" + channelName + "_help"].set_string(helpBlock);
+        } else {
+            basePath  = "catalyst/channels/" + channelName;
+            mainBlock = "block_main";
+            helpBlock = "block_help";
+            node_m[basePath + "/type"].set_string("multimesh");
+            node_m[basePath + "/assembly/main"].set_string(mainBlock);
+            node_m[basePath + "/assembly/help"].set_string(helpBlock);
+        }
 
-
-
-        channel["type"].set_string("multimesh");
-        
-        
-        auto data =     channel["data/block_main"];
-        auto data_help =     channel["data/block_help"];
-        channel["assembly/main"] = "block_main";
-        channel["assembly/help"] = "block_help";
+        auto data      = node_m[basePath + "/data/" + mainBlock];
+        auto data_help = node_m[basePath + "/data/" + helpBlock];
         
         ////////////////////////////////////////////////////////
         // Note:
@@ -915,6 +943,56 @@ if ( !visEnabled_m) return;
     node_m["catalyst/mpi_comm"].set(fcomm64);   
 
 
+    // ==========================================================================================
+    //  ADIOS BACKEND (AdiosCatalyst -> ADIOS2)
+    // ==========================================================================================
+    // AdiosCatalyst is a Catalyst 2 implementation: it consumes the same Conduit Blueprint channels
+    // (populated in Execute()) but writes them through ADIOS2 instead of running a ParaView
+    // pipeline. Selection + the ADIOS2 XML config are read from the initialize node and consumed by
+    // catalyst_initialize(), so they must be set here (node_m is reset afterwards).
+    if (adiosBackend_m) {
+        node_m["catalyst_load/implementation"].set_string("adios");
+
+        // Resolve the ADIOS2 XML config: IPPL_ADIOS2_XML if it exists, else ./adios2.xml in the
+        // working directory, else the template bundled next to this adaptor.
+        std::filesystem::path adiosXmlPath;
+        if (adiosXml_m && std::filesystem::exists(adiosXml_m)) {
+            adiosXmlPath = adiosXml_m;
+        } else if (std::filesystem::exists("adios2.xml")) {
+            adiosXmlPath = std::filesystem::absolute("adios2.xml");
+        } else {
+            adiosXmlPath = sourceDir_m / "adios2.xml";
+        }
+        if (!std::filesystem::exists(adiosXmlPath)) {
+            throw IpplException("Stream::InSitu::CatalystAdaptor::Initialize()",
+                                "ADIOS backend selected but no adios2.xml found (set IPPL_ADIOS2_XML "
+                                "or place adios2.xml in the run directory).");
+        }
+        node_m["adios/config_filepath"].set_string(adiosXmlPath.string());
+
+        catalystInfo_m << level4 << "::Initialize()   ADIOS backend: implementation=adios" << endl;
+        catalystInfo_m << level4 << "::Initialize()   ADIOS config_filepath = " << adiosXmlPath.string() << endl;
+
+        // Populate per-channel bookkeeping (forceHostCopy_m) used by Execute(); the ParaView
+        // pipeline/proxy scripts below are not used by AdiosCatalyst.
+        InitVisitor initV{*this};
+        visRegistry_m->forEach(initV);
+
+        catalystInfo_m << level4 << "::Initialize()   Printing Conduit `node_m` instance passed to catalyst_initialize() =>" << endl;
+        catalystInfo_m << level4 << node_m.to_yaml() << endl;
+
+        catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node_m));
+        if (err != catalyst_status_ok) {
+            catalystInfo_m << level4 << "::Initialize()   Catalyst (ADIOS) initialization failed." << endl;
+            throw IpplException("Stream::InSitu::CatalystAdaptor::Initialize()", "Failed to initialize Catalyst (ADIOS)!!!");
+        }
+        catalystInfo_m << level4 << "::Initialize()   Catalyst (ADIOS) initialized successfully." << endl;
+        node_m.reset();
+        catalystInfo_m << level4 << "::Initialize()  DONE (ADIOS)============================================== 1" << endl;
+        return;
+    }
+
+
     setNodeScript(  node_m["catalyst/scripts/script/filename"], //where in node_m
                     "CATALYST_PIPELINE_PATH",                   // environment override
                     sourceDir_m / "catalyst_scripts" / "pipeline_default.py") //default
@@ -1040,6 +1118,15 @@ void CatalystAdaptor::Execute( int cycle, double time, int rank /* default = ipp
     state["time"].set(time);
     state["domain_id"].set(rank);    
 
+    // AdiosCatalyst reads the output basename from catalyst/state/sstFileName (default "gs.bp").
+    // node_m is reset each Execute(), so set it every cycle when the ADIOS backend is active.
+    if (adiosBackend_m) {
+        const std::string adiosOutputName =
+            (adiosOutput_m && std::string(adiosOutput_m).size()) ? std::string(adiosOutput_m)
+                                                                 : std::string("alpine.bp");
+        state["sstFileName"].set_string(adiosOutputName);
+    }
+
     IpplTimings::startTimer(TMRexecVizVisitor);
     if ( !!visEnabled_m){
         // edit forward Node: add visualisation channels
@@ -1096,7 +1183,18 @@ void CatalystAdaptor::Execute( int cycle, double time, int rank /* default = ipp
         
     catalystInfo_m << level4 <<"::Execute()::catalyst_execute() ==>" << endl;
     IpplTimings::startTimer(TMRcatalyst_execute);
-        catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node_m));
+        catalyst_status err;
+        if (adiosBackend_m) {
+            // AdiosCatalyst's writer rejects strided arrays, and ippl lays out Vector<T,Dim> field
+            // components with a stride (interleaved x/y/z). Hand Catalyst a fully compacted
+            // (contiguous) copy of the tree so every leaf satisfies its is-compact check. The copy
+            // owns its data and outlives the synchronous catalyst_execute() call below.
+            conduit_cpp::Node executeNode;
+            conduit_node_compact_to(conduit_cpp::c_node(&node_m), conduit_cpp::c_node(&executeNode));
+            err = catalyst_execute(conduit_cpp::c_node(&executeNode));
+        } else {
+            err = catalyst_execute(conduit_cpp::c_node(&node_m));
+        }
     IpplTimings::stopTimer(TMRcatalyst_execute);
 
     ////////////////////////////////////////////////////////////////////////////////
