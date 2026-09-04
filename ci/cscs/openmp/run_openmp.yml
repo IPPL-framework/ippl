@@ -36,18 +36,6 @@ variables:
     - export CTEST_BUILD_NAME="${CDASH_LABEL}-${BUILD_ARCH}-${BUILD_TYPE}-${TEST_INFO}"
     - find $BUILD_PATH -type f -name \*.xml -exec sed -i "s|BuildName=.*|BuildName=\"${CTEST_BUILD_NAME}\"|g" {} \;
     # ctest should now have valid file paths, (use srun to launch with uenv setup)
-    - |
-      # The binaries were built in a different CI job with a different absolute
-      # source/build path. gcov stores those absolute paths, so create a symlink
-      # from the original source directory to the current one. This makes both
-      # the source files and the default .gcda output path resolve correctly.
-      SOURCE_CACHE_DIR=$(grep "CMAKE_HOME_DIRECTORY:INTERNAL=" $BUILD_PATH/CMakeCache.txt | cut -d'=' -f2)
-      if [ "$SOURCE_CACHE_DIR" != "$CI_PROJECT_DIR" ]; then
-        echo "Symlinking original source dir $SOURCE_CACHE_DIR -> $CI_PROJECT_DIR"
-        mkdir -p "$(dirname "$SOURCE_CACHE_DIR")"
-        rm -rf "$SOURCE_CACHE_DIR"
-        ln -s "$CI_PROJECT_DIR" "$SOURCE_CACHE_DIR"
-      fi
     - ctest -V --output-on-failure --timeout 60 $TEST_ARGS -S $CI_PROJECT_DIR/ci/cscs/dashboard-test.cmake
       -DCTEST_SITE="$CTEST_SITE"
       -DCTEST_BUILD_NAME="$CTEST_BUILD_NAME"
