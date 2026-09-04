@@ -19,7 +19,7 @@ variables:
   extends: [.baremetal-runner-eiger-zen2]
   variables:
     SLURM_JOB_NUM_NODES: 1
-    SLURM_TIMELIMIT: "0:15:00"
+    SLURM_TIMELIMIT: "0:30:00"
   before_script:
     - !reference [.pr-number-extractor, before_script]
     - pwd
@@ -43,6 +43,7 @@ variables:
       -DBUILD_TYPE=$BUILD_TYPE
       -DBUILD_DIR=$BUILD_PATH
       -DBUILD_ARCH=$BUILD_ARCH
+      -DENABLE_COVERAGE=$ENABLE_COVERAGE
 
 # ---------------------------------------------------------
 # 1 rank debug
@@ -57,6 +58,7 @@ ippl-test-openmp-debug-1-rank:
     BUILD_TYPE: Debug
     TEST_INFO: "1-rank"
     TEST_ARGS: "-E known_fail"
+    ENABLE_COVERAGE: "ON"
 
 # ---------------------------------------------------------
 # 1 rank release

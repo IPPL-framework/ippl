@@ -28,10 +28,70 @@ set(CTEST_GROUP "Experimental")
 # --- append to the existing dashboard entry ---
 ctest_start(Experimental GROUP "${CTEST_GROUP}" APPEND)
 
+# --- redirect .gcda files into the current build directory ---
+# The executables were built in a different CI job with a different absolute path. gcov writes .gcda
+# files next to the absolute .gcno path by default, so without this redirection CTest coverage would
+# find no .gcda files.  This relies on srun/MPI forwarding the environment to the test ranks.
+if(ENABLE_COVERAGE)
+  set(ENV{GCOV_PREFIX} "${CTEST_BINARY_DIRECTORY}")
+  string(REPLACE "/" ";" _gcovPrefixList "${CTEST_BINARY_DIRECTORY}")
+  list(LENGTH _gcovPrefixList _gcovPrefixLen)
+  math(EXPR _gcovPrefixStrip "${_gcovPrefixLen} - 1")
+  set(ENV{GCOV_PREFIX_STRIP} "${_gcovPrefixStrip}")
+  message(
+    STATUS
+      "Redirecting .gcda files to ${CTEST_BINARY_DIRECTORY} (GCOV_PREFIX_STRIP=${_gcovPrefixStrip})"
+  )
+endif()
+
 # --- run tests : we use srun and already control parallelism
 ctest_test(PARALLEL_LEVEL 1 RETURN_VALUE test_result)
 
-# --- submit test results ---
+# --- collect coverage if requested ---
+set(_coverage_symlink "")
+if(ENABLE_COVERAGE)
+  message(STATUS "Collecting coverage with gcov")
+  ctest_read_custom_files("${CTEST_SOURCE_DIRECTORY}")
+
+  # gcov records the absolute source path from the build job.  If the current CI_PROJECT_DIR differs
+  # from that path, create a temporary symlink so that gcov can find the source files during
+  # coverage processing.  The symlink is removed again as soon as coverage collection finishes.
+  set(_cache_file "${BUILD_DIR}/CMakeCache.txt")
+  if(EXISTS "${_cache_file}")
+    file(STRINGS "${_cache_file}" _cache_home_line REGEX "^CMAKE_HOME_DIRECTORY:INTERNAL=")
+    if(_cache_home_line)
+      list(GET _cache_home_line 0 _cache_home_line)
+      string(REGEX REPLACE "^CMAKE_HOME_DIRECTORY:INTERNAL=(.*)$" "\\1" _build_source_dir
+                           "${_cache_home_line}")
+      if(NOT _build_source_dir STREQUAL CTEST_SOURCE_DIRECTORY)
+        message(
+          STATUS
+            "Creating temporary source symlink: ${_build_source_dir} -> ${CTEST_SOURCE_DIRECTORY}")
+        get_filename_component(_build_source_parent "${_build_source_dir}" DIRECTORY)
+        file(MAKE_DIRECTORY "${_build_source_parent}")
+        file(REMOVE_RECURSE "${_build_source_dir}")
+        execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink "${CTEST_SOURCE_DIRECTORY}"
+                                "${_build_source_dir}")
+        set(_coverage_symlink "${_build_source_dir}")
+      endif()
+    endif()
+  endif()
+
+  file(GLOB_RECURSE _gcno_files "${CTEST_BINARY_DIRECTORY}/*.gcno")
+  file(GLOB_RECURSE _gcda_files "${CTEST_BINARY_DIRECTORY}/*.gcda")
+  list(LENGTH _gcno_files _gcno_count)
+  list(LENGTH _gcda_files _gcda_count)
+  message(STATUS "Coverage input: ${_gcno_count} .gcno files, ${_gcda_count} .gcda files")
+
+  set(CTEST_COVERAGE_COMMAND "gcov")
+  ctest_coverage(RETURN_VALUE cov_result)
+
+  if(_coverage_symlink)
+    file(REMOVE "${_coverage_symlink}")
+  endif()
+endif()
+
+# --- submit test (and coverage) results ---
 ctest_submit()
 
 # --- fail if any test failed ---

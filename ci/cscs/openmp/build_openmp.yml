@@ -36,6 +36,7 @@ variables:
       -DBUILD_TYPE=$BUILD_TYPE
       -DBUILD_DIR=$BUILD_PATH
       -DBUILD_ARCH=$BUILD_ARCH
+      -DENABLE_COVERAGE=$ENABLE_COVERAGE
       -DIPPL_PLATFORMS=OPENMP
       -DIPPL_OPENMP_THREADS=32
       -DKokkos_VERSION=git.5.2.0
@@ -61,6 +62,7 @@ ippl-build-openmp-debug:
   variables:
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug"
     BUILD_TYPE: Debug
+    ENABLE_COVERAGE: "ON"
 
 # ---------------------------------------------------------
 # openmp build release
