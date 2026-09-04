@@ -531,4 +531,85 @@ namespace ippl {
     DefineParticleReduction(Min, min, if (myVal < valL) valL = myVal, std::less)
     DefineParticleReduction(Prod, prod, valL *= myVal, std::multiplies)
 
+
+    #ifdef IPPL_ENABLE_CATALYST
+    //////////////////////////////////////////////////////////////////////////////////////
+    // Note:
+    // In general, for runtime performance, neither function overloading nor if 
+    // constexpr has an inherent advantage when used correctly for compile-time 
+    // dispatch. .
+    // Function overloading with template parameter extraction or constraints or sfinae 
+    // are all hard to implement in this case, so we switched to if const expr.
+    //////////////////////////////////////////////////////////////////////////////////////
+    template <typename T, class... Properties>
+    void ParticleAttrib<T, Properties...>::signConduitBlueprintNode(
+        const size_type Np_local, 
+        conduit_cpp::Node& node_fields, 
+        ViewRegistry& viewRegistry,
+        Inform& ca_m,
+        Inform& ca_warn,
+        const bool forceHostCopy
+    )  const 
+    {
+        host_mirror_type  hostMirror;
+        if(forceHostCopy){
+            hostMirror  = this->getHostMirror();
+            Kokkos::deep_copy(hostMirror ,  this->getView());
+        } else{
+            hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->getView());
+        }
+        auto field = node_fields[this->name_m];
+        field["association"].set_string("vertex");
+        field["topology"].set_string("p_unstructured_topo");
+        field["volume_dependent"].set_string("false");
+    
+    
+        if constexpr (std::is_scalar_v<T>) {
+            // --- SCALAR CASE ---
+          ca_m << level4 <<"::Execute()excute_entry() for attribute: "<<this->name_m << endl
+                << "                          call to:"  << endl
+                << "                          ParticleAttribute<"  << typeid(T).name()  << ">::signConduitBlueprintNode()" << endl;
+            
+            field["values"].set_external(hostMirror.data(), Np_local);
+
+
+        } else if constexpr (is_vector_v<T>) {
+            // --- VECTOR CASE ---
+          ca_m << level4 <<"::Execute()excute_entry() for attribute: "<<this->name_m << endl
+                << "                          call to:"  << endl
+                << "                          ParticleAttribute<ippl::vector<" << typeid(typename T::value_type).name()<<","<<T::dim<<">>::signConduitBlueprintNode()" << endl;
+
+                
+            using elem_t = std::remove_pointer_t<decltype(hostMirror.data())>;
+            const size_t stride_bytes = sizeof(elem_t);
+            // static constexpr size_t stride_bytes = sizeof(elem_t);
+
+            if(Np_local>0){
+                                field["values/x"].set_external(&hostMirror.data()[0][0], Np_local, 0 , stride_bytes );
+                            if constexpr (T::dim>=2){
+                                field["values/y"].set_external(&hostMirror.data()[0][1], Np_local, 0 ,  stride_bytes );
+                            }
+                            if constexpr (T::dim>=3) {
+                                field["values/z"].set_external(&hostMirror.data()[0][2], Np_local, 0 ,  stride_bytes  );
+                            }
+            }else /* (Np_local=0) */ {
+                // If Np_local is 0. We MUST provide valid, empty arrays for the gather to work.
+                using component_type = typename T::value_type;
+                                         field["values/x"].set_external(static_cast<component_type*>(nullptr), 0);
+                if constexpr (T::dim>=2) field["values/y"].set_external(static_cast<component_type*>(nullptr), 0);
+                if constexpr (T::dim>=3) field["values/z"].set_external(static_cast<component_type*>(nullptr), 0);
+            }
+        } else {
+            // --- INVALID CASE ---
+            ca_warn << "::Execute()excute_entry() for attribute:"<<this->name_m << endl
+                    << "                          call to:"  << endl
+                    << "                          ParticleAttribute<"  << typeid(T).name()  << ">::signConduitBlueprintNode()" << endl
+                    << "                          For this type of Attribute the Conduit Blueprint description wasnt \n" 
+                    << "                          implemented in ippl. Therefore this type of attribute is not \n"
+                    << "                          supported for visualisation." << endl;
+        }
+        viewRegistry.set(hostMirror);
+    }
+    #endif
+
 }  // namespace ippl

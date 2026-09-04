@@ -85,9 +85,9 @@ namespace ippl {
      */
     template <class PLayout, typename... IDProperties>
     class ParticleBase : public ParticleBaseBase {
+    public:
         constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
 
-    public:
         using vector_type            = typename PLayout::vector_type;
         using index_type             = typename PLayout::index_type;
         using particle_position_type = typename PLayout::particle_position_type;
@@ -197,6 +197,12 @@ namespace ippl {
          */
         template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
         attribute_type<MemorySpace>* getAttribute(size_t i) {
+            return attributes_m.template get<MemorySpace>()[i];
+        }
+
+        /*! Const overload — needed when called on a const ParticleBase reference. */
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+        const attribute_type<MemorySpace>* getAttribute(size_t i) const {
             return attributes_m.template get<MemorySpace>()[i];
         }
 
