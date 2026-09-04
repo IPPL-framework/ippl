@@ -100,6 +100,11 @@ function(set_kokkos_options)
       if(NOT DEFINED CMAKE_HIP_ARCHITECTURES)
         message(FATAL_ERROR "HIP platform requested but CMAKE_HIP_ARCHITECTURES not set")
       endif()
+
+      if(NOT DEFINED AMDGPU_TARGETS)
+        set(AMDGPU_TARGETS "${CMAKE_HIP_ARCHITECTURES}"
+            CACHE STRING "AMDGPU targets for ROCm packages" FORCE)
+      endif()
     endif()
   endforeach()
 
@@ -214,7 +219,7 @@ endfunction()
 # ------------------------------------------------------------------------------
 # set the default version of kokkos we will ask for if not already set
 if(NOT Kokkos_VERSION_DEFAULT)
-  set(Kokkos_VERSION_DEFAULT 5.0.0)
+  set(Kokkos_VERSION_DEFAULT 5.2.0)
 endif()
 # if the user has not asked for a specific version, we will use a default
 if(NOT Kokkos_VERSION)
@@ -250,6 +255,29 @@ else()
   set_kokkos_options()
   # Invoke cmake fetch/find
   FetchContent_Declare(Kokkos GIT_TAG ${KOKKOS_VERSION_GIT} GIT_REPOSITORY ${Kokkos_REPOSITORY})
+
+  # Kokkos's own CMake (kokkos_compiler_id.cmake and kokkos_functions.cmake) calls
+  # find_program(Kokkos_COMPILE_LAUNCHER) and find_program(Kokkos_NVCC_WRAPPER) with HINTS/PATHS =
+  # ${PROJECT_SOURCE_DIR}.  Because Kokkos never calls project() when built as a subdirectory,
+  # PROJECT_SOURCE_DIR is the IPPL top-level rather than Kokkos's source dir, so the search falls
+  # through to the system PATH and can pick up an unrelated installed Kokkos (e.g. a spack view of a
+  # different version) - leading to the wrong kokkos_launch_compiler/nvcc_wrapper being used to
+  # compile everything.
+  #
+  # Pin both scripts to the FetchContent source bin/ directory.  The download step of
+  # FetchContent_MakeAvailable runs before add_subdirectory (which is when Kokkos's find_program
+  # executes), so the scripts are guaranteed to exist by then - even on a first configure.
+  set(_kokkos_fetch_bin "${FETCHCONTENT_BASE_DIR}/kokkos-src/bin")
+  if(NOT Kokkos_COMPILE_LAUNCHER STREQUAL "${_kokkos_fetch_bin}/kokkos_launch_compiler")
+    set(Kokkos_COMPILE_LAUNCHER "${_kokkos_fetch_bin}/kokkos_launch_compiler"
+        CACHE FILEPATH "kokkos_launch_compiler pinned to FetchContent source" FORCE)
+  endif()
+  if(NOT Kokkos_NVCC_WRAPPER STREQUAL "${_kokkos_fetch_bin}/nvcc_wrapper")
+    set(Kokkos_NVCC_WRAPPER "${_kokkos_fetch_bin}/nvcc_wrapper"
+        CACHE FILEPATH "nvcc_wrapper pinned to FetchContent source" FORCE)
+  endif()
+  unset(_kokkos_fetch_bin)
+
   FetchContent_MakeAvailable(Kokkos)
 
   # get_git_tags(${Kokkos_REPOSITORY} KOKKOS_GIT_TAGS) if(NOT Kokkos_VERSION IN_LIST
@@ -266,8 +294,39 @@ endif()
 # - if the requested version is not found on the system
 # - if the requested version is found but doesn't have the features we requested
 # ------------------------------------------------------------------------------
+if(IPPL_ENABLE_CUFFTMP AND NOT IPPL_ENABLE_FFT)
+  message(FATAL_ERROR "IPPL_ENABLE_CUFFTMP requires IPPL_ENABLE_FFT=ON")
+endif()
+
+if(IPPL_ENABLE_FINUFFT AND NOT IPPL_ENABLE_FFT)
+  message(FATAL_ERROR "IPPL_ENABLE_FINUFFT requires IPPL_ENABLE_FFT=ON")
+endif()
+
+if(IPPL_ENABLE_CUFINUFFT AND NOT IPPL_ENABLE_FINUFFT)
+  message(FATAL_ERROR "IPPL_ENABLE_CUFINUFFT requires IPPL_ENABLE_FINUFFT=ON")
+endif()
+
+if(IPPL_ENABLE_CUFINUFFT)
+  if(NOT "CUDA" IN_LIST IPPL_PLATFORMS)
+    message(
+      FATAL_ERROR
+        "IPPL_ENABLE_CUFINUFFT requires CUDA in IPPL_PLATFORMS. "
+        "cuFINUFFT is a single-rank GPU backend and this PR does not provide "
+        "a host-serial to CUDA staging backend.")
+  endif()
+endif()
+
 if(IPPL_ENABLE_FFT)
   add_compile_definitions(IPPL_ENABLE_FFT)
+
+  if(IPPL_ENABLE_CUFFTMP)
+    if(NOT "CUDA" IN_LIST IPPL_PLATFORMS)
+      message(FATAL_ERROR "IPPL_ENABLE_CUFFTMP requires CUDA in IPPL_PLATFORMS")
+    endif()
+
+    add_compile_definitions(IPPL_ENABLE_CUFFTMP)
+  endif()
+
   option(Heffte_ENABLE_GPU_AWARE_MPI "Is an issue ... " OFF)
 
   # set the default version of Heffte we will ask for if not already set
@@ -338,6 +397,87 @@ if(IPPL_ENABLE_FFT)
 endif()
 
 # ------------------------------------------------------------------------------
+# FINUFFT / cuFINUFFT (only if explicitly enabled)
+# ------------------------------------------------------------------------------
+if(IPPL_ENABLE_FINUFFT)
+  if(NOT FINUFFT_VERSION_DEFAULT)
+    set(FINUFFT_VERSION_DEFAULT v2.5.0)
+  endif()
+
+  if(NOT FINUFFT_VERSION)
+    set(FINUFFT_VERSION ${FINUFFT_VERSION_DEFAULT})
+  endif()
+
+  find_package(finufft CONFIG QUIET)
+  if(NOT finufft_FOUND)
+    find_package(Finufft CONFIG QUIET)
+  endif()
+
+  if(finufft_FOUND OR Finufft_FOUND)
+    colour_message(STATUS ${Green} "✅ FINUFFT found externally")
+  else()
+    colour_message(STATUS ${Green} "✅ FINUFFT ${FINUFFT_VERSION} building from source")
+
+    set(FINUFFT_BUILD_TESTS OFF CACHE BOOL "Disable FINUFFT tests" FORCE)
+    set(FINUFFT_BUILD_EXAMPLES OFF CACHE BOOL "Disable FINUFFT examples" FORCE)
+    set(FINUFFT_USE_CPU ON CACHE BOOL "Enable CPU FINUFFT" FORCE)
+    set(FINUFFT_USE_DUCC0 ${IPPL_FINUFFT_USE_DUCC0}
+        CACHE BOOL "Use FINUFFT's bundled DUCC0 FFT backend" FORCE)
+
+    if(IPPL_ENABLE_CUFINUFFT)
+      set_cuda_architectures_from_kokkos()
+      set(FINUFFT_USE_CUDA ON CACHE BOOL "Enable CUDA cuFINUFFT" FORCE)
+      colour_message(
+        STATUS ${Green}
+        "✅ cuFINUFFT enabled as a single-rank GPU NUFFT backend (no MPI decomposition)")
+    else()
+      set(FINUFFT_USE_CUDA OFF CACHE BOOL "Disable CUDA cuFINUFFT" FORCE)
+    endif()
+
+    # cuFINUFFT's CUDA RDC fatbin registration can fail at startup when its device code is wrapped
+    # in a shared library. Force static for this FetchContent build regardless of the global
+    # BUILD_SHARED_LIBS setting.
+    set(_ippl_saved_build_shared_libs ${BUILD_SHARED_LIBS})
+    set(BUILD_SHARED_LIBS OFF)
+
+    FetchContent_Declare(
+      finufft
+      GIT_REPOSITORY https://github.com/flatironinstitute/finufft.git
+      GIT_TAG ${FINUFFT_VERSION}
+      GIT_SHALLOW ON
+      DOWNLOAD_EXTRACT_TIMESTAMP ON)
+    FetchContent_MakeAvailable(finufft)
+
+    set(BUILD_SHARED_LIBS ${_ippl_saved_build_shared_libs})
+  endif()
+
+  set(IPPL_FINUFFT_TARGETS)
+  if(TARGET finufft::finufft)
+    list(APPEND IPPL_FINUFFT_TARGETS finufft::finufft)
+  elseif(TARGET finufft)
+    list(APPEND IPPL_FINUFFT_TARGETS finufft)
+  endif()
+
+  if(IPPL_ENABLE_CUFINUFFT)
+    if(TARGET cufinufft::cufinufft)
+      list(APPEND IPPL_FINUFFT_TARGETS cufinufft::cufinufft)
+    elseif(TARGET cufinufft)
+      list(APPEND IPPL_FINUFFT_TARGETS cufinufft)
+    else()
+      message(FATAL_ERROR "IPPL_ENABLE_CUFINUFFT is ON, but no cuFINUFFT CMake target was found")
+    endif()
+
+    add_compile_definitions(ENABLE_GPU_NUFFT FINUFFT_USE_CUDA)
+  endif()
+
+  if(NOT IPPL_FINUFFT_TARGETS)
+    message(FATAL_ERROR "IPPL_ENABLE_FINUFFT is ON, but no FINUFFT CMake target was found")
+  endif()
+
+  add_compile_definitions(ENABLE_FINUFFT)
+endif()
+
+# ------------------------------------------------------------------------------
 # GoogleTest
 # ------------------------------------------------------------------------------
 if(IPPL_ENABLE_UNIT_TESTS)
@@ -359,24 +499,21 @@ if(IPPL_ENABLE_UNIT_TESTS)
   endif()
 endif()
 
-if(IPPL_ENABLE_TESTS)
-  set(DOWNLOADED_HEADERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloaded_headers")
-  file(DOWNLOAD https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
-       "${DOWNLOADED_HEADERS_DIR}/stb_image_write.h")
-  message(STATUS "✅ stb_image_write loaded for testing FDTD solver.")
-endif()
-
 # ------------------------------------------------------------------------------
-# FEL module header-only dependencies (nlohmann/json for config parsing,
-# stb_image_write for the Poynting-flux visualization).
+# FEL module header-only dependencies (nlohmann/json for config parsing, stb_image_write for the
+# Poynting-flux visualization).
 # ------------------------------------------------------------------------------
 if(IPPL_ENABLE_FEL)
-  set(DOWNLOADED_HEADERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/downloaded_headers")
-  file(DOWNLOAD
-       https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp
-       "${DOWNLOADED_HEADERS_DIR}/json.hpp")
-  file(DOWNLOAD
-       https://raw.githubusercontent.com/manuel5975p/stb/master/stb_image_write.h
-       "${DOWNLOADED_HEADERS_DIR}/stb_image_write.hpp")
-  message(STATUS "✅ nlohmann/json and stb_image_write loaded for the FEL module.")
+  # Fetch the CMake package instead of downloading the release header directly.  CMake's
+  # file(DOWNLOAD) does not fail by default and can leave a zero-byte json.hpp behind when a
+  # release-asset host is unavailable, which only surfaces later as a confusing compile error.
+  set(JSON_BuildTests OFF CACHE BOOL "Disable nlohmann/json tests" FORCE)
+  FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
+    GIT_SHALLOW ON)
+  FetchContent_MakeAvailable(nlohmann_json)
+
+  message(STATUS "✅ nlohmann/json loaded for the FEL module.")
 endif()

@@ -20,7 +20,6 @@
 
 #include "Utility/IpplTimings.h"
 
-#include "../../alpine/ParticleContainer.hpp"
 #include "Communicate/Window.h"
 
 namespace ippl {
@@ -188,8 +187,10 @@ namespace ippl {
         for (unsigned d = 0; d < Dim; ++d) {
             anyPeriodic = anyPeriodic || periodic[d];
         }
-        if (!anyPeriodic)
+        if (!anyPeriodic) {
+            IpplTimings::stopTimer(timer);
             return;
+        }
 
         const auto& globalRegion = this->rlayout_m->getDomain();
         const auto overlap       = rcutoff_m;
@@ -208,6 +209,7 @@ namespace ippl {
             },
             Kokkos::Sum<size_type>(numBoundaryParticles));
         if (numBoundaryParticles == 0) {
+            IpplTimings::stopTimer(timer);
             return;
         }
 
@@ -864,12 +866,15 @@ namespace ippl {
         IpplTimings::startTimer(cellBuildTimer);
 
         // get local variables of all necessary data as needed for the Kokkos parallel loops
-        const auto rank                   = Comm->rank();
-        const size_type numLoc            = pc.getLocalNum();
-        const auto positions              = pc.R.getView();
-        const auto totalCells             = totalCells_m;
-        const auto numLocalCells          = numLocalCells_m;
-        const auto localRegion            = this->rlayout_m->getdLocalRegions()(rank);
+        const auto rank          = Comm->rank();
+        const size_type numLoc   = pc.getLocalNum();
+        const auto positions     = pc.R.getView();
+        const auto totalCells    = totalCells_m;
+        const auto numLocalCells = numLocalCells_m;
+        // This setup runs on the host. Copy the rank-local region from the host mirror before
+        // capturing it by value in the device kernels below; indexing the device view here is
+        // invalid for execution spaces such as CUDA.
+        const auto localRegion            = this->rlayout_m->gethLocalRegions()(rank);
         const auto& cellWidth             = cellWidth_m;
         const auto cellStrides            = cellStrides_m;
         const auto cellPermutationForward = cellPermutationForward_m;

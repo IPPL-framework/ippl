@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "Expression/IpplOperations.h"  // get the function apply()
+#include "Utility/ViewUtils.h"
 
 // Expands to a lambda that acts as a wrapper for a differential operator
 // fun: the function for which to create the wrapper, such as ippl::laplace
@@ -47,7 +48,7 @@ namespace ippl {
         // avoids per-call Field allocations and per-call deep copies in PCG.
         // The default (identity) preconditioner copies u into result.
         virtual void operator()(Field& u, Field& result) {
-            Kokkos::deep_copy(result.getView(), u.getView());
+            detail::deepCopyIfDifferent(result.getView(), u.getView());
         }
 
         // Allocate any scratch fields the preconditioner needs. Called once
@@ -292,13 +293,13 @@ namespace ippl {
             x_m     = 2.0 * rho_m[1] / delta_m * (2.0 * r - A_m / theta_m);
             if (degree_m == 0) {
                 // result = x_old
-                Kokkos::deep_copy(result.getView(), x_old_m.getView());
+                detail::deepCopyIfDifferent(result.getView(), x_old_m.getView());
                 return;
             }
 
             if (degree_m == 1) {
                 // result = x
-                Kokkos::deep_copy(result.getView(), x_m.getView());
+                detail::deepCopyIfDifferent(result.getView(), x_m.getView());
                 return;
             }
             for (unsigned int i = 2; i < degree_m + 1; ++i) {
@@ -307,8 +308,8 @@ namespace ippl {
                 // Write the new x value into result (the caller's buffer);
                 // x_old gets a deep copy of the previous x.
                 result = rho_m[i] * (2 * sigma_m * x_m - rho_m[i - 1] * x_old_m + z_m);
-                Kokkos::deep_copy(x_old_m.getView(), x_m.getView());
-                Kokkos::deep_copy(x_m.getView(), result.getView());
+                detail::deepCopyIfDifferent(x_old_m.getView(), x_m.getView());
+                detail::deepCopyIfDifferent(x_m.getView(), result.getView());
             }
         }
 
@@ -470,7 +471,7 @@ namespace ippl {
                 } else {
                     result = g_old_m + inverse_diagonal_m(result);
                 }
-                Kokkos::deep_copy(g_old_m.getView(), result.getView());
+                detail::deepCopyIfDifferent(g_old_m.getView(), result.getView());
             }
         }
 

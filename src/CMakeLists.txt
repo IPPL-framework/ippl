@@ -90,6 +90,7 @@ add_subdirectory(Utility)
 add_subdirectory(Expression)
 add_subdirectory(Types)
 add_subdirectory(Partition)
+add_subdirectory(Nodes1D)
 add_subdirectory(FEM)
 add_subdirectory(Random)
 
@@ -178,6 +179,10 @@ target_link_libraries(ippl PUBLIC Kokkos::kokkos MPI::MPI_CXX)
 
 if(IPPL_ENABLE_FFT)
   target_link_libraries(ippl PUBLIC Heffte::Heffte)
+endif()
+
+if(IPPL_ENABLE_FINUFFT)
+  target_link_libraries(ippl PUBLIC ${IPPL_FINUFFT_TARGETS})
 endif()
 
 # this alias should be created after all target properties have been set

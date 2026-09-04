@@ -62,9 +62,11 @@ compile-and-test-juwels:
         -DIPPL_ENABLE_FFT=ON \
         -DIPPL_ENABLE_SOLVERS=ON \
         -DIPPL_ENABLE_ALPINE=ON \
-        -DIPPL_ENABLE_EXAMPLES=ON \
-        -DIPPL_USE_ALTERNATIVE_VARIANT=ON \
+        -DIPPL_ENABLE_ESPIF=ON \
+        -DIPPL_ENABLE_COLLISIONS=ON \
         -DIPPL_ENABLE_COSMOLOGY=ON \
+        -DIPPL_ENABLE_FEL=ON \
+        -DIPPL_USE_ALTERNATIVE_VARIANT=ON \
         $([ "${ARCH}" != "NONE" ] && echo "-DKokkos_ARCH_${ARCH}=ON") \
         -DIPPL_PLATFORMS="${PLATFORM}"
 

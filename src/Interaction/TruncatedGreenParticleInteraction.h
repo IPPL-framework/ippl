@@ -1,8 +1,9 @@
 //
 // Class TruncatedGreenParticleInteraction
-//   This class implements the short range interaction part of the green function splitting obtained
-//   by taking the gradient of [forceConstant * (1 - erf(alpha * r)) / r]. The long range part is
-//   handled by FFTTruncatedGreenPeriodicSolver.
+//   This class implements the short-range part of the Ewald Green function split by evaluating the
+//   gradient of forceConstant * erfc(alpha * r) / r. Below regularization_cutoff, the singular
+//   Coulomb contribution is replaced by a linear force that matches continuously at the cutoff.
+//   The long-range part is handled by the periodic or open-boundary P3M mesh solver.
 //
 //   It assumes that ParticleContainer implements a function forAllPairs() to iterate over all
 //   relevant particle pairs.
@@ -38,8 +39,9 @@ namespace ippl {
          * @param R Position attribute
          * @param QM Charge or Mass like attribute determining the force magnitued
          * @param params Parameters, containing at least 'alpha', 'force_constant' and 'rcut'. alpha
-         * controls the truncation strength. force_constant to be multiplied with the force. rcut
-         * determines the maximal distance between two particles to contribute to the forces.
+         * controls the Ewald split, force_constant scales the interaction, and rcut determines the
+         * maximal contributing pair distance. The optional positive regularization_cutoff controls
+         * the near-origin softening and defaults to 1e-9.
          */
         TruncatedGreenParticleInteraction(const ParticleContainer& pc, VectorAttribute& F,
                                           const VectorAttribute& R, const ScalarAttribute& QM,
@@ -47,7 +49,12 @@ namespace ippl {
             : Base(pc, params)
             , Field_m(F)
             , R_m(R)
-            , QM_m(QM) {}
+            , QM_m(QM) {
+            if (!this->params_m.contains("regularization_cutoff")) {
+                this->params_m.template add<Scalar_t>("regularization_cutoff",
+                                                      static_cast<Scalar_t>(1.0e-9));
+            }
+        }
 
         ~TruncatedGreenParticleInteraction() override = default;
 
@@ -65,7 +72,7 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION static constexpr Vector_t fieldFromPair(const Vector_t& dist,
                                                                        Scalar_t r2, Scalar_t alpha,
                                                                        Scalar_t forceConstant,
-                                                                       Scalar_t qm);
+                                                                       Scalar_t qm, Scalar_t reg);
 
         ///! The electric or gravitational field
         VectorAttribute& Field_m;

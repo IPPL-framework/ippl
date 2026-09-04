@@ -2,13 +2,13 @@ include:
   - local: "ci/cscs/common.yml"
 
 variables:
-  CUDA12_9_UENV: "/capstor/store/cscs/cscs/public/uenvs/opal-x-gh200-mpich-gcc-2025-12-19-cuda-12.9.1.squashfs"
+  CUDA_UENV: "/capstor/store/cscs/cscs/public/uenvs/opal-x-gh200-mpich-gcc-2026-08-04-cuda-13.1.1.squashfs"
   WITH_UENV_VIEW: "default"
   WRAPPER: "/user-environment/wrapper-mpi.sh"
   SCRATCH: "/capstor/scratch/cscs/biddisco"
-  SRUN_ARGS: "--uenv=${CUDA12_9_UENV} --view=${WITH_UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-daint $WRAPPER"
+  SRUN_ARGS: "--uenv=${CUDA_UENV} --view=${WITH_UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-daint $WRAPPER"
   BUILD_ARCH: "gh200"
-  CTEST_SITE: "Daint gh200 CUDA 12.9.1"
+  CTEST_SITE: "Daint gh200 CUDA 13.1.1"
 
 # ---------------------------------------------------------
 # Common settings for cuda tests
@@ -48,8 +48,8 @@ variables:
 # ---------------------------------------------------------
 # 1 rank debug
 # ---------------------------------------------------------
-ippl-test-cuda12-sm90-debug-1-rank:
-  needs: ["ippl-build-cuda12-sm90-debug"]
+ippl-test-cuda13-sm90-debug-1-rank:
+  needs: ["ippl-build-cuda13-sm90-debug"]
   extends: .ippl-test-cuda-common
   variables:
     SLURM_NTASKS: 1
@@ -61,8 +61,8 @@ ippl-test-cuda12-sm90-debug-1-rank:
 # ---------------------------------------------------------
 # 1 rank release
 # ---------------------------------------------------------
-ippl-test-cuda12-sm90-release-1-rank:
-  needs: ["ippl-build-cuda12-sm90-release"]
+ippl-test-cuda13-sm90-release-1-rank:
+  needs: ["ippl-build-cuda13-sm90-release"]
   extends: .ippl-test-cuda-common
   variables:
     SLURM_NTASKS: 1
@@ -74,8 +74,8 @@ ippl-test-cuda12-sm90-release-1-rank:
 # ---------------------------------------------------------
 # 4 ranks release
 # ---------------------------------------------------------
-ippl-test-cuda12-sm90-release-4-ranks:
-  needs: ["ippl-build-cuda12-sm90-release"]
+ippl-test-cuda13-sm90-release-4-ranks:
+  needs: ["ippl-build-cuda13-sm90-release"]
   extends: .ippl-test-cuda-common
   variables:
     SLURM_NTASKS: 4
@@ -87,8 +87,8 @@ ippl-test-cuda12-sm90-release-4-ranks:
 # ---------------------------------------------------------
 # 4 ranks release : known failing tests
 # ---------------------------------------------------------
-# ippl-test-cuda12-sm90-release-failing-4-ranks:
-#   needs: ["ippl-build-cuda12-sm90-release"]
+# ippl-test-cuda13-sm90-release-failing-4-ranks:
+#   needs: ["ippl-build-cuda13-sm90-release"]
 #   extends: .ippl-test-cuda-common
 #   variables:
 #     SLURM_NTASKS: 4

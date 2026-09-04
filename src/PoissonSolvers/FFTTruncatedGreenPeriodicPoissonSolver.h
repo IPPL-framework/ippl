@@ -1,11 +1,12 @@
 //
 // Class FFTTruncatedGreenPeriodicPoissonSolver
-//   Poisson solver for periodic boundaries, based on FFTs.
-//   Solves laplace(phi) = -rho, and E = -grad(phi).
-//
-//   Uses a convolution with a Green's function given by:
-//      G(r) = forceConstant * erf(alpha * r) / r,
-//         alpha = controls long-range interaction.
+//   P3M long-range solver retaining its historical class name. PERIODIC uses the native spectral
+//   Ewald path; OPEN delegates to FFTOpenPoissonSolver with a doubled-grid Hockney convolution.
+//   For every nonzero periodic Fourier mode, it computes
+//      phi_hat(k) = -rho_hat(k) * 4*pi*forceConstant*exp(-k^2/(4*alpha^2))/k^2
+//   and E = -grad(phi). The zero mode is set to zero, corresponding to a neutral system or an
+//   implicit uniform neutralizing background. alpha controls the split between mesh and particle
+//   interactions.
 //
 //
 
@@ -20,6 +21,7 @@
 #include "FieldLayout/FieldLayout.h"
 #include "Meshes/UniformCartesian.h"
 #include "Poisson.h"
+#include "PoissonSolvers/FFTOpenPoissonSolver.h"
 
 namespace ippl {
     template <typename FieldLHS, typename FieldRHS>
@@ -38,16 +40,19 @@ namespace ippl {
         // define a type for the 3 dimensional real to complex Fourier transform
         typedef FFT<RCTransform, FieldRHS> FFT_t;
 
-        // define a type for a 3 dimensional field (e.g. charge density field)
-        // define a type of Field with integers to be used for the helper Green's function
-        // also define a type for the Fourier transformed complex valued fields
-        typedef FieldRHS Field_t;
-        typedef Field<int, Dim, mesh_type, typename FieldLHS::Centering_t> IField_t;
+        // define a type for the Fourier transformed complex valued fields
         typedef typename FFT_t::ComplexField CxField_t;
         typedef Vector<Trhs, Dim> Vector_t;
 
         // define type for field layout
         typedef FieldLayout<Dim> FieldLayout_t;
+
+        enum BoundaryType {
+            OPEN     = 0,
+            PERIODIC = 1
+        };
+
+        using OpenSolver_t = FFTOpenPoissonSolver<FieldLHS, FieldRHS>;
 
         // constructor and destructor
         FFTTruncatedGreenPeriodicPoissonSolver();
@@ -59,6 +64,9 @@ namespace ippl {
         // since we need to call initializeFields()
         void setRhs(rhs_type& rhs) override;
 
+        // Keep the delegated open solver bound to the same output field.
+        void setLhs(lhs_type& lhs) override;
+
         // solve the Poisson equation
         // more specifically, compute the scalar potential given a density field rho
         void solve() override;
@@ -66,22 +74,22 @@ namespace ippl {
         // function called in the constructor to initialize the fields
         void initializeFields();
 
-        // compute standard Green's function
+        // compute the periodic Ewald Green's function
         void greensFunction();
 
-
     private:
-        Field_t grn_m;  // the Green's function
-
         CxField_t rhotr_m;
         CxField_t grntr_m;
         CxField_t tempFieldComplex_m;
 
-        // fields that facilitate the calculation in greensFunction()
-        IField_t grnIField_m[Dim];
-
         // the FFT object
         std::unique_ptr<FFT_t> fft_m;
+
+        // Reuse the existing Hockney implementation for open-boundary P3M.
+        std::unique_ptr<OpenSolver_t> openSolver_m;
+
+        BoundaryType boundaryType_m = PERIODIC;
+        bool boundaryInitialized_m  = false;
 
         // mesh and layout objects for rho_m (RHS)
         mesh_type* mesh_mp;
@@ -109,6 +117,7 @@ namespace ippl {
             this->params_m.add("r2c_direction", 0);
             this->params_m.template add<Trhs>("alpha", 1);
             this->params_m.template add<Trhs>("force_constant", 1);
+            this->params_m.add("boundary_type", PERIODIC);
 
             switch (opts.algorithm) {
                 case heffte::reshape_algorithm::alltoall:
@@ -124,12 +133,13 @@ namespace ippl {
                     this->params_m.add("comm", p2p_pl);
                     break;
                 default:
-                    throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters",
-                                        "Unrecognized heffte communication type");
+                    throw IpplException(
+                        "FFTTruncatedGreenPeriodicPoissonSolver::setDefaultParameters",
+                        "Unrecognized heffte communication type");
             }
         }
     };
 }  // namespace ippl
 
 #include "PoissonSolvers/FFTTruncatedGreenPeriodicPoissonSolver.hpp"
-#endif // IPPL_FFT_TRUNCATED_GREEN_PERIODIC_POISSON_SOLVER_H_SOLVER_H_
+#endif  // IPPL_FFT_TRUNCATED_GREEN_PERIODIC_POISSON_SOLVER_H_SOLVER_H_

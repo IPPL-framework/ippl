@@ -74,6 +74,18 @@ namespace ippl {
         }
 
         /*!
+         * Guard view-to-view copies against identical source and destination views.
+         *
+         * Kokkos 5.2 aborts on identical view arguments to Kokkos::deep_copy().
+         */
+        template <typename DstView, typename SrcView>
+        void deepCopyIfDifferent(const DstView& dst, const SrcView& src) {
+            if (static_cast<const void*>(dst.data()) != static_cast<const void*>(src.data())) {
+                Kokkos::deep_copy(dst, src);
+            }
+        }
+
+        /*!
          * Writes a view to an output stream
          * @tparam T view data type
          * @tparam Dim view dimension
