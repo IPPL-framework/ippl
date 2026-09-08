@@ -172,3 +172,101 @@ target_link_libraries(app PRIVATE ippl::ippl)
 ```
 
 
+
+## Kokkos Kernels and host eigenanalysis
+
+`IPPL_ENABLE_KOKKOS_KERNELS` defaults to `ON`. IPPL first finds an installed
+Kokkos Kernels package (default minimum version 5.2.0), then falls back to
+FetchContent. `KokkosKernels_VERSION=git.<tag-or-sha>` requests a source build.
+The package uses the Kokkos target already selected by IPPL. An external package
+must have been built against a compatible Kokkos with the required backends.
+
+Host eigenanalysis is selected independently of `IPPL_PLATFORMS`:
+
+- `IPPL_KOKKOS_KERNELS_HOST=LAPACKE` (default): provide LAPACKE headers and a
+  complete LAPACKE/LAPACK/BLAS link line. Set `LAPACKE_ROOT`, or
+  `LAPACKE_INCLUDE_DIRS` and `LAPACKE_LIBRARIES`. Static link lines must include
+  transitive dependencies, such as the Fortran runtime. Library names can be
+  resolved through `LAPACKE_LIBRARY_DIRS`; absolute paths are supported.
+- `IPPL_KOKKOS_KERNELS_HOST=MKL`: provide an MKL CMake package through
+  `CMAKE_PREFIX_PATH`/`MKL_DIR` (modern oneMKL).
+- `IPPL_KOKKOS_KERNELS_HOST=NONE`: use portable/GPU kernels without requesting
+  host eigenanalysis; only the GEMM regression is registered in the test binary.
+- `IPPL_ENABLE_KOKKOS_KERNELS=OFF`: omit the dependency and its tests entirely.
+
+Kokkos does not install these external libraries. On macOS, install a LAPACKE
+provider, such as an OpenBLAS build with LAPACKE or reference LAPACK built with
+LAPACKE. Apple's Accelerate alone does not supply this LAPACKE interface.
+Installation paths belong in site presets/toolchain files, not repository CMake.
+For example, source builds can use these preset cache entries:
+
+```json
+{
+  "IPPL_ENABLE_KOKKOS_KERNELS": "ON",
+  "IPPL_KOKKOS_KERNELS_HOST": "LAPACKE",
+  "LAPACKE_ROOT": "/site/path/to/lapacke",
+  "IPPL_LAPACK_INTEGER_BYTES": "4"
+}
+```
+
+Use headers and libraries from one compatible provider. Integer size defaults to
+4 bytes (LP64); 8 selects ILP64 and propagates `LAPACK_ILP64` or `MKL_ILP64` to IPPL
+consumers. For MKL source builds it also selects `MKL_INTERFACE`. Changing this
+option cannot convert an installed library to another ABI. Configure checks the
+header integer size, links an actual `LAPACKE_dgeev` call, and, for native builds,
+runs a small spectrum/status check. Cross builds defer runtime checks to tests.
+These checks are smoke tests, not a substitute for a consistent vendor build.
+Providers with renamed symbols (for example, `LAPACKE_dgeev64_`) need matching
+headers exposing the standard LAPACKE call; integer-size selection alone does
+not adapt symbol names. Incompatible installations are rejected by the link probe.
+
+CUDA source builds enable cuBLAS, cuSOLVER and cuSPARSE. HIP source builds enable
+rocBLAS, rocSOLVER and rocSPARSE (the sparse libraries are required by the solver
+TPL configuration). Supply `CUDAToolkit_ROOT` or ROCm's `CMAKE_PREFIX_PATH` in site
+presets. Host LAPACKE/MKL remains necessary when host eigenanalysis is requested.
+Installed Kernels configurations are inspected for the requested TPLs; changing
+cache options cannot add a missing TPL to an installed package. All link
+requirements propagate through `Kokkos::kokkoskernels` and `IPPL::ippl`.
+
+Source builds default to on-demand kernel instantiation rather than default ETI.
+`KokkosKernels_ADD_DEFAULT_ETI=ON` can enable upstream's preinstantiations.
+Supernodal SPTRSV defaults off because it requires LayoutLeft ETI; applications
+needing it should configure the required ETI and enable it explicitly.
+
+The `KokkosKernelsLinearMap` unit test constructs coupled 4x4 maps using GEMM in
+the default execution/memory space, explicitly copies results to host memory,
+and verifies analytical eigenvalues and normalized right-eigenvector residuals.
+It covers stable rotations, conjugate branches, coupled modes, real/complex
+instabilities, and near-integer/neutral modes. Eigenvalue/residual tolerance is
+1e-12 for small, well-conditioned double-precision maps; GEMM tolerance is 1e-14.
+No production physics algorithm or reduction ordering is changed.
+
+The test calls the configured host `LAPACKE_dgeev` directly with column-major
+Kokkos host views. Kokkos Kernels 5.2.0's experimental `SerialEigendecomposition`
+header contains an invalid Householder template call rejected by GCC 15 and
+Clang 21; its
+device implementation is unfinished and its host wrapper discards LAPACKE's
+status. IPPL does not patch upstream or suppress compiler diagnostics. This test
+therefore validates portable map construction and an explicit host eigenanalysis
+boundary, not a GPU eigensolver or the experimental wrapper.
+
+```sh
+cmake --build build_openmp --target KokkosKernelsLinearMap
+OMP_NUM_THREADS=2 ctest --test-dir build_openmp -R '^KokkosKernelsLinearMap$' --output-on-failure
+```
+
+Reference: [Kokkos Kernels 5.2.0 eigenanalysis implementation](https://github.com/kokkos/kokkos-kernels/blob/5.2.0/batched/dense/impl/KokkosBatched_Eigendecomposition_Serial_Internal.hpp).
+
+A standalone consumer test checks dependency propagation while linking only
+`IPPL::ippl`. Configure it against the IPPL build directory, then repeat with
+`IPPL_DIR=<install-prefix>/lib/cmake/ippl` after installation:
+
+```sh
+cmake -S cmake/tests/KokkosKernelsConsumer -B build/kernels-consumer -DIPPL_DIR="$PWD/build_openmp"
+cmake --build build/kernels-consumer
+OMP_NUM_THREADS=2 build/kernels-consumer/consumer
+```
+
+Use the same compiler/toolchain as the IPPL build. The CSCS dashboard script
+forwards the host-provider and dependency-path options above; site images must
+supply these dependencies before running default-enabled builds.
