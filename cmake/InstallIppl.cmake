@@ -29,6 +29,7 @@ set(_ippl_install_excludes
     PATTERN "*.cc"  EXCLUDE
     PATTERN "*.cpp" EXCLUDE
     PATTERN "*.cu"  EXCLUDE
+    PATTERN "catalyst_scripts" EXCLUDE
     # match your filenames if needed
 )
 
@@ -101,14 +102,21 @@ write_basic_package_version_file("${PROJECT_BINARY_DIR}/IPPLConfigVersion.cmake"
 # -------------------------------------------------------
 # Setup the main project config file found by find_package(IPPL
 # -------------------------------------------------------
+set(IPPL_CATALYST_CONFIG_BUILD_TREE OFF)
+set(IPPL_CONFIG_CATALYST_BUILD_PACKAGE_DIR "")
 configure_package_config_file(
   "${PROJECT_SOURCE_DIR}/cmake/IPPLConfig.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/IPPLConfig.cmake"
   INSTALL_DESTINATION ${IPPL_INSTALL_CMAKEDIR})
 
 # Also generate config file in the build directory to support uninstalled builds
+set(IPPL_CATALYST_CONFIG_BUILD_TREE ON)
+set(IPPL_CONFIG_CATALYST_BUILD_PACKAGE_DIR "${IPPL_CATALYST_BUILD_PACKAGE_DIR}")
 configure_package_config_file(
   "${PROJECT_SOURCE_DIR}/cmake/IPPLConfig.cmake.in" "${PROJECT_BINARY_DIR}/IPPLConfig.cmake"
   INSTALL_DESTINATION lib/cmake/IPPL)
+
+unset(IPPL_CATALYST_CONFIG_BUILD_TREE)
+unset(IPPL_CONFIG_CATALYST_BUILD_PACKAGE_DIR)
 
 # -------------------------------------------------------
 # The install rule that copies the generated config files to the install tree
@@ -123,10 +131,6 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/IPPLConfig.cmake"
 # -------------------------------------------------------
 if(TARGET Heffte)
   install(TARGETS Heffte EXPORT ipplTargets DESTINATION lib)
-endif()
-
-if(TARGET catalyst AND NOT catalyst_FOUND)
-  install(TARGETS catalyst EXPORT ipplTargets DESTINATION lib)
 endif()
 
 foreach(_ippl_extern_dep IN ITEMS finufft finufft_common cufinufft)

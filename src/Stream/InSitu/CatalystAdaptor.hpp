@@ -49,16 +49,16 @@ void CatalystAdaptor::InitVizChannel( [[maybe_unused]]  const Field<T, Dim, View
             const std::string script = "catalyst/scripts/" + label;
             setNodeScript( node_m[script + "/filename"],
                             "CATALYST_EXTRACTOR_SCRIPT_" +label,
-                            sourceDir_m /"catalyst_scripts" / "catalyst_extractors" /"png_ext_sfield.py"
+                            resourceDir_m / "catalyst_extractors" / "png_ext_sfield.py"
                         );
             conduit_cpp::Node args = node_m[script + "/args"];
             args.append().set_string("--channel_name");
             args.append().set_string(channelName);
             args.append().set_string("--label");
             args.append().set_string(label);
-            if(TestName){
+            if(experimentName_m){
                 args.append().set_string("--experiment_name");
-                args.append().set_string(std::string(TestName));
+                args.append().set_string(*experimentName_m);
             }
 
             args.append().set_string("--verbosity");
@@ -87,7 +87,7 @@ void CatalystAdaptor::InitVizChannel( [[maybe_unused]]  const Field<Vector<T, Di
 
             setNodeScript( node_m[script + "/filename"],
                             "CATALYST_EXTRACTOR_SCRIPT_" + label,
-                            sourceDir_m /"catalyst_scripts" / "catalyst_extractors" /"png_ext_vfield.py"
+                            resourceDir_m / "catalyst_extractors" / "png_ext_vfield.py"
                             
                         );
             conduit_cpp::Node args = node_m[script + "/args"];
@@ -95,9 +95,9 @@ void CatalystAdaptor::InitVizChannel( [[maybe_unused]]  const Field<Vector<T, Di
             args.append().set_string(channelName);
             args.append().set_string("--label");
             args.append().set_string(label);
-            if(TestName){
+            if(experimentName_m){
                 args.append().set_string("--experiment_name");
-                args.append().set_string(std::string(TestName));
+                args.append().set_string(*experimentName_m);
             }
             args.append().set_string("--verbosity");
             args.append().set_string(std::to_string(catalystInfo_m.getOutputLevel()));
@@ -128,7 +128,7 @@ void CatalystAdaptor::InitVizChannel( [[maybe_unused]]  const T& entry, const st
                 setNodeScript( 
                             node_m[script + "/filename"],
                             "CATALYST_EXTRACTOR_SCRIPT_" +label,
-                            sourceDir_m /"catalyst_scripts" / "catalyst_extractors" /"png_ext_particle.py"
+                            resourceDir_m / "catalyst_extractors" / "png_ext_particle.py"
                 );
 
                 conduit_cpp::Node args = node_m[script + "/args"];
@@ -137,9 +137,9 @@ void CatalystAdaptor::InitVizChannel( [[maybe_unused]]  const T& entry, const st
                     args.append().set_string("--label");
                     args.append().set_string(label);
 
-                if(TestName){
+                if(experimentName_m){
                     args.append().set_string("--experiment_name");
-                    args.append().set_string(std::string(TestName));
+                    args.append().set_string(*experimentName_m);
                 }
 
                 args.append().set_string("--verbosity");
@@ -917,7 +917,7 @@ if ( !visEnabled_m) return;
 
     setNodeScript(  node_m["catalyst/scripts/script/filename"], //where in node_m
                     "CATALYST_PIPELINE_PATH",                   // environment override
-                    sourceDir_m / "catalyst_scripts" / "pipeline_default.py") //default
+                    resourceDir_m / "pipeline_default.py") //default
                 ;
     conduit_cpp::Node args = node_m["catalyst/scripts/script/args"];
 
@@ -932,18 +932,32 @@ if ( !visEnabled_m) return;
 
 
     args.append().set_string("--VTKextract");
-    args.append().set_string(std::string(catalystVtk_m));
+    args.append().set_string(catalystVtk_m);
 
     args.append().set_string("--live");
-    args.append().set_string(std::string(catalystLive_m));
+    args.append().set_string(catalystLive_m);
 
     args.append().set_string("--steer");
-    args.append().set_string(std::string(catalystSteer_m));
+    args.append().set_string(catalystSteer_m);
 
 
     args.append().set_string("--steer_channel_names");
         
-    auto proxyPath = (sourceDir_m / "catalyst_scripts" / "catalyst_proxy.xml").string() ;
+    std::filesystem::path proxyPath = outputDir_m / "catalyst_proxy.xml";
+    bool useExistingProxy = false;
+    if (const char* proxyPathEnv = std::getenv("IPPL_CATALYST_PROXY_PATH");
+        proxyPathEnv && *proxyPathEnv) {
+        proxyPath = proxyPathEnv;
+        useExistingProxy = true;
+    } else if (const char* legacyProxyPathEnv = std::getenv("CATALYST_PROXYS_PATH");
+               legacyProxyPathEnv && *legacyProxyPathEnv) {
+        proxyPath = legacyProxyPathEnv;
+        useExistingProxy = true;
+        catalystWarn_m << "CATALYST_PROXYS_PATH is deprecated; use "
+                          "IPPL_CATALYST_PROXY_PATH instead."
+                       << endl;
+    }
+
     std::string cfgYaml;
     if (const char* cfg_env = std::getenv("IPPL_PROXY_CONFIG_YAML")) {
         if (std::filesystem::exists(cfg_env)) {
@@ -953,7 +967,7 @@ if ( !visEnabled_m) return;
         }
     }
     if (cfgYaml.empty()) {
-        auto default_cfgYaml = (sourceDir_m / "catalyst_scripts" / "proxy_default_config.yaml").string();
+        auto default_cfgYaml = (resourceDir_m / "proxy_default_config.yaml").string();
         if (std::filesystem::exists(default_cfgYaml)) {
             cfgYaml = std::move(default_cfgYaml);
         } // else leave empty -> ProxyWriter can proceed without config
@@ -965,21 +979,46 @@ if ( !visEnabled_m) return;
         SteerInitVisitor steerInitV{*this};
         steerRegistry_m->forEach(steerInitV);
     } 
-    setNodeScript(    node_m["catalyst/proxies/proxy_/filename"],
-        "CATALYST_PROXYS_PATH",
-        proxyPath
-    );
+    const bool generateProxy = !useExistingProxy && proxyOption_m != "OFF";
+    int proxyReady = 1;
 
-    
-
-    if( std::string(proxyOption_m) == "PRODUCE_ONLY"){
-            proxyWriter_m.produceUnified("SteerableParameters_SCALARS", "SteerableParameters");
-            throw IpplException("Stream::InSitu::CatalystAdaptor", "write_proxy_only_run: proxies have been printed");
-    }else if( std::string(proxyOption_m) == "OFF"){
-    }else{
-        proxyWriter_m.produceUnified("SteerableParameters_SCALARS", "SteerableParameters");
+    if (ippl::Comm->rank() == 0) {
+        if (useExistingProxy) {
+            proxyReady = std::filesystem::is_regular_file(proxyPath) ? 1 : 0;
+        } else if (generateProxy) {
+            proxyReady = proxyWriter_m.produceUnified(
+                             "SteerableParameters_SCALARS", "SteerableParameters")
+                             ? 1
+                             : 0;
+        } else {
+            proxyReady = std::filesystem::is_regular_file(proxyPath) ? 1 : 0;
+        }
     }
 
+#if defined(MPI_VERSION)
+    MPI_Bcast(&proxyReady, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+    if ((useExistingProxy || generateProxy) && !proxyReady) {
+        throw IpplException(
+            "Stream::InSitu::CatalystAdaptor::Initialize()",
+            "Could not create or read Catalyst proxy XML: " + proxyPath.string());
+    }
+
+    if (proxyReady) {
+        node_m["catalyst/proxies/proxy_/filename"].set(proxyPath.string());
+    } else if (steerEnabled_m) {
+        catalystWarn_m << "Steering is enabled without a Catalyst proxy XML because "
+                          "IPPL_CATALYST_PROXY_OPTION=OFF and no existing proxy was found at "
+                       << proxyPath.string() << endl;
+    }
+
+    if (proxyOption_m == "PRODUCE_ONLY") {
+        throw IpplException(
+            "Stream::InSitu::CatalystAdaptor",
+            "write_proxy_only_run: proxy available at " + proxyPath.string());
+    }
 
     catalystInfo_m << level4 <<"::Initialize()   Printing Conduit `node_m` instance passed to catalyst_initialize() =>" << endl;
     catalystInfo_m << level4 <<node_m.to_yaml() << endl; // or node.to_json() 
@@ -1050,7 +1089,7 @@ void CatalystAdaptor::Execute( int cycle, double time, int rank /* default = ipp
 
 
     IpplTimings::startTimer(TMRexecSteerVisitor);
-    if (catalystSteer_m && std::string(catalystSteer_m) == "ON") {
+    if (steerEnabled_m) {
         // edit forward Node: add steering channels
         SteerForwardVisitor steerV{*this};
         steerRegistry_m->forEach(steerV); 
@@ -1109,7 +1148,7 @@ void CatalystAdaptor::Execute( int cycle, double time, int rank /* default = ipp
         std::cerr << "::Execute()   Failed to execute Catalyst (runtime path): " << err << std::endl;
     }
 
-    if (catalystSteer_m && std::string(catalystSteer_m) == "ON") {
+    if (steerEnabled_m) {
         
         static IpplTimings::TimerRef TMRfetchResult = IpplTimings::getTimer("fetchSteerParameters");
         IpplTimings::startTimer(TMRfetchResult);

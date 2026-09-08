@@ -73,16 +73,29 @@ endif()
 # Catalyst
 # -----------------------------------------------------------------------------
 if(@IPPL_ENABLE_CATALYST@)
-    if(@catalyst_FOUND@)
-        message(STATUS "Finding IPPL dependency : external Catalyst")
+    if("@IPPL_CATALYST_USE_MPI@" AND NOT CMAKE_C_COMPILER_LOADED)
+        set(${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE)
+        set(${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE
+            "IPPL was built with MPI-enabled Catalyst, which requires the C language. Enable it in the consuming project with project(... LANGUAGES C CXX).")
+        return()
+    endif()
+
+    if(@IPPL_CATALYST_CONFIG_BUILD_TREE@)
+      if("@IPPL_CATALYST_FETCHED@")
+        set(catalyst_DIR "@IPPL_CONFIG_CATALYST_BUILD_PACKAGE_DIR@")
+      elseif(NOT "@catalyst_DIR@" STREQUAL "")
         set(catalyst_DIR "@catalyst_DIR@")
-        find_dependency(catalyst REQUIRED)
-    else()
-        message(STATUS "Using Catalyst built with IPPL (targets exported via IPPL::ippl)")
+      endif()
+    elseif("@IPPL_CATALYST_FETCHED@")
+      set(catalyst_DIR
+          "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_LIBDIR@/cmake/@IPPL_CATALYST_PACKAGE_DIRNAME@")
+    elseif(NOT catalyst_DIR AND NOT "@catalyst_DIR@" STREQUAL "")
+      set(catalyst_DIR "@catalyst_DIR@")
     endif()
-    if(DEFINED catalyst_VERSION)
-        message(STATUS "Catalyst version ${catalyst_VERSION}")
-    endif()
+
+    message(STATUS "Finding IPPL dependency : Catalyst")
+    find_dependency(catalyst @IPPL_CATALYST_VERSION@ CONFIG REQUIRED)
+    message(STATUS "Catalyst version ${catalyst_VERSION}")
 endif()
 
 # -----------------------------------------------------------------------------
@@ -90,3 +103,8 @@ endif()
 # -----------------------------------------------------------------------------
 include("${CMAKE_CURRENT_LIST_DIR}/IPPLTargets.cmake")
 
+if("@IPPL_ENABLE_CATALYST@" AND NOT @IPPL_CATALYST_CONFIG_BUILD_TREE@)
+    set_property(
+        TARGET IPPL::ippl APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS
+        "IPPL_CATALYST_SCRIPTS_DIR=\"${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_DATADIR@/ippl/catalyst_scripts\"")
+endif()

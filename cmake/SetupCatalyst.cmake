@@ -21,7 +21,7 @@ message(STATUS "Catalyst enabled")
 target_compile_definitions(
   ippl
   PUBLIC IPPL_ENABLE_CATALYST
-         CATALYST_ADAPTOR_ABS_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+         $<BUILD_INTERFACE:IPPL_CATALYST_SCRIPTS_DIR="${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/ippl/catalyst_scripts">)
 
 target_link_libraries(ippl PUBLIC catalyst::catalyst)
 
@@ -41,4 +41,3 @@ endif()
 get_target_property(_cat_type catalyst::catalyst TYPE)
 message(STATUS "  Target: catalyst::catalyst (${_cat_type})")
 unset(_cat_type)
-

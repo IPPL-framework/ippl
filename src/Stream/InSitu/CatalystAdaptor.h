@@ -14,6 +14,7 @@
 #include <catalyst.hpp>
 #include <catalyst_conduit.hpp>
 
+#include <cstdlib>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -170,6 +171,25 @@ public:
     using SteerVisitorVariant_t = std::variant<SteerInitVisitor*, SteerForwardVisitor*, SteerFetchVisitor*>;
 
 private:
+    static std::string environmentValue(const char* name, std::string fallback) {
+        const char* value = std::getenv(name);
+        return value && *value ? std::string(value) : std::move(fallback);
+    }
+
+    static std::filesystem::path catalystOutputDirectory() {
+        const char* value = std::getenv("IPPL_CATALYST_OUTPUT_DIR");
+        return value && *value ? std::filesystem::path(value)
+                               : std::filesystem::current_path() / "catalyst";
+    }
+
+    static std::optional<std::string> normalizeExperimentName(
+        std::optional<std::string> experimentName) {
+        if (experimentName && experimentName->empty()) {
+            experimentName.reset();
+        }
+        return experimentName;
+    }
+
     std::shared_ptr<ippl::VisRegistryRuntime> visRegistry_m;
     std::shared_ptr<ippl::VisRegistryRuntime> steerRegistry_m;
     
@@ -186,14 +206,15 @@ private:
     std::unordered_map<std::string, std::vector<std::pair<std::string,int>>> enumChoices_m;
 
     
-    const char* catalystVis_m  ;
-    const char* catalystLive_m  ;
-    const char* catalystSteer_m;
-    const char* catalystPng_m  ;
-    const char* catalystVtk_m  ;
-    const char* catalystVerbosity_m;
-    const char* catalystGhostMask_m  ;
-    const char* proxyOption_m;
+    const std::optional<std::string> experimentName_m;
+    const std::string catalystVis_m;
+    const std::string catalystLive_m;
+    const std::string catalystSteer_m;
+    const std::string catalystPng_m;
+    const std::string catalystVtk_m;
+    const std::string catalystVerbosity_m;
+    const std::string catalystGhostMask_m;
+    const std::string proxyOption_m;
     
     const bool visEnabled_m;
     const bool liveEnabled_m;
@@ -203,8 +224,8 @@ private:
     const int  outputLevel_m  ; 
     const bool useGhostMasks_m;
     
-    // std::string associate_m;
-    const std::filesystem::path sourceDir_m;
+    const std::filesystem::path resourceDir_m;
+    const std::filesystem::path outputDir_m;
 
     std::unordered_map<std::string, bool> forceHostCopy_m;    
     
@@ -215,32 +236,35 @@ public:
 
     
 
-    CatalystAdaptor() : 
+    /**
+     * @brief Construct a Catalyst adaptor.
+     *
+     * @param experimentName Optional label forwarded to Catalyst extractor scripts.
+     * Runtime output is written below IPPL_CATALYST_OUTPUT_DIR, or ./catalyst when unset.
+     */
+    explicit CatalystAdaptor(std::optional<std::string> experimentName = std::nullopt) :
                 catalystInfo_m("CatalystAdaptor::", 0),  // Only print on rank 0
-                catalystWarn_m("CatalystAdaptor_WARNING", std::cerr, INFORM_ALL_NODES), 
-                catalystVis_m(std::getenv("IPPL_CATALYST_VIS")),
-                catalystLive_m(std::getenv("IPPL_CATALYST_LIVE")),
-                catalystSteer_m(std::getenv("IPPL_CATALYST_STEER")),
-                catalystPng_m(std::getenv("IPPL_CATALYST_PNG")),
-                catalystVtk_m(std::getenv("IPPL_CATALYST_VTK")),
-                catalystVerbosity_m(std::getenv("IPPL_CATALYST_VERBOSITY")),
-                catalystGhostMask_m(std::getenv("IPPL_CATALYST_GHOST_MASKS")),
-                proxyOption_m(std::getenv("IPPL_CATALYST_PROXY_OPTION")),
-                visEnabled_m( ! (catalystVis_m        && std::string(catalystVis_m)    == "OFF") ),
-                liveEnabled_m(   catalystLive_m       && std::string(catalystLive_m)   == "ON"),
-                steerEnabled_m(  catalystSteer_m      && std::string(catalystSteer_m)  == "ON"),
-                pngExtracts_m(   catalystPng_m        && std::string(catalystPng_m)    == "ON"),
-                vtkExtracts_m(   catalystVtk_m        && std::string(catalystVtk_m)    == "ON"),
-                outputLevel_m(   catalystVerbosity_m  ? std::stoi(catalystVerbosity_m) : ippl::Info->getOutputLevel()),
-                useGhostMasks_m(catalystGhostMask_m && std::string(catalystGhostMask_m) == "ON"),
-                sourceDir_m(std::filesystem::path(CATALYST_ADAPTOR_ABS_DIR) / "Stream" / "InSitu")
+                catalystWarn_m("CatalystAdaptor_WARNING", std::cerr, INFORM_ALL_NODES),
+                experimentName_m(normalizeExperimentName(std::move(experimentName))),
+                catalystVis_m(environmentValue("IPPL_CATALYST_VIS", "ON")),
+                catalystLive_m(environmentValue("IPPL_CATALYST_LIVE", "OFF")),
+                catalystSteer_m(environmentValue("IPPL_CATALYST_STEER", "OFF")),
+                catalystPng_m(environmentValue("IPPL_CATALYST_PNG", "OFF")),
+                catalystVtk_m(environmentValue("IPPL_CATALYST_VTK", "OFF")),
+                catalystVerbosity_m(environmentValue(
+                    "IPPL_CATALYST_VERBOSITY", std::to_string(ippl::Info->getOutputLevel()))),
+                catalystGhostMask_m(environmentValue("IPPL_CATALYST_GHOST_MASKS", "OFF")),
+                proxyOption_m(environmentValue("IPPL_CATALYST_PROXY_OPTION", "ON")),
+                visEnabled_m(catalystVis_m != "OFF"),
+                liveEnabled_m(catalystLive_m == "ON"),
+                steerEnabled_m(catalystSteer_m == "ON"),
+                pngExtracts_m(catalystPng_m == "ON"),
+                vtkExtracts_m(catalystVtk_m == "ON"),
+                outputLevel_m(std::stoi(catalystVerbosity_m)),
+                useGhostMasks_m(catalystGhostMask_m == "ON"),
+                resourceDir_m(IPPL_CATALYST_SCRIPTS_DIR),
+                outputDir_m(catalystOutputDirectory())
     {
-        // associate_m="element";
-
-        if(!liveEnabled_m){
-            catalystLive_m ="OFF";
-        }
-        
         catalystInfo_m.setOutputLevel(outputLevel_m);
         
         // #if defined(MPI_VERSION)
@@ -254,7 +278,8 @@ public:
         catalystInfo_m << "::CatalystAdaptor()   Global        Output  Level setting: " << ippl::Info->getOutputLevel() << endl;
         catalystInfo_m << "::CatalystAdaptor()   Catalyst Info Output  Level setting: " << catalystInfo_m.getOutputLevel() << endl;
         catalystInfo_m << "::CatalystAdaptor()   Catalyst Warn Output  Level setting: " << catalystWarn_m.getOutputLevel() << endl;
-        catalystInfo_m << "::CatalystAdaptor()   using sourceDir_m = " << sourceDir_m.string() << endl;
+        catalystInfo_m << "::CatalystAdaptor()   using resourceDir_m = " << resourceDir_m.string() << endl;
+        catalystInfo_m << "::CatalystAdaptor()   using outputDir_m = " << outputDir_m.string() << endl;
         if  (pngExtracts_m) 
             { catalystInfo_m << "::CatalystAdaptor()   PNG extraction ACTIVATED"   << endl;} 
         else{ catalystInfo_m << "::CatalystAdaptor()   PNG extraction DEACTIVATED" << endl;}
@@ -700,4 +725,3 @@ public:
 
 
 #endif
-

@@ -210,7 +210,10 @@ bool ProxyWriter::produceUnified(const std::string& unifiedProxyName,
   full << header_m.str() << sources_m.str() << misc_m.str() << footer_m.str();
 
   std::error_code ec;
-  std::filesystem::create_directories(outPath_m.parent_path(), ec);
+  if (!outPath_m.parent_path().empty()) {
+    std::filesystem::create_directories(outPath_m.parent_path(), ec);
+    if (ec) return false;
+  }
   std::ofstream ofs(outPath_m);
   if (!ofs) return false;
   ofs << full.str();
@@ -764,7 +767,6 @@ void ProxyWriter::appendUnifiedSourceProxy(const std::string& proxyName,
   // Collect struct members (non-array) including numerics, bools, enums, and buttons
   std::map<std::string, std::vector<const Channel*>> structMembers;
   bool hasLooseNumerics = false;
-  auto endsWith = [](const std::string& s, const std::string& suf){ return s.size()>=suf.size() && s.compare(s.size()-suf.size(), suf.size(), suf)==0; };
   for (const auto& ch : channels_m) {
     if (ch.isArray) continue;
     // include bool, enum, button and numerics in struct groups
