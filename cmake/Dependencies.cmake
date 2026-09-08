@@ -2,11 +2,12 @@
 # Dependencies.cmake
 # ~~~
 #
-# Resolves third-party libraries: Kokkos and Heffte.
+# Resolves third-party libraries: Kokkos, Heffte, and Catalyst.
 #
 # Responsibilities:
 #   - Fetch or find Kokkos, using version and backends from Platforms.cmake
 #   - Fetch Heffte if IPPL_ENABLE_FFT is ON, using CUDA or AVX2 based on platform
+#   - Fetch or find Catalyst when IPPL_ENABLE_CATALYST is ON
 #
 # Not responsible for:
 #   - Selecting platform backends            → Platforms.cmake
@@ -475,6 +476,57 @@ if(IPPL_ENABLE_FINUFFT)
   endif()
 
   add_compile_definitions(ENABLE_FINUFFT)
+endif()
+
+# ------------------------------------------------------------------------------
+# Catalyst (libcatalyst SDK)
+# ------------------------------------------------------------------------------
+if(IPPL_ENABLE_CATALYST)
+  enable_language(C)
+
+  # Support Catalyst_DIR, catalyst_DIR, CATALYST_DIR (package dir or install prefix)
+  foreach(_cat_dir_var IN ITEMS Catalyst_DIR catalyst_DIR CATALYST_DIR)
+    if(DEFINED ${_cat_dir_var} AND ${_cat_dir_var})
+      if(EXISTS "${${_cat_dir_var}}/catalyst-config.cmake")
+        set(catalyst_DIR "${${_cat_dir_var}}")
+      else()
+        list(APPEND CMAKE_PREFIX_PATH "${${_cat_dir_var}}")
+      endif()
+    endif()
+  endforeach()
+  unset(_cat_dir_var)
+
+  find_package(catalyst CONFIG QUIET)
+
+  if(catalyst_FOUND)
+    colour_message(STATUS ${Green} "✅ Catalyst ${catalyst_VERSION} found externally")
+  else()
+    if(NOT Catalyst_VERSION)
+      set(Catalyst_VERSION 2.1.0)
+    endif()
+    colour_message(STATUS ${Green} "✅ Catalyst v${Catalyst_VERSION} building from source")
+
+    set(CATALYST_BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+    set(CATALYST_BUILD_STUB_IMPLEMENTATION ON CACHE BOOL "" FORCE)
+    set(CATALYST_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(CATALYST_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+    set(CATALYST_WRAP_PYTHON OFF CACHE BOOL "" FORCE)
+    set(CATALYST_WRAP_FORTRAN OFF CACHE BOOL "" FORCE)
+    set(CATALYST_WITH_EXTERNAL_CONDUIT OFF CACHE BOOL "" FORCE)
+    set(CATALYST_USE_MPI ON CACHE BOOL "" FORCE)
+
+    FetchContent_Declare(
+      catalyst
+      GIT_REPOSITORY "https://gitlab.kitware.com/paraview/catalyst.git"
+      GIT_TAG "v${Catalyst_VERSION}"
+      GIT_SHALLOW ON
+      DOWNLOAD_EXTRACT_TIMESTAMP ON)
+    FetchContent_MakeAvailable(catalyst)
+
+    if(NOT TARGET catalyst::catalyst)
+      message(FATAL_ERROR "Catalyst FetchContent did not provide catalyst::catalyst")
+    endif()
+  endif()
 endif()
 
 # ------------------------------------------------------------------------------

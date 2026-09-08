@@ -70,6 +70,22 @@ if(@IPPL_ENABLE_FFT@)
 endif()
 
 # -----------------------------------------------------------------------------
+# Catalyst
+# -----------------------------------------------------------------------------
+if(@IPPL_ENABLE_CATALYST@)
+    if(@catalyst_FOUND@)
+        message(STATUS "Finding IPPL dependency : external Catalyst")
+        set(catalyst_DIR "@catalyst_DIR@")
+        find_dependency(catalyst REQUIRED)
+    else()
+        message(STATUS "Using Catalyst built with IPPL (targets exported via IPPL::ippl)")
+    endif()
+    if(DEFINED catalyst_VERSION)
+        message(STATUS "Catalyst version ${catalyst_VERSION}")
+    endif()
+endif()
+
+# -----------------------------------------------------------------------------
 # MAke sure IPPL targets are setup
 # -----------------------------------------------------------------------------
 include("${CMAKE_CURRENT_LIST_DIR}/IPPLTargets.cmake")
