@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <iostream>
 
-#include "FEM/FEMQuadratureData.h"
+#include "FEM/RefShapeFunctionData.h"
 #include "LinearSolvers/PCG.h"
 #include "Maxwell.h"
 
@@ -69,7 +69,7 @@ namespace ippl {
          */
         KOKKOS_FUNCTION auto operator()(
             size_t i, size_t j,
-            const QuadratureData<Vector<T, Dim>, Vector<T, Dim>, numElementDOFs>& qd) const {
+            const RefShapeFunctionData<Vector<T, Dim>, Vector<T, Dim>, numElementDOFs>& qd) const {
             T curlTerm = dot(DPhiInvT * qd.deriv_q[j], DPhiInvT * qd.deriv_q[i]).apply();
             T massTerm = dot(qd.val_q[j], qd.val_q[i]).apply();
             return (curlTerm + massTerm) * absDetDPhi;
@@ -106,7 +106,7 @@ namespace ippl {
         using ElementType =
             std::conditional_t<Dim == 2, ippl::QuadrilateralElement<T>, ippl::HexahedralElement<T>>;
 
-        using QuadratureType = GaussJacobiQuadrature<T, 5, ElementType>;
+        using QuadratureType = GaussLegendreQuadrature<T, 5, ElementType>;
 
         using NedelecType = NedelecSpace<T, Dim, 1, ElementType, QuadratureType, FieldType>;
 
@@ -115,7 +115,7 @@ namespace ippl {
             : Base()
             , rhsVector_m(nullptr)
             , refElement_m()
-            , quadrature_m(refElement_m, 0.0, 0.0)
+            , quadrature_m(refElement_m)
             , nedelecSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)),
                                             Vector<T, Dim>(0), Vector<T, Dim>(0))),
                              refElement_m, quadrature_m) {}
@@ -125,7 +125,7 @@ namespace ippl {
             : Base(lhs, lhs, rhs)
             , rhsVector_m(nullptr)
             , refElement_m()
-            , quadrature_m(refElement_m, 0.0, 0.0)
+            , quadrature_m(refElement_m)
             , nedelecSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout()) {
             static_assert(std::is_floating_point<T>::value, "Not a floating point type");
             setDefaultParameters();

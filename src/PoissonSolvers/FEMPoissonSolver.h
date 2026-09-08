@@ -39,7 +39,7 @@ namespace ippl {
                                std::conditional_t<Dim == 2, ippl::QuadrilateralElement<Tlhs>,
                                                   ippl::HexahedralElement<Tlhs>>>;
 
-        using QuadratureType = GaussJacobiQuadrature<Tlhs, QuadNumNodes, ElementType>;
+        using QuadratureType = GaussLegendreQuadrature<Tlhs, QuadNumNodes, ElementType>;
 
         using LagrangeType =
             LagrangeSpace<Tlhs, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>;
@@ -48,7 +48,7 @@ namespace ippl {
         FEMPoissonSolver()
             : Base()
             , refElement_m()
-            , quadrature_m(refElement_m, 0.0, 0.0)
+            , quadrature_m(refElement_m)
             , lagrangeSpace_m(*(new MeshType(NDIndex<Dim>(Vector<unsigned, Dim>(0)),
                                              Vector<Tlhs, Dim>(0), Vector<Tlhs, Dim>(0))),
                               refElement_m, quadrature_m) {
@@ -58,7 +58,7 @@ namespace ippl {
         FEMPoissonSolver(lhs_type& lhs, rhs_type& rhs)
             : Base(lhs, rhs)
             , refElement_m()
-            , quadrature_m(refElement_m, 0.0, 0.0)
+            , quadrature_m(refElement_m)
             , lagrangeSpace_m(rhs.get_mesh(), refElement_m, quadrature_m, rhs.getLayout()) {
             static_assert(std::is_floating_point<Tlhs>::value, "Not a floating point type");
             setDefaultParameters();

@@ -1,14 +1,38 @@
+// Tests for the standalone ippl::GaussLegendreQuadrature (FEM/Quadrature/GaussLegendreQuadrature.h).
+//
+// HISTORY (2026-08-17): merged in the former GaussJacobiQuadrature.cpp typed test. The weighted
+// Gauss-Jacobi / Gauss-Chebyshev rules were commented out in GaussLegendreQuadrature.h, so the
+// only FEM quadrature exercised here is Gauss-Legendre. Node-level Chebyshev behavior stays
+// covered by the Nodes1D unit tests (ippl::nodes1d::computeGaussChebyshev / chebyshevNode).
 
 #include "Ippl.h"
 
+#include "Nodes1D/Nodes1D.h"
 #include "TestUtils.h"
 #include "gtest/gtest.h"
 
+// FEM GaussLegendreQuadrature (n=7, default GolubWelsch) must be bit-identical
+// to nodes1d::computeGaussLegendre — same Nodes1D path, no extra rounding.
+TEST(GaussLegendreQuadrature, MatchesNodes1D) {
+    using ElementType = ippl::EdgeElement<double>;
+    const ElementType ref;
+    constexpr unsigned N = 7;
+    const ippl::GaussLegendreQuadrature<double, N, ElementType> fem(ref);
+    double nodes[N], weights[N];
+    ippl::nodes1d::computeGaussLegendre(N, nodes, weights);
+    const auto& q = fem.getIntegrationNodes1D(-1.0, 1.0);
+    const auto& w = fem.getWeights1D(-1.0, 1.0);
+    for (unsigned i = 0; i < N; ++i) {
+        EXPECT_DOUBLE_EQ(nodes[i], q[i]);
+        EXPECT_DOUBLE_EQ(weights[i], w[i]);
+    }
+}
+
 template <typename>
-class GaussJacobiQuadratureTest;
+class GaussLegendreQuadratureTest;
 
 template <typename T, typename ExecSpace, unsigned NumNodes1D>
-class GaussJacobiQuadratureTest<Parameters<T, ExecSpace, Rank<NumNodes1D>>>
+class GaussLegendreQuadratureTest<Parameters<T, ExecSpace, Rank<NumNodes1D>>>
     : public ::testing::Test {
 protected:
     void SetUp() override {}
@@ -18,15 +42,13 @@ public:
 
     using ElementType = ippl::EdgeElement<T>;
 
-    GaussJacobiQuadratureTest()
+    GaussLegendreQuadratureTest()
         : ref_element()
-        , gaussLegendreQuadrature(ref_element, 10, 1)
-        , chebyshevGaussQuadrature(ref_element, 10, 1) {}
+        , gaussLegendreQuadrature(ref_element) {}
 
     const ElementType ref_element;
 
     const ippl::GaussLegendreQuadrature<T, NumNodes1D, ElementType> gaussLegendreQuadrature;
-    const ippl::ChebyshevGaussQuadrature<T, NumNodes1D, ElementType> chebyshevGaussQuadrature;
 };
 
 using Precisions = TestParams::Precisions;
@@ -34,9 +56,9 @@ using Spaces     = TestParams::Spaces;
 using NumNodes   = TestParams::Ranks<1, 2, 3, 4, 5, 6, 7>;
 using Combos     = CreateCombinations<Precisions, Spaces, NumNodes>::type;
 using Tests      = TestForTypes<Combos>::type;
-TYPED_TEST_CASE(GaussJacobiQuadratureTest, Tests);
+TYPED_TEST_CASE(GaussLegendreQuadratureTest, Tests);
 
-TYPED_TEST(GaussJacobiQuadratureTest, GaussLegendreQuadrature) {
+TYPED_TEST(GaussLegendreQuadratureTest, NodesAndWeights) {
     using T = typename TestFixture::value_t;
 
     const auto& gaussLegendreQuadrature = this->gaussLegendreQuadrature;
@@ -123,29 +145,6 @@ TYPED_TEST(GaussJacobiQuadratureTest, GaussLegendreQuadrature) {
         EXPECT_NEAR(w[4], 0.3818300505051189, tol);
         EXPECT_NEAR(w[5], 0.2797053914892766, tol);
         EXPECT_NEAR(w[6], 0.1294849661688697, tol);
-    }
-}
-
-TYPED_TEST(GaussJacobiQuadratureTest, ChebyshevGaussQuadrature) {
-    // Chebyshev-Gauss gaussLegendreQuadrature
-    using T = typename TestFixture::value_t;
-
-    const auto& chebyshevGaussQuadrature = this->chebyshevGaussQuadrature;
-    const std::size_t& numNodes1D        = this->chebyshevGaussQuadrature.numNodes1D;
-
-    const T& tol = std::numeric_limits<T>::epsilon() * 20;
-
-    // Chebyshev-Gauss Quadrature
-    const auto& q = chebyshevGaussQuadrature.getIntegrationNodes1D(-1.0, 1.0);
-    const auto& w = chebyshevGaussQuadrature.getWeights1D(-1.0, 1.0);
-
-    T x;
-    T w_k = Kokkos::numbers::pi_v<T> / numNodes1D;
-    for (unsigned k = 0; k < numNodes1D; ++k) {
-        x = chebyshevGaussQuadrature.getChebyshevNodes(k);
-
-        EXPECT_NEAR(q[k], x, tol);
-        EXPECT_NEAR(w[k], w_k, tol);
     }
 }
 

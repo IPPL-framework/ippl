@@ -24,7 +24,6 @@
 #include "Correction.h"
 #include "FFT/FFT.h"
 #include "FFT/NUFFT/ESKernel.h"
-#include "FFT/NUFFT/NUFFTUtilities.h"
 #include "Particle/ParticleAttrib.h"
 
 namespace ippl {
