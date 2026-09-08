@@ -6,6 +6,10 @@ set(_lapackeResolved)
 foreach(_library IN LISTS LAPACKE_LIBRARIES)
   if(TARGET "${_library}")
     list(APPEND _lapackeResolved "${_library}")
+  elseif(_library MATCHES "^-")
+    # CMake LAPACK providers may return linker items such as -lm or -pthread.
+    # Preserve them verbatim instead of treating them as find_library names.
+    list(APPEND _lapackeResolved "${_library}")
   elseif(IS_ABSOLUTE "${_library}")
     if(NOT EXISTS "${_library}")
       message(FATAL_ERROR "LAPACKE dependency does not exist: ${_library}")
