@@ -92,6 +92,10 @@ int main(int argc, char* argv[]) {
 
             manager.run(manager.getNt());
 
+            #ifdef IPPL_ENABLE_CATALYST
+            manager.cat_viz.Finalize();
+            #endif
+        
             msg << "End." << endl;
 
             IpplTimings::stopTimer(mainTimer);
