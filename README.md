@@ -45,7 +45,8 @@ The [IPPL Manual](https://ippl-framework.github.io/Manual/) contains comprehensi
 
 For detailed API, class, and file documentation, please visit our [Doxygen site](https://ippl-framework.github.io/ippl/).
 
-Kokkos Kernels is enabled by default and requires a host LAPACKE or MKL provider.
+Kokkos Kernels is enabled by default. Missing host LAPACKE is built from source
+using C and Fortran compilers; installed LAPACKE or MKL providers are also supported.
 See [Kokkos Kernels configuration](cmake/BuildSystem.md#kokkos-kernels-and-host-eigenanalysis)
 for dependency setup and options to disable host eigenanalysis or Kokkos Kernels.
 

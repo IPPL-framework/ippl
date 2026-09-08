@@ -194,9 +194,37 @@ Host eigenanalysis is selected independently of `IPPL_PLATFORMS`:
   host eigenanalysis; only the GEMM regression is registered in the test binary.
 - `IPPL_ENABLE_KOKKOS_KERNELS=OFF`: omit the dependency and its tests entirely.
 
-Kokkos does not install these external libraries. On macOS, install a LAPACKE
-provider, such as an OpenBLAS build with LAPACKE or reference LAPACK built with
-LAPACKE. Apple's Accelerate alone does not supply this LAPACKE interface.
+Kokkos does not install these external libraries. If host LAPACKE is not found,
+IPPL now downloads reference LAPACK 3.12.1 (SHA256-verified) and builds its BLAS,
+LAPACK and LAPACKE libraries. The fallback requires host C and Fortran compilers;
+set `CMAKE_Fortran_COMPILER` or `FC` if automatic discovery cannot find gfortran.
+The host C compiler is selected independently via `CC` or the fallback toolchain.
+It supports LP64 and ILP64 through `IPPL_LAPACK_INTEGER_BYTES` and builds static
+position-independent libraries for use by shared or static IPPL.
+
+The first configure builds this dependency in an isolated host project under
+`_deps`, before the existing compile/link/runtime probes run. This can take a few
+minutes; subsequent configures reuse the build. CUDA/HIP compiler launchers and
+IPPL's directory flags are not applied to the host project. Its logs are in
+`_deps/ippl-host-lapack-<integer-bytes>-build/{configure,build,install}.log`.
+`IPPL_LAPACKE_BUILD_JOBS` controls build parallelism (default 4).
+For offline builds, point `FETCHCONTENT_SOURCE_DIR_IPPL_REFERENCE_LAPACK` at an
+already unpacked reference LAPACK 3.12.1 source tree.
+
+Set `IPPL_FETCH_LAPACKE=OFF` to require an installed provider. An explicit
+`LAPACKE_LIBRARIES` remains authoritative: missing headers or broken linkage
+produce errors instead of silently substituting a different provider. A Kernels
+package already built without its LAPACKE TPL still needs rebuilding; fetching
+LAPACKE cannot enable features in an installed Kernels library.
+
+For a cross build, supply `IPPL_LAPACKE_TOOLCHAIN_FILE` with a C/Fortran toolchain
+for the target CPU, or use an installed provider. Runtime checks remain deferred
+in cross builds. Fetched libraries, headers, license and the relocatable
+`IPPLHostLapack` CMake package are bundled with IPPL's installation; the compatible
+Fortran compiler runtime remains a system dependency.
+
+On macOS, an installed OpenBLAS build with LAPACKE or reference LAPACK can also be
+used. Apple's Accelerate alone does not supply this LAPACKE interface.
 Installation paths belong in site presets/toolchain files, not repository CMake.
 For example, source builds can use these preset cache entries:
 
@@ -268,5 +296,5 @@ OMP_NUM_THREADS=2 build/kernels-consumer/consumer
 ```
 
 Use the same compiler/toolchain as the IPPL build. The CSCS dashboard script
-forwards the host-provider and dependency-path options above; site images must
-supply these dependencies before running default-enabled builds.
+forwards the host-provider, fallback, compiler and dependency-path options above.
+Site images can supply LAPACKE or host C/Fortran compilers for the fallback.
