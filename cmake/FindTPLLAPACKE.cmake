@@ -27,7 +27,12 @@ if(IPPL_HOST_LAPACK_FETCHED)
   set(_lapackeIncludes)
 endif()
 kokkoskernels_create_imported_tpl(LAPACKE INTERFACE
-  LINK_LIBRARIES "${_lapackeResolved}" INCLUDES "${_lapackeIncludes}")
+  LINK_LIBRARIES "${_lapackeResolved}")
+if(_lapackeIncludes)
+  # Environment views may also contain an incompatible desul installation.
+  # Keep their broad include directory behind Kokkos's bundled TPL headers.
+  target_include_directories(LAPACKE SYSTEM INTERFACE ${_lapackeIncludes})
+endif()
 
 if(IPPL_HOST_LAPACK_FETCHED)
   # Also make the Kernels package usable directly, including in a fresh IPPL
