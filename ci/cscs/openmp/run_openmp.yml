@@ -19,7 +19,7 @@ variables:
   extends: [.baremetal-runner-eiger-zen2]
   variables:
     SLURM_JOB_NUM_NODES: 1
-    SLURM_TIMELIMIT: "0:15:00"
+    SLURM_TIMELIMIT: "0:30:00"
   before_script:
     - !reference [.pr-number-extractor, before_script]
     - pwd

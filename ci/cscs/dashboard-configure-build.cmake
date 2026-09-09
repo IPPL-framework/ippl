@@ -15,7 +15,9 @@ if(NOT DEFINED BUILD_DIR)
 endif()
 
 # The full build name here gets overwritten in test phase, so leave this blank for now
-set(TEST_INFO "")
+if(NOT DEFINED TEST_INFO)
+  set(TEST_INFO "")
+endif()
 
 # --- CDash metadata ---
 set(CTEST_SITE "${CTEST_SITE}")
@@ -78,6 +80,15 @@ endforeach()
 string(APPEND CTEST_CONFIGURE_COMMAND " -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON")
 string(APPEND CTEST_CONFIGURE_COMMAND " -DIPPL_ENABLE_SOLVERS=ON")
 string(APPEND CTEST_CONFIGURE_COMMAND " -DIPPL_MARK_FAILING_TESTS=ON")
+
+if(ENABLE_COVERAGE)
+  message(STATUS "Coverage enabled for this build")
+  string(APPEND CTEST_CONFIGURE_COMMAND " -DIPPL_ENABLE_COVERAGE=ON")
+  string(APPEND CTEST_CONFIGURE_COMMAND " -DIPPL_DEFAULT_TEST_TIMEOUT=600")
+elseif(BUILD_TYPE STREQUAL "Debug")
+  # Debug builds run noticeably slower than release, give them more headroom.
+  string(APPEND CTEST_CONFIGURE_COMMAND " -DIPPL_DEFAULT_TEST_TIMEOUT=300")
+endif()
 
 if(DEFINED Kokkos_ARCH_FLAG)
   string(APPEND CTEST_CONFIGURE_COMMAND " -D${Kokkos_ARCH_FLAG}=ON")

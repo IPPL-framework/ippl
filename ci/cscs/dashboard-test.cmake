@@ -19,16 +19,16 @@ set(CTEST_SITE "${CTEST_SITE}")
 set(CTEST_BUILD_CONFIGURATION ${BUILD_TYPE})
 set(CTEST_BUILD_NAME "${CTEST_BUILD_NAME}")
 
-set(CTEST_SOURCE_DIRECTORY "$ENV{CI_PROJECT_DIR}")
+set(_ci_project_dir "$ENV{CI_PROJECT_DIR}")
+set(CTEST_SOURCE_DIRECTORY "${_ci_project_dir}")
 set(CTEST_BINARY_DIRECTORY "${BUILD_DIR}")
 set(CTEST_CMAKE_GENERATOR "Ninja")
-set(CTEST_GROUP "Pull_Requests")
 set(CTEST_GROUP "Experimental")
 
 # --- append to the existing dashboard entry ---
 ctest_start(Experimental GROUP "${CTEST_GROUP}" APPEND)
 
-# --- run tests : we use srun and already control parallelism
+# --- run tests : we use srun and already control parallelism ---
 ctest_test(PARALLEL_LEVEL 1 RETURN_VALUE test_result)
 
 # --- submit test results ---
