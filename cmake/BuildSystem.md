@@ -175,11 +175,12 @@ target_link_libraries(app PRIVATE ippl::ippl)
 
 ## Kokkos Kernels and host eigenanalysis
 
-`IPPL_ENABLE_KOKKOS_KERNELS` defaults to `ON`. IPPL first finds an installed
-Kokkos Kernels package (default minimum version 5.2.0), then falls back to
-FetchContent. `KokkosKernels_VERSION=git.<tag-or-sha>` requests a source build.
-The package uses the Kokkos target already selected by IPPL. An external package
-must have been built against a compatible Kokkos with the required backends.
+`IPPL_ENABLE_KOKKOS_KERNELS` defaults to `OFF`. Set it to `ON` to enable this
+support. IPPL first finds an installed Kokkos Kernels package (default minimum
+version 5.2.0), then falls back to FetchContent.
+`KokkosKernels_VERSION=git.<tag-or-sha>` requests a source build. The package uses
+the Kokkos target already selected by IPPL. An external package must have been
+built against a compatible Kokkos with the required backends.
 
 Host eigenanalysis is selected independently of `IPPL_PLATFORMS`:
 
@@ -192,7 +193,7 @@ Host eigenanalysis is selected independently of `IPPL_PLATFORMS`:
   `CMAKE_PREFIX_PATH`/`MKL_DIR` (modern oneMKL).
 - `IPPL_KOKKOS_KERNELS_HOST=NONE`: use portable/GPU kernels without requesting
   host eigenanalysis; only the GEMM regression is registered in the test binary.
-- `IPPL_ENABLE_KOKKOS_KERNELS=OFF`: omit the dependency and its tests entirely.
+- `IPPL_ENABLE_KOKKOS_KERNELS=OFF` (default): omit the dependency and its tests entirely.
 
 Kokkos does not install these external libraries. If host LAPACKE is not found,
 IPPL now downloads reference LAPACK 3.12.1 (SHA256-verified) and builds its BLAS,
