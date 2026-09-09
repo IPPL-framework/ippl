@@ -1,8 +1,9 @@
-"""! \file png_ext_particle.py
+r"""! \file png_ext_particle.py
 \brief Catalyst PNG extractor for 3D particles (ParticleContainer/ParticleBase).
-\details Visualizes particle point data with adaptive camera and velocity-based
-coloring. Expects 'position' and 'velocity' arrays and is orchestrated by
-pipeline_default.py. Generates PNG extracts and supports Catalyst Live.
+\details Visualizes particle point data with an adaptive camera. Particles are
+colored by their first custom point attribute (using magnitude for vectors), or
+solid red when no custom attribute exists. Generates PNG extracts and supports
+Catalyst Live.
 """
 
 # script-version: 2.0
@@ -13,12 +14,10 @@ pipeline_default.py. Generates PNG extracts and supports Catalyst Live.
 # PNG extractor script for paraview catalyst. 
 # Visualizes 3D particles. (ParticleContainer/ParticleBase)
 # 
-# Currently hard coded to rely on attributes:
-# - 'position'
-# - 'velocity'
-# Is adaptive: Attempts to set Camera Angle and colouring 
-# of particles (dependent on velocity magnitude) adaptive to 
-# current frame, range and scale (every 10'th step).
+# The position, particle-ID and rank-ID arrays are built-ins. Any first
+# additional point-data array is selected for coloring. Scalar arrays are used
+# directly and multi-component arrays are colored by magnitude.
+# The camera, color range and particle scale adapt to the current frame.
 # 
 # 
 # Relies on pipeline_default.py to update pipeline else might
@@ -44,7 +43,7 @@ from paraview.simple import (
     GetMaterialLibrary,
     CreateView,
     Show,
-    GetTransferFunction2D,
+    ColorBy,
     GetColorTransferFunction,
     GetScalarBar,
     CreateExtractor,
@@ -72,6 +71,94 @@ def print_info_(s, level=0):
     global verbosity
     if verbosity>level:
         print_info(s)
+
+
+_BUILTIN_PARTICLE_ATTRIBUTES = {
+    "position",
+    "particleid",
+    "particleids",
+    "rankid",
+    "rankids",
+}
+
+
+def _normalized_attribute_name(name):
+    """Normalize spelling variants such as ParticleIDs and particle_ids."""
+    return "".join(character for character in name.lower() if character.isalnum())
+
+
+def _first_custom_particle_attribute(point_data_info):
+    """Return (name, component count) for the first non-built-in point array."""
+    if point_data_info is None:
+        return None, 0
+
+    for index in range(point_data_info.GetNumberOfArrays()):
+        array_info = point_data_info.GetArrayInformation(index)
+        if array_info is None:
+            continue
+        name = array_info.GetName()
+        if not name or _normalized_attribute_name(name) in _BUILTIN_PARTICLE_ATTRIBUTES:
+            continue
+        components = array_info.GetNumberOfComponents()
+        if components > 0:
+            return name, components
+
+    return None, 0
+
+
+particle_color_array_name = None
+particle_color_components = 0
+particle_color_lut = None
+particle_coloring_initialized = False
+
+
+def _configure_particle_coloring(point_data_info):
+    """Select the first custom attribute, or configure solid red coloring."""
+    global particle_color_array_name
+    global particle_color_components
+    global particle_color_lut
+    global particle_coloring_initialized
+
+    array_name, components = _first_custom_particle_attribute(point_data_info)
+    if (particle_coloring_initialized
+            and array_name == particle_color_array_name
+            and components == particle_color_components):
+        return
+
+    if particle_color_lut is not None:
+        try:
+            GetScalarBar(particle_color_lut, renderView1).Visibility = 0
+        except Exception:
+            pass
+
+    particle_color_array_name = array_name
+    particle_color_components = components
+    particle_color_lut = None
+    particle_coloring_initialized = True
+
+    if array_name is None:
+        ippl_particleDisplay.ColorArrayName = ['POINTS', '']
+        ippl_particleDisplay.AmbientColor = [1.0, 0.0, 0.0]
+        ippl_particleDisplay.DiffuseColor = [1.0, 0.0, 0.0]
+        print_info_("No custom particle attribute found; using solid red coloring.")
+        return
+
+    color_spec = ("POINTS", array_name)
+    component_title = ""
+    if components > 1:
+        color_spec = ("POINTS", array_name, "Magnitude")
+        component_title = "Magnitude"
+
+    ColorBy(ippl_particleDisplay, color_spec)
+    particle_color_lut = GetColorTransferFunction(array_name)
+    color_bar = GetScalarBar(particle_color_lut, renderView1)
+    color_bar.Title = array_name
+    color_bar.ComponentTitle = component_title
+    color_bar.Visibility = 1
+    ippl_particleDisplay.SetScalarBarVisibility(renderView1, True)
+
+    mode = "magnitude" if components > 1 else "scalar values"
+    print_info_(f"Coloring particles by {mode} of custom attribute '{array_name}'.")
 # ----------------------------------------------------------------
 # ----------------------------------------------------------------
 paraview.simple._DisableFirstRenderCameraReset()
@@ -182,20 +269,6 @@ hide_source_from_gui(ippl_particle_box)
 # ippl_particle_e.UpdatePipeline()
 
 
-# Apply Threshold on 'velocity' (Magnitude)
-# We set the range to essentially "All valid numbers"
-# ippl_particle_t = Threshold(registrationName='Filter_Particles', Input=ippl_particle_m)
-# ippl_particle_t.Scalars = ['POINTS', 'velocity']
-# ippl_particle_t.ThresholdMethod = 'Above Upper Threshold' # Or 'Between'
-# ippl_particle_t.UpperThreshold = -1.0 # Velocity magnitude is always >= 0, so this keeps everything valid
-# Note: In newer ParaView versions (5.10+), properties might be:
-# ippl_particle.ThresholdRange = [-1.0, 999999999.9]
-
-
-
-
-
-
 ippl_particle = ippl_particle_bunch
 
 
@@ -244,31 +317,21 @@ auto_camera_from_bounds(renderView1, bounds)
 # ----------------------------------------------------------------
 ippl_particleDisplay = Show(ippl_particle, renderView1, 'UnstructuredGridRepresentation')
 # ippl_particleDisplay = Show(ippl_particle, renderView1, 'GeometryRepresentation')
-# ----------------------------------------------------------------
-# setup initial transfer function for colouring and opacity
-# ----------------------------------------------------------------
-velocityTF2D = GetTransferFunction2D('velocity')
-velocityLUT = GetColorTransferFunction('velocity')
-velocityLUT.TransferFunction2D = velocityTF2D
-velocityLUT.RGBPoints = [0.050641224585373915, 0.231373, 0.298039, 0.752941, 
-                         2.3924284143906274, 0.865003, 0.865003, 0.865003, 
-                         4.734215604195881, 0.705882, 0.0156863, 0.14902]
-# ----------------------------------------------------------------
 # configure displayed data
 # ----------------------------------------------------------------
 # ippl_particleDisplay.Representation = 'Points'
 ippl_particleDisplay.Representation = 'Point Gaussian'
-ippl_particleDisplay.LookupTable = velocityLUT
 # point size ...
 # ippl_particleDisplay.GaussianRadius = 1
 ippl_particleDisplay.DataAxesGrid = 'GridAxesRepresentation'
 ippl_particleDisplay.SelectInputVectors = ['POINTS', 'position']
-ippl_particleDisplay.ColorArrayName = ['POINTS', 'velocity']
-velocityLUTColorBar = GetScalarBar(velocityLUT, renderView1)
-velocityLUTColorBar.Title = 'velocity'
-velocityLUTColorBar.ComponentTitle = 'Magnitude'
-velocityLUTColorBar.Visibility = 1
-ippl_particleDisplay.SetScalarBarVisibility(renderView1, True)
+
+# Point-array metadata may not be available while the Catalyst script is first
+# loaded. Start with the guaranteed fallback and discover custom attributes in
+# catalyst_execute after the producer and main particle block are updated.
+ippl_particleDisplay.ColorArrayName = ['POINTS', '']
+ippl_particleDisplay.AmbientColor = [1.0, 0.0, 0.0]
+ippl_particleDisplay.DiffuseColor = [1.0, 0.0, 0.0]
 
 # ----------------------------------------------------------------
 # visualize helper box as yellow outline
@@ -329,11 +392,12 @@ def catalyst_execute(info):
     global ippl_particle_p
     global renderView1
     global pNG1
+    global particle_color_array_name
+    global particle_color_components
+    global particle_color_lut
 
     ippl_particle_p.UpdatePipeline()
-    # ippl_particle_bunch
-    # ippl_particle_box
-    # ippl_particle
+    ippl_particle_bunch.UpdatePipeline()
 
     # SetActiveView(renderView1)
     # print(info)
@@ -343,21 +407,21 @@ def catalyst_execute(info):
     if info.cycle % 1 == 0:
         particle_info = ippl_particle_p.GetDataInformation()
 
-        point_data_info = particle_info.GetPointDataInformation()
-        # point_data_info = particle_info.GetFieldDataInformation()
-        # print(point_data_info)
+        bunch_info = ippl_particle_bunch.GetDataInformation()
+        point_data_info = bunch_info.GetPointDataInformation()
+        _configure_particle_coloring(point_data_info)
 
-        vel_array_info = point_data_info.GetArrayInformation('velocity')
+        color_array_info = None
+        if particle_color_array_name is not None:
+            color_array_info = point_data_info.GetArrayInformation(particle_color_array_name)
         pos_array_info = point_data_info.GetArrayInformation('position')
 
-        if vel_array_info:
-            local_vmin, local_vmax = vel_array_info.GetComponentRange(-1)
-            gmin, gmax = get_global_range(local_vmin, local_vmax)
+        if color_array_info:
+            component = -1 if particle_color_components > 1 else 0
+            local_min, local_max = color_array_info.GetComponentRange(component)
+            gmin, gmax = get_global_range(local_min, local_max)
             nice_min, nice_max = nice_bounds(gmin, gmax)
-            vel_lut = GetColorTransferFunction('velocity')
-            vel_lut.RescaleTransferFunction(nice_min, nice_max)
-        else:
-            print_info_("Velocity array not found!")
+            particle_color_lut.RescaleTransferFunction(nice_min, nice_max)
         if pos_array_info:
             local_bounds = particle_info.GetBounds()
             bounds = get_global_spatial_bounds(local_bounds)
@@ -379,4 +443,3 @@ def catalyst_execute(info):
 
         else:
             print_info_("Position array not found!")
-
