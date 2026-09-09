@@ -137,14 +137,14 @@ namespace ippl {
          * particle range [0, size()).
          */
         view_type getView() {
-            return Kokkos::subview(dview_m,
-                                   Kokkos::make_pair(size_type(0),
-                                                     static_cast<size_type>(*(this->localNum_mp))));
+            return Kokkos::subview(
+                dview_m,
+                Kokkos::make_pair(size_type(0), static_cast<size_type>(*(this->localNum_mp))));
         }
         const view_type getView() const {
-            return Kokkos::subview(dview_m,
-                                   Kokkos::make_pair(size_type(0),
-                                                     static_cast<size_type>(*(this->localNum_mp))));
+            return Kokkos::subview(
+                dview_m,
+                Kokkos::make_pair(size_type(0), static_cast<size_type>(*(this->localNum_mp))));
         }
 
         host_mirror_type getHostMirror() const { return Kokkos::create_mirror(getView()); }
