@@ -69,9 +69,12 @@ public:
      * @brief Register the particle attributes.
      */
     void registerAttributes() {
-        this->addAttribute(m);
+        V.set_name("velocity");
+        F.set_name("gravitational_field");
+        m.set_name("mass");
         this->addAttribute(V);
         this->addAttribute(F);
+        this->addAttribute(m);
     }
 
     /**

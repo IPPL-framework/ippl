@@ -38,9 +38,9 @@ public:
         q.set_name("charge");
         E.set_name("electric_field");
         // register the particle attributes
-        this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
+        this->addAttribute(q);
     }
     void setupBCs() { setBCAllPeriodic(); }
 

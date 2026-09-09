@@ -50,13 +50,21 @@ public:
     void setPL(std::shared_ptr<PLayout_t<T, Dim>>& pl) { pl_m = pl; }
 
     void registerAttributes() {
-        this->addAttribute(Q);
-        this->addAttribute(mass);
+        gamma_beta.set_name("gamma_beta");
+        E_gather.set_name("electric_field");
+        B_gather.set_name("magnetic_field");
+        Q.set_name("charge");
+        mass.set_name("mass");
+        R_nm1.set_name("previous_position");
+        R_np1.set_name("next_position");
+
         this->addAttribute(gamma_beta);
-        this->addAttribute(R_nm1);
-        this->addAttribute(R_np1);
         this->addAttribute(E_gather);
         this->addAttribute(B_gather);
+        this->addAttribute(Q);
+        this->addAttribute(mass);
+        this->addAttribute(R_nm1);
+        this->addAttribute(R_np1);
     }
 
     void setupBCs() { setBCAllOpen(); }
