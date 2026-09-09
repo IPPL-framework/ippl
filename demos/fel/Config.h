@@ -51,7 +51,6 @@ struct config {
     scalar undulator_period;  // Period of the undulator
     scalar undulator_length;  // Length of the undulator
 
-    uint32_t output_rhythm;                                      // Frequency of output in timesteps
     std::string output_path;                                     // Path to output files
     std::unordered_map<std::string, double> experiment_options;  // Additional experimental options
 };
@@ -252,7 +251,6 @@ inline config read_config(const char* filepath) {
     ret.position_truncations = getVector<config::scalar, 3>(j["bunch"]["distribution-truncations"])
                                * lmult / unit_length_in_meters;
     ret.sigma_momentum = getVector<config::scalar, 3>(j["bunch"]["sigma-momentum"]);
-    ret.output_rhythm  = j["output"].contains("rhythm") ? uint32_t(j["output"]["rhythm"]) : 0;
     ret.output_path    = "../data/";
     if (j["output"].contains("path")) {
         ret.output_path = j["output"]["path"];

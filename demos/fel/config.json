@@ -4,7 +4,7 @@
     "length-scale": "micrometers",
     "time-scale": "picoseconds",
     "extents": [3200.0, 3200.0, 280.0],
-    "resolution": [96, 96, 3000],
+    "resolution": [24, 24, 750],
     "total-time": 30000.0,
     "space-charge": false
   },
@@ -26,7 +26,10 @@
     }
   },
   "output": {
-    "rhythm": 30,
     "path": "../renderdata"
   }
 }
+
+
+    // "resolution": [96, 96, 3000],
+    // "resolution": [48, 48, 1500],

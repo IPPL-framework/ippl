@@ -609,8 +609,7 @@ if(IPPL_ENABLE_UNIT_TESTS)
 endif()
 
 # ------------------------------------------------------------------------------
-# FEL module header-only dependencies (nlohmann/json for config parsing, stb_image_write for the
-# Poynting-flux visualization).
+# FEL module header-only dependency (nlohmann/json for config parsing).
 # ------------------------------------------------------------------------------
 if(IPPL_ENABLE_FEL)
   # Fetch the CMake package instead of downloading the release header directly.  CMake's
