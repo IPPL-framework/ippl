@@ -182,6 +182,41 @@ version 5.2.0), then falls back to FetchContent.
 the Kokkos target already selected by IPPL. An external package must have been
 built against a compatible Kokkos with the required backends.
 
+The following CMake cache variables control this support:
+
+- `IPPL_ENABLE_KOKKOS_KERNELS` (`OFF`): enable Kokkos Kernels and its IPPL unit
+  test. The remaining variables in this list are used only when this is `ON`.
+- `KokkosKernels_VERSION` (`5.2.0`): required package version. Prefix the value
+  with `git.` to request a specific source tag, branch, or commit.
+- `IPPL_KOKKOS_KERNELS_HOST` (`LAPACKE`): select `LAPACKE`, `MKL`, or `NONE` for
+  host eigenanalysis.
+- `IPPL_LAPACK_INTEGER_BYTES` (`4`): select the 4-byte LP64 or 8-byte ILP64
+  integer interface.
+- `IPPL_FETCH_LAPACKE` (`ON`): build reference LAPACK and LAPACKE when the
+  `LAPACKE` provider cannot be found.
+- `IPPL_LAPACKE_BUILD_JOBS` (`4`): parallel jobs for the reference LAPACK build.
+  This cache entry is created only when the fallback is needed.
+- `IPPL_LAPACKE_TOOLCHAIN_FILE` (empty): C/Fortran toolchain used by the fallback,
+  required when cross-compiling. This entry is also created only when needed.
+
+Installed dependencies can be selected with `KokkosKernels_DIR`, `LAPACKE_ROOT`,
+`LAPACKE_INCLUDE_DIRS`, `LAPACKE_LIBRARY_DIRS`, `LAPACKE_LIBRARIES`, or `MKL_DIR`.
+`LAPACKE_LIBRARIES` is a semicolon-separated complete link line and may contain
+absolute paths, library names, imported targets, and linker items such as `-lm`.
+The standard FetchContent overrides `FETCHCONTENT_SOURCE_DIR_KOKKOSKERNELS` and
+`FETCHCONTENT_SOURCE_DIR_IPPL_REFERENCE_LAPACK` support offline source trees.
+Set `CMAKE_Fortran_COMPILER` or the `FC` environment variable to choose the
+fallback Fortran compiler; use `CC` to choose its C compiler.
+
+The minimum opt-in configuration is:
+
+```console
+cmake -S . -B build -DIPPL_ENABLE_KOKKOS_KERNELS=ON
+```
+
+CUDA and HIP BLAS, sparse, and solver TPLs are selected automatically from
+`IPPL_PLATFORMS`; they do not require additional IPPL cache variables.
+
 Host eigenanalysis is selected independently of `IPPL_PLATFORMS`:
 
 - `IPPL_KOKKOS_KERNELS_HOST=LAPACKE` (default): provide LAPACKE headers and a
