@@ -31,20 +31,12 @@ namespace ippl {
  * - Register channels via include()/includeVector()/includeBool()/includeEnum()/includeButton()
  * - Generate the XML file with produceUnified()
  *
- * YAML schema (implicit typing):
- * typeDefaults:
- *   scalar: { min: <num>, max: <num>, default: <num> }
- *   vector:
- *     component_defaults: { min: <num>, max: <num>, default: <num> }
- * steerParams:
- *   Efield: { min: <num>, max: <num>, default: <num> }
- *   Bfield:
- *     components:
- *       x: { min: <num>, max: <num>, default: <num> }
- *       y: { ... }
- *       z: { ... }
- *   # Or uniform vector defaults/range for all components
- *   V: { min: <num>, max: <num>, default: <num> }
+ * YAML schema:
+ * ranges:
+ *   parameter_name:
+ *     min: <num>
+ *     max: <num>
+ *     default: <num> # optional
  */
 class ProxyWriter {
 public:
@@ -227,6 +219,13 @@ private:
    * @return true if successfully parsed, false otherwise.
    */
   bool loadConfigFromYamlString(const std::string& yaml);
+
+  /**
+   * @brief Populates the steering configuration cache from a parsed Conduit tree.
+   * @param root Parsed YAML root node.
+   * @return true if at least one range/default entry was found, false otherwise.
+   */
+  bool loadConfigFromConduitNode(const conduit_cpp::Node& root);
 
   /**
    * @brief Applies parsed scalar configuration data (min, max, defaults) to a specific channel.

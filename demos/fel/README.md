@@ -12,6 +12,10 @@ cmake -S . -B build -DIPPL_ENABLE_FEL=ON -DCMAKE_CXX_STANDARD=20
 cmake --build build --target FreeElectronLaser
 ```
 
+The FEL configuration is parsed with the Conduit API shipped by Catalyst. CMake
+therefore finds or fetches Catalyst when the FEL demo is enabled, even when
+`IPPL_ENABLE_CATALYST` itself is off.
+
 The executable is built at
 `build/demos/fel/FreeElectronLaser`. The example configuration is staged beside
 it as `build/demos/fel/config.json` whenever the target is built.

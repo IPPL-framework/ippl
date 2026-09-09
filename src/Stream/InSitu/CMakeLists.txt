@@ -7,13 +7,13 @@ target_include_directories(ippl
         $<INSTALL_INTERFACE:include>
 )
 
-# Add implementation sources for InSitu components
-target_sources(ippl
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/ProxyWriter.cpp
-)
-
 if(IPPL_ENABLE_CATALYST)
+    # ProxyWriter uses Catalyst's Conduit API and is only needed by the Catalyst adaptor.
+    target_sources(ippl
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/ProxyWriter.cpp
+    )
+
     set(_ippl_catalyst_resource_source_dir
         "${CMAKE_CURRENT_SOURCE_DIR}/catalyst_scripts")
     set(_ippl_catalyst_resource_build_dir

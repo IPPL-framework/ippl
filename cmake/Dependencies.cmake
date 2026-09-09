@@ -7,7 +7,7 @@
 # Responsibilities:
 #   - Fetch or find Kokkos, using version and backends from Platforms.cmake
 #   - Fetch Heffte if IPPL_ENABLE_FFT is ON, using CUDA or AVX2 based on platform
-#   - Fetch or find Catalyst when IPPL_ENABLE_CATALYST is ON
+#   - Fetch or find Catalyst when in-situ support or the FEL demo is enabled
 #
 # Not responsible for:
 #   - Selecting platform backends            → Platforms.cmake
@@ -479,9 +479,9 @@ if(IPPL_ENABLE_FINUFFT)
 endif()
 
 # ------------------------------------------------------------------------------
-# Catalyst (libcatalyst SDK)
+# Catalyst (libcatalyst SDK and bundled Conduit parser)
 # ------------------------------------------------------------------------------
-if(IPPL_ENABLE_CATALYST)
+if(IPPL_ENABLE_CATALYST OR IPPL_ENABLE_FEL)
   enable_language(C)
 
   if(NOT Catalyst_VERSION)
@@ -606,22 +606,4 @@ if(IPPL_ENABLE_UNIT_TESTS)
     FetchContent_MakeAvailable(GTest)
     message(STATUS "✅ GoogleTest built from source (${GTest_VERSION})")
   endif()
-endif()
-
-# ------------------------------------------------------------------------------
-# FEL module header-only dependency (nlohmann/json for config parsing).
-# ------------------------------------------------------------------------------
-if(IPPL_ENABLE_FEL)
-  # Fetch the CMake package instead of downloading the release header directly.  CMake's
-  # file(DOWNLOAD) does not fail by default and can leave a zero-byte json.hpp behind when a
-  # release-asset host is unavailable, which only surfaces later as a confusing compile error.
-  set(JSON_BuildTests OFF CACHE BOOL "Disable nlohmann/json tests" FORCE)
-  FetchContent_Declare(
-    nlohmann_json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.11.3
-    GIT_SHALLOW ON)
-  FetchContent_MakeAvailable(nlohmann_json)
-
-  message(STATUS "✅ nlohmann/json loaded for the FEL module.")
 endif()

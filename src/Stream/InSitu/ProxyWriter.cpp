@@ -1,72 +1,12 @@
 #include "ProxyWriter.h"
 
 #include <fstream>
+#include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <limits>
-#include <cctype>
-#include <algorithm>
-
-namespace {  // ananymus namespace, accessible from within this file but not from outside ...
-inline std::string ltrim(std::string s) {
-  size_t i = 0; while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i; return s.substr(i);
-}
-inline std::string rtrim(std::string s) {
-  size_t i = s.size(); while (i > 0 && std::isspace(static_cast<unsigned char>(s[i-1]))) --i; s.resize(i); return s;
-}
-inline std::string trim(std::string s) { return rtrim(ltrim(std::move(s))); }
-inline bool startsWith(const std::string& s, const std::string& p) { return s.rfind(p, 0) == 0; }
-
-inline std::string stripComment(const std::string& s) {
-  // Very naive: drop everything after an unbraced '#'
-  // We'll ignore '#' if it appears inside { } to keep inline maps intact
-  int brace = 0;
-  for (size_t i = 0; i < s.size(); ++i) {
-    if (s[i] == '{') ++brace; else if (s[i] == '}') brace = std::max(0, brace-1);
-    else if (s[i] == '#' && brace == 0) return s.substr(0, i);
-  }
-  return s;
-}
-
-inline int leadingSpaces(const std::string& s) {
-  int n = 0; while (n < (int)s.size() && s[n] == ' ') ++n; return n;
-}
-
-inline std::string unquote(std::string s) {
-  s = trim(std::move(s));
-  if (!s.empty() && (s.front() == '"' || s.front() == '\'')) s.erase(s.begin());
-  if (!s.empty() && (s.back() == '"' || s.back() == '\'')) s.pop_back();
-  return s;
-}
-
-inline bool extractNumber(const std::string& src, const std::string& key, double& out) {
-  // find "key:" and parse following number until a delimiter (',' or '}' or end)
-  const std::string pat = key + ":";
-  auto pos = src.find(pat);
-  if (pos == std::string::npos) return false;
-  pos += pat.size();
-  // skip spaces
-  while (pos < src.size() && std::isspace(static_cast<unsigned char>(src[pos]))) ++pos;
-  // capture sign and digits
-  size_t end = pos;
-  bool dotSeen = false; bool expSeen = false;
-  if (end < src.size() && (src[end] == '+' || src[end] == '-')) ++end;
-  while (end < src.size()) {
-    char c = src[end];
-    if (std::isdigit(static_cast<unsigned char>(c))) { ++end; continue; }
-    if (c == '.' && !dotSeen) { dotSeen = true; ++end; continue; }
-    if ((c == 'e' || c == 'E') && !expSeen) { expSeen = true; ++end; if (end < src.size() && (src[end] == '+' || src[end] == '-')) ++end; continue; }
-    break;
-  }
-  if (end == pos) return false;
-  try {
-    out = std::stod(src.substr(pos, end - pos));
-    return true;
-  } catch (...) { return false; }
-}
-
-} // anonymous namespace
 
 namespace ippl {
 
@@ -1065,91 +1005,90 @@ void ProxyWriter::applyScalarConfig(Channel& ch) const {
   }
 }
 
-static void parseInlineMapInto(const std::string& inlineMap,
-                                  bool& hasAny,
-                                  double& vmin, double& vmax, double& vdef) {
-  hasAny = false;
-  std::string s = inlineMap;
-  // ensure braces removed
-  auto lb = s.find('{'); if (lb != std::string::npos) s.erase(0, lb+1);
-  auto rb = s.rfind('}'); if (rb != std::string::npos) s.erase(rb);
-  s = trim(s);
-  double tmp;
-  if (extractNumber(s, "min", tmp)) { vmin = tmp; hasAny = true; }
-  if (extractNumber(s, "max", tmp)) { vmax = tmp; hasAny = true; }
-  if (extractNumber(s, "default", tmp)) { vdef = tmp; hasAny = true; }
-}
-
 bool ProxyWriter::loadConfigFromYamlFile(const std::string& path) {
-  std::ifstream ifs(path);
-  if (!ifs) return false;
-  std::ostringstream ss; ss << ifs.rdbuf();
-  return loadConfigFromYamlString(ss.str());
+  try {
+    conduit_cpp::Node root;
+    conduit_node_load(conduit_cpp::c_node(&root), path.c_str(), "yaml");
+    return loadConfigFromConduitNode(root);
+  } catch (const std::exception& error) {
+    labelScalarCfg_m.clear();
+    labelVectorCfg_m.clear();
+    hasConfig_m = false;
+    std::cerr << "Warning: Unable to parse Catalyst steering config '" << path
+              << "': " << error.what() << '\n';
+    return false;
+  }
 }
 
 bool ProxyWriter::loadConfigFromYamlString(const std::string& yaml) {
-  // Reset caches to only track per-label ranges
-  labelScalarCfg_m.clear();
-  labelVectorCfg_m.clear();
+  try {
+    conduit_cpp::Node root;
+    conduit_node_parse(conduit_cpp::c_node(&root), yaml.c_str(), "yaml");
+    return loadConfigFromConduitNode(root);
+  } catch (const std::exception& error) {
+    labelScalarCfg_m.clear();
+    labelVectorCfg_m.clear();
+    hasConfig_m = false;
+    std::cerr << "Warning: Unable to parse Catalyst steering YAML: " << error.what() << '\n';
+    return false;
+  }
+}
 
-  enum class Mode { None, Ranges };
-  Mode mode = Mode::None;
-  std::string currentLabel;
+bool ProxyWriter::loadConfigFromConduitNode(const conduit_cpp::Node& root) {
+  std::map<std::string, ScalarCfg> scalarConfigs;
+  std::map<std::string, VectorCfg> vectorConfigs;
 
-  std::istringstream iss(yaml);
-  std::string rawLine;
-  while (std::getline(iss, rawLine)) {
-    std::string line = stripComment(rawLine);
-    line = rtrim(line);
-    if (line.find_first_not_of(' ') == std::string::npos) continue; // empty
-    int indent = leadingSpaces(line);
-    std::string t = trim(line);
-
-    // Only consider the 'ranges:' section
-    if (indent == 0 && t == "ranges:") { mode = Mode::Ranges; currentLabel.clear(); continue; }
-    if (mode != Mode::Ranges) continue;
-
-    // simple ranges: label keys under 'ranges:' with min/max pairs
-    if (indent == 2) {
-      auto pos = t.find(':'); if (pos == std::string::npos) continue;
-      currentLabel = unquote(t.substr(0, pos));
-      continue;
-    }
-    if (indent == 4) {
-      // inside label map: accept one key per line or inline multiple keys
-      if (currentLabel.empty()) continue;
-      bool minPresent=false, maxPresent=false, defPresent=false;
-      double mn=0.0, mx=0.0, df=0.0, tmp=0.0;
-      // Inline parse (handles e.g. "{ min: -1, max: 1 }")
-      bool any=false; parseInlineMapInto("{" + t + "}", any, mn, mx, df);
-      // Explicit single-key parsing (overrides inline if specific)
-      if (startsWith(t, "min:")) { if (extractNumber(t, "min", tmp)) { mn = tmp; minPresent = true; } }
-      if (startsWith(t, "max:")) { if (extractNumber(t, "max", tmp)) { mx = tmp; maxPresent = true; } }
-      if (startsWith(t, "default:")) { if (extractNumber(t, "default", tmp)) { df = tmp; defPresent = true; } }
-      // If inline map contained keys but not detected as single-key lines, infer presence
-      if (any && !minPresent && t.find("min:") != std::string::npos) minPresent = true;
-      if (any && !maxPresent && t.find("max:") != std::string::npos) maxPresent = true;
-      if (any && !defPresent && t.find("default:") != std::string::npos) defPresent = true;
-
-      if (minPresent || maxPresent || defPresent) {
-        ScalarCfg& sc = labelScalarCfg_m[currentLabel]; sc.has = true;
-        if (minPresent) sc.min = mn;
-        if (maxPresent) sc.max = mx;
-        if (defPresent) sc.def = df;
-
-        VectorCfg& vc = labelVectorCfg_m[currentLabel]; vc.has = true; vc.uniform = true;
-        if (minPresent) vc.umin = mn;
-        if (maxPresent) vc.umax = mx;
-        if (defPresent) vc.udef = df;
-
-        hasConfig_m = true;
-      }
-      continue;
-    }
-    // If we dedent back to 0, we're out of ranges
-    if (indent == 0) { mode = Mode::None; }
+  if (!root.has_path("ranges")) {
+    labelScalarCfg_m.clear();
+    labelVectorCfg_m.clear();
+    hasConfig_m = false;
+    return false;
   }
 
+  const auto ranges = root["ranges"];
+  if (!ranges.dtype().is_object()) {
+    throw std::runtime_error("The 'ranges' entry must be a YAML mapping");
+  }
+
+  for (conduit_index_t i = 0; i < ranges.number_of_children(); ++i) {
+    const auto range = ranges.child(i);
+    if (!range.dtype().is_object()) {
+      throw std::runtime_error("Range '" + range.name() + "' must be a YAML mapping");
+    }
+
+    ScalarCfg scalar;
+    VectorCfg vector;
+    vector.uniform = true;
+
+    const auto readOptionalNumber = [&range](const std::string& key, double& value) {
+      if (!range.has_child(key)) return false;
+
+      const auto node = range[key];
+      if (!node.dtype().is_number() || node.number_of_elements() != 1) {
+        throw std::runtime_error("Range value '" + range.name() + "/" + key +
+                                 "' must be a numeric scalar");
+      }
+      value = node.to_double();
+      return true;
+    };
+
+    const bool hasMin = readOptionalNumber("min", scalar.min);
+    const bool hasMax = readOptionalNumber("max", scalar.max);
+    const bool hasDefault = readOptionalNumber("default", scalar.def);
+    scalar.has = hasMin || hasMax || hasDefault;
+    if (!scalar.has) continue;
+
+    vector.has = true;
+    vector.umin = scalar.min;
+    vector.umax = scalar.max;
+    vector.udef = scalar.def;
+    scalarConfigs.emplace(range.name(), scalar);
+    vectorConfigs.emplace(range.name(), vector);
+  }
+
+  labelScalarCfg_m = std::move(scalarConfigs);
+  labelVectorCfg_m = std::move(vectorConfigs);
+  hasConfig_m = !labelScalarCfg_m.empty();
   return hasConfig_m;
 }
 

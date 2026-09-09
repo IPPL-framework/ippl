@@ -23,7 +23,7 @@ add_dependencies(FreeElectronLaser ippl_fel_config)
 
 target_link_libraries(
     FreeElectronLaser
-    PRIVATE IPPL::ippl nlohmann_json::nlohmann_json)
+    PRIVATE IPPL::ippl catalyst::catalyst)
 
 target_include_directories(FreeElectronLaser PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(FreeElectronLaser SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stb)

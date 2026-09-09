@@ -8,18 +8,20 @@
 // FreeElectronLaser.cpp.
 
 #include <algorithm>
+#include <catalyst_conduit.hpp>
+#include <cctype>
+#include <cmath>
 #include <cstdint>
-#include <fstream>
 #include <iostream>
+#include <limits>
+#include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 
 #include "Types/Vector.h"
 
 #include "units.h"
-
-#define JSON_HAS_RANGES 0
-#include <nlohmann/json.hpp>
 
 struct config {
     using scalar = double;
@@ -40,11 +42,13 @@ struct config {
     bool space_charge;       // Flag for considering space charge effects
 
     // BUNCH PARAMETERS
-    ippl::Vector<scalar, 3> mean_position;   // Mean initial position of the particle bunch
-    ippl::Vector<scalar, 3> sigma_position;  // Standard deviation of the initial position distribution
+    ippl::Vector<scalar, 3> mean_position;  // Mean initial position of the particle bunch
+    ippl::Vector<scalar, 3>
+        sigma_position;  // Standard deviation of the initial position distribution
     ippl::Vector<scalar, 3> position_truncations;  // Truncations of the position distribution
-    ippl::Vector<scalar, 3> sigma_momentum;  // Standard deviation of the initial momentum distribution
-    scalar bunch_gamma;                      // Relativistic gamma factor of the bunch
+    ippl::Vector<scalar, 3>
+        sigma_momentum;  // Standard deviation of the initial momentum distribution
+    scalar bunch_gamma;  // Relativistic gamma factor of the bunch
 
     // UNDULATOR PARAMETERS
     scalar undulator_K;       // Undulator parameter K
@@ -55,20 +59,116 @@ struct config {
     std::unordered_map<std::string, double> experiment_options;  // Additional experimental options
 };
 
-template <typename scalar, unsigned Dim>
-ippl::Vector<scalar, Dim> getVector(const nlohmann::json& j) {
-    if (j.is_array()) {
-        assert(j.size() == Dim);
-        ippl::Vector<scalar, Dim> ret;
-        for (unsigned i = 0; i < Dim; i++)
-            ret[i] = (scalar)j[i];
-        return ret;
-    } else {
-        std::cerr << "Warning: Obtaining Vector from scalar json\n";
-        ippl::Vector<scalar, Dim> ret = (scalar)j;
-        return ret;
+namespace fel_config_detail {
+
+    inline conduit_cpp::Node requiredNode(const conduit_cpp::Node& root, const std::string& path) {
+        if (!root.has_path(path)) {
+            throw std::runtime_error("Missing required configuration value '" + path + "'");
+        }
+        return root[path];
     }
-}
+
+    inline long double numericElement(const conduit_cpp::Node& node, conduit_index_t index,
+                                      const std::string& path) {
+        if (!node.dtype().is_number() || index < 0 || index >= node.number_of_elements()) {
+            throw std::runtime_error("Configuration value '" + path + "' must be numeric");
+        }
+
+        using Id = conduit_cpp::DataType::Id;
+        switch (node.dtype().id()) {
+            case Id::int8:
+                return node.as_int8_ptr()[index];
+            case Id::int16:
+                return node.as_int16_ptr()[index];
+            case Id::int32:
+                return node.as_int32_ptr()[index];
+            case Id::int64:
+                return static_cast<long double>(node.as_int64_ptr()[index]);
+            case Id::uint8:
+                return node.as_uint8_ptr()[index];
+            case Id::uint16:
+                return node.as_uint16_ptr()[index];
+            case Id::uint32:
+                return node.as_uint32_ptr()[index];
+            case Id::uint64:
+                return static_cast<long double>(node.as_uint64_ptr()[index]);
+            case Id::float32:
+                return node.as_float32_ptr()[index];
+            case Id::float64:
+                return node.as_float64_ptr()[index];
+            case Id::unknown:
+                break;
+        }
+
+        throw std::runtime_error("Unsupported numeric type for configuration value '" + path + "'");
+    }
+
+    inline double requiredNumber(const conduit_cpp::Node& root, const std::string& path) {
+        const auto node = requiredNode(root, path);
+        if (node.number_of_elements() != 1) {
+            throw std::runtime_error("Configuration value '" + path + "' must be a scalar");
+        }
+        return static_cast<double>(numericElement(node, 0, path));
+    }
+
+    inline std::string requiredString(const conduit_cpp::Node& root, const std::string& path) {
+        const auto node = requiredNode(root, path);
+        if (!node.dtype().is_string()) {
+            throw std::runtime_error("Configuration value '" + path + "' must be a string");
+        }
+        return node.as_string();
+    }
+
+    template <typename Scalar>
+    Scalar checkedNumericCast(long double value, const std::string& path) {
+        if constexpr (std::is_integral_v<Scalar>) {
+            if (!std::isfinite(value) || std::trunc(value) != value
+                || value < static_cast<long double>(std::numeric_limits<Scalar>::lowest())
+                || value > static_cast<long double>(std::numeric_limits<Scalar>::max())) {
+                throw std::runtime_error("Configuration value '" + path
+                                         + "' must be an in-range integer");
+            }
+        }
+        return static_cast<Scalar>(value);
+    }
+
+    template <typename Scalar>
+    Scalar requiredInteger(const conduit_cpp::Node& root, const std::string& path) {
+        static_assert(std::is_integral_v<Scalar>);
+        const auto node = requiredNode(root, path);
+        if (node.number_of_elements() != 1) {
+            throw std::runtime_error("Configuration value '" + path + "' must be a scalar");
+        }
+        return checkedNumericCast<Scalar>(numericElement(node, 0, path), path);
+    }
+
+    template <typename Scalar, unsigned Dim>
+    ippl::Vector<Scalar, Dim> getVector(const conduit_cpp::Node& root, const std::string& path) {
+        const auto node = requiredNode(root, path);
+        if (!node.dtype().is_number()) {
+            throw std::runtime_error("Configuration value '" + path + "' must be numeric");
+        }
+
+        const auto size = node.number_of_elements();
+        ippl::Vector<Scalar, Dim> result;
+        if (size == 1) {
+            std::cerr << "Warning: Obtaining vector from scalar configuration value '" << path
+                      << "'\n";
+            result = checkedNumericCast<Scalar>(numericElement(node, 0, path), path);
+            return result;
+        }
+        if (size != static_cast<conduit_index_t>(Dim)) {
+            throw std::runtime_error("Configuration value '" + path + "' must contain "
+                                     + std::to_string(Dim) + " elements");
+        }
+
+        for (unsigned i = 0; i < Dim; ++i) {
+            result[i] = checkedNumericCast<Scalar>(numericElement(node, i, path), path);
+        }
+        return result;
+    }
+
+}  // namespace fel_config_detail
 
 // Compile-time / run-time string hashing used to switch on unit-scale names.
 template <size_t N, typename T>
@@ -126,7 +226,9 @@ inline size_t chash(const std::string& _val) {
 }
 inline std::string lowercase_singular(std::string str) {
     // Convert string to lowercase
-    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+    std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
 
     // Check if the string ends with "s" and remove it if it does
     if (!str.empty() && str.back() == 's') {
@@ -135,10 +237,11 @@ inline std::string lowercase_singular(std::string str) {
 
     return str;
 }
-inline double get_time_multiplier(const nlohmann::json& j) {
-    std::string length_scale_string = lowercase_singular((std::string)j["mesh"]["time-scale"]);
-    double time_factor              = 1.0;
-    switch (chash(length_scale_string)) {
+inline double get_time_multiplier(const conduit_cpp::Node& root) {
+    const std::string time_scale  = fel_config_detail::requiredString(root, "mesh/time-scale");
+    std::string time_scale_string = lowercase_singular(time_scale);
+    double time_factor            = 1.0;
+    switch (chash(time_scale_string)) {
         case chash<"planck-time">():
         case chash<"plancktime">():
         case chash<"pt">():
@@ -161,16 +264,15 @@ inline double get_time_multiplier(const nlohmann::json& j) {
             time_factor = 1.0;
             break;
         default:
-            std::cerr << "Unrecognized time scale: " << (std::string)j["mesh"]["time-scale"]
-                      << "\n";
+            std::cerr << "Unrecognized time scale: " << time_scale << "\n";
             break;
     }
     return time_factor;
 }
-inline double get_length_multiplier(const nlohmann::json& options) {
-    std::string length_scale_string =
-        lowercase_singular((std::string)options["mesh"]["length-scale"]);
-    double length_factor = 1.0;
+inline double get_length_multiplier(const conduit_cpp::Node& root) {
+    const std::string length_scale  = fel_config_detail::requiredString(root, "mesh/length-scale");
+    std::string length_scale_string = lowercase_singular(length_scale);
+    double length_factor            = 1.0;
     switch (chash(length_scale_string)) {
         case chash<"planck-length">():
         case chash<"plancklength">():
@@ -194,77 +296,98 @@ inline double get_length_multiplier(const nlohmann::json& options) {
             length_factor = 1.0;
             break;
         default:
-            std::cerr << "Unrecognized length scale: "
-                      << (std::string)options["mesh"]["length-scale"] << "\n";
+            std::cerr << "Unrecognized length scale: " << length_scale << "\n";
             break;
     }
     return length_factor;
 }
 inline config read_config(const char* filepath) {
-    std::ifstream cfile(filepath);
-    nlohmann::json j;
-    cfile >> j;
-    config::scalar lmult = get_length_multiplier(j);
-    config::scalar tmult = get_time_multiplier(j);
-    config ret;
+    try {
+        conduit_cpp::Node root;
+        conduit_node_load(conduit_cpp::c_node(&root), filepath, "json");
 
-    ret.extents[0] = ((config::scalar)j["mesh"]["extents"][0] * lmult) / unit_length_in_meters;
-    ret.extents[1] = ((config::scalar)j["mesh"]["extents"][1] * lmult) / unit_length_in_meters;
-    ret.extents[2] = ((config::scalar)j["mesh"]["extents"][2] * lmult) / unit_length_in_meters;
-    ret.resolution = getVector<uint32_t, 3>(j["mesh"]["resolution"]);
+        const config::scalar lmult = get_length_multiplier(root);
+        const config::scalar tmult = get_time_multiplier(root);
+        config ret{};
 
-    if (j.contains("timestep-ratio")) {
-        ret.timestep_ratio = (config::scalar)j["timestep-ratio"];
-    } else {
-        ret.timestep_ratio = 1;
-    }
-    ret.total_time   = ((config::scalar)j["mesh"]["total-time"] * tmult) / unit_time_in_seconds;
-    ret.space_charge = (bool)(j["mesh"]["space-charge"]);
-    ret.bunch_gamma  = (config::scalar)(j["bunch"]["gamma"]);
-    if (ret.bunch_gamma < config::scalar(1)) {
-        std::cerr << "Gamma must be >= 1\n";
-        exit(1);
-    }
-    assert(j.contains("undulator"));
-    assert(j["undulator"].contains("static-undulator"));
+        ret.extents = fel_config_detail::getVector<config::scalar, 3>(root, "mesh/extents") * lmult
+                      / unit_length_in_meters;
+        ret.resolution = fel_config_detail::getVector<uint32_t, 3>(root, "mesh/resolution");
 
-    ret.undulator_K      = j["undulator"]["static-undulator"]["undulator-parameter"];
-    ret.undulator_period = ((config::scalar)j["undulator"]["static-undulator"]["period"] * lmult)
-                           / unit_length_in_meters;
-    ret.undulator_length = ((config::scalar)j["undulator"]["static-undulator"]["length"] * lmult)
-                           / unit_length_in_meters;
-    assert(!std::isnan(ret.undulator_length));
-    assert(!std::isnan(ret.undulator_period));
-    assert(!std::isnan(ret.extents[0]));
-    assert(!std::isnan(ret.extents[1]));
-    assert(!std::isnan(ret.extents[2]));
-    assert(!std::isnan(ret.total_time));
-    ret.length_scale_in_jobfile   = get_length_multiplier(j);
-    ret.temporal_scale_in_jobfile = get_time_multiplier(j);
-    ret.charge        = (config::scalar)j["bunch"]["charge"] * electron_charge_in_unit_charges;
-    ret.mass          = (config::scalar)j["bunch"]["mass"] * electron_mass_in_unit_masses;
-    ret.num_particles = (uint64_t)j["bunch"]["number-of-particles"];
-    ret.mean_position =
-        getVector<config::scalar, 3>(j["bunch"]["position"]) * lmult / unit_length_in_meters;
-    ret.sigma_position =
-        getVector<config::scalar, 3>(j["bunch"]["sigma-position"]) * lmult / unit_length_in_meters;
-    ret.position_truncations = getVector<config::scalar, 3>(j["bunch"]["distribution-truncations"])
-                               * lmult / unit_length_in_meters;
-    ret.sigma_momentum = getVector<config::scalar, 3>(j["bunch"]["sigma-momentum"]);
-    ret.output_path    = "../data/";
-    if (j["output"].contains("path")) {
-        ret.output_path = j["output"]["path"];
-        if (!ret.output_path.ends_with('/')) {
-            ret.output_path.push_back('/');
+        ret.timestep_ratio = root.has_path("timestep-ratio")
+                                 ? fel_config_detail::requiredNumber(root, "timestep-ratio")
+                                 : config::scalar(1);
+        ret.total_time     = fel_config_detail::requiredNumber(root, "mesh/total-time") * tmult
+                             / unit_time_in_seconds;
+        ret.space_charge =
+            fel_config_detail::requiredNumber(root, "mesh/space-charge") != config::scalar(0);
+        ret.bunch_gamma = fel_config_detail::requiredNumber(root, "bunch/gamma");
+        if (ret.bunch_gamma < config::scalar(1)) {
+            throw std::runtime_error("Configuration value 'bunch/gamma' must be >= 1");
         }
-    }
-    if (j.contains("experimentation")) {
-        nlohmann::json je = j["experimentation"];
-        for (auto it = je.begin(); it != je.end(); it++) {
-            ret.experiment_options[it.key()] = double(it.value());
+
+        ret.undulator_K = fel_config_detail::requiredNumber(
+            root, "undulator/static-undulator/undulator-parameter");
+        ret.undulator_period =
+            fel_config_detail::requiredNumber(root, "undulator/static-undulator/period") * lmult
+            / unit_length_in_meters;
+        ret.undulator_length =
+            fel_config_detail::requiredNumber(root, "undulator/static-undulator/length") * lmult
+            / unit_length_in_meters;
+
+        if (!std::isfinite(ret.undulator_length) || !std::isfinite(ret.undulator_period)
+            || !std::isfinite(ret.extents[0]) || !std::isfinite(ret.extents[1])
+            || !std::isfinite(ret.extents[2]) || !std::isfinite(ret.total_time)) {
+            throw std::runtime_error("FEL configuration contains a non-finite physical value");
         }
+
+        ret.length_scale_in_jobfile   = lmult;
+        ret.temporal_scale_in_jobfile = tmult;
+        ret.charge                    = fel_config_detail::requiredNumber(root, "bunch/charge")
+                                        * electron_charge_in_unit_charges;
+        ret.mass =
+            fel_config_detail::requiredNumber(root, "bunch/mass") * electron_mass_in_unit_masses;
+        ret.num_particles = fel_config_detail::requiredInteger<uint64_t>(
+            root, "bunch/number-of-particles");
+        ret.mean_position = fel_config_detail::getVector<config::scalar, 3>(root, "bunch/position")
+                            * lmult / unit_length_in_meters;
+        ret.sigma_position =
+            fel_config_detail::getVector<config::scalar, 3>(root, "bunch/sigma-position") * lmult
+            / unit_length_in_meters;
+        ret.position_truncations =
+            fel_config_detail::getVector<config::scalar, 3>(root, "bunch/distribution-truncations")
+            * lmult / unit_length_in_meters;
+        ret.sigma_momentum =
+            fel_config_detail::getVector<config::scalar, 3>(root, "bunch/sigma-momentum");
+
+        ret.output_path = "../data/";
+        if (root.has_path("output/path")) {
+            ret.output_path = fel_config_detail::requiredString(root, "output/path");
+            if (!ret.output_path.ends_with('/')) {
+                ret.output_path.push_back('/');
+            }
+        }
+
+        if (root.has_path("experimentation")) {
+            const auto experimentation = root["experimentation"];
+            if (!experimentation.dtype().is_object()) {
+                throw std::runtime_error("Configuration value 'experimentation' must be an object");
+            }
+            for (conduit_index_t i = 0; i < experimentation.number_of_children(); ++i) {
+                const auto option = experimentation.child(i);
+                if (!option.dtype().is_number() || option.number_of_elements() != 1) {
+                    throw std::runtime_error("Experimentation option '" + option.name()
+                                             + "' must be a numeric scalar");
+                }
+                ret.experiment_options[option.name()] = option.to_double();
+            }
+        }
+
+        return ret;
+    } catch (const std::exception& error) {
+        throw std::runtime_error("Failed to read FEL configuration '" + std::string(filepath)
+                                 + "': " + error.what());
     }
-    return ret;
 }
 
 #endif
