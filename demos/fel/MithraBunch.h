@@ -176,16 +176,14 @@ void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Do
     unsigned int Np = bunchInit.numberOfParticles_, i, Np0 = chargeVector.size();
 
     /* Declare the required parameters for the initialization of charge vectors. */
-    Charge<Double> charge;
+    Charge<Double> charge{};
     charge.q               = bunchInit.cloudCharge_ / Np;
     FieldVector<Double> gb = bunchInit.initialGamma_ * bunchInit.betaVector_;
     FieldVector<Double> r(0.0);
     FieldVector<Double> t(0.0);
     Double t0;  //, g;
     Double zmin = 1e100;
-    Double Ne;
     Double bF = bunchInit.bF_;
-    Double bFi;
     unsigned int bmi;
     std::vector<Double> randomNumbers;
 
@@ -235,7 +233,7 @@ void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Do
 
                 /* Obtain the phase and amplitude of the modulation.
                  */
-                bFi = bF * sqrt(-2.0 * log(generate(8, bmi)));
+                const Double bFi = bF * sqrt(-2.0 * log(generate(8, bmi)));
 
                 q.rnp[2] = charge.rnp[2] - bunchInit.lambda_ / 4 * ii;
 
@@ -291,7 +289,8 @@ void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Do
 
         /* Obtain the average number of electrons per FEL beamlet.
          */
-        Ne = bunchInit.cloudCharge_ * bunchInit.lambda_ / (2.0 * bunchInit.sigmaPosition_[2]);
+        const Double Ne =
+            bunchInit.cloudCharge_ * bunchInit.lambda_ / (2.0 * bunchInit.sigmaPosition_[2]);
 
         /* Set the bunching factor level for the shot noise depending on the given values.
          */

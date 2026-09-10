@@ -21,7 +21,7 @@
 
 #include "Particle/ParticleSpatialOverlapLayout.h"
 
-namespace {
+namespace test_truncated_green_particle_interaction {
     constexpr unsigned Dim  = 3;
     using Scalar_t          = double;
     using Mesh_t            = ippl::UniformCartesian<Scalar_t, Dim>;
@@ -110,7 +110,9 @@ namespace {
         ippl::Comm->allreduce(normLocal, norm, 1, std::plus<double>());
         return norm;
     }
-}  // namespace
+}  // namespace test_truncated_green_particle_interaction
+
+using namespace test_truncated_green_particle_interaction;
 
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);

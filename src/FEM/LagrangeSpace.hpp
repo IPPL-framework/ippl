@@ -72,9 +72,10 @@ namespace ippl {
         // while tagging upper boundary points such that they can be removed after.
         Kokkos::View<size_t*> points("npoints", npoints);
         Kokkos::View<bool*> is_boundary("is_boundary", npoints);
+        const DeviceStruct space = getDeviceMirror();
         Kokkos::parallel_reduce(
             "ComputePoints", npoints,
-            KOKKOS_CLASS_LAMBDA(const int i, int& local) {
+            KOKKOS_LAMBDA(const int i, int& local) {
                 int idx = i;
                 indices_t val;
                 bool isBoundary = false;
@@ -87,7 +88,7 @@ namespace ippl {
                     }
                 }
                 is_boundary(i) = isBoundary;
-                points(i)      = this->getElementIndex(val);
+                points(i)      = space.getElementIndex(val);
                 local += isBoundary;
             },
             Kokkos::Sum<int>(upperBoundaryPoints));
@@ -100,11 +101,12 @@ namespace ippl {
         Kokkos::View<size_t> index("index");
 
         if (elementsPerRank > 0) {
+            const auto elementIndicesView = elementIndices;
             Kokkos::parallel_for(
-                "CompactElementIndices", npoints, KOKKOS_CLASS_LAMBDA(const int i) {
+                "CompactElementIndices", npoints, KOKKOS_LAMBDA(const int i) {
                     if (!is_boundary(i)) {
-                        const size_t idx    = Kokkos::atomic_fetch_add(&index(), 1);
-                        elementIndices(idx) = points(i);
+                        const size_t idx        = Kokkos::atomic_fetch_add(&index(), 1);
+                        elementIndicesView(idx) = points(i);
                     }
                 });
         }
@@ -441,17 +443,20 @@ namespace ippl {
         // start a timer
         IpplTimings::startTimer(evalAx_outer);
 
+        const DeviceStruct space       = getDeviceMirror();
+        const auto elementIndicesView = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+            KOKKOS_LAMBDA(const size_t index) {
+                const size_t elementIndex                        = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
 
                 for (size_t i = 0; i < numElementDOFs; ++i) {
-                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                    global_dof_ndindices[i] = space.getMeshVertexNDIndex(global_dofs[i]);
                 }
 
                 // local DOF indices (both i and j go from 0 to numDOFs-1 in the element)
@@ -468,13 +473,13 @@ namespace ippl {
                     // Handle boundary DOFs
                     // If Zero Dirichlet BCs, skip this DOF
                     // If Constant Dirichlet BCs, identity
-                    if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                    if ((bcType == CONSTANT_FACE) && (space.isDOFOnBoundary(I_nd))) {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
                         apply(resultView, I_nd) =  apply(view, I_nd);
                         continue;
-                    } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                    } else if ((bcType == ZERO_FACE) && (space.isDOFOnBoundary(I_nd))) {
                         continue;
                     }
 
@@ -488,7 +493,7 @@ namespace ippl {
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
                         if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
-                            && this->isDOFOnBoundary(J_nd)) {
+                            && space.isDOFOnBoundary(J_nd)) {
                             continue;
                         }
 
@@ -588,17 +593,20 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        const DeviceStruct space       = getDeviceMirror();
+        const auto elementIndicesView = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+            KOKKOS_LAMBDA(const size_t index) {
+                const size_t elementIndex                        = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
 
                 for (size_t i = 0; i < numElementDOFs; ++i) {
-                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                    global_dof_ndindices[i] = space.getMeshVertexNDIndex(global_dofs[i]);
                 }
 
                 // local DOF indices
@@ -615,13 +623,13 @@ namespace ippl {
                     // Handle boundary DOFs
                     // If Zero Dirichlet BCs, skip this DOF
                     // If Constant Dirichlet BCs, identity
-                    if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                    if ((bcType == CONSTANT_FACE) && (space.isDOFOnBoundary(I_nd))) {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
                         apply(resultView, I_nd) =  apply(view, I_nd);
                         continue;
-                    } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                    } else if ((bcType == ZERO_FACE) && (space.isDOFOnBoundary(I_nd))) {
                         continue;
                     }
 
@@ -639,7 +647,7 @@ namespace ippl {
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
                         if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
-                            && this->isDOFOnBoundary(J_nd)) {
+                            && space.isDOFOnBoundary(J_nd)) {
                             continue;
                         }
 
@@ -732,17 +740,20 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        const DeviceStruct space       = getDeviceMirror();
+        const auto elementIndicesView = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+            KOKKOS_LAMBDA(const size_t index) {
+                const size_t elementIndex                        = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
 
                 for (size_t i = 0; i < numElementDOFs; ++i) {
-                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                    global_dof_ndindices[i] = space.getMeshVertexNDIndex(global_dofs[i]);
                 }
 
                 // local DOF indices
@@ -759,13 +770,13 @@ namespace ippl {
                     // Handle boundary DOFs
                     // If Zero Dirichlet BCs, skip this DOF
                     // If Constant Dirichlet BCs, identity
-                    if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                    if ((bcType == CONSTANT_FACE) && (space.isDOFOnBoundary(I_nd))) {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
                         apply(resultView, I_nd) =  apply(view, I_nd);
                         continue;
-                    } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                    } else if ((bcType == ZERO_FACE) && (space.isDOFOnBoundary(I_nd))) {
                         continue;
                     }
 
@@ -783,7 +794,7 @@ namespace ippl {
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
                         if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
-                            && this->isDOFOnBoundary(J_nd)) {
+                            && space.isDOFOnBoundary(J_nd)) {
                             continue;
                         }
 
@@ -877,17 +888,20 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        const DeviceStruct space       = getDeviceMirror();
+        const auto elementIndicesView = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+            KOKKOS_LAMBDA(const size_t index) {
+                const size_t elementIndex                        = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
 
                 for (size_t i = 0; i < numElementDOFs; ++i) {
-                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                    global_dof_ndindices[i] = space.getMeshVertexNDIndex(global_dofs[i]);
                 }
 
                 // local DOF indices
@@ -904,13 +918,13 @@ namespace ippl {
                     // Handle boundary DOFs
                     // If Zero Dirichlet BCs, skip this DOF
                     // If Constant Dirichlet BCs, identity
-                    if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                    if ((bcType == CONSTANT_FACE) && (space.isDOFOnBoundary(I_nd))) {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
                         apply(resultView, I_nd) =  apply(view, I_nd);
                         continue;
-                    } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                    } else if ((bcType == ZERO_FACE) && (space.isDOFOnBoundary(I_nd))) {
                         continue;
                     }
 
@@ -924,7 +938,7 @@ namespace ippl {
 
                         // Skip boundary DOFs (Zero & Constant Dirichlet BCs)
                         if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE)) 
-                            && this->isDOFOnBoundary(J_nd)) {
+                            && space.isDOFOnBoundary(J_nd)) {
                             continue;
                         }
 
@@ -1016,17 +1030,20 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        const DeviceStruct space       = getDeviceMirror();
+        const auto elementIndicesView = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+            KOKKOS_LAMBDA(const size_t index) {
+                const size_t elementIndex                        = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
 
                 for (size_t i = 0; i < numElementDOFs; ++i) {
-                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                    global_dof_ndindices[i] = space.getMeshVertexNDIndex(global_dofs[i]);
                 }
 
                 // local DOF indices
@@ -1043,13 +1060,13 @@ namespace ippl {
                     // Handle boundary DOFs
                     // If Zero Dirichlet BCs, skip this DOF
                     // If Constant Dirichlet BCs, identity
-                    if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                    if ((bcType == CONSTANT_FACE) && (space.isDOFOnBoundary(I_nd))) {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
                         apply(resultView, I_nd) = 1.0;
                         continue;
-                    } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                    } else if ((bcType == ZERO_FACE) && (space.isDOFOnBoundary(I_nd))) {
                         continue;
                     }
 
@@ -1147,17 +1164,20 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        const DeviceStruct space       = getDeviceMirror();
+        const auto elementIndicesView = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+            KOKKOS_LAMBDA(const size_t index) {
+                const size_t elementIndex                        = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
 
                 for (size_t i = 0; i < numElementDOFs; ++i) {
-                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                    global_dof_ndindices[i] = space.getMeshVertexNDIndex(global_dofs[i]);
                 }
 
                 // local DOF indices
@@ -1174,13 +1194,13 @@ namespace ippl {
                     // Handle boundary DOFs
                     // If Zero Dirichlet BCs, skip this DOF
                     // If Constant Dirichlet BCs, identity
-                    if ((bcType == CONSTANT_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                    if ((bcType == CONSTANT_FACE) && (space.isDOFOnBoundary(I_nd))) {
                         for (unsigned d = 0; d < Dim; ++d) {
                             I_nd[d] = I_nd[d] - ldom[d].first() + nghost;
                         }
                         apply(resultView, I_nd) =  apply(view, I_nd);
                         continue;
-                    } else if ((bcType == ZERO_FACE) && (this->isDOFOnBoundary(I_nd))) {
+                    } else if ((bcType == ZERO_FACE) && (space.isDOFOnBoundary(I_nd))) {
                         continue;
                     }
 
@@ -1267,17 +1287,20 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        const DeviceStruct space       = getDeviceMirror();
+        const auto elementIndicesView = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(const size_t index) {
-                const size_t elementIndex                            = elementIndices(index);
+            KOKKOS_LAMBDA(const size_t index) {
+                const size_t elementIndex                            = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
                 Vector<indices_t, numElementDOFs> global_dof_ndindices;
 
                 for (size_t i = 0; i < numElementDOFs; ++i) {
-                    global_dof_ndindices[i] = this->getMeshVertexNDIndex(global_dofs[i]);
+                    global_dof_ndindices[i] = space.getMeshVertexNDIndex(global_dofs[i]);
                 }
 
                 // local DOF indices (both i and j go from 0 to numDOFs-1 in the element)
@@ -1292,7 +1315,7 @@ namespace ippl {
                     I_nd = global_dof_ndindices[i];
 
                     // Skip if on a row of the matrix
-                    if (this->isDOFOnBoundary(I_nd)) {
+                    if (space.isDOFOnBoundary(I_nd)) {
                         continue;
                     }
 
@@ -1305,7 +1328,7 @@ namespace ippl {
                         J_nd = global_dof_ndindices[j];
 
                         // Contribute to lifting only if on a boundary DOF
-                        if (this->isDOFOnBoundary(J_nd)) {
+                        if (space.isDOFOnBoundary(J_nd)) {
                             // get the appropriate index for the Kokkos view of the field
                             for (unsigned d = 0; d < Dim; ++d) {
                                 J_nd[d] = J_nd[d] - ldom[d].first() + nghost;
@@ -1374,17 +1397,21 @@ namespace ippl {
         // We work with a temporary field since we need to use field
         // to evaluate the load vector; then we assign temp to RHS field
         AtomicViewType atomic_view = temp_field.getView();
+        const auto fieldView       = field.getView();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        const DeviceStruct space       = getDeviceMirror();
+        const auto elementIndicesView = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+            KOKKOS_LAMBDA(size_t index) {
+                const size_t elementIndex                        = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
 
                 size_t i, I;
 
@@ -1393,11 +1420,11 @@ namespace ippl {
                     I = global_dofs[i];
 
                     // TODO fix for higher order
-                    auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+                    auto dof_ndindex_I = space.getMeshVertexNDIndex(I);
 
                     // Skip boundary DOFs (Zero and Constant Dirichlet BCs)
                     if (((bcType == ZERO_FACE) || (bcType == CONSTANT_FACE))
-                        && (this->isDOFOnBoundary(dof_ndindex_I))) {
+                        && (space.isDOFOnBoundary(dof_ndindex_I))) {
                         continue;
                     }
 
@@ -1408,13 +1435,13 @@ namespace ippl {
                         for (size_t j = 0; j < numElementDOFs; ++j) {
                             // get field index corresponding to this DOF
                             size_t J           = global_dofs[j];
-                            auto dof_ndindex_J = this->getMeshVertexNDIndex(J);
+                            auto dof_ndindex_J = space.getMeshVertexNDIndex(J);
                             for (unsigned d = 0; d < Dim; ++d) {
                                 dof_ndindex_J[d] = dof_ndindex_J[d] - ldom[d].first() + nghost;
                             }
 
                             // get field value at DOF and interpolate to q_k
-                            val += basis_q[k][j] * apply(field, dof_ndindex_J);
+                            val += basis_q[k][j] * apply(fieldView, dof_ndindex_J);
                         }
 
                         contrib += w[k] * basis_q[k][i] * absDetDPhi * val;
@@ -1483,13 +1510,16 @@ namespace ippl {
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        const DeviceStruct space       = getDeviceMirror();
+        const auto elementIndicesView = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_for(
             "Loop over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(size_t index) {
-                const size_t elementIndex                        = elementIndices(index);
+            KOKKOS_LAMBDA(size_t index) {
+                const size_t elementIndex                        = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
 
                 size_t i, I;
 
@@ -1498,7 +1528,7 @@ namespace ippl {
                     I = global_dofs[i];
 
                     // TODO fix for higher order
-                    auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+                    auto dof_ndindex_I = space.getMeshVertexNDIndex(I);
 
                     // calculate the contribution of this element
                     T contrib = 0;
@@ -1559,36 +1589,40 @@ namespace ippl {
         // Get domain information and ghost cells
         auto ldom        = (u_h.getLayout()).getLocalNDIndex();
         const int nghost = u_h.getNghost();
+        const auto uView = u_h.getView();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        const DeviceStruct space       = getDeviceMirror();
+        const auto elementIndicesView = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_reduce(
             "Compute error over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
-                const size_t elementIndex = elementIndices(index);
+            KOKKOS_LAMBDA(size_t index, double& local) {
+                const size_t elementIndex = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
 
                 // contribution of this element to the error
                 T contrib = 0;
                 for (size_t k = 0; k < QuadratureType::numElementNodes; ++k) {
-                    T val_u_sol = u_sol(this->ref_element_m.localToGlobal(
-                        this->getElementMeshVertexPoints(this->getElementNDIndex(elementIndex)),
+                    T val_u_sol = u_sol(space.ref_element_m.localToGlobal(
+                        space.getElementMeshVertexPoints(space.getElementNDIndex(elementIndex)),
                         q[k]));
 
                     T val_u_h = 0;
                     for (size_t i = 0; i < numElementDOFs; ++i) {
                         // get field index corresponding to this DOF
                         size_t I           = global_dofs[i];
-                        auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+                        auto dof_ndindex_I = space.getMeshVertexNDIndex(I);
                         for (unsigned d = 0; d < Dim; ++d) {
                             dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
                         }
 
                         // get field value at DOF and interpolate to q_k
-                        val_u_h += basis_q[k][i] * apply(u_h, dof_ndindex_I);
+                        val_u_h += basis_q[k][i] * apply(uView, dof_ndindex_I);
                     }
 
                     contrib += w[k] * Kokkos::pow(val_u_sol - val_u_h, 2) * absDetDPhi;
@@ -1643,17 +1677,21 @@ namespace ippl {
         // Get domain information and ghost cells
         auto ldom        = (u_h.getLayout()).getLocalNDIndex();
         const int nghost = u_h.getNghost();
+        const auto uView = u_h.getView();
 
         using exec_space  = typename Kokkos::View<const size_t*>::execution_space;
         using policy_type = Kokkos::RangePolicy<exec_space>;
 
+        const DeviceStruct space       = getDeviceMirror();
+        const auto elementIndicesView = elementIndices;
+
         // Loop over elements to compute contributions
         Kokkos::parallel_reduce(
             "Compute average over elements", policy_type(0, elementIndices.extent(0)),
-            KOKKOS_CLASS_LAMBDA(size_t index, double& local) {
-                const size_t elementIndex = elementIndices(index);
+            KOKKOS_LAMBDA(size_t index, double& local) {
+                const size_t elementIndex = elementIndicesView(index);
                 const Vector<size_t, numElementDOFs> global_dofs =
-                    this->LagrangeSpace::getGlobalDOFIndices(elementIndex);
+                    space.getGlobalDOFIndices(elementIndex);
 
                 // contribution of this element to the error
                 T contrib = 0;
@@ -1662,13 +1700,13 @@ namespace ippl {
                     for (size_t i = 0; i < numElementDOFs; ++i) {
                         // get field index corresponding to this DOF
                         size_t I           = global_dofs[i];
-                        auto dof_ndindex_I = this->getMeshVertexNDIndex(I);
+                        auto dof_ndindex_I = space.getMeshVertexNDIndex(I);
                         for (unsigned d = 0; d < Dim; ++d) {
                             dof_ndindex_I[d] = dof_ndindex_I[d] - ldom[d].first() + nghost;
                         }
 
                         // get field value at DOF and interpolate to q_k
-                        val_u_h += basis_q[k][i] * apply(u_h, dof_ndindex_I);
+                        val_u_h += basis_q[k][i] * apply(uView, dof_ndindex_I);
                     }
 
                     contrib += w[k] * val_u_h * absDetDPhi;
@@ -1696,7 +1734,9 @@ namespace ippl {
     LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
     getDeviceMirror() const {
         DeviceStruct space_mirror;
-        space_mirror.nr_m = this->nr_m;
+        space_mirror.nr_m          = this->nr_m;
+        space_mirror.hr_m          = this->hr_m;
+        space_mirror.origin_m      = this->origin_m;
         space_mirror.ref_element_m = this->ref_element_m;
         return space_mirror;
     }
@@ -1705,6 +1745,87 @@ namespace ippl {
     // Make sure that any changes in getLocalDOFIndex, getGlobalDOFIndices, 
     // evaluateRefElementShapeFunction, and getMeshVertexNDIndex from the
     // parent class FiniteElementSpace get propagated here.
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                                           FieldRHS>::indices_t
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                  FieldRHS>::DeviceStruct::getElementNDIndex(const size_t& element_index) const {
+        size_t index = element_index;
+        indices_t element_nd_index;
+        const Vector<size_t, Dim> cells_per_dim = nr_m - 1;
+
+        size_t remaining_number_of_cells = 1;
+        for (const size_t num_cells : cells_per_dim) {
+            remaining_number_of_cells *= num_cells;
+        }
+
+        for (int d = Dim - 1; d >= 0; --d) {
+            remaining_number_of_cells /= cells_per_dim[d];
+            element_nd_index[d] = index / remaining_number_of_cells;
+            index -= element_nd_index[d] * remaining_number_of_cells;
+        }
+
+        return element_nd_index;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION size_t
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                  FieldRHS>::DeviceStruct::getElementIndex(
+        const indices_t& element_nd_index) const {
+        size_t element_index = 0;
+        const Vector<size_t, Dim> cells_per_dim = nr_m - 1;
+        size_t remaining_number_of_cells        = 1;
+
+        for (unsigned d = 0; d < Dim; ++d) {
+            element_index += element_nd_index[d] * remaining_number_of_cells;
+            remaining_number_of_cells *= cells_per_dim[d];
+        }
+
+        return element_index;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                                           FieldRHS>::DeviceStruct::indices_list_t
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                  FieldRHS>::DeviceStruct::getElementMeshVertexNDIndices(
+        const indices_t& element_nd_index) const {
+        indices_list_t vertex_nd_indices;
+
+        for (size_t i = 0; i < numElementVertices; ++i) {
+            vertex_nd_indices[i] = element_nd_index;
+            for (size_t d = 0; d < Dim; ++d) {
+                vertex_nd_indices[i][d] += (i >> d) & 1;
+            }
+        }
+
+        return vertex_nd_indices;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION typename LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                                           FieldRHS>::DeviceStruct::vertex_points_t
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                  FieldRHS>::DeviceStruct::getElementMeshVertexPoints(
+        const indices_t& element_nd_index) const {
+        vertex_points_t vertex_points;
+        const indices_list_t vertex_nd_indices =
+            getElementMeshVertexNDIndices(element_nd_index);
+
+        for (size_t i = 0; i < numElementVertices; ++i) {
+            for (size_t d = 0; d < Dim; ++d) {
+                vertex_points[i][d] = vertex_nd_indices[i][d] * hr_m[d] + origin_m[d];
+            }
+        }
+
+        return vertex_points;
+    }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
               typename QuadratureType, typename FieldLHS, typename FieldRHS>
@@ -1734,6 +1855,15 @@ namespace ippl {
         //throw IpplException("LagrangeSpace::getLocalDOFIndex()",
         //                    "FEM Lagrange Space: Global DOF not found in specified element");
         return 0;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION Vector<size_t, LagrangeSpace<T, Dim, Order, ElementType, QuadratureType,
+                                   FieldLHS, FieldRHS>::DeviceStruct::numElementDOFs>
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS>::
+    DeviceStruct::getGlobalDOFIndices(const size_t& elementIndex) const {
+        return getGlobalDOFIndices(getElementNDIndex(elementIndex));
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,
@@ -1808,6 +1938,19 @@ namespace ippl {
         }
 
         return globalDOFs;
+    }
+
+    template <typename T, unsigned Dim, unsigned Order, typename ElementType,
+              typename QuadratureType, typename FieldLHS, typename FieldRHS>
+    KOKKOS_FUNCTION bool
+    LagrangeSpace<T, Dim, Order, ElementType, QuadratureType, FieldLHS,
+                  FieldRHS>::DeviceStruct::isDOFOnBoundary(const indices_t& ndindex) const {
+        for (size_t d = 0; d < Dim; ++d) {
+            if (ndindex[d] <= 0 || ndindex[d] >= nr_m[d] - 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     template <typename T, unsigned Dim, unsigned Order, typename ElementType,

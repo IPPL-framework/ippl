@@ -198,9 +198,11 @@ namespace ippl {
             size_t size    = sizeof(T);
             auto base      = bufferData();
             auto writepos  = writepos_m;
+            auto viewSpan  = view.to_mdspan();
             Kokkos::parallel_for(
                 "Archive::serialize()", policy_type(0, nsends), KOKKOS_LAMBDA(const size_type i) {
-                    const char* src = reinterpret_cast<const char*>(view.data() + i);
+                    const T value   = viewSpan(i);
+                    const char* src = reinterpret_cast<const char*>(&value);
                     char* dst       = base + i * size + writepos;
                     copyBytes(dst, src, size);
                 });
@@ -303,11 +305,14 @@ namespace ippl {
             }
             auto base    = bufferData();
             auto readpos = readpos_m;
+            auto viewSpan = view.to_mdspan();
             Kokkos::parallel_for(
                 "Archive::deserialize()", policy_type(0, nrecvs), KOKKOS_LAMBDA(const size_type i) {
                     const char* src = base + i * size + readpos;
-                    char* dst       = reinterpret_cast<char*>(view.data() + i);
+                    T value{};
+                    char* dst = reinterpret_cast<char*>(&value);
                     copyBytes(dst, src, size);
+                    viewSpan(i) = value;
                 });
             // Wait for deserialization kernel to complete
             // (as with serialization kernels)
