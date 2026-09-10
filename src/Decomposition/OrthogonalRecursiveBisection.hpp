@@ -13,6 +13,16 @@ namespace ippl {
     template <typename Attrib>
     bool OrthogonalRecursiveBisection<Field, Tp>::binaryRepartition(
         const Attrib& R, FieldLayout<Dim>& fl, const bool& isFirstRepartition) {
+        std::array<bool, Dim> allowedAxes;
+        allowedAxes.fill(true);
+        return binaryRepartition(R, fl, isFirstRepartition, allowedAxes);
+    }
+
+    template <class Field, class Tp>
+    template <typename Attrib>
+    bool OrthogonalRecursiveBisection<Field, Tp>::binaryRepartition(
+        const Attrib& R, FieldLayout<Dim>& fl, const bool& isFirstRepartition,
+        const std::array<bool, Dim>& allowedAxes) {
         // Timings
         static IpplTimings::TimerRef tbasicOp       = IpplTimings::getTimer("basicOperations");
         static IpplTimings::TimerRef tperpReduction = IpplTimings::getTimer("perpReduction");
@@ -53,13 +63,22 @@ namespace ippl {
         while (maxprocs > 1) {
             // Find cut axis
             IpplTimings::startTimer(tbasicOp);
-            int cutAxis = findCutAxis(domains[it]);
+            int cutAxis = findCutAxis(domains[it], allowedAxes);
+            if (cutAxis < 0) {
+                IpplTimings::stopTimer(tbasicOp);
+                return false;
+            }
+            int cutAxisLength = static_cast<int>(domains[it][cutAxis].length());
+            if (cutAxisLength < 4) {
+                IpplTimings::stopTimer(tbasicOp);
+                return false;
+            }
             IpplTimings::stopTimer(tbasicOp);
 
             // Reserve space
             IpplTimings::startTimer(tperpReduction);
-            reduced.resize(domains[it][cutAxis].length());
-            reducedRank.resize(domains[it][cutAxis].length());
+            reduced.resize(cutAxisLength);
+            reducedRank.resize(cutAxisLength);
 
             std::fill(reducedRank.begin(), reducedRank.end(), 0.0);
             std::fill(reduced.begin(), reduced.end(), 0.0);
@@ -77,7 +96,7 @@ namespace ippl {
             IpplTimings::startTimer(tbasicOp);
             // Initialize median to some value (1 is lower bound value)
             int median = 1;
-            median     = findMedian(reduced);
+            median     = std::clamp(findMedian(reduced), 1, cutAxisLength - 3);
             IpplTimings::stopTimer(tbasicOp);
 
             // Cut domains and procs
@@ -101,14 +120,15 @@ namespace ippl {
             IpplTimings::stopTimer(tperpReduction);
         }
 
-        // Check that no plane was obtained in the repartition
         IpplTimings::startTimer(tbasicOp);
-        for (const auto& domain : domains) {
-            for (const auto& axis : domain) {
-                if (axis.length() == 1) {
-                    return false;
-                }
-            }
+        const NDIndex<Dim>& globalDomain = fl.getDomain();
+        if (domains.size() != static_cast<size_t>(nprocs)) {
+            IpplTimings::stopTimer(tbasicOp);
+            return false;
+        }
+        if (!domainsTileAllowedDecomposition(domains, globalDomain, allowedAxes)) {
+            IpplTimings::stopTimer(tbasicOp);
+            return false;
         }
 
         // Update FieldLayout with new indices
@@ -123,11 +143,73 @@ namespace ippl {
 
     template <class Field, class Tp>
     int OrthogonalRecursiveBisection<Field, Tp>::findCutAxis(NDIndex<Dim>& dom) {
-        // Find longest domain size
-        return std::distance(dom.begin(), std::max_element(dom.begin(), dom.end(),
-                                                           [&](const Index& a, const Index& b) {
-                                                               return a.length() < b.length();
-                                                           }));
+        std::array<bool, Dim> allowedAxes;
+        allowedAxes.fill(true);
+        return findCutAxis(dom, allowedAxes);
+    }
+
+    template <class Field, class Tp>
+    int OrthogonalRecursiveBisection<Field, Tp>::findCutAxis(
+        const NDIndex<Dim>& dom, const std::array<bool, Dim>& allowedAxes) {
+        int cutAxis = -1;
+        for (unsigned d = 0; d < Dim; ++d) {
+            if (!allowedAxes[d]) {
+                continue;
+            }
+            if (cutAxis < 0 || dom[d].length() > dom[cutAxis].length()) {
+                cutAxis = d;
+            }
+        }
+        return cutAxis;
+    }
+
+    template <class Field, class Tp>
+    bool OrthogonalRecursiveBisection<Field, Tp>::domainsOverlap(const NDIndex<Dim>& lhs,
+                                                                 const NDIndex<Dim>& rhs) const {
+        for (unsigned d = 0; d < Dim; ++d) {
+            if (lhs[d].last() < rhs[d].first() || rhs[d].last() < lhs[d].first()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    template <class Field, class Tp>
+    bool OrthogonalRecursiveBisection<Field, Tp>::domainsTileAllowedDecomposition(
+        const std::vector<NDIndex<Dim>>& domains, const NDIndex<Dim>& globalDomain,
+        const std::array<bool, Dim>& allowedAxes) const {
+        size_t globalCells = 1;
+        for (unsigned d = 0; d < Dim; ++d) {
+            globalCells *= globalDomain[d].length();
+        }
+
+        size_t localCells = 0;
+        for (size_t i = 0; i < domains.size(); ++i) {
+            const auto& domain = domains[i];
+            size_t domainCells = 1;
+            for (unsigned d = 0; d < Dim; ++d) {
+                if (domain[d].length() < 2) {
+                    return false;
+                }
+                if (domain[d].first() < globalDomain[d].first()
+                    || domain[d].last() > globalDomain[d].last()) {
+                    return false;
+                }
+                if (!allowedAxes[d] && domain[d] != globalDomain[d]) {
+                    return false;
+                }
+                domainCells *= domain[d].length();
+            }
+
+            for (size_t j = 0; j < i; ++j) {
+                if (domainsOverlap(domain, domains[j])) {
+                    return false;
+                }
+            }
+            localCells += domainCells;
+        }
+
+        return localCells == globalCells;
     }
 
     template <class Field, class Tp>
