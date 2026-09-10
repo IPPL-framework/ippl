@@ -1,0 +1,50 @@
+cmake_minimum_required(VERSION 3.24)
+# A separate host project prevents IPPL's CUDA/HIP launchers and flags from
+# reaching reference LAPACK's C/Fortran compilation.
+project(IPPLReferenceLapack LANGUAGES C Fortran)
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(LIBRARY_PREFIX ippl_)
+set(CMAKE_INSTALL_LIBDIR lib/ippl-lapack CACHE STRING "" FORCE)
+set(CMAKE_INSTALL_INCLUDEDIR include/ippl-lapack CACHE STRING "" FORCE)
+set(LAPACKE ON CACHE BOOL "" FORCE)
+set(CBLAS OFF CACHE BOOL "" FORCE)
+set(LAPACKE_WITH_TMG OFF CACHE BOOL "" FORCE)
+set(BUILD_INDEX64_EXT_API OFF CACHE BOOL "" FORCE)
+set(USE_OPTIMIZED_BLAS OFF CACHE BOOL "" FORCE)
+set(USE_OPTIMIZED_LAPACK OFF CACHE BOOL "" FORCE)
+set(BUILD_DEPRECATED OFF CACHE BOOL "" FORCE)
+if(IPPL_LAPACK_INTEGER_BYTES STREQUAL "8")
+  set(BUILD_INDEX64 ON CACHE BOOL "" FORCE)
+  set(_suffix 64)
+else()
+  set(BUILD_INDEX64 OFF CACHE BOOL "" FORCE)
+  set(_suffix "")
+endif()
+add_subdirectory("${IPPL_REFERENCE_LAPACK_SOURCE_DIR}" lapack)
+
+# Consumers need not enable Fortran just to link the static host libraries.
+set(IPPL_LAPACK_RUNTIME_LIBRARIES)
+foreach(_library IN LISTS CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES)
+  if(_library IN_LIST CMAKE_C_IMPLICIT_LINK_LIBRARIES)
+    continue()
+  endif()
+  unset(_runtimeLibrary)
+  find_library(_runtimeLibrary NAMES ${_library}
+               HINTS ${CMAKE_Fortran_IMPLICIT_LINK_DIRECTORIES} REQUIRED NO_CACHE)
+  list(APPEND IPPL_LAPACK_RUNTIME_LIBRARIES "${_runtimeLibrary}")
+endforeach()
+set(IPPL_LAPACKE_FILE "${CMAKE_STATIC_LIBRARY_PREFIX}lapacke${_suffix}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set(IPPL_LAPACK_FILE "${CMAKE_STATIC_LIBRARY_PREFIX}lapack${_suffix}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+set(IPPL_BLAS_FILE "${CMAKE_STATIC_LIBRARY_PREFIX}blas${_suffix}${CMAKE_STATIC_LIBRARY_SUFFIX}")
+# LIBRARY_PREFIX is applied inside the reference subdirectory, not this scope.
+foreach(_kind LAPACKE LAPACK BLAS)
+  string(REPLACE "${CMAKE_STATIC_LIBRARY_PREFIX}" "${CMAKE_STATIC_LIBRARY_PREFIX}ippl_"
+         IPPL_${_kind}_FILE "${IPPL_${_kind}_FILE}")
+endforeach()
+configure_file(IPPLHostLapackConfig.cmake.in IPPLHostLapackConfig.cmake @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/IPPLHostLapackConfig.cmake"
+        DESTINATION lib/cmake/IPPLHostLapack)
+install(FILES "${IPPL_REFERENCE_LAPACK_SOURCE_DIR}/LICENSE"
+        DESTINATION share/ippl RENAME LAPACK-LICENSE)

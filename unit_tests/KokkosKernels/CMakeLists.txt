@@ -1,0 +1,7 @@
+add_ippl_test(KokkosKernelsLinearMap LABELS kokkos-kernels)
+if(IPPL_KOKKOS_KERNELS_EIGENANALYSIS)
+  target_compile_definitions(KokkosKernelsLinearMap PRIVATE IPPL_TEST_HOST_EIGENANALYSIS)
+  if(IPPL_KOKKOS_KERNELS_HOST STREQUAL "MKL")
+    target_compile_definitions(KokkosKernelsLinearMap PRIVATE IPPL_TEST_HOST_MKL)
+  endif()
+endif()

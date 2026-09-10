@@ -45,6 +45,12 @@ The [IPPL Manual](https://ippl-framework.github.io/Manual/) contains comprehensi
 
 For detailed API, class, and file documentation, please visit our [Doxygen site](https://ippl-framework.github.io/ippl/).
 
+Kokkos Kernels support is optional and can be enabled with
+`-DIPPL_ENABLE_KOKKOS_KERNELS=ON`. Missing host LAPACKE is then built from source
+using C and Fortran compilers; installed LAPACKE or MKL providers are also supported.
+See [Kokkos Kernels configuration](cmake/BuildSystem.md#kokkos-kernels-and-host-eigenanalysis)
+for dependency setup and options controlling host eigenanalysis.
+
 **Feedback & Support**
 If you find any issues with the manual, please report them in the [Manual's GitHub repository](https://github.com/IPPL-framework/Manual).
 

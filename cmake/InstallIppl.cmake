@@ -102,21 +102,14 @@ write_basic_package_version_file("${PROJECT_BINARY_DIR}/IPPLConfigVersion.cmake"
 # -------------------------------------------------------
 # Setup the main project config file found by find_package(IPPL
 # -------------------------------------------------------
-set(IPPL_CATALYST_CONFIG_BUILD_TREE OFF)
-set(IPPL_CONFIG_CATALYST_BUILD_PACKAGE_DIR "")
 configure_package_config_file(
   "${PROJECT_SOURCE_DIR}/cmake/IPPLConfig.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/IPPLConfig.cmake"
   INSTALL_DESTINATION ${IPPL_INSTALL_CMAKEDIR})
 
 # Also generate config file in the build directory to support uninstalled builds
-set(IPPL_CATALYST_CONFIG_BUILD_TREE ON)
-set(IPPL_CONFIG_CATALYST_BUILD_PACKAGE_DIR "${IPPL_CATALYST_BUILD_PACKAGE_DIR}")
 configure_package_config_file(
   "${PROJECT_SOURCE_DIR}/cmake/IPPLConfig.cmake.in" "${PROJECT_BINARY_DIR}/IPPLConfig.cmake"
   INSTALL_DESTINATION lib/cmake/IPPL)
-
-unset(IPPL_CATALYST_CONFIG_BUILD_TREE)
-unset(IPPL_CONFIG_CATALYST_BUILD_PACKAGE_DIR)
 
 # -------------------------------------------------------
 # The install rule that copies the generated config files to the install tree

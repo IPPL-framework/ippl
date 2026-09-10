@@ -288,6 +288,18 @@ endif()
 
 # ------------------------------------------------------------------------------
 # ~~~
+# Kokkos Kernels
+# ------------------------------------------------------------------------------
+set(IPPL_KOKKOS_PACKAGE_HINT "${Kokkos_DIR}")
+if(NOT Kokkos_FOUND)
+  set(IPPL_KOKKOS_PACKAGE_HINT "${kokkos_BINARY_DIR}")
+endif()
+if(IPPL_ENABLE_KOKKOS_KERNELS)
+  include(KokkosKernelsDependency)
+endif()
+
+# ------------------------------------------------------------------------------
+# ~~~
 # Heffte (only if FFT enabled)
 # Use find_package(...) with a minimum version requested,
 # except:

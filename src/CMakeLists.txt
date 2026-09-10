@@ -114,6 +114,11 @@ include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)
 
 target_link_libraries(ippl PUBLIC Kokkos::kokkos MPI::MPI_CXX)
 
+if(IPPL_ENABLE_KOKKOS_KERNELS)
+  target_link_libraries(ippl PUBLIC Kokkos::kokkoskernels)
+  target_compile_definitions(ippl PUBLIC IPPL_ENABLE_KOKKOS_KERNELS ${IPPL_HOST_LAPACK_DEFINITIONS})
+endif()
+
 if(IPPL_ENABLE_FFT)
   target_link_libraries(ippl PUBLIC Heffte::Heffte)
 endif()
