@@ -149,7 +149,7 @@ public:
             static IpplTimings::TimerRef CAinit = IpplTimings::getTimer("CAinit");
             IpplTimings::startTimer(CAinit);
             cat_viz.Initialize(runtime_vis_registry, runtime_steer_registry);
-            IpplTimings::startTimer(CAinit);
+            IpplTimings::stopTimer(CAinit);
 
         #endif
 

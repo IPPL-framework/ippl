@@ -228,13 +228,35 @@ void CatalystAdaptor::ExecVizChannel(const Field<T, Dim, ViewArgs...>& entry, co
         int dims_n=1;
         double extra_origin=0;
 
-        const auto Ox = Origin_[0] + (double(int(LocalNDIndex_[0].first()) - int(index_offset)) + extra_origin) * Spacing_[0];
-        const auto Oy = Origin_[1] + (double(int(LocalNDIndex_[1].first()) - int(index_offset)) + extra_origin) * Spacing_[1];
-        const auto Oz = Origin_[2] + (double(int(LocalNDIndex_[2].first()) - int(index_offset)) + extra_origin) * Spacing_[2];
+        static_assert(Dim >= 1 && Dim <= 3,
+                      "Catalyst visualization supports fields with one to three dimensions");
 
-        const size_t nx =               LocalNDIndex_[0].length() + extra                 ;
-        const size_t ny = (Dim >= 2) ?  LocalNDIndex_[1].length() + extra      :         1;
-        const size_t nz = (Dim >= 3) ?  LocalNDIndex_[2].length() + extra      :         1;
+        const auto Ox = Origin_[0]
+                        + (double(int(LocalNDIndex_[0].first()) - int(index_offset))
+                           + extra_origin)
+                              * Spacing_[0];
+        double Oy = 0.0;
+        double Oz = 0.0;
+        if constexpr (Dim >= 2) {
+            Oy = Origin_[1]
+                 + (double(int(LocalNDIndex_[1].first()) - int(index_offset)) + extra_origin)
+                       * Spacing_[1];
+        }
+        if constexpr (Dim >= 3) {
+            Oz = Origin_[2]
+                 + (double(int(LocalNDIndex_[2].first()) - int(index_offset)) + extra_origin)
+                       * Spacing_[2];
+        }
+
+        const size_t nx = LocalNDIndex_[0].length() + extra;
+        size_t ny       = 1;
+        size_t nz       = 1;
+        if constexpr (Dim >= 2) {
+            ny = LocalNDIndex_[1].length() + extra;
+        }
+        if constexpr (Dim >= 3) {
+            nz = LocalNDIndex_[2].length() + extra;
+        }
 
         const auto& fullDeviceView = field->getView(); // original view
         using DeviceView_t = typename Field<T, Dim, ViewArgs...>::view_type;
@@ -244,24 +266,41 @@ void CatalystAdaptor::ExecVizChannel(const Field<T, Dim, ViewArgs...>& entry, co
             Kokkos::HostSpace
         >;
 
+        auto makeHostView = [&](const char* viewLabel) -> HostView_t {
+            if constexpr (Dim == 1) {
+                return HostView_t(viewLabel, nx);
+            } else if constexpr (Dim == 2) {
+                return HostView_t(viewLabel, nx, ny);
+            } else {
+                return HostView_t(viewLabel, nx, ny, nz);
+            }
+        };
+
+        auto copyFieldToHost = [&](HostView_t& hostView, bool includeGhosts) {
+            if (includeGhosts) {
+                Kokkos::deep_copy(hostView, fullDeviceView);
+            } else if constexpr (Dim == 1) {
+                const auto r0 = Kokkos::make_pair(nGhost, nGhost + nx);
+                Kokkos::deep_copy(hostView, Kokkos::subview(fullDeviceView, r0));
+            } else if constexpr (Dim == 2) {
+                const auto r0 = Kokkos::make_pair(nGhost, nGhost + nx);
+                const auto r1 = Kokkos::make_pair(nGhost, nGhost + ny);
+                Kokkos::deep_copy(hostView, Kokkos::subview(fullDeviceView, r0, r1));
+            } else {
+                const auto r0 = Kokkos::make_pair(nGhost, nGhost + nx);
+                const auto r1 = Kokkos::make_pair(nGhost, nGhost + ny);
+                const auto r2 = Kokkos::make_pair(nGhost, nGhost + nz);
+                Kokkos::deep_copy(hostView, Kokkos::subview(fullDeviceView, r0, r1, r2));
+            }
+        };
+
         if (refreshOnly) {
             HostView_t* hostMirrorFinal = viewRegistry_m.find<HostView_t>(label);
             if (!hostMirrorFinal) {
                 throw IpplException("Stream::InSitu::CatalystAdaptor::ExecVizChannel",
                                     "Missing host mirror for refresh: " + label);
             }
-            if (useGhostMasks_m) {
-                Kokkos::deep_copy(*hostMirrorFinal, fullDeviceView);
-            } else {
-                auto r0 = Kokkos::make_pair(nGhost, nGhost + nx);
-                auto r1 = (Dim >= 2)
-                              ? Kokkos::make_pair(nGhost, nGhost + ny)
-                              : Kokkos::make_pair(size_t(0), fullDeviceView.extent(1));
-                auto r2 = (Dim >= 3)
-                              ? Kokkos::make_pair(nGhost, nGhost + nz)
-                              : Kokkos::make_pair(size_t(0), fullDeviceView.extent(2));
-                Kokkos::deep_copy(*hostMirrorFinal, Kokkos::subview(fullDeviceView, r0, r1, r2));
-            }
+            copyFieldToHost(*hostMirrorFinal, useGhostMasks_m);
             return;
         }
 
@@ -359,25 +398,12 @@ void CatalystAdaptor::ExecVizChannel(const Field<T, Dim, ViewArgs...>& entry, co
 
         // Version 1: Cut out Ghost Cells from data during a deep copy into a new Kokkos View.
         auto getHostMirrorView_noGhosts = [&]() -> HostView_t {
-
-            auto r0 = 
-                        Kokkos::make_pair(nGhost, nGhost + nx);
-            auto r1 = (Dim >= 2) 
-                      ? Kokkos::make_pair(nGhost, nGhost + ny)
-                      : Kokkos::make_pair(size_t(0), fullDeviceView.extent(1));
-            auto r2 = (Dim >= 3) 
-                      ? Kokkos::make_pair(nGhost, nGhost + nz)
-                      : Kokkos::make_pair(size_t(0), fullDeviceView.extent(2));
-
-            
-            auto deviceSubView = Kokkos::subview(fullDeviceView, r0, r1, r2);
-                
-            HostView_t hostMirrorFinal = HostView_t("hostMirrorNoGhosts_LayoutLeft", nx, ny, nz);
+            HostView_t hostMirrorFinal = makeHostView("hostMirrorNoGhosts_LayoutLeft");
             // This single deep_copy now performs:
             //    - Device-to-Host transfer
             //    - LayoutRight-to-LayoutLeft transpose
             //    - Cutting Ghost Cells from data.
-            Kokkos::deep_copy(hostMirrorFinal, deviceSubView);
+            copyFieldToHost(hostMirrorFinal, false);
             return hostMirrorFinal  ;
 
             /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -449,35 +475,33 @@ void CatalystAdaptor::ExecVizChannel(const Field<T, Dim, ViewArgs...>& entry, co
                     Kokkos::parallel_for("ZeroOwnedMask2D", interior, KOKKOS_LAMBDA(const int i, const int j) {
                         deviceMaskView(i,j) = static_cast<m_t>(0);
                     });
-                } else if ( Dim == 3){ // Dim == 3
+                } else if constexpr (Dim == 3) {
                     Kokkos::parallel_for("ZeroOwnedMask3D", interior, KOKKOS_LAMBDA(const int i, const int j, const int k) {
                         deviceMaskView(i,j,k) = static_cast<m_t>(0);
                     });
-                } else{
-                    throw IpplException("Stream::InSitu::CatalystAdaptor::Execute()::ExecVizChannel(" + label + ") | Type:ippl::Field<" + typeid(T).name() + "," + std::to_string(Dim) + ">)", 
-                                        "Unsupported Field Dimnesion (Dim > 3) for Visualisation with Catalyst Paraview");
                 }
                 Kokkos::fence();
                 
                 /* Allocate the 1D host view that will own the memory */
                 hostMaskView1D = HostMaskView1D_t("hostGhostMask_1D", deviceMaskView.size());
 
-                /*  Create a temporary, UNMANAGED (8)N-D view that wraps the 1D view's data. 
-                    This is our copy target. The constructor handles any rank automatically.  
-                    (?) The 8-dim extent constructor is flexible for any dimension up to 8
-                    but eg 3 analog is not (or it seems so at the moment).
-                */
-                HostMaskView_t hostMaskView_N_Rank(
-                    hostMaskView1D.data(),
-                    deviceMaskView.extent(0),
-                    deviceMaskView.extent(1),
-                    deviceMaskView.extent(2),
-                    deviceMaskView.extent(3),
-                    deviceMaskView.extent(4),
-                    deviceMaskView.extent(5),
-                    deviceMaskView.extent(6),
-                    deviceMaskView.extent(7) 
-                );
+                // Wrap the flat host allocation in a view with the field's actual rank. This
+                // gives deep_copy matching source and destination ranks while retaining a single
+                // flat allocation for Conduit's external array.
+                HostMaskView_t hostMaskView_N_Rank;
+                if constexpr (Dim == 1) {
+                    hostMaskView_N_Rank =
+                        HostMaskView_t(hostMaskView1D.data(), deviceMaskView.extent(0));
+                } else if constexpr (Dim == 2) {
+                    hostMaskView_N_Rank = HostMaskView_t(hostMaskView1D.data(),
+                                                        deviceMaskView.extent(0),
+                                                        deviceMaskView.extent(1));
+                } else {
+                    hostMaskView_N_Rank = HostMaskView_t(hostMaskView1D.data(),
+                                                        deviceMaskView.extent(0),
+                                                        deviceMaskView.extent(1),
+                                                        deviceMaskView.extent(2));
+                }
 
                 
                 // The deep_copy now performs:
@@ -489,33 +513,6 @@ void CatalystAdaptor::ExecVizChannel(const Field<T, Dim, ViewArgs...>& entry, co
                 //  Store the 1D view (which owns the memory) in the cache, enough to keep in memory
                 ghostMaskCache_m[ghostKey] = hostMaskView1D;                
                 // --- END OF CACHING LOGIC ---
-                
-                ////////////////////////////////////////////////////////////////////////////////////////
-                // NOTE: 
-                // I am unsure why a 3D wrapper would not succeed also, but currently a
-                // code along the following line will run into compilation issues (?).
-                //
-                // using HostMaskView_t = Kokkos::View<
-                //     typename decltype(deviceMaskView)::data_type,
-                //     typename decltype(deviceMaskView)::array_layout,
-                //     Kokkos::HostSpace
-                // >;
-                // ---      or              ---
-                // using HostMaskView_t = Kokkos::View<
-                //     typename decltype(deviceMaskView)::data_type,
-                //     Kokkos::LayoutLeft, // <-- Use LayoutLeft
-                //     Kokkos::HostSpace
-                // >;    
-                //
-                // HostMaskView_t hostMaskView(hostMaskView1D.data(),
-                //                             deviceMaskView.extent(0),
-                //                             deviceMaskView.extent(1),
-                //                             deviceMaskView.extent(2));
-                //
-                // Kokkos::deep_copy(hostMaskView, deviceMaskView);
-                //
-                // ghostMaskCache_m[ghostKey] = hostMaskView1D;
-                ////////////////////////////////////////////////////////////////////////////////////////
             }
             
 
@@ -539,8 +536,8 @@ void CatalystAdaptor::ExecVizChannel(const Field<T, Dim, ViewArgs...>& entry, co
             // so the meta data can be properly associated with the data.
             ////////////////////////////////////////////////////////////////////////////////////////////
 
-            HostView_t hostMirrorFinal = HostView_t("hostMirrorWithGhosts_LayoutLeft", nx, ny, nz);
-            Kokkos::deep_copy(hostMirrorFinal, fullDeviceView);
+            HostView_t hostMirrorFinal = makeHostView("hostMirrorWithGhosts_LayoutLeft");
+            copyFieldToHost(hostMirrorFinal, true);
 
             return hostMirrorFinal;
             // --- END FIX FOR MAIN FIELD ---
@@ -566,10 +563,27 @@ void CatalystAdaptor::ExecVizChannel(const Field<T, Dim, ViewArgs...>& entry, co
             field_node["values"].set_external(hostMirrorFinal.data(), n_elems);
         } else if constexpr (is_vector_v<T>) {
             // --- VECTOR FIELD CASE ---
-                                    // stride was 1 in predecessor code? how did this work?...
-                                     field_node["values/x"].set_external(&hostMirrorFinal.data()[0][0], n_elems, offset, stride_bytes);
-            if constexpr (T::dim>=2) field_node["values/y"].set_external(&hostMirrorFinal.data()[0][1], n_elems, offset, stride_bytes);
-            if constexpr (T::dim>=3) field_node["values/z"].set_external(&hostMirrorFinal.data()[0][2], n_elems, offset, stride_bytes);        
+            if (n_elems > 0) {
+                field_node["values/x"].set_external(&hostMirrorFinal.data()[0][0], n_elems,
+                                                    offset, stride_bytes);
+                if constexpr (T::dim >= 2) {
+                    field_node["values/y"].set_external(&hostMirrorFinal.data()[0][1], n_elems,
+                                                        offset, stride_bytes);
+                }
+                if constexpr (T::dim >= 3) {
+                    field_node["values/z"].set_external(&hostMirrorFinal.data()[0][2], n_elems,
+                                                        offset, stride_bytes);
+                }
+            } else {
+                using component_type = typename T::value_type;
+                field_node["values/x"].set_external(static_cast<component_type*>(nullptr), 0);
+                if constexpr (T::dim >= 2) {
+                    field_node["values/y"].set_external(static_cast<component_type*>(nullptr), 0);
+                }
+                if constexpr (T::dim >= 3) {
+                    field_node["values/z"].set_external(static_cast<component_type*>(nullptr), 0);
+                }
+            }
         } 
         // else {
             // --- INVALID CASE ---
@@ -599,7 +613,9 @@ void CatalystAdaptor::ExecVizChannel(const T& entry, const std::string label)
         const std::string channelName = "ippl_particles_" + label;
 
         auto particleContainer = &entry;
-        assert((particleContainer->R.getView().data() != nullptr) && "R view should not be nullptr, might be missing the right execution space");
+        const size_t localNum  = particleContainer->getLocalNum();
+        assert((localNum == 0 || particleContainer->R.getView().data() != nullptr)
+               && "A non-empty R view should not be nullptr");
 
         const std::string blockName = "block_allRanks";
         // const std::string blockName = "block_rank" + std::to_string(ippl::Comm->rank());
@@ -632,7 +648,6 @@ void CatalystAdaptor::ExecVizChannel(const T& entry, const std::string label)
         auto fields = data["fields"];
         data["type"].set_string("mesh");
 
-        const size_t localNum = particleContainer->getLocalNum();
         const int rank = ippl::Comm->rank();
 
         using IotaView_t = Kokkos::View<int64_t*, Kokkos::HostSpace>;
@@ -714,7 +729,7 @@ void CatalystAdaptor::ExecVizChannel(const T& entry, const std::string label)
             }
             if constexpr(dim_ >= 3){
                 data_help["coordsets/bound_helper_coords/dims/k"].set(2);
-                data_help["coordsets/bound_helper_coords/spacing/dz"].set( ndr[2].max()- ndr[1].min() );
+                data_help["coordsets/bound_helper_coords/spacing/dz"].set( ndr[2].max()- ndr[2].min() );
                 data_help["coordsets/bound_helper_coords/origin/z"].set(   ndr[2].min()               );
                 // data_help["topologies/bound_helper_topo/origin/z"].set(    ndr[2].min()               );
             }
@@ -778,17 +793,29 @@ void CatalystAdaptor::ExecVizChannel(const T& entry, const std::string label)
             R_field["volume_dependent"].set_string("false");
 
 
+        constexpr unsigned ParticleDim = particle_dim_v<T>;
+        static_assert(ParticleDim >= 1 && ParticleDim <= 3,
+                      "Catalyst visualization supports particles with one to three dimensions");
+
         if (localNum > 0)
         {   
             /* COORDINATE DEFINITION... */
             data["coordsets/p_explicit_coords/values/x"].set_external(&R_hostMirror.data()[0][0], particleContainer->getLocalNum(), 0, R_stride_bytes);
-            data["coordsets/p_explicit_coords/values/y"].set_external(&R_hostMirror.data()[0][1], particleContainer->getLocalNum(), 0, R_stride_bytes);
-            data["coordsets/p_explicit_coords/values/z"].set_external(&R_hostMirror.data()[0][2], particleContainer->getLocalNum(), 0, R_stride_bytes);
+            if constexpr (ParticleDim >= 2) {
+                data["coordsets/p_explicit_coords/values/y"].set_external(&R_hostMirror.data()[0][1], particleContainer->getLocalNum(), 0, R_stride_bytes);
+            }
+            if constexpr (ParticleDim >= 3) {
+                data["coordsets/p_explicit_coords/values/z"].set_external(&R_hostMirror.data()[0][2], particleContainer->getLocalNum(), 0, R_stride_bytes);
+            }
             
             /* POSITION ATTRIBUTE */
             R_field["values/x"].set_external(&R_hostMirror.data()[0][0], particleContainer->getLocalNum(), 0, R_stride_bytes);
-            R_field["values/y"].set_external(&R_hostMirror.data()[0][1], particleContainer->getLocalNum(), 0, R_stride_bytes);
-            R_field["values/z"].set_external(&R_hostMirror.data()[0][2], particleContainer->getLocalNum(), 0, R_stride_bytes);
+            if constexpr (ParticleDim >= 2) {
+                R_field["values/y"].set_external(&R_hostMirror.data()[0][1], particleContainer->getLocalNum(), 0, R_stride_bytes);
+            }
+            if constexpr (ParticleDim >= 3) {
+                R_field["values/z"].set_external(&R_hostMirror.data()[0][2], particleContainer->getLocalNum(), 0, R_stride_bytes);
+            }
             
             /* concept for no copy in situ vis would be */
             //mesh["topologies/p_unstructured_topo/elements/connectivity"].set_external(particleContainer->ID.getView().data(),particleContainer->getLocalNum());
@@ -797,34 +824,28 @@ void CatalystAdaptor::ExecVizChannel(const T& entry, const std::string label)
             // In case a rank has no particles-> data()[0] is nulllptr dereferencing !!!!!
             using component_type = typename R_elem_t::value_type;
             data["coordsets/p_explicit_coords/values/x"].set_external(static_cast<component_type*>(nullptr), 0);
-            data["coordsets/p_explicit_coords/values/y"].set_external(static_cast<component_type*>(nullptr), 0);
-            data["coordsets/p_explicit_coords/values/z"].set_external(static_cast<component_type*>(nullptr), 0);       
             R_field["values/x"].set_external(static_cast<component_type*>(nullptr), 0);
-            R_field["values/y"].set_external(static_cast<component_type*>(nullptr), 0);
-            R_field["values/z"].set_external(static_cast<component_type*>(nullptr), 0);
+            if constexpr (ParticleDim >= 2) {
+                data["coordsets/p_explicit_coords/values/y"].set_external(static_cast<component_type*>(nullptr), 0);
+                R_field["values/y"].set_external(static_cast<component_type*>(nullptr), 0);
+            }
+            if constexpr (ParticleDim >= 3) {
+                data["coordsets/p_explicit_coords/values/z"].set_external(static_cast<component_type*>(nullptr), 0);
+                R_field["values/z"].set_external(static_cast<component_type*>(nullptr), 0);
+            }
         }
 
-        // Skip built-in attributes (ID and/or R) and call signConduitBlueprintNode
-        // on every remaining user-defined attribute.
-        //
-        // ?NOTE?: getAttributeNum() counts across ALL memory spaces, while getAttribute(i)
-        // only indexes into the DefaultExecutionSpace::memory_space vector — a mismatch
-        // that causes an out-of-bounds segfault when attributes exist in multiple spaces.
-        // forAllAttributes with void MemorySpace passes each per-space *vector* to the
-        // functor, so we iterate the vectors ourselves with a global skip counter.
-        constexpr size_t builtinAttribs = T::EnableIDs ? 2 : 1;
-
-        {
-            size_t attrib_idx = 0;
-            entry.forAllAttributes([&]<typename Attributes>(const Attributes& atts) {
-                for (auto* attribute : atts) {
-                    if (attrib_idx >= builtinAttribs) {
-                        attribute->signConduitBlueprintNode(localNum, fields, viewRegistry_m, catalystInfo_m, catalystWarn_m, forceHostCopy_m[label]);
-                    }
-                    ++attrib_idx;
+        // Attribute containers are grouped by memory space, so their global ordinal is not
+        // stable. Identify ParticleBase's built-ins by object identity instead.
+        entry.forAllAttributes([&]<typename Attributes>(const Attributes& atts) {
+            for (auto* attribute : atts) {
+                if (!entry.isBuiltinAttribute(attribute)) {
+                    attribute->signConduitBlueprintNode(localNum, fields, viewRegistry_m,
+                                                        catalystInfo_m, catalystWarn_m,
+                                                        forceHostCopy_m[label]);
                 }
-            });
-        }
+            }
+        });
          ////////////////////////////////////////////////////////////////////////////////////////////
          // Note:
          // All ways on how to iterate over particle attributes rely on base class pointers.

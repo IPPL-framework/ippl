@@ -92,7 +92,7 @@ private:
      */
     std::vector<Entry> entries_m;
 
-    // Fast index for execute-ables: last one wins on duplicate labels.
+    // Fast index for every registered entry. Labels are unique registry-wide.
     std::unordered_map<std::string, std::size_t> indexExec_m;
 
 public:
@@ -117,10 +117,7 @@ public:
     }
 
     /**
-     * @brief we guarenteed that label is in index_entry_ by checking in remember function
-     * 
-     *
-     * @brief Apply ExecVisitor to a single entry identified by label.
+     * @brief Apply a visualization or steering visitor to one entry identified by label.
      * @return true if found and executed, false otherwise.
      */
     template <typename VisitorT>
@@ -128,7 +125,7 @@ public:
         auto it = indexExec_m.find(label);
         if (it == indexExec_m.end()) {
             std::cerr << "VisRegistryRuntime::forOne: label not found: '" << label << "'\n";
-            std::cerr << "  Available exec labels (" << indexExec_m.size() << "):" << std::endl;
+            std::cerr << "  Available registry labels (" << indexExec_m.size() << "):" << std::endl;
             for (const auto& kv : indexExec_m) std::cerr << " " << kv.first << std::endl;
             std::cerr << std::endl;
             return false;

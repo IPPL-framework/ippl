@@ -29,6 +29,31 @@ namespace ippl {
         }
         // Materialize label as an owned copy for safe capture in lambdas
         std::string L = effectiveLabel;
+
+        if (indexExec_m.contains(L)) {
+            throw IpplException("VisRegistryRuntime::add",
+                                "Duplicate registry label '" + L + "'");
+        }
+
+        constexpr bool supported = []() constexpr {
+            if constexpr (AllowedVisType_v<T> || AllowedSteerType_v<T>
+                          || ippl::detail::StructMeta<DecayT>::registered) {
+                return true;
+            } else if constexpr (is_std_vector_v<DecayT>) {
+                using ElemT = typename DecayT::value_type;
+                return ippl::detail::StructMeta<ElemT>::registered;
+            } else {
+                return false;
+            }
+        }();
+
+        if constexpr (!supported) {
+            throw IpplException(
+                "VisRegistryRuntime::add",
+                std::string("Unsupported value type for registry entry '") + label + "' (type="
+                    + typeid(T).name() + ")");
+        }
+
         Entry e; e.label_m = L;
 
         if constexpr (AllowedVisType_v<T>) {
@@ -61,28 +86,7 @@ namespace ippl {
             }
         }
         entries_m.push_back(std::move(e));
-        if constexpr (AllowedVisType_v<T>) {
-            indexExec_m[L] = entries_m.size() - 1;
-        }
-
-        // Check if type is completely unsupported
-        bool supported = false;
-        if constexpr (AllowedVisType_v<T> || AllowedSteerType_v<T>) {
-            supported = true;
-        } else if (ippl::detail::StructMeta<DecayT>::registered) {
-            supported = true;
-        } else {
-            if constexpr (is_std_vector_v<DecayT>) {
-                using ElemT = typename DecayT::value_type;
-                if (ippl::detail::StructMeta<ElemT>::registered) {
-                    supported = true;
-                }
-            }
-        }
-        
-        if (!supported) {
-            throw IpplException("VisRegistryRuntime::add", std::string("Unsupported value type for registry entry '") + label + "' (type=" + typeid(T).name() + ")");
-        }
+        indexExec_m.emplace(L, entries_m.size() - 1);
     }
 
 

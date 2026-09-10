@@ -4,7 +4,7 @@
     "length-scale": "micrometers",
     "time-scale": "picoseconds",
     "extents": [3200.0, 3200.0, 280.0],
-    "resolution": [24, 24, 750],
+    "resolution": [96, 96, 3000],
     "total-time": 30000.0,
     "space-charge": false
   },

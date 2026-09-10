@@ -251,6 +251,28 @@ namespace ippl {
             return total;
         }
 
+        /**
+         * @brief Return whether an attribute is one of ParticleBase's built-in attributes.
+         *
+         * Attribute lists are partitioned by memory space, so their iteration order cannot be
+         * used to identify the built-in position and ID attributes reliably.
+         */
+        template <typename MemorySpace>
+        bool isBuiltinAttribute(const detail::ParticleAttribBase<MemorySpace>* attribute) const {
+            if (attribute == nullptr) {
+                return false;
+            }
+
+            const void* candidate = dynamic_cast<const void*>(attribute);
+            if (candidate == static_cast<const void*>(&R)) {
+                return true;
+            }
+            if constexpr (EnableIDs) {
+                return candidate == static_cast<const void*>(&ID);
+            }
+            return false;
+        }
+
         /*!
          * Create nLocal rank local particles. This is a collective call,
          * i.e. all MPI ranks must call this.
