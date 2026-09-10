@@ -275,20 +275,20 @@ public:
         // MPI_Barrier(MPI_COMM_WORLD);
         // #endif
 
-        catalystInfo_m << "::CatalystAdaptor()   Global        Output  Level setting: " << ippl::Info->getOutputLevel() << endl;
-        catalystInfo_m << "::CatalystAdaptor()   Catalyst Info Output  Level setting: " << catalystInfo_m.getOutputLevel() << endl;
-        catalystInfo_m << "::CatalystAdaptor()   Catalyst Warn Output  Level setting: " << catalystWarn_m.getOutputLevel() << endl;
-        catalystInfo_m << "::CatalystAdaptor()   using resourceDir_m = " << resourceDir_m.string() << endl;
-        catalystInfo_m << "::CatalystAdaptor()   using outputDir_m = " << outputDir_m.string() << endl;
+        catalystInfo_m << level4 << "::CatalystAdaptor()   Global        Output  Level setting: " << ippl::Info->getOutputLevel() << endl;
+        catalystInfo_m << level4 << "::CatalystAdaptor()   Catalyst Info Output  Level setting: " << catalystInfo_m.getOutputLevel() << endl;
+        catalystInfo_m << level4 << "::CatalystAdaptor()   Catalyst Warn Output  Level setting: " << catalystWarn_m.getOutputLevel() << endl;
+        catalystInfo_m << level4 << "::CatalystAdaptor()   using resourceDir_m = " << resourceDir_m.string() << endl;
+        catalystInfo_m << level4 << "::CatalystAdaptor()   using outputDir_m = " << outputDir_m.string() << endl;
         if  (pngExtracts_m) 
-            { catalystInfo_m << "::CatalystAdaptor()   PNG extraction ACTIVATED"   << endl;} 
-        else{ catalystInfo_m << "::CatalystAdaptor()   PNG extraction DEACTIVATED" << endl;}
+            { catalystInfo_m << level4 << "::CatalystAdaptor()   PNG extraction ACTIVATED"   << endl;}
+        else{ catalystInfo_m << level4 << "::CatalystAdaptor()   PNG extraction DEACTIVATED" << endl;}
         if  (vtkExtracts_m) 
-            { catalystInfo_m << "::CatalystAdaptor()   VTK extraction ACTIVATED"   << endl;}
-        else{ catalystInfo_m << "::CatalystAdaptor()   VTK extraction DEACTIVATED" << endl;}
+            { catalystInfo_m << level4 << "::CatalystAdaptor()   VTK extraction ACTIVATED"   << endl;}
+        else{ catalystInfo_m << level4 << "::CatalystAdaptor()   VTK extraction DEACTIVATED" << endl;}
         if  (steerEnabled_m) 
-            { catalystInfo_m << "::CatalystAdaptor()   Steering       ACTIVATED"   << endl;}
-        else{ catalystInfo_m << "::CatalystAdaptor()   Steering       DEACTIVATED" << endl;}
+            { catalystInfo_m << level4 << "::CatalystAdaptor()   Steering       ACTIVATED"   << endl;}
+        else{ catalystInfo_m << level4 << "::CatalystAdaptor()   Steering       DEACTIVATED" << endl;}
 
     }
 

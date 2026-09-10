@@ -19,13 +19,13 @@ void CatalystAdaptor::setNodeScript(
         const char* filePathEnv = std::getenv(envVar.c_str());
         std::filesystem::path filePath;
         if (filePathEnv && std::filesystem::exists(filePathEnv)) {
-           catalystInfo_m << level4 <<"::Initialize()::setNodeScripts(...):" << endl
-                << "                Using " << envVar << " from environment:" << endl
+           catalystInfo_m << level4 <<"::Initialize()::setNodeScripts(...):\n"
+                << "                Using " << envVar << " from environment:\n"
                 << "                "<< filePathEnv << endl;
            filePath = filePathEnv;
         } else {
-           catalystInfo_m << level4 <<"::Initialize()::setNodeScripts(...): No valid " << envVar <<" set." << endl 
-                << "                Using default:" << endl
+           catalystInfo_m << level4 <<"::Initialize()::setNodeScripts(...): No valid " << envVar <<" set.\n"
+                << "                Using default:\n"
                 << "                " << defaultFilePath << endl;
            filePath = defaultFilePath;
         }
@@ -74,7 +74,7 @@ void CatalystAdaptor::InitVizChannel( [[maybe_unused]]  const Field<T, Dim, View
 template<typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
 void CatalystAdaptor::InitVizChannel( [[maybe_unused]]  const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry , const std::string label)
 {
-        catalystInfo_m    << "::Initialize()::InitVizChannel(ippl::Field<ippl::Vector<"
+        catalystInfo_m    << level4 << "::Initialize()::InitVizChannel(ippl::Field<ippl::Vector<"
                 << typeid(T).name() << "," << Dim_v << ">," << Dim 
                 << ">) called" << endl;
 
@@ -115,7 +115,7 @@ template<typename T>
 requires (std::derived_from<std::decay_t<T>, ParticleBaseBase>)
 void CatalystAdaptor::InitVizChannel( [[maybe_unused]]  const T& entry, const std::string label)
 {
-        catalystInfo_m    << "::Initialize()::InitVizChannel(ParticleBase<PLayout<" 
+        catalystInfo_m    << level4 << "::Initialize()::InitVizChannel(ParticleBase<PLayout<"
                 << typeid(particle_value_t<T>).name() << ","<< particle_dim_v<T> 
                 << ",...>...> [or subclass]) called" << endl;
                     
@@ -206,8 +206,8 @@ void CatalystAdaptor::ExecVizChannel(const Field<T, Dim, ViewArgs...>& entry, co
         }else{
             channelName = "ippl_errorField_" + label;
 
-            catalystInfo_m    << "::Execute()::ExecVizChannel(Field<"<<typeid(T).name()<< ">)" << endl
-                    << "    For this type of Field the Conduit Blueprint description wasnt \n" 
+            catalystInfo_m    << level4 << "::Execute()::ExecVizChannel(Field<"<<typeid(T).name()<< ">)\n"
+                    << "    For this type of Field the Conduit Blueprint description wasnt \n"
                     << "    implemented in ippl. Therefore this type of field is not \n"
                     << "    supported for visualisation." << endl;
         }
@@ -591,7 +591,7 @@ void CatalystAdaptor::ExecVizChannel(const T& entry, const std::string label)
         return;
     }
 
-        catalystInfo_m        << "::Execute()::ExecVizChannel(" << label << ") | Type : ParticleBase<PLayout<" 
+        catalystInfo_m        << level4 << "::Execute()::ExecVizChannel(" << label << ") | Type : ParticleBase<PLayout<"
                     << typeid(particle_value_t<T>).name() 
                     << ","
                     << particle_dim_v<T> 
@@ -1102,17 +1102,17 @@ void CatalystAdaptor::Execute( int cycle, double time, int rank /* default = ipp
         #if defined(MPI_VERSION)
         MPI_Barrier(MPI_COMM_WORLD);
             catalystInfo_m << level4 <<"::Execute() [rank = 0]  Printing first Conduit Node passed from  to catalyst_execute() ==>" << endl;
-            if(catalystInfo_m.getOutputLevel() > 0 && ippl::Comm->rank()==0) node_m.print();
+            if(catalystInfo_m.getOutputLevel() >= 4 && ippl::Comm->rank()==0) node_m.print();
             catalystInfo_m << level4 <<"::Execute() [rank = 1]  Printing first Conduit Node passed from  to catalyst_execute() ==>" << endl;
         MPI_Barrier(MPI_COMM_WORLD);
-            if(catalystInfo_m.getOutputLevel() > 0 && ippl::Comm->rank()==1) node_m.print();
+            if(catalystInfo_m.getOutputLevel() >= 4 && ippl::Comm->rank()==1) node_m.print();
         MPI_Barrier(MPI_COMM_WORLD);
         #endif
         // if(level >= 5 && ippl::Comm->rank()==0)  node_m.print();
 
-        catalystInfo_m    << "::Execute() During first catalyst_execute() catalyst will "     << endl
-                << "            for each passed script - in order how they were "   << endl 
-                << "            passed to the conduit node - run the globa scope,"  << endl 
+        catalystInfo_m    << level4 << "::Execute() During first catalyst_execute() catalyst will\n"
+                << "            for each passed script - in order how they were \n"
+                << "            passed to the conduit node - run the globa scope,\n"
                 << "             the initialize() and the execute()."               << endl;
     }
 

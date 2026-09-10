@@ -1,4 +1,4 @@
-"""! \file catalystSubroutines.py
+r"""! \file catalystSubroutines.py
 \brief Helper utilities for Catalyst extractors and diagnostics.
 \details Provides logging helpers, proxy inspection, and convenience creators
 for extractors (e.g., VTPD). Intended for use by Catalyst pipeline/extractor
@@ -314,7 +314,7 @@ def get_available_extract_names(catalyst_link):
             if name:
                 all_names.append(name)
         
-        print(f"DEBUG: All found sources: {sorted(list(set(all_names)))}")
+        _log(f"DEBUG: All found sources: {sorted(list(set(all_names)))}", "DEBUG")
 
         names = []
         for name in all_names:
@@ -326,6 +326,5 @@ def get_available_extract_names(catalyst_link):
         return sorted(list(set(names)))
 
     except Exception as e:
-        print(f"[Error] Failed to query InsituProxyManager: {e}")
+        _log(f"[Error] Failed to query InsituProxyManager: {e}", "ERROR")
         return []
-

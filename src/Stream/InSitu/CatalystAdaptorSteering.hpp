@@ -176,7 +176,7 @@ void CatalystAdaptor::RegisterEnumChoicesTyped(const std::vector<std::pair<std::
 template<typename T>
 requires (!std::is_enum_v<std::decay_t<T>>)
 void CatalystAdaptor::InitSteerChannel( [[maybe_unused]] const T& steerableScalarForwardpass,  const std::string& label ){
-    catalystInfo_m << "::Initialize()::InitSteerChannel(" << label << "):  | Type: " << typeid(T).name() << endl;
+    catalystInfo_m << level4 << "::Initialize()::InitSteerChannel(" << label << "):  | Type: " << typeid(T).name() << endl;
     // Only invoke ProxyWriter scalar include for arithmetic types; others are placeholders.
     if constexpr (std::is_arithmetic_v<std::decay_t<T>>) {
         proxyWriter_m.include(steerableScalarForwardpass, label);
@@ -192,7 +192,7 @@ void CatalystAdaptor::InitSteerChannel( [[maybe_unused]] const T& steerableScala
 template<typename E>
 requires (std::is_enum_v<std::decay_t<E>>)
 void CatalystAdaptor::InitSteerChannel( [[maybe_unused]] const E& e, const std::string& label ){
-    catalystInfo_m << "::Initialize()::InitSteerChannel(" << label << "):  | Type: Enum" << endl;
+    catalystInfo_m << level4 << "::Initialize()::InitSteerChannel(" << label << "):  | Type: Enum" << endl;
     auto it = enumChoices_m.find(label);
     if (it != enumChoices_m.end()) {
         proxyWriter_m.includeEnum(label, it->second, static_cast<int>(e));
@@ -212,7 +212,7 @@ void CatalystAdaptor::InitSteerChannel( [[maybe_unused]] const E& e, const std::
 
 // Bool-like Switch: init (checkbox in GUI)
 void CatalystAdaptor::InitSteerChannel( [[maybe_unused]] const bool& sw, const std::string& label ){
-    catalystInfo_m << "::Initialize()::InitSteerChannel(" << label << "):  | Type: Switch" << endl;
+    catalystInfo_m << level4 << "::Initialize()::InitSteerChannel(" << label << "):  | Type: Switch" << endl;
     proxyWriter_m.includeBool(label, static_cast<bool>(sw));
 
     conduit_cpp::Node scriptArgs = node_m["catalyst/scripts/script/args"];
@@ -221,7 +221,7 @@ void CatalystAdaptor::InitSteerChannel( [[maybe_unused]] const bool& sw, const s
 
 // Button-like: init (push button in GUI)
 void CatalystAdaptor::InitSteerChannel( [[maybe_unused]] const ippl::Button& btn, const std::string& label ){
-    catalystInfo_m << "::Initialize()::InitSteerChannel(" << label << "):  | Type: Button" << endl;
+    catalystInfo_m << level4 << "::Initialize()::InitSteerChannel(" << label << "):  | Type: Button" << endl;
     proxyWriter_m.includeButton(label);
     conduit_cpp::Node scriptArgs = node_m["catalyst/scripts/script/args"];
     scriptArgs.append().set_string(label);
@@ -231,7 +231,7 @@ void CatalystAdaptor::InitSteerChannel( [[maybe_unused]] const ippl::Button& btn
 template<typename T, unsigned Dim_v>
 void CatalystAdaptor::InitSteerChannel( [[maybe_unused]] const ippl::Vector<T, Dim_v>& steerableVecForwardpass, const std::string& label )
 {
-    catalystInfo_m << "::Initialize()::InitSteerChannel(" << label << "):  | Vector<" << typeid(T).name() << "," << Dim_v << ">" << endl;
+    catalystInfo_m << level4 << "::Initialize()::InitSteerChannel(" << label << "):  | Vector<" << typeid(T).name() << "," << Dim_v << ">" << endl;
     // Register this label as a vector channel in the proxy writer (limit to 3 comps in GUI)
     proxyWriter_m.includeVector<T, Dim_v>(label);
     (void)steerableVecForwardpass;
@@ -254,7 +254,7 @@ void CatalystAdaptor::InitSteerChannel( [[maybe_unused]] const std::vector<Elem>
 {
     // Normalize: ensure 'array:' prefix for any std::vector steerable labels (user shouldn't add it)
     const std::string alabel = (label.rfind("array:", 0) == 0) ? label : std::string("array:") + label;
-    catalystInfo_m << "::Initialize()::InitSteerChannel(" << alabel << "):  | Type: std::vector<elem> size=" << arr.size() << endl;
+    catalystInfo_m << level4 << "::Initialize()::InitSteerChannel(" << alabel << "):  | Type: std::vector<elem> size=" << arr.size() << endl;
     // Derive namespace from canonical label of the form "array:<ns>.<member>"
     std::string ns = alabel;
     if (ns.rfind("array:", 0) == 0) ns = ns.substr(6);
@@ -307,7 +307,7 @@ void CatalystAdaptor::InitSteerChannel( [[maybe_unused]] const std::vector<ippl:
 {
     // Normalize: ensure 'array:' prefix for any std::vector steerable labels
     const std::string alabel = (label.rfind("array:", 0) == 0) ? label : std::string("array:") + label;
-    catalystInfo_m << "::Initialize()::InitSteerChannel(" << alabel << "):  | Type: std::vector<Vector<" << typeid(T).name() << "," << Dim_v << ">> size=" << arr.size() << endl;
+    catalystInfo_m << level4 << "::Initialize()::InitSteerChannel(" << alabel << "):  | Type: std::vector<Vector<" << typeid(T).name() << "," << Dim_v << ">> size=" << arr.size() << endl;
     // Derive namespace from canonical label of the form "array:<ns>.<member>"
     std::string ns = alabel;
     if (ns.rfind("array:", 0) == 0) ns = ns.substr(6);
@@ -336,7 +336,7 @@ template<typename T>
 requires (!std::is_enum_v<std::decay_t<T>>)
 void CatalystAdaptor::ForwardSteerChannel( const T& steerableScalarForwardpass,  const std::string& steerableSuffix ) 
 {
-        catalystInfo_m << "::Execute()::ForwardSteerChannel(" << steerableSuffix << ");  | Type: " << typeid(T).name() << endl;
+        catalystInfo_m << level4 << "::Execute()::ForwardSteerChannel(" << steerableSuffix << ");  | Type: " << typeid(T).name() << endl;
         
         auto steerableChannel = node_m["catalyst/channels/steerable_channel_0D_mesh"];
 
@@ -375,7 +375,7 @@ template<typename E>
 requires (std::is_enum_v<std::decay_t<E>>)
 void CatalystAdaptor::ForwardSteerChannel( const E& e, const std::string& steerableSuffix )
 {
-    catalystInfo_m << "::Execute()::ForwardSteerChannel(" << steerableSuffix << ");  | Type: Enum" << endl;
+    catalystInfo_m << level4 << "::Execute()::ForwardSteerChannel(" << steerableSuffix << ");  | Type: Enum" << endl;
     auto steerableChannel = node_m["catalyst/channels/steerable_channel_0D_mesh"];
     steerableChannel["type"].set("mesh");
     auto steerableData = steerableChannel["data"];    
@@ -395,7 +395,7 @@ void CatalystAdaptor::ForwardSteerChannel( const E& e, const std::string& steera
 // Bool-like Switch overload: forward as single scalar (0/1)
 void CatalystAdaptor::ForwardSteerChannel( const bool& sw, const std::string& steerableSuffix )
 {
-    catalystInfo_m << "::Execute()::ForwardSteerChannel(" << steerableSuffix << ");  | Type: bool/Switch" << endl;
+    catalystInfo_m << level4 << "::Execute()::ForwardSteerChannel(" << steerableSuffix << ");  | Type: bool/Switch" << endl;
     
     auto steerableChannel = node_m["catalyst/channels/steerable_channel_0D_mesh"];
     steerableChannel["type"].set("mesh");
@@ -420,7 +420,7 @@ void CatalystAdaptor::ForwardSteerChannel( const bool& sw, const std::string& st
 // Bool-like Button overload: forward as single scalar (0/1)
 void CatalystAdaptor::ForwardSteerChannel( const ippl::Button& btn, const std::string& steerableSuffix )
 {
-    catalystInfo_m << "::Execute()::ForwardSteerChannel(" << steerableSuffix << ");  | Type: Button" << endl;
+    catalystInfo_m << level4 << "::Execute()::ForwardSteerChannel(" << steerableSuffix << ");  | Type: Button" << endl;
     auto steerableChannel = node_m["catalyst/channels/steerable_channel_0D_mesh"];
     steerableChannel["type"].set("mesh");
     auto steerableData = steerableChannel["data"];
@@ -449,7 +449,7 @@ void CatalystAdaptor::ForwardSteerChannel( const ippl::Button& btn, const std::s
 template<typename T, unsigned Dim_v>
 void CatalystAdaptor::ForwardSteerChannel( const ippl::Vector<T, Dim_v>& steerableVecForwardpass, const std::string& steerableSuffix )
 {
-    catalystInfo_m << "::Execute()::ForwardSteerChannel(" << steerableSuffix << ");  | Vector<" << typeid(T).name() << "," << Dim_v << ">" << endl;
+    catalystInfo_m << level4 << "::Execute()::ForwardSteerChannel(" << steerableSuffix << ");  | Vector<" << typeid(T).name() << "," << Dim_v << ">" << endl;
 
     auto steerableChannel = node_m["catalyst/channels/steerable_channel_0D_mesh"];
     steerableChannel["type"].set("mesh");
@@ -501,7 +501,7 @@ void CatalystAdaptor::ForwardSteerChannel( const std::vector<Elem>& arr, const s
 {
     // Normalize: ensure 'array:' prefix so downstream pipeline/proxies can identify arrray channel
     const std::string alabel = (label.rfind("array:", 0) == 0) ? label : std::string("array:") + label;
-    catalystInfo_m << "::Execute()::ForwardSteerChannel(vector<elem>) " << alabel << " | N=" << arr.size() << endl;
+    catalystInfo_m << level4 << "::Execute()::ForwardSteerChannel(vector<elem>) " << alabel << " | N=" << arr.size() << endl;
     std::string prefix = alabel;
     auto us_pos = prefix.find('.');
     if(us_pos != std::string::npos) prefix = prefix.substr(0, us_pos);
@@ -558,7 +558,7 @@ void CatalystAdaptor::ForwardSteerChannel( const std::vector<ippl::Vector<T, Dim
 {
     // Normalize: ensure 'array:' prefix so downstream pipeline/proxies can identify arrray channel
     const std::string alabel = (label.rfind("array:", 0) == 0) ? label : std::string("array:") + label;
-    catalystInfo_m << "::Execute()::ForwardSteerChannel(vector<Vector<" << typeid(T).name() << "," << Dim_v << ">>) " << alabel << " | N=" << arr.size() << endl;
+    catalystInfo_m << level4 << "::Execute()::ForwardSteerChannel(vector<Vector<" << typeid(T).name() << "," << Dim_v << ">>) " << alabel << " | N=" << arr.size() << endl;
     std::string prefix = alabel;
     auto us_pos = prefix.find('.');
     if(us_pos != std::string::npos) prefix = prefix.substr(0, us_pos);
@@ -636,13 +636,13 @@ void CatalystAdaptor::FetchSteerChannel( T& steerableScalarBackwardpass, const s
     if (results_m.has_path(unified_path)) {
         chosen = &unified_path;
     } else {
-        catalystInfo_m << "::Execute()::FetchSteerChannel(" << label << ") | no backward result present; skipping." << endl;
+        catalystInfo_m << level4 << "::Execute()::FetchSteerChannel(" << label << ") | no backward result present; skipping." << endl;
         return;
     }
 
     conduit_cpp::Node values_node = results_m[*chosen];
     if (!values_node.dtype().is_number()) {
-        catalystInfo_m << "::Execute()::FetchSteerChannel(" << label << ") | backward value not numeric; skipping." << endl;
+        catalystInfo_m << level4 << "::Execute()::FetchSteerChannel(" << label << ") | backward value not numeric; skipping." << endl;
         return;
     }
 
@@ -659,10 +659,10 @@ void CatalystAdaptor::FetchSteerChannel( T& steerableScalarBackwardpass, const s
 
 
     if constexpr (is_std_vector_any<std::decay_t<T>>::value) {
-        catalystInfo_m << "::Execute()::FetchSteerChannel(" << label << ") | Type: " << typeid(T).name() << " | received vector | size="
+        catalystInfo_m << level4 << "::Execute()::FetchSteerChannel(" << label << ") | Type: " << typeid(T).name() << " | received vector | size="
              << steerableScalarBackwardpass.size() << endl;
     } else {
-        catalystInfo_m << "::Execute()::FetchSteerChannel(" << label << ") | Type: " << typeid(T).name() << " | received: " << steerableScalarBackwardpass << endl;
+        catalystInfo_m << level4 << "::Execute()::FetchSteerChannel(" << label << ") | Type: " << typeid(T).name() << " | received: " << steerableScalarBackwardpass << endl;
     }
 }
 
@@ -674,18 +674,18 @@ void CatalystAdaptor::FetchSteerChannel( E& e, const std::string& label)
     std::string unified_path = std::string("catalyst/steerable_channel_backward_all/fields/") +
                                "steerable_field_b_" + label + "/values";
     if (!results_m.has_path(unified_path)) {
-        catalystInfo_m << "  no backward enum found for label '" << label << "'" << endl;
+        catalystInfo_m << level4 << "  no backward enum found for label '" << label << "'" << endl;
         return;
     }
     conduit_cpp::Node values_node = results_m[unified_path];
     if (!values_node.dtype().is_number()) return;
     e = static_cast<E>(values_node.to_int32());
 
-    catalystInfo_m << "::Execute()::FetchSteerChannel(" << label  << ") | Type: Enum | received: " << e << endl;
+    catalystInfo_m << level4 << "::Execute()::FetchSteerChannel(" << label  << ") | Type: Enum | received: " << e << endl;
     /////////////////////////////////////////////7
     // Note:
     // We should find a smooth way to log explicit name an enum type similar to
-    // catalystInfo_m << "::Execute()::FetchSteerChannel(" << label  << ") | Type: Enum | received: " << to_string(e) << endl;
+    // catalystInfo_m << level4 << "::Execute()::FetchSteerChannel(" << label  << ") | Type: Enum | received: " << to_string(e) << endl;
     /////////////////////////////////////////////7
 }
 
@@ -707,7 +707,7 @@ void CatalystAdaptor::FetchSteerChannel( ippl::Vector<T, Dim_v>& steerableVecBac
         // Handle 1D vector appearing as scalar
         if (comps == 1 && vnode.dtype().is_number()) {
              steerableVecBackwardpass[0] = static_cast<T>(vnode.to_double());
-             catalystInfo_m << "::Execute()::FetchSteerChannel(" << label  << ") | Type: Vector<" << typeid(T).name() << "," << Dim_v << "> | received: " << steerableVecBackwardpass << endl;
+             catalystInfo_m << level4 << "::Execute()::FetchSteerChannel(" << label  << ") | Type: Vector<" << typeid(T).name() << "," << Dim_v << "> | received: " << steerableVecBackwardpass << endl;
              return;
         }
 
@@ -726,7 +726,7 @@ void CatalystAdaptor::FetchSteerChannel( ippl::Vector<T, Dim_v>& steerableVecBac
             }
         }
         if (idx_read) {
-            catalystInfo_m << "::Execute()::FetchSteerChannel(" << label  << ") | Type: Vector<" << typeid(T).name() << "," << Dim_v << "> | received: " << steerableVecBackwardpass << endl;
+            catalystInfo_m << level4 << "::Execute()::FetchSteerChannel(" << label  << ") | Type: Vector<" << typeid(T).name() << "," << Dim_v << "> | received: " << steerableVecBackwardpass << endl;
         } else {
              catalystWarn_m << "  backward vector '" << label << "' missing components." << endl;
         }
@@ -757,7 +757,7 @@ void CatalystAdaptor::FetchSteerChannel( std::vector<Elem>& out, const std::stri
     const std::string path = std::string("catalyst/steerable_channel_backward_all/fields/") +
                              "steerable_field_b_" + alabel + "/values";
     if (!results_m.has_path(path)) {
-        catalystInfo_m << "  no backward array for '" << alabel << "'" << endl;
+        catalystInfo_m << level4 << "  no backward array for '" << alabel << "'" << endl;
         return;
     }
     conduit_cpp::Node vals = results_m[path];
@@ -806,10 +806,10 @@ void CatalystAdaptor::FetchSteerChannel( std::vector<Elem>& out, const std::stri
                 success = true;
             }
         } catch (const std::exception &e) {
-            catalystInfo_m << "  [DEBUG] direct pointer read failed for '" << alabel << "': " << e.what() << endl;
+            catalystInfo_m << level4 << "  [DEBUG] direct pointer read failed for '" << alabel << "': " << e.what() << endl;
             success = false;
         } catch (...) {
-            catalystInfo_m << "  [DEBUG] direct pointer read failed for '" << alabel << "' (unknown error)" << endl;
+            catalystInfo_m << level4 << "  [DEBUG] direct pointer read failed for '" << alabel << "' (unknown error)" << endl;
             success = false;
         }
 
@@ -821,20 +821,20 @@ void CatalystAdaptor::FetchSteerChannel( std::vector<Elem>& out, const std::stri
                     assign_from_double(i, results_m[child_path].to_double());
                 } else {
                     // If even this fails, leave default value and warn
-                    catalystInfo_m << "  [WARN] Could not read element " << i << " of '" << alabel << "' via fallback" << endl;
+                    catalystInfo_m << level4 << "  [WARN] Could not read element " << i << " of '" << alabel << "' via fallback" << endl;
                 }
             }
         }
     }
 
     // Log the received array
-    catalystInfo_m << "::Execute()::FetchSteerChannel(" << alabel << ") | Type: vector<elem> | received: [";
+    catalystInfo_m << level4 << "::Execute()::FetchSteerChannel(" << alabel << ") | Type: vector<elem> | received: [";
     for (size_t i = 0; i < out.size(); ++i) {
-        if (i > 0) catalystInfo_m << ", ";
-        if constexpr (std::is_enum_v<std::decay_t<Elem>>) catalystInfo_m << to_string(out[i]);
-        else catalystInfo_m << out[i];
+        if (i > 0) catalystInfo_m << level4 << ", ";
+        if constexpr (std::is_enum_v<std::decay_t<Elem>>) catalystInfo_m << level4 << to_string(out[i]);
+        else catalystInfo_m << level4 << out[i];
     }
-    catalystInfo_m << "]" << endl;
+    catalystInfo_m << level4 << "]" << endl;
 }
 
 // Fetch std::vector<ippl::Vector<T,Dim>>
@@ -868,12 +868,12 @@ void CatalystAdaptor::FetchSteerChannel( std::vector<ippl::Vector<T, Dim_v>>& ou
                 out[i][0] = static_cast<T>(get_val(i));
             }
             
-            catalystInfo_m << "::Execute()::FetchSteerChannel(" << alabel << ") | Type: vector<Vector<" << typeid(T).name() << "," << Dim_v << ">> | received: [";
+            catalystInfo_m << level4 << "::Execute()::FetchSteerChannel(" << alabel << ") | Type: vector<Vector<" << typeid(T).name() << "," << Dim_v << ">> | received: [";
             for (size_t i = 0; i < out.size(); ++i) {
-                if (i > 0) catalystInfo_m << ", ";
-                catalystInfo_m << out[i];
+                if (i > 0) catalystInfo_m << level4 << ", ";
+                catalystInfo_m << level4 << out[i];
             }
-            catalystInfo_m << "]" << endl;
+            catalystInfo_m << level4 << "]" << endl;
             return;
         }
     }
@@ -883,7 +883,7 @@ void CatalystAdaptor::FetchSteerChannel( std::vector<ippl::Vector<T, Dim_v>>& ou
     if constexpr (Dim_v >= 3) has_xyz = has_xyz && results_m.has_path(root + "/2");
 
     if (!has_xyz) {
-        catalystInfo_m << "  no backward vector array for '" << alabel << "' (expected components 0" 
+        catalystInfo_m << level4 << "  no backward vector array for '" << alabel << "' (expected components 0"
              << (Dim_v >= 2 ? "/1" : "") << (Dim_v >= 3 ? "/2" : "") << ")" << endl;
         return;
     }
@@ -922,12 +922,12 @@ void CatalystAdaptor::FetchSteerChannel( std::vector<ippl::Vector<T, Dim_v>>& ou
         out[i] = v;
     }
 
-    catalystInfo_m << "::Execute()::FetchSteerChannel(" << alabel << ") | Type: vector<Vector<" << typeid(T).name() << "," << Dim_v << ">> | received: [";
+    catalystInfo_m << level4 << "::Execute()::FetchSteerChannel(" << alabel << ") | Type: vector<Vector<" << typeid(T).name() << "," << Dim_v << ">> | received: [";
     for (size_t i = 0; i < out.size(); ++i) {
-        if (i > 0) catalystInfo_m << ", ";
-        catalystInfo_m << out[i];
+        if (i > 0) catalystInfo_m << level4 << ", ";
+        catalystInfo_m << level4 << out[i];
     }
-    catalystInfo_m << "]" << endl;
+    catalystInfo_m << level4 << "]" << endl;
 }
 
 

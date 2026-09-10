@@ -1,4 +1,4 @@
-"""! \file png_ext_vfield.py
+r"""! \file png_ext_vfield.py
 \brief Catalyst PNG extractor for 3D vector fields (e.g., ippl::Field<Vector<T,3>,3>).
 \details Uses glyph-based rendering with adaptive camera and magnitude-driven
 color/opacity. Driven by pipeline_default.py and compatible with Catalyst Live.
@@ -72,9 +72,12 @@ from catalystSubroutines import (
     hide_source_from_gui 
 )
 
-def print_info_(s, level=0):
+_CATALYST_INFO_LEVEL = 4
+
+
+def print_info_(s, level=_CATALYST_INFO_LEVEL):
     global verbosity
-    if verbosity>level:
+    if verbosity >= max(level, _CATALYST_INFO_LEVEL):
         print_info(s)
 # ----------------------------------------------------------------
 # ----------------------------------------------------------------
@@ -89,7 +92,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--label", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
 parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
-parser.add_argument("--verbosity", type=int, default="1", help="Communicate the catalyst Output Level from the simulation")
+parser.add_argument("--verbosity", type=int, default=0, help="Communicate the Catalyst output level from the simulation")
 
 parsed = parser.parse_args(arg_list)
 label = parsed.label
@@ -256,4 +259,3 @@ def catalyst_execute(info):
         # # Update color and opacity transfer function
         fieldStrengthLUT.RescaleTransferFunction(nice_min, nice_max)
         fieldStrengthPWF.RescaleTransferFunction(nice_min, nice_max)
-

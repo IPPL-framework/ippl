@@ -1,4 +1,4 @@
-"""! \file pipeline_default.py
+r"""! \file pipeline_default.py
 \brief Main ParaView Catalyst pipeline: live visualization, VTK extracts, and steering.
 \details Discovers channel proxies, wires optional extractors, updates live views,
 and forwards/fetches steerable parameters between the simulation an        
@@ -136,6 +136,9 @@ def create_VTM_extractor(name, object, fr = 10):
 #     return vTPD
 
 
+_CATALYST_INFO_LEVEL = 4
+
+
 def _log(msg):
     """Logs a message from the Catalyst script."""
 
@@ -146,11 +149,12 @@ def _log(msg):
         msg =  "[rank " + str(rank) + "]:  " + msg
     
 
-    print( msg  )
+    if verbosity >= _CATALYST_INFO_LEVEL:
+        print(msg)
 
-def print_info_(s, level=0):
+def print_info_(s, level=_CATALYST_INFO_LEVEL):
     global verbosity
-    if verbosity>level:
+    if verbosity >= max(level, _CATALYST_INFO_LEVEL):
         print_info(s)
 
 
@@ -196,7 +200,7 @@ parser.add_argument("--channel_names", nargs="*",
 parser.add_argument("--steer_channel_names", nargs="*",
                      help="Pass All Channel Names for Steering scalar parameters")
 
-parser.add_argument("--verbosity", type=int, default="1", help="Communicate the catalyst Output Level from the simulation")
+parser.add_argument("--verbosity", type=int, default=0, help="Communicate the Catalyst output level from the simulation")
 parser.add_argument("--VTKextract", default="OFF", help="Enable the VTK extracts of all incoming channels")
 parser.add_argument("--live",       default="OFF", help="Enable options.CatalystLive")
 parser.add_argument("--steer",      default="OFF", help="Enable steering from catalyst python side")
@@ -419,7 +423,7 @@ for cname in parsed.channel_names:
             dim_y = int(round((global_bounds[3] - global_bounds[2]) / dy)) - 2*ghost_y
             dim_z = int(round((global_bounds[5] - global_bounds[4]) / dz)) - 2*ghost_z
             global_extent = [dim_x, dim_y, dim_z]
-            print(global_extent)
+            print_info_(global_extent)
 
 
             
@@ -577,7 +581,7 @@ if steer_enabled:
 
 # ------------------------------------------------------------------------------
 print_info_("=== Printing Proxy Overview ============"[0:40]+"0")
-if verbosity > 0: 
+if verbosity >= _CATALYST_INFO_LEVEL:
     print_proxy_overview()
 print_info_("=== Printing Proxy Overview ============"[0:40]+"1")
 # ------------------------------------------------------------------------------

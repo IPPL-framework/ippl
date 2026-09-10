@@ -566,8 +566,8 @@ namespace ippl {
     
         if constexpr (std::is_scalar_v<T>) {
             // --- SCALAR CASE ---
-          ca_m << level4 <<"::Execute()excute_entry() for attribute: "<<this->name_m << endl
-                << "                          call to:"  << endl
+          ca_m << level4 <<"::Execute()excute_entry() for attribute: "<<this->name_m << '\n'
+                << "                          call to:\n"
                 << "                          ParticleAttribute<"  << typeid(T).name()  << ">::signConduitBlueprintNode()" << endl;
             
             field["values"].set_external(hostMirror.data(), Np_local);
@@ -575,8 +575,8 @@ namespace ippl {
 
         } else if constexpr (is_vector_v<T>) {
             // --- VECTOR CASE ---
-          ca_m << level4 <<"::Execute()excute_entry() for attribute: "<<this->name_m << endl
-                << "                          call to:"  << endl
+          ca_m << level4 <<"::Execute()excute_entry() for attribute: "<<this->name_m << '\n'
+                << "                          call to:\n"
                 << "                          ParticleAttribute<ippl::vector<" << typeid(typename T::value_type).name()<<","<<T::dim<<">>::signConduitBlueprintNode()" << endl;
 
                 

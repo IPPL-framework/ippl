@@ -1,4 +1,4 @@
-"""! \file png_ext_sfield.py
+r"""! \file png_ext_sfield.py
 \brief Catalyst PNG extractor for 3D scalar fields.
 \details Performs volume rendering with adaptive camera, ghost cutting (Threshold), and smoothing (C2P).
 """
@@ -35,9 +35,12 @@ from catalystSubroutines import (
     # get_global_extent
 )
 
-def print_info_(s, level=0):
+_CATALYST_INFO_LEVEL = 4
+
+
+def print_info_(s, level=_CATALYST_INFO_LEVEL):
     global verbosity
-    if verbosity > level:
+    if verbosity >= max(level, _CATALYST_INFO_LEVEL):
         print_info(s)
 
 # ----------------------------------------------------------------
@@ -51,7 +54,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--label", default="AAAAAA", help="Label.")
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Channel.")
 parser.add_argument("--experiment_name", default="_", help="Exp Name.")
-parser.add_argument("--verbosity", type=int, default="1", help="Verbosity")
+parser.add_argument("--verbosity", type=int, default=0, help="Catalyst output level")
 parsed = parser.parse_args(arg_list)
 
 label = parsed.label
@@ -69,11 +72,11 @@ scalar_info = ippl_scalar_p.GetDataInformation()
 
 
 local_bounds = scalar_info.GetBounds()
-print_info(local_bounds)
+print_info_(local_bounds)
 local_extent = scalar_info.GetExtent()
-print_info(local_extent)
+print_info_(local_extent)
 global_bounds = get_global_spatial_bounds(local_bounds)
-print_info(global_bounds)
+print_info_(global_bounds)
 
 # # Check for ghosts
 ippl_scalar_p.UpdatePipeline()
@@ -468,4 +471,3 @@ def catalyst_execute(info):
 #     print_info_("No ghosts found. Using original data.", level=1)
 #     ippl_scalar = ippl_scalar_p
 #     associate = "CELLS"
-

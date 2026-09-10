@@ -67,9 +67,12 @@ from catalystSubroutines import (
     hide_source_from_gui
     # print_info_
 )
-def print_info_(s, level=0):
+_CATALYST_INFO_LEVEL = 4
+
+
+def print_info_(s, level=_CATALYST_INFO_LEVEL):
     global verbosity
-    if verbosity>level:
+    if verbosity >= max(level, _CATALYST_INFO_LEVEL):
         print_info(s)
 
 
@@ -172,7 +175,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--channel_name", default="DEFAULT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
 parser.add_argument("--label", default="DEFAULAAAAAAAAT_CHANNEL", help="Needed to correctly setup association between script name and conduti channel.")
 parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
-parser.add_argument("--verbosity", type=int, default="1", help="Communicate the catalyst Output Level from the simulation")
+parser.add_argument("--verbosity", type=int, default=0, help="Communicate the Catalyst output level from the simulation")
 parsed = parser.parse_args(arg_list)
 
 label = parsed.label
