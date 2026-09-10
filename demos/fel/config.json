@@ -26,7 +26,6 @@
     }
   },
   "output": {
-    "rhythm": 30,
     "path": "../renderdata"
   }
 }

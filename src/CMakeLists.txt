@@ -101,6 +101,15 @@ if(IPPL_ENABLE_SOLVERS)
   add_subdirectory(LinearSolvers)
 endif()
 
+
+message (STATUS "Adding Stream subdirectory")
+add_subdirectory (Stream)
+
+if(IPPL_ENABLE_CATALYST)
+  include(${PROJECT_SOURCE_DIR}/cmake/SetupCatalyst.cmake)
+endif()
+
+
 include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)
 
 target_link_libraries(ippl PUBLIC Kokkos::kokkos MPI::MPI_CXX)

@@ -29,6 +29,7 @@ set(_ippl_install_excludes
     PATTERN "*.cc"  EXCLUDE
     PATTERN "*.cpp" EXCLUDE
     PATTERN "*.cu"  EXCLUDE
+    PATTERN "catalyst_scripts" EXCLUDE
     # match your filenames if needed
 )
 

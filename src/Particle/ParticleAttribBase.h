@@ -21,6 +21,12 @@
 
 #include "Communicate/Archive.h"
 
+
+ #ifdef IPPL_ENABLE_CATALYST
+ #include <catalyst.hpp>
+ #include "Stream/Registry/ViewRegistry.h"
+ #endif
+
 namespace ippl {
     namespace detail {
         // Maximum length for attribute names (including null terminator)
@@ -94,6 +100,16 @@ namespace ippl {
             virtual void applyPermutation(const hash_type&) = 0;
             virtual void internalCopy(const hash_type&)     = 0;
 
+            #ifdef IPPL_ENABLE_CATALYST
+                virtual void signConduitBlueprintNode(
+                              const size_type Np_local
+                            , conduit_cpp::Node& node_fields
+                            , ViewRegistry& viewRegistry
+                            , Inform& ca_m
+                            , Inform& ca_warn
+                            , const bool forceHostCopy
+                        )  const = 0;
+            #endif
         protected:
             const size_type* localNum_mp;
             char name_m[ATTRIB_NAME_MAX_LEN];
