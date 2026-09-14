@@ -80,7 +80,7 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION constexpr void scatterToField(
             const std::index_sequence<ScatterPoint...>&, const View& view,
             const Vector<T, View::rank>& wlo, const Vector<T, View::rank>& whi,
-            const Vector<IndexType, View::rank>& args, Val val = T(1));
+            const Vector<IndexType, View::rank>& args, Val val = Val(1));
 
         /*!
          * Gathers from a field at a single point
