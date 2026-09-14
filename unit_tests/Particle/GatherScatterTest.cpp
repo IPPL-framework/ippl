@@ -53,7 +53,7 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
     Bunch(PLayout& playout)
         : ippl::ParticleBase<PLayout>(playout) {
         this->addAttribute(Q);
-        this->addAttribute(QFloat);
+        this->addAttribute(QFloat_m);
     }
     ~Bunch() = default;
 
@@ -62,7 +62,7 @@ struct Bunch : public ippl::ParticleBase<PLayout> {
     typedef ippl::ParticleAttrib<float, typename PLayout::position_execution_space>
         mixed_charge_container_type;
     charge_container_type Q;
-    mixed_charge_container_type QFloat;
+    mixed_charge_container_type QFloat_m;
 };
 
 template <typename>
@@ -157,11 +157,11 @@ public:
     }
 
     void fillAttributeQFloat(float value) {
-        auto Q_host = bunch->QFloat.getHostMirror();
+        auto Q_host = bunch->QFloat_m.getHostMirror();
         for (size_t i = 0; i < Q_host.size(); ++i) {
             Q_host(i) = value;
         }
-        Kokkos::deep_copy(bunch->QFloat.getView(), Q_host);
+        Kokkos::deep_copy(bunch->QFloat_m.getView(), Q_host);
         ippl::Comm->barrier();
     }
 };
@@ -289,10 +289,10 @@ TYPED_TEST(GatherScatterTest, ScatterMixedValueTypeTest) {
     field.initialize(this->mesh, this->layout);
     field = FieldType(0.0);
 
-    scatter(this->bunch->QFloat, field, this->bunch->R);
+    scatter(this->bunch->QFloat_m, field, this->bunch->R);
 
     const double total_field     = field.sum();
-    const double total_particles = static_cast<double>(this->bunch->QFloat.sum());
+    const double total_particles = static_cast<double>(this->bunch->QFloat_m.sum());
     const double tolerance = scatterConservationTolerance<ScatterType, FieldType>(total_particles);
 
     ASSERT_NEAR(total_field, total_particles, tolerance);
@@ -429,11 +429,11 @@ TYPED_TEST(GatherScatterTest, ScatterMixedValueTypeCustomHashTest) {
 
     std::mt19937_64 eng(42);
     std::uniform_real_distribution<ScatterType> unif_charge(0.5f, 1.5f);
-    auto Q_host = this->bunch->QFloat.getHostMirror();
+    auto Q_host = this->bunch->QFloat_m.getHostMirror();
     for (size_t i = 0; i < nLoc; ++i) {
         Q_host(i) = unif_charge(eng);
     }
-    Kokkos::deep_copy(this->bunch->QFloat.getView(), Q_host);
+    Kokkos::deep_copy(this->bunch->QFloat_m.getView(), Q_host);
 
     using Mesh_t = typename TestFixture::mesh_type;
     using Field  = ippl::Field<FieldType, TestFixture::dim, Mesh_t,
@@ -455,7 +455,7 @@ TYPED_TEST(GatherScatterTest, ScatterMixedValueTypeCustomHashTest) {
     Kokkos::deep_copy(hash, hash_host);
 
     double Q_total = 0.0;
-    auto viewQ     = this->bunch->QFloat.getView();
+    auto viewQ     = this->bunch->QFloat_m.getView();
     ComputeTotalChargeLambda<decltype(viewQ), decltype(hash)> lambda(viewQ, hash);
     Kokkos::parallel_reduce("computeMixedTotalCharge",
                             Kokkos::RangePolicy<typename TestFixture::exec_space>(0, NScattered),
@@ -463,11 +463,11 @@ TYPED_TEST(GatherScatterTest, ScatterMixedValueTypeCustomHashTest) {
     ippl::Comm->allreduce(Q_total, 1, std::plus<double>());
 
     Kokkos::RangePolicy<typename TestFixture::exec_space> policy(0, NScattered);
-    scatter(this->bunch->QFloat, field, this->bunch->R, policy, hash);
+    scatter(this->bunch->QFloat_m, field, this->bunch->R, policy, hash);
 
-    const double Total_charge_field = field.sum();
-    const double tolerance          = scatterConservationTolerance<ScatterType, FieldType>(Q_total);
-    ASSERT_NEAR(Q_total, Total_charge_field, tolerance);
+    const double totalChargeField = field.sum();
+    const double tolerance        = scatterConservationTolerance<ScatterType, FieldType>(Q_total);
+    ASSERT_NEAR(Q_total, totalChargeField, tolerance);
 }
 
 int main(int argc, char* argv[]) {
