@@ -199,29 +199,6 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::scatter(
         Field& f, const ParticleAttrib<Vector<PT, Field::dim>, Properties...>& pp,
         policy_type iteration_policy, hash_type hash_array) const {
-        constexpr unsigned Dim = Field::dim;
-        using PositionType     = typename Field::Mesh_t::value_type;
-
-        static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
-        IpplTimings::startTimer(scatterTimer);
-        using view_type = typename Field::view_type;
-        view_type view  = f.getView();
-
-        using mesh_type       = typename Field::Mesh_t;
-        const mesh_type& mesh = f.get_mesh();
-
-        using vector_type = typename mesh_type::vector_type;
-        using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
-
-        const vector_type& dx     = mesh.getMeshSpacing();
-        const vector_type& origin = mesh.getOrigin();
-        const vector_type invdx   = 1.0 / dx;
-
-        const FieldLayout<Dim>& layout = f.getLayout();
-        const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
-        const int nghost               = f.getNghost();
-
-        // using policy_type = Kokkos::RangePolicy<execution_space>;
         const bool useHashView = hash_array.extent(0) > 0;
         if (useHashView && std::cmp_greater(iteration_policy.end(), hash_array.extent(0))) {
             Inform m("scatter");
