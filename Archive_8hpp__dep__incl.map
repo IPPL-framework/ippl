@@ -1,13 +1,13 @@
 <map id="Archive.hpp" name="Archive.hpp">
-<area shape="rect" id="node1" title=" " alt="" coords="2184,5,2275,31"/>
-<area shape="rect" id="node2" href="$Archive_8h.html" title=" " alt="" coords="2191,79,2267,104"/>
+<area shape="rect" id="node1" title=" " alt="" coords="2201,5,2292,31"/>
+<area shape="rect" id="node2" href="$Archive_8h.html" title=" " alt="" coords="2209,79,2285,104"/>
 <area shape="rect" id="node3" href="$BcTypes_8h.html" title=" " alt="" coords="1675,592,1757,617"/>
-<area shape="rect" id="node7" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="2304,812,2475,837"/>
+<area shape="rect" id="node7" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="2317,812,2488,837"/>
 <area shape="rect" id="node23" href="$BufferHandler_8h.html" title=" " alt="" coords="723,152,834,177"/>
 <area shape="rect" id="node24" href="$Communicator_8h.html" title=" " alt="" coords="662,299,778,324"/>
-<area shape="rect" id="node34" href="$HaloCells_8h.html" title=" " alt="" coords="2185,445,2273,471"/>
+<area shape="rect" id="node34" href="$HaloCells_8h.html" title=" " alt="" coords="2203,445,2291,471"/>
 <area shape="rect" id="node37" href="$FieldBufferOps_8hpp.html" title=" " alt="" coords="2411,519,2543,544"/>
-<area shape="rect" id="node49" href="$ParticleAttribBase_8h.html" title=" " alt="" coords="1045,152,1182,177"/>
+<area shape="rect" id="node49" href="$ParticleAttribBase_8h.html" title=" " alt="" coords="1601,152,1738,177"/>
 <area shape="rect" id="node4" href="$BConds_8h.html" title=" " alt="" coords="1677,665,1755,691"/>
 <area shape="rect" id="node17" href="$Multigrid_8h.html" title=" " alt="" coords="1229,973,1310,999"/>
 <area shape="rect" id="node5" href="$Field_8h.html" title=" " alt="" coords="1686,739,1746,764"/>
@@ -17,12 +17,12 @@
 <area shape="rect" id="node19" href="$Maxwell_8h.html" title=" " alt="" coords="1753,812,1831,837"/>
 <area shape="rect" id="node9" href="$datatypes_8h.html" title=" " alt="" coords="2164,973,2252,999"/>
 <area shape="rect" id="node11" href="$Ippl_8h.html" title=" " alt="" coords="808,893,861,918"/>
-<area shape="rect" id="node12" href="$BaseManager_8h.html" title=" " alt="" coords="941,973,1053,999"/>
-<area shape="rect" id="node13" href="$Buffers_8cpp.html" title=" " alt="" coords="309,973,395,999"/>
-<area shape="rect" id="node14" href="$Environment_8cpp.html" title=" " alt="" coords="601,973,719,999"/>
-<area shape="rect" id="node15" href="$Inform_8cpp.html" title=" " alt="" coords="744,973,827,999"/>
-<area shape="rect" id="node16" href="$Ippl_8cpp.html" title=" " alt="" coords="851,973,917,999"/>
-<area shape="rect" id="node18" href="$PCG_8h.html" title=" " alt="" coords="1709,1047,1769,1072"/>
+<area shape="rect" id="node12" href="$BaseManager_8h.html" title=" " alt="" coords="992,973,1104,999"/>
+<area shape="rect" id="node13" href="$Buffers_8cpp.html" title=" " alt="" coords="393,973,479,999"/>
+<area shape="rect" id="node14" href="$CatalystAdaptor_8h.html" title="Declarations and lightweight types for ParaView Catalyst in&#45;situ integration." alt="" coords="701,973,825,999"/>
+<area shape="rect" id="node15" href="$CatalystAdaptor_8hpp.html" title=" " alt="" coords="693,1047,832,1072"/>
+<area shape="rect" id="node16" href="$Environment_8cpp.html" title=" " alt="" coords="849,973,967,999"/>
+<area shape="rect" id="node18" href="$PCG_8h.html" title=" " alt="" coords="1759,1047,1819,1072"/>
 <area shape="rect" id="node20" href="$FDTDSolverBase_8h.html" title=" " alt="" coords="1725,893,1859,918"/>
 <area shape="rect" id="node21" href="$NonStandardFDTDSolver_8h.html" title="Defines the NonStandardFDTDSolver class for solving Maxwell&#39;s equations using a non&#45;standard Finite&#45;D..." alt="" coords="1599,973,1777,999"/>
 <area shape="rect" id="node22" href="$StandardFDTDSolver_8h.html" title="Defines the StandardFDTDSolver class for solving Maxwell&#39;s equations using the FDTD method." alt="" coords="1819,973,1973,999"/>
@@ -32,7 +32,7 @@
 <area shape="rect" id="node28" href="$CommunicatorLogging_8cpp.html" title=" " alt="" coords="5,372,181,397"/>
 <area shape="rect" id="node29" href="$FieldLayout_8h.html" title=" " alt="" coords="1576,372,1675,397"/>
 <area shape="rect" id="node41" href="$SubFieldLayout_8h.html" title=" " alt="" coords="917,519,1040,544"/>
-<area shape="rect" id="node42" href="$HaloCells_8hpp.html" title=" " alt="" coords="1947,372,2050,397"/>
+<area shape="rect" id="node42" href="$HaloCells_8hpp.html" title=" " alt="" coords="1965,372,2067,397"/>
 <area shape="rect" id="node43" href="$NUFFT_8h.html" title="Non&#45;uniform FFT specialization (NUFFTransform tag)." alt="" coords="411,372,487,397"/>
 <area shape="rect" id="node44" href="$PrunedCC_8h.html" title="Pruned complex&#45;to&#45;complex FFT (PrunedCCTransform tag)." alt="" coords="512,372,603,397"/>
 <area shape="rect" id="node45" href="$PrunedRC_8h.html" title="Pruned real&#45;to&#45;complex FFT (PrunedRCTransform tag)." alt="" coords="627,372,717,397"/>

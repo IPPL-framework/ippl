@@ -1,0 +1,8 @@
+<map id="CatalystVisitors.h" name="CatalystVisitors.h">
+<area shape="rect" id="node1" title="Visitor functors used by CatalystAdaptor for initialization, execution, and steering." alt="" coords="180,5,303,31"/>
+<area shape="rect" id="node2" href="$CatalystAdaptor_8h.html" title="Declarations and lightweight types for ParaView Catalyst in&#45;situ integration." alt="" coords="179,79,303,104"/>
+<area shape="rect" id="node4" href="$CatalystAdaptorSteering_8hpp.html" title=" " alt="" coords="5,152,192,177"/>
+<area shape="rect" id="node3" href="$CatalystAdaptor_8hpp.html" title=" " alt="" coords="80,225,219,251"/>
+<area shape="rect" id="node5" href="$VisRegistryRuntime_8h.html" title="Non&#45;templated heterogeneous registry for visualization and steering." alt="" coords="243,225,389,251"/>
+<area shape="rect" id="node6" href="$VisRegistryRuntime_8hpp.html" title=" " alt="" coords="236,299,396,324"/>
+</map>

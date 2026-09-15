@@ -1,0 +1,10 @@
+<map id="ProxyWriter.h" name="ProxyWriter.h">
+<area shape="rect" id="node1" title="Declarations for generating ParaView Catalyst proxy XML for steerable parameters. This header contain..." alt="" coords="264,5,363,31"/>
+<area shape="rect" id="node2" href="$CatalystAdaptor_8h.html" title="Declarations and lightweight types for ParaView Catalyst in&#45;situ integration." alt="" coords="181,79,305,104"/>
+<area shape="rect" id="node8" href="$ProxyWriter_8cpp.html" title=" " alt="" coords="329,79,441,104"/>
+<area shape="rect" id="node3" href="$CatalystAdaptor_8hpp.html" title=" " alt="" coords="5,299,144,324"/>
+<area shape="rect" id="node4" href="$CatalystAdaptorSteering_8hpp.html" title=" " alt="" coords="124,225,311,251"/>
+<area shape="rect" id="node5" href="$VisRegistryRuntime_8h.html" title="Non&#45;templated heterogeneous registry for visualization and steering." alt="" coords="287,299,433,324"/>
+<area shape="rect" id="node7" href="$CatalystVisitors_8h.html" title="Visitor functors used by CatalystAdaptor for initialization, execution, and steering." alt="" coords="181,152,304,177"/>
+<area shape="rect" id="node6" href="$VisRegistryRuntime_8hpp.html" title=" " alt="" coords="280,372,440,397"/>
+</map>

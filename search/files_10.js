@@ -7,7 +7,8 @@ var searchData=
   ['refshapefunctiondata_2eh_4',['RefShapeFunctionData.h',['../RefShapeFunctionData_8h.html',1,'']]],
   ['regionlayout_2eh_5',['RegionLayout.h',['../RegionLayout_8h.html',1,'']]],
   ['regionlayout_2ehpp_6',['RegionLayout.hpp',['../RegionLayout_8hpp.html',1,'']]],
-  ['request_2ecpp_7',['Request.cpp',['../Request_8cpp.html',1,'']]],
-  ['request_2eh_8',['Request.h',['../Request_8h.html',1,'']]],
-  ['rootfindermethod_2eh_9',['RootFinderMethod.h',['../RootFinderMethod_8h.html',1,'']]]
+  ['registryhelper_2eh_7',['RegistryHelper.h',['../RegistryHelper_8h.html',1,'']]],
+  ['request_2ecpp_8',['Request.cpp',['../Request_8cpp.html',1,'']]],
+  ['request_2eh_9',['Request.h',['../Request_8h.html',1,'']]],
+  ['rootfindermethod_2eh_10',['RootFinderMethod.h',['../RootFinderMethod_8h.html',1,'']]]
 ];

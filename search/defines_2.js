@@ -5,5 +5,6 @@ var searchData=
   ['ippl_5ffft_5fdefine_5fheffte_5ftrig_2',['IPPL_FFT_DEFINE_HEFFTE_TRIG',['../Heffte_8h.html#ae25dd9bcc8a8da7a4ed68847dab76ef4',1,'Heffte.h']]],
   ['ippl_5fmpi_5fop_3',['IPPL_MPI_OP',['../Operations_8h.html#a37baab2616f5c9bc58e78e80302a5dc0',1,'Operations.h']]],
   ['ippl_5fmpi_5fserializable_4',['IPPL_MPI_SERIALIZABLE',['../Serializable_8h.html#a4f5800854ab38bc9fee2918f3a4d3135',1,'Serializable.h']]],
-  ['ippl_5fsolver_5foperator_5fwrapper_5',['IPPL_SOLVER_OPERATOR_WRAPPER',['../Preconditioner_8h.html#a2b8c9f5e923b5dd92d4830f80dd0a4ea',1,'Preconditioner.h']]]
+  ['ippl_5fproxywriter_5fdecl_5',['IPPL_PROXYWRITER_DECL',['../ProxyWriter_8h.html#a544a03218e6d3be8aef528006b7dcf82',1,'ProxyWriter.h']]],
+  ['ippl_5fsolver_5foperator_5fwrapper_6',['IPPL_SOLVER_OPERATOR_WRAPPER',['../Preconditioner_8h.html#a2b8c9f5e923b5dd92d4830f80dd0a4ea',1,'Preconditioner.h']]]
 ];

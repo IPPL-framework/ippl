@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['std_0',['std',['../namespacestd.html',1,'']]]
+  ['kokkos_0',['Kokkos',['../namespaceKokkos.html',1,'']]],
+  ['kokkoscorrection_1',['KokkosCorrection',['../namespaceKokkosCorrection.html',1,'']]]
 ];

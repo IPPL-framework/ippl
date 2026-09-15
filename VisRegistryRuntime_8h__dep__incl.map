@@ -1,0 +1,8 @@
+<map id="VisRegistryRuntime.h" name="VisRegistryRuntime.h">
+<area shape="rect" id="node1" title="Non&#45;templated heterogeneous registry for visualization and steering." alt="" coords="199,5,345,31"/>
+<area shape="rect" id="node2" href="$CatalystAdaptor_8h.html" title="Declarations and lightweight types for ParaView Catalyst in&#45;situ integration." alt="" coords="43,79,167,104"/>
+<area shape="rect" id="node6" href="$VisRegistryRuntime_8hpp.html" title=" " alt="" coords="192,79,352,104"/>
+<area shape="rect" id="node3" href="$CatalystAdaptor_8hpp.html" title=" " alt="" coords="5,299,144,324"/>
+<area shape="rect" id="node4" href="$CatalystAdaptorSteering_8hpp.html" title=" " alt="" coords="133,225,320,251"/>
+<area shape="rect" id="node5" href="$CatalystVisitors_8h.html" title="Visitor functors used by CatalystAdaptor for initialization, execution, and steering." alt="" coords="175,152,297,177"/>
+</map>

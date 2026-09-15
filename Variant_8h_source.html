@@ -138,7 +138,7 @@ $(function() {
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><span class="preprocessor">#define __cpp_lib_variant 202102L</span></div>
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span> </div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacestd.html">std</a> _GLIBCXX_VISIBILITY(default) {</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespacestd.html">std</a> _GLIBCXX_VISIBILITY(<a class="code hl_variable" href="namespacepng__ext__empty.html#a9555328bfe851f0180196d27427beef2">default</a>) {</div>
 <div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    _GLIBCXX_BEGIN_NAMESPACE_VERSION</div>
 <div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <span class="keyword">template</span> &lt;<span class="keyword">typename</span>... _Types&gt;</div>
@@ -179,7 +179,7 @@ $(function() {
 <div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>    <span class="keyword">struct </span>variant_alternative&lt;_Np, variant&lt;_Types...&gt;&gt; {</div>
 <div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>        <span class="keyword">static_assert</span>(_Np &lt; <span class="keyword">sizeof</span>...(_Types));</div>
 <div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>        <span class="keyword">using </span>type = <span class="keyword">typename</span> _Nth_type&lt;_Np, _Types...&gt;::type;</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>        <span class="keyword">using </span><a class="code hl_variable" href="namespacepng__ext__empty.html#a9cd41e5f8a214824cd046bbed03696cf">type</a> = <span class="keyword">typename</span> _Nth_type&lt;_Np, _Types...&gt;::type;</div>
 <div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>    };</div>
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span> </div>
 <div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    <span class="keyword">template</span> &lt;<span class="keywordtype">size_t</span> _Np, <span class="keyword">typename</span> _Variant&gt;</div>
@@ -187,17 +187,17 @@ $(function() {
 <div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span> </div>
 <div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>    <span class="keyword">template</span> &lt;<span class="keywordtype">size_t</span> _Np, <span class="keyword">typename</span> _Variant&gt;</div>
 <div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>    <span class="keyword">struct </span>variant_alternative&lt;_Np, const _Variant&gt; {</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        <span class="keyword">using </span>type = <span class="keyword">const</span> variant_alternative_t&lt;_Np, _Variant&gt;;</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        <span class="keyword">using </span><a class="code hl_variable" href="namespacepng__ext__empty.html#a9cd41e5f8a214824cd046bbed03696cf">type</a> = <span class="keyword">const</span> variant_alternative_t&lt;_Np, _Variant&gt;;</div>
 <div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>    };</div>
 <div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span> </div>
 <div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>    <span class="keyword">template</span> &lt;<span class="keywordtype">size_t</span> _Np, <span class="keyword">typename</span> _Variant&gt;</div>
 <div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>    <span class="keyword">struct </span>variant_alternative&lt;_Np, volatile _Variant&gt; {</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>        <span class="keyword">using </span>type = <span class="keyword">volatile</span> variant_alternative_t&lt;_Np, _Variant&gt;;</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>        <span class="keyword">using </span><a class="code hl_variable" href="namespacepng__ext__empty.html#a9cd41e5f8a214824cd046bbed03696cf">type</a> = <span class="keyword">volatile</span> variant_alternative_t&lt;_Np, _Variant&gt;;</div>
 <div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>    };</div>
 <div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span> </div>
 <div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>    <span class="keyword">template</span> &lt;<span class="keywordtype">size_t</span> _Np, <span class="keyword">typename</span> _Variant&gt;</div>
 <div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>    <span class="keyword">struct </span>variant_alternative&lt;_Np, const volatile _Variant&gt; {</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>        <span class="keyword">using </span>type = <span class="keyword">const</span> <span class="keyword">volatile</span> variant_alternative_t&lt;_Np, _Variant&gt;;</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>        <span class="keyword">using </span><a class="code hl_variable" href="namespacepng__ext__empty.html#a9cd41e5f8a214824cd046bbed03696cf">type</a> = <span class="keyword">const</span> <span class="keyword">volatile</span> variant_alternative_t&lt;_Np, _Variant&gt;;</div>
 <div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>    };</div>
 <div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span> </div>
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>    <span class="keyword">inline</span> <span class="keyword">constexpr</span> <span class="keywordtype">size_t</span> variant_npos = -1;</div>
@@ -235,12 +235,12 @@ $(function() {
 <div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>            <span class="keyword">struct </span>__variant_cookie {};</div>
 <div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>            <span class="comment">// used for raw visitation with indices passed in</span></div>
 <div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>            <span class="keyword">struct </span>__variant_idx_cookie {</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>                <span class="keyword">using </span>type = __variant_idx_cookie;</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>                <span class="keyword">using </span><a class="code hl_variable" href="namespacepng__ext__empty.html#a9cd41e5f8a214824cd046bbed03696cf">type</a> = __variant_idx_cookie;</div>
 <div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>            };</div>
 <div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>            <span class="comment">// Used to enable deduction (and same-type checking) for std::visit:</span></div>
 <div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>            <span class="keyword">template</span> &lt;<span class="keyword">typename</span> _Tp&gt;</div>
 <div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>            <span class="keyword">struct </span>__deduce_visit_result {</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>                <span class="keyword">using </span>type = _Tp;</div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>                <span class="keyword">using </span><a class="code hl_variable" href="namespacepng__ext__empty.html#a9cd41e5f8a214824cd046bbed03696cf">type</a> = _Tp;</div>
 <div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>            };</div>
 <div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span> </div>
 <div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>            <span class="comment">// Visit variants that might be valueless.</span></div>
@@ -1405,14 +1405,14 @@ $(function() {
 <div class="line"><a id="l01323" name="l01323"></a><span class="lineno"> 1323</span>            enable_if_t&lt;is_constructible_v&lt;__to_type&lt;_Np&gt;, _Args...&gt;, __to_type&lt;_Np&gt;&amp;&gt;</div>
 <div class="line"><a id="l01324" name="l01324"></a><span class="lineno"> 1324</span>            emplace(_Args&amp;&amp;... __args) {</div>
 <div class="line"><a id="l01325" name="l01325"></a><span class="lineno"> 1325</span>            <span class="keyword">namespace </span>__variant = std::__detail::__variant;</div>
-<div class="line"><a id="l01326" name="l01326"></a><span class="lineno"> 1326</span>            <span class="keyword">using </span>type          = <span class="keyword">typename</span> _Nth_type&lt;_Np, _Types...&gt;::type;</div>
+<div class="line"><a id="l01326" name="l01326"></a><span class="lineno"> 1326</span>            <span class="keyword">using </span><a class="code hl_variable" href="namespacepng__ext__empty.html#a9cd41e5f8a214824cd046bbed03696cf">type</a>          = <span class="keyword">typename</span> _Nth_type&lt;_Np, _Types...&gt;::type;</div>
 <div class="line"><a id="l01327" name="l01327"></a><span class="lineno"> 1327</span>            <span class="comment">// Provide the strong exception-safety guarantee when possible,</span></div>
 <div class="line"><a id="l01328" name="l01328"></a><span class="lineno"> 1328</span>            <span class="comment">// to avoid becoming valueless.</span></div>
-<div class="line"><a id="l01329" name="l01329"></a><span class="lineno"> 1329</span>            <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (is_nothrow_constructible_v&lt;type, _Args...&gt;) {</div>
+<div class="line"><a id="l01329" name="l01329"></a><span class="lineno"> 1329</span>            <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (is_nothrow_constructible_v&lt;<a class="code hl_variable" href="namespacepng__ext__empty.html#a9cd41e5f8a214824cd046bbed03696cf">type</a>, _Args...&gt;) {</div>
 <div class="line"><a id="l01330" name="l01330"></a><span class="lineno"> 1330</span>                __variant::__emplace&lt;_Np&gt;(*<span class="keyword">this</span>, std::forward&lt;_Args&gt;(__args)...);</div>
 <div class="line"><a id="l01331" name="l01331"></a><span class="lineno"> 1331</span>            } <span class="keywordflow">else</span> <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (is_scalar_v&lt;type&gt;) {</div>
 <div class="line"><a id="l01332" name="l01332"></a><span class="lineno"> 1332</span>                <span class="comment">// This might invoke a potentially-throwing conversion operator:</span></div>
-<div class="line"><a id="l01333" name="l01333"></a><span class="lineno"> 1333</span>                <span class="keyword">const</span> type __tmp(std::forward&lt;_Args&gt;(__args)...);</div>
+<div class="line"><a id="l01333" name="l01333"></a><span class="lineno"> 1333</span>                <span class="keyword">const</span> <a class="code hl_variable" href="namespacepng__ext__empty.html#a9cd41e5f8a214824cd046bbed03696cf">type</a> __tmp(std::forward&lt;_Args&gt;(__args)...);</div>
 <div class="line"><a id="l01334" name="l01334"></a><span class="lineno"> 1334</span>                <span class="comment">// But this won&#39;t throw:</span></div>
 <div class="line"><a id="l01335" name="l01335"></a><span class="lineno"> 1335</span>                __variant::__emplace&lt;_Np&gt;(*<span class="keyword">this</span>, __tmp);</div>
 <div class="line"><a id="l01336" name="l01336"></a><span class="lineno"> 1336</span>            } <span class="keywordflow">else</span> <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (__variant::_Never_valueless_alt&lt;type&gt;()</div>
@@ -1434,7 +1434,7 @@ $(function() {
 <div class="line"><a id="l01352" name="l01352"></a><span class="lineno"> 1352</span>            is_constructible_v&lt;__to_type&lt;_Np&gt;, initializer_list&lt;_Up&gt;&amp;, _Args...&gt;, __to_type&lt;_Np&gt;&amp;&gt;</div>
 <div class="line"><a id="l01353" name="l01353"></a><span class="lineno"> 1353</span>        emplace(initializer_list&lt;_Up&gt; __il, _Args&amp;&amp;... __args) {</div>
 <div class="line"><a id="l01354" name="l01354"></a><span class="lineno"> 1354</span>            <span class="keyword">namespace </span>__variant = std::__detail::__variant;</div>
-<div class="line"><a id="l01355" name="l01355"></a><span class="lineno"> 1355</span>            <span class="keyword">using </span>type          = <span class="keyword">typename</span> _Nth_type&lt;_Np, _Types...&gt;::type;</div>
+<div class="line"><a id="l01355" name="l01355"></a><span class="lineno"> 1355</span>            <span class="keyword">using </span><a class="code hl_variable" href="namespacepng__ext__empty.html#a9cd41e5f8a214824cd046bbed03696cf">type</a>          = <span class="keyword">typename</span> _Nth_type&lt;_Np, _Types...&gt;::type;</div>
 <div class="line"><a id="l01356" name="l01356"></a><span class="lineno"> 1356</span>            <span class="comment">// Provide the strong exception-safety guarantee when possible,</span></div>
 <div class="line"><a id="l01357" name="l01357"></a><span class="lineno"> 1357</span>            <span class="comment">// to avoid becoming valueless.</span></div>
 <div class="line"><a id="l01358" name="l01358"></a><span class="lineno"> 1358</span>            <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (is_nothrow_constructible_v&lt;type, initializer_list&lt;_Up&gt;&amp;, _Args...&gt;) {</div>
@@ -1757,6 +1757,8 @@ $(function() {
 <div class="line"><a id="l01679" name="l01679"></a><span class="lineno"> 1679</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="anamespaceippl_html_a494d531f735e82bd4f9a1206adee199b"><div class="ttname"><a href="namespaceippl.html#a494d531f735e82bd4f9a1206adee199b">ippl::operator!=</a></div><div class="ttdeci">bool operator!=(const NDIndex&lt; Dim &gt; &amp;nd1, const NDIndex&lt; Dim &gt; &amp;nd2)</div><div class="ttdef"><b>Definition:</b> NDIndex.hpp:210</div></div>
 <div class="ttc" id="anamespaceippl_html_ad65908dfd0a46b5d73e58c8fa81b418e"><div class="ttname"><a href="namespaceippl.html#ad65908dfd0a46b5d73e58c8fa81b418e">ippl::operator==</a></div><div class="ttdeci">bool operator==(const NDIndex&lt; Dim &gt; &amp;nd1, const NDIndex&lt; Dim &gt; &amp;nd2)</div><div class="ttdef"><b>Definition:</b> NDIndex.hpp:200</div></div>
+<div class="ttc" id="anamespacepng__ext__empty_html_a9555328bfe851f0180196d27427beef2"><div class="ttname"><a href="namespacepng__ext__empty.html#a9555328bfe851f0180196d27427beef2">png_ext_empty.default</a></div><div class="ttdeci">default</div><div class="ttdef"><b>Definition:</b> png_ext_empty.py:16</div></div>
+<div class="ttc" id="anamespacepng__ext__empty_html_a9cd41e5f8a214824cd046bbed03696cf"><div class="ttname"><a href="namespacepng__ext__empty.html#a9cd41e5f8a214824cd046bbed03696cf">png_ext_empty.type</a></div><div class="ttdeci">type</div><div class="ttdef"><b>Definition:</b> png_ext_empty.py:16</div></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdef"><b>Definition:</b> Tuple.h:352</div></div>
 <div class="ttc" id="anamespacestd_html_aa876655c5861b50670827f4c06a082c0"><div class="ttname"><a href="namespacestd.html#aa876655c5861b50670827f4c06a082c0">std::get</a></div><div class="ttdeci">KOKKOS_INLINE_FUNCTION auto &amp; get(::ippl::Tuple&lt; Ts... &gt; &amp;t)</div><div class="ttdef"><b>Definition:</b> Tuple.h:362</div></div>
 </div><!-- fragment --></div><!-- contents -->

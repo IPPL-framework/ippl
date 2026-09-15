@@ -145,13 +145,13 @@ $(function() {
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>                }</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span> </div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>                <span class="keyword">auto</span>&amp; dst = tempField_m(di, dj, dk);</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>                <span class="keyword">auto</span> src  = fview_m(i, j, k);</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>                <span class="keyword">auto</span> <a class="code hl_variable" href="namespacepipeline__default.html#a2324c0d35a63ece0df95db412b469baa">src</a>  = fview_m(i, j, k);</div>
 <div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span><span class="preprocessor">#ifdef ENABLE_GPU_NUFFT</span></div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>                dst.x = src.real();</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>                dst.y = src.imag();</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>                dst.x = <a class="code hl_variable" href="namespacepipeline__default.html#a2324c0d35a63ece0df95db412b469baa">src</a>.real();</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>                dst.y = <a class="code hl_variable" href="namespacepipeline__default.html#a2324c0d35a63ece0df95db412b469baa">src</a>.imag();</div>
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>                dst.real(src.real());</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>                dst.imag(src.imag());</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>                dst.real(<a class="code hl_variable" href="namespacepipeline__default.html#a2324c0d35a63ece0df95db412b469baa">src</a>.real());</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>                dst.imag(<a class="code hl_variable" href="namespacepipeline__default.html#a2324c0d35a63ece0df95db412b469baa">src</a>.imag());</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>            }</div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>        };</div>
@@ -168,9 +168,9 @@ $(function() {
 <div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>                : fview_m(fview)</div>
 <div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>                , tempField_m(tempField)</div>
 <div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>                , nghost_m(nghost)</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>                , nx_m(nx)</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>                , ny_m(ny)</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>                , nz_m(nz) {}</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>                , nx_m(<a class="code hl_variable" href="namespacepng__ext__sfield.html#a8027b22e5609ec1726543afbcef7e11b">nx</a>)</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>                , ny_m(<a class="code hl_variable" href="namespacepng__ext__sfield.html#a7a97461e49d44233e6462c5974f7dc98">ny</a>)</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>                , nz_m(<a class="code hl_variable" href="namespacepng__ext__sfield.html#a77cbd3abfd51b4890b854868b6ced357">nz</a>) {}</div>
 <div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span> </div>
 <div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>            KOKKOS_INLINE_FUNCTION <span class="keywordtype">void</span> operator()(<span class="keywordtype">int</span> i, <span class="keywordtype">int</span> j, <span class="keywordtype">int</span> k)<span class="keyword"> const </span>{</div>
 <div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                <span class="keywordtype">int</span> li = i - nghost_m;</div>
@@ -181,13 +181,13 @@ $(function() {
 <div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                <span class="keywordtype">int</span> sj = (lj + ny_m / 2) % ny_m;</div>
 <div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>                <span class="keywordtype">int</span> sk = (lk + nz_m / 2) % nz_m;</div>
 <div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span> </div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>                <span class="keyword">auto</span> src = tempField_m(si, sj, sk);</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>                <span class="keyword">auto</span> <a class="code hl_variable" href="namespacepipeline__default.html#a2324c0d35a63ece0df95db412b469baa">src</a> = tempField_m(si, sj, sk);</div>
 <div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span><span class="preprocessor">#ifdef ENABLE_GPU_NUFFT</span></div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>                fview_m(i, j, k).real() = src.x;</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>                fview_m(i, j, k).imag() = src.y;</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>                fview_m(i, j, k).real() = <a class="code hl_variable" href="namespacepipeline__default.html#a2324c0d35a63ece0df95db412b469baa">src</a>.x;</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>                fview_m(i, j, k).imag() = <a class="code hl_variable" href="namespacepipeline__default.html#a2324c0d35a63ece0df95db412b469baa">src</a>.y;</div>
 <div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>                fview_m(i, j, k).real() = src.real();</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>                fview_m(i, j, k).imag() = src.imag();</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>                fview_m(i, j, k).real() = <a class="code hl_variable" href="namespacepipeline__default.html#a2324c0d35a63ece0df95db412b469baa">src</a>.real();</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>                fview_m(i, j, k).imag() = <a class="code hl_variable" href="namespacepipeline__default.html#a2324c0d35a63ece0df95db412b469baa">src</a>.imag();</div>
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            }</div>
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        };</div>
@@ -658,6 +658,10 @@ $(function() {
 <div class="ttc" id="anamespaceippl_html"><div class="ttname"><a href="namespaceippl.html">ippl</a></div><div class="ttdef"><b>Definition:</b> Archive.h:29</div></div>
 <div class="ttc" id="anamespaceippl_html_abfab7f67f977ee069d97c58cef8bd486"><div class="ttname"><a href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">ippl::Comm</a></div><div class="ttdeci">std::unique_ptr&lt; mpi::Communicator &gt; Comm</div><div class="ttdef"><b>Definition:</b> Ippl.h:21</div></div>
 <div class="ttc" id="anamespaceippl_html_ada34ee07ac0361fa2d0a71bf981d9241"><div class="ttname"><a href="namespaceippl.html#ada34ee07ac0361fa2d0a71bf981d9241">ippl::get</a></div><div class="ttdeci">KOKKOS_INLINE_FUNCTION auto &amp; get(Tuple&lt; Ts... &gt; &amp;t)</div><div class="ttdoc">Accessor function to get an element mutable reference at a specific index from a Tuple.</div><div class="ttdef"><b>Definition:</b> Tuple.h:314</div></div>
+<div class="ttc" id="anamespacepipeline__default_html_a2324c0d35a63ece0df95db412b469baa"><div class="ttname"><a href="namespacepipeline__default.html#a2324c0d35a63ece0df95db412b469baa">pipeline_default.src</a></div><div class="ttdeci">src</div><div class="ttdef"><b>Definition:</b> pipeline_default.py:259</div></div>
+<div class="ttc" id="anamespacepng__ext__sfield_html_a77cbd3abfd51b4890b854868b6ced357"><div class="ttname"><a href="namespacepng__ext__sfield.html#a77cbd3abfd51b4890b854868b6ced357">png_ext_sfield.nz</a></div><div class="ttdeci">nz</div><div class="ttdef"><b>Definition:</b> png_ext_sfield.py:97</div></div>
+<div class="ttc" id="anamespacepng__ext__sfield_html_a7a97461e49d44233e6462c5974f7dc98"><div class="ttname"><a href="namespacepng__ext__sfield.html#a7a97461e49d44233e6462c5974f7dc98">png_ext_sfield.ny</a></div><div class="ttdeci">ny</div><div class="ttdef"><b>Definition:</b> png_ext_sfield.py:96</div></div>
+<div class="ttc" id="anamespacepng__ext__sfield_html_a8027b22e5609ec1726543afbcef7e11b"><div class="ttname"><a href="namespacepng__ext__sfield.html#a8027b22e5609ec1726543afbcef7e11b">png_ext_sfield.nx</a></div><div class="ttdeci">nx</div><div class="ttdef"><b>Definition:</b> png_ext_sfield.py:95</div></div>
 <div class="ttc" id="astructippl_1_1Interpolation_1_1GatherConfig_html"><div class="ttname"><a href="structippl_1_1Interpolation_1_1GatherConfig.html">ippl::Interpolation::GatherConfig</a></div><div class="ttdoc">Configuration for scatter/gather operations.</div><div class="ttdef"><b>Definition:</b> GatherConfig.h:74</div></div>
 <div class="ttc" id="astructippl_1_1Interpolation_1_1ScatterConfig_html"><div class="ttname"><a href="structippl_1_1Interpolation_1_1ScatterConfig.html">ippl::Interpolation::ScatterConfig</a></div><div class="ttdoc">Configuration for scatter operations.</div><div class="ttdef"><b>Definition:</b> ScatterConfig.h:41</div></div>
 <div class="ttc" id="astructippl_1_1detail_1_1ScalePositionsFunctor_html"><div class="ttname"><a href="structippl_1_1detail_1_1ScalePositionsFunctor.html">ippl::detail::ScalePositionsFunctor</a></div><div class="ttdoc">Functor to scale particle positions by a factor.</div><div class="ttdef"><b>Definition:</b> NUFFT.hpp:24</div></div>

@@ -1,9 +1,9 @@
 var searchData=
 [
-  ['y_5f_0',['y_',['../classippl_1_1detail_1_1GPModel.html#a4403139cbc8e478db34ce6220dde4d8c',1,'ippl::detail::GPModel']]],
-  ['y_5fmean_5f_1',['y_mean_',['../classippl_1_1detail_1_1GPModel.html#acffd8d0fa36b4e9cf9f02adb8d49b33e',1,'ippl::detail::GPModel']]],
-  ['y_5fnorm_5f_2',['y_norm_',['../classippl_1_1detail_1_1GPModel.html#a394465ffadcb5a041b281bb79d766f57',1,'ippl::detail::GPModel']]],
-  ['y_5fstd_5f_3',['y_std_',['../classippl_1_1detail_1_1GPModel.html#a6d48c4a0c7300e373fe9c5752f2dc2af',1,'ippl::detail::GPModel']]],
-  ['y_5fvar_5f_4',['y_var_',['../classippl_1_1detail_1_1GPModel.html#af3c809c3bda969cce423fb6d31c46ef2',1,'ippl::detail::GPModel']]],
-  ['yvector_5fm_5',['yvector_m',['../structippl_1_1detail_1_1meta__curl.html#af01304d5e62b3163d161be41b89ab8e1',1,'ippl::detail::meta_curl']]]
+  ['x_0',['x',['../structippl_1_1Interpolation_1_1detail_1_1GatherArgumentsBase.html#adcb15f333d3b2ad30860d864471a8cd6',1,'ippl::Interpolation::detail::GatherArgumentsBase::x()'],['../structippl_1_1Interpolation_1_1detail_1_1ScatterArgumentsBase.html#ab853505a3225a40f20559add82046109',1,'ippl::Interpolation::detail::ScatterArgumentsBase::x()']]],
+  ['x_5f_1',['X_',['../classippl_1_1detail_1_1GPModel.html#a2f313dcecc7342d7243f9f002258ab0c',1,'ippl::detail::GPModel']]],
+  ['x_5fm_2',['x_m',['../structippl_1_1polynomial__chebyshev__preconditioner.html#ae13373f9b8aa3a7210c88a65bc042434',1,'ippl::polynomial_chebyshev_preconditioner']]],
+  ['x_5fold_5fm_3',['x_old_m',['../structippl_1_1polynomial__chebyshev__preconditioner.html#a2f1f56bc188dea3d41ef52058d74f471',1,'ippl::polynomial_chebyshev_preconditioner']]],
+  ['xn_5f_4',['Xn_',['../classippl_1_1detail_1_1GPModel.html#a7beb8126d3c6931634d9f4f127367b71',1,'ippl::detail::GPModel']]],
+  ['xvector_5fm_5',['xvector_m',['../structippl_1_1detail_1_1meta__curl.html#a33b53691996b8705aff0b2524b54a9d5',1,'ippl::detail::meta_curl']]]
 ];

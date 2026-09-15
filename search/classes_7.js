@@ -8,11 +8,13 @@ var searchData=
   ['halopackfunctor_5',['HaloPackFunctor',['../structippl_1_1detail_1_1HaloPackFunctor.html',1,'ippl::detail']]],
   ['haloperiodicfunctor_6',['HaloPeriodicFunctor',['../structippl_1_1detail_1_1HaloPeriodicFunctor.html',1,'ippl::detail']]],
   ['halounpackfunctor_7',['HaloUnpackFunctor',['../structippl_1_1detail_1_1HaloUnpackFunctor.html',1,'ippl::detail']]],
-  ['hefftebackend_8',['HeffteBackend',['../structippl_1_1fft_1_1HeffteBackend.html',1,'ippl::fft']]],
-  ['hefftec2c_9',['HeffteC2C',['../classippl_1_1fft_1_1HeffteC2C.html',1,'ippl::fft']]],
-  ['hefftegpu_10',['HeffteGPU',['../structippl_1_1fft_1_1HeffteGPU.html',1,'ippl::fft']]],
-  ['heffter2c_11',['HeffteR2C',['../classippl_1_1fft_1_1HeffteR2C.html',1,'ippl::fft']]],
-  ['hefftetrig_12',['HeffteTrig',['../classippl_1_1fft_1_1HeffteTrig.html',1,'ippl::fft']]],
-  ['hexahedralelement_13',['HexahedralElement',['../classippl_1_1HexahedralElement.html',1,'ippl']]],
-  ['histogram_14',['Histogram',['../structippl_1_1Interpolation_1_1detail_1_1TiledScatter_1_1Histogram.html',1,'ippl::Interpolation::detail::TiledScatter']]]
+  ['has_5fgetregionlayout_8',['has_getRegionLayout',['../structippl_1_1has__getRegionLayout.html',1,'ippl']]],
+  ['has_5fgetregionlayout_3c_20t_2c_20std_3a_3avoid_5ft_3c_20decltype_28std_3a_3adeclval_3c_20t_20_3e_28_29_2egetregionlayout_28_29_29_3e_20_3e_9',['has_getRegionLayout&lt; T, std::void_t&lt; decltype(std::declval&lt; T &gt;().getRegionLayout())&gt; &gt;',['../structippl_1_1has__getRegionLayout_3_01T_00_01std_1_1void__t_3_01decltype_07std_1_1declval_3_01Tb4e89e0fc7d70ebf062f951715a6bcda.html',1,'ippl']]],
+  ['hefftebackend_10',['HeffteBackend',['../structippl_1_1fft_1_1HeffteBackend.html',1,'ippl::fft']]],
+  ['hefftec2c_11',['HeffteC2C',['../classippl_1_1fft_1_1HeffteC2C.html',1,'ippl::fft']]],
+  ['hefftegpu_12',['HeffteGPU',['../structippl_1_1fft_1_1HeffteGPU.html',1,'ippl::fft']]],
+  ['heffter2c_13',['HeffteR2C',['../classippl_1_1fft_1_1HeffteR2C.html',1,'ippl::fft']]],
+  ['hefftetrig_14',['HeffteTrig',['../classippl_1_1fft_1_1HeffteTrig.html',1,'ippl::fft']]],
+  ['hexahedralelement_15',['HexahedralElement',['../classippl_1_1HexahedralElement.html',1,'ippl']]],
+  ['histogram_16',['Histogram',['../structippl_1_1Interpolation_1_1detail_1_1TiledScatter_1_1Histogram.html',1,'ippl::Interpolation::detail::TiledScatter']]]
 ];

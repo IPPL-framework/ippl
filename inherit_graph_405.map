@@ -1,0 +1,22 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" title=" " alt="" coords="5,517,111,543"/>
+<area shape="rect" id="node2" href="$structippl_1_1detail_1_1isExpression.html" title=" " alt="" coords="159,5,347,31"/>
+<area shape="rect" id="node3" href="$structippl_1_1detail_1_1is__kokkos__complex.html" title=" " alt="" coords="181,55,325,95"/>
+<area shape="rect" id="node4" href="$structippl_1_1fft_1_1is__available.html" title=" " alt="" coords="186,119,319,159"/>
+<area shape="rect" id="node5" href="$structippl_1_1has__getRegionLayout.html" title=" " alt="" coords="166,183,339,223"/>
+<area shape="rect" id="node6" href="$structippl_1_1is__allowed__shared__ptr.html" title=" " alt="" coords="175,247,330,287"/>
+<area shape="rect" id="node7" href="$structippl_1_1is__complex.html" title=" " alt="" coords="181,312,324,337"/>
+<area shape="rect" id="node8" href="$structippl_1_1is__field.html" title=" " alt="" coords="193,361,312,387"/>
+<area shape="rect" id="node9" href="$structippl_1_1is__ippl__vector.html" title=" " alt="" coords="173,411,333,436"/>
+<area shape="rect" id="node10" href="$structippl_1_1is__std__vector.html" title=" " alt="" coords="175,460,331,485"/>
+<area shape="rect" id="node11" href="$structippl_1_1is__std__vector__any.html" title=" " alt="" coords="189,510,316,550"/>
+<area shape="rect" id="node12" href="$structippl_1_1is__std__vector__of__allowed__scalar.html" title=" " alt="" coords="170,574,335,614"/>
+<area shape="rect" id="node13" href="$structippl_1_1is__std__vector__of__ippl__vector.html" title=" " alt="" coords="181,638,324,678"/>
+<area shape="rect" id="node14" href="$structippl_1_1is__vector.html" title=" " alt="" coords="187,703,318,728"/>
+<area shape="rect" id="node15" href="$structippl_1_1mpi_1_1always__false.html" title=" " alt="" coords="163,752,343,777"/>
+<area shape="rect" id="node16" href="$structippl_1_1mpi_1_1is__a__logger.html" title=" " alt="" coords="182,802,323,842"/>
+<area shape="rect" id="node17" href="$structippl_1_1mpi_1_1is__ippl__mpi__type.html" title=" " alt="" coords="185,866,320,906"/>
+<area shape="rect" id="node18" href="$structippl_1_1mpi_1_1is__serializable.html" title=" " alt="" coords="175,930,331,970"/>
+<area shape="rect" id="node19" href="$structippl_1_1mpi_1_1rma_1_1isActiveTarget.html" title=" " alt="" coords="177,994,328,1034"/>
+<area shape="rect" id="node20" href="$structippl_1_1mpi_1_1rma_1_1isPassiveTarget.html" title=" " alt="" coords="173,1058,333,1098"/>
+</map>

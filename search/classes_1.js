@@ -24,5 +24,6 @@ var searchData=
   ['buffersizecomputer_21',['BufferSizeComputer',['../structippl_1_1BufferSizeComputer.html',1,'ippl']]],
   ['buffersizecomputer_3c_20t_20_3e_22',['BufferSizeComputer&lt; T &gt;',['../structippl_1_1BufferSizeComputer_3_01T_01_4.html',1,'ippl']]],
   ['buffersizecomputer_3c_20t_2c_20rest_2e_2e_2e_20_3e_23',['BufferSizeComputer&lt; T, Rest... &gt;',['../structippl_1_1BufferSizeComputer_3_01T_00_01Rest_8_8_8_01_4.html',1,'ippl']]],
-  ['bufferview_24',['BufferView',['../classippl_1_1BufferView.html',1,'ippl']]]
+  ['bufferview_24',['BufferView',['../classippl_1_1BufferView.html',1,'ippl']]],
+  ['button_25',['Button',['../structippl_1_1Button.html',1,'ippl']]]
 ];

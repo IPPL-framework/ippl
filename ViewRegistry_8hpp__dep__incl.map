@@ -1,0 +1,10 @@
+<map id="ViewRegistry.hpp" name="ViewRegistry.hpp">
+<area shape="rect" id="node1" title=" " alt="" coords="181,5,304,31"/>
+<area shape="rect" id="node2" href="$ViewRegistry_8h.html" title="Dynamic registry for storing and retrieving named visualization&#45;related views." alt="" coords="189,79,297,104"/>
+<area shape="rect" id="node3" href="$CatalystAdaptor_8h.html" title="Declarations and lightweight types for ParaView Catalyst in&#45;situ integration." alt="" coords="181,152,305,177"/>
+<area shape="rect" id="node4" href="$CatalystAdaptor_8hpp.html" title=" " alt="" coords="5,372,144,397"/>
+<area shape="rect" id="node5" href="$CatalystAdaptorSteering_8hpp.html" title=" " alt="" coords="124,299,311,324"/>
+<area shape="rect" id="node6" href="$VisRegistryRuntime_8h.html" title="Non&#45;templated heterogeneous registry for visualization and steering." alt="" coords="287,372,433,397"/>
+<area shape="rect" id="node8" href="$CatalystVisitors_8h.html" title="Visitor functors used by CatalystAdaptor for initialization, execution, and steering." alt="" coords="181,225,304,251"/>
+<area shape="rect" id="node7" href="$VisRegistryRuntime_8hpp.html" title=" " alt="" coords="280,445,440,471"/>
+</map>
