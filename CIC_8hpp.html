@@ -88,13 +88,15 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;Kokkos_Core.hpp&gt;</code><br />
+<code>#include &lt;type_traits&gt;</code><br />
 </div><div class="textblock"><div class="dynheader">
 Include dependency graph for CIC.hpp:</div>
 <div class="dyncontent">
 <div class="center"><img src="CIC_8hpp__incl.png" border="0" usemap="#aCIC_8hpp" alt=""/></div>
 <map name="aCIC_8hpp" id="aCIC_8hpp">
-<area shape="rect" title=" " alt="" coords="33,5,101,31"/>
+<area shape="rect" title=" " alt="" coords="97,5,165,31"/>
 <area shape="rect" title=" " alt="" coords="5,79,129,104"/>
+<area shape="rect" title=" " alt="" coords="154,79,237,104"/>
 </map>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -175,9 +177,9 @@ Functions</h2></td></tr>
 <tr class="memitem:aca521118a2b7efed7214514d5cf12cfc"><td class="memTemplParams" colspan="2">template&lt;unsigned long ScatterPoint, unsigned long... Index, typename View , typename T , typename IndexType  = size_t&gt; </td></tr>
 <tr class="memitem:aca521118a2b7efed7214514d5cf12cfc"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#aca521118a2b7efed7214514d5cf12cfc">ippl::detail::scatterToPoint</a> (const std::index_sequence&lt; Index... &gt; &amp;, const View &amp;view, const <a class="el" href="datatypes_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a>&lt; T, View::rank &gt; &amp;wlo, const <a class="el" href="datatypes_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a>&lt; T, View::rank &gt; &amp;whi, const <a class="el" href="datatypes_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a>&lt; IndexType, View::rank &gt; &amp;args, const T &amp;val)</td></tr>
 <tr class="separator:aca521118a2b7efed7214514d5cf12cfc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2248ccca4c2190a3ef7c2146d0e06e6"><td class="memTemplParams" colspan="2">template&lt;unsigned long... ScatterPoint, typename View , typename T , typename IndexType  = size_t&gt; </td></tr>
-<tr class="memitem:af2248ccca4c2190a3ef7c2146d0e06e6"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#af2248ccca4c2190a3ef7c2146d0e06e6">ippl::detail::scatterToField</a> (const std::index_sequence&lt; ScatterPoint... &gt; &amp;, const View &amp;view, const <a class="el" href="datatypes_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a>&lt; T, View::rank &gt; &amp;wlo, const <a class="el" href="datatypes_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a>&lt; T, View::rank &gt; &amp;whi, const <a class="el" href="datatypes_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a>&lt; IndexType, View::rank &gt; &amp;args, T val=1)</td></tr>
-<tr class="separator:af2248ccca4c2190a3ef7c2146d0e06e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69a67f83471d0cc3398f5c998a8bb53f"><td class="memTemplParams" colspan="2">template&lt;unsigned long... ScatterPoint, typename View , typename T , typename IndexType  = size_t, typename Val  = T&gt; </td></tr>
+<tr class="memitem:a69a67f83471d0cc3398f5c998a8bb53f"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a69a67f83471d0cc3398f5c998a8bb53f">ippl::detail::scatterToField</a> (const std::index_sequence&lt; ScatterPoint... &gt; &amp;, const View &amp;view, const <a class="el" href="datatypes_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a>&lt; T, View::rank &gt; &amp;wlo, const <a class="el" href="datatypes_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a>&lt; T, View::rank &gt; &amp;whi, const <a class="el" href="datatypes_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a>&lt; IndexType, View::rank &gt; &amp;args, Val val=Val(1))</td></tr>
+<tr class="separator:a69a67f83471d0cc3398f5c998a8bb53f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac1c27e3737696e82ba38feb8fa6042d"><td class="memTemplParams" colspan="2">template&lt;unsigned long GatherPoint, unsigned long... Index, typename View , typename T , typename IndexType  = size_t&gt; </td></tr>
 <tr class="memitem:aac1c27e3737696e82ba38feb8fa6042d"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr <a class="el" href="AutoTune_8cpp.html#aeecb440b1be5cf5c7d0164a566f2d704">View::value_type</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#aac1c27e3737696e82ba38feb8fa6042d">ippl::detail::gatherFromPoint</a> (const std::index_sequence&lt; Index... &gt; &amp;, const View &amp;view, const <a class="el" href="datatypes_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a>&lt; T, View::rank &gt; &amp;wlo, const <a class="el" href="datatypes_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a>&lt; T, View::rank &gt; &amp;whi, const <a class="el" href="datatypes_8h.html#a85288a0d331794ed0a966fd0666c9d5b">Vector</a>&lt; IndexType, View::rank &gt; &amp;args)</td></tr>
 <tr class="separator:aac1c27e3737696e82ba38feb8fa6042d"><td class="memSeparator" colspan="2">&#160;</td></tr>

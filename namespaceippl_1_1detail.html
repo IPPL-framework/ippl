@@ -369,9 +369,9 @@ Functions</h2></td></tr>
 <tr class="memitem:aca521118a2b7efed7214514d5cf12cfc"><td class="memTemplParams" colspan="2">template&lt;unsigned long ScatterPoint, unsigned long... Index, typename View , typename T , typename IndexType  = size_t&gt; </td></tr>
 <tr class="memitem:aca521118a2b7efed7214514d5cf12cfc"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#aca521118a2b7efed7214514d5cf12cfc">scatterToPoint</a> (const std::index_sequence&lt; Index... &gt; &amp;, const View &amp;view, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, View::rank &gt; &amp;wlo, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, View::rank &gt; &amp;whi, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; IndexType, View::rank &gt; &amp;args, const T &amp;val)</td></tr>
 <tr class="separator:aca521118a2b7efed7214514d5cf12cfc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2248ccca4c2190a3ef7c2146d0e06e6"><td class="memTemplParams" colspan="2">template&lt;unsigned long... ScatterPoint, typename View , typename T , typename IndexType  = size_t&gt; </td></tr>
-<tr class="memitem:af2248ccca4c2190a3ef7c2146d0e06e6"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#af2248ccca4c2190a3ef7c2146d0e06e6">scatterToField</a> (const std::index_sequence&lt; ScatterPoint... &gt; &amp;, const View &amp;view, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, View::rank &gt; &amp;wlo, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, View::rank &gt; &amp;whi, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; IndexType, View::rank &gt; &amp;args, T val=1)</td></tr>
-<tr class="separator:af2248ccca4c2190a3ef7c2146d0e06e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69a67f83471d0cc3398f5c998a8bb53f"><td class="memTemplParams" colspan="2">template&lt;unsigned long... ScatterPoint, typename View , typename T , typename IndexType  = size_t, typename Val  = T&gt; </td></tr>
+<tr class="memitem:a69a67f83471d0cc3398f5c998a8bb53f"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a69a67f83471d0cc3398f5c998a8bb53f">scatterToField</a> (const std::index_sequence&lt; ScatterPoint... &gt; &amp;, const View &amp;view, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, View::rank &gt; &amp;wlo, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, View::rank &gt; &amp;whi, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; IndexType, View::rank &gt; &amp;args, Val val=Val(1))</td></tr>
+<tr class="separator:a69a67f83471d0cc3398f5c998a8bb53f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aac1c27e3737696e82ba38feb8fa6042d"><td class="memTemplParams" colspan="2">template&lt;unsigned long GatherPoint, unsigned long... Index, typename View , typename T , typename IndexType  = size_t&gt; </td></tr>
 <tr class="memitem:aac1c27e3737696e82ba38feb8fa6042d"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION constexpr View::value_type&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#aac1c27e3737696e82ba38feb8fa6042d">gatherFromPoint</a> (const std::index_sequence&lt; Index... &gt; &amp;, const View &amp;view, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, View::rank &gt; &amp;wlo, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; T, View::rank &gt; &amp;whi, const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; IndexType, View::rank &gt; &amp;args)</td></tr>
 <tr class="separator:aac1c27e3737696e82ba38feb8fa6042d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -383,6 +383,12 @@ Functions</h2></td></tr>
 <tr class="memitem:a4edaccf377aaff3be0400f21229a4dc4"><td class="memTemplParams" colspan="2">template&lt;typename T , typename &gt; </td></tr>
 <tr class="memitem:a4edaccf377aaff3be0400f21229a4dc4"><td class="memTemplItemLeft" align="right" valign="top">T&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a4edaccf377aaff3be0400f21229a4dc4">getNumericalOption</a> (const char *arg)</td></tr>
 <tr class="separator:a4edaccf377aaff3be0400f21229a4dc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d5c0438c017aa9ca7df25eba799d3d3"><td class="memTemplParams" colspan="2">template&lt;bool UseHashView, typename HashView &gt; </td></tr>
+<tr class="memitem:a7d5c0438c017aa9ca7df25eba799d3d3"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION size_t&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a7d5c0438c017aa9ca7df25eba799d3d3">scatterMappedIndex</a> (const size_t idx, const HashView &amp;hashView)</td></tr>
+<tr class="separator:a7d5c0438c017aa9ca7df25eba799d3d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89d90c08472c0fead43deaaddcdeb6c2"><td class="memTemplParams" colspan="2">template&lt;bool UseHashView, typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename ValuesView , typename PositionAttrib , typename policy_type , typename HashView &gt; </td></tr>
+<tr class="memitem:a89d90c08472c0fead43deaaddcdeb6c2"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a89d90c08472c0fead43deaaddcdeb6c2">particleAttribScatterImpl</a> (<a class="el" href="classippl_1_1Field.html">Field</a> &amp;f, const ValuesView &amp;dview, const PositionAttrib &amp;pp, policy_type iteration_policy, HashView hash_array)</td></tr>
+<tr class="separator:a89d90c08472c0fead43deaaddcdeb6c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1d66496296fff7cc0b70c60b8efee3da"><td class="memTemplParams" colspan="2">template&lt;typename ExecSpace , typename IndexView &gt; </td></tr>
 <tr class="memitem:a1d66496296fff7cc0b70c60b8efee3da"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a1d66496296fff7cc0b70c60b8efee3da">validatePermutation</a> (const IndexView &amp;permute, size_t n, const char *label=&quot;sortParticles&quot;)</td></tr>
 <tr class="memdesc:a1d66496296fff7cc0b70c60b8efee3da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate that all permutation indices are in bounds.  <a href="namespaceippl_1_1detail.html#a1d66496296fff7cc0b70c60b8efee3da">More...</a><br /></td></tr>
@@ -2273,6 +2279,54 @@ template&lt;typename F &gt; </div>
 
 </div>
 </div>
+<a id="a89d90c08472c0fead43deaaddcdeb6c2" name="a89d90c08472c0fead43deaaddcdeb6c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a89d90c08472c0fead43deaaddcdeb6c2">&#9670;&#160;</a></span>particleAttribScatterImpl()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;bool UseHashView, typename <a class="el" href="classippl_1_1Field.html">Field</a> , typename ValuesView , typename PositionAttrib , typename policy_type , typename HashView &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void ippl::detail::particleAttribScatterImpl </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Field.html">Field</a> &amp;&#160;</td>
+          <td class="paramname"><em>f</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const ValuesView &amp;&#160;</td>
+          <td class="paramname"><em>dview</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const PositionAttrib &amp;&#160;</td>
+          <td class="paramname"><em>pp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">policy_type&#160;</td>
+          <td class="paramname"><em>iteration_policy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">HashView&#160;</td>
+          <td class="paramname"><em>hash_array</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ac2447f0b7b87bc65cbd47b802b836c30" name="ac2447f0b7b87bc65cbd47b802b836c30"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac2447f0b7b87bc65cbd47b802b836c30">&#9670;&#160;</a></span>runConcurrentBatch()</h2>
 
@@ -2378,13 +2432,43 @@ template&lt;typename Functor &gt; </div>
 
 </div>
 </div>
-<a id="af2248ccca4c2190a3ef7c2146d0e06e6" name="af2248ccca4c2190a3ef7c2146d0e06e6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af2248ccca4c2190a3ef7c2146d0e06e6">&#9670;&#160;</a></span>scatterToField()</h2>
+<a id="a7d5c0438c017aa9ca7df25eba799d3d3" name="a7d5c0438c017aa9ca7df25eba799d3d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d5c0438c017aa9ca7df25eba799d3d3">&#9670;&#160;</a></span>scatterMappedIndex()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;unsigned long... ScatterPoint, typename View , typename T , typename IndexType  = size_t&gt; </div>
+template&lt;bool UseHashView, typename HashView &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_INLINE_FUNCTION size_t ippl::detail::scatterMappedIndex </td>
+          <td>(</td>
+          <td class="paramtype">const size_t&#160;</td>
+          <td class="paramname"><em>idx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const HashView &amp;&#160;</td>
+          <td class="paramname"><em>hashView</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a69a67f83471d0cc3398f5c998a8bb53f" name="a69a67f83471d0cc3398f5c998a8bb53f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69a67f83471d0cc3398f5c998a8bb53f">&#9670;&#160;</a></span>scatterToField()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;unsigned long... ScatterPoint, typename View , typename T , typename IndexType  = size_t, typename Val  = T&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -2422,8 +2506,8 @@ template&lt;unsigned long... ScatterPoint, typename View , typename T , typename
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">T&#160;</td>
-          <td class="paramname"><em>val</em> = <code>1</code>&#160;</td>
+          <td class="paramtype">Val&#160;</td>
+          <td class="paramname"><em>val</em> = <code>Val(1)</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -2526,6 +2610,7 @@ template&lt;unsigned long ScatterPoint, unsigned long... Index, typename View , 
     <tr><td class="paramname">View</td><td>the field view type </td></tr>
     <tr><td class="paramname">T</td><td>the field data type </td></tr>
     <tr><td class="paramname">IndexType</td><td>the index type for accessing the field (default size_t) </td></tr>
+    <tr><td class="paramname">Val</td><td>the type of the value to interpolate to the grid </td></tr>
   </table>
   </dd>
 </dl>

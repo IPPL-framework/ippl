@@ -218,6 +218,8 @@ This graph shows which files directly or indirectly include this file:</div>
 Namespaces</h2></td></tr>
 <tr class="memitem:namespaceippl"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl.html">ippl</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceippl_1_1detail"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html">ippl::detail</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
@@ -226,6 +228,12 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a7d5c0438c017aa9ca7df25eba799d3d3"><td class="memTemplParams" colspan="2">template&lt;bool UseHashView, typename HashView &gt; </td></tr>
+<tr class="memitem:a7d5c0438c017aa9ca7df25eba799d3d3"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION size_t&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a7d5c0438c017aa9ca7df25eba799d3d3">ippl::detail::scatterMappedIndex</a> (const size_t idx, const HashView &amp;hashView)</td></tr>
+<tr class="separator:a7d5c0438c017aa9ca7df25eba799d3d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89d90c08472c0fead43deaaddcdeb6c2"><td class="memTemplParams" colspan="2">template&lt;bool UseHashView, typename <a class="el" href="datatypes_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a> , typename ValuesView , typename PositionAttrib , typename policy_type , typename HashView &gt; </td></tr>
+<tr class="memitem:a89d90c08472c0fead43deaaddcdeb6c2"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl_1_1detail.html#a89d90c08472c0fead43deaaddcdeb6c2">ippl::detail::particleAttribScatterImpl</a> (<a class="el" href="datatypes_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a> &amp;f, const ValuesView &amp;dview, const PositionAttrib &amp;pp, policy_type iteration_policy, HashView hash_array)</td></tr>
+<tr class="separator:a89d90c08472c0fead43deaaddcdeb6c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4b695c957670e518d5d77db5d296198"><td class="memTemplParams" colspan="2">template&lt;typename Attrib1 , typename <a class="el" href="datatypes_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a> , typename Attrib2 , typename policy_type  = Kokkos::RangePolicy&lt;typename Field::execution_space&gt;&gt; </td></tr>
 <tr class="memitem:ae4b695c957670e518d5d77db5d296198"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceippl.html#ae4b695c957670e518d5d77db5d296198">ippl::scatter</a> (const Attrib1 &amp;attrib, <a class="el" href="datatypes_8h.html#ac96462ba5ddf81f7b4bded4078509ff5">Field</a> &amp;f, const Attrib2 &amp;pp)</td></tr>
 <tr class="memdesc:ae4b695c957670e518d5d77db5d296198"><td class="mdescLeft">&#160;</td><td class="mdescRight">Non-class interface for scattering particle attribute data onto a field.  <a href="namespaceippl.html#ae4b695c957670e518d5d77db5d296198">More...</a><br /></td></tr>
