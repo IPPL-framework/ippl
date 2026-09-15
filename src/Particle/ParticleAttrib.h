@@ -271,6 +271,17 @@ namespace ippl {
          */
         void internalCopy(const hash_type& indices) override;
 
+        #ifdef IPPL_ENABLE_CATALYST
+            void signConduitBlueprintNode(
+                              const size_type Np_local
+                            , conduit_cpp::Node& node_fields
+                            , ViewRegistry& viewRegistry
+                            , Inform& ca_m
+                            , Inform& ca_warn
+                            , const bool forceHostCopy
+                        ) const override ;       
+        #endif
+
     private:
         view_type dview_m{"ParticleAttrib::dview", 0};
         view_type buf_m{"ParticleAttrib::buf", 0};

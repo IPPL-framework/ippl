@@ -36,6 +36,7 @@ variables:
       -DBUILD_TYPE=$BUILD_TYPE
       -DBUILD_DIR=$BUILD_PATH
       -DBUILD_ARCH=$BUILD_ARCH
+      -DENABLE_COVERAGE=$ENABLE_COVERAGE
       -DIPPL_PLATFORMS=OPENMP
       -DIPPL_OPENMP_THREADS=32
       -DKokkos_VERSION=git.5.2.0
@@ -61,6 +62,106 @@ ippl-build-openmp-debug:
   variables:
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug"
     BUILD_TYPE: Debug
+    ENABLE_COVERAGE: "OFF"
+
+# ---------------------------------------------------------
+# openmp build + test debug with coverage
+# This job builds and tests in the same workspace so that gcov's recorded
+# absolute source/build paths stay valid.  The tests run in the job shell
+# (each test launches itself via srun with the uenv), while the coverage
+# collection runs in a separate uenv srun step because the gcov matching
+# the build compiler is only visible inside such a step.  It is allowed to
+# fail so that the coverage run does not block the normal test gates.
+# ---------------------------------------------------------
+ippl-build-test-openmp-debug-coverage:
+  stage: ippl_build
+  extends: [.baremetal-runner-eiger-zen2]
+  allow_failure: true
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
+    SLURM_CPUS_PER_TASK: 64
+    SLURM_TIMELIMIT: "0:45:00"
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug-coverage"
+    BUILD_TYPE: Debug
+    TEST_INFO: "1-rank-coverage"
+    ENABLE_COVERAGE: "ON"
+  before_script:
+    - !reference [.pr-number-extractor, before_script]
+    - export BUILD_PATH=$(pwd)/$BUILD_DIR
+    - pwd
+    - env | sort | grep CI
+    - export CC=gcc
+    - export CXX=g++
+  script:
+    # Build inside a single uenv srun step.  This gives us the same environment
+    # as the normal uenv-runner build job without wrapping the whole script in
+    # srun, so the subsequent test launches can each use srun as usual.
+    - |
+      srun --uenv=${EIGER_UENV} --view=${WITH_UENV_VIEW} --repo=${SCRATCH}/.uenv-images-ci-eiger \
+        --ntasks=1 --cpus-per-task=64 \
+        bash -c "
+          export CC=gcc CXX=g++
+          ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-configure-build.cmake \
+            -DCTEST_SITE=\"$CTEST_SITE\" \
+            -DPRESET=release-testing \
+            -DCDASH_LABEL=$CDASH_LABEL \
+            -DBUILD_TYPE=$BUILD_TYPE \
+            -DBUILD_DIR=$BUILD_PATH \
+            -DBUILD_ARCH=$BUILD_ARCH \
+            -DENABLE_COVERAGE=$ENABLE_COVERAGE \
+            -DTEST_INFO=$TEST_INFO \
+            -DIPPL_PLATFORMS=OPENMP \
+            -DIPPL_OPENMP_THREADS=32 \
+            -DKokkos_VERSION=git.5.2.0 \
+            -DKokkos_ARCH_FLAG=Kokkos_ARCH_AMD_GFX942_APU \
+            -DMPIEXEC_EXECUTABLE=/usr/bin/srun \
+            -DMPIEXEC_PREFLAGS=\"$SRUN_FLAGS\" \
+            -DMPIEXEC_MAX_NUMPROCS=4 && \
+          command -v gcov > $BUILD_PATH/gcov.path && \
+          echo \"gcov path saved: \$(cat $BUILD_PATH/gcov.path)\"
+        "
+    - echo "Build directory size (before cleanup):" $(du -sh $BUILD_PATH | cut -f1)
+    - find $BUILD_PATH -name \*.o -delete
+    - find $BUILD_PATH/bin -type f -exec strip {} +
+    - find $BUILD_PATH/lib -type f -exec strip {} +
+    - echo "Build directory size (cleaned):" $(du -sh $BUILD_PATH | cut -f1)
+    # run tests in the job shell; coverage is NOT collected here because the uenv
+    # (and its matching gcov) is only mounted inside srun --uenv steps - a job-shell
+    # gcov has a different gcc version and silently reports 0% coverage.
+    # Test failures are tolerated here so that coverage is still collected below.
+    - export LD_LIBRARY_PATH=$BUILD_PATH/lib:$LD_LIBRARY_PATH
+    - export CTEST_BUILD_NAME="${CDASH_LABEL}-${BUILD_ARCH}-${BUILD_TYPE}-${TEST_INFO}"
+    - if [[ -f $BUILD_PATH/gcov.path ]]; then export GCOV_COMMAND=$(cat $BUILD_PATH/gcov.path); echo "Using uenv gcov $GCOV_COMMAND"; fi
+    - export TEST_RESULT=0
+    - >-
+      ctest -V --output-on-failure --timeout 60 -E known_fail -S $CI_PROJECT_DIR/ci/cscs/dashboard-test.cmake
+      -DCTEST_SITE="$CTEST_SITE"
+      -DCTEST_BUILD_NAME="$CTEST_BUILD_NAME"
+      -DCDASH_LABEL=$CDASH_LABEL
+      -DBUILD_TYPE=$BUILD_TYPE
+      -DBUILD_DIR=$BUILD_PATH
+      -DBUILD_ARCH=$BUILD_ARCH
+      || TEST_RESULT=1
+    # collect coverage inside a uenv srun step so that the gcov matching the build
+    # compiler (from the uenv) is used; it appends Coverage.xml to the same CDash entry
+    - |
+      srun --uenv=${EIGER_UENV} --view=${WITH_UENV_VIEW} --repo=${SCRATCH}/.uenv-images-ci-eiger \
+        --ntasks=1 --cpus-per-task=64 \
+        bash -c "
+          ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-coverage.cmake \
+            -DCTEST_SITE=\"$CTEST_SITE\" \
+            -DCTEST_BUILD_NAME=\"$CTEST_BUILD_NAME\" \
+            -DCDASH_LABEL=$CDASH_LABEL \
+            -DBUILD_TYPE=$BUILD_TYPE \
+            -DBUILD_DIR=$BUILD_PATH \
+            -DGCOV_COMMAND=$GCOV_COMMAND
+        "
+    - if [[ "$TEST_RESULT" != "0" ]]; then exit 1; fi
+  artifacts:
+    paths:
+      - $BUILD_DIR
+    expire_in: 1 day
 
 # ---------------------------------------------------------
 # openmp build release

@@ -9,7 +9,7 @@
 #ifndef IPPL_EVALFUNCTOR_H
 #define IPPL_EVALFUNCTOR_H
 
-#include "FEM/FEMQuadratureData.h"
+#include "FEM/RefShapeFunctionData.h"
 
 namespace ippl {
     template <typename Tlhs, unsigned Dim, unsigned numElemDOFs>
@@ -23,7 +23,7 @@ namespace ippl {
 
         KOKKOS_FUNCTION auto operator()(
             const size_t& i, const size_t& j,
-            const QuadratureData<Tlhs, Vector<Tlhs, Dim>, numElemDOFs>& qd) const {
+            const RefShapeFunctionData<Tlhs, Vector<Tlhs, Dim>, numElemDOFs>& qd) const {
             return dot((DPhiInvT * qd.deriv_q[j]), (DPhiInvT * qd.deriv_q[i])).apply() * absDetDPhi;
         }
     };

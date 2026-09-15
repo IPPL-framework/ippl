@@ -90,6 +90,7 @@ add_subdirectory(Utility)
 add_subdirectory(Expression)
 add_subdirectory(Types)
 add_subdirectory(Partition)
+add_subdirectory(Nodes1D)
 add_subdirectory(FEM)
 add_subdirectory(Random)
 
@@ -100,9 +101,23 @@ if(IPPL_ENABLE_SOLVERS)
   add_subdirectory(LinearSolvers)
 endif()
 
+
+message (STATUS "Adding Stream subdirectory")
+add_subdirectory (Stream)
+
+if(IPPL_ENABLE_CATALYST)
+  include(${PROJECT_SOURCE_DIR}/cmake/SetupCatalyst.cmake)
+endif()
+
+
 include(${PROJECT_SOURCE_DIR}/cmake/PlatformOptions.cmake)
 
 target_link_libraries(ippl PUBLIC Kokkos::kokkos MPI::MPI_CXX)
+
+if(IPPL_ENABLE_KOKKOS_KERNELS)
+  target_link_libraries(ippl PUBLIC Kokkos::kokkoskernels)
+  target_compile_definitions(ippl PUBLIC IPPL_ENABLE_KOKKOS_KERNELS ${IPPL_HOST_LAPACK_DEFINITIONS})
+endif()
 
 if(IPPL_ENABLE_FFT)
   target_link_libraries(ippl PUBLIC Heffte::Heffte)

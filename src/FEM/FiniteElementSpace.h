@@ -31,7 +31,7 @@ namespace ippl {
      * @tparam Dim The dimension of the mesh (same dimension as the space)
      * @tparam NumElementDOFs The number of degrees of freedom per element
      * @tparam QuadratureType The type of the quadrature rule (e.g. MidpointQuadrature,
-     * GaussJacobiQuadrature)
+     * GaussLegendreQuadrature, GaussLobattoQuadrature)
      * @tparam FieldLHS The type of the left hand side field
      * @tparam FieldRHS The type of the right hand side field (can be the same as FieldLHS)
      */

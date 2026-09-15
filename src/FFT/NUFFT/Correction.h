@@ -28,7 +28,7 @@
 #include "Utility/ParallelDispatch.h"
 
 #include "FFT/NUFFT/ESKernel.h"
-#include "FFT/NUFFT/NUFFTUtilities.h"
+#include "Nodes1D/GaussLegendre1D.h"
 
 namespace ippl {
     namespace nufft {
@@ -69,7 +69,7 @@ namespace ippl {
             auto nodes      = Kokkos::View<RealType*, typename ExecSpace::memory_space>("nodes", q);
             auto weights = Kokkos::View<RealType*, typename ExecSpace::memory_space>("weights", q);
 
-            gauss_legendre<ExecSpace>(q, nodes, weights);
+            ippl::nodes1d::computeGaussLegendre<ExecSpace>(nodes, weights);
 
             const RealType alpha = Kokkos::numbers::pi_v<RealType> * kernel.width() / n_grid;
             const RealType beta  = kernel.beta();

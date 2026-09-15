@@ -3,9 +3,10 @@ Unit tests and Integration tests will be performed for each PR made to IPPL on A
 
 Clicking on the Tick/Cross will take you to the pipeline information page where you can drill down to see individual stages/steps
 * what stages/steps exist (and dependencies), currently there are
-  * Debug 
-    * Build all tests in debug mode to ensure all compilation succeeds 
+  * Debug
+    * Build all tests in debug mode to ensure all compilation succeeds
     * 1 rank run of unit tests (excluding known fails)
+    * On OpenMP/Eiger, the 1 rank debug run also collects code coverage and submits it to CDash
   * Release
     * Build all tests in release mode to ensure all compilation succeeds 
     * 1 rank run of unit tests (excluding known fails)
