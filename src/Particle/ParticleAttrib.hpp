@@ -16,7 +16,6 @@
 #include "Ippl.h"
 
 #include <Kokkos_MathematicalConstants.hpp>
-
 #include <cmath>
 #include <utility>
 
@@ -32,6 +31,72 @@
 #include "Particle/SortBuffer.h"
 
 namespace ippl {
+    namespace detail {
+        template <bool UseHashView, typename HashView>
+        KOKKOS_INLINE_FUNCTION size_t scatterMappedIndex(const size_t idx,
+                                                         const HashView& hashView) {
+            if constexpr (UseHashView) {
+                return static_cast<size_t>(hashView(idx));
+            } else {
+                (void)hashView;
+                return idx;
+            }
+        }
+
+        template <bool UseHashView, typename Field, typename ValuesView, typename PositionAttrib,
+                  typename policy_type, typename HashView>
+        void particleAttribScatterImpl(Field& f, const ValuesView& dview, const PositionAttrib& pp,
+                                       policy_type iteration_policy, HashView hash_array) {
+            constexpr unsigned Dim = Field::dim;
+            using PositionType     = typename Field::Mesh_t::value_type;
+
+            static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
+            IpplTimings::startTimer(scatterTimer);
+            using view_type = typename Field::view_type;
+            view_type view  = f.getView();
+
+            using mesh_type       = typename Field::Mesh_t;
+            const mesh_type& mesh = f.get_mesh();
+
+            using vector_type = typename mesh_type::vector_type;
+            using value_type  = typename ValuesView::non_const_value_type;
+
+            const vector_type& dx     = mesh.getMeshSpacing();
+            const vector_type& origin = mesh.getOrigin();
+            const vector_type invdx   = 1.0 / dx;
+
+            const FieldLayout<Dim>& layout = f.getLayout();
+            const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
+            const int nghost               = f.getNghost();
+
+            auto ppview   = pp.getView();
+            auto hashView = hash_array;
+            Kokkos::parallel_for(
+                "ParticleAttrib::scatter", iteration_policy, KOKKOS_LAMBDA(const size_t idx) {
+                    // map index to possible hash_map
+                    const size_t mapped_idx =
+                        detail::scatterMappedIndex<UseHashView>(idx, hashView);
+
+                    vector_type l                 = (ppview(mapped_idx) - origin) * invdx + 0.5;
+                    Vector<int, Field::dim> index = l;
+                    Vector<PositionType, Field::dim> whi = l - index;
+                    Vector<PositionType, Field::dim> wlo = 1.0 - whi;
+
+                    Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
+
+                    const value_type& val = dview(mapped_idx);
+                    detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo,
+                                           whi, args, val);
+                });
+            IpplTimings::stopTimer(scatterTimer);
+
+            static IpplTimings::TimerRef accumulateHaloTimer =
+                IpplTimings::getTimer("accumulateHalo");
+            IpplTimings::startTimer(accumulateHaloTimer);
+            f.accumulateHalo();
+            IpplTimings::stopTimer(accumulateHaloTimer);
+        }
+    }  // namespace detail
 
     template <typename T, class... Properties>
     void ParticleAttrib<T, Properties...>::create(size_type n, bool non_destructive) {
@@ -134,29 +199,6 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::scatter(
         Field& f, const ParticleAttrib<Vector<PT, Field::dim>, Properties...>& pp,
         policy_type iteration_policy, hash_type hash_array) const {
-        constexpr unsigned Dim = Field::dim;
-        using PositionType     = typename Field::Mesh_t::value_type;
-
-        static IpplTimings::TimerRef scatterTimer = IpplTimings::getTimer("scatter");
-        IpplTimings::startTimer(scatterTimer);
-        using view_type = typename Field::view_type;
-        view_type view  = f.getView();
-
-        using mesh_type       = typename Field::Mesh_t;
-        const mesh_type& mesh = f.get_mesh();
-
-        using vector_type = typename mesh_type::vector_type;
-        using value_type  = typename ParticleAttrib<T, Properties...>::value_type;
-
-        const vector_type& dx     = mesh.getMeshSpacing();
-        const vector_type& origin = mesh.getOrigin();
-        const vector_type invdx   = 1.0 / dx;
-
-        const FieldLayout<Dim>& layout = f.getLayout();
-        const NDIndex<Dim>& lDom       = layout.getLocalNDIndex();
-        const int nghost               = f.getNghost();
-
-        // using policy_type = Kokkos::RangePolicy<execution_space>;
         const bool useHashView = hash_array.extent(0) > 0;
         if (useHashView && std::cmp_greater(iteration_policy.end(), hash_array.extent(0))) {
             Inform m("scatter");
@@ -164,30 +206,12 @@ namespace ippl {
               << endl;
             ippl::Comm->abort();
         }
-        auto dview  = dview_m;
-        auto ppview = pp.getView();
-        Kokkos::parallel_for(
-            "ParticleAttrib::scatter", iteration_policy, KOKKOS_LAMBDA(const size_t idx) {
-                // map index to possible hash_map
-                size_t mapped_idx = useHashView ? hash_array(idx) : idx;
 
-                vector_type l                        = (ppview(mapped_idx) - origin) * invdx + 0.5;
-                Vector<int, Field::dim> index        = l;
-                Vector<PositionType, Field::dim> whi = l - index;
-                Vector<PositionType, Field::dim> wlo = 1.0 - whi;
-
-                Vector<size_t, Field::dim> args = index - lDom.first() + nghost;
-
-                const value_type& val = dview(mapped_idx);
-                detail::scatterToField(std::make_index_sequence<1 << Field::dim>{}, view, wlo, whi,
-                                       args, val);
-            });
-        IpplTimings::stopTimer(scatterTimer);
-
-        static IpplTimings::TimerRef accumulateHaloTimer = IpplTimings::getTimer("accumulateHalo");
-        IpplTimings::startTimer(accumulateHaloTimer);
-        f.accumulateHalo();
-        IpplTimings::stopTimer(accumulateHaloTimer);
+        if (useHashView) {
+            detail::particleAttribScatterImpl<true>(f, dview_m, pp, iteration_policy, hash_array);
+        } else {
+            detail::particleAttribScatterImpl<false>(f, dview_m, pp, iteration_policy, hash_array);
+        }
     }
 
     template <typename T, class... Properties>
@@ -411,8 +435,7 @@ namespace ippl {
         Field<FT, Dim, M, C>& f, Field<ST, Dim, M, C>& Sk,
         const ParticleAttrib<Vector<PT, Dim>, Properties...>& pp,
         FFT<NUFFTransform, Field<ST, Dim, M, C>>* nufft, ParticleAttrib<PT, Properties...>& q) {
-        static IpplTimings::TimerRef gatherPIFNUFFTTimer =
-            IpplTimings::getTimer("GatherPIFNUFFT");
+        static IpplTimings::TimerRef gatherPIFNUFFTTimer = IpplTimings::getTimer("GatherPIFNUFFT");
         IpplTimings::startTimer(gatherPIFNUFFTTimer);
 
         typename Field<FT, Dim, M, C>::uniform_type tempField;
@@ -453,8 +476,7 @@ namespace ippl {
                 "Gather NUFFT",
                 mdrange_type(
                     {nghost, nghost, nghost},
-                    {fview.extent(0) - nghost, fview.extent(1) - nghost,
-                     fview.extent(2) - nghost}),
+                    {fview.extent(0) - nghost, fview.extent(1) - nghost, fview.extent(2) - nghost}),
                 KOKKOS_LAMBDA(const int i, const int j, const int k) {
                     Vector<int, 3> iVec = {i, j, k};
                     for (unsigned d = 0; d < Dim; ++d) {
@@ -530,5 +552,113 @@ namespace ippl {
     DefineParticleReduction(Max, max, if (myVal > valL) valL = myVal, std::greater)
     DefineParticleReduction(Min, min, if (myVal < valL) valL = myVal, std::less)
     DefineParticleReduction(Prod, prod, valL *= myVal, std::multiplies)
+
+
+    #ifdef IPPL_ENABLE_CATALYST
+
+    namespace detail {
+        /// Helper to map a pointer to a Conduit-bitwidth-compatible pointer type.
+        /// The Catalyst Conduit C++ wrapper exposes set_external() overloads for
+        /// C-native and Conduit bitwidth types, but not for long long on platforms
+        /// where Conduit's int64 is implemented as long.  Reinterpreting to the
+        /// matching bitwidth type is safe because the sizes and alignments match.
+        template <typename T>
+        auto conduitCompatiblePtr(T* ptr) {
+            if constexpr (std::is_same_v<T, long long>) {
+                static_assert(sizeof(T) == sizeof(conduit_int64),
+                              "long long size must match conduit_int64");
+                static_assert(alignof(T) == alignof(conduit_int64),
+                              "long long alignment must match conduit_int64");
+                return reinterpret_cast<conduit_int64*>(ptr);
+            } else if constexpr (std::is_same_v<T, unsigned long long>) {
+                static_assert(sizeof(T) == sizeof(conduit_uint64),
+                              "unsigned long long size must match conduit_uint64");
+                static_assert(alignof(T) == alignof(conduit_uint64),
+                              "unsigned long long alignment must match conduit_uint64");
+                return reinterpret_cast<conduit_uint64*>(ptr);
+            } else {
+                return ptr;
+            }
+        }
+    } // namespace detail
+
+    //////////////////////////////////////////////////////////////////////////////////////
+    // Note:
+    // In general, for runtime performance, neither function overloading nor if 
+    // constexpr has an inherent advantage when used correctly for compile-time 
+    // dispatch. .
+    // Function overloading with template parameter extraction or constraints or sfinae 
+    // are all hard to implement in this case, so we switched to if const expr.
+    //////////////////////////////////////////////////////////////////////////////////////
+    template <typename T, class... Properties>
+    void ParticleAttrib<T, Properties...>::signConduitBlueprintNode(
+        const size_type Np_local, 
+        conduit_cpp::Node& node_fields, 
+        ViewRegistry& viewRegistry,
+        Inform& ca_m,
+        Inform& ca_warn,
+        const bool forceHostCopy
+    )  const 
+    {
+        host_mirror_type  hostMirror;
+        if(forceHostCopy){
+            hostMirror  = this->getHostMirror();
+            Kokkos::deep_copy(hostMirror ,  this->getView());
+        } else{
+            hostMirror =   Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), this->getView());
+        }
+        auto field = node_fields[this->name_m];
+        field["association"].set_string("vertex");
+        field["topology"].set_string("p_unstructured_topo");
+        field["volume_dependent"].set_string("false");
+    
+    
+        if constexpr (std::is_scalar_v<T>) {
+            // --- SCALAR CASE ---
+          ca_m << level4 <<"::Execute()excute_entry() for attribute: "<<this->name_m << '\n'
+                << "                          call to:\n"
+                << "                          ParticleAttribute<"  << typeid(T).name()  << ">::signConduitBlueprintNode()" << endl;
+            
+            field["values"].set_external(detail::conduitCompatiblePtr(hostMirror.data()), Np_local);
+
+
+        } else if constexpr (is_vector_v<T>) {
+            // --- VECTOR CASE ---
+          ca_m << level4 <<"::Execute()excute_entry() for attribute: "<<this->name_m << '\n'
+                << "                          call to:\n"
+                << "                          ParticleAttribute<ippl::vector<" << typeid(typename T::value_type).name()<<","<<T::dim<<">>::signConduitBlueprintNode()" << endl;
+
+                
+            using elem_t = std::remove_pointer_t<decltype(hostMirror.data())>;
+            const size_t stride_bytes = sizeof(elem_t);
+            // static constexpr size_t stride_bytes = sizeof(elem_t);
+
+            if(Np_local>0){
+                                field["values/x"].set_external(detail::conduitCompatiblePtr(&hostMirror.data()[0][0]), Np_local, 0 , stride_bytes );
+                            if constexpr (T::dim>=2){
+                                field["values/y"].set_external(detail::conduitCompatiblePtr(&hostMirror.data()[0][1]), Np_local, 0 ,  stride_bytes );
+                            }
+                            if constexpr (T::dim>=3) {
+                                field["values/z"].set_external(detail::conduitCompatiblePtr(&hostMirror.data()[0][2]), Np_local, 0 ,  stride_bytes  );
+                            }
+            }else /* (Np_local=0) */ {
+                // If Np_local is 0. We MUST provide valid, empty arrays for the gather to work.
+                using component_type = typename T::value_type;
+                                         field["values/x"].set_external(detail::conduitCompatiblePtr(static_cast<component_type*>(nullptr)), 0);
+                if constexpr (T::dim>=2) field["values/y"].set_external(detail::conduitCompatiblePtr(static_cast<component_type*>(nullptr)), 0);
+                if constexpr (T::dim>=3) field["values/z"].set_external(detail::conduitCompatiblePtr(static_cast<component_type*>(nullptr)), 0);
+            }
+        } else {
+            // --- INVALID CASE ---
+            ca_warn << "::Execute()excute_entry() for attribute:"<<this->name_m << endl
+                    << "                          call to:"  << endl
+                    << "                          ParticleAttribute<"  << typeid(T).name()  << ">::signConduitBlueprintNode()" << endl
+                    << "                          For this type of Attribute the Conduit Blueprint description wasnt \n" 
+                    << "                          implemented in ippl. Therefore this type of attribute is not \n"
+                    << "                          supported for visualisation." << endl;
+        }
+        viewRegistry.set(hostMirror);
+    }
+    #endif
 
 }  // namespace ippl

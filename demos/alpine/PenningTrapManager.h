@@ -15,6 +15,10 @@
 #include "Random/NormalDistribution.h"
 #include "Random/Randn.h"
 
+#ifdef IPPL_ENABLE_CATALYST
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
+
 using view_type = typename ippl::detail::ViewType<ippl::Vector<double, Dim>, 1>::view_type;
 
 template <typename T, unsigned Dim>
@@ -44,6 +48,13 @@ private:
     double dxFinest_m;
     double alpha_m;
     double DrInv_m;
+
+
+    
+    #ifdef IPPL_ENABLE_CATALYST
+    public:
+    ippl::CatalystAdaptor cat_viz{std::string{TestName}};
+    #endif
 
 public:
     void pre_run() override {
@@ -123,6 +134,24 @@ public:
         IpplTimings::stopTimer(SolveTimer);
 
         this->grid2par();
+
+        #ifdef IPPL_ENABLE_CATALYST
+            m << "Catalyst is enabled" << endl; 
+            
+            std::shared_ptr<ippl::VisRegistryRuntime>  runtime_steer_registry = ippl::MakeVisRegistryRuntimePtr();
+            std::shared_ptr<ippl::VisRegistryRuntime> runtime_vis_registry   = ippl::MakeVisRegistryRuntimePtr(
+                "density",          this->fcontainer_m->getRho(),
+                "ions",             this->pcontainer_m
+            );
+            // runtime_vis_registry->add("potential",        this->fcontainer_m->getRho() );
+            runtime_vis_registry->add("electrostatic",    this->fcontainer_m->getE() );
+
+            static IpplTimings::TimerRef CAinit = IpplTimings::getTimer("CAinit");
+            IpplTimings::startTimer(CAinit);
+            cat_viz.Initialize(runtime_vis_registry, runtime_steer_registry);
+            IpplTimings::stopTimer(CAinit);
+
+        #endif
 
         this->dump();
 
@@ -239,6 +268,11 @@ public:
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
         static IpplTimings::TimerRef SolveTimer          = IpplTimings::getTimer("solve");
 
+        #ifdef IPPL_ENABLE_CATALYST
+        static IpplTimings::TimerRef TMR_CAremember   = IpplTimings::getTimer("CAremember");
+        static IpplTimings::TimerRef TMR_CAexecute    = IpplTimings::getTimer("CAexecute");
+        #endif
+
         double alpha                            = this->alpha_m;
         double Bext                             = this->Bext_m;
         double DrInv                            = this->DrInv_m;
@@ -298,6 +332,13 @@ public:
         // scatter the charge onto the underlying grid
         this->par2grid();
 
+        // Save deep copy of the density field (for later).
+        #ifdef IPPL_ENABLE_CATALYST
+            IpplTimings::startTimer(TMR_CAremember);
+            cat_viz.rememberNow("density");
+            IpplTimings::stopTimer(TMR_CAremember);
+        #endif
+
         // Field solve
         IpplTimings::startTimer(SolveTimer);
         this->fsolver_m->runSolver();
@@ -305,6 +346,13 @@ public:
 
         // gather E field
         this->grid2par();
+
+        //trigger In Situ pipeline
+        #ifdef IPPL_ENABLE_CATALYST
+                IpplTimings::startTimer(TMR_CAexecute);
+                cat_viz.Execute(it, this->time_m);
+                IpplTimings::stopTimer(TMR_CAexecute); 
+        #endif
 
         IpplTimings::startTimer(PTimer);
         auto R2view = pc->R.getView();

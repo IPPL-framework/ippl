@@ -172,3 +172,165 @@ target_link_libraries(app PRIVATE ippl::ippl)
 ```
 
 
+
+## Kokkos Kernels and host eigenanalysis
+
+`IPPL_ENABLE_KOKKOS_KERNELS` defaults to `OFF`. Set it to `ON` to enable this
+support. IPPL first finds an installed Kokkos Kernels package (default minimum
+version 5.2.0), then falls back to FetchContent.
+`KokkosKernels_VERSION=git.<tag-or-sha>` requests a source build. The package uses
+the Kokkos target already selected by IPPL. An external package must have been
+built against a compatible Kokkos with the required backends.
+
+The following CMake cache variables control this support:
+
+- `IPPL_ENABLE_KOKKOS_KERNELS` (`OFF`): enable Kokkos Kernels and its IPPL unit
+  test. The remaining variables in this list are used only when this is `ON`.
+- `KokkosKernels_VERSION` (`5.2.0`): required package version. Prefix the value
+  with `git.` to request a specific source tag, branch, or commit.
+- `IPPL_KOKKOS_KERNELS_HOST` (`LAPACKE`): select `LAPACKE`, `MKL`, or `NONE` for
+  host eigenanalysis.
+- `IPPL_LAPACK_INTEGER_BYTES` (`4`): select the 4-byte LP64 or 8-byte ILP64
+  integer interface.
+- `IPPL_FETCH_LAPACKE` (`ON`): build reference LAPACK and LAPACKE when the
+  `LAPACKE` provider cannot be found.
+- `IPPL_LAPACKE_BUILD_JOBS` (`4`): parallel jobs for the reference LAPACK build.
+  This cache entry is created only when the fallback is needed.
+- `IPPL_LAPACKE_TOOLCHAIN_FILE` (empty): C/Fortran toolchain used by the fallback,
+  required when cross-compiling. This entry is also created only when needed.
+
+Installed dependencies can be selected with `KokkosKernels_DIR`, `LAPACKE_ROOT`,
+`LAPACKE_INCLUDE_DIRS`, `LAPACKE_LIBRARY_DIRS`, `LAPACKE_LIBRARIES`, or `MKL_DIR`.
+`LAPACKE_LIBRARIES` is a semicolon-separated complete link line and may contain
+absolute paths, library names, imported targets, and linker items such as `-lm`.
+The standard FetchContent overrides `FETCHCONTENT_SOURCE_DIR_KOKKOSKERNELS` and
+`FETCHCONTENT_SOURCE_DIR_IPPL_REFERENCE_LAPACK` support offline source trees.
+Set `CMAKE_Fortran_COMPILER` or the `FC` environment variable to choose the
+fallback Fortran compiler; use `CC` to choose its C compiler.
+
+The minimum opt-in configuration is:
+
+```console
+cmake -S . -B build -DIPPL_ENABLE_KOKKOS_KERNELS=ON
+```
+
+CUDA and HIP BLAS, sparse, and solver TPLs are selected automatically from
+`IPPL_PLATFORMS`; they do not require additional IPPL cache variables.
+
+Host eigenanalysis is selected independently of `IPPL_PLATFORMS`:
+
+- `IPPL_KOKKOS_KERNELS_HOST=LAPACKE` (default): provide LAPACKE headers and a
+  complete LAPACKE/LAPACK/BLAS link line. Set `LAPACKE_ROOT`, or
+  `LAPACKE_INCLUDE_DIRS` and `LAPACKE_LIBRARIES`. Static link lines must include
+  transitive dependencies, such as the Fortran runtime. Library names can be
+  resolved through `LAPACKE_LIBRARY_DIRS`; absolute paths are supported.
+- `IPPL_KOKKOS_KERNELS_HOST=MKL`: provide an MKL CMake package through
+  `CMAKE_PREFIX_PATH`/`MKL_DIR` (modern oneMKL).
+- `IPPL_KOKKOS_KERNELS_HOST=NONE`: use portable/GPU kernels without requesting
+  host eigenanalysis; only the GEMM regression is registered in the test binary.
+- `IPPL_ENABLE_KOKKOS_KERNELS=OFF` (default): omit the dependency and its tests entirely.
+
+Kokkos does not install these external libraries. If host LAPACKE is not found,
+IPPL now downloads reference LAPACK 3.12.1 (SHA256-verified) and builds its BLAS,
+LAPACK and LAPACKE libraries. The fallback requires host C and Fortran compilers;
+set `CMAKE_Fortran_COMPILER` or `FC` if automatic discovery cannot find gfortran.
+The host C compiler is selected independently via `CC` or the fallback toolchain.
+It supports LP64 and ILP64 through `IPPL_LAPACK_INTEGER_BYTES` and builds static
+position-independent libraries for use by shared or static IPPL.
+
+The first configure builds this dependency in an isolated host project under
+`_deps`, before the existing compile/link/runtime probes run. This can take a few
+minutes; subsequent configures reuse the build. CUDA/HIP compiler launchers and
+IPPL's directory flags are not applied to the host project. Its logs are in
+`_deps/ippl-host-lapack-<integer-bytes>-build/{configure,build,install}.log`.
+`IPPL_LAPACKE_BUILD_JOBS` controls build parallelism (default 4).
+For offline builds, point `FETCHCONTENT_SOURCE_DIR_IPPL_REFERENCE_LAPACK` at an
+already unpacked reference LAPACK 3.12.1 source tree.
+
+Set `IPPL_FETCH_LAPACKE=OFF` to require an installed provider. An explicit
+`LAPACKE_LIBRARIES` remains authoritative: missing headers or broken linkage
+produce errors instead of silently substituting a different provider. A Kernels
+package already built without its LAPACKE TPL still needs rebuilding; fetching
+LAPACKE cannot enable features in an installed Kernels library.
+
+For a cross build, supply `IPPL_LAPACKE_TOOLCHAIN_FILE` with a C/Fortran toolchain
+for the target CPU, or use an installed provider. Runtime checks remain deferred
+in cross builds. Fetched libraries, headers, license and the relocatable
+`IPPLHostLapack` CMake package are bundled with IPPL's installation; the compatible
+Fortran compiler runtime remains a system dependency.
+
+On macOS, an installed OpenBLAS build with LAPACKE or reference LAPACK can also be
+used. Apple's Accelerate alone does not supply this LAPACKE interface.
+Installation paths belong in site presets/toolchain files, not repository CMake.
+For example, source builds can use these preset cache entries:
+
+```json
+{
+  "IPPL_ENABLE_KOKKOS_KERNELS": "ON",
+  "IPPL_KOKKOS_KERNELS_HOST": "LAPACKE",
+  "LAPACKE_ROOT": "/site/path/to/lapacke",
+  "IPPL_LAPACK_INTEGER_BYTES": "4"
+}
+```
+
+Use headers and libraries from one compatible provider. Integer size defaults to
+4 bytes (LP64); 8 selects ILP64 and propagates `LAPACK_ILP64` or `MKL_ILP64` to IPPL
+consumers. For MKL source builds it also selects `MKL_INTERFACE`. Changing this
+option cannot convert an installed library to another ABI. Configure checks the
+header integer size, links an actual `LAPACKE_dgeev` call, and, for native builds,
+runs a small spectrum/status check. Cross builds defer runtime checks to tests.
+These checks are smoke tests, not a substitute for a consistent vendor build.
+Providers with renamed symbols (for example, `LAPACKE_dgeev64_`) need matching
+headers exposing the standard LAPACKE call; integer-size selection alone does
+not adapt symbol names. Incompatible installations are rejected by the link probe.
+
+CUDA source builds enable cuBLAS, cuSOLVER and cuSPARSE. HIP source builds enable
+rocBLAS, rocSOLVER and rocSPARSE (the sparse libraries are required by the solver
+TPL configuration). Supply `CUDAToolkit_ROOT` or ROCm's `CMAKE_PREFIX_PATH` in site
+presets. Host LAPACKE/MKL remains necessary when host eigenanalysis is requested.
+Installed Kernels configurations are inspected for the requested TPLs; changing
+cache options cannot add a missing TPL to an installed package. All link
+requirements propagate through `Kokkos::kokkoskernels` and `IPPL::ippl`.
+
+Source builds default to on-demand kernel instantiation rather than default ETI.
+`KokkosKernels_ADD_DEFAULT_ETI=ON` can enable upstream's preinstantiations.
+Supernodal SPTRSV defaults off because it requires LayoutLeft ETI; applications
+needing it should configure the required ETI and enable it explicitly.
+
+The `KokkosKernelsLinearMap` unit test constructs coupled 4x4 maps using GEMM in
+the default execution/memory space, explicitly copies results to host memory,
+and verifies analytical eigenvalues and normalized right-eigenvector residuals.
+It covers stable rotations, conjugate branches, coupled modes, real/complex
+instabilities, and near-integer/neutral modes. Eigenvalue/residual tolerance is
+1e-12 for small, well-conditioned double-precision maps; GEMM tolerance is 1e-14.
+No production physics algorithm or reduction ordering is changed.
+
+The test calls the configured host `LAPACKE_dgeev` directly with column-major
+Kokkos host views. Kokkos Kernels 5.2.0's experimental `SerialEigendecomposition`
+header contains an invalid Householder template call rejected by GCC 15 and
+Clang 21; its
+device implementation is unfinished and its host wrapper discards LAPACKE's
+status. IPPL does not patch upstream or suppress compiler diagnostics. This test
+therefore validates portable map construction and an explicit host eigenanalysis
+boundary, not a GPU eigensolver or the experimental wrapper.
+
+```sh
+cmake --build build_openmp --target KokkosKernelsLinearMap
+OMP_NUM_THREADS=2 ctest --test-dir build_openmp -R '^KokkosKernelsLinearMap$' --output-on-failure
+```
+
+Reference: [Kokkos Kernels 5.2.0 eigenanalysis implementation](https://github.com/kokkos/kokkos-kernels/blob/5.2.0/batched/dense/impl/KokkosBatched_Eigendecomposition_Serial_Internal.hpp).
+
+A standalone consumer test checks dependency propagation while linking only
+`IPPL::ippl`. Configure it against the IPPL build directory, then repeat with
+`IPPL_DIR=<install-prefix>/lib/cmake/ippl` after installation:
+
+```sh
+cmake -S cmake/tests/KokkosKernelsConsumer -B build/kernels-consumer -DIPPL_DIR="$PWD/build_openmp"
+cmake --build build/kernels-consumer
+OMP_NUM_THREADS=2 build/kernels-consumer/consumer
+```
+
+Use the same compiler/toolchain as the IPPL build. The CSCS dashboard script
+forwards the host-provider, fallback, compiler and dependency-path options above.
+Site images can supply LAPACKE or host C/Fortran compilers for the fallback.

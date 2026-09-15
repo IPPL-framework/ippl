@@ -2,6 +2,7 @@
 #define IPPL_FREE_ELECTRON_LASER_MANAGER_H
 
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <sstream>
@@ -16,9 +17,12 @@
 #include "LorentzTransform.h"
 #include "MithraBunch.h"
 #include "Undulator.h"
-#include "VideoWriter.h"
 #include "datatypes.h"
 #include "units.h"
+
+#ifdef IPPL_ENABLE_CATALYST
+#include "Stream/InSitu/CatalystAdaptor.h"
+#endif
 
 // FEL simulation manager.
 //
@@ -53,7 +57,7 @@ public:
         , frame_m(ippl::UniaxialLorentzframe<T, 2>::from_gamma(frame_gamma_m))
         , undulator_m(uparams_m, 2.0 * cfg.sigma_position[2] * frame_gamma_m * frame_gamma_m) {}
 
-    ~FreeElectronLaserManager() { video_m.close(); }
+    ~FreeElectronLaserManager() = default;
 
 protected:
     config m_config;
@@ -84,7 +88,6 @@ protected:
     ippl::undulator_parameters<T> uparams_m;    ///< Undulator parameters.
     ippl::UniaxialLorentzframe<T, 2> frame_m;   ///< Boost into the co-moving frame (z-axis).
     ippl::Undulator<T> undulator_m;             ///< Static undulator field model.
-    FELVideoWriter<T, Dim> video_m;             ///< Optional ffmpeg Poynting-flux video.
 
     // --- narrow-band (resonant) radiation power diagnostic state ---
     // MITHRA reports the FEL output power as a sliding-window single-frequency
@@ -98,6 +101,10 @@ protected:
     Kokkos::View<T****> rp_fdt_m;  ///< ring buffer [Nf][nx][ny][4] = (Ex,Ey,Bx,By)_lab
 
 public:
+#ifdef IPPL_ENABLE_CATALYST
+    ippl::CatalystAdaptor cat_viz{std::string{"FreeElectronLaser"}};
+#endif
+
     size_type getTotalP() const { return totalP_m; }
     void setTotalP(size_type totalP_) { totalP_m = totalP_; }
 
@@ -247,6 +254,22 @@ public:
     void pre_run() override {
         Inform m("Pre Run");
 
+        int outputDirectoryReady = 1;
+        if (ippl::Comm->rank() == 0) {
+            std::error_code error;
+            std::filesystem::create_directories(this->m_config.output_path, error);
+            if (error) {
+                outputDirectoryReady = 0;
+                m << "Unable to create output directory '" << this->m_config.output_path
+                  << "': " << error.message() << endl;
+            }
+        }
+        MPI_Bcast(&outputDirectoryReady, 1, MPI_INT, 0, ippl::Comm->getCommunicator());
+        if (!outputDirectoryReady) {
+            throw IpplException("FreeElectronLaserManager::pre_run",
+                                "Unable to create the configured output directory");
+        }
+
         // The longitudinal box and the simulated time are measured in the
         // co-moving frame: stretch z and shorten the time accordingly.
         this->m_config.extents[2] *= frame_gamma_m;
@@ -304,8 +327,15 @@ public:
 
         initializeParticles();
 
-        // Open the ffmpeg pipe (rank 0, only if periodic output was requested).
-        video_m.open(this->m_config);
+#ifdef IPPL_ENABLE_CATALYST
+        auto runtime_vis_registry = ippl::MakeVisRegistryRuntimePtr(
+            "Particles", this->pcontainer_m,
+            "EField",    this->fcontainer_m->getE(),
+            "Bfield",    this->fcontainer_m->getB()
+        );
+        auto runtime_steer_registry = ippl::MakeVisRegistryRuntimePtr();
+        cat_viz.Initialize(runtime_vis_registry, runtime_steer_registry);
+#endif
 
         this->dump();
 
@@ -354,6 +384,12 @@ public:
         // 2. Advance the electromagnetic field one FDTD step.
         this->solver_m->solve();
 
+#ifdef IPPL_ENABLE_CATALYST
+        // Execute immediately after the solver has recomputed E/B. The adaptor
+        // makes its host snapshots synchronously during this call.
+        cat_viz.Execute(this->it_m, this->time_m);
+#endif
+
         // 3. Push particles with the self-consistent field plus the undulator
         //    field transformed into the co-moving frame.
         auto und = undulator_m;
@@ -369,14 +405,6 @@ public:
         dumpRadiation();
         dumpRadiationBanded();
         dumpFELDiagnostics();
-
-        // Emit a video frame on the configured rhythm. writeFrame is collective,
-        // so every rank must reach it under the same condition.
-        if (this->m_config.output_rhythm != 0
-            && (this->it_m % (int)this->m_config.output_rhythm) == 0) {
-            video_m.writeFrame(this->it_m, *this->fcontainer_m, *this->pcontainer_m, frame_m,
-                               this->m_config, this->nr_m);
-        }
     }
 
     // Radiated power leaving the downstream end of the domain, transformed back

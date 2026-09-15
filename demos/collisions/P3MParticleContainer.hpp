@@ -51,10 +51,13 @@ private:
     void setBCAllPeriodic() { this->setParticleBC(ippl::BC::PERIODIC); }
 
     void registerAttributes() {
+        P.set_name("velocity");
+        E.set_name("electric_field");
+        Q.set_name("charge");
         // register the particle attributes
-        this->addAttribute(Q);
         this->addAttribute(P);
         this->addAttribute(E);
+        this->addAttribute(Q);
     }
 };
 

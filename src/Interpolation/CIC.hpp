@@ -1,5 +1,6 @@
 #include <Kokkos_Core.hpp>
 
+#include <type_traits>
 
 namespace ippl {
     namespace detail {
@@ -33,14 +34,18 @@ namespace ippl {
                                val * (interpolationWeight<ScatterPoint, Index>(wlo, whi) * ...));
         }
 
-        template <unsigned long... ScatterPoint, typename View, typename T, typename IndexType>
+        template <unsigned long... ScatterPoint, typename View, typename T, typename IndexType,
+                  typename Val>
         KOKKOS_INLINE_FUNCTION constexpr void scatterToField(
             const std::index_sequence<ScatterPoint...>&, const View& view,
             const Vector<T, View::rank>& wlo, const Vector<T, View::rank>& whi,
-            const Vector<IndexType, View::rank>& args, T val) {
+            const Vector<IndexType, View::rank>& args, Val val) {
             // The number of indices is equal to the view rank
+            using out_type =
+                std::remove_cv_t<std::remove_reference_t<typename View::non_const_value_type>>;
+            const out_type field_value = static_cast<out_type>(val);
             (scatterToPoint<ScatterPoint>(std::make_index_sequence<View::rank>{}, view, wlo, whi,
-                                          args, val),
+                                          args, field_value),
              ...);
         }
 
