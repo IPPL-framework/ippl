@@ -85,9 +85,9 @@ namespace ippl {
      */
     template <class PLayout, typename... IDProperties>
     class ParticleBase : public ParticleBaseBase {
+    public:
         constexpr static bool EnableIDs = sizeof...(IDProperties) > 0;
 
-    public:
         using vector_type            = typename PLayout::vector_type;
         using index_type             = typename PLayout::index_type;
         using particle_position_type = typename PLayout::particle_position_type;
@@ -200,6 +200,12 @@ namespace ippl {
             return attributes_m.template get<MemorySpace>()[i];
         }
 
+        /*! Const overload — needed when called on a const ParticleBase reference. */
+        template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space>
+        const attribute_type<MemorySpace>* getAttribute(size_t i) const {
+            return attributes_m.template get<MemorySpace>()[i];
+        }
+
         /*!
          * Calls a given function for all attributes in the bunch
          * @tparam MemorySpace the memory space of the attributes to visit (void to visit all of
@@ -243,6 +249,28 @@ namespace ippl {
                 total += attributes_m.template get<MemorySpace>().size();
             });
             return total;
+        }
+
+        /**
+         * @brief Return whether an attribute is one of ParticleBase's built-in attributes.
+         *
+         * Attribute lists are partitioned by memory space, so their iteration order cannot be
+         * used to identify the built-in position and ID attributes reliably.
+         */
+        template <typename MemorySpace>
+        bool isBuiltinAttribute(const detail::ParticleAttribBase<MemorySpace>* attribute) const {
+            if (attribute == nullptr) {
+                return false;
+            }
+
+            const void* candidate = dynamic_cast<const void*>(attribute);
+            if (candidate == static_cast<const void*>(&R)) {
+                return true;
+            }
+            if constexpr (EnableIDs) {
+                return candidate == static_cast<const void*>(&ID);
+            }
+            return false;
         }
 
         /*!

@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 # CMake version requirement
 # ------------------------------------------------------------------------------
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.26)
 
 # ------------------------------------------------------------------------------
 # Policies - use the latest of everything
@@ -59,6 +59,10 @@ option(IPPL_MARK_FAILING_TESTS
        OFF)
 option(IPPL_ENABLE_SCRIPTS "Generate job script templates for some benchmarks/tests" OFF)
 
+
+option(IPPL_ENABLE_CATALYST "Enable ParaView Catalyst" OFF)
+set(Catalyst_DIR "" CACHE PATH "Catalyst cmake package directory or install prefix (catalyst_DIR and CATALYST_DIR also accepted)")
+set(Catalyst_VERSION "" CACHE STRING "Catalyst version or git.<tag/branch/sha> (default 2.1.0)")
 # "Build IPPL as a shared library (ON) or static library (OFF)" OFF) if(IPPL_DYL)
 # set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE) message(WARNING "IPPL_DYL is deprecated; use
 # -DBUILD_SHARED_LIBS=ON instead.") endif()

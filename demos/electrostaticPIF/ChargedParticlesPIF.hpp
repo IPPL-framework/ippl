@@ -157,10 +157,13 @@ public:
     */
     ChargedParticlesPIF(PLayout& pl)
         : ippl::ParticleBase<PLayout>(pl) {
+        P.set_name("velocity");
+        E.set_name("electric_field");
+        q.set_name("charge");
         // register the particle attributes
-        this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
+        this->addAttribute(q);
     }
 
     ChargedParticlesPIF(PLayout& pl, Vector_t hr, Vector_t rmin, Vector_t rmax,
@@ -174,10 +177,13 @@ public:
         , Np_m(Np)
         , useUpsampledInputs_m(useUpsampledInputs) 
         , useFinufft_m(useFinufft) {
+        P.set_name("velocity");
+        E.set_name("electric_field");
+        q.set_name("charge");
         // register the particle attributes
-        this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
+        this->addAttribute(q);
         setupBCs();
         for (unsigned int i = 0; i < Dim; i++)
             decomp_m[i] = decomp[i];

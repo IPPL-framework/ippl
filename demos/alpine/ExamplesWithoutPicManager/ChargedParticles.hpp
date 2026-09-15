@@ -262,10 +262,13 @@ public:
     }
 
     void registerAttributes() {
+        P.set_name("velocity");
+        E.set_name("electric_field");
+        q.set_name("charge");
         // register the particle attributes
-        this->addAttribute(q);
         this->addAttribute(P);
         this->addAttribute(E);
+        this->addAttribute(q);
     }
 
     ~ChargedParticles() {}

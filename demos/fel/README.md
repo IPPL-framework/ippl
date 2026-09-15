@@ -3,7 +3,7 @@
 An electromagnetic PIC simulation of a free-electron laser: a relativistic
 electron bunch is tracked through an undulator in a co-moving Lorentz frame,
 with the self-consistent field advanced by an FDTD Maxwell solver. The radiated
-power is written to a CSV (and, optionally, a Poynting-flux video).
+power and FEL diagnostics are written to CSV files.
 
 ## Build
 
@@ -12,23 +12,29 @@ cmake -S . -B build -DIPPL_ENABLE_FEL=ON -DCMAKE_CXX_STANDARD=20
 cmake --build build --target FreeElectronLaser
 ```
 
+The FEL configuration is parsed with the Conduit API shipped by Catalyst. CMake
+therefore finds or fetches Catalyst when the FEL demo is enabled, even when
+`IPPL_ENABLE_CATALYST` itself is off.
+
 The executable is built at
-`build/fel/FreeElectronLaser`.
+`build/demos/fel/FreeElectronLaser`. The example configuration is staged beside
+it as `build/demos/fel/config.json` whenever the target is built.
 
 ## Run
 
 ```sh
 cd build
-./fel/FreeElectronLaser ../fel/config.json --info 5
+./demos/fel/FreeElectronLaser --info 5
 ```
 
-The argument is a MITHRA-style JSON job file (defaults to `../fel/config.json`);
-see [config.json](config.json) for the available keys. Run on multiple ranks
-with `mpirun -np <N> ...`.
+An optional first argument can select another MITHRA-style JSON job file. By
+default, the executable uses the staged `build/demos/fel/config.json`; see
+[config.json](config.json) for the available keys. Run on multiple ranks with
+`mpirun -np <N> ...`.
 
 Output is written to the directory given by `output.path` in the config:
-`radiation_<nranks>.csv` holds the radiated power. If `output.rhythm > 0`, a
-Poynting-flux video is produced and requires **ffmpeg** on the `PATH`.
+`radiation_<nranks>.csv` holds the radiated power. The directory is created
+automatically; relative paths are resolved from the process working directory.
 
 ## Acknowledgements
 
