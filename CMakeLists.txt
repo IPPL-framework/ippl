@@ -58,6 +58,7 @@ option(IPPL_MARK_FAILING_TESTS
        "Prefix names of tests that are known to fail with 'known_fail' for filtering with ctest"
        OFF)
 option(IPPL_ENABLE_SCRIPTS "Generate job script templates for some benchmarks/tests" OFF)
+option(IPPL_ENABLE_BENCHMARK "Enable Google Benchmark-based benchmarks" OFF)
 
 
 option(IPPL_ENABLE_CATALYST "Enable ParaView Catalyst" OFF)
@@ -141,4 +142,8 @@ add_subdirectory(demos)
 
 if(IPPL_ENABLE_SCRIPTS)
   add_subdirectory(scripts)
+endif()
+
+if(IPPL_ENABLE_BENCHMARK)
+  add_subdirectory(benchmarks)
 endif()

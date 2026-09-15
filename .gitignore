@@ -26,3 +26,6 @@ build*/
 
 # lsp info
 compile_commands.json
+
+# local agent scratch files (may contain secrets)
+.scratch/**/*.env

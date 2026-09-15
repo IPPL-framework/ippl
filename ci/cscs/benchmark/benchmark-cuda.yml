@@ -1,0 +1,44 @@
+# -----------------------------------------------------------------------------
+
+# CUDA benchmark on Daint GH200
+# -----------------------------------------------------------------------------
+ippl-benchmark-cuda:
+  extends: .uenv-runner-daint-gh200
+  stage: benchmark
+  image: "/capstor/store/cscs/cscs/public/uenvs/opal-x-gh200-mpich-gcc-2026-08-04-cuda-13.1.1.squashfs"
+  needs: ["ippl-build-cuda13-sm90-release", "ippl-test-cuda13-sm90-release-4-ranks"]
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_TIMELIMIT: "0:15:00"
+    BENCHMARK_MIN_TIME: "1.0s"
+    BENCHER_PROJECT: "ippl-opalx"
+    CUDA_UENV: "/capstor/store/cscs/cscs/public/uenvs/opal-x-gh200-mpich-gcc-2026-08-04-cuda-13.1.1.squashfs"
+    WITH_UENV_VIEW: "default"
+    WRAPPER: "/user-environment/wrapper-mpi.sh"
+    SCRATCH: "/capstor/scratch/cscs/biddisco"
+    SRUN_FLAGS: "--uenv=${CUDA_UENV} --view=${WITH_UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-daint ${WRAPPER}"
+    BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
+    SLURM_NTASKS: 4
+    SLURM_CPUS_PER_TASK: 32
+    BENCHER_TESTBED: "daint-gh200-1node"
+  before_script:
+    - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
+    - echo "CI_COMMIT_SHORT_SHA=$CI_COMMIT_SHORT_SHA"
+    - echo "IPPL_RUN_BENCHMARKS=$IPPL_RUN_BENCHMARKS"
+    - export BUILD_PATH=$(pwd)/$BUILD_DIR
+    - pwd
+    - env | sort | grep CI
+  script:
+    - ./ci/scripts/install_bencher.sh
+    - export PATH=$HOME/.cargo/bin:$PATH
+    - ./ci/scripts/run_benchmark.sh
+  artifacts:
+    paths:
+      - LandauDampingBench.json
+      - LandauDampingBench.bmf.json
+    expire_in: 1 week
+  allow_failure: true
+  rules:
+    - if: $IPPL_RUN_BENCHMARKS == "true"
+      when: always
+    - when: never

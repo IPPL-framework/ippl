@@ -1,6 +1,11 @@
 include:
   - remote: "https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml"
 
+variables:
+  IPPL_RUN_BENCHMARKS:
+    value: "false"
+    description: "Set to 'true' to run the bencher benchmark jobs after tests."
+
 .pr-number-extractor:
   before_script:
     - echo "CI_PROJECT_URL=$CI_PROJECT_URL"
@@ -18,3 +23,4 @@ include:
 stages:
   - ippl_build
   - ippl_test
+  - benchmark
