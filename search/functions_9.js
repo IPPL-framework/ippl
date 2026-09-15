@@ -67,5 +67,6 @@ var searchData=
   ['isparallel_64',['isParallel',['../classippl_1_1FieldLayout.html#a4089a93c74132863690cfe3ab3a49c04',1,'ippl::FieldLayout']]],
   ['ispointinrefelement_65',['isPointInRefElement',['../classippl_1_1QuadrilateralElement.html#aceb4f615ae5632f3937dcc52542cefdc',1,'ippl::QuadrilateralElement::isPointInRefElement()'],['../classippl_1_1HexahedralElement.html#ab470c56a1ab099223e2a57385dbe3621',1,'ippl::HexahedralElement::isPointInRefElement()'],['../classippl_1_1EdgeElement.html#ab52020041e2f1f3280e40b93150001ba',1,'ippl::EdgeElement::isPointInRefElement()']]],
   ['isupper_66',['isUpper',['../namespaceippl_1_1detail.html#af5cb3f4133091465784b612237769df9',1,'ippl::detail']]],
-  ['iterator_67',['iterator',['../classippl_1_1Index_1_1iterator.html#a027313d03a320717c36ae3038011e14e',1,'ippl::Index::iterator::iterator(int current, int stride=1)'],['../classippl_1_1Index_1_1iterator.html#ab07ee164cc41052e73c3962811c5791d',1,'ippl::Index::iterator::iterator()']]]
+  ['iswhitelisted_67',['isWhitelisted',['../namespaceippl_1_1benchmark_1_1detail.html#a5b3064039fb3e3a457748cddfec1ee04',1,'ippl::benchmark::detail']]],
+  ['iterator_68',['iterator',['../classippl_1_1Index_1_1iterator.html#ab07ee164cc41052e73c3962811c5791d',1,'ippl::Index::iterator::iterator()'],['../classippl_1_1Index_1_1iterator.html#a027313d03a320717c36ae3038011e14e',1,'ippl::Index::iterator::iterator(int current, int stride=1)']]]
 ];
