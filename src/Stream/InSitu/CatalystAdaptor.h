@@ -11,6 +11,7 @@
 
 #include "Ippl.h"
 
+#include <array>
 #include <catalyst.hpp>
 #include <catalyst_conduit.hpp>
 #include <cstdlib>
@@ -31,6 +32,7 @@
 
 #include "Utility/IpplException.h"
 
+#include "Stream/InSitu/Channel.h"
 #include "Stream/InSitu/ProxyWriter.h"
 #include "Stream/Registry/RegistryHelper.h"
 #include "Stream/Registry/ViewRegistry.h"
@@ -181,6 +183,12 @@ namespace ippl {
         std::shared_ptr<ippl::VisRegistryRuntime> visRegistry_m;
         std::shared_ptr<ippl::VisRegistryRuntime> steerRegistry_m;
 
+        // New channel-based viz path (replaces visRegistry_m + viewRegistry_m
+        // for visualization).  Steering still uses steerRegistry_m.
+        std::vector<std::shared_ptr<Channel>> channels_m;
+        // True after the channel Conduit tree has been built (first Execute)
+        bool channelsBuilt_m = false;
+
         ViewRegistry viewRegistry_m;
         conduit_cpp::Node node_m;
         conduit_cpp::Node results_m;
@@ -219,6 +227,9 @@ namespace ippl {
         std::unordered_map<std::string, bool> forceHostCopy_m;
 
         std::unordered_map<GhostKey_t, HostMaskView1D_t, GhostKeyHash> ghostMaskCache_m;
+
+        /// Per-label bunch-to-lab transform data published as one-point polydata channels.
+        std::unordered_map<std::string, TransformData> transformChannels_m;
 
     public:
         /**
@@ -651,29 +662,75 @@ namespace ippl {
         void RegisterEnumChoicesTyped(const std::vector<std::pair<std::string, E>>& entries);
 
         /**
-         * @brief Initializes Catalyst using runtime registries (visualization and steering).
+         * @brief Initializes Catalyst using the new channel-based API.
          *
-         * @param visReg Shared pointer to the visualization runtime registry.
-         * @param steerReg Shared pointer to the steering runtime registry.
+         * Visualization channels (registered via addMeshChannel/addParticleChannel)
+         * are initialized here.  The steering registry is optional.
+         *
+         * @param steerReg Shared pointer to the steering runtime registry (may be null).
          */
-        void Initialize(const std::shared_ptr<VisRegistryRuntime>& visReg,
-                        const std::shared_ptr<VisRegistryRuntime>& steerReg);
+        void Initialize(const std::shared_ptr<VisRegistryRuntime>& steerReg = nullptr);
 
         /**
-         * @brief Explicitly forces a host copy for a specifically labelled channel right now.
+         * @brief Registers a mesh channel with multiple field arrays.
          *
-         * @param label The label specifying which field or particle to remember currently.
+         * One Conduit channel is created per mesh; call addArray() on the
+         * returned handle to attach fields.
+         *
+         * @tparam Dim Mesh dimension (1, 2, or 3).
+         * @param name Channel name (e.g. "bunch_mesh").
+         * @param mesh The IPPL mesh (must outlive the adaptor).
+         * @param layout The field layout (must outlive the adaptor).
+         * @param nghost Number of ghost layers (from the first field).
+         * @param useGhostMasks Whether to publish ghost cells with vtkGhostType.
+         * @return Handle for chaining addArray() calls.
          */
-        void rememberNow(const std::string label);
+        template <unsigned Dim>
+        MeshChannelHandle addMeshChannel(const std::string& name,
+                                         const UniformCartesian<double, Dim>& mesh,
+                                         const FieldLayout<Dim>& layout, int nghost = 0,
+                                         bool useGhostMasks = false);
 
         /**
-         * @brief Executes Catalyst for a given timestep using the runtime registry.
+         * @brief Registers a particle channel (one per particle container).
          *
-         * Populates forward steerable values and fetches back updated ones.
+         * Supports multi-bunch: call once per container.  Each channel is
+         * independent with its own multimesh and optional transform.
+         *
+         * @tparam T Particle container type (deriving from ParticleBaseBase).
+         * @param name Channel name (e.g. "BEAM1", "BEAM2").
+         * @param pc The particle container (must outlive the adaptor).
+         * @return Handle for chaining setTransform() calls.
+         */
+        template <typename T>
+            requires std::derived_from<std::decay_t<T>, ParticleBaseBase>
+        ParticleChannelHandle addParticleChannel(const std::string& name, const T& pc);
+
+        /**
+         * @brief Forces a refresh of a specific array (replaces rememberNow).
+         *
+         * For Manual-policy arrays, copies device->host immediately.
+         * For Always/Static arrays, this is a no-op (Always copies on next
+         * Execute anyway; Static never copies).
+         *
+         * @param label The array label to refresh.
+         */
+        void refresh(const std::string& label);
+
+        /**
+         * @brief Deprecated. Use refresh(label) instead.
+         */
+        void rememberNow(const std::string label) { refresh(label); }
+
+        /**
+         * @brief Executes Catalyst for a given timestep.
+         *
+         * Iterates all registered channels, copies dynamic data into staging
+         * buffers, and calls catalyst_execute().
          *
          * @param cycle The current simulation cycle or timestep index.
          * @param time The current simulation time.
-         * @param rank The MPI rank of the executing process (defaults to ippl::Comm->rank()).
+         * @param rank The MPI rank of the executing process.
          */
         void Execute(int cycle, double time, int rank = ippl::Comm->rank());
 

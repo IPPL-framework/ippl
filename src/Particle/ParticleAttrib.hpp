@@ -685,6 +685,76 @@ namespace ippl {
         }
         viewRegistry.set(hostMirror);
     }
+
+    // ------------------------------------------------------------------
+    // prepareConduitNode: allocate persistent mirror, set Conduit once.
+    // ------------------------------------------------------------------
+    template <typename T, class... Properties>
+    void ParticleAttrib<T, Properties...>::prepareConduitNode(const size_type Np_local,
+                                                              conduit_cpp::Node& node_fields,
+                                                              Inform& ca_m) const {
+        // Allocate (or resize) persistent host mirror
+        if (hostMirrorForViz_m.extent(0) != Np_local) {
+            Kokkos::resize(hostMirrorForViz_m, Np_local);
+        }
+        Kokkos::deep_copy(hostMirrorForViz_m, this->getView());
+
+        auto field = node_fields[this->name_m];
+        field["association"].set_string("vertex");
+        field["topology"].set_string("p_unstructured_topo");
+        field["volume_dependent"].set_string("false");
+
+        if constexpr (std::is_scalar_v<T>) {
+            ca_m << level4 << "  prepareConduitNode: '" << this->name_m << "' (scalar, " << Np_local
+                 << " particles)" << endl;
+            field["values"].set_external(detail::conduitCompatiblePtr(hostMirrorForViz_m.data()),
+                                         Np_local);
+        } else if constexpr (is_vector_v<T>) {
+            ca_m << level4 << "  prepareConduitNode: '" << this->name_m << "' (vector, " << Np_local
+                 << " particles)" << endl;
+            using elem_t        = std::remove_pointer_t<decltype(hostMirrorForViz_m.data())>;
+            const size_t stride = sizeof(elem_t);
+            if (Np_local > 0) {
+                field["values/x"].set_external(
+                    detail::conduitCompatiblePtr(&hostMirrorForViz_m.data()[0][0]), Np_local, 0,
+                    stride);
+                if constexpr (T::dim >= 2)
+                    field["values/y"].set_external(
+                        detail::conduitCompatiblePtr(&hostMirrorForViz_m.data()[0][1]), Np_local, 0,
+                        stride);
+                if constexpr (T::dim >= 3)
+                    field["values/z"].set_external(
+                        detail::conduitCompatiblePtr(&hostMirrorForViz_m.data()[0][2]), Np_local, 0,
+                        stride);
+            } else {
+                using component_type = typename T::value_type;
+                field["values/x"].set_external(
+                    detail::conduitCompatiblePtr(static_cast<component_type*>(nullptr)), 0);
+                if constexpr (T::dim >= 2)
+                    field["values/y"].set_external(
+                        detail::conduitCompatiblePtr(static_cast<component_type*>(nullptr)), 0);
+                if constexpr (T::dim >= 3)
+                    field["values/z"].set_external(
+                        detail::conduitCompatiblePtr(static_cast<component_type*>(nullptr)), 0);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // updateConduitData: deep-copy device into existing persistent mirror.
+    // If Np_local changed, resize and re-set external pointers.
+    // ------------------------------------------------------------------
+    template <typename T, class... Properties>
+    void ParticleAttrib<T, Properties...>::updateConduitData() const {
+        const size_type Np = this->getParticleCount();
+        if (hostMirrorForViz_m.extent(0) != Np) {
+            // Particle count changed — resize and let the next init re-set
+            // external pointers.  For now just resize; the caller should
+            // detect the change and re-init.
+            Kokkos::resize(hostMirrorForViz_m, Np);
+        }
+        Kokkos::deep_copy(hostMirrorForViz_m, this->getView());
+    }
 #endif
 
 }  // namespace ippl
