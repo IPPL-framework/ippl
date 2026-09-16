@@ -576,7 +576,13 @@ namespace ippl {
         /// matching bitwidth type is safe because the sizes and alignments match.
         template <typename T>
         auto conduitCompatiblePtr(T* ptr) {
-            if constexpr (std::is_same_v<T, long long>) {
+            if constexpr (std::is_same_v<T, bool>) {
+                static_assert(sizeof(T) == sizeof(conduit_uint8),
+                              "bool size must match conduit_uint8");
+                static_assert(alignof(T) == alignof(conduit_uint8),
+                              "bool alignment must match conduit_uint8");
+                return reinterpret_cast<conduit_uint8*>(ptr);
+            } else if constexpr (std::is_same_v<T, long long>) {
                 static_assert(sizeof(T) == sizeof(conduit_int64),
                               "long long size must match conduit_int64");
                 static_assert(alignof(T) == alignof(conduit_int64),
