@@ -197,6 +197,8 @@ arg_list = paraview.catalyst.get_args()
 parser = argparse.ArgumentParser()
 parser.add_argument("--channel_names", nargs="*",
                      help="Pass All Channel Names for which we need to update the privial producer each round")
+parser.add_argument("--channel_types", nargs="*",
+                     help="Conduit type for each channel (mesh or multimesh)")
 parser.add_argument("--steer_channel_names", nargs="*",
                      help="Pass All Channel Names for Steering scalar parameters")
 
@@ -223,6 +225,7 @@ print_info_("==========================================================0"[0:55]+
 
 print_info_(f"Parsed steer_channel_names:     {parsed.steer_channel_names}")
 print_info_(f"Parsed channel_names:           {parsed.channel_names}")
+print_info_(f"Parsed channel_types:           {parsed.channel_types}")
 print_info_(f"Parsed verbosity level:         {parsed.verbosity}")
 print_info_(f"Parsed VTK extract options:     {parsed.VTKextract}")
 print_info_(f"Parsed steering option:         {parsed.steer}")
@@ -324,33 +327,37 @@ _filters = {}
 
 # NEW / ALT APPROAH:
 
+# Build a (name, type) list.  If --channel_types was not passed (e.g. old
+# C++ side), fall back to name-based heuristics for backward compatibility.
+_channel_types = parsed.channel_types or []
+_channels = list(zip(parsed.channel_names, _channel_types))
+if not _channel_types:
+    _channels = []
+    for cname in parsed.channel_names:
+        if "particles" in cname:
+            _channels.append((cname, "multimesh"))
+        elif "sField" in cname or "vField" in cname:
+            _channels.append((cname, "mesh"))
+        else:
+            _channels.append((cname, "mesh"))
+
 # Find proxies and set up pipelines in the global scope
 pm = servermanager.ProxyManager()
-for cname in parsed.channel_names:
-    # proxy = pm.GetProxy("sources", cname) 
-    # if not proxy:
-    #     _log(f"WARNING: Could not find auto-generated proxy for channel '{cname}'")
-    #     continue
-    # _log(f"Found auto-generated source proxy: {cname} ({proxy.GetXMLName()})")
+for cname, ctype in _channels:
     proxy = PVTrivialProducer(registrationName=cname)
     proxy.UpdatePipeline()
     _sources[cname] = proxy
 
-
-    if "particles" in cname:
-        # For Live visualization: create ExtractBlock filters to show specific blocks
+    if ctype == "multimesh":
+        # Particle channel: multimesh with block_main, block_help, block_transform
         if options.EnableCatalystLive:
             _log(f"Creating ExtractBlock filter(s) for particle channel '{cname}' (Live view)")
             particles = ExtractBlock(
-                # registrationName=f"{cname[15:]}.bunch",
                 registrationName=f"{cname}.bunch",
                 Input=proxy,
-                # // fails to enable visualisation by attributes exclusive to this block
-                Selectors=['//main', '//block_main'] 
-                # Selectors=[]
+                Selectors=['//main', '//block_main']
             )
             helper = ExtractBlock(
-                # registrationName=f"{cname[15:]}_box",
                 registrationName=f"{cname}.box",
                 Input=proxy,
                 Selectors=['//help', '//block_help']
@@ -360,60 +367,62 @@ for cname in parsed.channel_names:
 
             _filters[cname+"_main"] = particles
             _filters[cname+"_help"] = helper
-            
+
             Show(particles)
             Show(helper)
 
+        # Always expose the transform block as a separate source so it can be
+        # selected as the second input of a Programmable Filter.
+        transform = ExtractBlock(
+            registrationName=f"{cname}.transform",
+            Input=proxy,
+            Selectors=['//block_transform']
+        )
+        transform.UpdatePipeline()
+        _filters[cname+"_transform"] = transform
 
-        # Particles come as multimesh with block_main and block_help
-        # Conduit multimesh → vtkPartitionedDataSetCollection → use VTPC writer
-        # Option 1: Extract entire multimesh (all blocks together)
+        # Particles come as multimesh -> vtkPartitionedDataSetCollection -> VTPC
         if parsed.VTKextract == "ON":
             _log(f"Attaching VTPC extractor to complete multimesh particle proxy '{cname}'")
             _extractors[cname] = create_VTM_extractor(cname, proxy, 1)
-        
 
-
-    if "sField" in cname:
+    elif ctype == "mesh":
+        # Mesh channel: uniform grid with multiple cell-data arrays
         if options.EnableCatalystLive:
-
-            _log("   -> Using MergeBlocks for structured scalar field data.")
-            # merged = MergeBlocks(registrationName=cname[12:]+'_MergedBlocks',
-            merged = MergeBlocks(registrationName=cname +'.MergedBlocks',
+            _log(f"   -> Using MergeBlocks for mesh channel '{cname}'")
+            merged = MergeBlocks(registrationName=cname + '.MergedBlocks',
                                  Input=proxy)
             merged.MergePartitionsOnly = 1
             Show(merged)
 
-            _log("   -> Using CellDataToPointtData for structured scalar field data.")
-            # cell2point = CellDatatoPointData(registrationName=cname[12:]+'.Cell2Point', 
-            cell2point = CellDatatoPointData(registrationName=cname+'.Cell2Point', 
+            _log("   -> Using CellDatatoPointData for mesh channel data.")
+            cell2point = CellDatatoPointData(registrationName=cname+'.Cell2Point',
                                              Input=merged)
             Show(cell2point)
-            
-            _log("   -> Using ResampleToImage for structured scalar field data.")
-            
+
+            _log("   -> Using ResampleToImage for mesh channel data.")
+
             # Calculate dimensions (logic from png_ext_sfield.py)
             info = proxy.GetDataInformation()
             local_bounds = info.GetBounds()
             local_extent = info.GetExtent()
             global_bounds = get_global_spatial_bounds(local_bounds)
-            
+
             nx = (local_extent[1] - local_extent[0] + 1)
             ny = (local_extent[3] - local_extent[2] + 1)
             nz = (local_extent[5] - local_extent[4] + 1)
-            
+
             lx = (local_bounds[1] - local_bounds[0])
             ly = (local_bounds[3] - local_bounds[2])
             lz = (local_bounds[5] - local_bounds[4])
-            
+
             spacing_x = lx / max(nx - 1, 1)
             spacing_y = ly / max(ny - 1, 1)
             spacing_z = lz / max(nz - 1, 1)
-            
+
             dx = max(spacing_x, 1e-12)
             dy = max(spacing_y, 1e-12)
             dz = max(spacing_z, 1e-12)
-
 
             ghost_x = 1
             ghost_y = 1
@@ -425,52 +434,18 @@ for cname in parsed.channel_names:
             global_extent = [dim_x, dim_y, dim_z]
             print_info_(global_extent)
 
-
-            
             resample = ResampleToImage(registrationName=cname+'.ResampleToImage', Input=merged)
             resample.UseInputBounds = 1
-            # resample.SamplingBounds = global_bounds
             resample.SamplingDimensions = global_extent
             Show(resample)
 
-            # cell2point.CellDataArraytoprocess = ['RankID', 'density']
-            _filters[cname[12:]+"_merge"] = merged
-            _filters[cname[12:]+"_c2p"] = merged
-            _filters[cname[12:]+"_resample"] = resample
+            _filters[cname+"_merge"] = merged
+            _filters[cname+"_c2p"] = cell2point
+            _filters[cname+"_resample"] = resample
 
         if parsed.VTKextract == "ON":
-            # _log(f"Attaching VTPD extractor to proxy '{cname}'")
             _extractors[cname] = create_VTPD_extractor(cname, proxy, 1)
 
-        
-
-
-    if "vField" in cname:
-        if options.EnableCatalystLive:
-            
-            _log("   -> Using MergeBlocks for structured vector field data.")
-            merged = MergeBlocks(registrationName=cname+'.MergedBlocks',Input=proxy)
-            merged.MergePartitionsOnly = 1
-            Show(merged)
-
-            _log("   -> Using Glyph for structured vector field data.")
-            glyph = Glyph(registrationName=cname +'.Glyph', Input=merged, GlyphType='Arrow')
-            glyph.OrientationArray = ['CELLS', cname[12:]]
-            # glyphShow = 
-            Show(glyph)
-            
-            _filters[cname + "_merged"] = merged
-            _filters[cname + "_glyph"]  = glyph
-
-        if parsed.VTKextract == "ON":
-            # _log(f"Attaching VTPD extractor to proxy '{cname}'")
-            _extractors[cname] = create_VTPD_extractor(cname, proxy, 1)
-
-        
-
-
-
-# ------------------------------------------------------------------------------
 # Setup steering channels
 # ------------------------------------------------------------------------------
 

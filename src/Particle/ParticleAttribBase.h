@@ -21,11 +21,11 @@
 
 #include "Communicate/Archive.h"
 
+#ifdef IPPL_ENABLE_CATALYST
+#include <catalyst.hpp>
 
- #ifdef IPPL_ENABLE_CATALYST
- #include <catalyst.hpp>
- #include "Stream/Registry/ViewRegistry.h"
- #endif
+#include "Stream/Registry/ViewRegistry.h"
+#endif
 
 namespace ippl {
     namespace detail {
@@ -100,16 +100,22 @@ namespace ippl {
             virtual void applyPermutation(const hash_type&) = 0;
             virtual void internalCopy(const hash_type&)     = 0;
 
-            #ifdef IPPL_ENABLE_CATALYST
-                virtual void signConduitBlueprintNode(
-                              const size_type Np_local
-                            , conduit_cpp::Node& node_fields
-                            , ViewRegistry& viewRegistry
-                            , Inform& ca_m
-                            , Inform& ca_warn
-                            , const bool forceHostCopy
-                        )  const = 0;
-            #endif
+#ifdef IPPL_ENABLE_CATALYST
+            virtual void signConduitBlueprintNode(const size_type Np_local,
+                                                  conduit_cpp::Node& node_fields,
+                                                  ViewRegistry& viewRegistry, Inform& ca_m,
+                                                  Inform& ca_warn,
+                                                  const bool forceHostCopy) const = 0;
+
+            /// Allocate a persistent host mirror and set Conduit external
+            /// pointers.  Called once during channel init.
+            virtual void prepareConduitNode(const size_type Np_local,
+                                            conduit_cpp::Node& node_fields, Inform& ca_m) const = 0;
+
+            /// Deep-copy device data into the persistent host mirror.
+            /// Called every Execute for dynamic particle channels.
+            virtual void updateConduitData() const = 0;
+#endif
         protected:
             const size_type* localNum_mp;
             char name_m[ATTRIB_NAME_MAX_LEN];

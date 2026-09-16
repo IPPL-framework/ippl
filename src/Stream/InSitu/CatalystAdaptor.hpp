@@ -9,6 +9,29 @@
 #include "Stream/InSitu/CatalystAdaptor.h"
 #include "Stream/InSitu/CatalystVisitors.h"
 #include "Stream/Registry/VisRegistryRuntime.h"
+
+namespace {
+    /**
+     * @brief Device functor for zeroing the interior of a ghost-mask field.
+     *
+     * Using a named functor instead of a lambda avoids the NVCC restriction that
+     * extended __host__ __device__ lambdas cannot appear inside private/protected
+     * member functions.
+     */
+    template <typename View>
+    struct ZeroGhostMaskInterior {
+        View view;
+
+        KOKKOS_INLINE_FUNCTION void operator()(const int i) const { view(i) = 0; }
+
+        KOKKOS_INLINE_FUNCTION void operator()(const int i, const int j) const { view(i, j) = 0; }
+
+        KOKKOS_INLINE_FUNCTION void operator()(const int i, const int j, const int k) const {
+            view(i, j, k) = 0;
+        }
+    };
+}  // namespace
+
 namespace ippl {
 
     // ==============================================================================================
@@ -332,11 +355,12 @@ namespace ippl {
                 {0, 0, 0},    // Start indices {i, j, k}
                 {nx, ny, nz}  // End indices {i, j, k}
             );
-            Kokkos::parallel_for(
-                "fill_rank_ids_3D", host_policy,
-                KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                    rank_id_view_cells(i, j, k) = rank;
-                });
+            // Host-only policy: plain lambda avoids NVCC private-member extended-lambda
+            // restriction.
+            Kokkos::parallel_for("fill_rank_ids_3D", host_policy,
+                                 [&](const int i, const int j, const int k) {
+                                     rank_id_view_cells(i, j, k) = rank;
+                                 });
         }
 
         auto rank_field = fields["RankID"];
@@ -465,20 +489,14 @@ namespace ippl {
                 /* Fill inner cells with 0 */
                 //  TODO(?): use ippl dimension independent iterators
                 if constexpr (Dim == 1) {
-                    Kokkos::parallel_for(
-                        "ZeroOwnedMask1D", interior,
-                        KOKKOS_LAMBDA(const int i) { deviceMaskView(i) = static_cast<m_t>(0); });
+                    Kokkos::parallel_for("ZeroOwnedMask1D", interior,
+                                         ZeroGhostMaskInterior<DeviceMaskView_t>{deviceMaskView});
                 } else if constexpr (Dim == 2) {
-                    Kokkos::parallel_for(
-                        "ZeroOwnedMask2D", interior, KOKKOS_LAMBDA(const int i, const int j) {
-                            deviceMaskView(i, j) = static_cast<m_t>(0);
-                        });
+                    Kokkos::parallel_for("ZeroOwnedMask2D", interior,
+                                         ZeroGhostMaskInterior<DeviceMaskView_t>{deviceMaskView});
                 } else if constexpr (Dim == 3) {
-                    Kokkos::parallel_for(
-                        "ZeroOwnedMask3D", interior,
-                        KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                            deviceMaskView(i, j, k) = static_cast<m_t>(0);
-                        });
+                    Kokkos::parallel_for("ZeroOwnedMask3D", interior,
+                                         ZeroGhostMaskInterior<DeviceMaskView_t>{deviceMaskView});
                 }
                 Kokkos::fence();
 
@@ -620,10 +638,11 @@ namespace ippl {
 
         channel["type"].set_string("multimesh");
 
-        auto data                = channel["data/block_main"];
-        auto data_help           = channel["data/block_help"];
-        channel["assembly/main"] = "block_main";
-        channel["assembly/help"] = "block_help";
+        auto data                           = channel["data/block_main"];
+        auto data_help                      = channel["data/block_help"];
+        channel["assembly/main"]            = "block_main";
+        channel["assembly/help"]            = "block_help";
+        channel["assembly/block_transform"] = "block_transform";
 
         ////////////////////////////////////////////////////////
         // Note:
@@ -646,12 +665,14 @@ namespace ippl {
         if (localNum > 0) {
             using HostExecSpace = Kokkos::DefaultHostExecutionSpace;
             Kokkos::RangePolicy<HostExecSpace> host_policy(0, localNum);
-            Kokkos::parallel_for(
-                "fill_iota_host", host_policy,
-                KOKKOS_LAMBDA(const int64_t i) { iota_view(i) = i; });
-            Kokkos::parallel_for(
-                "fill_rank_ids", host_policy,
-                KOKKOS_LAMBDA(const int64_t i) { rank_id_view(i) = rank; });
+            // Host-only policy: plain lambda avoids NVCC private-member extended-lambda
+            // restriction.
+            Kokkos::parallel_for("fill_iota_host", host_policy, [&](const int64_t i) {
+                iota_view(i) = i;
+            });
+            Kokkos::parallel_for("fill_rank_ids", host_policy, [&](const int64_t i) {
+                rank_id_view(i) = rank;
+            });
         }
 
         viewRegistry_m.set(label + "_iota", iota_view);
@@ -862,6 +883,45 @@ namespace ippl {
         //     [&]<typename Attributes>(const Attributes& atts) {
         //         for (auto* attribute : atts) {
         ////////////////////////////////////////////////////////////////////////////////////////////
+
+        // If a bunch-frame transform was registered for this label, embed it as a
+        // third block in the same multimesh so the bunch is self-contained.
+        auto it = transformChannels_m.find(label);
+        if (it != transformChannels_m.end()) {
+            const auto& td = it->second;
+            auto data_tf   = channel["data/block_transform"];
+            data_tf["type"].set_string("mesh");
+
+            data_tf["coordsets/tf_coords/type"].set_string("explicit");
+            data_tf["coordsets/tf_coords/values/x"].set(0.0);
+            data_tf["coordsets/tf_coords/values/y"].set(0.0);
+            data_tf["coordsets/tf_coords/values/z"].set(0.0);
+
+            data_tf["topologies/tf_topo/coordset"].set_string("tf_coords");
+            data_tf["topologies/tf_topo/type"].set_string("unstructured");
+            data_tf["topologies/tf_topo/elements/shape"].set_string("point");
+            data_tf["topologies/tf_topo/elements/connectivity"].set(0);
+
+            auto setVec3Field = [&](const std::string& fieldName,
+                                    const ippl::Vector<double, 3>& v) {
+                auto f = data_tf[std::string("fields/") + fieldName];
+                f["association"].set_string("vertex");
+                f["topology"].set_string("tf_topo");
+                f["volume_dependent"].set_string("false");
+                f["values/x"].set(v[0]);
+                f["values/y"].set(v[1]);
+                f["values/z"].set(v[2]);
+            };
+
+            setVec3Field("BunchOrigin", td.origin);
+            setVec3Field("BunchRotRow0", td.rows[0]);
+            setVec3Field("BunchRotRow1", td.rows[1]);
+            setVec3Field("BunchRotRow2", td.rows[2]);
+            setVec3Field("BunchInvOrigin", td.invOrigin);
+            setVec3Field("BunchInvRotRow0", td.invRows[0]);
+            setVec3Field("BunchInvRotRow1", td.invRows[1]);
+            setVec3Field("BunchInvRotRow2", td.invRows[2]);
+        }
     }
 
     // BASE CASE: only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
@@ -906,11 +966,10 @@ namespace ippl {
     }
 
     // =====================================================================================
-    // Runtime registry based Initialize / Execute (non-templated registry)
+    // Channel-based Initialize / Execute
     // =====================================================================================
 
-    void CatalystAdaptor::Initialize(const std::shared_ptr<VisRegistryRuntime>& visReg,
-                                     const std::shared_ptr<VisRegistryRuntime>& steerReg) {
+    void CatalystAdaptor::Initialize(const std::shared_ptr<VisRegistryRuntime>& steerReg) {
         if (!visEnabled_m)
             return;
 
@@ -923,28 +982,30 @@ namespace ippl {
 #if defined(MPI_VERSION)
         MPI_Allreduce(MPI_IN_PLACE, &all_ready, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-        catalystInfo_m << level4
-                       << "::InitializeRuntime() Ranks ready for catalyst int: " << all_ready
+        catalystInfo_m << level4 << "::Initialize() Ranks ready for catalyst int: " << all_ready
                        << " ranks" << endl;
 
-        visRegistry_m   = visReg;
         steerRegistry_m = steerReg;
 
         const int fcomm       = MPI_Comm_c2f(MPI_COMM_WORLD);
         const int64_t fcomm64 = static_cast<int64_t>(fcomm);
         node_m["catalyst/mpi_comm"].set(fcomm64);
 
-        setNodeScript(node_m["catalyst/scripts/script/filename"],  // where in node_m
-                      "CATALYST_PIPELINE_PATH",                    // environment override
-                      resourceDir_m / "pipeline_default.py")       // default
-            ;
+        setNodeScript(node_m["catalyst/scripts/script/filename"], "CATALYST_PIPELINE_PATH",
+                      resourceDir_m / "pipeline_default.py");
         conduit_cpp::Node args = node_m["catalyst/scripts/script/args"];
 
+        // Pass channel names from registered channels
         args.append().set_string("--channel_names");
-        InitVisitor initV{*this};
-        visRegistry_m->forEach(initV);
-        // Visitor will (also) append channel names here into the node_m (sequence of overall
-        // arguments is important!!)
+        for (const auto& ch : channels_m) {
+            args.append().set_string(ch->name());
+        }
+
+        // Pass channel types so scripts can dispatch without name-pattern matching
+        args.append().set_string("--channel_types");
+        for (const auto& ch : channels_m) {
+            args.append().set_string(ch->conduitType());
+        }
 
         args.append().set_string("--verbosity");
         args.append().set_string(std::to_string(catalystInfo_m.getOutputLevel()));
@@ -960,6 +1021,7 @@ namespace ippl {
 
         args.append().set_string("--steer_channel_names");
 
+        // Proxy writer (unchanged from old path)
         std::filesystem::path proxyPath = outputDir_m / "catalyst_proxy.xml";
         bool useExistingProxy           = false;
         if (const char* proxyPathEnv = std::getenv("IPPL_CATALYST_PROXY_PATH");
@@ -989,7 +1051,7 @@ namespace ippl {
             auto default_cfgYaml = (resourceDir_m / "proxy_default_config.yaml").string();
             if (std::filesystem::exists(default_cfgYaml)) {
                 cfgYaml = std::move(default_cfgYaml);
-            }  // else leave empty -> ProxyWriter can proceed without config
+            }
         }
 
         proxyWriter_m.initialize(proxyPath, cfgYaml);
@@ -1041,7 +1103,7 @@ namespace ippl {
                        << "::Initialize()   Printing Conduit `node_m` instance passed to "
                           "catalyst_initialize() =>"
                        << endl;
-        catalystInfo_m << level4 << node_m.to_yaml() << endl;  // or node.to_json()
+        catalystInfo_m << level4 << node_m.to_yaml() << endl;
 
         catalyst_status err = catalyst_initialize(conduit_cpp::c_node(&node_m));
         if (err != catalyst_status_ok) {
@@ -1052,43 +1114,17 @@ namespace ippl {
             catalystInfo_m << level4 << "::Initialize()   Catalyst initialized successfully."
                            << endl;
         }
+
+        // Reset node_m (scripts are consumed by catalyst_initialize).
+        // Channel tree will be built on first Execute() and reused thereafter.
         node_m.reset();
+        channelsBuilt_m = false;
+
         catalystInfo_m
             << level4
             << "::Initialize()  DONE============================================================= 1"
             << endl;
     }
-
-    void CatalystAdaptor::rememberNow(const std::string label) {
-        if (!visEnabled_m)
-            return;
-
-        // Validate inputs and state
-        auto it = forceHostCopy_m.find(label);
-        if (it == forceHostCopy_m.end()) {
-            throw IpplException("Stream::InSitu::CatalystAdaptor::rememberNow",
-                                "Label not present in Visualisation Registry: " + label);
-        }
-        if (!visRegistry_m) {
-            throw IpplException("Stream::InSitu::CatalystAdaptor::rememberNow",
-                                "Visualization registry is not initialized (nullptr)");
-        }
-
-        // Temporarily force a host copy for this label during an execute
-        bool tmp               = it->second;
-        forceHostCopy_m[label] = true;
-        ExecVisitor execV{*this};
-        const bool ok = visRegistry_m->forOne(label, execV);
-
-        // Restore prior state
-        forceHostCopy_m[label] = tmp;
-        if (!ok) {
-            throw IpplException(
-                "Stream::InSitu::CatalystAdaptor::rememberNow",
-                "Label not found in executable entries or has no execute callback: " + label);
-        }
-    }
-
     void CatalystAdaptor::Execute(int cycle, double time,
                                   int rank /* default = ippl::Comm->rank() */) {
         if (!visEnabled_m)
@@ -1101,126 +1137,77 @@ namespace ippl {
 
         static IpplTimings::TimerRef TMRcatalyst_execute =
             IpplTimings::getTimer("catalyst_execute");
-        static IpplTimings::TimerRef TMRexecVizVisitor = IpplTimings::getTimer("execVizVisitor");
+        static IpplTimings::TimerRef TMRchannelExecute = IpplTimings::getTimer("channelExecute");
         static IpplTimings::TimerRef TMRexecSteerVisitor =
             IpplTimings::getTimer("execSteerVisitor");
 
+        // Build channel tree on first Execute (after catalyst_initialize
+        // consumed the scripts node).
+        if (!channelsBuilt_m) {
+            for (auto& ch : channels_m) {
+                ch->init(node_m, rank);
+            }
+            channelsBuilt_m = true;
+
+            if (cycle == 0) {
+#if defined(MPI_VERSION)
+                MPI_Barrier(MPI_COMM_WORLD);
+                catalystInfo_m << level4
+                               << "::Execute() [rank = 0]  Printing first Conduit Node ==>" << endl;
+                if (catalystInfo_m.getOutputLevel() >= 4 && ippl::Comm->rank() == 0)
+                    node_m.print();
+                MPI_Barrier(MPI_COMM_WORLD);
+#endif
+            }
+        }
+
+        // Update state
         auto state = node_m["catalyst/state"];
         state["cycle"].set(cycle);
         state["time"].set(time);
         state["domain_id"].set(rank);
 
-        IpplTimings::startTimer(TMRexecVizVisitor);
-        if (!!visEnabled_m) {
-            // edit forward Node: add visualisation channels
-            ExecVisitor execV{*this};
-            visRegistry_m->forEach(execV);
+        // Execute channels (deep-copy dynamic data into persistent mirrors)
+        IpplTimings::startTimer(TMRchannelExecute);
+        for (auto& ch : channels_m) {
+            ch->execute(node_m, cycle, time, rank);
         }
-        IpplTimings::stopTimer(TMRexecVizVisitor);
+        IpplTimings::stopTimer(TMRchannelExecute);
 
+        // Steering forward
         IpplTimings::startTimer(TMRexecSteerVisitor);
         if (steerEnabled_m) {
-            // edit forward Node: add steering channels
             SteerForwardVisitor steerV{*this};
             steerRegistry_m->forEach(steerV);
         }
         IpplTimings::stopTimer(TMRexecSteerVisitor);
 
-        if (cycle == 0) {
-#if defined(MPI_VERSION)
-            MPI_Barrier(MPI_COMM_WORLD);
-            catalystInfo_m << level4
-                           << "::Execute() [rank = 0]  Printing first Conduit Node passed from  to "
-                              "catalyst_execute() ==>"
-                           << endl;
-            if (catalystInfo_m.getOutputLevel() >= 4 && ippl::Comm->rank() == 0)
-                node_m.print();
-            catalystInfo_m << level4
-                           << "::Execute() [rank = 1]  Printing first Conduit Node passed from  to "
-                              "catalyst_execute() ==>"
-                           << endl;
-            MPI_Barrier(MPI_COMM_WORLD);
-            if (catalystInfo_m.getOutputLevel() >= 4 && ippl::Comm->rank() == 1)
-                node_m.print();
-            MPI_Barrier(MPI_COMM_WORLD);
-#endif
-            // if(level >= 5 && ippl::Comm->rank()==0)  node_m.print();
-
-            catalystInfo_m << level4
-                           << "::Execute() During first catalyst_execute() catalyst will\n"
-                           << "            for each passed script - in order how they were \n"
-                           << "            passed to the conduit node - run the globa scope,\n"
-                           << "             the initialize() and the execute()." << endl;
-        }
-
-        ////////////////////////////////////////////////////////////////
-        // Note:
-        // Possibly helpful for further debugging.
-        //
-        // Kokkos::fence();
-        // #if defined(MPI_VERSION)
-        // MPI_Barrier(MPI_COMM_WORLD);
-        // #endif
-        //
-        // int all_ready = 1;
-        // #if defined(MPI_VERSION)
-        //     MPI_Allreduce(MPI_IN_PLACE, &all_ready, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-        // #endif
-        // catalystInfo_m << level4 <<"::Execute() All ranks ready for catalyst_execute:    " <<
-        // all_ready << " ranks" << endl;
-        ////////////////////////////////////////////////////////////////
-
+        // catalyst_execute
         catalystInfo_m << level4 << "::Execute()::catalyst_execute() ==>" << endl;
         IpplTimings::startTimer(TMRcatalyst_execute);
         catalyst_status err = catalyst_execute(conduit_cpp::c_node(&node_m));
         IpplTimings::stopTimer(TMRcatalyst_execute);
-
-        ////////////////////////////////////////////////////////////////////////////////
-        // Note:
-        // catalyst execute seems to be the current bottleneck of a medium sized simulation...
-        ////////////////////////////////////////////////////////////////////////////////
 
         if (err != catalyst_status_ok) {
             std::cerr << "::Execute()   Failed to execute Catalyst (runtime path): " << err
                       << std::endl;
         }
 
+        // Steering fetch
         if (steerEnabled_m) {
             static IpplTimings::TimerRef TMRfetchResult =
                 IpplTimings::getTimer("fetchSteerParameters");
             IpplTimings::startTimer(TMRfetchResult);
 
             fetchResults();
-            // backward Node: fetch updated steering values
             SteerFetchVisitor fetchV{*this};
             steerRegistry_m->forEach(fetchV);
 
             IpplTimings::stopTimer(TMRfetchResult);
-
-            if (true) {
-                // if(cycle == 0){
-                catalystInfo_m
-                    << level4
-                    << "::Execute()   Printing Conduit Node received from catalyst_execute() ==>"
-                    << endl;
-                catalystInfo_m << level4 << results_m.to_yaml() << endl;
-            }
         }
 
-        viewRegistry_m.clear();
-        ghostMaskCache_m.clear();
-        node_m.reset();
-
-        ///////////////////////////////////////////////////
-        // Note:
-        // We deliberately don't reset results since
-        //  1. they will be properly overwritten by Catalyst.
-        //  2. If the part of the Catalyst backend crashes and the
-        //      results are not sent back, the old results will be used, possibly
-        //      avoiding a problems during result retrieval.
-        //
-        // results.reset();
-        ///////////////////////////////////////////////////
+        // NO viewRegistry_m.clear(), NO ghostMaskCache_m.clear(), NO node_m.reset().
+        // The Conduit tree and all staging buffers persist across steps.
 
         catalystInfo_m
             << level4
@@ -1237,6 +1224,306 @@ namespace ippl {
         if (err != catalyst_status_ok) {
             std::cerr << "Failed to finalize Catalyst: " << err << std::endl;
         }
+    }
+
+    // =====================================================================================
+    // New channel-based API
+    // =====================================================================================
+
+    template <unsigned Dim>
+    MeshChannelHandle CatalystAdaptor::addMeshChannel(const std::string& name,
+                                                      const UniformCartesian<double, Dim>& mesh,
+                                                      const FieldLayout<Dim>& layout, int nghost,
+                                                      bool useGhostMasks) {
+        auto ch = std::make_shared<MeshChannelT<Dim>>(name, mesh, layout, nghost, useGhostMasks);
+        channels_m.push_back(ch);
+        catalystInfo_m << level4 << "::addMeshChannel('" << name << "', Dim=" << Dim
+                       << ", nghost=" << nghost << ")" << endl;
+        return MeshChannelHandle(std::static_pointer_cast<void>(ch), Dim);
+    }
+
+    template <typename T>
+        requires std::derived_from<std::decay_t<T>, ParticleBaseBase>
+    ParticleChannelHandle CatalystAdaptor::addParticleChannel(const std::string& name,
+                                                              const T& pc) {
+        auto ch = std::make_shared<ParticleChannel>(
+            name, const_cast<void*>(static_cast<const void*>(&pc)));
+        auto* raw = ch.get();
+
+        // Type-specific init function: builds multimesh, allocates mirrors,
+        // sets Conduit external pointers.  Called once by Initialize().
+        raw->setInitFn([this, name, &pc, raw](conduit_cpp::Node& channel, int rank, Inform& info) {
+            const size_t localNum = pc.getLocalNum();
+            channel["type"].set_string("multimesh");
+            channel["assembly/main"] = "block_main";
+            channel["assembly/help"] = "block_help";
+
+            auto data      = channel["data/block_main"];
+            auto data_help = channel["data/block_help"];
+            data["type"].set_string("mesh");
+
+            // Persistent iota + rank_id
+            auto& iota   = const_cast<Kokkos::View<int64_t*, Kokkos::HostSpace>&>(raw->iota_m);
+            auto& rankId = const_cast<Kokkos::View<int*, Kokkos::HostSpace>&>(raw->rankId_m);
+            if (iota.extent(0) != localNum) {
+                Kokkos::resize(iota, localNum);
+                Kokkos::resize(rankId, localNum);
+            }
+            for (size_t i = 0; i < localNum; ++i) {
+                iota(i)   = static_cast<int64_t>(i);
+                rankId(i) = rank;
+            }
+
+            // Coordset + topology
+            data["coordsets/p_explicit_coords/type"].set_string("explicit");
+            data["topologies/p_unstructured_topo/coordset"].set_string("p_explicit_coords");
+            data["topologies/p_unstructured_topo/type"].set_string("unstructured");
+            data["topologies/p_unstructured_topo/elements/shape"].set_string("point");
+            data["topologies/p_unstructured_topo/elements/connectivity"].set_external(iota.data(),
+                                                                                      localNum);
+
+            // R host mirror (persistent)
+            using RAttrib_t = std::remove_reference_t<decltype(pc.R)>;
+            using RHost_t   = typename RAttrib_t::host_mirror_type;
+            static thread_local RHost_t RHost;
+            if (RHost.extent(0) != localNum) {
+                Kokkos::resize(RHost, localNum);
+            }
+            Kokkos::deep_copy(RHost, pc.R.getView());
+            viewRegistry_m.set(name + "_R", RHost);
+
+            constexpr unsigned ParticleDim = particle_dim_v<T>;
+            static constexpr size_t R_stride =
+                sizeof(std::remove_pointer_t<decltype(RHost.data())>);
+
+            if (localNum > 0) {
+                data["coordsets/p_explicit_coords/values/x"].set_external(&RHost.data()[0][0],
+                                                                          localNum, 0, R_stride);
+                if constexpr (ParticleDim >= 2) {
+                    data["coordsets/p_explicit_coords/values/y"].set_external(
+                        &RHost.data()[0][1], localNum, 0, R_stride);
+                }
+                if constexpr (ParticleDim >= 3) {
+                    data["coordsets/p_explicit_coords/values/z"].set_external(
+                        &RHost.data()[0][2], localNum, 0, R_stride);
+                }
+            }
+
+            // RankID field
+            auto fields    = data["fields"];
+            auto rankField = fields["RankID"];
+            rankField["association"].set_string("vertex");
+            rankField["topology"].set_string("p_unstructured_topo");
+            rankField["volume_dependent"].set_string("false");
+            if (localNum > 0) {
+                rankField["values"].set_external(rankId.data(), localNum);
+            } else {
+                rankField["values"].set_external(static_cast<int*>(nullptr), 0);
+            }
+            data["metadata/vtk_fields/RankID/attribute_type"].set_string("ProcessIds");
+
+            // ID field (if enabled)
+            if constexpr (T::EnableIDs) {
+                using IDAttrib_t = std::remove_reference_t<decltype(pc.ID)>;
+                using IDHost_t   = typename IDAttrib_t::host_mirror_type;
+                static thread_local IDHost_t IDHost;
+                if (IDHost.extent(0) != localNum) {
+                    Kokkos::resize(IDHost, localNum);
+                }
+                Kokkos::deep_copy(IDHost, pc.ID.getView());
+                viewRegistry_m.set(name + "_ID", IDHost);
+
+                auto idField = fields["ParticleIDs"];
+                idField["association"].set_string("vertex");
+                idField["topology"].set_string("p_unstructured_topo");
+                idField["volume_dependent"].set_string("false");
+                if (localNum > 0) {
+                    idField["values"].set_external(IDHost.data(), localNum);
+                } else {
+                    using id_value_t = typename IDHost_t::value_type;
+                    idField["values"].set_external(static_cast<id_value_t*>(nullptr), 0);
+                }
+                data["metadata/vtk_fields/ParticleIDs/attribute_type"].set_string("GlobalIds");
+            }
+
+            // Position field (references RHost)
+            auto R_field = fields["position"];
+            R_field["association"].set_string("vertex");
+            R_field["topology"].set_string("p_unstructured_topo");
+            R_field["volume_dependent"].set_string("false");
+            if (localNum > 0) {
+                R_field["values/x"].set_external(&RHost.data()[0][0], localNum, 0, R_stride);
+                if constexpr (ParticleDim >= 2) {
+                    R_field["values/y"].set_external(&RHost.data()[0][1], localNum, 0, R_stride);
+                }
+                if constexpr (ParticleDim >= 3) {
+                    R_field["values/z"].set_external(&RHost.data()[0][2], localNum, 0, R_stride);
+                }
+            }
+
+            // User-defined attributes (persistent mirrors via prepareConduitNode)
+            pc.forAllAttributes([&]<typename Attributes>(const Attributes& atts) {
+                for (auto* attribute : atts) {
+                    if (!pc.isBuiltinAttribute(attribute)) {
+                        attribute->prepareConduitNode(localNum, fields, info);
+                    }
+                }
+            });
+
+            // Helper block (bounding box)
+            if constexpr (has_getRegionLayout_v<typename T::Layout_t>) {
+                using RLayout_t         = typename T::Layout_t::RegionLayout_t;
+                using NDRegion_t        = typename RLayout_t::NDRegion_t;
+                constexpr unsigned dim_ = T::Layout_t::dim;
+                const NDRegion_t ndr    = pc.getLayout().getRegionLayout().getDomain();
+
+                data_help["coordsets/bound_helper_coords/type"].set_string("uniform");
+                data_help["topologies/bound_helper_topo/coordset"].set_string(
+                    "bound_helper_coords");
+                data_help["topologies/bound_helper_topo/type"].set_string("uniform");
+                {
+                    data_help["coordsets/bound_helper_coords/dims/i"].set(2);
+                    data_help["coordsets/bound_helper_coords/spacing/dx"].set(ndr[0].max()
+                                                                              - ndr[0].min());
+                    data_help["coordsets/bound_helper_coords/origin/x"].set(ndr[0].min());
+                }
+                if constexpr (dim_ >= 2) {
+                    data_help["coordsets/bound_helper_coords/dims/j"].set(2);
+                    data_help["coordsets/bound_helper_coords/spacing/dy"].set(ndr[1].max()
+                                                                              - ndr[1].min());
+                    data_help["coordsets/bound_helper_coords/origin/y"].set(ndr[1].min());
+                }
+                if constexpr (dim_ >= 3) {
+                    data_help["coordsets/bound_helper_coords/dims/k"].set(2);
+                    data_help["coordsets/bound_helper_coords/spacing/dz"].set(ndr[2].max()
+                                                                              - ndr[2].min());
+                    data_help["coordsets/bound_helper_coords/origin/z"].set(ndr[2].min());
+                }
+            }
+
+            // Transform block (if registered via setTransform)
+            if (raw->hasTransform()) {
+                const auto& td = *raw->transform();
+                auto data_tf   = channel["data/block_transform"];
+                data_tf["type"].set_string("mesh");
+                data_tf["coordsets/tf_coords/type"].set_string("explicit");
+                data_tf["coordsets/tf_coords/values/x"].set(0.0);
+                data_tf["coordsets/tf_coords/values/y"].set(0.0);
+                data_tf["coordsets/tf_coords/values/z"].set(0.0);
+                data_tf["topologies/tf_topo/coordset"].set_string("tf_coords");
+                data_tf["topologies/tf_topo/type"].set_string("unstructured");
+                data_tf["topologies/tf_topo/elements/shape"].set_string("point");
+                data_tf["topologies/tf_topo/elements/connectivity"].set(0);
+
+                auto setVec3Field = [&](const std::string& fieldName,
+                                        const ippl::Vector<double, 3>& v) {
+                    auto f = data_tf[std::string("fields/") + fieldName];
+                    f["association"].set_string("vertex");
+                    f["topology"].set_string("tf_topo");
+                    f["volume_dependent"].set_string("false");
+                    f["values/x"].set(v[0]);
+                    f["values/y"].set(v[1]);
+                    f["values/z"].set(v[2]);
+                };
+                setVec3Field("BunchOrigin", td.origin);
+                setVec3Field("BunchRotRow0", td.rows[0]);
+                setVec3Field("BunchRotRow1", td.rows[1]);
+                setVec3Field("BunchRotRow2", td.rows[2]);
+                setVec3Field("BunchInvOrigin", td.invOrigin);
+                setVec3Field("BunchInvRotRow0", td.invRows[0]);
+                setVec3Field("BunchInvRotRow1", td.invRows[1]);
+                setVec3Field("BunchInvRotRow2", td.invRows[2]);
+            }
+
+            raw->lastLocalNum_m = localNum;
+            info << level4 << "  ParticleChannel '" << name << "' initialized (" << localNum
+                 << " particles)" << endl;
+        });
+
+        // Type-specific execute function: deep-copy into persistent mirrors.
+        // Called every Execute().
+        raw->setExecuteFn(
+            [this, name, &pc, raw](conduit_cpp::Node& channel, int rank, Inform& info) {
+                const size_t localNum = pc.getLocalNum();
+
+                // If particle count changed, re-init the whole channel
+                // (re-allocate mirrors, re-set external pointers).
+                if (localNum != raw->lastLocalNum_m) {
+                    catalystInfo_m << level4 << "  ParticleChannel '" << name
+                                   << "' count changed: " << raw->lastLocalNum_m << " -> "
+                                   << localNum << ", re-initializing" << endl;
+                    channel.reset();
+                    raw->initFn_m(channel, rank, info);
+                    return;
+                }
+
+                // Deep-copy R into persistent mirror
+                using RAttrib_t = std::remove_reference_t<decltype(pc.R)>;
+                using RHost_t   = typename RAttrib_t::host_mirror_type;
+                auto* RHost     = viewRegistry_m.find<RHost_t>(name + "_R");
+                if (RHost) {
+                    Kokkos::deep_copy(*RHost, pc.R.getView());
+                }
+
+                // Deep-copy ID (if enabled)
+                if constexpr (T::EnableIDs) {
+                    using IDHost_t =
+                        typename std::remove_reference_t<decltype(pc.ID)>::host_mirror_type;
+                    auto* IDHost = viewRegistry_m.find<IDHost_t>(name + "_ID");
+                    if (IDHost) {
+                        Kokkos::deep_copy(*IDHost, pc.ID.getView());
+                    }
+                }
+
+                // Deep-copy all user-defined attributes
+                pc.forAllAttributes([&]<typename Attributes>(const Attributes& atts) {
+                    for (auto* attribute : atts) {
+                        if (!pc.isBuiltinAttribute(attribute)) {
+                            attribute->updateConduitData();
+                        }
+                    }
+                });
+
+                // Update transform block values (if present)
+                if (raw->hasTransform()) {
+                    const auto& td    = *raw->transform();
+                    auto data_tf      = channel["data/block_transform"];
+                    auto setVec3Field = [&](const std::string& fieldName,
+                                            const ippl::Vector<double, 3>& v) {
+                        data_tf[std::string("fields/") + fieldName + "/values/x"].set(v[0]);
+                        data_tf[std::string("fields/") + fieldName + "/values/y"].set(v[1]);
+                        data_tf[std::string("fields/") + fieldName + "/values/z"].set(v[2]);
+                    };
+                    setVec3Field("BunchOrigin", td.origin);
+                    setVec3Field("BunchRotRow0", td.rows[0]);
+                    setVec3Field("BunchRotRow1", td.rows[1]);
+                    setVec3Field("BunchRotRow2", td.rows[2]);
+                    setVec3Field("BunchInvOrigin", td.invOrigin);
+                    setVec3Field("BunchInvRotRow0", td.invRows[0]);
+                    setVec3Field("BunchInvRotRow1", td.invRows[1]);
+                    setVec3Field("BunchInvRotRow2", td.invRows[2]);
+                }
+            });
+
+        channels_m.push_back(ch);
+        catalystInfo_m << level4 << "::addParticleChannel('" << name
+                       << "', type=" << typeid(T).name() << ")" << endl;
+        return ParticleChannelHandle(raw);
+    }
+
+    void CatalystAdaptor::refresh(const std::string& label) {
+        if (!visEnabled_m)
+            return;
+        for (auto& ch : channels_m) {
+            auto* arr = ch->findArray(label);
+            if (arr) {
+                arr->markDirty();
+                Inform info("CatalystAdaptor");
+                arr->refresh(ippl::Comm->rank(), info);
+                return;
+            }
+        }
+        catalystWarn_m << "::refresh() label not found: '" << label << "'" << endl;
     }
 
 }  // namespace ippl
