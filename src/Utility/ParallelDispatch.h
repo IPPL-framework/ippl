@@ -7,8 +7,8 @@
 #define IPPL_PARALLEL_DISPATCH_H
 
 #include <Kokkos_Core.hpp>
-#include "Ippl.h"
 
+#include <mpi.h>
 #include <tuple>
 
 #include "Types/Vector.h"
@@ -198,7 +198,9 @@ namespace ippl {
         template <typename F>
         void parallelForMPI(size_t n, F&& f) {
             constexpr bool useGPU = isGPUSpace<Kokkos::DefaultExecutionSpace>;
-            const bool threadSafe = Env->threadMultiple();
+            int provided          = MPI_THREAD_SINGLE;
+            MPI_Query_thread(&provided);
+            const bool threadSafe = provided >= MPI_THREAD_MULTIPLE;
 
             if constexpr (useGPU) {
                 if (threadSafe) {
