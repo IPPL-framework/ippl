@@ -1,0 +1,718 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage[margin=23mm,headheight=14pt,headsep=8mm,footskip=11mm]{geometry}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,patterns}
+\usepackage{caption}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{xurl}
+
+\usepackage[numbers,square,sort&compress]{natbib}
+\bibliographystyle{unsrtnat}
+\usepackage[
+  colorlinks=true,linkcolor=accent,citecolor=accent,urlcolor=accent,
+  pdftitle={Cherenkov diffraction radiation: analytical models, FDTD interfaces and an IPPL proof of concept},
+  pdfsubject={Single-electron radiation at a vacuum-dielectric interface and numerical validation}
+]{hyperref}
+
+\definecolor{ink}{HTML}{173448}
+\definecolor{accent}{HTML}{176B87}
+\definecolor{pale}{HTML}{EAF2F5}
+\definecolor{gridgray}{HTML}{CEDAE0}
+\titleformat{\section}{\large\bfseries\color{ink}}{\thesection}{0.65em}{}
+\titleformat{\subsection}{\normalsize\bfseries\color{ink}}{\thesubsection}{0.65em}{}
+\titlespacing*{\section}{0pt}{16pt}{7pt}
+\titlespacing*{\subsection}{0pt}{11pt}{5pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt plus 1pt}
+\setlength{\emergencystretch}{2em}
+\setlist{nosep,leftmargin=1.5em,topsep=5pt}
+\captionsetup{font=small,labelfont=bf,skip=7pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{ink}Cherenkov diffraction radiation}
+\fancyhead[R]{\small Literature and modelling note}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\dd}{\mathrm d}
+\newcommand{\unit}[1]{\,\mathrm{#1}}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\numberwithin{equation}{section}
+\setlength{\bibsep}{3pt}
+\renewcommand*{\bibfont}{\small}
+
+\author{A Adelmann}
+\title{Cherenkov diffraction radiation}
+ 
+\begin{document}
+\maketitle
+\thispagestyle{plain}
+
+This report illustrates a simple ChDR setup, the single-electron
+literature review, the review of finite-difference time-domain (FDTD) material
+interfaces, and the implications for the {\tt ChDR} mini-app based on IPPL FEL. The electron
+remains in vacuum at a gap \(a\) from the radiator. Entering the longitudinal
+region beside the material is distinct from crossing into the dielectric.
+
+\begin{figure}[!ht]
+\centering
+\begin{tikzpicture}[
+  x=1cm,
+  y=1cm,
+  >=Latex,
+  font=\sffamily,
+  beam/.style={very thick, -{Latex[length=3mm]}},
+  radiation/.style={very thick, -{Latex[length=2.5mm]}, green!45!black},
+  boundary/.style={very thick, black},
+  gridline/.style={thin, gray!55},
+  label/.style={font=\small},
+  every node/.style={inner sep=2pt}
+]
+
+  % Vacuum background and dielectric radiator.
+  \fill[blue!3] (-1.0,-2.8) rectangle (11.1,3.0);
+  \fill[orange!18] (4.0,-2.45) rectangle (8.65,0.0);
+  \draw[boundary] (4.0,0.0) -- (8.65,0.0) -- (8.65,-2.45)
+                  -- (4.0,-2.45) -- cycle;
+
+  % Computational mesh spanning both vacuum and dielectric.
+  \foreach \xx in {-0.55,-0.10,0.35,0.80,1.25,1.70,2.15,2.60,3.05,3.50,
+                    3.95,4.40,4.85,5.30,5.75,6.20,6.65,7.10,7.55,8.00,
+                    8.45,8.90,9.35,9.80,10.25}
+    \draw[gridline] (\xx,-2.45) -- (\xx,2.65);
+  \foreach \yy in {-2.05,-1.65,-1.25,-0.85,-0.45,-0.05,0.35,0.75,
+                    1.15,1.55,1.95,2.35}
+    \draw[gridline] (-0.75,\yy) -- (10.65,\yy);
+  \draw[gridline,dashed] (-0.75,-2.45) rectangle (10.65,2.65);
+
+  % Beam travelling in physical +z (horizontal in TikZ), parallel to the surface.
+  \draw[beam] (-0.75,0.72) -- (10.65,0.72);
+
+  % A small bunch marker and negative charge sign.
+  \draw[thick,fill=white] (1.05,0.72) circle (0.25);
+  \node at (1.05,0.72) {$e^{-}$};
+
+  % Beam--surface impact parameter.
+  \draw[<->] (3.30,0.02) -- node[right,fill=white] {$a$} (3.30,0.70);
+  \node[label,anchor=east,fill=white] at (6.4,0.4) {impact parameter};
+
+  % Radiation generated in the dielectric at the Cherenkov angle.
+  \draw[radiation] (4.18,0.0) -- (5.08,-0.957);
+  \draw[radiation] (4.85,0.0) -- (5.75,-0.957);
+  \draw[radiation] (5.52,0.0) -- (6.42,-0.957);
+  \draw[radiation] (6.19,0.0) -- (7.09,-0.957);
+  \draw[radiation] (6.86,0.0) -- (7.76,-0.957);
+  \draw[radiation] (7.53,0.0) -- (8.43,-0.957);
+
+  % Qualitative finite-edge radiation; not a Fresnel exit ray.
+  \draw[radiation,dashed] (8.65,-2.45) -- (9.55,-1.25);
+  \node[label,anchor=west,align=left,green!35!black] at (9.58,-1.25)
+    {edge radiation\\(schematic)};
+
+  % Cherenkov angle, measured from the beam direction (+z).
+  \draw[thin] (4.18,0.0) ++(-46.75:0.55)
+    arc[start angle=-46.75,end angle=0,radius=0.55];
+  \node[label,anchor=west,fill=orange!18] at (4.30,-0.22)
+    {$\theta_{\rm Ch}\simeq46.7^\circ$};
+
+  % Material labels.
+  \node[label,align=center] at (6.20,-1.55)
+    {dielectric radiator\\
+     $\epsilon_r=2.13$\;(illustrative)};
+  \node[label,align=center] at (1.50,2.15)
+    {vacuum\\$\epsilon_r=1$};
+
+  % Coordinate axes.
+  \draw[->,thick] (-0.55,-2.55) -- (-0.55,-1.65)
+    node[left] {$x$};
+  \draw[->,thick] (-0.55,-2.55) -- (0.35,-2.55)
+    node[below] {$z$};
+
+\end{tikzpicture}
+\caption{Schematic \(x\)--\(z\) view of the setup draft.
+The electron travels in vacuum along \(+z\), at gap \(a\) above the finite
+radiator. The computational grid encompasses both materials. Solid green arrows indicate
+internal radiation; the dashed edge-radiation arrow is qualitative, not a
+prediction of the external observation angle.}
+\label{fig:geometry}
+\end{figure}
+
+
+
+
+%\textbf{Main finding.} The infinite planar-interface problem supplies an
+%analytical reference requiring one numerical integral per frequency.
+%A finite radiator additionally requires edge and extraction effects.
+%FDTD can model both, provided the constitutive response, moving-charge source
+%and outer boundary are consistent. A Cartesian grid can represent a tilted
+%face; the current FEL solver needs a material formulation before that geometry
+%can be used quantitatively.
+
+\section{Geometry and fixed beam parameters}
+\label{sec:setup}
+
+Let us fix the AWA like beam parameters as follows, assuming \(60\unit{MeV}\) means
+kinetic energy and \(3\unit{mm}\) means the rms longitudinal length of a
+Gaussian bunch. The magnitude of the bunch charge is \(5\unit{nC}\).
+The beam travels along \(+z\), with \(x\) normal to the beam-facing surface
+and \(y\) the other transverse coordinate. Thus \(\sigma_z=3\unit{mm}\);
+\(\sigma_x\) and \(\sigma_y\) denote the transverse beam sizes.
+The dielectric (fused silika) is initially an illustrative nonmagnetic, lossless medium
+with relative permittivity \(\epsilon_r=2.13\). 
+
+\begin{center}
+\renewcommand{\arraystretch}{1.14}
+\begin{tabularx}{\linewidth}{@{}Y l@{}}
+\toprule
+Quantity & Value\\
+\midrule
+Electron kinetic energy \(K\) & \(60\unit{MeV}\)\\
+Total energy per electron \(E_{\mathrm{tot}}\) & \(60.511\unit{MeV}\)\\
+Lorentz factor \(\gamma=1+K/(m_ec^2)\) & \(118.4171\)\\
+Normalized speed \(\beta=\sqrt{1-\gamma^{-2}}\) & \(0.99996434\)\\
+Longitudinal rms length \(\sigma_z\) & \(3\unit{mm}\)\\
+Rms duration \(\sigma_t=\sigma_z/(\beta c)\) & \(10.0073\unit{ps}\)\\
+Gaussian pulse FWHM & \(23.6\unit{ps}\)\\
+Gaussian peak current magnitude \(I_{\mathrm{peak}}\) & \(199\unit{A}\)\\
+Charge magnitude \(Q\), electron number \(N=Q/e\) &
+\(5\unit{nC},\quad 3.12\times10^{10}\)\\
+Bunch kinetic energy \(NK\) & \(0.30\unit{J}\)\\
+Refractive index \(n=\sqrt{2.13}\) & \(1.45945\)\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+The duration, peak current and energy follow from
+\begin{align}
+ t_{\mathrm{FWHM}}&=2\sqrt{2\ln2}\,\sigma_t,&
+ I_{\mathrm{peak}}&=\frac{Q}{\sqrt{2\pi}\,\sigma_t},\\
+ E_{\mathrm{tot}}&=K+m_ec^2,&
+ E_{\mathrm{bunch,kin}}&=NK.
+\end{align}
+%Here \(Q\) is the positive charge magnitude; the electron bunch carries
+%charge \(-Q\). The approximation \(\sigma_t\simeq\sigma_z/c\) gives
+%\(10.0\unit{ps}\), consistent with the setup draft.
+
+\subsection{First simulation case}
+
+A straight \(60\unit{MeV}\), \(5\unit{nC}\) bunch passing parallel to a flat
+\(\epsilon_r=2.13\) radiator is a useful first proof of concept. Varying the
+gap \(a\) tests coupling, spectrum, polarization and the internal Cherenkov
+angle before adding the tilted prism and its optical extraction.
+The gap, transverse beam sizes and radiator dimensions remain parameters.
+
+A longitudinal span of \(6\)--\(10\,\sigma_z\), or approximately
+\(18\)--\(30\unit{mm}\), is a starting allowance for the bunch in a
+laboratory-frame domain. Add the radiator, upstream and downstream vacuum
+margins, radiation travel distance and absorbing layers. This bunch-span
+estimate alone does not determine the full simulation volume or duration.
+
+\subsection{Simplified experimental considerations}
+
+The \(3\unit{mm}\) bunch length gives a longitudinal squared-form-factor
+roll-off near \(16\unit{GHz}\), corresponding to centimetre wavelengths.
+This motivates examining a microwave band, but the detected maximum also
+depends on the radiator response and collection geometry. A flat slab
+validates generation inside the dielectric; the prism and optical system
+are needed to predict the collected signal. Section~\ref{sec:analytical}
+separates the single-electron response, bunch coherence and finite-body effects.
+
+The prism aperture models discussed below are most useful when face dimensions
+greatly exceed wavelength. A centimetre-scale radiator is comparable to the
+approximately \(19\unit{mm}\) vacuum wavelength at this bunch form-factor
+scale, so that assumption must be checked. The appropriate material input is
+\(\epsilon_r(\omega)\) over the chosen band; an optical dielectric constant
+cannot be presumed valid at microwave frequencies.
+
+\section{Analytical and reduced single-electron models}
+\label{sec:analytical}
+
+\subsection{Literature closest to the stated geometry}
+
+Tyukhtin, Galyamin and Vorobev~\cite{tyukhtin2021invertedprism}
+give the exact dielectric-half-space field as a single transverse-wave-number
+integral in Section~III, Eqs.~(5)--(8). This is the most direct reference
+for the planar benchmark. The later finite-prism construction in that paper
+uses an aperture approximation, and should not be treated as an exact
+solution for any finite body.
+
+Shevelev and Konkov~\cite{shevelev2014dielectrictarget} calculate polarization
+radiation from a charge outside a prismatic target, including target
+orientation and extraction. Their target is infinite in one transverse
+direction. The Fresnel extraction assumes an exit face much larger than
+the wavelength and omits multiple internal rereflections; see p.~510.
+Their gap is denoted by \(b\), whereas their \(a\) is a target dimension.
+
+Curcio et al.~\cite{curcio2020bunchlength} connect ChDR theory, simulations
+and bunch-length measurements. Section~III.A compares MAGIC simulations of
+an axisymmetric hollow cone with an analytical radiator transfer function.
+The modulated beam and conical geometry support the approach, but are
+different from a planar single-electron benchmark.
+
+\subsection{Meaning of a one-dimensional computation}
+
+For the analytical reference, replace the finite radiator in
+Fig.~\ref{fig:geometry} by a dielectric half-space with an infinitely extended
+beam-facing plane at \(x=0\). Choose vacuum at \(x>0\) and dielectric at
+\(x<0\). Cartesian vectors below are ordered as \((x,y,z)\). For a prescribed
+electron trajectory at gap \(a>0\), moving along \(+z\),
+\begin{align}
+ \mathbf r_e(t)&=(a,0,vt), \label{eq:trajectory}\\
+ \rho(\mathbf r,t)&=-e\,\delta(x-a)\delta(y)\delta(z-vt),&
+ \mathbf J&=v\rho\,\hat{\mathbf z}. \label{eq:source}
+\end{align}
+Here \(v=\beta c>0\), so \(J_x=J_y=0\) and \(J_z=v\rho\).
+With time convention \(e^{-i\omega t}\), the source fixes
+\begin{equation}
+ k_z=\frac{\omega}{v}.
+ \label{eq:phase}
+\end{equation}
+Fourier transformation in \(y\) is useful because the ideal half-space is
+uniform along \(y\): spatial modes \(e^{ik_y y}\) can be solved independently.
+Motion along \(z\) already fixes \(k_z=\omega/v\). Thus, for each pair
+\((\omega,k_y)\), only the dependence on \(x\) remains to be solved as a
+one-dimensional boundary-value problem. For \(\mu_r=1\), the vacuum decay
+constant and dielectric normal wave number obey
+\begin{align}
+ \kappa_0&=\sqrt{k_y^2+\frac{\omega^2}{\gamma^2v^2}}, \label{eq:kappa}\\
+ k_{x,d}^{\,2}&=\epsilon_r(\omega)\frac{\omega^2}{c^2}
+                  -\frac{\omega^2}{v^2}-k_y^2. \label{eq:kxd}
+\end{align}
+The subscript \(d\) in \(k_{x,d}\) means \emph{dielectric}: it labels the
+wave-number component normal to the interface inside the dielectric,
+not a distance or derivative. Equation~\eqref{eq:kxd} follows from the
+dielectric dispersion relation
+\[
+ k_{x,d}^{\,2}+k_y^2+k_z^2
+ =\epsilon_r(\omega)\frac{\omega^2}{c^2}
+\]
+after substituting \(k_z=\omega/v\).
+The vacuum field is evanescent normal to the interface. Choose the
+dielectric branch to carry energy away from the interface, or to decay
+into passive lossy material.
+
+Each spectral component is obtained by matching the two polarizations
+at the interface. The electron is localized at \(y=0\), so its field
+contains all \(k_y\) components even though the material is uniform in
+\(y\). Integrating these components over \(k_y\) reconstructs the
+three-dimensional point-electron field at a fixed frequency. Reconstructing
+a time waveform also requires an inverse frequency transform. Both
+propagating and evanescent dielectric components belong in the full integral.
+
+This is a \emph{spectral reduction of a three-dimensional point-source
+problem}. Ordinary 1D FDTD cannot resolve both the gap and the propagation
+direction. Ordinary Cartesian 2D FDTD describes a source uniform in the
+omitted coordinate, hence a line charge with per-unit-length normalization.
+The explicit amplitudes and Fourier normalization in
+Ref.~\cite{tyukhtin2021invertedprism} use Gaussian electromagnetic units;
+convert source and field normalization consistently for an absolute
+comparison in SI or IPPL units.
+
+\subsection{Threshold, internal angle and gap dependence}
+
+For a real, positive, nondispersive permittivity, a propagating dielectric
+component requires
+\begin{equation}
+ k_y^2<\frac{\omega^2}{c^2}
+       \left(\epsilon_r-\beta^{-2}\right).
+\end{equation}
+Consequently the threshold and internal phase-matching angle are
+\begin{equation}
+ n\beta>1,\qquad
+ \cos\theta_{\mathrm{Ch}}=\frac{1}{n\beta},\qquad
+ \theta_{\mathrm{Ch}}=46.7476^\circ
+ \quad(\epsilon_r=2.13).
+ \label{eq:angle}
+\end{equation}
+This angle is measured inside the homogeneous dielectric relative to
+the beam direction \(+z\). It does not specify the camera angle after extraction.
+
+At a fixed \(k_y\), moving the trajectory away from the interface supplies
+the amplitude factor \(e^{-\kappa_0a}\), and the corresponding modal energy
+factor \(e^{-2\kappa_0a}\). An integrated observable combines many \(k_y\)
+values and need not follow a single exponential in \(a\). At \(k_y=0\),
+\begin{equation}
+ \kappa_0^{-1}=\frac{\gamma\beta\lambda_0}{2\pi}.
+ \label{eq:coupling}
+\end{equation}
+For example, this field coupling length is approximately
+\(9.4\unit{\mu m}\) at a vacuum wavelength of \(500\unit{nm}\).
+It is neither a hard cutoff nor a required box dimension.
+
+\subsection{Extension to the specified bunch}
+
+For prescribed trajectories in a linear material, electron responses can
+be superposed. If they differ only by independent arrival times and have
+the same transverse coupling, expanding the squared sum of the amplitudes gives
+\begin{align}
+ \left\langle\frac{\dd W_N}{\dd\omega}\right\rangle
+   &=\left[N+N(N-1)|F(\omega)|^2\right]
+      \frac{\dd W_1}{\dd\omega}, \label{eq:bunch}\\
+ |F(\omega)|^2&=\exp[-(\omega\sigma_t)^2]
+              =\exp[-(\omega\sigma_z/v)^2],&
+ N&=\frac{Q}{e}. \label{eq:formfactor}
+\end{align}
+A transverse distribution, including a distribution of gaps, requires
+an amplitude average over those trajectories.
+
+The Gaussian squared form factor reaches \(e^{-1}\) at
+\begin{equation}
+ f_*=\frac{1}{2\pi\sigma_t}=\frac{v}{2\pi\sigma_z}=15.904\unit{GHz},
+ \qquad \lambda_{0,*}\simeq18.85\unit{mm}.
+\end{equation}
+This is a form-factor roll-off, \emph{not automatically a detected spectral
+maximum}. The single-electron spectrum, finite-radiator response and
+collection optics also contribute. A direct representation of individual
+electrons does not remove the grid's spatial and temporal bandwidth limits.
+For a fixed bunch shape and geometry, the coherent contribution scales
+approximately as \(Q^2\). At visible wavelengths the Gaussian longitudinal
+coherent term is strongly suppressed for a \(3\unit{mm}\) bunch. A visible-camera
+prediction therefore needs the incoherent single-electron contribution,
+or optical-scale bunching if coherent emission is intended.
+
+\subsection{Finite radiator and the approximately 47-degree geometry}
+
+Equation~\eqref{eq:phase} implies \(k_z>\omega/c\): the tangential wave
+number exceeds the vacuum propagating-wave limit. Therefore a mode
+coupled through the infinite planar interface cannot escape as propagating
+radiation through that same interface. An inclined extraction face or a
+finite edge changes this constraint. This is a phase-matching consequence
+of the idealized model.
+
+A rectangular radiator can demonstrate excitation inside the dielectric,
+while producing a different external angular distribution from a prism.
+Distinguish the orientation of the beam-facing surface, the extraction-face
+normal and the internal angle in Eq.~\eqref{eq:angle}.
+
+Entering and leaving the region beside a finite body breaks translation
+symmetry along \(z\). Edge transients, interference and internal reflections
+then require a finite-geometry treatment. If the material is still invariant
+in \(y\), a Fourier transform in that coordinate gives a family of
+two-dimensional problems, often called 2.5D. Finite width generally requires
+a three-dimensional calculation.
+
+\section{FDTD and the vacuum--dielectric boundary}
+\label{sec:fdtd}
+
+\subsection{Field equations and the material interface}
+
+The Meep paper by Oskooi et al.~\cite{oskooi2010meep} describes a practical
+FDTD implementation and includes moving-source Cherenkov radiation in
+Fig.~5. Its homogeneous-medium, two-dimensional demonstration is a useful
+starting point. The maintained source example is also available~\cite{meepMovingSource}.
+
+A suitable material formulation, written here in SI units, is
+\begin{align}
+ \partial_t\mathbf D&=\nabla\times\mathbf H-\mathbf J_{\mathrm{free}},
+ &\partial_t\mathbf B&=-\nabla\times\mathbf E, \label{eq:maxwell}\\
+ \mathbf B&=\mu_0\mathbf H,
+ &\mathbf D&=\epsilon_0\epsilon_r(\mathbf r)\mathbf E. \label{eq:constitutive}
+\end{align}
+For the initial lossless, nondispersive proof of concept,
+\(\epsilon_r=1\) in vacuum and \(2.13\) in the radiator.
+The electron's field polarizes the material; a separate prescribed
+Cherenkov-radiation source is unnecessary.
+
+With no free surface-charge sheet or free surface current, the physical
+interface conditions are
+\begin{equation}
+ [\mathbf E_t]=[\mathbf H_t]=0,\qquad [D_n]=[B_n]=0.
+ \label{eq:interface}
+\end{equation}
+Here square brackets denote the jump across the interface. The normal
+components at the beam-facing plane \(x=0\) are \(D_x,B_x\), and the
+tangential components are \(E_y,E_z,H_y,H_z\). The normal
+electric field generally jumps; forcing every component of \(\mathbf E\)
+to be continuous gives an incorrect boundary. Bound polarization charge
+is represented by the constitutive relation.
+
+In a Yee discretization, material coefficients must correspond to the
+electric-component locations and their averaging volumes. Beginning with a
+grid-aligned plane isolates constitutive and source errors from errors
+in representing a sloping face.
+
+\subsection{Cut cells and a tilted extraction face}
+
+Farjadpour et al.~\cite{farjadpour2006subpixel} derive subpixel averaging
+that removes the leading interface error for suitable geometries.
+Kottke et al.~\cite{kottke2008interfaces}, Section~VI, explain the
+discontinuity-aware treatment and its anisotropic extension.
+
+For a cell cut by a locally planar interface between two isotropic,
+nondispersive materials, let \(f\) be the dielectric fraction.
+Using relative permittivities, the tangential and normal averages are
+\begin{align}
+ \epsilon_{\parallel}&=f\epsilon_d+(1-f)\epsilon_v,\\
+ \epsilon_{\perp}&=\left(
+    \frac{f}{\epsilon_d}+\frac{1-f}{\epsilon_v}
+    \right)^{-1}.
+\end{align}
+For unit interface normal \(\hat{\mathbf n}\), these form the tensor
+\begin{equation}
+ \boldsymbol{\epsilon}_{\mathrm{eff}}
+ =\epsilon_{\parallel}
+   (\mathbf I-\hat{\mathbf n}\hat{\mathbf n}^{T})
+ +\epsilon_{\perp}\hat{\mathbf n}\hat{\mathbf n}^{T}.
+ \label{eq:tensor}
+\end{equation}
+At the beam-facing plane, \(\hat{\mathbf n}=\hat{\mathbf x}\), so in
+\((x,y,z)\) order this is
+\(\operatorname{diag}(\epsilon_{\perp},\epsilon_{\parallel},\epsilon_{\parallel})\).
+Off-diagonal entries require consistent interpolation on a staggered
+grid. This describes a sharp interface within a numerical cell, rather
+than a deliberately thick physical transition layer. Corners and edges
+can limit convergence below second order~\cite{kottke2008interfaces}.
+
+A \(47^\circ\) face is therefore possible on a Cartesian grid.
+The issue is accurate representation and convergence of the interface.
+Arbitrary scalar averaging of the permittivity does not implement
+Eq.~\eqref{eq:tensor}.
+
+\subsection{Frequency-dependent response}
+
+For dispersive material, introduce a causal polarization model, for example
+auxiliary equations for Lorentz or Debye responses, with
+\begin{equation}
+ \mathbf D=\epsilon_0\epsilon_\infty\mathbf E+\mathbf P.
+\end{equation}
+The nondispersive averaging above is not a complete dispersive algorithm.
+Meep smooths the instantaneous permittivity and documents limitations
+for dispersive contributions~\cite{meepSubpixel}. Material loss, bandwidth
+and any auxiliary-equation stability conditions need explicit choices.
+
+\subsection{Moving charge, initialization and conservation}
+\label{sec:source-consistency}
+
+Esirkepov's deposition construction~\cite{esirkepov2001charge}
+provides a reference for satisfying discrete continuity. Its discrete
+operators must match those of the selected Maxwell solver:
+\begin{equation}
+ \frac{\rho^{n+1}-\rho^n}{\Delta t}
+ +\nabla_h\cdot\mathbf J^{n+1/2}=0.
+ \label{eq:continuity}
+\end{equation}
+Combined with consistent initial fields, this preserves the free-charge
+Gauss constraint \(\nabla_h\cdot\mathbf D=\rho\).
+Starting an already moving electron with zero fields, or abruptly switching
+its current on and off, creates transients. Initialize consistently or
+show that those transients do not enter the benchmark measurement.
+
+The numerical particle shape must fit within the vacuum gap and resolve
+the measured frequencies. Otherwise deposition overlaps the material or
+filters the spectrum. These requirements still apply when every simulated
+particle represents one electron.
+
+\subsection{Outer absorption and numerical radiation}
+
+A perfectly matched layer (PML) truncates the computational domain;
+it is separate from the physical vacuum--dielectric interface.
+Johnson's notes~\cite{johnson2021pml} explain the construction and its
+limitations. Place it outside the observation region, and verify convergence
+with its distance and thickness. If dielectric reaches the PML, extend
+the material consistently. Inhomogeneity along the stretching direction,
+including some oblique structures, can invalidate ordinary
+matching~\cite{meepPML}.
+
+The setup draft additionally cites Kraus, Adelmann and
+Arbenz~\cite{kraus2011adipml}, who formulate PML for a divergence-preserving
+alternating-direction implicit (ADI) Maxwell scheme. This is relevant when
+evaluating an ADI route; its update equations must not be assumed to apply
+unchanged to the present explicit potential solver.
+
+Xu et al.~\cite{xu2020numericalfields} analyse spurious fields and
+Cherenkov-like wakes around a relativistic particle, including in vacuum.
+At the present \(\beta=0.99996434\), a vacuum control with the same source,
+mesh and time step is essential. A visible cone alone is not evidence
+of physical ChDR. Numerical radiation from a prescribed charge should also
+be distinguished from collective numerical Cherenkov instability.
+
+Measure radiation separately from the electron's bound near field:
+compare complex field spectra at specified locations, or outgoing flux
+away from the trajectory. Align \(\mathbf E\) and \(\mathbf H\) in space
+and time before computing Poynting flux~\cite{oskooi2010meep}.
+Subtracting two near-field powers is not generally equivalent to computing
+the power of a difference field.
+
+\section{Implications for the new IPPL {\tt ChDR} mini-app}
+\label{sec:ippl}
+
+\subsection{Development scope for the MSc thesis of D.~Rosser}
+
+The setup draft identifies dielectric interfaces, the reference frame and
+absorbing boundaries as development topics for this thesis. The following
+items connect that scope to the current implementation.
+
+\textbf{Field formulation.}
+\path{demos/fel/datatypes.h}, around line~50, selects
+\code{NonStandardFDTDSolver} with absorbing Mur boundaries.
+\path{src/MaxwellSolvers/NonStandardFDTDSolver.hpp}, around lines~28
+and~114, advances four-potential fields using a vacuum stencil and sets
+\(\Delta t=h_z\) in normalized units. A spatial dielectric is more than a
+geometry mask or a replacement of \(c\) by \(c/n\): constitutive response,
+interface coupling and stability must be derived consistently.
+
+\textbf{Existing particle and source machinery.}
+The FEL mini-app already provides relativistic Boris particle motion,
+field interpolation, particle initialization and current deposition.
+In \path{demos/fel/FreeElectronLaserManager.h}, \code{depositCurrent}
+calls \code{assemble\_current\_collocated}; CIC charge-density deposition
+is enabled by \code{space\_charge}. These are existing capabilities to
+reuse for ChDR. The material extension does not by itself require a new
+particle pusher or deposition scheme.
+
+\textbf{Initialization and conservation checks.}
+Section~\ref{sec:source-consistency} is therefore supported by existing
+particle/source machinery, but its full consistency requirements have
+not yet been established for the ChDR configuration.
+In \path{src/MaxwellSolvers/NonStandardFDTDSolver.hpp},
+\code{initialize} sets all three potential time levels to zero.
+The manager's initialization sequence does not supply the pre-existing
+self-field of an already moving electron. Consistent field initialization,
+or exclusion of startup transients from the measurement, remains necessary.
+
+The current implementation uses trajectory-segmented CIC deposition on
+a collocated grid. The tests in
+\path{unit_tests/Interpolation/TestCurrentDeposition.cpp} check deposited
+values, but do not establish the discrete continuity relation in
+Eq.~\eqref{eq:continuity} or preservation of the Gauss constraint.
+Exact discrete charge conservation should therefore be verified using
+the selected field operators; it is not established by the presence of
+the deposition routine alone. Repeat that compatibility check if the
+material solver or field staggering changes.
+
+\textbf{Moving electron source:}
+Oskooi and Johnson's chapter in the volume edited by Taflove, Oskooi and
+Johnson~\cite{taflove2013advances,oskooi2013sources},
+Section~4.7, pp.~89--91, explicitly demonstrates moving-source Cherenkov
+radiation. Figure~4.10 compares continuous interpolation of the source
+with rounding its position to grid points; the latter produces artificial
+high-frequency radiation. Interpolation reduces these artifacts, while
+numerical dispersion remains. This homogeneous-medium, two-dimensional
+example supports source validation but does not replace the
+vacuum-gap benchmark for our geometry. The chapter is authored by
+Oskooi and Johnson; Taflove is a co-editor of the book.
+Taflove and Hagness~\cite{taflove2005computational} provide the broader
+FDTD background on material updates, numerical dispersion, stability
+and absorbing boundaries.
+
+\textbf{Reference frame.}
+The same manager, around line~47, ties a Lorentz boost to bunch and
+undulator parameters. A laboratory-frame ChDR mode keeps the radiator
+stationary. A dielectric that is stationary and isotropic in the laboratory
+cannot be represented as the same stationary scalar material after a
+nonzero boost. Removing the undulator field alone does not establish
+the correct material-frame model.
+
+\textbf{Outer boundaries.}
+The second-order Mur treatment can be used for preliminary checks if
+reflections are shown to be below the measurement tolerance. Quantitative
+power and oblique radiation motivate a validated PML implementation.
+The absorber must remain separate from the physical dielectric interface.
+
+Two possible formulations merit evaluation:
+\begin{enumerate}
+ \item A direct \(\mathbf D,\mathbf B\) Maxwell solver with a material
+       constitutive response and consistent particle coupling.
+ \item A potential solver coupled self-consistently to polarization
+       charge and current,
+       \begin{equation}
+       \rho_{\mathrm{bound}}=-\nabla\cdot\mathbf P,\qquad
+       \mathbf J_{\mathrm{bound}}=\partial_t\mathbf P.
+       \end{equation}
+       This route needs a stable, gauge-consistent coupling.
+\end{enumerate}
+The literature review does not establish which requires the smaller
+implementation change.
+
+\subsection{Job-file units and coordinate mapping}
+
+The parser in \path{demos/fel/Config.h} converts the numerical
+\code{charge} and \code{mass} entries from elementary-charge and
+electron-mass units into solver units. They are not direct SI coulombs
+and kilograms. The manager subsequently divides the configured totals
+by the actual particle count.
+
+The charge conversion factor in \path{demos/fel/units.h} is positive and
+the input sign is passed through. Thus, for an electron bunch of charge
+\(-5\unit{nC}\), the setup draft's charge magnitude becomes a negative
+input. A sketch of the relevant entries is
+\begin{verbatim}
+"charge": -3.1207545e10,
+"mass":    3.1207545e10,
+"gamma":   118.417071,
+"sigma-position": [sigma_x_code_um, sigma_y_code_um, 3000.0]
+\end{verbatim}
+The two transverse sizes are placeholders. The value \(3000.0\) assumes
+the job file selects micrometres as its length scale. In the current code
+the third coordinate, \(z_{\mathrm{code}}\), is longitudinal and corresponds
+to \(z\) in Fig.~\ref{fig:geometry}; \(x_{\mathrm{code}}\) and
+\(y_{\mathrm{code}}\) are transverse. Thus the third entry is
+\(\sigma_z=3000\unit{\mu m}\), while the first two are \(\sigma_x,\sigma_y\).
+This coordinate convention does not remove the code's boost.
+These entries therefore specify units
+and beam scales, not a complete runnable laboratory-frame ChDR job.
+
+\subsection{Validation sequence}
+
+\begin{enumerate}[itemsep=5pt]
+ \item \textbf{Passive interface.} Launch plane waves at a flat boundary.
+       Compare Fresnel reflection and transmission for both polarizations
+       and check lossless energy balance.
+ \item \textbf{Vacuum electron.} Use a prescribed \(60\unit{MeV}\)
+       trajectory and consistent initial fields. Measure unwanted radiation,
+       continuity residuals and the Gauss residual.
+ \item \textbf{Planar ChDR.} Compare complex spectra, polarization, gap
+       dependence and propagation angle with the independent half-space
+       calculation. Check convergence in mesh spacing, particle shape,
+       box dimensions and outer absorption.
+ \item \textbf{Finite radiator.} Add leading and trailing edges, followed
+       by the tilted extraction face. Compare angular spectra and refine
+       the interface representation. Apply finite-target analytical
+       approximations only within their stated regime.
+ \item \textbf{Bunch response.} Introduce the longitudinal and transverse
+       distributions in the selected band after the single-electron
+       response is established.
+\end{enumerate}
+
+For an infinite track, compare a spectral energy quantity per unit path
+length rather than a finite total radiated energy. For a finite radiator,
+define whether the observable is a local field, electron energy loss,
+outgoing spectral energy or energy collected by specified optics.
+
+For a conventional explicit Yee solver, the vacuum region imposes
+\begin{equation}
+ c\Delta t\sqrt{h_x^{-2}+h_y^{-2}+h_z^{-2}}\leq1.
+\end{equation}
+Auxiliary material equations and other stencils can impose additional
+conditions. This is not the time-step rule of the existing nonstandard
+potential solver. Resolve the shortest material wavelength and relevant
+gap/source scales; a prescribed cell count alone does not certify accuracy.
+
+\subsection{Inputs still needed and status}
+
+The remaining physical choices are gap \(a\), radiator length, thickness
+and width, face orientations, material data \(\epsilon_r(\omega)\), the
+frequency band, transverse beam distribution and the detector observable.
+The approximately \(16\unit{GHz}\) bunch form-factor scale is useful for
+planning, but does not determine the detected peak or eliminate the
+need for the radiator transfer function.
+
+This is a focused literature synthesis and implementation assessment.
+The beam quantities are direct calculations from the stated assumptions.
+The listed simulations and convergence checks are recommendations;
+no field simulation or solver modification was performed for this report.
+
+\clearpage
+\renewcommand{\bibsection}{\section{Literature and software references}}
+\bibliography{chdr_references}
+
+\end{document}
