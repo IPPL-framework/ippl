@@ -4,16 +4,16 @@ The report combines the setup, analytical single-electron models, FDTD interface
 
 ## Files required to compile
 
-- `chdr_literature_review.tex`: the author's latest edited report, with its bibliography configuration converted to standard BibTeX using natbib and the unsrtnat style.
+- `chdr_literature_review.tex`: the canonical consolidated source containing the setup, fixed beam parameters, proof-of-concept scope, literature review and implementation assessment. Its bibliography uses standard BibTeX with natbib and the unsrtnat style.
 - `chdr_references.bib`: the reference database; the three undated Meep entries are explicitly marked `n.d.` (no date).
 
-The finite-radiator TikZ figure is embedded in the source; no external images or custom bibliography styles are needed. The original Markdown reviews and `../chdr_setup.tex` are retained separately.
+The finite-radiator TikZ figure is embedded in the source; no external images or custom bibliography styles are needed. The original Markdown reviews and `../chdr_setup.tex` remain as historical working material, but all report content is maintained in the consolidated source.
 
 ## Coordinate convention
 
 The report consistently uses Cartesian order `(x,y,z)`, with the electron moving along `+z`. The planar reference has its interface at `x=0`, vacuum at `x>0`, dielectric at `x<0`, and gap `a` measured along `x`. The longitudinal bunch length is `sigma_z = 3 mm`; `sigma_x` and `sigma_y` are transverse sizes.
 
-The trajectory, charge/current source, spectral equations, form factor, interface-component descriptions and job-file mapping use this convention. The electron trajectory is `(a,0,vt)`, phase matching fixes `k_z = omega/v`, and the remaining Fourier integral is over `k_y`. Relabelling the axes leaves the numerical beam parameters and internal Cherenkov angle unchanged. The original setup draft is retained separately without edits.
+The trajectory, charge/current source, spectral equations, form factor, interface-component descriptions and job-file mapping use this convention. The electron trajectory is `(a,0,vt)`, phase matching fixes `k_z = omega/v`, and the remaining Fourier integral is over `k_y`. Relabelling the axes leaves the numerical beam parameters and internal Cherenkov angle unchanged. The legacy standalone setup is retained separately without edits.
 
 ## TeXShop: BibTeX workflow
 

@@ -57,11 +57,12 @@
 \maketitle
 \thispagestyle{plain}
 
-This report illustrates a simple ChDR setup, the single-electron
-literature review, the review of finite-difference time-domain (FDTD) material
-interfaces, and the implications for the {\tt ChDR} mini-app based on IPPL FEL. The electron
-remains in vacuum at a gap \(a\) from the radiator. Entering the longitudinal
-region beside the material is distinct from crossing into the dielectric.
+This consolidated report combines the ChDR setup and beam parameters with
+the single-electron literature review, the review of finite-difference
+time-domain (FDTD) material interfaces, and the implications for the
+{\tt ChDR} mini-app based on IPPL FEL. The electron remains in vacuum at a
+gap \(a\) from the radiator. Entering the longitudinal region beside the
+material is distinct from crossing into the dielectric.
 
 \begin{figure}[!ht]
 \centering
@@ -138,7 +139,7 @@ region beside the material is distinct from crossing into the dielectric.
     node[below] {$z$};
 
 \end{tikzpicture}
-\caption{Schematic \(x\)--\(z\) view of the setup draft.
+\caption{Schematic \(x\)--\(z\) view of the ChDR setup.
 The electron travels in vacuum along \(+z\), at gap \(a\) above the finite
 radiator. The computational grid encompasses both materials. Solid green arrows indicate
 internal radiation; the dashed edge-radiation arrow is qualitative, not a
@@ -157,10 +158,10 @@ prediction of the external observation angle.}
 %face; the current FEL solver needs a material formulation before that geometry
 %can be used quantitatively.
 
-\section{Geometry and fixed beam parameters}
+\section{Setup, fixed beam parameters and proof-of-concept geometry}
 \label{sec:setup}
 
-Let us fix the AWA like beam parameters as follows, assuming \(60\unit{MeV}\) means
+Let us fix the AWA-like beam parameters as follows, assuming \(60\unit{MeV}\) means
 kinetic energy and \(3\unit{mm}\) means the rms longitudinal length of a
 Gaussian bunch. The magnitude of the bunch charge is \(5\unit{nC}\).
 The beam travels along \(+z\), with \(x\) normal to the beam-facing surface
@@ -200,7 +201,7 @@ The duration, peak current and energy follow from
 \end{align}
 %Here \(Q\) is the positive charge magnitude; the electron bunch carries
 %charge \(-Q\). The approximation \(\sigma_t\simeq\sigma_z/c\) gives
-%\(10.0\unit{ps}\), consistent with the setup draft.
+%\(10.0\unit{ps}\), consistent with the rounded setup value.
 
 \subsection{First simulation case}
 
@@ -209,12 +210,44 @@ A straight \(60\unit{MeV}\), \(5\unit{nC}\) bunch passing parallel to a flat
 gap \(a\) tests coupling, spectrum, polarization and the internal Cherenkov
 angle before adding the tilted prism and its optical extraction.
 The gap, transverse beam sizes and radiator dimensions remain parameters.
+The beam-facing dielectric surface does not have to be tilted by the
+approximately \(47^\circ\) internal Cherenkov angle. An axis-aligned slab is
+the cleaner first material-interface test. It does not reproduce the final
+out-coupling through a prism or the camera signal.
 
 A longitudinal span of \(6\)--\(10\,\sigma_z\), or approximately
 \(18\)--\(30\unit{mm}\), is a starting allowance for the bunch in a
 laboratory-frame domain. Add the radiator, upstream and downstream vacuum
 margins, radiation travel distance and absorbing layers. This bunch-span
 estimate alone does not determine the full simulation volume or duration.
+
+\subsection{Proof-of-concept scope and present obstacles}
+
+There is no fundamental obstacle to the proposed proof-of-concept
+calculation, but the following implementation issues delimit its first stage:
+\begin{enumerate}[itemsep=4pt]
+ \item The existing field formulation is a vacuum solver. A spatial
+       constitutive response \(\epsilon_r(\mathbf r)\) and a verified
+       vacuum--dielectric interface treatment must be added before the
+       radiator is physical.
+ \item The FEL mini-app uses a Lorentz-boosted frame, whereas a stationary
+       isotropic radiator is most simply represented in the laboratory
+       frame. The ChDR configuration therefore needs a laboratory-frame mode
+       or a fully transformed material model.
+ \item The existing second-order Mur boundary may reflect oblique radiation.
+       It is suitable only when a boundary-convergence test shows that the
+       reflected field is below the required tolerance; quantitative power
+       calculations motivate a validated PML.
+ \item A tilted prism on a Cartesian mesh introduces cut cells and possible
+       staircasing. The first benchmark should use an axis-aligned planar
+       interface, followed by subcell averaging or a conformal treatment for
+       the extraction face.
+\end{enumerate}
+Sections~\ref{sec:fdtd} and~\ref{sec:ippl} develop these points and give a
+validation sequence. The initial parameter scan is therefore the gap \(a\)
+for a straight beam parallel to a flat radiator. The planar benchmark should
+establish spectrum, polarization, gap dependence and the internal angle
+before finite edges, the tilted prism and detector optics are introduced.
 
 \subsection{Simplified experimental considerations}
 
@@ -522,9 +555,8 @@ the material consistently. Inhomogeneity along the stretching direction,
 including some oblique structures, can invalidate ordinary
 matching~\cite{meepPML}.
 
-The setup draft additionally cites Kraus, Adelmann and
-Arbenz~\cite{kraus2011adipml}, who formulate PML for a divergence-preserving
-alternating-direction implicit (ADI) Maxwell scheme. This is relevant when
+Kraus, Adelmann and Arbenz~\cite{kraus2011adipml} formulate PML for a
+divergence-preserving alternating-direction implicit (ADI) Maxwell scheme. This is relevant when
 evaluating an ADI route; its update equations must not be assumed to apply
 unchanged to the present explicit potential solver.
 
@@ -547,8 +579,8 @@ the power of a difference field.
 
 \subsection{Development scope for the MSc thesis of D.~Rosser}
 
-The setup draft identifies dielectric interfaces, the reference frame and
-absorbing boundaries as development topics for this thesis. The following
+The consolidated setup identifies dielectric interfaces, the reference frame
+and absorbing boundaries as development topics for this thesis. The following
 items connect that scope to the current implementation.
 
 \textbf{Field formulation.}
@@ -643,8 +675,8 @@ by the actual particle count.
 
 The charge conversion factor in \path{demos/fel/units.h} is positive and
 the input sign is passed through. Thus, for an electron bunch of charge
-\(-5\unit{nC}\), the setup draft's charge magnitude becomes a negative
-input. A sketch of the relevant entries is
+\(-5\unit{nC}\), the configured charge must be negative even though the beam
+parameter table quotes its magnitude. A sketch of the relevant entries is
 \begin{verbatim}
 "charge": -3.1207545e10,
 "mass":    3.1207545e10,
