@@ -92,7 +92,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &lt;Kokkos_Core.hpp&gt;</code><br />
-<code>#include &quot;<a class="el" href="Ippl_8h_source.html">Ippl.h</a>&quot;</code><br />
+<code>#include &lt;mpi.h&gt;</code><br />
 <code>#include &lt;tuple&gt;</code><br />
 <code>#include &quot;<a class="el" href="Vector_8h_source.html">Types/Vector.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="IpplException_8h_source.html">Utility/IpplException.h</a>&quot;</code><br />
@@ -101,56 +101,26 @@ Include dependency graph for ParallelDispatch.h:</div>
 <div class="dyncontent">
 <div class="center"><img src="ParallelDispatch_8h__incl.png" border="0" usemap="#aParallelDispatch_8h" alt=""/></div>
 <map name="aParallelDispatch_8h" id="aParallelDispatch_8h">
-<area shape="rect" title=" " alt="" coords="1999,5,2126,31"/>
-<area shape="rect" title=" " alt="" coords="246,636,370,661"/>
-<area shape="rect" href="Ippl_8h.html" title=" " alt="" coords="2036,79,2089,104"/>
-<area shape="rect" href="Vector_8h.html" title=" " alt="" coords="1195,783,1304,808"/>
-<area shape="rect" href="IpplException_8h.html" title=" " alt="" coords="395,636,541,661"/>
-<area shape="rect" title=" " alt="" coords="3015,555,3065,581"/>
-<area shape="rect" title=" " alt="" coords="2881,929,2953,955"/>
-<area shape="rect" href="IpplTypes_8h.html" title=" " alt="" coords="2594,783,2721,808"/>
-<area shape="rect" href="Inform_8h.html" title=" " alt="" coords="2916,401,3023,427"/>
-<area shape="rect" href="Communicator_8h.html" title=" " alt="" coords="1112,475,1312,500"/>
-<area shape="rect" href="Environment_8h.html" title=" " alt="" coords="398,152,586,177"/>
-<area shape="rect" href="IpplCore_8h.html" title=" " alt="" coords="2023,152,2103,177"/>
-<area shape="rect" title=" " alt="" coords="2625,856,2690,881"/>
-<area shape="rect" title=" " alt="" coords="2189,929,2256,955"/>
-<area shape="rect" title=" " alt="" coords="3005,475,3075,500"/>
-<area shape="rect" title=" " alt="" coords="2234,709,2302,735"/>
-<area shape="rect" title=" " alt="" coords="736,709,789,735"/>
-<area shape="rect" href="BufferHandler_8h.html" title=" " alt="" coords="1180,636,1375,661"/>
-<area shape="rect" href="Archive_8h.html" title=" " alt="" coords="1197,709,1357,735"/>
-<area shape="rect" title=" " alt="" coords="647,929,707,955"/>
-<area shape="rect" href="LoggingBufferHandler_8h.html" title=" " alt="" coords="1184,548,1371,588"/>
-<area shape="rect" href="Request_8h.html" title=" " alt="" coords="699,555,863,581"/>
-<area shape="rect" href="Status_8h.html" title=" " alt="" coords="685,636,840,661"/>
-<area shape="rect" title=" " alt="" coords="1395,555,1455,581"/>
-<area shape="rect" href="TypeUtils_8h.html" title=" " alt="" coords="398,555,522,581"/>
-<area shape="rect" href="TagMaker_8h.html" title=" " alt="" coords="1479,555,1654,581"/>
-<area shape="rect" href="Tags_8h.html" title=" " alt="" coords="1678,555,1823,581"/>
-<area shape="rect" href="Collectives_8hpp.html" title=" " alt="" coords="1848,555,2043,581"/>
-<area shape="rect" href="PointToPoint_8hpp.html" title=" " alt="" coords="2067,555,2272,581"/>
-<area shape="rect" href="Buffers_8hpp.html" title=" " alt="" coords="939,555,1109,581"/>
-<area shape="rect" title=" " alt="" coords="1331,929,1413,955"/>
-<area shape="rect" title=" " alt="" coords="1051,929,1191,955"/>
-<area shape="rect" title=" " alt="" coords="2328,856,2379,881"/>
-<area shape="rect" title=" " alt="" coords="1159,856,1255,881"/>
-<area shape="rect" title=" " alt="" coords="2736,856,2795,881"/>
-<area shape="rect" href="IpplExpressions_8h.html" title=" " alt="" coords="893,856,1083,881"/>
-<area shape="rect" href="Vector_8hpp.html" title=" " alt="" coords="1330,856,1414,881"/>
-<area shape="rect" title=" " alt="" coords="907,709,962,735"/>
-<area shape="rect" href="BareField_8h.html" title=" " alt="" coords="2367,321,2486,346"/>
-<area shape="rect" href="FieldLayout_8h.html" title=" " alt="" coords="2443,401,2613,427"/>
-<area shape="rect" href="Field_8h.html" title=" " alt="" coords="1370,233,1462,258"/>
-<area shape="rect" href="BConds_8h.html" title=" " alt="" coords="2313,636,2423,661"/>
-<area shape="rect" href="IpplInfo_8h.html" title=" " alt="" coords="1588,233,1700,258"/>
-<area shape="rect" href="SubFieldLayout_8h.html" title=" " alt="" coords="2098,321,2291,346"/>
-<area shape="rect" href="ParticleBase_8h.html" title=" " alt="" coords="2624,475,2779,500"/>
-<area shape="rect" href="ParticleSpatialLayout_8h.html" title=" " alt="" coords="2623,313,2777,353"/>
-<area shape="rect" href="OrthogonalRecursiveBisection_8h.html" title=" " alt="" coords="2565,225,2739,265"/>
-<area shape="rect" href="EdgeElement_8h.html" title=" " alt="" coords="1724,233,1921,258"/>
-<area shape="rect" href="HexahedralElement_8h.html" title=" " alt="" coords="1946,233,2179,258"/>
-<area shape="rect" href="QuadrilateralElement_8h.html" title=" " alt="" coords="2204,225,2388,265"/>
+<area shape="rect" title=" " alt="" coords="181,5,308,31"/>
+<area shape="rect" title=" " alt="" coords="5,79,129,104"/>
+<area shape="rect" title=" " alt="" coords="154,79,207,104"/>
+<area shape="rect" title=" " alt="" coords="338,299,389,324"/>
+<area shape="rect" href="Vector_8h.html" title=" " alt="" coords="642,79,751,104"/>
+<area shape="rect" href="IpplException_8h.html" title=" " alt="" coords="919,79,1066,104"/>
+<area shape="rect" title=" " alt="" coords="681,225,821,251"/>
+<area shape="rect" title=" " alt="" coords="641,152,691,177"/>
+<area shape="rect" title=" " alt="" coords="283,225,343,251"/>
+<area shape="rect" title=" " alt="" coords="766,152,862,177"/>
+<area shape="rect" title=" " alt="" coords="574,225,657,251"/>
+<area shape="rect" title=" " alt="" coords="995,152,1054,177"/>
+<area shape="rect" href="IpplExpressions_8h.html" title=" " alt="" coords="375,152,565,177"/>
+<area shape="rect" href="Vector_8hpp.html" title=" " alt="" coords="887,152,971,177"/>
+<area shape="rect" href="IpplOperations_8h.html" title=" " alt="" coords="367,225,549,251"/>
+<area shape="rect" title=" " alt="" coords="437,299,669,324"/>
+<area shape="rect" title=" " alt="" coords="993,225,1136,251"/>
+<area shape="rect" title=" " alt="" coords="1161,225,1227,251"/>
+<area shape="rect" title=" " alt="" coords="846,225,918,251"/>
+<area shape="rect" title=" " alt="" coords="1079,152,1133,177"/>
 </map>
 </div>
 </div><div class="textblock"><div class="dynheader">
@@ -158,56 +128,56 @@ This graph shows which files directly or indirectly include this file:</div>
 <div class="dyncontent">
 <div class="center"><img src="ParallelDispatch_8h__dep__incl.png" border="0" usemap="#aParallelDispatch_8hdep" alt=""/></div>
 <map name="aParallelDispatch_8hdep" id="aParallelDispatch_8hdep">
-<area shape="rect" title=" " alt="" coords="1859,5,1986,31"/>
-<area shape="rect" href="BareField_8h.html" title=" " alt="" coords="1958,225,2045,251"/>
-<area shape="rect" href="BareFieldOperations_8hpp.html" title=" " alt="" coords="1711,299,1875,324"/>
-<area shape="rect" href="Ippl_8h.html" title=" " alt="" coords="1052,445,1105,471"/>
-<area shape="rect" href="ParticleSpatialLayout_8hpp.html" title=" " alt="" coords="1579,519,1749,544"/>
-<area shape="rect" href="Common_8h.html" title="Helpers shared by the FFT transform wrappers." alt="" coords="2693,372,2777,397"/>
-<area shape="rect" href="Correction_8h.html" title="Deconvolution / pre&#45;correction kernels for the native NUFFT engine." alt="" coords="2748,152,2839,177"/>
-<area shape="rect" href="HaloCells_8hpp.html" title=" " alt="" coords="2070,79,2173,104"/>
-<area shape="rect" href="BareField_8hpp.html" title=" " alt="" coords="1951,299,2052,324"/>
-<area shape="rect" href="Field_8h.html" title=" " alt="" coords="2127,299,2187,324"/>
-<area shape="rect" href="IpplCore_8h.html" title=" " alt="" coords="1719,372,1799,397"/>
-<area shape="rect" href="UniformCartesian_8hpp.html" title=" " alt="" coords="2159,372,2305,397"/>
-<area shape="rect" href="Heffte_8h.html" title=" " alt="" coords="2575,299,2641,324"/>
-<area shape="rect" href="AbsorbingBC_8h.html" title=" " alt="" coords="1874,372,1982,397"/>
-<area shape="rect" href="AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="1729,680,1831,705"/>
-<area shape="rect" href="FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="2336,519,2507,544"/>
-<area shape="rect" href="FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="2212,592,2399,632"/>
-<area shape="rect" href="Maxwell_8h.html" title=" " alt="" coords="2058,519,2137,544"/>
-<area shape="rect" href="NativeNUFFT_8h.html" title=" " alt="" coords="2801,372,2916,397"/>
-<area shape="rect" href="Poisson_8h.html" title=" " alt="" coords="2277,445,2355,471"/>
-<area shape="rect" href="BaseManager_8h.html" title=" " alt="" coords="859,519,971,544"/>
-<area shape="rect" href="Buffers_8cpp.html" title=" " alt="" coords="995,519,1082,544"/>
-<area shape="rect" href="CatalystAdaptor_8h.html" title="Declarations and lightweight types for ParaView Catalyst in&#45;situ integration." alt="" coords="1158,519,1282,544"/>
-<area shape="rect" href="CatalystAdaptor_8hpp.html" title=" " alt="" coords="1231,680,1369,705"/>
-<area shape="rect" href="VisRegistryRuntime_8h.html" title="Non&#45;templated heterogeneous registry for visualization and steering." alt="" coords="941,680,1088,705"/>
-<area shape="rect" href="Environment_8cpp.html" title=" " alt="" coords="1437,519,1555,544"/>
-<area shape="rect" href="Inform_8cpp.html" title=" " alt="" coords="5,519,88,544"/>
-<area shape="rect" href="Ippl_8cpp.html" title=" " alt="" coords="112,519,179,544"/>
-<area shape="rect" href="IpplInfo_8cpp.html" title=" " alt="" coords="203,519,293,544"/>
-<area shape="rect" href="IpplTimings_8cpp.html" title=" " alt="" coords="317,519,430,544"/>
-<area shape="rect" href="Multigrid_8h.html" title=" " alt="" coords="454,519,535,544"/>
-<area shape="rect" href="ParticleAttrib_8hpp.html" title=" " alt="" coords="559,519,681,544"/>
-<area shape="rect" href="TileSizeCache_8cpp.html" title="CSV parsing and file IO for the singleton tile&#45;size cache." alt="" coords="705,519,834,544"/>
-<area shape="rect" href="FieldSolverBase_8h.html" title=" " alt="" coords="737,599,863,625"/>
-<area shape="rect" href="PicManager_8h.html" title=" " alt="" coords="783,680,884,705"/>
-<area shape="rect" href="CatalystAdaptorSteering_8hpp.html" title=" " alt="" coords="1064,599,1251,625"/>
-<area shape="rect" href="ParticleSpatialLayout_8h.html" title=" " alt="" coords="1645,599,1800,625"/>
-<area shape="rect" href="NUFFT_8h.html" title="Non&#45;uniform FFT specialization (NUFFTransform tag)." alt="" coords="2991,445,3067,471"/>
-<area shape="rect" href="Transform_8h.html" title="Aggregate include of all IPPL FFT transform specializations." alt="" coords="2713,519,2804,544"/>
-<area shape="rect" href="UniformCartesian_8h.html" title=" " alt="" coords="2113,445,2247,471"/>
-<area shape="rect" href="Backend_8h.html" title="Aggregate include for all FFT backends supported by IPPL." alt="" coords="2585,372,2668,397"/>
-<area shape="rect" href="CC_8h.html" title="Complex&#45;to&#45;complex FFT specialization (CCTransform tag)." alt="" coords="2687,445,2737,471"/>
-<area shape="rect" href="PrunedCC_8h.html" title="Pruned complex&#45;to&#45;complex FFT (PrunedCCTransform tag)." alt="" coords="2761,445,2852,471"/>
-<area shape="rect" href="PrunedRC_8h.html" title="Pruned real&#45;to&#45;complex FFT (PrunedRCTransform tag)." alt="" coords="2876,445,2967,471"/>
-<area shape="rect" href="RC_8h.html" title="Real&#45;to&#45;complex FFT specialization (RCTransform tag)." alt="" coords="2532,445,2583,471"/>
-<area shape="rect" href="Trig_8h.html" title="Trigonometric (sine / cosine / cosine&#45;Type&#45;I) FFT specializations." alt="" coords="2607,445,2662,471"/>
-<area shape="rect" href="HaloCells_8h.html" title=" " alt="" coords="2235,152,2323,177"/>
-<area shape="rect" href="BcTypes_8hpp.html" title=" " alt="" coords="2533,225,2630,251"/>
-<area shape="rect" href="FEMVector_8h.html" title=" " alt="" coords="2105,225,2202,251"/>
-<area shape="rect" href="FieldBufferOps_8hpp.html" title=" " alt="" coords="2291,225,2423,251"/>
+<area shape="rect" title=" " alt="" coords="1759,5,1885,31"/>
+<area shape="rect" href="BareField_8h.html" title=" " alt="" coords="1779,225,1865,251"/>
+<area shape="rect" href="BareFieldOperations_8hpp.html" title=" " alt="" coords="1532,299,1696,324"/>
+<area shape="rect" href="Ippl_8h.html" title=" " alt="" coords="805,445,858,471"/>
+<area shape="rect" href="ParticleSpatialLayout_8hpp.html" title=" " alt="" coords="200,519,369,544"/>
+<area shape="rect" href="Common_8h.html" title="Helpers shared by the FFT transform wrappers." alt="" coords="2555,372,2639,397"/>
+<area shape="rect" href="Correction_8h.html" title="Deconvolution / pre&#45;correction kernels for the native NUFFT engine." alt="" coords="2579,152,2670,177"/>
+<area shape="rect" href="HaloCells_8hpp.html" title=" " alt="" coords="1897,79,2000,104"/>
+<area shape="rect" href="BareField_8hpp.html" title=" " alt="" coords="1771,299,1873,324"/>
+<area shape="rect" href="Field_8h.html" title=" " alt="" coords="1948,299,2008,324"/>
+<area shape="rect" href="IpplCore_8h.html" title=" " alt="" coords="1550,372,1630,397"/>
+<area shape="rect" href="UniformCartesian_8hpp.html" title=" " alt="" coords="2041,372,2187,397"/>
+<area shape="rect" href="Heffte_8h.html" title=" " alt="" coords="2162,299,2229,324"/>
+<area shape="rect" href="AbsorbingBC_8h.html" title=" " alt="" coords="1756,372,1864,397"/>
+<area shape="rect" href="AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="1584,680,1687,705"/>
+<area shape="rect" href="FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="2147,519,2318,544"/>
+<area shape="rect" href="FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="2013,592,2199,632"/>
+<area shape="rect" href="Maxwell_8h.html" title=" " alt="" coords="1892,519,1971,544"/>
+<area shape="rect" href="NativeNUFFT_8h.html" title=" " alt="" coords="2663,372,2778,397"/>
+<area shape="rect" href="Poisson_8h.html" title=" " alt="" coords="2100,445,2179,471"/>
+<area shape="rect" href="datatypes_8h.html" title=" " alt="" coords="1922,680,2010,705"/>
+<area shape="rect" href="FieldSolverBase_8h.html" title=" " alt="" coords="813,753,940,779"/>
+<area shape="rect" href="PicManager_8h.html" title=" " alt="" coords="775,827,877,852"/>
+<area shape="rect" href="BaseManager_8h.html" title=" " alt="" coords="719,680,831,705"/>
+<area shape="rect" href="Buffers_8cpp.html" title=" " alt="" coords="1492,519,1579,544"/>
+<area shape="rect" href="CatalystAdaptor_8h.html" title="Declarations and lightweight types for ParaView Catalyst in&#45;situ integration." alt="" coords="52,519,176,544"/>
+<area shape="rect" href="CatalystAdaptor_8hpp.html" title=" " alt="" coords="23,599,162,625"/>
+<area shape="rect" href="VisRegistryRuntime_8h.html" title="Non&#45;templated heterogeneous registry for visualization and steering." alt="" coords="186,599,333,625"/>
+<area shape="rect" href="Environment_8cpp.html" title=" " alt="" coords="496,519,615,544"/>
+<area shape="rect" href="Inform_8cpp.html" title=" " alt="" coords="639,519,722,544"/>
+<area shape="rect" href="Ippl_8cpp.html" title=" " alt="" coords="746,519,813,544"/>
+<area shape="rect" href="IpplInfo_8cpp.html" title=" " alt="" coords="837,519,927,544"/>
+<area shape="rect" href="IpplTimings_8cpp.html" title=" " alt="" coords="951,519,1064,544"/>
+<area shape="rect" href="Multigrid_8h.html" title=" " alt="" coords="1088,519,1169,544"/>
+<area shape="rect" href="ParticleAttrib_8hpp.html" title=" " alt="" coords="1193,519,1315,544"/>
+<area shape="rect" href="TileSizeCache_8cpp.html" title="CSV parsing and file IO for the singleton tile&#45;size cache." alt="" coords="1339,519,1468,544"/>
+<area shape="rect" href="ParticleSpatialLayout_8h.html" title=" " alt="" coords="1475,599,1630,625"/>
+<area shape="rect" href="NUFFT_8h.html" title="Non&#45;uniform FFT specialization (NUFFTransform tag)." alt="" coords="2821,445,2897,471"/>
+<area shape="rect" href="Transform_8h.html" title="Aggregate include of all IPPL FFT transform specializations." alt="" coords="2601,519,2691,544"/>
+<area shape="rect" href="UniformCartesian_8h.html" title=" " alt="" coords="1942,445,2075,471"/>
+<area shape="rect" href="Backend_8h.html" title="Aggregate include for all FFT backends supported by IPPL." alt="" coords="2445,372,2527,397"/>
+<area shape="rect" href="CC_8h.html" title="Complex&#45;to&#45;complex FFT specialization (CCTransform tag)." alt="" coords="2363,445,2414,471"/>
+<area shape="rect" href="PrunedCC_8h.html" title="Pruned complex&#45;to&#45;complex FFT (PrunedCCTransform tag)." alt="" coords="2438,445,2529,471"/>
+<area shape="rect" href="PrunedRC_8h.html" title="Pruned real&#45;to&#45;complex FFT (PrunedRCTransform tag)." alt="" coords="2553,445,2643,471"/>
+<area shape="rect" href="RC_8h.html" title="Real&#45;to&#45;complex FFT specialization (RCTransform tag)." alt="" coords="2667,445,2718,471"/>
+<area shape="rect" href="Trig_8h.html" title="Trigonometric (sine / cosine / cosine&#45;Type&#45;I) FFT specializations." alt="" coords="2743,445,2797,471"/>
+<area shape="rect" href="HaloCells_8h.html" title=" " alt="" coords="1978,152,2066,177"/>
+<area shape="rect" href="BcTypes_8hpp.html" title=" " alt="" coords="2011,225,2108,251"/>
+<area shape="rect" href="FEMVector_8h.html" title=" " alt="" coords="1889,225,1987,251"/>
+<area shape="rect" href="FieldBufferOps_8hpp.html" title=" " alt="" coords="2313,225,2445,251"/>
 </map>
 </div>
 </div>

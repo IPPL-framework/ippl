@@ -1,52 +1,52 @@
 <map id="UniformCartesian.h" name="UniformCartesian.h">
-<area shape="rect" id="node1" title=" " alt="" coords="296,5,429,31"/>
-<area shape="rect" id="node2" href="$AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="1007,445,1110,471"/>
-<area shape="rect" id="node3" href="$BcTypes_8h.html" title=" " alt="" coords="1096,79,1179,104"/>
-<area shape="rect" id="node5" href="$Field_8h.html" title=" " alt="" coords="738,225,798,251"/>
+<area shape="rect" id="node1" title=" " alt="" coords="339,5,472,31"/>
+<area shape="rect" id="node2" href="$AutoTune_8cpp.html" title="Width&#45;2 (CIC) scatter / gather auto&#45;tuner implementation." alt="" coords="893,445,995,471"/>
+<area shape="rect" id="node3" href="$BcTypes_8h.html" title=" " alt="" coords="1071,79,1153,104"/>
+<area shape="rect" id="node5" href="$Field_8h.html" title=" " alt="" coords="635,225,695,251"/>
 <area shape="rect" id="node7" href="$FDTDSolverBase_8h.html" title=" " alt="" coords="195,372,328,397"/>
-<area shape="rect" id="node8" href="$NonStandardFDTDSolver_8h.html" title="Defines the NonStandardFDTDSolver class for solving Maxwell&#39;s equations using a non&#45;standard Finite&#45;D..." alt="" coords="112,445,291,471"/>
-<area shape="rect" id="node9" href="$StandardFDTDSolver_8h.html" title="Defines the StandardFDTDSolver class for solving Maxwell&#39;s equations using the FDTD method." alt="" coords="321,445,476,471"/>
-<area shape="rect" id="node10" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="439,592,609,617"/>
-<area shape="rect" id="node11" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="389,665,576,705"/>
-<area shape="rect" id="node39" href="$Maxwell_8h.html" title=" " alt="" coords="195,299,274,324"/>
-<area shape="rect" id="node47" href="$FiniteElementSpace_8h.html" title=" " alt="" coords="1250,152,1398,177"/>
-<area shape="rect" id="node4" href="$BConds_8h.html" title=" " alt="" coords="1147,152,1226,177"/>
-<area shape="rect" id="node28" href="$Multigrid_8h.html" title=" " alt="" coords="1245,445,1326,471"/>
-<area shape="rect" id="node15" href="$IpplCore_8h.html" title=" " alt="" coords="1245,299,1325,324"/>
-<area shape="rect" id="node6" href="$AbsorbingBC_8h.html" title=" " alt="" coords="571,299,679,324"/>
-<area shape="rect" id="node40" href="$NativeNUFFT_8h.html" title=" " alt="" coords="805,299,920,324"/>
-<area shape="rect" id="node43" href="$Poisson_8h.html" title=" " alt="" coords="722,519,801,544"/>
-<area shape="rect" id="node46" href="$UniformCartesian_8hpp.html" title=" " alt="" coords="400,299,547,324"/>
-<area shape="rect" id="node12" href="$datatypes_8h.html" title=" " alt="" coords="883,753,971,779"/>
-<area shape="rect" id="node13" href="$FieldSolverBase_8h.html" title=" " alt="" coords="1153,827,1279,852"/>
-<area shape="rect" id="node14" href="$PicManager_8h.html" title=" " alt="" coords="1216,900,1317,925"/>
-<area shape="rect" id="node16" href="$Ippl_8h.html" title=" " alt="" coords="1999,372,2052,397"/>
-<area shape="rect" id="node17" href="$BaseManager_8h.html" title=" " alt="" coords="1261,753,1373,779"/>
-<area shape="rect" id="node18" href="$Buffers_8cpp.html" title=" " alt="" coords="2023,445,2110,471"/>
-<area shape="rect" id="node19" href="$CatalystAdaptor_8h.html" title="Declarations and lightweight types for ParaView Catalyst in&#45;situ integration." alt="" coords="2285,445,2409,471"/>
-<area shape="rect" id="node20" href="$CatalystAdaptor_8hpp.html" title=" " alt="" coords="2029,592,2168,617"/>
-<area shape="rect" id="node22" href="$VisRegistryRuntime_8h.html" title="Non&#45;templated heterogeneous registry for visualization and steering." alt="" coords="2311,592,2457,617"/>
-<area shape="rect" id="node23" href="$Environment_8cpp.html" title=" " alt="" coords="2485,445,2603,471"/>
-<area shape="rect" id="node24" href="$Inform_8cpp.html" title=" " alt="" coords="2628,445,2711,471"/>
-<area shape="rect" id="node25" href="$Ippl_8cpp.html" title=" " alt="" coords="2735,445,2801,471"/>
-<area shape="rect" id="node26" href="$IpplInfo_8cpp.html" title=" " alt="" coords="2826,445,2915,471"/>
-<area shape="rect" id="node27" href="$IpplTimings_8cpp.html" title=" " alt="" coords="1433,445,1546,471"/>
-<area shape="rect" id="node35" href="$ParallelDispatch_8h.html" title=" " alt="" coords="2134,445,2261,471"/>
-<area shape="rect" id="node36" href="$ParticleSpatialLayout_8hpp.html" title=" " alt="" coords="1879,519,2049,544"/>
-<area shape="rect" id="node37" href="$ParticleAttrib_8hpp.html" title=" " alt="" coords="1673,445,1794,471"/>
-<area shape="rect" id="node38" href="$TileSizeCache_8cpp.html" title="CSV parsing and file IO for the singleton tile&#45;size cache." alt="" coords="1818,445,1947,471"/>
-<area shape="rect" id="node21" href="$CatalystAdaptorSteering_8hpp.html" title=" " alt="" coords="2148,519,2335,544"/>
-<area shape="rect" id="node29" href="$PCG_8h.html" title=" " alt="" coords="1255,519,1315,544"/>
-<area shape="rect" id="node30" href="$FEMMaxwellDiffusionSolver_8h.html" title=" " alt="" coords="1054,592,1247,617"/>
-<area shape="rect" id="node31" href="$FEMPoissonSolver_8h.html" title=" " alt="" coords="887,592,1030,617"/>
-<area shape="rect" id="node32" href="$PoissonCG_8h.html" title=" " alt="" coords="1071,673,1169,698"/>
-<area shape="rect" id="node33" href="$PreconditionedFEMPoissonSolver_8h.html" title=" " alt="" coords="1235,665,1418,705"/>
-<area shape="rect" id="node34" href="$PreconditionerValidation_8h.html" title=" " alt="" coords="1323,592,1495,617"/>
-<area shape="rect" id="node41" href="$NUFFT_8h.html" title="Non&#45;uniform FFT specialization (NUFFTransform tag)." alt="" coords="825,372,901,397"/>
-<area shape="rect" id="node42" href="$Transform_8h.html" title="Aggregate include of all IPPL FFT transform specializations." alt="" coords="817,445,908,471"/>
-<area shape="rect" id="node44" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="768,673,955,698"/>
-<area shape="rect" id="node45" href="$NullSolver_8h.html" title=" " alt="" coords="651,673,743,698"/>
-<area shape="rect" id="node48" href="$LagrangeSpace_8h.html" title=" " alt="" coords="1224,225,1347,251"/>
-<area shape="rect" id="node49" href="$NedelecSpace_8h.html" title=" " alt="" coords="1371,225,1488,251"/>
-<area shape="rect" id="node50" href="$NedelecSpace_8hpp.html" title=" " alt="" coords="1364,299,1495,324"/>
+<area shape="rect" id="node8" href="$NonStandardFDTDSolver_8h.html" title="Defines the NonStandardFDTDSolver class for solving Maxwell&#39;s equations using a non&#45;standard Finite&#45;D..." alt="" coords="89,445,268,471"/>
+<area shape="rect" id="node9" href="$StandardFDTDSolver_8h.html" title="Defines the StandardFDTDSolver class for solving Maxwell&#39;s equations using the FDTD method." alt="" coords="315,445,469,471"/>
+<area shape="rect" id="node10" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="284,592,455,617"/>
+<area shape="rect" id="node11" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="761,665,948,705"/>
+<area shape="rect" id="node39" href="$Maxwell_8h.html" title=" " alt="" coords="366,299,445,324"/>
+<area shape="rect" id="node47" href="$FiniteElementSpace_8h.html" title=" " alt="" coords="1225,152,1373,177"/>
+<area shape="rect" id="node4" href="$BConds_8h.html" title=" " alt="" coords="1122,152,1201,177"/>
+<area shape="rect" id="node29" href="$Multigrid_8h.html" title=" " alt="" coords="1351,445,1433,471"/>
+<area shape="rect" id="node15" href="$IpplCore_8h.html" title=" " alt="" coords="1220,299,1300,324"/>
+<area shape="rect" id="node6" href="$AbsorbingBC_8h.html" title=" " alt="" coords="469,299,577,324"/>
+<area shape="rect" id="node40" href="$NativeNUFFT_8h.html" title=" " alt="" coords="703,299,817,324"/>
+<area shape="rect" id="node43" href="$Poisson_8h.html" title=" " alt="" coords="657,519,735,544"/>
+<area shape="rect" id="node46" href="$UniformCartesian_8hpp.html" title=" " alt="" coords="195,299,341,324"/>
+<area shape="rect" id="node12" href="$datatypes_8h.html" title=" " alt="" coords="1021,753,1109,779"/>
+<area shape="rect" id="node13" href="$FieldSolverBase_8h.html" title=" " alt="" coords="1727,827,1854,852"/>
+<area shape="rect" id="node14" href="$PicManager_8h.html" title=" " alt="" coords="1791,900,1892,925"/>
+<area shape="rect" id="node16" href="$Ippl_8h.html" title=" " alt="" coords="2191,372,2244,397"/>
+<area shape="rect" id="node17" href="$BaseManager_8h.html" title=" " alt="" coords="1836,753,1948,779"/>
+<area shape="rect" id="node18" href="$Buffers_8cpp.html" title=" " alt="" coords="2306,445,2393,471"/>
+<area shape="rect" id="node19" href="$CatalystAdaptor_8h.html" title="Declarations and lightweight types for ParaView Catalyst in&#45;situ integration." alt="" coords="2417,445,2541,471"/>
+<area shape="rect" id="node20" href="$CatalystAdaptor_8hpp.html" title=" " alt="" coords="2447,673,2585,698"/>
+<area shape="rect" id="node22" href="$VisRegistryRuntime_8h.html" title="Non&#45;templated heterogeneous registry for visualization and steering." alt="" coords="2157,673,2304,698"/>
+<area shape="rect" id="node24" href="$Environment_8cpp.html" title=" " alt="" coords="2667,445,2786,471"/>
+<area shape="rect" id="node25" href="$Inform_8cpp.html" title=" " alt="" coords="2811,445,2893,471"/>
+<area shape="rect" id="node26" href="$Ippl_8cpp.html" title=" " alt="" coords="2917,445,2984,471"/>
+<area shape="rect" id="node27" href="$IpplInfo_8cpp.html" title=" " alt="" coords="3009,445,3098,471"/>
+<area shape="rect" id="node28" href="$IpplTimings_8cpp.html" title=" " alt="" coords="1625,445,1738,471"/>
+<area shape="rect" id="node36" href="$ParticleAttrib_8hpp.html" title=" " alt="" coords="1814,445,1935,471"/>
+<area shape="rect" id="node37" href="$ParticleSpatialLayout_8hpp.html" title=" " alt="" coords="1959,445,2129,471"/>
+<area shape="rect" id="node38" href="$TileSizeCache_8cpp.html" title="CSV parsing and file IO for the singleton tile&#45;size cache." alt="" coords="2153,445,2282,471"/>
+<area shape="rect" id="node21" href="$CatalystAdaptorSteering_8hpp.html" title=" " alt="" coords="2280,592,2467,617"/>
+<area shape="rect" id="node23" href="$CatalystVisitors_8h.html" title="Visitor functors used by CatalystAdaptor for initialization, execution, and steering." alt="" coords="2293,519,2416,544"/>
+<area shape="rect" id="node30" href="$PCG_8h.html" title=" " alt="" coords="1362,519,1422,544"/>
+<area shape="rect" id="node31" href="$FEMMaxwellDiffusionSolver_8h.html" title=" " alt="" coords="1161,592,1354,617"/>
+<area shape="rect" id="node32" href="$FEMPoissonSolver_8h.html" title=" " alt="" coords="994,592,1137,617"/>
+<area shape="rect" id="node33" href="$PoissonCG_8h.html" title=" " alt="" coords="1427,673,1525,698"/>
+<area shape="rect" id="node34" href="$PreconditionedFEMPoissonSolver_8h.html" title=" " alt="" coords="1181,665,1363,705"/>
+<area shape="rect" id="node35" href="$PreconditionerValidation_8h.html" title=" " alt="" coords="1430,592,1602,617"/>
+<area shape="rect" id="node41" href="$NUFFT_8h.html" title="Non&#45;uniform FFT specialization (NUFFTransform tag)." alt="" coords="689,372,765,397"/>
+<area shape="rect" id="node42" href="$Transform_8h.html" title="Aggregate include of all IPPL FFT transform specializations." alt="" coords="676,445,767,471"/>
+<area shape="rect" id="node44" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="529,592,716,617"/>
+<area shape="rect" id="node45" href="$NullSolver_8h.html" title=" " alt="" coords="525,673,617,698"/>
+<area shape="rect" id="node48" href="$LagrangeSpace_8h.html" title=" " alt="" coords="1199,225,1321,251"/>
+<area shape="rect" id="node49" href="$NedelecSpace_8h.html" title=" " alt="" coords="1345,225,1463,251"/>
+<area shape="rect" id="node50" href="$NedelecSpace_8hpp.html" title=" " alt="" coords="1339,299,1469,324"/>
 </map>

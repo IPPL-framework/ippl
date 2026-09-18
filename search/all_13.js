@@ -147,7 +147,7 @@ var searchData=
   ['solver_5fsend_144',['SOLVER_SEND',['../namespaceippl_1_1mpi_1_1tag.html#a15d567b75f6be9891166d172c200185aa2f2886600ba0b8f30cd54638b1e73540',1,'ippl::mpi::tag']]],
   ['solver_5fsend_145',['solver_send',['../namespaceippl_1_1detail.html#a85de396743c5bfee066d733df08d9073',1,'ippl::detail']]],
   ['solver_5fsend_5ffield_146',['solver_send_field',['../namespaceippl_1_1detail.html#ad0123b7420739825296d784631464f22',1,'ippl::detail']]],
-  ['solver_5ft_147',['Solver_t',['../datatypes_8h.html#a8c29b175c2b5534186c70f3cf73155a5',1,'datatypes.h']]],
+  ['solver_5ft_147',['Solver_t',['../datatypes_8h.html#a7cf5a3df313f80aef281450fe11971fa',1,'datatypes.h']]],
   ['solveralgorithm_148',['SolverAlgorithm',['../classippl_1_1SolverAlgorithm.html',1,'ippl']]],
   ['solveralgorithm_2eh_149',['SolverAlgorithm.h',['../SolverAlgorithm_8h.html',1,'']]],
   ['solveralgorithm_3c_20femvector_3c_20t_20_3e_2c_20femvector_3c_20t_20_3e_20_3e_150',['SolverAlgorithm&lt; FEMVector&lt; T &gt;, FEMVector&lt; T &gt; &gt;',['../classippl_1_1SolverAlgorithm.html',1,'ippl']]],
