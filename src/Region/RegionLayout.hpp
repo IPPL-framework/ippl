@@ -103,8 +103,10 @@ namespace ippl {
             using domain_type           = typename FieldLayout<Dim>::host_mirror_type;
             const domain_type& ldomains = fl.getHostLocalDomains();
 
-            Kokkos::resize(hLocalRegions_m, ldomains.size());
-            Kokkos::resize(dLocalRegions_m, ldomains.size());
+            // Every entry is replaced below, so preserving the previous allocation contents via
+            // Kokkos::resize only performs an unnecessary View remap. Reallocate instead.
+            Kokkos::realloc(hLocalRegions_m, ldomains.size());
+            Kokkos::realloc(dLocalRegions_m, ldomains.size());
 
             using size_type = typename domain_type::size_type;
             for (size_type i = 0; i < ldomains.size(); ++i) {

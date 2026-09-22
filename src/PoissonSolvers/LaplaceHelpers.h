@@ -8,11 +8,11 @@ namespace ippl {
     namespace detail {
         // Implements the poisson matrix acting on a d dimensional field
         template <typename E>
-        struct meta_poisson : public Expression<meta_poisson<E>, sizeof(E)> {
+        struct meta_poisson : public Expression<meta_poisson<E>, sizeof(typename E::view_type)> {
             constexpr static unsigned dim = E::dim;
 
             KOKKOS_FUNCTION
-            meta_poisson(const E& u)
+            meta_poisson(const typename E::view_type& u)
                 : u_m(u) {}
 
             template <typename... Idx>
@@ -36,20 +36,23 @@ namespace ippl {
             }
 
         private:
-            const E u_m;
+            using view_type = typename E::view_type;
+            const view_type u_m;
         };
 
         template <typename E>
         struct meta_lower_laplace
             : public Expression<meta_lower_laplace<E>,
-                                sizeof(E) + sizeof(typename E::Mesh_t::vector_type)
+                                sizeof(typename E::view_type)
+                                    + sizeof(typename E::Mesh_t::vector_type)
                                     + 2 * sizeof(typename E::Layout_t::NDIndex_t)
                                     + sizeof(unsigned)> {
             constexpr static unsigned dim = E::dim;
             using value_type              = typename E::value_type;
 
             KOKKOS_FUNCTION
-            meta_lower_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector,
+            meta_lower_laplace(const typename E::view_type& u,
+                               const typename E::Mesh_t::vector_type& hvector,
                                unsigned nghosts, const typename E::Layout_t::NDIndex_t& ldom,
                                const typename E::Layout_t::NDIndex_t& domain)
                 : u_m(u)
@@ -92,8 +95,9 @@ namespace ippl {
             using Mesh_t      = typename E::Mesh_t;
             using Layout_t    = typename E::Layout_t;
             using vector_type = typename Mesh_t::vector_type;
+            using view_type   = typename E::view_type;
             using domain_type = typename Layout_t::NDIndex_t;
-            const E u_m;
+            const view_type u_m;
             const vector_type hvector_m;
             const unsigned nghosts_m;
             const domain_type ldom_m;
@@ -103,14 +107,16 @@ namespace ippl {
         template <typename E>
         struct meta_upper_laplace
             : public Expression<meta_upper_laplace<E>,
-                                sizeof(E) + sizeof(typename E::Mesh_t::vector_type)
+                                sizeof(typename E::view_type)
+                                    + sizeof(typename E::Mesh_t::vector_type)
                                     + 2 * sizeof(typename E::Layout_t::NDIndex_t)
                                     + sizeof(unsigned)> {
             constexpr static unsigned dim = E::dim;
             using value_type              = typename E::value_type;
 
             KOKKOS_FUNCTION
-            meta_upper_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector,
+            meta_upper_laplace(const typename E::view_type& u,
+                               const typename E::Mesh_t::vector_type& hvector,
                                unsigned nghosts, const typename E::Layout_t::NDIndex_t& ldom,
                                const typename E::Layout_t::NDIndex_t& domain)
                 : u_m(u)
@@ -153,8 +159,9 @@ namespace ippl {
             using Mesh_t      = typename E::Mesh_t;
             using Layout_t    = typename E::Layout_t;
             using vector_type = typename Mesh_t::vector_type;
+            using view_type   = typename E::view_type;
             using domain_type = typename Layout_t::NDIndex_t;
-            const E u_m;
+            const view_type u_m;
             const vector_type hvector_m;
             const unsigned nghosts_m;
             const domain_type ldom_m;
@@ -164,12 +171,14 @@ namespace ippl {
         template <typename E>
         struct meta_upper_and_lower_laplace
             : public Expression<meta_upper_and_lower_laplace<E>,
-                                sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
+                                sizeof(typename E::view_type)
+                                    + sizeof(typename E::Mesh_t::vector_type)> {
             constexpr static unsigned dim = E::dim;
             using value_type              = typename E::value_type;
 
             KOKKOS_FUNCTION
-            meta_upper_and_lower_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector)
+            meta_upper_and_lower_laplace(const typename E::view_type& u,
+                                         const typename E::Mesh_t::vector_type& hvector)
                 : u_m(u)
                 , hvector_m(hvector) {}
 
@@ -194,7 +203,8 @@ namespace ippl {
 
         private:
             using vector_type = typename E::Mesh_t::vector_type;
-            const E u_m;
+            using view_type   = typename E::view_type;
+            const view_type u_m;
             const vector_type hvector_m;
         };
     }  // namespace detail
@@ -211,7 +221,7 @@ namespace ippl {
         BConds<Field, Dim>& bcField = u.getFieldBC();
         bcField.apply(u);
 
-        return detail::meta_poisson<Field>(u);
+        return detail::meta_poisson<Field>(u.getView());
     }
 
     /*!
@@ -247,7 +257,8 @@ namespace ippl {
         unsigned nghosts   = u.getNghost();
         const auto& ldom   = layout.getLocalNDIndex();
         const auto& domain = layout.getDomain();
-        return detail::meta_lower_laplace<Field>(u, hvector, nghosts, ldom, domain);
+        return detail::meta_lower_laplace<Field>(u.getView(), hvector, nghosts, ldom,
+                                                 domain);
     }
 
     /*!
@@ -283,7 +294,8 @@ namespace ippl {
         unsigned nghosts   = u.getNghost();
         const auto& ldom   = layout.getLocalNDIndex();
         const auto& domain = layout.getDomain();
-        return detail::meta_upper_laplace<Field>(u, hvector, nghosts, ldom, domain);
+        return detail::meta_upper_laplace<Field>(u.getView(), hvector, nghosts, ldom,
+                                                 domain);
     }
 
     /*!
@@ -315,7 +327,7 @@ namespace ippl {
         for (unsigned d = 0; d < Dim; d++) {
             hvector[d] = 1.0 / Kokkos::pow(mesh.getMeshSpacing(d), 2);
         }
-        return detail::meta_upper_and_lower_laplace<Field>(u, hvector);
+        return detail::meta_upper_and_lower_laplace<Field>(u.getView(), hvector);
     }
 
     /*!
