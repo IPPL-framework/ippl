@@ -1,6 +1,8 @@
 <map id="ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct" name="ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct">
-<area shape="rect" id="node1" title="Device struct for copies //////////////////////////////////////////." alt="" coords="25,445,269,647"/>
-<area shape="rect" id="node2" href="$classippl_1_1Vector.html" title=" " alt="" coords="85,152,209,383"/>
+<area shape="rect" id="node1" title="Device struct for copies //////////////////////////////////////////." alt="" coords="155,475,399,779"/>
+<area shape="rect" id="node2" href="$classippl_1_1Vector.html" title=" " alt="" coords="137,159,261,390"/>
 <area shape="rect" id="node3" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,157,89"/>
 <area shape="rect" id="node4" title=" " alt="" coords="182,27,242,67"/>
+<area shape="rect" id="node5" href="$classippl_1_1Vector.html" title=" " alt="" coords="285,152,427,397"/>
+<area shape="rect" id="node6" href="$structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="280,5,432,89"/>
 </map>

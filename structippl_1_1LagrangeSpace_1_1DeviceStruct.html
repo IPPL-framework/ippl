@@ -82,6 +82,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
@@ -99,21 +100,48 @@ Collaboration diagram for ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, Qu
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1LagrangeSpace_1_1DeviceStruct__coll__graph.png" border="0" usemap="#aippl_1_1LagrangeSpace_3_01T_00_01Dim_00_01Order_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_1_1DeviceStruct_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1LagrangeSpace_3_01T_00_01Dim_00_01Order_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_1_1DeviceStruct_coll__map" id="aippl_1_1LagrangeSpace_3_01T_00_01Dim_00_01Order_00_01ElementType_00_01QuadratureType_00_01FieldLHS_00_01FieldRHS_01_4_1_1DeviceStruct_coll__map">
-<area shape="rect" title="Device struct for copies //////////////////////////////////////////." alt="" coords="25,445,269,647"/>
-<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="85,152,209,383"/>
+<area shape="rect" title="Device struct for copies //////////////////////////////////////////." alt="" coords="155,475,399,779"/>
+<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="137,159,261,390"/>
 <area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,157,89"/>
 <area shape="rect" title=" " alt="" coords="182,27,242,67"/>
+<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="285,152,427,397"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="280,5,432,89"/>
 </map>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a513b8285a945590cbc07e59e4fbac82c"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a513b8285a945590cbc07e59e4fbac82c">indices_list_t</a> = <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a>, <a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a1f0fb799b9451b1cbafda29b67878383">numElementVertices</a> &gt;</td></tr>
+<tr class="separator:a513b8285a945590cbc07e59e4fbac82c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a792c4460d42bdda75eb4e11ef2a89e55"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a792c4460d42bdda75eb4e11ef2a89e55">vertex_points_t</a> = <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a>, <a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a1f0fb799b9451b1cbafda29b67878383">numElementVertices</a> &gt;</td></tr>
+<tr class="separator:a792c4460d42bdda75eb4e11ef2a89e55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a9da7337bac6310c3f740bf4e6054a8ea"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a9da7337bac6310c3f740bf4e6054a8ea">getMeshVertexNDIndex</a> (const size_t &amp;vertex_index) const</td></tr>
 <tr class="separator:a9da7337bac6310c3f740bf4e6054a8ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36cadab49acf10171fe37d475d1f24d2"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a36cadab49acf10171fe37d475d1f24d2">getElementNDIndex</a> (const size_t &amp;element_index) const</td></tr>
+<tr class="memdesc:a36cadab49acf10171fe37d475d1f24d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert a flattened element index to its N-dimensional mesh index.  <a href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a36cadab49acf10171fe37d475d1f24d2">More...</a><br /></td></tr>
+<tr class="separator:a36cadab49acf10171fe37d475d1f24d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0aa16dd7b0aaa439c3897dccaf125402"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a0aa16dd7b0aaa439c3897dccaf125402">getElementIndex</a> (const <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a> &amp;element_nd_index) const</td></tr>
+<tr class="memdesc:a0aa16dd7b0aaa439c3897dccaf125402"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flatten an N-dimensional element index.  <a href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a0aa16dd7b0aaa439c3897dccaf125402">More...</a><br /></td></tr>
+<tr class="separator:a0aa16dd7b0aaa439c3897dccaf125402"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac952a52ada3e6e1d9ce7c1b3e2c11324"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a513b8285a945590cbc07e59e4fbac82c">indices_list_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#ac952a52ada3e6e1d9ce7c1b3e2c11324">getElementMeshVertexNDIndices</a> (const <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a> &amp;element_nd_index) const</td></tr>
+<tr class="memdesc:ac952a52ada3e6e1d9ce7c1b3e2c11324"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the mesh indices of every vertex belonging to an element.  <a href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#ac952a52ada3e6e1d9ce7c1b3e2c11324">More...</a><br /></td></tr>
+<tr class="separator:ac952a52ada3e6e1d9ce7c1b3e2c11324"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f6fbf67eed5dbca993ec5c86978f34c"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a792c4460d42bdda75eb4e11ef2a89e55">vertex_points_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a9f6fbf67eed5dbca993ec5c86978f34c">getElementMeshVertexPoints</a> (const <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a> &amp;element_nd_index) const</td></tr>
+<tr class="memdesc:a9f6fbf67eed5dbca993ec5c86978f34c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the physical coordinates of every vertex belonging to an element.  <a href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a9f6fbf67eed5dbca993ec5c86978f34c">More...</a><br /></td></tr>
+<tr class="separator:a9f6fbf67eed5dbca993ec5c86978f34c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4451d0e20c6f6b0fea6b6561e6a59f6d"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a4451d0e20c6f6b0fea6b6561e6a59f6d">getLocalDOFIndex</a> (const <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a> &amp;elementNDIndex, const size_t &amp;globalDOFIndex) const</td></tr>
 <tr class="separator:a4451d0e20c6f6b0fea6b6561e6a59f6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acc50254a39fe3d069a3082cde038fba9"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, <a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#aca9d747feaeeb921c959e724c19642c3">numElementDOFs</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#acc50254a39fe3d069a3082cde038fba9">getGlobalDOFIndices</a> (const size_t &amp;elementIndex) const</td></tr>
+<tr class="memdesc:acc50254a39fe3d069a3082cde038fba9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the global degree-of-freedom indices of a flattened element.  <a href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#acc50254a39fe3d069a3082cde038fba9">More...</a><br /></td></tr>
+<tr class="separator:acc50254a39fe3d069a3082cde038fba9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6fa0c56851a6e1b6c9a7d1f21c34ddde"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, <a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#aca9d747feaeeb921c959e724c19642c3">numElementDOFs</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a6fa0c56851a6e1b6c9a7d1f21c34ddde">getGlobalDOFIndices</a> (const <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a> &amp;elementNDIndex) const</td></tr>
 <tr class="separator:a6fa0c56851a6e1b6c9a7d1f21c34ddde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0a7ed4da7f75b0a732ccc1eead3b1d2"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#ad0a7ed4da7f75b0a732ccc1eead3b1d2">isDOFOnBoundary</a> (const <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a> &amp;ndindex) const</td></tr>
+<tr class="memdesc:ad0a7ed4da7f75b0a732ccc1eead3b1d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine whether a global degree of freedom lies on the mesh boundary.  <a href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#ad0a7ed4da7f75b0a732ccc1eead3b1d2">More...</a><br /></td></tr>
+<tr class="separator:ad0a7ed4da7f75b0a732ccc1eead3b1d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa618089d25440cac0c4082115cddd6ac"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#aa618089d25440cac0c4082115cddd6ac">evaluateRefElementShapeFunction</a> (const size_t &amp;localDOF, const <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a> &amp;localPoint) const</td></tr>
 <tr class="separator:aa618089d25440cac0c4082115cddd6ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a04f24bb76b2219879577297142e5644b"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a04f24bb76b2219879577297142e5644b">evaluateRefElementShapeFunctionGradient</a> (const size_t &amp;localDOF, const <a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a> &amp;localPoint) const</td></tr>
@@ -122,19 +150,75 @@ Public Member Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a8821cd5564f0755e6bee356b7ad57489"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a8821cd5564f0755e6bee356b7ad57489">nr_m</a></td></tr>
+<tr class="memdesc:a8821cd5564f0755e6bee356b7ad57489"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of mesh vertices in each dimension.  <a href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a8821cd5564f0755e6bee356b7ad57489">More...</a><br /></td></tr>
 <tr class="separator:a8821cd5564f0755e6bee356b7ad57489"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c1370aa3bc11ce7d7bce02b18eb0bd4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; double, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a0c1370aa3bc11ce7d7bce02b18eb0bd4">hr_m</a></td></tr>
+<tr class="memdesc:a0c1370aa3bc11ce7d7bce02b18eb0bd4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Uniform mesh spacing in each dimension.  <a href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a0c1370aa3bc11ce7d7bce02b18eb0bd4">More...</a><br /></td></tr>
+<tr class="separator:a0c1370aa3bc11ce7d7bce02b18eb0bd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aefc0e9cc6805e8e0615151407292364d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; double, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#aefc0e9cc6805e8e0615151407292364d">origin_m</a></td></tr>
+<tr class="memdesc:aefc0e9cc6805e8e0615151407292364d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Physical coordinate of mesh vertex index zero.  <a href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#aefc0e9cc6805e8e0615151407292364d">More...</a><br /></td></tr>
+<tr class="separator:aefc0e9cc6805e8e0615151407292364d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f6ddb7c91314f52e34d062a9a97b815"><td class="memItemLeft" align="right" valign="top">ElementType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a7f6ddb7c91314f52e34d062a9a97b815">ref_element_m</a></td></tr>
+<tr class="memdesc:a7f6ddb7c91314f52e34d062a9a97b815"><td class="mdescLeft">&#160;</td><td class="mdescRight">Device-copyable reference-element description.  <a href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a7f6ddb7c91314f52e34d062a9a97b815">More...</a><br /></td></tr>
 <tr class="separator:a7f6ddb7c91314f52e34d062a9a97b815"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:aca9d747feaeeb921c959e724c19642c3"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#aca9d747feaeeb921c959e724c19642c3">numElementDOFs</a> = LagrangeSpace::numElementDOFs</td></tr>
 <tr class="separator:aca9d747feaeeb921c959e724c19642c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f0fb799b9451b1cbafda29b67878383"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a1f0fb799b9451b1cbafda29b67878383">numElementVertices</a> = LagrangeSpace::numElementVertices</td></tr>
+<tr class="separator:a1f0fb799b9451b1cbafda29b67878383"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename T, unsigned Dim, unsigned Order, typename ElementType, typename QuadratureType, typename FieldLHS, typename FieldRHS&gt;<br />
 struct ippl::LagrangeSpace&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct</div><p >Device struct for copies //////////////////////////////////////////. </p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+<p >Device-copyable snapshot of the Lagrange-space geometry and indexing rules.</p>
+<p ><code><a class="el" href="classippl_1_1LagrangeSpace.html" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid.">LagrangeSpace</a></code> is a host-side owner. In particular, it contains fields and other objects whose lifetime management and destructors are not device-callable. Capturing the complete space (or <code>this</code>) in a <code>KOKKOS_CLASS_LAMBDA</code> therefore makes the kernel closure contain host-only state. CUDA compilers can then diagnose calls to host-only constructors or destructors while generating device code.</p>
+<p ><code><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html" title="Device struct for copies //////////////////////////////////////////.">DeviceStruct</a></code> defines the architectural boundary between that host-side owner and device kernels. It contains only the immutable, device-copyable values needed to reproduce mesh indexing, element geometry, degree-of-freedom mappings, and reference element evaluations. A kernel obtains a snapshot with <a class="el" href="classippl_1_1LagrangeSpace.html#a5c83b8a2bc0065c8e2c820cbeadfd9b7" title="Create the device-safe snapshot captured by LagrangeSpace kernels.">getDeviceMirror()</a> and captures that snapshot by value in a <code>KOKKOS_LAMBDA</code>. <a class="el" href="namespaceKokkos.html">Kokkos</a> views such as <code>elementIndices</code> and field data views are captured separately; they deliberately are not owned by this structure.</p>
+<p >More specifically, the mirror performs the following tasks:</p>
+<ul>
+<li>It snapshots the mesh vertex counts (<code>nr_m</code>), mesh spacing (<code>hr_m</code>), physical origin (<code>origin_m</code>), and reference element (<code>ref_element_m</code>) that device code needs for geometric calculations. The compile-time element/DOF counts are reused without adding runtime storage.</li>
+<li>It reconstructs the deterministic operations that previously required access to the parent class: flattened/N-dimensional element-index conversion, element-vertex enumeration, physical vertex-coordinate construction, global-DOF lookup, boundary detection, and reference-element shape-function evaluation.</li>
+<li>It gives a <code>KOKKOS_LAMBDA</code> a self-contained, read-only description of the space. The host creates the structure before launching a kernel; capture-by-value places it in the <a class="el" href="namespaceKokkos.html">Kokkos</a> kernel closure, which <a class="el" href="namespaceKokkos.html">Kokkos</a> makes available in the selected execution space. <a class="el" href="classippl_1_1LagrangeSpace.html#a5c83b8a2bc0065c8e2c820cbeadfd9b7" title="Create the device-safe snapshot captured by LagrangeSpace kernels.">getDeviceMirror()</a> itself performs no field allocation or field-data copy.</li>
+<li>It does not contain field objects, field layouts, MPI decomposition state, or other host-owned infrastructure. Before each kernel launch, the host extracts the required device-accessible <a class="el" href="namespaceKokkos.html">Kokkos</a> views—such as the <code>resultField</code> data view and <code>elementIndices</code>—and captures those view handles separately from this geometry and indexing snapshot.</li>
+<li>It removes the need to capture <code>this</code>. Consequently, constructing and destroying the device closure never requires the host-only lifetime operations of <code><a class="el" href="classippl_1_1LagrangeSpace.html" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid.">LagrangeSpace</a></code> or <code><a class="el" href="classippl_1_1Field.html">Field</a></code>, which would cause issues when using GPUs.</li>
+</ul>
+<p >"Lightweight" therefore means that this is neither a second owning finite-element space nor an automatically synchronized copy of one. It is a small, non-owning value snapshot containing only kernel-invariant geometry and algorithms. Changes to the host object are not reflected in an existing mirror; the host must create another mirror before the next kernel that observes the changed state.</p>
+<p >When a new device kernel needs additional <code><a class="el" href="classippl_1_1LagrangeSpace.html" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid.">LagrangeSpace</a></code> functionality, add the smallest required device-copyable state and a <code>KOKKOS_FUNCTION</code> helper here instead of capturing the parent object. All members must remain safe to copy into a device closure and must not introduce host-only ownership or lifetime management. A new snapshot must be created after changing any mirrored mesh or reference-element state on the host. During a kernel invocation the snapshot is read-only and may be shared by all threads. </p>
+</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a513b8285a945590cbc07e59e4fbac82c" name="a513b8285a945590cbc07e59e4fbac82c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a513b8285a945590cbc07e59e4fbac82c">&#9670;&#160;</a></span>indices_list_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::indices_list_t =  <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a>, <a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a1f0fb799b9451b1cbafda29b67878383">numElementVertices</a>&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a792c4460d42bdda75eb4e11ef2a89e55" name="a792c4460d42bdda75eb4e11ef2a89e55"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a792c4460d42bdda75eb4e11ef2a89e55">&#9670;&#160;</a></span>vertex_points_t</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::vertex_points_t =  <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;<a class="el" href="classippl_1_1LagrangeSpace.html#ac0162d27387a8d638d0f72cd0a8defaa">point_t</a>, <a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a1f0fb799b9451b1cbafda29b67878383">numElementVertices</a>&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Member Function Documentation</h2>
 <a id="aa618089d25440cac0c4082115cddd6ac" name="aa618089d25440cac0c4082115cddd6ac"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa618089d25440cac0c4082115cddd6ac">&#9670;&#160;</a></span>evaluateRefElementShapeFunction()</h2>
 
@@ -195,8 +279,132 @@ template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , ty
 
 </div>
 </div>
+<a id="a0aa16dd7b0aaa439c3897dccaf125402" name="a0aa16dd7b0aaa439c3897dccaf125402"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0aa16dd7b0aaa439c3897dccaf125402">&#9670;&#160;</a></span>getElementIndex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_FUNCTION size_t <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::getElementIndex </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>element_nd_index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Flatten an N-dimensional element index. </p>
+<p >This is the inverse of <a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a36cadab49acf10171fe37d475d1f24d2" title="Convert a flattened element index to its N-dimensional mesh index.">getElementNDIndex()</a> for valid element indices and uses a dimension-zero-fastest ordering.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">element_nd_index</td><td>N-dimensional index of an element's lower mesh vertex. Each component <code>d</code> must be in <code>[0, nr_m[d] - 1)</code>. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Zero-based flattened element index.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a36cadab49acf10171fe37d475d1f24d2" title="Convert a flattened element index to its N-dimensional mesh index.">getElementNDIndex()</a> </dd></dl>
+
+</div>
+</div>
+<a id="ac952a52ada3e6e1d9ce7c1b3e2c11324" name="ac952a52ada3e6e1d9ce7c1b3e2c11324"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac952a52ada3e6e1d9ce7c1b3e2c11324">&#9670;&#160;</a></span>getElementMeshVertexNDIndices()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1LagrangeSpace.html">LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;<a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a513b8285a945590cbc07e59e4fbac82c">::DeviceStruct::indices_list_t</a> <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::getElementMeshVertexNDIndices </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>element_nd_index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return the mesh indices of every vertex belonging to an element. </p>
+<p >Vertex ordering follows the tensor-product binary convention used throughout the finite-element implementation: bit <code>d</code> of a local vertex number selects the lower (<code>0</code>) or upper (<code>1</code>) vertex in dimension <code>d</code>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">element_nd_index</td><td>N-dimensional index of the element's lower mesh vertex. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Fixed-size list of the element vertex indices in local vertex order. </dd></dl>
+
+</div>
+</div>
+<a id="a9f6fbf67eed5dbca993ec5c86978f34c" name="a9f6fbf67eed5dbca993ec5c86978f34c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f6fbf67eed5dbca993ec5c86978f34c">&#9670;&#160;</a></span>getElementMeshVertexPoints()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1LagrangeSpace.html">LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;<a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a792c4460d42bdda75eb4e11ef2a89e55">::DeviceStruct::vertex_points_t</a> <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::getElementMeshVertexPoints </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>element_nd_index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return the physical coordinates of every vertex belonging to an element. </p>
+<p >Coordinates are computed from the mirrored structured-mesh geometry as <code>origin_m[d] + vertex_index[d] * hr_m[d]</code>. The returned points use the same local vertex ordering as <a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#ac952a52ada3e6e1d9ce7c1b3e2c11324" title="Return the mesh indices of every vertex belonging to an element.">getElementMeshVertexNDIndices()</a>.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">element_nd_index</td><td>N-dimensional index of the element's lower mesh vertex. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Fixed-size list of physical vertex coordinates in local vertex order.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#ac952a52ada3e6e1d9ce7c1b3e2c11324" title="Return the mesh indices of every vertex belonging to an element.">getElementMeshVertexNDIndices()</a> </dd></dl>
+
+</div>
+</div>
+<a id="a36cadab49acf10171fe37d475d1f24d2" name="a36cadab49acf10171fe37d475d1f24d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36cadab49acf10171fe37d475d1f24d2">&#9670;&#160;</a></span>getElementNDIndex()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1LagrangeSpace.html">LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;<a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">::indices_t</a> <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::getElementNDIndex </td>
+          <td>(</td>
+          <td class="paramtype">const size_t &amp;&#160;</td>
+          <td class="paramname"><em>element_index</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Convert a flattened element index to its N-dimensional mesh index. </p>
+<p >The returned index denotes the lower mesh vertex of the element. Dimension zero is the fastest-varying dimension in the flattened representation.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">element_index</td><td>Zero-based flattened element index in the interval <code>[0, product(nr_m[d] - 1))</code>. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>N-dimensional element index in which component <code>d</code> is in the interval <code>[0, nr_m[d] - 1)</code>.</dd></dl>
+<dl class="section pre"><dt>Precondition</dt><dd>Every dimension contains at least two mesh vertices. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a0aa16dd7b0aaa439c3897dccaf125402" title="Flatten an N-dimensional element index.">getElementIndex()</a> </dd></dl>
+
+</div>
+</div>
 <a id="a6fa0c56851a6e1b6c9a7d1f21c34ddde" name="a6fa0c56851a6e1b6c9a7d1f21c34ddde"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6fa0c56851a6e1b6c9a7d1f21c34ddde">&#9670;&#160;</a></span>getGlobalDOFIndices()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fa0c56851a6e1b6c9a7d1f21c34ddde">&#9670;&#160;</a></span>getGlobalDOFIndices() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -212,6 +420,39 @@ template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , ty
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="acc50254a39fe3d069a3082cde038fba9" name="acc50254a39fe3d069a3082cde038fba9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc50254a39fe3d069a3082cde038fba9">&#9670;&#160;</a></span>getGlobalDOFIndices() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_FUNCTION <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; size_t, <a class="el" href="classippl_1_1LagrangeSpace.html">LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;<a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#aca9d747feaeeb921c959e724c19642c3">::DeviceStruct::numElementDOFs</a> &gt; <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::getGlobalDOFIndices </td>
+          <td>(</td>
+          <td class="paramtype">const size_t &amp;&#160;</td>
+          <td class="paramname"><em>elementIndex</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Return the global degree-of-freedom indices of a flattened element. </p>
+<p >This convenience overload first converts the flattened element index with <a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a36cadab49acf10171fe37d475d1f24d2" title="Convert a flattened element index to its N-dimensional mesh index.">getElementNDIndex()</a> and then applies the existing N-dimensional DOF mapping. It allows kernels that iterate over the flattened <code>elementIndices</code> view to remain entirely within the device-safe interface.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">elementIndex</td><td>Zero-based flattened element index. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Global DOF indices in local element-DOF order.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a36cadab49acf10171fe37d475d1f24d2" title="Convert a flattened element index to its N-dimensional mesh index.">getElementNDIndex()</a> </dd>
+<dd>
+<a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html#a6fa0c56851a6e1b6c9a7d1f21c34ddde">getGlobalDOFIndices(const indices_t&amp;) const</a> </dd></dl>
 
 </div>
 </div>
@@ -265,7 +506,55 @@ template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , ty
 
 </div>
 </div>
+<a id="ad0a7ed4da7f75b0a732ccc1eead3b1d2" name="ad0a7ed4da7f75b0a732ccc1eead3b1d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad0a7ed4da7f75b0a732ccc1eead3b1d2">&#9670;&#160;</a></span>isDOFOnBoundary()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">KOKKOS_FUNCTION bool <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::isDOFOnBoundary </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="classippl_1_1LagrangeSpace.html#ac8eeceeda13c087c38524c5be1a9140a">indices_t</a> &amp;&#160;</td>
+          <td class="paramname"><em>ndindex</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Determine whether a global degree of freedom lies on the mesh boundary. </p>
+<p >A DOF is a boundary DOF when at least one index component is on the lower boundary (<code>0</code>) or upper boundary (<code>nr_m[d] - 1</code>). The predicate is used inside assembly kernels to apply or skip Dirichlet boundary contributions without accessing the host-side <code><a class="el" href="classippl_1_1LagrangeSpace.html" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid.">LagrangeSpace</a></code> object.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ndindex</td><td>N-dimensional global mesh/DOF index. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd><code>true</code> if any component lies on a domain boundary; otherwise <code>false</code>. </dd></dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a0c1370aa3bc11ce7d7bce02b18eb0bd4" name="a0c1370aa3bc11ce7d7bce02b18eb0bd4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c1370aa3bc11ce7d7bce02b18eb0bd4">&#9670;&#160;</a></span>hr_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;double, Dim&gt; <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::hr_m</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Uniform mesh spacing in each dimension. </p>
+
+</div>
+</div>
 <a id="a8821cd5564f0755e6bee356b7ad57489" name="a8821cd5564f0755e6bee356b7ad57489"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8821cd5564f0755e6bee356b7ad57489">&#9670;&#160;</a></span>nr_m</h2>
 
@@ -279,6 +568,8 @@ template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , ty
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Number of mesh vertices in each dimension. </p>
 
 </div>
 </div>
@@ -306,6 +597,48 @@ template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , ty
 
 </div>
 </div>
+<a id="a1f0fb799b9451b1cbafda29b67878383" name="a1f0fb799b9451b1cbafda29b67878383"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f0fb799b9451b1cbafda29b67878383">&#9670;&#160;</a></span>numElementVertices</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr unsigned <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::numElementVertices = LagrangeSpace::numElementVertices</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aefc0e9cc6805e8e0615151407292364d" name="aefc0e9cc6805e8e0615151407292364d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aefc0e9cc6805e8e0615151407292364d">&#9670;&#160;</a></span>origin_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt;double, Dim&gt; <a class="el" href="classippl_1_1LagrangeSpace.html">ippl::LagrangeSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldLHS, FieldRHS &gt;::DeviceStruct::origin_m</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Physical coordinate of mesh vertex index zero. </p>
+
+</div>
+</div>
 <a id="a7f6ddb7c91314f52e34d062a9a97b815" name="a7f6ddb7c91314f52e34d062a9a97b815"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7f6ddb7c91314f52e34d062a9a97b815">&#9670;&#160;</a></span>ref_element_m</h2>
 
@@ -319,6 +652,8 @@ template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , ty
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Device-copyable reference-element description. </p>
 
 </div>
 </div>

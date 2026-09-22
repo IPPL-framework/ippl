@@ -82,6 +82,7 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
@@ -124,6 +125,12 @@ Collaboration diagram for ippl::NedelecSpace&lt; T, Dim, Order, ElementType, Qua
 </map>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1NedelecSpace_1_1DeviceStruct.html">DeviceStruct</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Non-owning, device-copyable snapshot used by Nedelec assembly kernels.  <a href="structippl_1_1NedelecSpace_1_1DeviceStruct.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
 <tr class="memitem:a629a6ae81e7100b3894e0f25b19c76f1"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="classippl_1_1FiniteElementSpace.html">FiniteElementSpace</a>&lt; T, Dim, <a class="el" href="classippl_1_1NedelecSpace.html#ad4713b5b85ef51ac80b6075b3411ce09">numElementDOFs</a>, ElementType, QuadratureType, <a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt;, <a class="el" href="classippl_1_1FEMVector.html">FEMVector</a>&lt; T &gt; &gt;::indices_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NedelecSpace.html#a629a6ae81e7100b3894e0f25b19c76f1">indices_t</a></td></tr>
@@ -227,6 +234,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4f02db3e88a98993fdf105ac394af804"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NedelecSpace.html#a4f02db3e88a98993fdf105ac394af804">getBoundarySide</a> (const size_t &amp;dofIdx) const</td></tr>
 <tr class="memdesc:a4f02db3e88a98993fdf105ac394af804"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns which side the boundary is on.  <a href="classippl_1_1NedelecSpace.html#a4f02db3e88a98993fdf105ac394af804">More...</a><br /></td></tr>
 <tr class="separator:a4f02db3e88a98993fdf105ac394af804"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72d30b0864f305f866d8151e45961845"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structippl_1_1NedelecSpace_1_1DeviceStruct.html">DeviceStruct</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1NedelecSpace.html#a72d30b0864f305f866d8151e45961845">getDeviceMirror</a> () const</td></tr>
+<tr class="memdesc:a72d30b0864f305f866d8151e45961845"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create the device-safe snapshot captured by Nedelec kernels.  <a href="classippl_1_1NedelecSpace.html#a72d30b0864f305f866d8151e45961845">More...</a><br /></td></tr>
+<tr class="separator:a72d30b0864f305f866d8151e45961845"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classippl_1_1FiniteElementSpace"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classippl_1_1FiniteElementSpace')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classippl_1_1FiniteElementSpace.html">ippl::FiniteElementSpace&lt; T, Dim, getNedelecNumElementDOFs(Dim, Order), ElementType, QuadratureType, FEMVector&lt; T &gt;, FEMVector&lt; T &gt; &gt;</a></td></tr>
 <tr class="memitem:a22431704078c7819295ae0d912e3cd90 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FiniteElementSpace.html#a22431704078c7819295ae0d912e3cd90">FiniteElementSpace</a> (<a class="el" href="classippl_1_1UniformCartesian.html">UniformCartesian</a>&lt; T, Dim &gt; &amp;mesh, ElementType &amp;ref_element, const QuadratureType &amp;quadrature)</td></tr>
 <tr class="memdesc:a22431704078c7819295ae0d912e3cd90 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a new FiniteElementSpace object.  <a href="classippl_1_1FiniteElementSpace.html#a22431704078c7819295ae0d912e3cd90">More...</a><br /></td></tr>
@@ -877,6 +887,27 @@ template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , ty
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Which boundary side the DoF is on or -1 if on no boundary. </dd></dl>
+
+</div>
+</div>
+<a id="a72d30b0864f305f866d8151e45961845" name="a72d30b0864f305f866d8151e45961845"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a72d30b0864f305f866d8151e45961845">&#9670;&#160;</a></span>getDeviceMirror()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , typename QuadratureType , typename FieldType &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1NedelecSpace.html">NedelecSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldType &gt;::DeviceStruct <a class="el" href="classippl_1_1NedelecSpace.html">ippl::NedelecSpace</a>&lt; T, Dim, Order, ElementType, QuadratureType, FieldType &gt;::getDeviceMirror</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Create the device-safe snapshot captured by Nedelec kernels. </p>
+<p >Device-safe kernel snapshot ///////////////////////////////////////.</p>
+<p >The returned value is independent of the host object's lifetime and contains no <code><a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a></code> or MPI ownership. It is valid until a kernel needs mesh or reference- element state newer than the state copied by this call.</p>
+<dl class="section return"><dt>Returns</dt><dd>Device-copyable geometry and edge-indexing snapshot. </dd></dl>
 
 </div>
 </div>

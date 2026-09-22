@@ -231,7 +231,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a08f3b640834bd1d15761ef67fc7f6ea0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a field, compute the average.  <a href="classippl_1_1LagrangeSpace.html#a08f3b640834bd1d15761ef67fc7f6ea0">More...</a><br /></td></tr>
 <tr class="separator:a08f3b640834bd1d15761ef67fc7f6ea0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c83b8a2bc0065c8e2c820cbeadfd9b7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structippl_1_1LagrangeSpace_1_1DeviceStruct.html">DeviceStruct</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1LagrangeSpace.html#a5c83b8a2bc0065c8e2c820cbeadfd9b7">getDeviceMirror</a> () const</td></tr>
-<tr class="memdesc:a5c83b8a2bc0065c8e2c820cbeadfd9b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Device struct definitions /////////////////////////////////////////.  <a href="classippl_1_1LagrangeSpace.html#a5c83b8a2bc0065c8e2c820cbeadfd9b7">More...</a><br /></td></tr>
+<tr class="memdesc:a5c83b8a2bc0065c8e2c820cbeadfd9b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create the device-safe snapshot captured by <a class="el" href="classippl_1_1LagrangeSpace.html" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid.">LagrangeSpace</a> kernels.  <a href="classippl_1_1LagrangeSpace.html#a5c83b8a2bc0065c8e2c820cbeadfd9b7">More...</a><br /></td></tr>
 <tr class="separator:a5c83b8a2bc0065c8e2c820cbeadfd9b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classippl_1_1FiniteElementSpace"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classippl_1_1FiniteElementSpace')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classippl_1_1FiniteElementSpace.html">ippl::FiniteElementSpace&lt; T, Dim, getLagrangeNumElementDOFs(Dim, Order), ElementType, QuadratureType, FieldLHS, FieldRHS &gt;</a></td></tr>
 <tr class="memitem:a22431704078c7819295ae0d912e3cd90 inherit pub_methods_classippl_1_1FiniteElementSpace"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FiniteElementSpace.html#a22431704078c7819295ae0d912e3cd90">FiniteElementSpace</a> (<a class="el" href="classippl_1_1UniformCartesian.html">UniformCartesian</a>&lt; T, Dim &gt; &amp;mesh, ElementType &amp;ref_element, const QuadratureType &amp;quadrature)</td></tr>
@@ -1004,7 +1004,11 @@ template&lt;typename T , unsigned Dim, unsigned Order, typename ElementType , ty
       </table>
 </div><div class="memdoc">
 
-<p>Device struct definitions /////////////////////////////////////////. </p>
+<p>Create the device-safe snapshot captured by <a class="el" href="classippl_1_1LagrangeSpace.html" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid.">LagrangeSpace</a> kernels. </p>
+<p >Device struct definitions /////////////////////////////////////////.</p>
+<p >Copies the mesh extents, spacing, origin, and reference element into a non-owning value that can be captured by <code>KOKKOS_LAMBDA</code>. The returned value supplies device-side mesh indexing, physical-coordinate, DOF-mapping, boundary, and reference-element operations without retaining a pointer or reference to the parent <code><a class="el" href="classippl_1_1LagrangeSpace.html" title="A class representing a Lagrange space for finite element methods on a structured, rectilinear grid.">LagrangeSpace</a></code>. Views containing the element partition and field data are intentionally captured separately by each kernel.</p>
+<dl class="section return"><dt>Returns</dt><dd>Independent, device-copyable snapshot of the current geometric and indexing state.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Recreate the mirror after changing the corresponding host-side mesh or reference element state. The returned object does not synchronize later host changes. </dd></dl>
 
 </div>
 </div>

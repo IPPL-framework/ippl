@@ -112,7 +112,7 @@ Collaboration diagram for ippl::ParticleSpatialLayout&lt; T, Dim, Mesh, Position
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1ParticleSpatialLayout__coll__graph.png" border="0" usemap="#aippl_1_1ParticleSpatialLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1ParticleSpatialLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_coll__map" id="aippl_1_1ParticleSpatialLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="474,445,709,940"/>
+<area shape="rect" title=" " alt="" coords="474,445,709,955"/>
 <area shape="rect" href="classippl_1_1detail_1_1ParticleLayout.html" title=" " alt="" coords="5,57,209,243"/>
 <area shape="rect" href="classippl_1_1mpi_1_1rma_1_1Window.html" title=" " alt="" coords="233,5,387,295"/>
 <area shape="rect" href="structippl_1_1detail_1_1ViewType.html" title=" " alt="" coords="411,115,577,185"/>
@@ -278,8 +278,10 @@ Private Attributes</h2></td></tr>
 <tr class="separator:aa737764878a256f8dfe36e0fddb31f20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae759f52e7551fc1672203f72486dcb0b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a5108e7a0ec58d61e64086ab632c21069">bool_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#ae759f52e7551fc1672203f72486dcb0b">leaving_d_</a></td></tr>
 <tr class="separator:ae759f52e7551fc1672203f72486dcb0b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaf4bae1e2ca607c8fd7c4512f0dae7c6"><td class="memItemLeft" align="right" valign="top">Kokkos::View&lt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a>, <a class="el" href="classippl_1_1detail_1_1ParticleLayout.html#a4a5694686ce8572352d14e7e50ab6c69">position_memory_space</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aaf4bae1e2ca607c8fd7c4512f0dae7c6">nDest_d_</a></td></tr>
-<tr class="separator:aaf4bae1e2ca607c8fd7c4512f0dae7c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fe8e32910f5bb1fd17fa6140338541f"><td class="memItemLeft" align="right" valign="top">Kokkos::View&lt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a> *, <a class="el" href="classippl_1_1detail_1_1ParticleLayout.html#a4a5694686ce8572352d14e7e50ab6c69">position_memory_space</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a0fe8e32910f5bb1fd17fa6140338541f">nDest_d_</a></td></tr>
+<tr class="separator:a0fe8e32910f5bb1fd17fa6140338541f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a251971c984dda0e2710347f10493d598"><td class="memItemLeft" align="right" valign="top">Kokkos::View&lt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a> *, Kokkos::HostSpace &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a251971c984dda0e2710347f10493d598">nDest_h_</a></td></tr>
+<tr class="separator:a251971c984dda0e2710347f10493d598"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f907e2b1bf9e4b94f79b66bf3fbfbae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a0f907e2b1bf9e4b94f79b66bf3fbfbae">neighbors_d_</a></td></tr>
 <tr class="separator:a0f907e2b1bf9e4b94f79b66bf3fbfbae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92d4fe42f45c741cc4ae1c2ecf1ea91c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; int &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#a92d4fe42f45c741cc4ae1c2ecf1ea91c">neighbors_host_</a></td></tr>
@@ -1372,8 +1374,8 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 
 </div>
 </div>
-<a id="aaf4bae1e2ca607c8fd7c4512f0dae7c6" name="aaf4bae1e2ca607c8fd7c4512f0dae7c6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaf4bae1e2ca607c8fd7c4512f0dae7c6">&#9670;&#160;</a></span>nDest_d_</h2>
+<a id="a0fe8e32910f5bb1fd17fa6140338541f" name="a0fe8e32910f5bb1fd17fa6140338541f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0fe8e32910f5bb1fd17fa6140338541f">&#9670;&#160;</a></span>nDest_d_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1384,7 +1386,31 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Kokkos::View&lt;<a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a>, <a class="el" href="classippl_1_1detail_1_1ParticleLayout.html#a4a5694686ce8572352d14e7e50ab6c69">position_memory_space</a>&gt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::nDest_d_</td>
+          <td class="memname">Kokkos::View&lt;<a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a>*, <a class="el" href="classippl_1_1detail_1_1ParticleLayout.html#a4a5694686ce8572352d14e7e50ab6c69">position_memory_space</a>&gt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::nDest_d_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a251971c984dda0e2710347f10493d598" name="a251971c984dda0e2710347f10493d598"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a251971c984dda0e2710347f10493d598">&#9670;&#160;</a></span>nDest_h_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Kokkos::View&lt;<a class="el" href="classippl_1_1ParticleSpatialLayout.html#a70e36e5624b3174677176f6eb8179e53">size_type</a>*, Kokkos::HostSpace&gt; <a class="el" href="classippl_1_1ParticleSpatialLayout.html">ippl::ParticleSpatialLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::nDest_h_</td>
         </tr>
       </table>
   </td>

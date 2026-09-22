@@ -98,8 +98,8 @@ Inheritance diagram for ippl::detail::meta_hess&lt; E &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1detail_1_1meta__hess__inherit__graph.png" border="0" usemap="#aippl_1_1detail_1_1meta__hess_3_01E_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1detail_1_1meta__hess_3_01E_01_4_inherit__map" id="aippl_1_1detail_1_1meta__hess_3_01E_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="43,181,178,368"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,216,133"/>
+<area shape="rect" title=" " alt="" coords="38,196,173,383"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,205,148"/>
 </map>
 </div>
 <div class="dynheader">
@@ -107,21 +107,21 @@ Collaboration diagram for ippl::detail::meta_hess&lt; E &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1detail_1_1meta__hess__coll__graph.png" border="0" usemap="#aippl_1_1detail_1_1meta__hess_3_01E_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1detail_1_1meta__hess_3_01E_01_4_coll__map" id="aippl_1_1detail_1_1meta__hess_3_01E_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="65,447,199,619"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,205,216,333"/>
-<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="241,153,391,384"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="230,5,402,104"/>
+<area shape="rect" title=" " alt="" coords="59,447,194,619"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,197,205,340"/>
+<area shape="rect" href="classippl_1_1Vector.html" title=" " alt="" coords="230,153,381,384"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="219,5,391,104"/>
 </map>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a4f71ec8c1b5a54683d237b24d44ae246"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__hess.html#a4f71ec8c1b5a54683d237b24d44ae246">meta_hess</a> (const E &amp;u, const typename E::Mesh_t::vector_type vectors[], const typename E::Mesh_t::vector_type &amp;hvector)</td></tr>
-<tr class="separator:a4f71ec8c1b5a54683d237b24d44ae246"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abdacbc1d86dfdcdff582cb00695868db"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__hess.html#abdacbc1d86dfdcdff582cb00695868db">meta_hess</a> (const typename E::view_type &amp;u, const typename E::Mesh_t::vector_type vectors[], const typename E::Mesh_t::vector_type &amp;hvector)</td></tr>
+<tr class="separator:abdacbc1d86dfdcdff582cb00695868db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8496961d11ae6188e2e02fe776961cee"><td class="memTemplParams" colspan="2">template&lt;typename... Idx&gt; </td></tr>
 <tr class="memitem:a8496961d11ae6188e2e02fe776961cee"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__hess.html#a8496961d11ae6188e2e02fe776961cee">operator()</a> (const Idx... args) const</td></tr>
 <tr class="separator:a8496961d11ae6188e2e02fe776961cee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_methods_structippl_1_1detail_1_1Expression"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_structippl_1_1detail_1_1Expression')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="structippl_1_1detail_1_1Expression.html">ippl::detail::Expression&lt; meta_hess&lt; E &gt;, sizeof(E)+sizeof(E::Mesh_t::vector_type[E::Mesh_t::Dimension])+sizeof(E::Mesh_t::vector_type)&gt;</a></td></tr>
+<tr class="inherit_header pub_methods_structippl_1_1detail_1_1Expression"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_structippl_1_1detail_1_1Expression')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="structippl_1_1detail_1_1Expression.html">ippl::detail::Expression&lt; meta_hess&lt; E &gt;, sizeof(E::view_type)+sizeof(E::Mesh_t::vector_type[E::Mesh_t::Dimension])+sizeof(E::Mesh_t::vector_type)&gt;</a></td></tr>
 <tr class="memitem:aa121b2144b45f7ca060a9e9b02a5991c inherit pub_methods_structippl_1_1detail_1_1Expression"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1Expression.html#aa121b2144b45f7ca060a9e9b02a5991c">operator[]</a> (size_t i) const</td></tr>
 <tr class="separator:aa121b2144b45f7ca060a9e9b02a5991c inherit pub_methods_structippl_1_1detail_1_1Expression"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -129,7 +129,7 @@ Public Member Functions</h2></td></tr>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:a307436e41c96f29a8b824f0ba9121e98"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__hess.html#a307436e41c96f29a8b824f0ba9121e98">dim</a> = E::dim</td></tr>
 <tr class="separator:a307436e41c96f29a8b824f0ba9121e98"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_static_attribs_structippl_1_1detail_1_1Expression"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_structippl_1_1detail_1_1Expression')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="structippl_1_1detail_1_1Expression.html">ippl::detail::Expression&lt; meta_hess&lt; E &gt;, sizeof(E)+sizeof(E::Mesh_t::vector_type[E::Mesh_t::Dimension])+sizeof(E::Mesh_t::vector_type)&gt;</a></td></tr>
+<tr class="inherit_header pub_static_attribs_structippl_1_1detail_1_1Expression"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_structippl_1_1detail_1_1Expression')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="structippl_1_1detail_1_1Expression.html">ippl::detail::Expression&lt; meta_hess&lt; E &gt;, sizeof(E::view_type)+sizeof(E::Mesh_t::vector_type[E::Mesh_t::Dimension])+sizeof(E::Mesh_t::vector_type)&gt;</a></td></tr>
 <tr class="memitem:af8ae99c70daf0572b403dcd1bf832d72 inherit pub_static_attribs_structippl_1_1detail_1_1Expression"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">dim</a></td></tr>
 <tr class="separator:af8ae99c70daf0572b403dcd1bf832d72 inherit pub_static_attribs_structippl_1_1detail_1_1Expression"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -141,6 +141,8 @@ Private Types</h2></td></tr>
 <tr class="separator:a4cf5763f013e22aaa8895be22954f12f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29b424d1ee795d82f2d13cea2b27a319"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__hess.html#a29b424d1ee795d82f2d13cea2b27a319">matrix_type</a> = typename <a class="el" href="classippl_1_1Mesh.html#a102bad798da7441046e353fc7a666f77">Mesh_t::matrix_type</a></td></tr>
 <tr class="separator:a29b424d1ee795d82f2d13cea2b27a319"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac01611f60792a9e0eead1bf79cfbcbaf"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__hess.html#ac01611f60792a9e0eead1bf79cfbcbaf">view_type</a> = typename E::view_type</td></tr>
+<tr class="separator:ac01611f60792a9e0eead1bf79cfbcbaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -156,8 +158,8 @@ Private Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a8e057ccdbb226d506fc07b72b4db8623"><td class="memItemLeft" align="right" valign="top">const E&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__hess.html#a8e057ccdbb226d506fc07b72b4db8623">u_m</a></td></tr>
-<tr class="separator:a8e057ccdbb226d506fc07b72b4db8623"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abdeefa4afcde635dccbbc6b5573e640c"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structippl_1_1detail_1_1meta__hess.html#ac01611f60792a9e0eead1bf79cfbcbaf">view_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__hess.html#abdeefa4afcde635dccbbc6b5573e640c">u_m</a></td></tr>
+<tr class="separator:abdeefa4afcde635dccbbc6b5573e640c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a275eaa28ee145325c6f2abec0c03e3b3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structippl_1_1detail_1_1meta__hess.html#a4cf5763f013e22aaa8895be22954f12f">vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__hess.html#a275eaa28ee145325c6f2abec0c03e3b3">vectors_m</a> [<a class="el" href="structippl_1_1detail_1_1meta__hess.html#a307436e41c96f29a8b824f0ba9121e98">dim</a>]</td></tr>
 <tr class="separator:a275eaa28ee145325c6f2abec0c03e3b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad24418811d51b44acca79890e95dbdd2"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structippl_1_1detail_1_1meta__hess.html#a4cf5763f013e22aaa8895be22954f12f">vector_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__hess.html#ad24418811d51b44acca79890e95dbdd2">hvector_m</a></td></tr>
@@ -239,9 +241,33 @@ template&lt;typename E &gt; </div>
 
 </div>
 </div>
+<a id="ac01611f60792a9e0eead1bf79cfbcbaf" name="ac01611f60792a9e0eead1bf79cfbcbaf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac01611f60792a9e0eead1bf79cfbcbaf">&#9670;&#160;</a></span>view_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename E &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="structippl_1_1detail_1_1meta__hess.html">ippl::detail::meta_hess</a>&lt; E &gt;::view_type =  typename E::view_type</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a4f71ec8c1b5a54683d237b24d44ae246" name="a4f71ec8c1b5a54683d237b24d44ae246"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4f71ec8c1b5a54683d237b24d44ae246">&#9670;&#160;</a></span>meta_hess()</h2>
+<a id="abdacbc1d86dfdcdff582cb00695868db" name="abdacbc1d86dfdcdff582cb00695868db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abdacbc1d86dfdcdff582cb00695868db">&#9670;&#160;</a></span>meta_hess()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -254,7 +280,7 @@ template&lt;typename E &gt; </div>
         <tr>
           <td class="memname">KOKKOS_FUNCTION <a class="el" href="structippl_1_1detail_1_1meta__hess.html">ippl::detail::meta_hess</a>&lt; E &gt;::meta_hess </td>
           <td>(</td>
-          <td class="paramtype">const E &amp;&#160;</td>
+          <td class="paramtype">const typename E::view_type &amp;&#160;</td>
           <td class="paramname"><em>u</em>, </td>
         </tr>
         <tr>
@@ -532,8 +558,8 @@ template&lt;typename E &gt; </div>
 
 </div>
 </div>
-<a id="a8e057ccdbb226d506fc07b72b4db8623" name="a8e057ccdbb226d506fc07b72b4db8623"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8e057ccdbb226d506fc07b72b4db8623">&#9670;&#160;</a></span>u_m</h2>
+<a id="abdeefa4afcde635dccbbc6b5573e640c" name="abdeefa4afcde635dccbbc6b5573e640c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abdeefa4afcde635dccbbc6b5573e640c">&#9670;&#160;</a></span>u_m</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -544,7 +570,7 @@ template&lt;typename E &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const E <a class="el" href="structippl_1_1detail_1_1meta__hess.html">ippl::detail::meta_hess</a>&lt; E &gt;::u_m</td>
+          <td class="memname">const <a class="el" href="structippl_1_1detail_1_1meta__hess.html#ac01611f60792a9e0eead1bf79cfbcbaf">view_type</a> <a class="el" href="structippl_1_1detail_1_1meta__hess.html">ippl::detail::meta_hess</a>&lt; E &gt;::u_m</td>
         </tr>
       </table>
   </td>

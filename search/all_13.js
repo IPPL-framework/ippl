@@ -227,11 +227,10 @@ var searchData=
   ['subfieldlayout_2eh_224',['SubFieldLayout.h',['../SubFieldLayout_8h.html',1,'']]],
   ['subfieldlayout_2ehpp_225',['SubFieldLayout.hpp',['../SubFieldLayout_8hpp.html',1,'']]],
   ['subview_226',['subview',['../structippl_1_1detail_1_1HaloUnpackFunctor.html#adb44429be1a58c4c15ebb1ddacfc5486',1,'ippl::detail::HaloUnpackFunctor::subview()'],['../structippl_1_1detail_1_1HaloPackFunctor.html#a369d062fb75c03d803a42226a8888903',1,'ippl::detail::HaloPackFunctor::subview()']]],
-  ['sum_227',['Sum',['../structKokkosCorrection_1_1Sum.html',1,'KokkosCorrection']]],
+  ['sum_227',['Sum',['../structKokkosCorrection_1_1Sum.html',1,'KokkosCorrection::Sum&lt; Scalar, Space &gt;'],['../structKokkosCorrection_1_1Sum.html#afeeebbd244735f1079110707a893ba6f',1,'KokkosCorrection::Sum::Sum()']]],
   ['sum_228',['sum',['../classippl_1_1BareField.html#a0e2efcc2e51f03203635cfc402a69145',1,'ippl::BareField::sum()'],['../structKokkos_1_1reduction__identity_3_01ippl_1_1Vector_3_01T_00_01Dim_01_4_01_4.html#ae4f9cd6aba494cce6962ac97d1f91cc1',1,'Kokkos::reduction_identity&lt; ippl::Vector&lt; T, Dim &gt; &gt;::sum()'],['../classippl_1_1ParticleAttrib.html#a1bfa23788a10d5a310bb76622a381119',1,'ippl::ParticleAttrib::sum()']]],
-  ['sum_229',['Sum',['../structKokkosCorrection_1_1Sum.html#afeeebbd244735f1079110707a893ba6f',1,'KokkosCorrection::Sum']]],
-  ['sum_230',['SUM',['../namespaceippl_1_1mpi.html#af4f4f1044f97b9c23c582bf914d74a0fa6970bdc2201030b9c03fbdcf3973858a',1,'ippl::mpi']]],
-  ['super_231',['Super',['../structKokkosCorrection_1_1Max.html#af3a9c0fcaa65cef7f2a0e21e286d0395',1,'KokkosCorrection::Max::Super()'],['../structKokkosCorrection_1_1Min.html#a582236d149222c3199956552bbdb0062',1,'KokkosCorrection::Min::Super()'],['../structKokkosCorrection_1_1Sum.html#a208d6530594760af43584e94fc253267',1,'KokkosCorrection::Sum::Super()'],['../structKokkosCorrection_1_1Prod.html#afb2b66df3dcedee0ab18ec7732a3860c',1,'KokkosCorrection::Prod::Super()']]],
-  ['surface_232',['Surface',['../namespacepipeline__default.html#a2edbd661ad6d06cd8a0d26224be51e52',1,'pipeline_default']]],
-  ['sync_233',['sync',['../structippl_1_1fft_1_1Stream.html#a532e571669776b32ae65ddcbb1d2771a',1,'ippl::fft::Stream']]]
+  ['sum_229',['SUM',['../namespaceippl_1_1mpi.html#af4f4f1044f97b9c23c582bf914d74a0fa6970bdc2201030b9c03fbdcf3973858a',1,'ippl::mpi']]],
+  ['super_230',['Super',['../structKokkosCorrection_1_1Max.html#af3a9c0fcaa65cef7f2a0e21e286d0395',1,'KokkosCorrection::Max::Super()'],['../structKokkosCorrection_1_1Min.html#a582236d149222c3199956552bbdb0062',1,'KokkosCorrection::Min::Super()'],['../structKokkosCorrection_1_1Sum.html#a208d6530594760af43584e94fc253267',1,'KokkosCorrection::Sum::Super()'],['../structKokkosCorrection_1_1Prod.html#afb2b66df3dcedee0ab18ec7732a3860c',1,'KokkosCorrection::Prod::Super()']]],
+  ['surface_231',['Surface',['../namespacepipeline__default.html#a2edbd661ad6d06cd8a0d26224be51e52',1,'pipeline_default']]],
+  ['sync_232',['sync',['../structippl_1_1fft_1_1Stream.html#a532e571669776b32ae65ddcbb1d2771a',1,'ippl::fft::Stream']]]
 ];

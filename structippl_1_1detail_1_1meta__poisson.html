@@ -84,6 +84,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pri-types">Private Types</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="structippl_1_1detail_1_1meta__poisson-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ippl::detail::meta_poisson&lt; E &gt; Struct Template Reference</div></div>
@@ -96,8 +97,8 @@ Inheritance diagram for ippl::detail::meta_poisson&lt; E &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1detail_1_1meta__poisson__inherit__graph.png" border="0" usemap="#aippl_1_1detail_1_1meta__poisson_3_01E_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1detail_1_1meta__poisson_3_01E_01_4_inherit__map" id="aippl_1_1detail_1_1meta__poisson_3_01E_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="47,137,173,251"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,215,89"/>
+<area shape="rect" title=" " alt="" coords="35,152,161,265"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,191,104"/>
 </map>
 </div>
 <div class="dynheader">
@@ -105,19 +106,19 @@ Collaboration diagram for ippl::detail::meta_poisson&lt; E &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="structippl_1_1detail_1_1meta__poisson__coll__graph.png" border="0" usemap="#aippl_1_1detail_1_1meta__poisson_3_01E_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1detail_1_1meta__poisson_3_01E_01_4_coll__map" id="aippl_1_1detail_1_1meta__poisson_3_01E_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="47,137,173,251"/>
-<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,215,89"/>
+<area shape="rect" title=" " alt="" coords="35,152,161,265"/>
+<area shape="rect" href="structippl_1_1detail_1_1Expression.html" title=" " alt="" coords="5,5,191,104"/>
 </map>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:af05c504547c7063adf8a0d9f3a2a8009"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__poisson.html#af05c504547c7063adf8a0d9f3a2a8009">meta_poisson</a> (const E &amp;u)</td></tr>
-<tr class="separator:af05c504547c7063adf8a0d9f3a2a8009"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a05a65e49aa465c8745e19a4361ee698a"><td class="memItemLeft" align="right" valign="top">KOKKOS_FUNCTION&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__poisson.html#a05a65e49aa465c8745e19a4361ee698a">meta_poisson</a> (const typename E::view_type &amp;u)</td></tr>
+<tr class="separator:a05a65e49aa465c8745e19a4361ee698a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79e04de29cfd82699abdee367a985ab2"><td class="memTemplParams" colspan="2">template&lt;typename... Idx&gt; </td></tr>
 <tr class="memitem:a79e04de29cfd82699abdee367a985ab2"><td class="memTemplItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__poisson.html#a79e04de29cfd82699abdee367a985ab2">operator()</a> (const Idx... args) const</td></tr>
 <tr class="separator:a79e04de29cfd82699abdee367a985ab2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_methods_structippl_1_1detail_1_1Expression"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_structippl_1_1detail_1_1Expression')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="structippl_1_1detail_1_1Expression.html">ippl::detail::Expression&lt; meta_poisson&lt; E &gt;, sizeof(E)&gt;</a></td></tr>
+<tr class="inherit_header pub_methods_structippl_1_1detail_1_1Expression"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_structippl_1_1detail_1_1Expression')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="structippl_1_1detail_1_1Expression.html">ippl::detail::Expression&lt; meta_poisson&lt; E &gt;, sizeof(E::view_type)&gt;</a></td></tr>
 <tr class="memitem:aa121b2144b45f7ca060a9e9b02a5991c inherit pub_methods_structippl_1_1detail_1_1Expression"><td class="memItemLeft" align="right" valign="top">KOKKOS_INLINE_FUNCTION auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1Expression.html#aa121b2144b45f7ca060a9e9b02a5991c">operator[]</a> (size_t i) const</td></tr>
 <tr class="separator:aa121b2144b45f7ca060a9e9b02a5991c inherit pub_methods_structippl_1_1detail_1_1Expression"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -125,18 +126,48 @@ Public Member Functions</h2></td></tr>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:a2b0f7211736a5fe41cf22ff8365bfdd1"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__poisson.html#a2b0f7211736a5fe41cf22ff8365bfdd1">dim</a> = E::dim</td></tr>
 <tr class="separator:a2b0f7211736a5fe41cf22ff8365bfdd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pub_static_attribs_structippl_1_1detail_1_1Expression"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_structippl_1_1detail_1_1Expression')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="structippl_1_1detail_1_1Expression.html">ippl::detail::Expression&lt; meta_poisson&lt; E &gt;, sizeof(E)&gt;</a></td></tr>
+<tr class="inherit_header pub_static_attribs_structippl_1_1detail_1_1Expression"><td colspan="2" onclick="javascript:toggleInherit('pub_static_attribs_structippl_1_1detail_1_1Expression')"><img src="closed.png" alt="-"/>&#160;Static Public Attributes inherited from <a class="el" href="structippl_1_1detail_1_1Expression.html">ippl::detail::Expression&lt; meta_poisson&lt; E &gt;, sizeof(E::view_type)&gt;</a></td></tr>
 <tr class="memitem:af8ae99c70daf0572b403dcd1bf832d72 inherit pub_static_attribs_structippl_1_1detail_1_1Expression"><td class="memItemLeft" align="right" valign="top">static constexpr unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1Expression.html#af8ae99c70daf0572b403dcd1bf832d72">dim</a></td></tr>
 <tr class="separator:af8ae99c70daf0572b403dcd1bf832d72 inherit pub_static_attribs_structippl_1_1detail_1_1Expression"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
+Private Types</h2></td></tr>
+<tr class="memitem:a218970e4a28ab7334ba8e14f4f4ce2bd"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__poisson.html#a218970e4a28ab7334ba8e14f4f4ce2bd">view_type</a> = typename E::view_type</td></tr>
+<tr class="separator:a218970e4a28ab7334ba8e14f4f4ce2bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a01bdc781001607349b094be6b7df77d3"><td class="memItemLeft" align="right" valign="top">const E&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__poisson.html#a01bdc781001607349b094be6b7df77d3">u_m</a></td></tr>
-<tr class="separator:a01bdc781001607349b094be6b7df77d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5db1ff99841b23be01b10849d5fbb043"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="structippl_1_1detail_1_1meta__poisson.html#a218970e4a28ab7334ba8e14f4f4ce2bd">view_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structippl_1_1detail_1_1meta__poisson.html#a5db1ff99841b23be01b10849d5fbb043">u_m</a></td></tr>
+<tr class="separator:a5db1ff99841b23be01b10849d5fbb043"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a218970e4a28ab7334ba8e14f4f4ce2bd" name="a218970e4a28ab7334ba8e14f4f4ce2bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a218970e4a28ab7334ba8e14f4f4ce2bd">&#9670;&#160;</a></span>view_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename E &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="structippl_1_1detail_1_1meta__poisson.html">ippl::detail::meta_poisson</a>&lt; E &gt;::view_type =  typename E::view_type</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="af05c504547c7063adf8a0d9f3a2a8009" name="af05c504547c7063adf8a0d9f3a2a8009"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af05c504547c7063adf8a0d9f3a2a8009">&#9670;&#160;</a></span>meta_poisson()</h2>
+<a id="a05a65e49aa465c8745e19a4361ee698a" name="a05a65e49aa465c8745e19a4361ee698a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a05a65e49aa465c8745e19a4361ee698a">&#9670;&#160;</a></span>meta_poisson()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -149,7 +180,7 @@ template&lt;typename E &gt; </div>
         <tr>
           <td class="memname">KOKKOS_FUNCTION <a class="el" href="structippl_1_1detail_1_1meta__poisson.html">ippl::detail::meta_poisson</a>&lt; E &gt;::meta_poisson </td>
           <td>(</td>
-          <td class="paramtype">const E &amp;&#160;</td>
+          <td class="paramtype">const typename E::view_type &amp;&#160;</td>
           <td class="paramname"><em>u</em></td><td>)</td>
           <td></td>
         </tr>
@@ -219,8 +250,8 @@ template&lt;typename E &gt; </div>
 
 </div>
 </div>
-<a id="a01bdc781001607349b094be6b7df77d3" name="a01bdc781001607349b094be6b7df77d3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a01bdc781001607349b094be6b7df77d3">&#9670;&#160;</a></span>u_m</h2>
+<a id="a5db1ff99841b23be01b10849d5fbb043" name="a5db1ff99841b23be01b10849d5fbb043"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5db1ff99841b23be01b10849d5fbb043">&#9670;&#160;</a></span>u_m</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -231,7 +262,7 @@ template&lt;typename E &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const E <a class="el" href="structippl_1_1detail_1_1meta__poisson.html">ippl::detail::meta_poisson</a>&lt; E &gt;::u_m</td>
+          <td class="memname">const <a class="el" href="structippl_1_1detail_1_1meta__poisson.html#a218970e4a28ab7334ba8e14f4f4ce2bd">view_type</a> <a class="el" href="structippl_1_1detail_1_1meta__poisson.html">ippl::detail::meta_poisson</a>&lt; E &gt;::u_m</td>
         </tr>
       </table>
   </td>
