@@ -2,11 +2,11 @@ include:
   - local: "ci/cscs/common.yml"
 
 variables:
-  EIGER_UENV: "prgenv-gnu/25.6:v2"
-  WITH_UENV_VIEW: "default"
+  JOB_UENV: "prgenv-gnu/25.6:v2"
+  UENV_VIEW: "default"
   WRAPPER: ""
   SCRATCH: "/capstor/scratch/cscs/biddisco"
-  SRUN_ARGS: "--uenv=${EIGER_UENV} --view=${WITH_UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-eiger $WRAPPER"
+  SRUN_ARGS: "--uenv=${JOB_UENV} --view=${UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-eiger $WRAPPER"
   BUILD_ARCH: "openmp"
   CTEST_SITE: "Eiger OpenMP"
 

@@ -5,18 +5,18 @@
 ippl-benchmark-cuda:
   extends: .uenv-runner-daint-gh200
   stage: benchmark
-  image: "/capstor/store/cscs/cscs/public/uenvs/opal-x-gh200-mpich-gcc-2026-08-04-cuda-13.1.1.squashfs"
+  image: "${JOB_UENV}"
   needs: ["ippl-build-cuda13-sm90-release", "ippl-test-cuda13-sm90-release-4-ranks"]
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_TIMELIMIT: "0:15:00"
     BENCHMARK_MIN_TIME: "1.0s"
     BENCHER_PROJECT: "ippl-opalx"
-    CUDA_UENV: "/capstor/store/cscs/cscs/public/uenvs/opal-x-gh200-mpich-gcc-2026-08-04-cuda-13.1.1.squashfs"
-    WITH_UENV_VIEW: "default"
+    JOB_UENV: "/capstor/store/cscs/cscs/public/uenvs/opal-x-gh200-mpich-gcc-2026-09-23.squashfs"
+    UENV_VIEW: "default"
     WRAPPER: "/user-environment/wrapper-mpi.sh"
     SCRATCH: "/capstor/scratch/cscs/biddisco"
-    SRUN_FLAGS: "--uenv=${CUDA_UENV} --view=${WITH_UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-daint ${WRAPPER}"
+    SRUN_FLAGS: "--uenv=${JOB_UENV} --view=${UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-daint ${WRAPPER}"
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
     SLURM_NTASKS: 4
     SLURM_CPUS_PER_TASK: 32

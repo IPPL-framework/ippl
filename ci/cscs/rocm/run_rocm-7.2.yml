@@ -1,25 +1,18 @@
 include:
   - local: "ci/cscs/common.yml"
 
-variables:
-  JOB_UENV: "/capstor/store/cscs/cscs/public/uenvs/opal-x-gh200-mpich-gcc-2026-09-23.squashfs"
-  UENV_VIEW: "default"
-  WRAPPER: "/user-environment/wrapper-mpi.sh"
-  SCRATCH: "/capstor/scratch/cscs/biddisco"
-  SRUN_ARGS: "--uenv=${JOB_UENV} --view=${UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-daint $WRAPPER"
-  BUILD_ARCH: "gh200"
-  CTEST_SITE: "Daint gh200 CUDA 13.1.1"
-
 # ---------------------------------------------------------
-# Common settings for cuda tests
+# Common settings for rocm tests
 # this uses a baremetal runner then ctest to test with srun using uenv flags
 # ---------------------------------------------------------
-.ippl-test-cuda-common:
+.ippl-test-rocm72-common:
   stage: ippl_test
-  extends: [.baremetal-runner-daint-gh200]
+  extends: [.rocm72-vars, .baremetal-runner-beverin-mi300]
   variables:
+    SRUN_ARGS: "--uenv=${JOB_UENV} --view=${UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-beverin $WRAPPER"
+    BUILD_ARCH: "mi300"
     SLURM_JOB_NUM_NODES: 1
-    SLURM_CPUS_PER_TASK: 64
+    SLURM_CPUS_PER_TASK: 8
     SLURM_TIMELIMIT: "0:30:00"
   before_script:
     - !reference [.pr-number-extractor, before_script]
@@ -31,11 +24,14 @@ variables:
     - CACHE_DIR=$(grep "CMAKE_CACHEFILE_DIR:INTERNAL=" $BUILD_PATH/CMakeCache.txt | cut -d'=' -f2)
     - echo "Replacing cache_dir $CACHE_DIR with build_dir $BUILD_PATH"
     - export LD_LIBRARY_PATH=$BUILD_PATH/lib:$LD_LIBRARY_PATH
+    - export HSA_XNACK=1
     - find $BUILD_PATH -type f -name "CTestTestfile.cmake" -exec sed -i "s|$CACHE_DIR|$BUILD_PATH|g" {} \;
     - find $BUILD_PATH -type f -name "DartConfiguration.tcl" -exec sed -i "s|$CACHE_DIR|$BUILD_PATH|g" {} \;
     # reset custom build name for cdash
     - export CTEST_BUILD_NAME="${CDASH_LABEL}-${BUILD_ARCH}-${BUILD_TYPE}-${TEST_INFO}"
     - find $BUILD_PATH -type f -name \*.xml -exec sed -i "s|BuildName=.*|BuildName=\"${CTEST_BUILD_NAME}\"|g" {} \;
+    - find $BUILD_PATH -name \*wrapper\* -exec realpath {} +
+    - grep MPIEXEC $BUILD_PATH/CMakeCache.txt
     # ctest should now have valid file paths, (use srun to launch with uenv setup)
     - ctest -V --output-on-failure --timeout 60 $TEST_ARGS -S $CI_PROJECT_DIR/ci/cscs/dashboard-test.cmake
       -DCTEST_SITE="$CTEST_SITE"
@@ -48,9 +44,9 @@ variables:
 # ---------------------------------------------------------
 # 1 rank debug
 # ---------------------------------------------------------
-ippl-test-cuda13-sm90-debug-1-rank:
-  needs: ["ippl-build-cuda13-sm90-debug"]
-  extends: .ippl-test-cuda-common
+ippl-test-rocm7_2-debug-1-rank:
+  needs: ["ippl-build-rocm7_2-debug"]
+  extends: .ippl-test-rocm72-common
   variables:
     SLURM_NTASKS: 1
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug"
@@ -61,9 +57,9 @@ ippl-test-cuda13-sm90-debug-1-rank:
 # ---------------------------------------------------------
 # 1 rank release
 # ---------------------------------------------------------
-ippl-test-cuda13-sm90-release-1-rank:
-  needs: ["ippl-build-cuda13-sm90-release"]
-  extends: .ippl-test-cuda-common
+ippl-test-rocm7_2-release-1-rank:
+  needs: ["ippl-build-rocm7_2-release"]
+  extends: .ippl-test-rocm72-common
   variables:
     SLURM_NTASKS: 1
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
@@ -74,9 +70,9 @@ ippl-test-cuda13-sm90-release-1-rank:
 # ---------------------------------------------------------
 # 4 ranks release
 # ---------------------------------------------------------
-ippl-test-cuda13-sm90-release-4-ranks:
-  needs: ["ippl-build-cuda13-sm90-release"]
-  extends: .ippl-test-cuda-common
+ippl-test-rocm7_2-release-4-ranks:
+  needs: ["ippl-build-rocm7_2-release"]
+  extends: .ippl-test-rocm72-common
   variables:
     SLURM_NTASKS: 4
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
@@ -87,9 +83,9 @@ ippl-test-cuda13-sm90-release-4-ranks:
 # ---------------------------------------------------------
 # 4 ranks release : known failing tests
 # ---------------------------------------------------------
-# ippl-test-cuda13-sm90-release-failing-4-ranks:
-#   needs: ["ippl-build-cuda13-sm90-release"]
-#   extends: .ippl-test-cuda-common
+# ippl-test-rocm7_2-release-failing-4-ranks:
+#   needs: ["ippl-build-rocm7_2-release"]
+#   extends: .ippl-test-rocm72-common
 #   variables:
 #     SLURM_NTASKS: 4
 #     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"

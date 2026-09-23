@@ -1,20 +1,16 @@
 # -----------------------------------------------------------------------------
 # ROCm benchmark on Beverin MI300
 # -----------------------------------------------------------------------------
-ippl-benchmark-rocm:
+.ippl-benchmark-rocm-common:
   extends: .uenv-runner-beverin-mi300
   stage: benchmark
-  image: "prgenv-gnu/25.07-6.3.3:v12"
-  needs: ["ippl-build-rocm6_3-release", "ippl-test-rocm6_3-release-4-ranks"]
+  image: "${JOB_UENV}"
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_TIMELIMIT: "0:15:00"
     BENCHMARK_MIN_TIME: "1.0s"
     BENCHER_PROJECT: "ippl-opalx"
-    ROCM6_3_UENV: "prgenv-gnu/25.07-6.3.3:v12"
-    WITH_UENV_VIEW: "default"
-    SCRATCH: "/capstor/scratch/cscs/biddisco"
-    SRUN_FLAGS: "--uenv=${ROCM6_3_UENV} --view=${WITH_UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-beverin"
+    SRUN_FLAGS: "--uenv=${JOB_UENV} --view=${UENV_VIEW} --repo=$SCRATCH/.uenv-images-ci-beverin"
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
     SLURM_NTASKS: 4
     SLURM_CPUS_PER_TASK: 32
@@ -40,3 +36,11 @@ ippl-benchmark-rocm:
     - if: $IPPL_RUN_BENCHMARKS == "true"
       when: always
     - when: never
+
+ippl-benchmark-rocm6_3:
+  extends: [.ippl-benchmark-rocm-common, .rocm63-vars]
+  needs: ["ippl-build-rocm6_3-release", "ippl-test-rocm6_3-release-4-ranks"]
+
+ippl-benchmark-rocm7_2:
+  extends: [.ippl-benchmark-rocm-common, .rocm72-vars]
+  needs: ["ippl-build-rocm7_2-release", "ippl-test-rocm7_2-release-4-ranks"]

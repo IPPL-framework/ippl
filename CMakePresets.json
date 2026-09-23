@@ -70,7 +70,7 @@
         "CMAKE_CUDA_ARCHITECTURES": "90",
         "MPIEXEC_EXECUTABLE": "/usr/bin/srun",
         "MPIEXEC_PREFLAGS": "--gpus-per-task=1;/user-environment/wrapper-mpi.sh",
-        "OPALX_PLATFORMS": "CUDA;SERIAL"
+        "IPPL_PLATFORMS": "CUDA;SERIAL"
       }
     },
     {
@@ -81,11 +81,10 @@
         "release-testing"
       ],
       "cacheVariables": {
-        "CMAKE_CXX_FLAGS": "--offload-arch=gfx942:sramecc+:xnack+",
-        "CMAKE_HIP_ARCHITECTURES": "gfx942",
+        "CMAKE_HIP_ARCHITECTURES": "gfx942:sramecc+:xnack+",
         "MPIEXEC_EXECUTABLE": "/usr/bin/srun",
-        "MPIEXEC_PREFLAGS": "--gpus-per-node=4;/user-environment/wrapper-mpi.sh",
-        "OPALX_PLATFORMS": "HIP;SERIAL",
+        "MPIEXEC_PREFLAGS": "--gpus-per-task=1;/user-environment/wrapper-mpi.sh",
+        "IPPL_PLATFORMS": "HIP;SERIAL",
         "Kokkos_ARCH_AMD_GFX942_APU": "ON",
         "KOKKOS_AMDGPU_OPTIONS": "--offload-arch=gfx942:sramecc+:xnack+"
       }

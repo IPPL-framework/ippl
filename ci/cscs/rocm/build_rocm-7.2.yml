@@ -5,9 +5,9 @@ include:
 # Common settings for rocm builds
 # this uses a uenv loaded by the uenv-runner and then cmake to build
 # ---------------------------------------------------------
-.ippl-build-rocm63-common:
+.ippl-build-rocm72-common:
   stage: ippl_build
-  extends: [.rocm63-vars, .uenv-runner-beverin-mi300]
+  extends: [.rocm72-vars, .uenv-runner-beverin-mi300]
   image: "${JOB_UENV}"
   variables:
     SRUN_FLAGS: "--uenv=${JOB_UENV};--view=${UENV_VIEW};--repo=$SCRATCH/.uenv-images-ci-beverin"
@@ -53,8 +53,8 @@ include:
 # ---------------------------------------------------------
 # rocm build debug
 # ---------------------------------------------------------
-ippl-build-rocm6_3-debug:
-  extends: .ippl-build-rocm63-common
+ippl-build-rocm7_2-debug:
+  extends: .ippl-build-rocm72-common
   variables:
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-debug"
     BUILD_TYPE: Debug
@@ -62,8 +62,8 @@ ippl-build-rocm6_3-debug:
 # ---------------------------------------------------------
 # rocm build release
 # ---------------------------------------------------------
-ippl-build-rocm6_3-release:
-  extends: .ippl-build-rocm63-common
+ippl-build-rocm7_2-release:
+  extends: .ippl-build-rocm72-common
   variables:
     BUILD_DIR: "build-$CI_COMMIT_SHORT_SHA-release"
     BUILD_TYPE: Release

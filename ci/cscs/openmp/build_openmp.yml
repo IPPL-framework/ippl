@@ -2,10 +2,10 @@ include:
   - local: "ci/cscs/common.yml"
 
 variables:
-  EIGER_UENV: "prgenv-gnu/25.6:v2"
-  WITH_UENV_VIEW: "default"
+  JOB_UENV: "prgenv-gnu/25.6:v2"
+  UENV_VIEW: "default"
   SCRATCH: "/capstor/scratch/cscs/biddisco"
-  SRUN_FLAGS: "--uenv=${EIGER_UENV};--view=${WITH_UENV_VIEW};--repo=$SCRATCH/.uenv-images-ci-eiger;$WRAPPER"
+  SRUN_FLAGS: "--uenv=${JOB_UENV};--view=${UENV_VIEW};--repo=$SCRATCH/.uenv-images-ci-eiger;$WRAPPER"
   BUILD_ARCH: "openmp"
   CTEST_SITE: "Eiger OpenMP"
 
@@ -16,7 +16,7 @@ variables:
 .ippl-build-openmp-common:
   stage: ippl_build
   extends: [.uenv-runner-eiger-zen2]
-  image: "${EIGER_UENV}"
+  image: "${JOB_UENV}"
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_TIMELIMIT: "0:30:00"
@@ -39,8 +39,7 @@ variables:
       -DENABLE_COVERAGE=$ENABLE_COVERAGE
       -DIPPL_PLATFORMS=OPENMP
       -DIPPL_OPENMP_THREADS=32
-      -DKokkos_VERSION=git.5.2.0
-      -DKokkos_ARCH_FLAG=Kokkos_ARCH_AMD_GFX942_APU
+      -DKokkos_VERSION=git.5.2.2
       -DMPIEXEC_EXECUTABLE=/usr/bin/srun
       -DMPIEXEC_PREFLAGS="$SRUN_FLAGS"
       -DMPIEXEC_MAX_NUMPROCS=4
@@ -99,7 +98,7 @@ ippl-build-test-openmp-debug-coverage:
     # as the normal uenv-runner build job without wrapping the whole script in
     # srun, so the subsequent test launches can each use srun as usual.
     - |
-      srun --uenv=${EIGER_UENV} --view=${WITH_UENV_VIEW} --repo=${SCRATCH}/.uenv-images-ci-eiger \
+      srun --uenv=${JOB_UENV} --view=${UENV_VIEW} --repo=${SCRATCH}/.uenv-images-ci-eiger \
         --ntasks=1 --cpus-per-task=64 \
         bash -c "
           export CC=gcc CXX=g++
@@ -147,7 +146,7 @@ ippl-build-test-openmp-debug-coverage:
     # collect coverage inside a uenv srun step so that the gcov matching the build
     # compiler (from the uenv) is used; it appends Coverage.xml to the same CDash entry
     - |
-      srun --uenv=${EIGER_UENV} --view=${WITH_UENV_VIEW} --repo=${SCRATCH}/.uenv-images-ci-eiger \
+      srun --uenv=${JOB_UENV} --view=${UENV_VIEW} --repo=${SCRATCH}/.uenv-images-ci-eiger \
         --ntasks=1 --cpus-per-task=64 \
         bash -c "
           ctest -V -S $CI_PROJECT_DIR/ci/cscs/dashboard-coverage.cmake \
