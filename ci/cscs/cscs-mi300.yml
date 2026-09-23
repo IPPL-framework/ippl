@@ -2,4 +2,20 @@ include:
   # AMD/MI300:
   - local: "ci/cscs/rocm/build_rocm-6.3.yml"
   - local: "ci/cscs/rocm/run_rocm-6.3.yml"
+  - local: "ci/cscs/rocm/build_rocm-7.2.yml"
+  - local: "ci/cscs/rocm/run_rocm-7.2.yml"
   - local: "ci/cscs/benchmark/benchmark-rocm.yml"
+
+.rocm63-vars:
+  variables:
+    JOB_UENV: "prgenv-gnu/25.07-6.3.3:v12"
+    UENV_VIEW: "default"
+    SCRATCH: "/capstor/scratch/cscs/biddisco"
+    CTEST_SITE: "Beverin mi300 ROCm 6.3.3 Kokkos 5.2.2"
+
+.rocm72-vars:
+  variables:
+    JOB_UENV: "/capstor/store/cscs/cscs/public/uenvs/opal-x-mi300-mpich-gcc-llvm-2026-09-23.squashfs"
+    UENV_VIEW: "default"
+    SCRATCH: "/capstor/scratch/cscs/biddisco"
+    CTEST_SITE: "Beverin mi300 ROCm 7.2.0 Kokkos 5.2.2"
