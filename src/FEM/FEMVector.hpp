@@ -38,7 +38,8 @@ namespace ippl {
 
         using memory_space = typename Kokkos::View<size_t*>::memory_space;
         // List of MPI requests which we send
-        std::vector<MPI_Request> requests(boundaryInfo_m->neighbors_m.size());
+        std::vector<MPI_Request> requests;
+        requests.reserve(boundaryInfo_m->neighbors_m.size());
 
         // Send loop.
         for (size_t i = 0; i < boundaryInfo_m->neighbors_m.size(); ++i) {
@@ -52,8 +53,8 @@ namespace ippl {
             // ippl MPI communication which sends data to neighbors
             mpi::Communicator::buffer_type<memory_space> archive =
                 ippl::Comm->getBuffer<memory_space, T>(nsends);
-            ippl::Comm->isend(neighborRank, tag, boundaryInfo_m->commBuffer_m, *archive,
-                              requests[i], nsends);
+            ippl::Comm->isend(neighborRank, tag, boundaryInfo_m->commBuffer_m, *archive, requests,
+                              nsends);
             archive->resetWritePos();
         }
 
@@ -93,7 +94,8 @@ namespace ippl {
 
         using memory_space = typename Kokkos::View<size_t*>::memory_space;
         // List of MPI requests which we send
-        std::vector<MPI_Request> requests(boundaryInfo_m->neighbors_m.size());
+        std::vector<MPI_Request> requests;
+        requests.reserve(boundaryInfo_m->neighbors_m.size());
 
         // Send loop.
         for (size_t i = 0; i < boundaryInfo_m->neighbors_m.size(); ++i) {
@@ -107,8 +109,8 @@ namespace ippl {
             // ippl MPI communication which sends data to neighbors
             mpi::Communicator::buffer_type<memory_space> archive =
                 ippl::Comm->getBuffer<memory_space, T>(nsends);
-            ippl::Comm->isend(neighborRank, tag, boundaryInfo_m->commBuffer_m, *archive,
-                              requests[i], nsends);
+            ippl::Comm->isend(neighborRank, tag, boundaryInfo_m->commBuffer_m, *archive, requests,
+                              nsends);
             archive->resetWritePos();
         }
 

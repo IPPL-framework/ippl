@@ -277,9 +277,19 @@ namespace ippl {
 
     template <class PLayout, typename... IP>
     template <typename HashType>
-    MPI_Request ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag, const HashType& hash) {
-        size_type nSends    = hash.size();
-        MPI_Request request = MPI_REQUEST_NULL;
+    std::vector<MPI_Request> ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag,
+                                                                      const HashType& hash) {
+        std::vector<MPI_Request> requests;
+        sendToRank(rank, tag, requests, hash);
+        return requests;
+    }
+
+    template <class PLayout, typename... IP>
+    template <typename HashType>
+    void ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag,
+                                                  std::vector<MPI_Request>& requests,
+                                                  const HashType& hash) {
+        const size_type nSends = hash.size();
 
         auto hashes = hash_container_type(hash, [&]<typename MemorySpace>() {
             return attributes_m.template get<MemorySpace>().size() > 0;
@@ -295,21 +305,9 @@ namespace ippl {
                 att->serialize(*buf, hashes.template get<MemorySpace>(), nSends);
             });
 
-            Comm->isend(rank, tag++, *buf, request);
+            Comm->isend(rank, tag++, *buf, requests);
             buf->resetWritePos();
         });
-        return request;
-    }
-
-    template <class PLayout, typename... IP>
-    template <typename HashType>
-    void ParticleBase<PLayout, IP...>::sendToRank(int rank, int tag,
-                                                  std::vector<MPI_Request>& requests,
-                                                  const HashType& hash) {
-        auto hashes = hash_container_type(hash, [&]<typename MemorySpace>() {
-            return attributes_m.template get<MemorySpace>().size() > 0;
-        });
-        requests.push_back(sendToRank(rank, tag, hash));
     }
 
     template <class PLayout, typename... IP>
@@ -333,9 +331,9 @@ namespace ippl {
     }
 
     template <class PLayout, typename... IP>
-    std::pair<MPI_Request, std::function<void(size_t)>>
+    std::pair<std::vector<MPI_Request>, std::function<void(size_t)>>
     ParticleBase<PLayout, IP...>::postRecvFromRank(int rank, int tag, size_type nRecvs) {
-        MPI_Request request = MPI_REQUEST_NULL;
+        std::vector<MPI_Request> requests;
 
         // Collect (buf, nRecvs) per memory space for deferred deserialization
         auto deferred = std::make_shared<std::vector<std::function<void(size_type)>>>();
@@ -346,7 +344,7 @@ namespace ippl {
                 return;
 
             auto buf = Comm->getBuffer<MemorySpace>(bufSize);
-            Comm->irecv(rank, tag++, *buf, request, bufSize);
+            Comm->irecv(rank, tag++, *buf, requests, bufSize);
 
             deferred->push_back([this, buf, nRecvs](size_type offset) {
                 forAllAttributes<MemorySpace>([&]<typename Attribute>(Attribute& att) {
@@ -357,7 +355,7 @@ namespace ippl {
         });
 
         // Finalize takes the offset (localNum_m after destruction) and advances it
-        return {request, [this, deferred, nRecvs](size_type offset) {
+        return {std::move(requests), [this, deferred, nRecvs](size_type offset) {
                     for (auto& fn : *deferred)
                         fn(offset);
                     localNum_m += nRecvs;

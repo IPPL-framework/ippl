@@ -244,8 +244,6 @@ namespace ippl {
                                 std::vector<MPI_Request>& requests) {
             using memory_space = typename View::memory_space;
 
-            requests.resize(requests.size() + 1);
-
             ippl::mpi::Communicator::size_type nsends;
             pack(intersection, view, fd, nghost, ldom, nsends);
 
@@ -254,7 +252,7 @@ namespace ippl {
 
             int tag = TAG + id;
 
-            ippl::Comm->isend(i, tag, fd, *buf, requests.back(), nsends);
+            ippl::Comm->isend(i, tag, fd, *buf, requests, nsends);
             buf->resetWritePos();
         }
 
@@ -290,8 +288,6 @@ namespace ippl {
                                       std::vector<MPI_Request>& requests) {
             using memory_space = typename View::memory_space;
 
-            requests.resize(requests.size() + 1);
-
             ippl::mpi::Communicator::size_type nsends;
             pack_field(intersection, view, fd, nghost, ldom, nsends);
 
@@ -300,7 +296,7 @@ namespace ippl {
 
             int tag = TAG + id;
 
-            ippl::Comm->isend(i, tag, fd, *buf, requests.back(), nsends);
+            ippl::Comm->isend(i, tag, fd, *buf, requests, nsends);
             buf->resetWritePos();
         }
 

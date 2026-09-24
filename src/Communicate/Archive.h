@@ -164,6 +164,7 @@ namespace ippl {
             }
 
             void gpuAlloc(size_type size);
+            static pointer_type allocateGpuBuffer(size_type size);
             void gpuFree();
 #else
             //! serialized data (standard Kokkos view on CPU)

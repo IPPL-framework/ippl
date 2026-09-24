@@ -2,6 +2,11 @@
 // Class Archive
 //   Class to (de-)serialize in MPI communication.
 //
+#include <limits>
+#include <string>
+
+#include "Utility/IpplException.h"
+
 #include "Archive.h"
 
 #if defined(KOKKOS_ENABLE_CUDA)
@@ -65,6 +70,27 @@ namespace ippl {
 #if defined(KOKKOS_ENABLE_CUDA) || defined(KOKKOS_ENABLE_HIP)
 
         template <class... Properties>
+        typename Archive<Properties...>::pointer_type Archive<Properties...>::allocateGpuBuffer(
+            size_type size) {
+            void* ptr = nullptr;
+#if defined(KOKKOS_ENABLE_CUDA)
+            const auto status = cudaMalloc(&ptr, size);
+            const bool failed = status != cudaSuccess;
+            const char* error = cudaGetErrorString(status);
+#else
+            const auto status = hipMalloc(&ptr, size);
+            const bool failed = status != hipSuccess;
+            const char* error = hipGetErrorString(status);
+#endif
+            if (failed) {
+                throw IpplException(
+                    "Archive::allocateGpuBuffer",
+                    "GPU allocation of " + std::to_string(size) + " bytes failed: " + error);
+            }
+            return static_cast<pointer_type>(ptr);
+        }
+
+        template <class... Properties>
         void Archive<Properties...>::gpuAlloc(size_type size) {
             if (size == 0) return;
 #if defined(KOKKOS_ENABLE_HIP)
@@ -73,15 +99,12 @@ namespace ippl {
             // granularity (64 KB on MI250X / MI300X).  Without this,
             // hsa_amd_ipc_memory_attach fails with INVALID_ARGUMENT.
             static constexpr size_type kGranularity = 65536;
+            if (size > std::numeric_limits<size_type>::max() - (kGranularity - 1)) {
+                throw IpplException("Archive::gpuAlloc", "GPU allocation size overflow");
+            }
             size = ((size + kGranularity - 1) / kGranularity) * kGranularity;
 #endif
-            void* ptr = nullptr;
-#if defined(KOKKOS_ENABLE_CUDA)
-            (void)cudaMalloc(&ptr, size);
-#else
-            (void)hipMalloc(&ptr, size);
-#endif
-            buffer_ptr_m  = static_cast<pointer_type>(ptr);
+            buffer_ptr_m  = allocateGpuBuffer(size);
             buffer_size_m = size;
         }
 
@@ -123,23 +146,29 @@ namespace ippl {
 
 #if defined(KOKKOS_ENABLE_HIP)
                 static constexpr size_type kGranularity = 65536;
+                if (size > std::numeric_limits<size_type>::max() - (kGranularity - 1)) {
+                    throw IpplException("Archive::resizeBuffer", "GPU allocation size overflow");
+                }
                 size = ((size + kGranularity - 1) / kGranularity) * kGranularity;
 #endif
-                pointer_type new_ptr = nullptr;
-                void* vptr           = nullptr;
-#if defined(KOKKOS_ENABLE_CUDA)
-                (void)cudaMalloc(&vptr, size);
-#else
-                (void)hipMalloc(&vptr, size);
-#endif
-                new_ptr = static_cast<pointer_type>(vptr);
+                pointer_type new_ptr = allocateGpuBuffer(size);
 
                 if (buffer_ptr_m && buffer_size_m > 0) {
 #if defined(KOKKOS_ENABLE_CUDA)
-                    (void)cudaMemcpy(new_ptr, buffer_ptr_m, buffer_size_m, cudaMemcpyDeviceToDevice);
+                    const auto status =
+                        cudaMemcpy(new_ptr, buffer_ptr_m, buffer_size_m, cudaMemcpyDeviceToDevice);
+                    if (status != cudaSuccess) {
+                        (void)cudaFree(new_ptr);
+                        throw IpplException("Archive::resizeBuffer", cudaGetErrorString(status));
+                    }
                     (void)cudaFree(buffer_ptr_m);
 #else
-                    (void)hipMemcpy(new_ptr, buffer_ptr_m, buffer_size_m, hipMemcpyDeviceToDevice);
+                    const auto status =
+                        hipMemcpy(new_ptr, buffer_ptr_m, buffer_size_m, hipMemcpyDeviceToDevice);
+                    if (status != hipSuccess) {
+                        (void)hipFree(new_ptr);
+                        throw IpplException("Archive::resizeBuffer", hipGetErrorString(status));
+                    }
                     (void)hipFree(buffer_ptr_m);
 #endif
                 }

@@ -143,10 +143,10 @@ namespace ippl {
 
             using memory_space = typename view_type::memory_space;
             using buffer_type  = mpi::Communicator::buffer_type<memory_space>;
-            std::vector<MPI_Request> requests(totalRequests);
+            std::vector<MPI_Request> requests;
+            requests.reserve(totalRequests);
             // sending loop
             constexpr size_t cubeCount = detail::countHypercubes(Dim) - 1;
-            size_t requestIndex        = 0;
             for (size_t index = 0; index < cubeCount; index++) {
                 int tag                        = mpi::tag::HALO + index;
                 const auto& componentNeighbors = neighbors[index];
@@ -187,7 +187,7 @@ namespace ippl {
 
                     buffer_type buf = comm.template getBuffer<memory_space, T>(nsends);
 
-                    comm.isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++], nsends);
+                    comm.isend(targetRank, tag, haloData_m, *buf, requests, nsends);
                     buf->resetWritePos();
                 }
             }
@@ -234,8 +234,8 @@ namespace ippl {
                 }
             }
 
-            if (totalRequests > 0) {
-                MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
+            if (!requests.empty()) {
+                MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
             }
 
             comm.freeAllBuffers();

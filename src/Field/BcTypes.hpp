@@ -241,7 +241,8 @@ namespace ippl {
 
                 using memory_space = typename Field::memory_space;
                 using buffer_type  = mpi::Communicator::buffer_type<memory_space>;
-                std::vector<MPI_Request> requests(neighbors.size());
+                std::vector<MPI_Request> requests;
+                requests.reserve(neighbors.size());
 
                 using HaloCells_t = typename Field::halo_type;
                 using range_t     = typename HaloCells_t::bound_type;
@@ -274,7 +275,7 @@ namespace ippl {
 
                     buffer_type buf = comm.template getBuffer<memory_space, T>(nSends);
 
-                    comm.isend(rank, tag, haloData_m, *buf, requests[i], nSends);
+                    comm.isend(rank, tag, haloData_m, *buf, requests, nSends);
                     buf->resetWritePos();
                 }
 

@@ -163,6 +163,7 @@ namespace ippl {
         // counts + offsets
         Kokkos::deep_copy(position_execution_space{}, rankSendCount_h_, rankSendCount_d_);
         Kokkos::deep_copy(position_execution_space{}, sendOffsets_h_, sendOffsets_d_);
+        position_execution_space{}.fence("ParticleSpatialLayout: host migration metadata ready");
 
         // Build host destination list without allocation
         destinationRanks_host_.clear();
@@ -208,7 +209,7 @@ namespace ippl {
             auto ids_sub = Kokkos::subview(
                 sendIds_d_, Kokkos::pair<size_t, size_t>{static_cast<size_t>(begin),
                                                          static_cast<size_t>(begin + count)});
-            requests.push_back(pc.sendToRank(rank, tag, ids_sub));
+            pc.sendToRank(rank, tag, requests, ids_sub);
         }
 
         IpplTimings::stopTimer(sendTimer);
@@ -239,13 +240,13 @@ namespace ippl {
             }
         }
 
-        std::vector<MPI_Request> recvRequests(recvList.size(), MPI_REQUEST_NULL);
+        std::vector<MPI_Request> recvRequests;
         std::vector<std::function<void(size_type)>> finalizers(recvList.size());
 
         for (size_t i = 0; i < recvList.size(); ++i) {
             auto [rank, count] = recvList[i];
             auto [req, fin]    = pc.postRecvFromRank(rank, tag, count);
-            recvRequests[i]    = req;
+            recvRequests.insert(recvRequests.end(), req.begin(), req.end());
             finalizers[i]      = std::move(fin);
         }
 

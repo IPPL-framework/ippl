@@ -354,7 +354,7 @@ namespace ippl {
                         const HashType& hash);
 
         template <typename HashType>
-        MPI_Request sendToRank(int rank, int tag, const HashType& hash);
+        std::vector<MPI_Request> sendToRank(int rank, int tag, const HashType& hash);
 
         /*!
          * Receives particles from another rank
@@ -364,8 +364,9 @@ namespace ippl {
          */
         void recvFromRank(int rank, int tag, size_type nRecvs);
 
-        std::pair<MPI_Request, std::function<void(size_type)>> postRecvFromRank(int rank, int tag,
-                                                                                size_type nRecvs);
+        // Retain every chunk/memory-space request until completion before deserializing.
+        std::pair<std::vector<MPI_Request>, std::function<void(size_type)>> postRecvFromRank(
+            int rank, int tag, size_type nRecvs);
 
         /*!
          * Serialize to do MPI calls.

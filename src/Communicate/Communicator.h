@@ -10,6 +10,7 @@
 
 #include "Communicate/BufferHandler.h"
 #include "Communicate/LoggingBufferHandler.h"
+#include "Communicate/MessageChunks.h"
 #include "Communicate/Request.h"
 #include "Communicate/Status.h"
 
@@ -171,19 +172,43 @@ namespace ippl {
             template <class Buffer, typename Archive>
             void recv(int src, int tag, Buffer& buffer, Archive& ar, size_type msize,
                       size_type nrecvs) {
-                assertMessageSize(msize);
-                MPI_Status status;
-                MPI_Recv(ar.getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &status);
-
+                recv(src, tag, ar, msize);
                 buffer.deserialize(ar, nrecvs);
             }
 
             template <class Buffer, typename Archive>
             void isend(int dest, int tag, Buffer& buffer, Archive& ar, MPI_Request& request,
                        size_type nsends) {
-                assertMessageSize(ar.getSize());
                 buffer.serialize(ar, nsends);
+                assertMessageSize(ar.getSize());
                 MPI_Isend(ar.getBuffer(), ar.getSize(), MPI_BYTE, dest, tag, *comm_m, &request);
+            }
+
+            template <class Buffer, typename Archive>
+            void isend(int dest, int tag, Buffer& buffer, Archive& ar,
+                       std::vector<MPI_Request>& requests, size_type nsends) {
+                buffer.serialize(ar, nsends);
+                isend(dest, tag, ar, requests);
+            }
+
+            /**
+             * @brief Append all requests for a possibly large archive transfer.
+             * @note Keep the archive alive until every request completes. Both peers must use
+             * the same maxChunkBytes; the default preserves single-message small transfers.
+             */
+            template <typename Archive>
+            void isend(int dest, int tag, Archive& ar, std::vector<MPI_Request>& requests,
+                       int maxChunkBytes = INT_MAX) {
+                auto* data = ar.getBuffer();
+                detail::forEachMessageChunk(
+                    ar.getSize(),
+                    [&](size_type offset, int count) {
+                        MPI_Request request;
+                        MPI_Isend(offset ? data + offset : data, count, MPI_BYTE, dest, tag,
+                                  *comm_m, &request);
+                        requests.push_back(request);
+                    },
+                    maxChunkBytes);
             }
 
             template <typename Archive>
@@ -193,10 +218,37 @@ namespace ippl {
             }
 
             template <typename Archive>
-            void recv(int src, int tag, Archive& ar, size_type msize) {
-                assertMessageSize(msize);
-                MPI_Status status;
-                MPI_Recv(ar.getBuffer(), msize, MPI_BYTE, src, tag, *comm_m, &status);
+            void recv(int src, int tag, Archive& ar, size_type msize, int maxChunkBytes = INT_MAX) {
+                auto* data = ar.getBuffer();
+                detail::forEachMessageChunk(
+                    msize,
+                    [&](size_type offset, int count) {
+                        MPI_Status status;
+                        MPI_Recv(offset ? data + offset : data, count, MPI_BYTE, src, tag, *comm_m,
+                                 &status);
+                        // If the first receive used a wildcard, bind the remaining chunks to it.
+                        src = status.MPI_SOURCE;
+                        tag = status.MPI_TAG;
+                    },
+                    maxChunkBytes);
+            }
+
+            template <typename Archive>
+            void irecv(int src, int tag, Archive& ar, std::vector<MPI_Request>& requests,
+                       size_type msize, int maxChunkBytes = INT_MAX) {
+                if (src == MPI_ANY_SOURCE || tag == MPI_ANY_TAG) {
+                    throw std::invalid_argument("Chunked irecv requires a concrete source and tag");
+                }
+                auto* data = ar.getBuffer();
+                detail::forEachMessageChunk(
+                    msize,
+                    [&](size_type offset, int count) {
+                        MPI_Request request;
+                        MPI_Irecv(offset ? data + offset : data, count, MPI_BYTE, src, tag, *comm_m,
+                                  &request);
+                        requests.push_back(request);
+                    },
+                    maxChunkBytes);
             }
 
             template <typename Archive>
