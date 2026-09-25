@@ -304,12 +304,14 @@ namespace ippl {
         struct meta_grad
             : public Expression<
                   meta_grad<E>,
-                  sizeof(E) + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])> {
+                  sizeof(typename E::view_type)
+                      + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])> {
             constexpr static unsigned dim = E::dim;
             using value_type              = typename E::value_type;
 
             KOKKOS_FUNCTION
-            meta_grad(const E& u, const typename E::Mesh_t::vector_type vectors[])
+            meta_grad(const typename E::view_type& u,
+                      const typename E::Mesh_t::vector_type vectors[])
                 : u_m(u) {
                 for (unsigned d = 0; d < E::Mesh_t::Dimension; d++) {
                     vectors_m[d] = vectors[d];
@@ -348,7 +350,8 @@ namespace ippl {
         private:
             using Mesh_t      = typename E::Mesh_t;
             using vector_type = typename Mesh_t::vector_type;
-            const E u_m;
+            using view_type   = typename E::view_type;
+            const view_type u_m;
             vector_type vectors_m[dim];
         };
     }  // namespace detail
@@ -362,11 +365,13 @@ namespace ippl {
         struct meta_div
             : public Expression<
                   meta_div<E>,
-                  sizeof(E) + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])> {
+                  sizeof(typename E::view_type)
+                      + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])> {
             constexpr static unsigned dim = E::dim;
 
             KOKKOS_FUNCTION
-            meta_div(const E& u, const typename E::Mesh_t::vector_type vectors[])
+            meta_div(const typename E::view_type& u,
+                     const typename E::Mesh_t::vector_type vectors[])
                 : u_m(u) {
                 for (unsigned d = 0; d < E::Mesh_t::Dimension; d++) {
                     vectors_m[d] = vectors[d];
@@ -404,7 +409,8 @@ namespace ippl {
         private:
             using Mesh_t      = typename E::Mesh_t;
             using vector_type = typename Mesh_t::vector_type;
-            const E u_m;
+            using view_type   = typename E::view_type;
+            const view_type u_m;
             vector_type vectors_m[dim];
         };
 
@@ -414,12 +420,14 @@ namespace ippl {
         template <typename E>
         struct meta_laplace
             : public Expression<meta_laplace<E>,
-                                sizeof(E) + sizeof(typename E::Mesh_t::vector_type)> {
+                                sizeof(typename E::view_type)
+                                    + sizeof(typename E::Mesh_t::vector_type)> {
             constexpr static unsigned dim = E::dim;
             using value_type              = typename E::value_type;
 
             KOKKOS_FUNCTION
-            meta_laplace(const E& u, const typename E::Mesh_t::vector_type& hvector)
+            meta_laplace(const typename E::view_type& u,
+                         const typename E::Mesh_t::vector_type& hvector)
                 : u_m(u)
                 , hvector_m(hvector) {}
 
@@ -456,7 +464,8 @@ namespace ippl {
         private:
             using Mesh_t      = typename E::Mesh_t;
             using vector_type = typename Mesh_t::vector_type;
-            const E u_m;
+            using view_type   = typename E::view_type;
+            const view_type u_m;
             const vector_type hvector_m;
         };
     }  // namespace detail
@@ -469,11 +478,13 @@ namespace ippl {
         template <typename E>
         struct meta_curl
             : public Expression<meta_curl<E>,
-                                sizeof(E) + 4 * sizeof(typename E::Mesh_t::vector_type)> {
+                                sizeof(typename E::view_type)
+                                    + 4 * sizeof(typename E::Mesh_t::vector_type)> {
             constexpr static unsigned dim = E::dim;
 
             KOKKOS_FUNCTION
-            meta_curl(const E& u, const typename E::Mesh_t::vector_type& xvector,
+            meta_curl(const typename E::view_type& u,
+                      const typename E::Mesh_t::vector_type& xvector,
                       const typename E::Mesh_t::vector_type& yvector,
                       const typename E::Mesh_t::vector_type& zvector,
                       const typename E::Mesh_t::vector_type& hvector)
@@ -501,7 +512,8 @@ namespace ippl {
         private:
             using Mesh_t      = typename E::Mesh_t;
             using vector_type = typename Mesh_t::vector_type;
-            const E u_m;
+            using view_type   = typename E::view_type;
+            const view_type u_m;
             const vector_type xvector_m;
             const vector_type yvector_m;
             const vector_type zvector_m;
@@ -517,13 +529,14 @@ namespace ippl {
         template <typename E>
         struct meta_hess
             : public Expression<meta_hess<E>,
-                                sizeof(E)
+                                sizeof(typename E::view_type)
                                     + sizeof(typename E::Mesh_t::vector_type[E::Mesh_t::Dimension])
                                     + sizeof(typename E::Mesh_t::vector_type)> {
             constexpr static unsigned dim = E::dim;
 
             KOKKOS_FUNCTION
-            meta_hess(const E& u, const typename E::Mesh_t::vector_type vectors[],
+            meta_hess(const typename E::view_type& u,
+                      const typename E::Mesh_t::vector_type vectors[],
                       const typename E::Mesh_t::vector_type& hvector)
                 : u_m(u)
                 , hvector_m(hvector) {
@@ -546,8 +559,9 @@ namespace ippl {
             using Mesh_t      = typename E::Mesh_t;
             using vector_type = typename Mesh_t::vector_type;
             using matrix_type = typename Mesh_t::matrix_type;
+            using view_type   = typename E::view_type;
 
-            const E u_m;
+            const view_type u_m;
             vector_type vectors_m[dim];
             const vector_type hvector_m;
 

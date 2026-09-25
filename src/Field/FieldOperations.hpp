@@ -25,7 +25,7 @@ namespace ippl {
             vectors[d]    = 0;
             vectors[d][d] = 0.5 / mesh.getMeshSpacing(d);
         }
-        return detail::meta_grad<Field>(u, vectors);
+        return detail::meta_grad<Field>(u.getView(), vectors);
     }
 
     /*!
@@ -49,7 +49,7 @@ namespace ippl {
             vectors[d]    = 0;
             vectors[d][d] = 0.5 / mesh.getMeshSpacing(d);
         }
-        return detail::meta_div<Field>(u, vectors);
+        return detail::meta_div<Field>(u.getView(), vectors);
     }
 
     /*!
@@ -70,7 +70,7 @@ namespace ippl {
         for (unsigned d = 0; d < Dim; d++) {
             hvector[d] = 1.0 / std::pow(mesh.getMeshSpacing(d), 2);
         }
-        return detail::meta_laplace<Field>(u, hvector);
+        return detail::meta_laplace<Field>(u.getView(), hvector);
     }
 
     /*!
@@ -95,7 +95,7 @@ namespace ippl {
         zvector[2] = 1.0;
         typename mesh_type::vector_type hvector(0);
         hvector = mesh.getMeshSpacing();
-        return detail::meta_curl<Field>(u, xvector, yvector, zvector, hvector);
+        return detail::meta_curl<Field>(u.getView(), xvector, yvector, zvector, hvector);
     }
 
     /*!
@@ -121,6 +121,6 @@ namespace ippl {
         }
         auto hvector = mesh.getMeshSpacing();
 
-        return detail::meta_hess<Field>(u, vectors, hvector);
+        return detail::meta_hess<Field>(u.getView(), vectors, hvector);
     }
 }  // namespace ippl
