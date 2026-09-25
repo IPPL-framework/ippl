@@ -8,7 +8,6 @@
 // FreeElectronLaser.cpp.
 
 #include <algorithm>
-#include <catalyst_conduit.hpp>
 #include <cctype>
 #include <cmath>
 #include <cstdint>
@@ -22,6 +21,9 @@
 #include "Types/Vector.h"
 
 #include "units.h"
+#ifdef IPP_ENABLE_CATALYST
+#include <catalyst_conduit.hpp>
+#endif
 
 struct config {
     using scalar = double;
@@ -61,6 +63,7 @@ struct config {
 
 namespace fel_config_detail {
 
+#ifdef IPPL_ENABLE_CATALYST
     inline conduit_cpp::Node requiredNode(const conduit_cpp::Node& root, const std::string& path) {
         if (!root.has_path(path)) {
             throw std::runtime_error("Missing required configuration value '" + path + "'");
@@ -167,6 +170,7 @@ namespace fel_config_detail {
         }
         return result;
     }
+#endif
 
 }  // namespace fel_config_detail
 
@@ -237,6 +241,8 @@ inline std::string lowercase_singular(std::string str) {
 
     return str;
 }
+
+#ifdef IPPL_ENABLE_CATALYST
 inline double get_time_multiplier(const conduit_cpp::Node& root) {
     const std::string time_scale  = fel_config_detail::requiredString(root, "mesh/time-scale");
     std::string time_scale_string = lowercase_singular(time_scale);
@@ -318,7 +324,7 @@ inline config read_config(const char* filepath) {
                                  ? fel_config_detail::requiredNumber(root, "timestep-ratio")
                                  : config::scalar(1);
         ret.total_time     = fel_config_detail::requiredNumber(root, "mesh/total-time") * tmult
-                             / unit_time_in_seconds;
+                         / unit_time_in_seconds;
         ret.space_charge =
             fel_config_detail::requiredNumber(root, "mesh/space-charge") != config::scalar(0);
         ret.bunch_gamma = fel_config_detail::requiredNumber(root, "bunch/gamma");
@@ -344,11 +350,11 @@ inline config read_config(const char* filepath) {
         ret.length_scale_in_jobfile   = lmult;
         ret.temporal_scale_in_jobfile = tmult;
         ret.charge                    = fel_config_detail::requiredNumber(root, "bunch/charge")
-                                        * electron_charge_in_unit_charges;
+                     * electron_charge_in_unit_charges;
         ret.mass =
             fel_config_detail::requiredNumber(root, "bunch/mass") * electron_mass_in_unit_masses;
-        ret.num_particles = fel_config_detail::requiredInteger<uint64_t>(
-            root, "bunch/number-of-particles");
+        ret.num_particles =
+            fel_config_detail::requiredInteger<uint64_t>(root, "bunch/number-of-particles");
         ret.mean_position = fel_config_detail::getVector<config::scalar, 3>(root, "bunch/position")
                             * lmult / unit_length_in_meters;
         ret.sigma_position =
@@ -389,5 +395,10 @@ inline config read_config(const char* filepath) {
                                  + "': " + error.what());
     }
 }
+#else
+inline config read_config(const char* filepath) {
+    return {};
+}
+#endif
 
 #endif

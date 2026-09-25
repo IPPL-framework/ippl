@@ -201,6 +201,8 @@ The following CMake cache variables control this support:
 
 Installed dependencies can be selected with `KokkosKernels_DIR`, `LAPACKE_ROOT`,
 `LAPACKE_INCLUDE_DIRS`, `LAPACKE_LIBRARY_DIRS`, `LAPACKE_LIBRARIES`, or `MKL_DIR`.
+Providers that nest their headers under `<prefix>/include/openblas/` (such as
+OpenBLAS) are found automatically when the prefix is on `CMAKE_PREFIX_PATH`.
 `LAPACKE_LIBRARIES` is a semicolon-separated complete link line and may contain
 absolute paths, library names, imported targets, and linker items such as `-lm`.
 The standard FetchContent overrides `FETCHCONTENT_SOURCE_DIR_KOKKOSKERNELS` and
