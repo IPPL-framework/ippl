@@ -10,6 +10,11 @@
 #ifndef IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
 #define IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
 
+#include <algorithm>
+#include <array>
+#include <numeric>
+#include <vector>
+
 #include "FieldLayout/FieldLayout.h"
 #include "Index/Index.h"
 #include "Index/NDIndex.h"
@@ -44,7 +49,8 @@ namespace ippl {
 
         /*!
          * Performs scatter operation of particle positions in field (weights) and
-         * repartitions FieldLayout's global domain
+         * repartitions FieldLayout's global domain. This overload preserves the
+         * legacy ORB behavior by allowing cuts along all axes.
          * @tparam Attrib the particle attribute type (memory space must be accessible to field
          * memory)
          * @param R Weights to scatter
@@ -56,10 +62,46 @@ namespace ippl {
                                const bool& isFirstRepartition);
 
         /*!
+         * Performs scatter operation of particle positions in field (weights) and
+         * repartitions FieldLayout's global domain using only the enabled axes.
+         * The FieldLayout and the ORB weight field are updated only after the proposed
+         * domains pass validation.
+         * @tparam Attrib the particle attribute type (memory space must be accessible to field
+         * memory)
+         * @param R Weights to scatter
+         * @param fl FieldLayout
+         * @param isFirstRepartition boolean which tells whether to scatter or not
+         * @param allowedAxes true for axes ORB is allowed to cut
+         */
+        template <typename Attrib>
+        bool binaryRepartition(const Attrib& R, FieldLayout<Dim>& fl,
+                               const bool& isFirstRepartition,
+                               const std::array<bool, Dim>& allowedAxes);
+
+        /*!
          * Find cutting axis as the longest axis of the field layout.
          * @param dom Domain to reduce
          */
         int findCutAxis(NDIndex<Dim>& dom);
+
+        /*!
+         * Find cutting axis as the longest enabled axis of the field layout.
+         * @param dom Domain to reduce
+         * @param allowedAxes true for axes ORB is allowed to cut
+         */
+        int findCutAxis(const NDIndex<Dim>& dom, const std::array<bool, Dim>& allowedAxes);
+
+        /*!
+         * Check whether two domains overlap.
+         */
+        bool domainsOverlap(const NDIndex<Dim>& lhs, const NDIndex<Dim>& rhs) const;
+
+        /*!
+         * Check whether proposed domains tile the global domain without cutting serial axes.
+         */
+        bool domainsTileAllowedDecomposition(const std::vector<NDIndex<Dim>>& domains,
+                                             const NDIndex<Dim>& globalDomain,
+                                             const std::array<bool, Dim>& allowedAxes) const;
 
         /*!
          * Performs reduction on local field in all dimension except that determined
