@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "Utility/IpplTimings.h"
 
 namespace ippl {
@@ -54,12 +56,18 @@ namespace ippl {
             // Find cut axis
             IpplTimings::startTimer(tbasicOp);
             int cutAxis = findCutAxis(domains[it]);
+            int cutAxisLength = static_cast<int>(domains[it][cutAxis].length());
+            // Halo exchange requires at least two cells in each child along the cut axis.
+            if (cutAxisLength < 4) {
+                IpplTimings::stopTimer(tbasicOp);
+                return false;
+            }
             IpplTimings::stopTimer(tbasicOp);
 
             // Reserve space
             IpplTimings::startTimer(tperpReduction);
-            reduced.resize(domains[it][cutAxis].length());
-            reducedRank.resize(domains[it][cutAxis].length());
+            reduced.resize(cutAxisLength);
+            reducedRank.resize(cutAxisLength);
 
             std::fill(reducedRank.begin(), reducedRank.end(), 0.0);
             std::fill(reduced.begin(), reduced.end(), 0.0);
@@ -77,7 +85,7 @@ namespace ippl {
             IpplTimings::startTimer(tbasicOp);
             // Initialize median to some value (1 is lower bound value)
             int median = 1;
-            median     = findMedian(reduced);
+            median     = std::clamp(findMedian(reduced), 1, cutAxisLength - 3);
             IpplTimings::stopTimer(tbasicOp);
 
             // Cut domains and procs
@@ -101,11 +109,12 @@ namespace ippl {
             IpplTimings::stopTimer(tperpReduction);
         }
 
-        // Check that no plane was obtained in the repartition
+        // Reject empty domains and planes before publishing the new layout.
         IpplTimings::startTimer(tbasicOp);
         for (const auto& domain : domains) {
             for (const auto& axis : domain) {
-                if (axis.length() == 1) {
+                if (axis.length() < 2) {
+                    IpplTimings::stopTimer(tbasicOp);
                     return false;
                 }
             }

@@ -6,6 +6,7 @@
 #include "Ippl.h"
 
 #include <random>
+#include <vector>
 
 #include "TestUtils.h"
 #include "gtest/gtest.h"
@@ -165,6 +166,47 @@ TYPED_TEST(ORBTest, Charge) {
 
     ASSERT_NEAR((charge - totalCharge), 0., tol);
 
+}
+
+TEST(ORBRegressionTest, EnforcesMinimumChildWidth) {
+    if (ippl::Comm->size() != 2) {
+        GTEST_SKIP() << "This regression exercises a single two-rank split.";
+    }
+
+    using Mesh   = ippl::UniformCartesian<double, 3>;
+    using Field  = ippl::Field<double, 3, Mesh, Mesh::DefaultCentering>;
+    using Layout = ippl::FieldLayout<3>;
+    using Box    = ippl::NDIndex<3>;
+
+    for (int extent : {2, 3, 4}) {
+        SCOPED_TRACE(extent);
+        Box domain{ippl::Index(extent), ippl::Index(extent), ippl::Index(extent)};
+        Layout layout(MPI_COMM_WORLD, domain, {true, true, true});
+        Mesh mesh(domain, ippl::Vector<double, 3>(1.0), ippl::Vector<double, 3>(0.0));
+        Field weights(mesh, layout);
+        weights = 0.0;
+
+        std::vector<Box> originalDomains;
+        for (int rank = 0; rank < ippl::Comm->size(); ++rank) {
+            originalDomains.push_back(layout.getLocalNDIndex(rank));
+        }
+        ippl::OrthogonalRecursiveBisection<Field> orb;
+        orb.initialize(layout, mesh, weights);
+        ippl::ParticleAttrib<ippl::Vector<double, 3>> unusedPositions;
+
+        const bool success = orb.binaryRepartition(unusedPositions, layout, true);
+        EXPECT_EQ(success, extent == 4);
+        for (int rank = 0; rank < ippl::Comm->size(); ++rank) {
+            const auto& current = layout.getLocalNDIndex(rank);
+            for (unsigned d = 0; d < 3; ++d) {
+                if (extent < 4) {
+                    EXPECT_EQ(current[d], originalDomains[rank][d]);
+                } else {
+                    EXPECT_GE(current[d].length(), 2u);
+                }
+            }
+        }
+    }
 }
 
 int main(int argc, char* argv[]) {
