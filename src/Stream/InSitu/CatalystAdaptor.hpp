@@ -638,11 +638,11 @@ namespace ippl {
 
         channel["type"].set_string("multimesh");
 
-        auto data                           = channel["data/block_main"];
-        auto data_help                      = channel["data/block_help"];
-        channel["assembly/main"]            = "block_main";
-        channel["assembly/help"]            = "block_help";
-        channel["assembly/block_transform"] = "block_transform";
+        auto data                           = channel["data/particles"];
+        auto data_help                      = channel["data/boundingbox"];
+        channel["assembly/particles"]       = "particles";
+        channel["assembly/boundingbox"]     = "boundingbox";
+        channel["assembly/transform"]       = "transform";
 
         ////////////////////////////////////////////////////////
         // Note:
@@ -889,7 +889,7 @@ namespace ippl {
         auto it = transformChannels_m.find(label);
         if (it != transformChannels_m.end()) {
             const auto& td = it->second;
-            auto data_tf   = channel["data/block_transform"];
+            auto data_tf   = channel["data/transform"];
             data_tf["type"].set_string("mesh");
 
             data_tf["coordsets/tf_coords/type"].set_string("explicit");
@@ -1242,6 +1242,21 @@ namespace ippl {
         return MeshChannelHandle(std::static_pointer_cast<void>(ch), Dim);
     }
 
+    template <unsigned Dim>
+    MeshChannelHandle CatalystAdaptor::addMeshBlock(
+        const std::string& parentName, const std::string& blockName,
+        const UniformCartesian<double, Dim>& mesh, const FieldLayout<Dim>& layout, int nghost,
+        bool useGhostMasks, GeometryPolicy geometryPolicy) {
+        auto ch = std::make_shared<MeshChannelT<Dim>>(blockName, mesh, layout, nghost, useGhostMasks,
+                                                      geometryPolicy, parentName);
+        channels_m.push_back(ch);
+        catalystInfo_m << level4 << "::addMeshBlock(parent='" << parentName << "', block='"
+                       << blockName << "', Dim=" << Dim << ", nghost=" << nghost
+                       << ", geometry=" << (geometryPolicy == GeometryPolicy::Static ? "Static" : "Dynamic")
+                       << ")" << endl;
+        return MeshChannelHandle(std::static_pointer_cast<void>(ch), Dim);
+    }
+
     template <typename T>
         requires std::derived_from<std::decay_t<T>, ParticleBaseBase>
     ParticleChannelHandle CatalystAdaptor::addParticleChannel(const std::string& name,
@@ -1255,11 +1270,12 @@ namespace ippl {
         raw->setInitFn([this, name, &pc, raw](conduit_cpp::Node& channel, int rank, Inform& info) {
             const size_t localNum = pc.getLocalNum();
             channel["type"].set_string("multimesh");
-            channel["assembly/main"] = "block_main";
-            channel["assembly/help"] = "block_help";
+            channel["assembly/particles"] = "particles";
+            channel["assembly/boundingbox"] = "boundingbox";
+            channel["assembly/transform"] = "transform";
 
-            auto data      = channel["data/block_main"];
-            auto data_help = channel["data/block_help"];
+            auto data      = channel["data/particles"];
+            auto data_help = channel["data/boundingbox"];
             data["type"].set_string("mesh");
 
             // Persistent iota + rank_id
@@ -1404,7 +1420,7 @@ namespace ippl {
             // Transform block (if registered via setTransform)
             if (raw->hasTransform()) {
                 const auto& td = *raw->transform();
-                auto data_tf   = channel["data/block_transform"];
+                auto data_tf   = channel["data/transform"];
                 data_tf["type"].set_string("mesh");
                 data_tf["coordsets/tf_coords/type"].set_string("explicit");
                 data_tf["coordsets/tf_coords/values/x"].set(0.0);
@@ -1487,7 +1503,7 @@ namespace ippl {
                 // Update transform block values (if present)
                 if (raw->hasTransform()) {
                     const auto& td    = *raw->transform();
-                    auto data_tf      = channel["data/block_transform"];
+                    auto data_tf      = channel["data/transform"];
                     auto setVec3Field = [&](const std::string& fieldName,
                                             const ippl::Vector<double, 3>& v) {
                         data_tf[std::string("fields/") + fieldName + "/values/x"].set(v[0]);

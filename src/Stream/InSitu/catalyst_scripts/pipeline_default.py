@@ -349,18 +349,18 @@ for cname, ctype in _channels:
     _sources[cname] = proxy
 
     if ctype == "multimesh":
-        # Particle channel: multimesh with block_main, block_help, block_transform
+        # Particle channel: multimesh with particles, boundingbox, transform
         if options.EnableCatalystLive:
             _log(f"Creating ExtractBlock filter(s) for particle channel '{cname}' (Live view)")
             particles = ExtractBlock(
                 registrationName=f"{cname}.bunch",
                 Input=proxy,
-                Selectors=['//main', '//block_main']
+                Selectors=['//particles']
             )
             helper = ExtractBlock(
                 registrationName=f"{cname}.box",
                 Input=proxy,
-                Selectors=['//help', '//block_help']
+                Selectors=['//boundingbox']
             )
             particles.UpdatePipeline()
             helper.UpdatePipeline()
@@ -376,7 +376,7 @@ for cname, ctype in _channels:
         transform = ExtractBlock(
             registrationName=f"{cname}.transform",
             Input=proxy,
-            Selectors=['//block_transform']
+            Selectors=['//transform']
         )
         transform.UpdatePipeline()
         _filters[cname+"_transform"] = transform

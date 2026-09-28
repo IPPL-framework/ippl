@@ -692,6 +692,34 @@ namespace ippl {
                                          bool useGhostMasks = false);
 
         /**
+         * @brief Registers a mesh block inside an existing particle multimesh.
+         *
+         * The mesh is written into
+         *   catalyst/channels/<parentName>/data/<blockName>
+         * instead of a top-level channel.  The caller is responsible for
+         * adding the corresponding assembly entry
+         *   catalyst/channels/<parentName>/assembly/<role> = "<blockName>"
+         * (typically done in the particle channel's init function).
+         *
+         * @tparam Dim Mesh dimension (1, 2, or 3).
+         * @param parentName Name of the parent particle channel.
+         * @param blockName Block name within the parent multimesh.
+         * @param mesh The IPPL mesh (must outlive the adaptor).
+         * @param layout The field layout (must outlive the adaptor).
+         * @param nghost Number of ghost layers.
+         * @param useGhostMasks Whether to publish ghost cells.
+         * @param geometryPolicy Whether to re-read mesh origin/spacing per step.
+         * @return Handle for chaining addArray() calls.
+         */
+        template <unsigned Dim>
+        MeshChannelHandle addMeshBlock(const std::string& parentName,
+                                       const std::string& blockName,
+                                       const UniformCartesian<double, Dim>& mesh,
+                                       const FieldLayout<Dim>& layout, int nghost = 0,
+                                       bool useGhostMasks = false,
+                                       GeometryPolicy geometryPolicy = GeometryPolicy::Dynamic);
+
+        /**
          * @brief Registers a particle channel (one per particle container).
          *
          * Supports multi-bunch: call once per container.  Each channel is
