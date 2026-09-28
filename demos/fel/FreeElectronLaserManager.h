@@ -1,3 +1,8 @@
+/**
+ * @file FreeElectronLaserManager.h
+ * @brief Boosted-frame FEL PIC orchestration, particle coupling and diagnostics.
+ * @ingroup fel_runtime
+ */
 #ifndef IPPL_FREE_ELECTRON_LASER_MANAGER_H
 #define IPPL_FREE_ELECTRON_LASER_MANAGER_H
 
@@ -24,25 +29,48 @@
 #include "Stream/InSitu/CatalystAdaptor.h"
 #endif
 
-// FEL simulation manager.
-//
-// An electromagnetic (FDTD) PIC manager for the Free Electron Laser: it owns the
-// field/particle containers and the Maxwell solver, provides the generic
-// particle<->grid operations (deposit / gather / relativistic Boris push), and
-// implements the FEL-specific run loop and diagnostics.
-//
-// It works in a Lorentz frame co-moving with the electron bunch (gamma_frame =
-// gamma_bunch / sqrt(1 + K^2/2)); the static undulator field is transformed into
-// this frame each step and added to the self-consistent FDTD field during the
-// particle push. Radiation is transformed back to the lab frame for output.
+/**
+ * @brief Coordinate the active collocated-potential FEL simulation on all MPI ranks.
+ * @ingroup fel_runtime
+ * @tparam T Floating-point scalar; the shipped executable uses double.
+ * @tparam Dim Mesh dimension; this manager's vectors/kernels require Dim = 3.
+ *
+ * Call pre_run() once, then inherited run(getNt()). Each iteration deposits the
+ * preceding particle displacement, advances the active nonstandard FDTD solver,
+ * optionally snapshots fields with Catalyst, pushes particles in three Boris
+ * substeps, removes escaped particles and migrates survivors. post_step() then
+ * advances the manager clock and writes diagnostics. The solver evolves
+ * collocated four-potentials and reconstructs E/B; it is not a Yee E/B update.
+ *
+ * The boost is along z with gamma_frame = max(1, gamma_bunch/sqrt(1+K^2/2)).
+ * State uses the normalized c=1 units of units.h in the boosted frame. External
+ * undulator fields are evaluated in the laboratory and transformed for the push.
+ * Radiation diagnostics transform E/B back, but retain their implemented sample
+ * positions/time convention; they are not a general laboratory detector model.
+ *
+ * Kokkos kernels operate on rank-local particle/field views; IPPL exchanges halos
+ * and migrates registered particle attributes. MPI reductions produce diagnostic
+ * scalars for rank-zero output. No dielectric response or initial equilibrium
+ * self-field solve is provided. Charge continuity, boundary loss, numerical
+ * dispersion and diagnostic normalization require separate physics validation.
+ */
 template <typename T, unsigned Dim>
 class FreeElectronLaserManager : public ippl::BaseManager {
 public:
+    /// @brief Particle storage and spatial ownership used by this manager.
     using ParticleContainer_t = FELParticleContainer<T, Dim>;
+    /// @brief Cartesian field storage used for E, B and the four-current.
     using FieldContainer_t    = FELFieldContainer<T, Dim>;
+    /// @brief Active solver alias from datatypes.h (nonstandard FDTD with Mur boundaries).
     using FDTDSolver_t        = ::FDTDSolver_t<T, Dim>;
+    /// @brief Particle-base alias retained for application-level compatibility.
     using Base                = ippl::ParticleBase<PLayout_t<T, Dim>>;
 
+    /**
+     * @brief Retain configuration and construct the boost/undulator models.
+     * @param cfg Parsed configuration already converted to normalized code units.
+     * Mesh, fields and particles are allocated later by pre_run().
+     */
     FreeElectronLaserManager(config cfg)
         : m_config(cfg)
         , totalP_m(cfg.num_particles)
@@ -57,30 +85,31 @@ public:
         , frame_m(ippl::UniaxialLorentzframe<T, 2>::from_gamma(frame_gamma_m))
         , undulator_m(uparams_m, 2.0 * cfg.sigma_position[2] * frame_gamma_m * frame_gamma_m) {}
 
+    /// @brief Release owned simulation handles; the executable finalizes Catalyst/MPI.
     ~FreeElectronLaserManager() = default;
 
 protected:
-    config m_config;
+    config m_config; ///< Local configuration copy; pre_run() changes z extent and duration for the boost.
 
-    size_type totalP_m;
-    int nt_m;
-    Vector_t<int, Dim> nr_m;
+    size_type totalP_m;        ///< Requested particle count, not the live count after generation/loss.
+    int nt_m;                 ///< Number of field steps derived as ceil(boosted duration/dt).
+    Vector_t<int, Dim> nr_m;   ///< Global owned-cell counts, excluding halos.
 
-    double time_m;
-    double dt_m;
-    int it_m;
+    double time_m; ///< Boosted-frame manager time in normalized units.
+    double dt_m;   ///< Field time step obtained from the active solver; currently h_z for c=1.
+    int it_m;      ///< Completed field-step count, also used for the diagnostic ring buffer.
 
-    Vector_t<double, Dim> rmin_m;
-    Vector_t<double, Dim> rmax_m;
-    Vector_t<double, Dim> hr_m;
-    Vector_t<double, Dim> origin_m;
-    ippl::NDIndex<Dim> domain_m;
-    std::array<bool, Dim> decomp_m;
-    bool isAllPeriodic_m;
+    Vector_t<double, Dim> rmin_m;   ///< Lower physical box corner in boosted-frame code units.
+    Vector_t<double, Dim> rmax_m;   ///< Upper physical box corner in boosted-frame code units.
+    Vector_t<double, Dim> hr_m;     ///< Uniform grid spacings in boosted-frame code length units.
+    Vector_t<double, Dim> origin_m; ///< Mesh origin; pre_run() centers the box around zero.
+    ippl::NDIndex<Dim> domain_m;    ///< Global index box with nr_m owned cells.
+    std::array<bool, Dim> decomp_m; ///< MPI split directions; active setup enables only z.
+    bool isAllPeriodic_m;          ///< False for the active open-boundary FEL layout.
 
-    std::shared_ptr<FieldContainer_t> fcontainer_m;
-    std::shared_ptr<ParticleContainer_t> pcontainer_m;
-    std::shared_ptr<FDTDSolver_t> solver_m;
+    std::shared_ptr<FieldContainer_t> fcontainer_m;       ///< Shared mesh/E/B/J storage, set during pre_run().
+    std::shared_ptr<ParticleContainer_t> pcontainer_m;     ///< Shared particle storage, set during pre_run().
+    std::shared_ptr<FDTDSolver_t> solver_m;                ///< Solver owning potential histories and referencing E/B/J.
 
     int nsubsteps_m = 3;  ///< Boris sub-steps per FDTD step (reference behaviour).
 
@@ -90,11 +119,9 @@ protected:
     ippl::Undulator<T> undulator_m;             ///< Static undulator field model.
 
     // --- narrow-band (resonant) radiation power diagnostic state ---
-    // MITHRA reports the FEL output power as a sliding-window single-frequency
-    // DFT of the exit-plane fields at the resonant wavelength, not the total
-    // broadband Poynting flux that dumpRadiation() integrates. These hold the
-    // rolling time-domain sample buffer and the derived window length / angular
-    // frequency; they are allocated lazily on the first diagnostic call.
+    // The MITHRA-inspired diagnostic uses a rolling single-frequency DFT rather
+    // than broadband flux. Its sampling convention is described at the method;
+    // matching MITHRA results is a separate validation question.
     bool rp_init_m    = false;     ///< whether rp_fdt_m has been allocated yet
     int rp_Nf_m       = 0;         ///< DFT window length [time steps] (~3 resonant cycles)
     double rp_omega_m = 0.0;       ///< resonant angular frequency [1/unit_time], c = 1
@@ -102,39 +129,63 @@ protected:
 
 public:
 #ifdef IPPL_ENABLE_CATALYST
+    /// @brief Optional in-situ adapter; initialized here and finalized by the executable.
     ippl::CatalystAdaptor cat_viz{std::string{"FreeElectronLaser"}};
 #endif
 
+    /// @brief Return the requested particle-count metadata, not the current live count.
     size_type getTotalP() const { return totalP_m; }
+    /// @brief Set count metadata only; particle storage and generator configuration are unchanged.
+    /// @param totalP_ Replacement requested-count metadata.
     void setTotalP(size_type totalP_) { totalP_m = totalP_; }
 
+    /// @brief Return the field-step count derived during pre_run().
     int getNt() const { return nt_m; }
+    /// @brief Set the step-count metadata subsequently read by the run caller.
+    /// @param nt_ Replacement number of field steps.
     void setNt(int nt_) { nt_m = nt_; }
 
+    /// @brief Return global grid-count metadata.
     const Vector_t<int, Dim>& getNr() const { return nr_m; }
+    /// @brief Set grid-count metadata only; this does not rebuild the mesh or solver.
+    /// @param nr_ Replacement global cell counts.
     void setNr(const Vector_t<int, Dim>& nr_) { nr_m = nr_; }
 
+    /// @brief Return manager time in boosted-frame code units.
     double getTime() const { return time_m; }
+    /// @brief Set the manager clock only; fields, particle state and iteration are unchanged.
+    /// @param time_ Replacement time in boosted-frame code units.
     void setTime(double time_) { time_m = time_; }
 
+    /// @brief Return shared particle storage, null before setup unless explicitly assigned.
     std::shared_ptr<ParticleContainer_t> getParticleContainer() { return pcontainer_m; }
+    /// @brief Assign particle storage without migrating or initializing its contents.
+    /// @param pcontainer Container consistent with the current mesh/layout.
     void setParticleContainer(std::shared_ptr<ParticleContainer_t> pcontainer) {
         pcontainer_m = pcontainer;
     }
 
+    /// @brief Return shared field storage, null before setup unless explicitly assigned.
     std::shared_ptr<FieldContainer_t> getFieldContainer() { return fcontainer_m; }
+    /// @brief Assign field storage; existing solver references are not rebound.
+    /// @param fcontainer Container consistent with the particles and solver.
     void setFieldContainer(std::shared_ptr<FieldContainer_t> fcontainer) {
         fcontainer_m = fcontainer;
     }
 
+    /// @brief Return the active field-solver handle.
     std::shared_ptr<FDTDSolver_t> getFieldSolver() { return solver_m; }
+    /// @brief Assign the solver handle without updating time-step metadata.
+    /// @param solver Solver already bound to the intended E/B/J fields.
     void setFieldSolver(std::shared_ptr<FDTDSolver_t> solver) { solver_m = solver; }
 
+    /// @brief Log entry into a step; this hook performs no numerical preparation.
     void pre_step() override {
         Inform m("Pre-step");
         m << "Done" << endl;
     }
 
+    /// @brief Increment time/iteration, run all diagnostics and log completion.
     void post_step() override {
         this->time_m += this->dt_m;
         this->it_m++;
@@ -144,13 +195,25 @@ public:
         m << "Finished time step: " << this->it_m << " time: " << this->time_m << endl;
     }
 
-    // Particle -> grid: charge-conserving current deposition into the four-current
-    // source field J ([1..Dim]); optionally the charge density into J[0].
+    /// @brief Active particle-to-grid wrapper invoking depositCurrent().
     void par2grid() { depositCurrent(); }
 
-    // Grid -> particle: interpolate E and B to the particle positions.
+    /// @brief Standalone gather wrapper; advance() instead gathers inside each push substep.
     void grid2par() { gatherFields(); }
 
+    /**
+     * @brief Reset J, deposit the previous displacement and sum halo contributions.
+     *
+     * assemble_current_collocated() splits each local R_nm1-to-R trajectory and
+     * deposits midpoint CIC current weights into J[1..Dim]. Optional CIC charge
+     * density is added to J[0] when space_charge is enabled; otherwise J[0] stays
+     * zero. Kokkos atomic additions scatter into rank-local storage, then IPPL
+     * accumulateHalo() sums shared contributions across ranks.
+     *
+     * The displacement is from the previous complete field step, not each Boris
+     * substep separately. Exact discrete charge continuity is not established by
+     * using trajectory segments alone and must be checked with the solver stencil.
+     */
     void depositCurrent() {
         using value_type = typename SourceField_t<T, Dim>::value_type;
         this->fcontainer_m->getJ() = value_type(0);
@@ -167,6 +230,15 @@ public:
         this->fcontainer_m->getJ().accumulateHalo();
     }
 
+    /**
+     * @brief Fill E/B halos and interpolate their current grid values to local R.
+     *
+     * Particle gather kernels use the existing field centering. The false gather
+     * argument overwrites each gathered attribute rather than adding to it.
+     * IPPL gather also fills the field halo internally, so these explicit fills
+     * are additional exchanges in the current implementation.
+     * The active push uses equivalent gathers repeatedly at substep positions.
+     */
     void gatherFields() {
         this->fcontainer_m->getE().fillHalo();
         this->fcontainer_m->getB().fillHalo();
@@ -176,10 +248,25 @@ public:
                                             false);
     }
 
-    // Relativistic Boris push with an externally supplied (E, B) field, performed
-    // in sub-steps over one FDTD time step. external_field(pos, time) must return
-    // a Kokkos::pair{E, B}. Faithful to the original NSFDSolverWithParticles
-    // particle update.
+    /**
+     * @brief Advance local particles through one field step with a relativistic Boris push.
+     * @tparam External Device-callable external-field functor captured by value.
+     * @param external_field Callable (position, time) returning a Kokkos pair of
+     * boosted-frame E and B three-vectors in code units.
+     *
+     * Saves R into R_nm1, explicitly fills E/B halos, and uses nsubsteps_m substeps.
+     * Each IPPL gather performs its own halo fill as well.
+     * Grid fields remain at the same time level but are regathered at each new
+     * position. The external field is reevaluated at time_m + substep*dt/nsubsteps.
+     * Kokkos updates dimensionless gamma*beta and R, with fences between stages.
+     * Particles outside/on the box faces are removed, then update() migrates the
+     * survivors and all registered attributes to their owning MPI ranks.
+     *
+     * @pre Containers and dt_m have been initialized. Substep trajectories must
+     * remain within the local interpolation support until the final migration.
+     * Particle removal is an open-boundary loss, not a closed-system conservation
+     * operation; removed trajectories are absent from the next current deposit.
+     */
     template <class External>
     void push(External external_field) {
         auto pc = this->pcontainer_m;
@@ -251,6 +338,23 @@ public:
         pc->update();
     }
 
+    /**
+     * @brief Collectively set up the boosted mesh, fields, solver and particle bunch.
+     *
+     * Rank zero creates the output directory and broadcasts success. The copied
+     * configuration is then changed in place: z extent is multiplied by the
+     * frame gamma, and duration divided by it. The centered mesh is nonperiodic
+     * and decomposed only along z. The active stencil requires
+     * (h_z/h_x)^2 + (h_z/h_y)^2 < 1; failure aborts the MPI communicator.
+     *
+     * Allocates E/B/J and particles, constructs the solver, reads its dt=h_z,
+     * initializes/migrates the bunch, initializes optional Catalyst registries,
+     * and writes initial diagnostics. Solver potential histories start at zero;
+     * no electrostatic startup solve is performed.
+     * @pre IPPL/MPI/Kokkos are initialized and all ranks call this method once.
+     * Repeated calls would apply the frame rescaling again.
+     * @throws IpplException If the output directory cannot be created.
+     */
     void pre_run() override {
         Inform m("Pre Run");
 
@@ -292,7 +396,7 @@ public:
             this->rmax_m[d]   = this->origin_m[d] + this->m_config.extents[d];
         }
 
-        // Courant / dispersion condition for the standard FDTD stencil.
+        // Mesh-aspect condition required by the active nonstandard FDTD stencil.
         const double rzx = this->hr_m[Dim - 1] / this->hr_m[0];
         const double rzy = this->hr_m[Dim - 1] / this->hr_m[1];
         if (rzx * rzx + rzy * rzy >= 1.0) {
@@ -342,6 +446,18 @@ public:
         m << "Done" << endl;
     }
 
+    /**
+     * @brief Generate the bunch on rank zero, center it and distribute by position.
+     *
+     * The MITHRA-style host generator/boost copies initial positions and momenta
+     * into Kokkos storage. R and R_nm1 initially coincide, so the first trajectory
+     * current is zero. Rank zero assigns equal Q and mass from configured totals
+     * divided by the actual generated count, which can differ from totalP_m.
+     * A global mean position is subtracted from both position arrays; the final
+     * particle update migrates all registered attributes to their owning ranks.
+     * @pre Particle storage, field layout and frame have been initialized on all ranks.
+     * A nonempty bunch is required by the charge/mass and centroid divisions.
+     */
     void initializeParticles() {
         Inform m("Initialize Particles");
 
@@ -377,6 +493,16 @@ public:
         m << "particles created and initial conditions assigned" << endl;
     }
 
+    /**
+     * @brief Deposit, evolve fields, optionally visualize, then push/migrate particles.
+     *
+     * This is the numerical body called by BaseManager::run(). The active solver
+     * updates potentials, shifts their time levels and reconstructs E/B. Optional
+     * Catalyst execution occurs immediately afterwards, before particle push and
+     * before post_step() increments the reported manager time/iteration.
+     * The push evaluates the static undulator in lab coordinates and transforms
+     * its E/B into the boosted frame; no separate grid2par() call is made here.
+     */
     void advance() override {
         // 1. Deposit the current produced by last step's motion (R_nm1 -> R).
         this->par2grid();
@@ -401,14 +527,31 @@ public:
         });
     }
 
+    /**
+     * @brief Run broadband power, single-frequency power and bunch/field diagnostics.
+     * Called collectively once at initialization and after every completed step.
+     * Output is appended by rank zero; the methods also use MPI reductions/barriers.
+     */
     void dump() {
         dumpRadiation();
         dumpRadiationBanded();
         dumpFELDiagnostics();
     }
 
-    // Radiated power leaving the downstream end of the domain, transformed back
-    // to the lab frame and integrated over the transverse exit plane.
+    /**
+     * @brief Integrate signed longitudinal E-cross-B flux on a downstream interior plane.
+     *
+     * A Kokkos reduction transforms stored E/B to the lab frame and selects view
+     * indices satisfying k + local_first_z = N_z - 3, with one halo layer assumed.
+     * Multiplication by transverse cell area and the units.h power-density factor
+     * yields watts; MPI sums to rank zero and appends radiation_Nranks.csv.
+     *
+     * This is broadband signed flux of the stored field, without background,
+     * near-field or outgoing-wave separation. The output distance label comes
+     * from transforming z'=extents[2], not the selected plane's physical coordinate
+     * in the centered box. It must not be read as an exact laboratory monitor
+     * position. Boundary reflection and normalization need independent checks.
+     */
     void dumpRadiation() {
         auto fc    = this->fcontainer_m;
         auto eview = fc->getE().getView();
@@ -442,7 +585,7 @@ public:
                    ippl::Comm->getCommunicator());
 
         if (ippl::Comm->rank() == 0) {
-            // Lab-frame longitudinal position the exit plane maps to at this time.
+            // Diagnostic distance label from z'=Lz; not the selected plane position.
             ippl::Vector<T, 3> pos{0, 0, (T)this->m_config.extents[2]};
             lb.primedToUnprimed(pos, (T)this->time_m);
 
@@ -459,8 +602,23 @@ public:
         ippl::Comm->barrier();
     }
 
-    // Narrow-band radiated power at the FEL resonance, computed the way MITHRA's
-    // powerSample() does.
+    /**
+     * @brief Append a MITHRA-inspired single-frequency downstream power estimate.
+     *
+     * Lazily allocates a rank-local Kokkos ring buffer of lab-transformed Ex, Ey,
+     * Bx and By. The same interior-plane index convention as dumpRadiation() is
+     * used. The chosen wavelength is undulator_period/frame_gamma; the buffer
+     * spans approximately three cycles, with omega=2*pi/lambda in code units.
+     * A Kokkos DFT forms the real E-cross-conjugate-B product, normalized by 2/Nf^2,
+     * transverse area and the power-density conversion. MPI sums to rank zero,
+     * which appends radiation_band_Nranks.csv and the same distance label.
+     *
+     * Samples use boosted-frame dt even though field values are transformed to
+     * the lab frame. The DFT indexes ring slots directly, and early output includes
+     * the initially unfilled window. Frequency interpretation, ring-window behavior
+     * and absolute power therefore require validation; this is not a broadband
+     * spectrum or a general lab-frame fixed-detector time series.
+     */
     void dumpRadiationBanded() {
         auto fc    = this->fcontainer_m;
         auto eview = fc->getE().getView();
@@ -562,15 +720,22 @@ public:
         ippl::Comm->barrier();
     }
 
-    // FEL gain diagnostics, written against the same lab-frame distance axis as
-    // the radiation curve so they can be overlaid:
-    //   * bunching   : micro-bunching factor |<exp(i k* z)>| at the resonant
-    //                  wavelength lambda* = undulator_period / (2 gamma_frame).
-    //                  Exponential growth of this is the signature of FEL gain;
-    //                  if it stays at the ~1% seed there is no gain.
-    //   * max|E|     : peak electric-field magnitude in the domain.
-    //   * fieldEnergy: total EM field energy (0.5 * sum(E.E + B.B) * cellVolume).
-    //   * N          : live particle count (catches runaway out-of-bounds loss).
+    /**
+     * @brief Reduce live-particle and grid-field statistics, then append feldiag_Nranks.csv.
+     *
+     * Bunching is the unweighted particle average of exp(i*k*z), with boosted-frame
+     * z and wavelength undulator_period/(2*frame_gamma). Field diagnostics are
+     * max|E| and 0.5*sum(E.E+B.B)*cellVolume over owned cells, in code units.
+     * These stored grid fields exclude the separately applied undulator field.
+     * The energy is not converted to joules and is not a particle-plus-field
+     * conservation balance in this driven, open system.
+     *
+     * Also records live count, mean z, centered rms z, sqrt(mean(x^2+y^2)) and
+     * mean gamma_beta_z. The transverse rms is about the origin, not a recentered
+     * transverse centroid. Positions remain boosted-frame code lengths; only the
+     * shared longitudinal distance label is converted to lab metres.
+     * Kokkos local reductions feed MPI reductions; rank zero writes the CSV.
+     */
     void dumpFELDiagnostics() {
         auto pc = this->pcontainer_m;
         auto fc = this->fcontainer_m;
@@ -688,9 +853,18 @@ public:
     // expand to extended __host__ __device__ lambdas under CUDA (nvcc). NVCC
     // forbids such lambdas inside protected or private member functions.
     // See: https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#extended-lambda-restrictions
-    // Deposit charge density (CIC) into component [0] of the four-current field,
-    // needed only when space charge is enabled. Component [1..Dim] is filled by
-    // assemble_current_collocated.
+    /**
+     * @brief Add current-position CIC charge density to component zero of J.
+     *
+     * Each local particle contributes Q/cellVolume to its surrounding 2^Dim cell
+     * centres with linear weights, using Kokkos atomic additions. The half-cell
+     * shift matches collocated deposition/gather centering. This method fences the
+     * kernel but neither zeros J nor accumulates halos; depositCurrent() performs
+     * those steps and calls this only when space_charge is enabled.
+     * @pre Particle interpolation support must lie in valid local/halo storage.
+     * Depositing rho does not itself impose Gauss's law or solve an initial
+     * Coulomb field. Public visibility also permits CUDA extended lambdas.
+     */
     void depositChargeDensity() {
         auto pc             = this->pcontainer_m;
         auto fc             = this->fcontainer_m;
@@ -733,7 +907,14 @@ public:
         Kokkos::fence();
     }
 
-    // Mark particles that have left the physical domain and remove them (open BC).
+    /**
+     * @brief Mark and remove particles outside or exactly on any physical box face.
+     *
+     * A Kokkos boolean mask and reduction identify local losses; destroy() compacts
+     * registered attributes. No wrapping, reflection or escaping-current deposit
+     * is performed here. The caller push() subsequently migrates surviving
+     * particles with update(). Public visibility also permits CUDA extended lambdas.
+     */
     void destroyOutOfBounds() {
         auto pc           = this->pcontainer_m;
         auto rview        = pc->R.getView();

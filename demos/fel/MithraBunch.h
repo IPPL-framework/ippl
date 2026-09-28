@@ -1,16 +1,21 @@
+/** @file MithraBunch.h
+ * @brief Host sampling and moving-frame initialization of the FEL particle bunch.
+ * @ingroup fel_particles
+ *
+ * The active path samples transverse Gaussians and a longitudinal uniform core
+ * with tapered tails, imposes the configured-in-code wavelength modulation,
+ * applies the MITHRA-style initial boost, and copies positions and normalized
+ * momenta into IPPL attributes. Sampling uses host containers and the C random
+ * generator; only the final attribute assignment uses a Kokkos kernel.
+ *
+ * This code uses FEL's internal unit system from units.h, not SI storage.
+ * Gamma is dimensionless and momentum means gamma*beta=p/(m*c). The current
+ * manager calls the complete generator on rank zero and distributes particles
+ * afterwards; the rank/size sampling arguments are not used for distributed
+ * generation by that path.
+ */
 #ifndef IPPL_FEL_MITHRA_BUNCH_H
 #define IPPL_FEL_MITHRA_BUNCH_H
-
-// MITHRA-style relativistic bunch initialization.
-//
-// Ported faithfully from the original FreeElectronLaser.cpp. Generates an
-// ellipsoidal electron bunch (Gaussian/uniform distributions, optional shot
-// noise / bunching factor / tail tapering), boosts it into the moving frame,
-// and copies the result into an ippl particle bunch.
-//
-// Behaviour is unchanged from the original; only the surrounding includes and
-// the assert_isreal helper were adapted (the old MaxwellSolvers/FDTD.h that
-// defined it is no longer part of the tree).
 
 #include <cassert>
 #include <cmath>
@@ -29,89 +34,127 @@
 #include "units.h"
 
 #ifndef assert_isreal
+/** @brief Debug assertion that a host scalar is neither NaN nor infinity.
+ * @param X Scalar expression tested with std::isnan and std::isinf.
+ * @note Disabled with NDEBUG; this is not run-time input validation.
+ */
 #define assert_isreal(X) assert(!std::isnan(X) && !std::isinf(X))
 #endif
 
+/** @brief Three-component host sampling vector.
+ * @tparam scalar Component type; dimensions depend on the containing member.
+ */
 template <typename scalar>
 using FieldVector = ippl::Vector<scalar, 3>;
+/** @brief Host-side parameters for the retained MITHRA-style sampling routines.
+ * @ingroup fel_particles
+ * @tparam scalar Floating-point sampling type.
+ *
+ * generate_mithra_config() fills the subset used by the FEL mini-app. This
+ * aggregate alone does not initialize or validate its scalar members. Several
+ * compatibility members describe features not implemented by the active path.
+ */
 template <typename scalar>
 struct BunchInitialize {
-    /* Type of the distributions (transverse or longitudinal) in the bunch.
+    /** Longitudinal core type: "uniform" or "gaussian"; transverse sampling is Gaussian.
      */
     std::string distribution_;
 
-    /* Type of the generator for creating the bunch distribution.
+    /** Sampling generator; the implemented initializeBunchEllipsoid path requires "random".
      */
     std::string generator_;
 
-    /* Total number of macroparticles in the bunch. */
+    /** Nominal total sample count; locally rounded up to a multiple of four before generation. */
     unsigned int numberOfParticles_;
 
-    /* Total charge of the bunch in pC. */
+    /** Total charge parameter in internal charge units, copied from config::charge, not pC. */
     scalar cloudCharge_;
 
-    /* Initial energy of the bunch in MeV. */
+    /** Dimensionless laboratory Lorentz factor gamma, not a kinetic energy in MeV. */
     scalar initialGamma_;
 
-    /* Initial normalized speed of the bunch. */
+    /** Dimensionless laboratory speed beta=v/c, stored by the configuration adapter. */
     scalar initialBeta_;
 
-    /* Initial movement direction of the bunch, which is a unit vector. */
+    /** Nominal unit direction; the active adapter fixes this to +z. */
     FieldVector<scalar> initialDirection_;
 
-    /* Position of the center of the bunch in the unit of length scale. */
+    /** Laboratory central position in internal length units, before boost and recentering. */
     FieldVector<scalar> position_;
 
-    /* Number of macroparticles in each direction for 3Dcrystal type. */
+    /** Unused crystal-generator compatibility counts; the active adapter sets zero. */
     FieldVector<unsigned int> numbers_;
 
-    /* Lattice constant in x, y, and z directions for 3D crystal type. */
+    /** Unused crystal-generator lattice lengths; the active adapter sets zero. */
     FieldVector<scalar> latticeConstants_;
 
-    /* Spread in position for each of the directions in the unit of length scale. For the 3D crystal
-     * type, it will be the spread in position for each micro-bunch of the crystal.
+    /** Internal-length sampling scales. x/y are Gaussian rms widths. z is a
+     * uniform half-width or Gaussian rms width according to distribution_, before
+     * rejection, wavelength modulation and any added uniform-core tails.
      */
     FieldVector<scalar> sigmaPosition_;
 
-    /* Spread in energy in each direction. */
+    /** Gaussian rms widths of the dimensionless components gamma*beta=p/(m*c). */
     FieldVector<scalar> sigmaGammaBeta_;
 
-    /* Store the truncation transverse distance for the electron generation.
+    /** Strict absolute cutoff applied separately to both x and y sampling offsets.
+     * In internal length units; copied from the x component of the input truncations.
      */
     scalar tranTrun_;
 
-    /* Store the truncation longitudinal distance for the electron generation.
+    /** Strict absolute z-offset cutoff in internal length units, before modulation.
      */
     scalar longTrun_;
 
-    /* Name of the file for reading the electrons distribution from.
+    /** Unused distribution-file compatibility name; no file is read by this sampler.
      */
     std::string fileName_;
 
-    /* The radiation wavelength corresponding to the bunch length outside the undulator
+    /** Laboratory resonant-wavelength parameter in internal length units.
+     * Zero disables quarter-wavelength particle grouping and modulation.
      */
     scalar lambda_;
 
-    /* Bunching factor for the initialization of the bunch.
+    /** Dimensionless longitudinal modulation parameter, accepted in [0,2].
+     * The adapter fixes 0.01; this parameter is not a measured post-sampling bunching factor.
      */
     scalar bF_;
 
-    /* Phase of the bunching factor for the initialization of the bunch.
+    /** Deterministic modulation phase in degrees; the adapter fixes zero.
      */
     scalar bFP_;
 
-    /* Boolean flag determining the activation of shot-noise.
+    /** Enable the retained shot-noise branch; false in the active FEL adapter.
      */
     bool shotNoise_;
 
-    /* Initial beta vector of the bunch, which is obtained as the product of beta and direction.
+    /** Dimensionless mean laboratory velocity vector; initialGamma_*betaVector_ sets mean momentum.
      */
     FieldVector<scalar> betaVector_;
 
 };
 
-// LORENTZ FRAME AND UNDULATOR
-
+/** @brief Adapt the parsed FEL configuration to the active bunch-sampling settings.
+ * @ingroup fel_particles
+ * @tparam scalar Floating-point type of the sampling parameters and frame.
+ * @param cfg Parsed FEL configuration with internal-unit lengths and charge.
+ * @return Parameters for random sampling, a uniform longitudinal core, +z motion,
+ * 0.01 deterministic modulation, zero phase, and disabled shot noise.
+ *
+ * The first argument cfg already stores internal-unit lengths and total charge;
+ * sigma_momentum is dimensionless gamma*beta spread. The second, unnamed frame
+ * argument is retained for compatibility but is not read. The wavelength is
+ * recomputed from
+ * @f$\gamma_f=\gamma_b/\sqrt{1+K^2/2}@f$ and
+ * @f$\lambda=\lambda_u/(2\gamma_f^2)@f$.
+ * Unlike the manager's boost factor, this local gamma_f is not clamped to one.
+ * No MeV, coulomb or SI-length conversion takes place here.
+ *
+ * Only position_truncations[0] and [2] are used; the x cutoff also applies to y.
+ * numberOfParticles_ is unsigned int even though config::num_particles is wider.
+ * Gaussian longitudinal sampling and shot noise are not selected by JSON keys
+ * in this adapter; changing those settings requires an explicit code extension.
+ */
 template <typename scalar>
 BunchInitialize<scalar> generate_mithra_config(
     const config& cfg, const ippl::UniaxialLorentzframe<scalar>& /*frame_boost unused*/) {
@@ -145,20 +188,56 @@ BunchInitialize<scalar> generate_mithra_config(
 
     return init;
 }
+/** @brief Temporary host sample before copying into IPPL particle attributes.
+ * @ingroup fel_particles
+ * @tparam Double Floating-point component type.
+ */
 template <typename Double>
 struct Charge {
-    Double q;                     /* Charge of the point in the unit of electron charge.	*/
-    FieldVector<Double> rnp, rnm; /* Position vector of the charge.			*/
-    FieldVector<Double> gb;       /* Normalized velocity vector of the charge.		*/
+    Double q;                     ///< Nominal sample charge in the same internal units as cloudCharge_.
+    /** Positions in internal length units: rnp is populated and boosted; rnm is unused here. */
+    FieldVector<Double> rnp, rnm;
+    FieldVector<Double> gb;       ///< Dimensionless momentum gamma*beta, initially in the laboratory frame.
 
-    /* Double flag determining if the particle is passing the entrance point of the undulator. This
-     * flag can be used for better boosting the bunch to the moving frame. We need to consider it to
-     * be double, because this flag needs to be communicated during bunch update.
+    /** Unused compatibility flag for undulator entrance crossing, initialized to zero.
      */
     Double e = 0.0;
 };
+/** @brief Host linked list used while sampling and boosting temporary particles.
+ * @tparam scalar Floating-point type of each Charge.
+ */
 template <typename scalar>
 using ChargeVector = std::list<Charge<scalar>>;
+/** @brief Append accepted laboratory-frame samples using the retained host generator.
+ * @ingroup fel_particles
+ * @tparam Double Floating-point sampling type.
+ * @param bunchInit Sampling settings, copied by value; count corrections do not update the caller.
+ * @param[in,out] chargeVector Host list receiving accepted samples and any added tail samples.
+ * @param rank Starting sample-group index for strided rank/size generation.
+ * @param size Positive stride between sample groups; current manager passes one.
+ * @param ia Component of position_ used by the retained uniform-tail scalar-offset expression.
+ * The current adapter passes zero; the core uses the full position_ vector instead.
+ * @pre The active supported call starts with an empty list, generator_="random",
+ * nonzero nominal particle count, positive uniform half-width and valid rank/size.
+ * @throws IpplException If bF_ is outside [0,2]. Indexed random access may throw
+ * std::out_of_range for unsupported combinations; invalid distribution names exit.
+ *
+ * Gaussian variates use Box-Muller sampling. The longitudinal uniform core spans
+ * @f$[-\sigma_z,\sigma_z]@f$ before strict coordinate cutoffs. Rejected groups
+ * are not replaced. If lambda_ is nonzero, each accepted base sample produces
+ * four particles separated initially by lambda_/4 and then sinusoidally shifted.
+ * The uniform path additionally samples Gaussian tails beyond the core ends.
+ * Actual particle count therefore need not equal numberOfParticles_.
+ *
+ * Every call resets the process-global C RNG with srand(42), then allocates a
+ * host random-number pool proportional to the nominal count. Reproducibility
+ * depends on the C library's rand() sequence; this is not a device RNG. The
+ * active manager uses rank=0,size=1 and later performs MPI particle distribution.
+ *
+ * @note The dormant shot-noise normalization treats cloudCharge_ as an electron
+ * count, whereas the current adapter supplies internal charge units. That branch
+ * is disabled and requires a unit audit before enabling it.
+ */
 template <typename Double>
 void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Double>& chargeVector,
                               int rank, int size, int ia) {
@@ -200,15 +279,15 @@ void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Do
                             "The bunching factor must be between 0 and 2.");
     }
 
-    /* If the generator is random we should make sure that different processors do not produce the
-     * same random numbers.
+    /* All invocations build the same seeded sequence; rank-strided sample indices
+     * select different groups when this low-level routine is used on several ranks.
      */
     if (bunchInit.generator_ == "random") {
         /* Initialize the random number generator with a fixed seed so the
          * generated bunch is reproducible across runs.
          */
         srand(42);
-        /* Np / ng * 20 is the maximum number of particles.
+        /* Reserve twenty random values per nominal sample group.
          */
         randomNumbers.resize(Np / ng * 20, 0.0);
         for (unsigned int ri = 0; ri < Np / ng * 20; ri++)
@@ -392,6 +471,30 @@ void initializeBunchEllipsoid(BunchInitialize<Double> bunchInit, ChargeVector<Do
     bunchInit.numberOfParticles_ = chargeVector.size();
 }
 
+/** @brief Apply the MITHRA-style initial +z boost and position resynchronization on the host.
+ * @ingroup fel_particles
+ * @tparam Double Floating-point particle type.
+ * @param[in,out] chargeVectorn_ Laboratory samples on entry; moving-frame positions
+ * and gamma*beta momenta on return. Charge weights are unchanged.
+ * @param frame_gamma Finite frame Lorentz factor at least one, with positive boost velocity.
+ * @pre The input list contains finite momenta and positions; gamma is not validated here.
+ *
+ * Let @f${\bf u}={\bf p}/(mc)@f$ denote particle momentum
+ * in units of m*c. The first pass leaves transverse u unchanged and computes
+ * @f[
+ * z' = \gamma_f z,\qquad
+ * u'_z=\gamma_f(u_z-\beta_f\sqrt{1+|{\bf u}|^2}).
+ * @f]
+ * With @f$z'_{\max}@f$ from this list and
+ * @f$\gamma'_p=\sqrt{1+|{\bf u}'|^2}@f$, the second pass shifts all coordinates by
+ * @f$\Delta{\bf r}'=({\bf u}'/\gamma'_p)\beta_f(z'-z'_{\max})@f$.
+ * This describes the implemented initialization convention, not a general
+ * spacetime-event transform. No MPI reduction is performed for z'_{max}; the
+ * active manager supplies the complete bunch on rank zero before distribution.
+ *
+ * @note Nonfinite detected states print diagnostics and call abort(). This path
+ * performs host loops only; the conversion to device attributes is separate.
+ */
 template <typename Double>
 void boost_bunch(ChargeVector<Double>& chargeVectorn_, Double frame_gamma) {
     Double frame_beta = std::sqrt((double)frame_gamma * frame_gamma - 1.0) / double(frame_gamma);
@@ -434,6 +537,29 @@ void boost_bunch(ChargeVector<Double>& chargeVectorn_, Double frame_gamma) {
     }
 }
 
+/** @brief Generate, boost, and copy a complete temporary bunch into IPPL attributes.
+ * @ingroup fel_particles
+ * @tparam bunch_type Particle container exposing create(), getLocalNum(), R, R_nm1,
+ * and gamma_beta with compatible three-component Kokkos views.
+ * @tparam scalar Floating-point type shared by sampling and particle vectors.
+ * @param[in,out] bunch Destination container; the active manager calls this on rank zero.
+ * @param bunchInit Host sampling settings used with rank=0, size=1 and ia=0.
+ * @param frame_gamma Lorentz factor for boost_bunch(), in the physical range gamma>=1.
+ * @return Actual local generated sample count, including rejection, grouping and tails.
+ * @pre Destination storage is initially empty or compatible with the generated count.
+ * This routine grows storage when needed but does not shrink an oversized bunch.
+ *
+ * Sampling and boost use host lists; data are staged in HostSpace views and
+ * explicitly copied to the default Kokkos memory space. A kernel sets R and
+ * R_nm1 to the same initial positions and gamma_beta to boosted normalized
+ * momenta, then fences. It does not assign charge, mass, or perform MPI migration.
+ * The manager assigns total charge/mass divided by the returned count, recentres
+ * the bunch, and calls the particle update to distribute it.
+ *
+ * @note Debug assertions require finite states and nonzero boosted longitudinal
+ * momentum. NDEBUG removes those assertions. Charge::q is not copied to Q;
+ * nominal weights in the temporary generator do not set the final charge sum.
+ */
 template <typename bunch_type, typename scalar>
 size_t initialize_bunch_mithra(bunch_type& bunch, const BunchInitialize<scalar>& bunchInit,
                                scalar frame_gamma) {

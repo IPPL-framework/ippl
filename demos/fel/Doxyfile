@@ -1,0 +1,69 @@
+# Focused FEL documentation: run `doxygen Doxyfile` from demos/fel.
+# Explicit inputs exclude build products, handoff notes and the rest of IPPL.
+DOXYFILE_ENCODING      = UTF-8
+PROJECT_NAME           = "FEL mini-app: student guide"
+PROJECT_BRIEF          = "Moving-frame PIC, collocated potentials, particles and diagnostics"
+OUTPUT_DIRECTORY       = docs
+INPUT                  = StudentGuide.md MathematicalModel.md Documentation.dox FreeElectronLaser.cpp \
+                         Config.h units.h datatypes.h FreeElectronLaserManager.h \
+                         FELFieldContainer.hpp FELParticleContainer.hpp \
+                         MithraBunch.h LorentzTransform.h Undulator.h
+INPUT_ENCODING         = UTF-8
+RECURSIVE              = NO
+USE_MDFILE_AS_MAINPAGE  = StudentGuide.md
+MARKDOWN_SUPPORT       = YES
+TOC_INCLUDE_HEADINGS   = 3
+FULL_PATH_NAMES        = NO
+STRIP_FROM_PATH        = .
+
+EXTRACT_ALL            = NO
+EXTRACT_STATIC         = YES
+EXTRACT_ANON_NSPACES    = YES
+EXTRACT_PRIVATE        = NO
+HIDE_UNDOC_MEMBERS     = YES
+HIDE_UNDOC_CLASSES     = YES
+JAVADOC_AUTOBRIEF      = YES
+SORT_MEMBER_DOCS       = NO
+SHOW_USED_FILES       = YES
+
+# Parse the mini-app without recursively preprocessing dependencies.
+ENABLE_PREPROCESSING   = YES
+SEARCH_INCLUDES        = NO
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+PREDEFINED             = KOKKOS_INLINE_FUNCTION= KOKKOS_FUNCTION= "KOKKOS_LAMBDA=[]"
+
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_IF_INCOMPLETE_DOC = YES
+WARN_AS_ERROR          = FAIL_ON_WARNINGS
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_COLORSTYLE        = LIGHT
+GENERATE_TREEVIEW      = YES
+SEARCHENGINE           = YES
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+GENERATE_LATEX         = NO
+GENERATE_XML           = NO
+GENERATE_MAN           = NO
+
+# Local SVG graphs and LaTeX formula images keep the result usable offline.
+# Tools: Graphviz dot, latex, dvips and Ghostscript.
+HAVE_DOT               = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = NO
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+DOT_GRAPH_MAX_NODES    = 30
+DOT_NUM_THREADS        = 1
+USE_MATHJAX            = NO

@@ -1,0 +1,41 @@
+/**
+ * @defgroup fel_runtime Program and timestep
+ * @brief Entry point, distributed initialization, PIC loop and diagnostics.
+ *
+ * Start with main() and FreeElectronLaserManager. Its lifecycle is inherited
+ * from IPPL BaseManager; the student guide explains the exact call order.
+ */
+
+/**
+ * @defgroup fel_config Configuration and units
+ * @brief JSON schema, parser checks and conversion to internal simulation units.
+ *
+ * Read config and read_config() before changing an input value. The FEL uses
+ * scaled internal units; the ChDR mesh constructor instead uses SI metres.
+ */
+
+/**
+ * @defgroup fel_fields Mesh, fields and solver selection
+ * @brief Uniform Cartesian layout, vector field types and the active solver alias.
+ *
+ * FELFieldContainer owns source and electromagnetic fields. The solver owns
+ * its three potential time levels. Its implementation is in IPPL's
+ * src/MaxwellSolvers, outside this focused documentation's input list.
+ * See @ref fel_mathematics for the exact stencil, field reconstruction and boundaries.
+ */
+
+/**
+ * @defgroup fel_particles Particles and initialization
+ * @brief Distributed particle attributes and host-side MITHRA bunch generation.
+ *
+ * The manager generates the bunch on rank zero, assigns charge and mass per
+ * actual generated particle, centres it and redistributes it through IPPL.
+ */
+
+/**
+ * @defgroup fel_physics Frame transforms and external field
+ * @brief Lorentz transforms and the analytic static-undulator model.
+ *
+ * These helpers support the active z-directed moving frame. Their comments
+ * distinguish general-looking interfaces from the directions actually supported.
+ */

@@ -79,6 +79,94 @@ class BeamCase:
         return math.degrees(math.acos(1.0 / (math.sqrt(self.epsilonR) * self.beta)))
 
 
+@dataclass(frozen=True)
+class UniformDensityEstimate:
+    """Density diagnostic for a uniformly occupied rectangular box.
+
+    This is deliberately a diagnostic, rather than a particle generator.  Its
+    cube-root volume per electron is often called an inter-electron spacing,
+    but it does not impose a lattice or predict a radiation line at that
+    length.  Independent Poisson positions have a different mean nearest
+    neighbour distance and broadband shot noise.
+    """
+
+    xMm: float
+    yMm: float
+    zMm: float
+    electronCount: float
+
+    def __post_init__(self):
+        for name, value in asdict(self).items():
+            if not math.isfinite(value) or value <= 0:
+                raise ValueError(f"{name} must be finite and positive")
+        volumeM3 = self.xMm * self.yMm * self.zMm * 1e-9
+        if not math.isfinite(volumeM3) or volumeM3 <= 0:
+            raise ValueError("Box volume must be finite and positive")
+        numberDensity = self.electronCount / volumeM3
+        if not math.isfinite(numberDensity) or numberDensity <= 0:
+            raise ValueError("Number density must be finite and positive")
+
+    @property
+    def volumeM3(self):
+        return self.xMm * self.yMm * self.zMm * 1e-9
+
+    @property
+    def numberDensity(self):
+        return self.electronCount / self.volumeM3
+
+    @property
+    def cubicSpacing(self):
+        """Cube root of the volume per electron, ``n^(-1/3)``, in metres."""
+        return self.numberDensity ** (-1.0 / 3.0)
+
+    @property
+    def poissonMeanNearestNeighbor(self):
+        """Mean nearest-neighbour distance for a 3-D Poisson process, in m."""
+        return math.gamma(4.0 / 3.0) * (3.0 / (4.0 * PI * self.numberDensity)) ** (1.0 / 3.0)
+
+    def metadata(self):
+        return {
+            "assumption": "Uniform rectangular density diagnostic; it does not impose particle ordering",
+            "box_mm": [self.xMm, self.yMm, self.zMm],
+            "volume_m3": self.volumeM3,
+            "number_density_per_m3": self.numberDensity,
+            "cube_root_volume_per_electron_m": self.cubicSpacing,
+            "cube_root_volume_per_electron_um": self.cubicSpacing * 1e6,
+            "poisson_mean_nearest_neighbor_m": self.poissonMeanNearestNeighbor,
+            "poisson_mean_nearest_neighbor_um": self.poissonMeanNearestNeighbor * 1e6,
+        }
+
+
+def frequenciesFromVacuumWavelengths(wavelengthsUm):
+    """Convert positive vacuum wavelengths in micrometres to unique sorted Hz values."""
+    wavelengthsUm = np.asarray(wavelengthsUm, dtype=float)
+    if wavelengthsUm.ndim != 1 or wavelengthsUm.size == 0:
+        raise ValueError("At least one vacuum wavelength is required")
+    if not np.all(np.isfinite(wavelengthsUm)) or np.any(wavelengthsUm <= 0):
+        raise ValueError("Vacuum wavelengths must be finite and positive")
+    with np.errstate(over="ignore", under="ignore", divide="ignore", invalid="ignore"):
+        frequenciesHz = LIGHT_SPEED / (wavelengthsUm * 1e-6)
+    if not np.all(np.isfinite(frequenciesHz)) or np.any(frequenciesHz <= 0):
+        raise ValueError("Vacuum wavelengths must map to finite positive frequencies")
+    return np.unique(frequenciesHz)
+
+
+def leastEvanescentLength(case, frequenciesHz):
+    """Return ``1/kappa(ky=0)=gamma*v/(2*pi*f)`` in metres.
+
+    It is the longest vacuum coupling length in the planar model at a given
+    frequency.  Every nonzero transverse Fourier wave number decays faster.
+    """
+    frequenciesHz = np.asarray(frequenciesHz, dtype=float)
+    if not np.all(np.isfinite(frequenciesHz)) or np.any(frequenciesHz <= 0):
+        raise ValueError("Frequencies must be finite and positive")
+    with np.errstate(over="ignore", under="ignore", divide="ignore", invalid="ignore"):
+        lengths = case.gamma * case.velocity / (2 * PI * frequenciesHz)
+    if not np.all(np.isfinite(lengths)) or np.any(lengths <= 0):
+        raise ValueError("Frequencies must map to finite positive coupling lengths")
+    return lengths
+
+
 @dataclass
 class ModeFields:
     incidentE: np.ndarray
@@ -226,13 +314,36 @@ def reconstructFields(case, frequencyHz, x, y=0.0, z=0.0, relativeTolerance=1e-8
 
 
 def bunchSpectra(case, frequenciesHz, singleSpectrum):
-    """Expected spectrum for independent Gaussian arrival times, same track."""
+    """Expected spectrum for independent Gaussian arrival times, same track.
+
+    ``incoherent`` is the conventional fixed-``N`` self term ``N*W1``.  It
+    equals the fixed-``N`` shot-noise fluctuation spectrum only when the smooth
+    bunch form factor is negligible.  This function does not create a
+    particular noisy particle realization.
+    """
     frequenciesHz = np.asarray(frequenciesHz)
     formFactorSquared = np.exp(-(2 * PI * frequenciesHz * case.sigmaTime)**2)
     n = case.electronCount
     incoherent = n * np.asarray(singleSpectrum)
     coherent = n * (n - 1) * formFactorSquared * np.asarray(singleSpectrum)
     return formFactorSquared, incoherent, coherent, incoherent + coherent
+
+
+def fixedCountShotNoiseFluctuation(case, frequenciesHz, singleSpectrum):
+    """Variance spectrum about the mean field for independent fixed-N arrivals.
+
+    For ``S=sum(exp(i*omega*t_j))``, this is
+    ``<|S-<S>|^2>*W1 = N*(1-|F|^2)*W1``.  It approaches ``N*W1`` only above
+    the smooth bunch form-factor bandwidth.  ``expm1`` retains accuracy when
+    the frequency is close to zero.
+    """
+    frequenciesHz = np.asarray(frequenciesHz, dtype=float)
+    if not np.all(np.isfinite(frequenciesHz)) or np.any(frequenciesHz < 0):
+        raise ValueError("Frequencies must be finite and nonnegative")
+    with np.errstate(over="ignore", under="ignore", invalid="ignore"):
+        exponent = 2 * PI * frequenciesHz * case.sigmaTime
+        noiseFraction = -np.expm1(-(exponent**2))
+    return case.electronCount * noiseFraction * np.asarray(singleSpectrum)
 
 
 def writeCsv(path, columns):
@@ -251,7 +362,7 @@ def fieldColumns(electric, magnetic, suffix=""):
     return result
 
 
-def makePlots(output, frequencies, results, profileFrequencyHz):
+def makePlots(output, frequencies, results, profileFrequencyHz, densityEstimate=None):
     os.environ.setdefault("MPLCONFIGDIR", str(output / ".matplotlib"))
     os.environ.setdefault("XDG_CACHE_HOME", str(output / ".cache"))
     Path(os.environ["XDG_CACHE_HOME"]).mkdir(parents=True, exist_ok=True)
@@ -264,6 +375,7 @@ def makePlots(output, frequencies, results, profileFrequencyHz):
     fig, axes = plt.subplots(3, 1, figsize=(9, 9), sharex=True, layout="constrained")
     anyRadiation = False
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    frequencyScale, frequencyUnit = (1e12, "THz") if np.max(frequencies) >= 1e12 else (1e9, "GHz")
     for index, entry in enumerate(results):
         case, data, caseDir, profile = entry
         color = colors[index % len(colors)]
@@ -271,9 +383,9 @@ def makePlots(output, frequencies, results, profileFrequencyHz):
         positive = data["single"] > 0
         anyRadiation |= bool(np.any(positive))
         if np.any(positive):
-            axes[0].loglog(frequencies[positive] / 1e9, data["single"][positive] * 1e9, label=label, color=color)
-            axes[1].loglog(frequencies[positive] / 1e9, data["total"][positive] * 1e9, label=label, color=color)
-        axes[2].semilogx(frequencies / 1e9, data["formFactor"], label=label, color=color)
+            axes[0].loglog(frequencies[positive] / frequencyScale, data["single"][positive] * frequencyScale, label=label, color=color)
+            axes[1].loglog(frequencies[positive] / frequencyScale, data["total"][positive] * frequencyScale, label=label, color=color)
+        axes[2].semilogx(frequencies / frequencyScale, data["formFactor"], label=label, color=color)
         if profile is not None:
             x, electric, magnetic = profile
             profileFig, profileAxes = plt.subplots(2, 1, figsize=(9, 6), sharex=True, layout="constrained")
@@ -290,15 +402,22 @@ def makePlots(output, frequencies, results, profileFrequencyHz):
             for extension in ["png", "svg"]:
                 profileFig.savefig(caseDir / f"field_profile.{extension}")
             plt.close(profileFig)
+    if densityEstimate is not None:
+        densityFrequency = LIGHT_SPEED / densityEstimate.cubicSpacing
+        if frequencies[0] <= densityFrequency <= frequencies[-1]:
+            for axis in axes:
+                axis.axvline(densityFrequency / frequencyScale, color="0.25", ls=":", lw=1.2)
+            axes[2].plot([], [], color="0.25", ls=":", lw=1.2,
+                         label=r"$c/n^{-1/3}$ diagnostic (not a radiation line)")
     for ax in axes[:2]:
-        ax.set_ylabel(r"$d^2W/(dz\,df)$ [J m$^{-1}$ GHz$^{-1}$]")
+        ax.set_ylabel(rf"$d^2W/(dz\,df)$ [J m$^{{-1}}$ {frequencyUnit}$^{{-1}}$]")
     if not anyRadiation:
         for ax in axes[:2]:
             ax.text(0.5, 0.5, "No propagating Cherenkov modes", transform=ax.transAxes, ha="center")
     axes[0].set_title("Single electron: energy entering the dielectric per path length")
     axes[1].set_title("Gaussian bunch: expected coherent + incoherent spectrum")
     axes[2].set_ylabel(r"$|F(f)|^2$")
-    axes[2].set_xlabel("Frequency [GHz]")
+    axes[2].set_xlabel(f"Frequency [{frequencyUnit}]")
     axes[2].set_ylim(-0.02, 1.02)
     axes[2].legend(loc="upper right", fontsize=8)
     firstCase = results[0][0]
@@ -319,6 +438,10 @@ def main(argv=None):
     parser.add_argument("--fmin-ghz", type=float, default=0.2)
     parser.add_argument("--fmax-ghz", type=float, default=200.0)
     parser.add_argument("--points", type=int, default=120, help="Log-spaced frequency samples")
+    parser.add_argument("--wavelength-um", nargs="+", type=float,
+                        help="Explicit positive vacuum wavelength sample(s) [um]; replaces --fmin-ghz/--fmax-ghz/--points")
+    parser.add_argument("--uniform-box-mm", nargs=3, type=float, metavar=("X", "Y", "Z"),
+                        help="Uniform-density diagnostic box dimensions [mm]; does not change the radiation model")
     parser.add_argument("--probe-depth-mm", type=float, default=1.0, help="Field probe at x=-depth, y=z=0")
     parser.add_argument("--profile-frequency-ghz", type=float, default=16.0)
     parser.add_argument("--profile-depth-mm", type=float, default=20.0)
@@ -327,19 +450,41 @@ def main(argv=None):
     parser.add_argument("--no-plots", action="store_true", help="Only export numerical results")
     parser.add_argument("--output", type=Path, default=Path(__file__).resolve().parent / "output")
     args = parser.parse_args(argv)
-    for value in [args.fmin_ghz, args.fmax_ghz, args.probe_depth_mm, args.profile_frequency_ghz, args.profile_depth_mm, args.rtol]:
+    for value in [args.probe_depth_mm, args.profile_frequency_ghz, args.profile_depth_mm, args.rtol]:
         if not math.isfinite(value) or value <= 0:
             parser.error("Frequencies, depths and rtol must be finite and positive")
-    if args.fmax_ghz <= args.fmin_ghz or args.points < 2 or args.rtol >= 1:
-        parser.error("Require fmax>fmin, points>=2 and 0<rtol<1")
+    if args.rtol >= 1:
+        parser.error("Require 0<rtol<1")
+    if args.wavelength_um is None:
+        for value in [args.fmin_ghz, args.fmax_ghz]:
+            if not math.isfinite(value) or value <= 0:
+                parser.error("Frequencies must be finite and positive")
+        if args.fmax_ghz <= args.fmin_ghz or args.points < 2:
+            parser.error("Require fmax>fmin and points>=2")
+        frequencies = np.geomspace(args.fmin_ghz * 1e9, args.fmax_ghz * 1e9, args.points)
+    else:
+        try:
+            frequencies = frequenciesFromVacuumWavelengths(args.wavelength_um)
+        except ValueError as error:
+            parser.error(str(error))
     try:
         cases = [BeamCase(a, energy, pulse, args.charge_nc, args.epsilon_r)
                  for a, energy, pulse in product(args.gap_mm, args.energy_mev, args.pulse_ps)]
     except ValueError as error:
         parser.error(str(error))
+    densityEstimate = None
+    if args.uniform_box_mm is not None:
+        try:
+            densityEstimate = UniformDensityEstimate(*args.uniform_box_mm, cases[0].electronCount)
+        except ValueError as error:
+            parser.error(str(error))
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    frequencies = np.geomspace(args.fmin_ghz * 1e9, args.fmax_ghz * 1e9, args.points)
+    if densityEstimate is not None:
+        print("Uniform-density diagnostic: "
+              f"n={densityEstimate.numberDensity:.6g} m^-3, "
+              f"n^(-1/3)={densityEstimate.cubicSpacing * 1e6:.6g} um "
+              "(this does not impose a particle lattice or select a radiation wavelength)", flush=True)
     results = []
     # Pulse-duration scans reuse the same single-electron calculation.
     cache = {}
@@ -362,10 +507,16 @@ def main(argv=None):
         radiation, probe, profile = cache[key]
         single, work, errors = radiation.T
         formFactor, incoherent, coherent, total = bunchSpectra(case, frequencies, single)
+        shotNoiseFluctuation = fixedCountShotNoiseFluctuation(case, frequencies, single)
+        wavelengthsUm = LIGHT_SPEED / frequencies * 1e6
+        couplingLengthsUm = leastEvanescentLength(case, frequencies) * 1e6
         columns = {"frequency_Hz": frequencies, "frequency_GHz": frequencies / 1e9,
+                   "vacuum_wavelength_um": wavelengthsUm,
+                   "least_evanescent_length_um": couplingLengthsUm,
                    "single_electron_J_per_m_per_Hz": single, "work_check_J_per_m_per_Hz": work,
                    "quadrature_error_estimate_J_per_m_per_Hz": errors,
                    "form_factor_squared": formFactor, "bunch_incoherent_J_per_m_per_Hz": incoherent,
+                   "bunch_fixed_N_shot_noise_fluctuation_J_per_m_per_Hz": shotNoiseFluctuation,
                    "bunch_coherent_cross_term_J_per_m_per_Hz": coherent, "bunch_total_J_per_m_per_Hz": total}
         writeCsv(caseDir / "spectrum.csv", columns)
         if probe is not None:
@@ -379,14 +530,17 @@ def main(argv=None):
             writeCsv(caseDir / "field_profile.csv", {"x_m": x, **fieldColumns(electric, magnetic)})
         positive = single > 0
         balance = float(np.max(np.abs(single[positive] - work[positive]) / single[positive])) if np.any(positive) else 0.0
+        hasBand = len(frequencies) > 1 and frequencies[-1] > frequencies[0]
         metadata = {"parameters": asdict(case), "gamma": case.gamma, "beta": case.beta,
                     "electron_count": case.electronCount, "sigma_z_mm": case.velocity * case.sigmaTime * 1e3,
                     "form_factor_e_minus_one_GHz": 1 / (2 * PI * case.sigmaTime) / 1e9,
+                    "uniform_density_diagnostic": densityEstimate.metadata() if densityEstimate is not None else None,
                     "internal_cherenkov_angle_deg": case.angleDeg,
                     "flux_work_max_relative_difference": balance,
-                    "sampled_band_bunch_energy_J_per_m": float(np.trapezoid(total, frequencies)),
+                    "sampled_band_bunch_energy_J_per_m": float(np.trapezoid(total, frequencies)) if hasBand else None,
+                    "sampled_band_note": "Undefined without a nonzero frequency interval; spectrum.csv reports spectral density" if not hasBand else None,
                     "settings": {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},
-                    "model": "Infinite, planar, lossless, nondispersive half-space; prescribed identical transverse tracks; independent Gaussian arrival times",
+                    "model": "Infinite, planar, lossless, nondispersive half-space; prescribed identical transverse tracks; independent Gaussian arrival times. At frequencies where the smooth form factor is negligible, N*W1 is the fixed-N shot-noise fluctuation spectrum.",
                     "normalization": "Forward Fourier transform integral dt dy; inverse /(2pi)^2. Spectrum uses positive f in Hz and is per metre of trajectory.",
                     "field_probe_m": [-args.probe_depth_mm * 1e-3, 0, 0],
                     "reference": "https://arxiv.org/abs/2105.01111, Section III; independent SI derivation in README.md"}
@@ -394,7 +548,7 @@ def main(argv=None):
         results.append((case, {"single": single, "total": total, "formFactor": formFactor}, caseDir, profile))
         print(f"  angle={case.angleDeg}, sigma_z={metadata['sigma_z_mm']:.6g} mm, flux/work relative difference={balance:.3g}", flush=True)
     if not args.no_plots:
-        makePlots(output, frequencies, results, args.profile_frequency_ghz * 1e9)
+        makePlots(output, frequencies, results, args.profile_frequency_ghz * 1e9, densityEstimate)
     print(f"Results: {output}")
     return 0
 

@@ -1,6 +1,8 @@
 """Independent physical identities and CLI regression checks; run with unittest."""
 
 from dataclasses import replace
+from contextlib import redirect_stderr
+import io
 import json
 import math
 from pathlib import Path
@@ -12,8 +14,10 @@ from numpy.testing import assert_allclose
 from scipy.special import k0, k1
 
 from chdr_1d import (BeamCase, ELEMENTARY_CHARGE, EPSILON_0, LIGHT_SPEED,
-                     MU_0, PI, VACUUM_IMPEDANCE, bunchSpectra, main,
-                     reconstructFields, solveMode, spectralRadiation)
+                     MU_0, PI, VACUUM_IMPEDANCE, UniformDensityEstimate,
+                     bunchSpectra, frequenciesFromVacuumWavelengths,
+                     fixedCountShotNoiseFluctuation, leastEvanescentLength,
+                     main, reconstructFields, solveMode, spectralRadiation)
 
 
 class HalfSpaceTests(unittest.TestCase):
@@ -114,6 +118,9 @@ class HalfSpaceTests(unittest.TestCase):
         ff, incoherent, coherent, total = bunchSpectra(self.case, np.array([frequency]), np.array([1.0]))
         self.assertAlmostEqual(float(ff[0]), math.exp(-1), places=14)
         assert_allclose(total, incoherent + coherent)
+        fixedCountNoise = fixedCountShotNoiseFluctuation(self.case, np.array([frequency]), np.array([1.0]))
+        assert_allclose(fixedCountNoise, self.case.electronCount * (1 - math.exp(-1)))
+        assert_allclose(fixedCountShotNoiseFluctuation(self.case, np.array([0.0]), np.array([1.0])), 0)
         longer = bunchSpectra(replace(self.case, pulsePs=20), np.array([frequency]), np.array([1.0]))
         self.assertLess(longer[-1][0], total[0])
         singleCase = replace(self.case, chargeNc=ELEMENTARY_CHARGE * 1e9)
@@ -124,6 +131,26 @@ class HalfSpaceTests(unittest.TestCase):
         n = self.case.electronCount
         assert_allclose(doubled[2] / coherent, (2 * n) * (2 * n - 1) / (n * (n - 1)))
 
+    def test_uniform_density_diagnostic_and_optical_coupling_length(self):
+        density = UniformDensityEstimate(1, 1, 1, 1e-9 / ELEMENTARY_CHARGE)
+        assert_allclose(density.volumeM3, 1e-9)
+        assert_allclose(density.numberDensity, 1e-9 / ELEMENTARY_CHARGE / 1e-9)
+        assert_allclose(density.cubicSpacing * 1e6, 0.543129590673, rtol=1e-12)
+        self.assertLess(density.poissonMeanNearestNeighbor, density.cubicSpacing)
+        frequencies = frequenciesFromVacuumWavelengths([0.5, 1.0])
+        assert_allclose(frequencies, [LIGHT_SPEED / 1e-6, LIGHT_SPEED / 0.5e-6])
+        self.assertEqual(len(frequenciesFromVacuumWavelengths([0.5, 0.5])), 1)
+        opticalCase = replace(self.case, energyMeV=60)
+        expectedLength = opticalCase.gamma * opticalCase.beta * 0.5e-6 / (2 * PI)
+        assert_allclose(leastEvanescentLength(opticalCase, frequencies[-1]) * 1e6,
+                        expectedLength * 1e6, rtol=2e-14)
+        with self.assertRaises(ValueError):
+            frequenciesFromVacuumWavelengths([0])
+        with self.assertRaises(ValueError):
+            frequenciesFromVacuumWavelengths([1e-320])
+        with self.assertRaises(ValueError):
+            UniformDensityEstimate(1e200, 1e200, 1e200, 1)
+
     def test_invalid_parameters(self):
         for field in ["gapMm", "energyMeV", "pulsePs", "chargeNc", "epsilonR"]:
             for value in [0, -1, float("nan"), float("inf")]:
@@ -131,6 +158,11 @@ class HalfSpaceTests(unittest.TestCase):
                     replace(self.case, **{field: value})
         with self.assertRaises(ValueError):
             reconstructFields(self.case, 16e9, self.case.gap)
+        with redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                main(["--wavelength-um", "1e-320", "--no-fields", "--no-plots"])
+            with self.assertRaises(SystemExit):
+                main(["--uniform-box-mm", "1e200", "1e200", "1e200", "--no-fields", "--no-plots"])
 
     def test_cli_parameter_sweep_and_metadata(self):
         with tempfile.TemporaryDirectory(prefix="chdr-test-") as folder:
@@ -144,6 +176,23 @@ class HalfSpaceTests(unittest.TestCase):
                 metadata = json.loads((caseDir / "parameters.json").read_text())
                 self.assertLess(metadata["flux_work_max_relative_difference"], 1e-8)
                 self.assertIn(metadata["parameters"]["pulsePs"], [5, 20])
+
+    def test_cli_optical_wavelength_and_density_diagnostic(self):
+        with tempfile.TemporaryDirectory(prefix="chdr-optical-test-") as folder:
+            main(["--gap-mm", "0.01", "--charge-nc", "1", "--pulse-ps", "3.33576",
+                  "--wavelength-um", "0.5", "0.5", "--uniform-box-mm", "1", "1", "1",
+                  "--no-fields", "--no-plots", "--output", folder])
+            caseDir, = Path(folder).glob("case_*")
+            data = np.genfromtxt(caseDir / "spectrum.csv", delimiter=",", names=True)
+            self.assertAlmostEqual(float(data["vacuum_wavelength_um"]), 0.5, places=13)
+            assert_allclose(data["bunch_fixed_N_shot_noise_fluctuation_J_per_m_per_Hz"],
+                            data["bunch_incoherent_J_per_m_per_Hz"])
+            metadata = json.loads((caseDir / "parameters.json").read_text())
+            diagnostic = metadata["uniform_density_diagnostic"]
+            self.assertAlmostEqual(diagnostic["cube_root_volume_per_electron_um"],
+                                   0.543129590673, places=12)
+            self.assertIsNone(metadata["sampled_band_bunch_energy_J_per_m"])
+            self.assertIn("Undefined", metadata["sampled_band_note"])
 
 
 if __name__ == "__main__":

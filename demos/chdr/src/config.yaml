@@ -1,0 +1,36 @@
+# Quick geometry inspection: 102,400 cells, with 2.5 mm spacing.
+# Coordinates are laboratory (x,y,z); the beam travels along +z.
+# The compact 25 mm prism depth is an assumption, not a measured CLARA value.
+schema_version: 1
+units:
+  length: mm
+
+domain:
+  lower_corner: [-58.0, -50.0, -55.0]
+  size: [100.0, 100.0, 160.0]
+  background: vacuum
+
+mesh:
+  cells: [40, 40, 64]
+  material_sampling: cell_center_staircase
+  # FEL-like z decomposition; all axes may be enabled for scaling studies.
+  decompose: [false, false, true]
+
+materials:
+  vacuum: {epsilon_r: 1.0, mu_r: 1.0}
+  radiator: {epsilon_r: 2.13, mu_r: 1.0}
+
+geometry:
+  - name: radiator_prism
+    type: prism
+    material: radiator
+    vertices:
+      - [0.0, -20.0, 0.0]
+      - [-25.0, -20.0, 25.0]
+      - [0.0, -20.0, 50.0]
+    axis: [0.0, 1.0, 0.0]
+    height: 40.0
+
+output:
+  path: mesh-1-output
+  preview_max_points_per_axis: 256

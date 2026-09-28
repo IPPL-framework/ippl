@@ -1,27 +1,22 @@
-// Free Electron Laser simulation.
-//
-//   Usage:
-//     srun ./FreeElectronLaser [<config.json>] --info [0-5]
-//    or
-//    mpirun -np [N] ./FreeElectronLaser  [<config.json>] --info [0-5]
-//
-//   Reads a MITHRA-style JSON job file (by default the config.json staged next to
-//   the build-tree executable) describing the grid, the relativistic electron
-//   bunch, and the undulator. The simulation
-//   runs in a Lorentz frame co-moving with the bunch: a charge-conserving
-//   current is deposited onto the grid, Maxwell's equations are advanced with a
-//   standard FDTD solver (absorbing boundaries), and the particles are pushed
-//   with a relativistic Boris pusher that also feels the (frame-transformed)
-//   undulator field. Radiated power is written to a CSV and a
-//   narrow-band radiation diagnostic is produced alongside it.
+/** @file FreeElectronLaser.cpp
+ * @brief Entry point for the three-dimensional, moving-frame FEL PIC mini-app.
+ * @ingroup fel_runtime
+ *
+ * Reads a MITHRA-style JSON job file, builds the distributed simulation through
+ * FreeElectronLaserManager, and runs its prescribed number of steps. The active
+ * solver advances collocated four-potentials with the nonstandard vacuum stencil;
+ * a relativistic Boris pusher also samples a frame-transformed static undulator.
+ * Current deposition, initialization transients and diagnostics have validation
+ * limits described in the student guide; this executable does not model media.
+ *
+ * Usage: `mpirun -np N ./FreeElectronLaser /path/to/config.json --info 5`.
+ * Without a positional path, the fallback `config.json` is relative to the
+ * process working directory. CMake stages a copy beside the executable, but does
+ * not make the executable search that directory automatically.
+ */
 
-
-
-    // "resolution": [96, 96, 3000],
-    // "resolution": [48, 48, 1500],
-
-constexpr unsigned Dim = 3;
-using T                = double;
+constexpr unsigned Dim = 3; ///< Spatial dimension; the application assumes beam motion along z.
+using T                = double; ///< Floating-point type for particles, fields and manager.
 
 #include "Ippl.h"
 
@@ -33,9 +28,21 @@ using T                = double;
 #include "FreeElectronLaserManager.h"
 
 #ifndef IPPL_FEL_DEFAULT_CONFIG
+/// Default job-file path; relative paths resolve from the working directory.
 #define IPPL_FEL_DEFAULT_CONFIG "config.json"
 #endif
 
+/** @brief Initialize IPPL, run the FEL manager, write timings and finalize IPPL.
+ * @param argc Number of command-line arguments; IPPL initialization may consume options.
+ * @param argv Command-line arguments; the remaining first non-option argument at
+ * index 1 selects the JSON file. Later positional arguments are not searched.
+ * @return Zero on normal completion. Configuration/runtime exceptions are not caught here.
+ *
+ * The inner scope destroys fields, particles and their Kokkos storage before
+ * ippl::finalize(). Optional Catalyst finalization occurs after the last step.
+ * Timing output `timing.dat` is written in the working directory, independently
+ * of the configured diagnostic output directory.
+ */
 int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     {
@@ -44,8 +51,7 @@ int main(int argc, char* argv[]) {
         static IpplTimings::TimerRef mainTimer = IpplTimings::getTimer("total");
         IpplTimings::startTimer(mainTimer);
 
-        // First positional argument (if any, and not an --option) overrides the
-        // example configuration staged next to the build-tree executable.
+        // Only argv[1] is inspected for a job-file override after initialization.
         std::string config_path = IPPL_FEL_DEFAULT_CONFIG;
         if (argc > 1 && argv[1][0] != '-') {
             config_path = argv[1];

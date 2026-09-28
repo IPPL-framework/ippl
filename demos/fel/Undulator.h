@@ -1,3 +1,7 @@
+/** @file Undulator.h
+ * @brief Prescribed planar-undulator magnetic field in laboratory coordinates.
+ * @ingroup fel_physics
+ */
 #ifndef UNDULATOR_H
 #define UNDULATOR_H
 #include <Kokkos_Core.hpp>
@@ -9,12 +13,27 @@
 #include "units.h"
 #include "LorentzTransform.h"
 namespace ippl {
+    /** @brief Host-created parameters in FEL's internal c=1 unit system.
+     * @ingroup fel_physics
+     * @tparam scalar Floating-point type used for lengths and field amplitude.
+     *
+     * The amplitude follows @f$K=eB_0\lambda_u/(2\pi m_e)@f$, where e and
+     * m_e are the positive electron-charge magnitude and electron mass expressed
+     * in the internal units from units.h. The constructor does not convert SI
+     * lengths or validate the supplied period and length.
+     */
     template <typename scalar>
     struct undulator_parameters {
-        scalar lambda_u;  // MITHRA: lambda_u
-        scalar K;         // Undulator parameter
-        scalar length;
-        scalar B_magnitude;
+        scalar lambda_u;  ///< Laboratory undulator period, in internal length units.
+        scalar K;         ///< Dimensionless deflection parameter; its sign sets the field sign.
+        scalar length;    ///< Length of the sinusoidal section, in internal length units.
+        scalar B_magnitude;  ///< B0 in internal magnetic-field units, not tesla.
+        /** @brief Precompute the laboratory magnetic amplitude on the host.
+         * @param K_undulator_parameter Dimensionless undulator deflection parameter.
+         * @param lambda_u Positive laboratory period in internal length units.
+         * @param _length Nonnegative sinusoidal-section length in internal length units.
+         * @pre Finite parameters and lambda_u>0; no input checks are performed here.
+         */
         undulator_parameters(scalar K_undulator_parameter, scalar lambda_u, scalar _length)
             : lambda_u(lambda_u)
             , K(K_undulator_parameter)
@@ -24,21 +43,37 @@ namespace ippl {
         }
     };
     /**
-     * @brief Struct representing an undulator.
+     * @brief Static planar-undulator field with prescribed Gaussian entrance/exit fringes.
+     * @ingroup fel_physics
      *
      * @tparam scalar Type of the scalar values (e.g., float, double).
+     *
+     * This value object samples an external laboratory field; it does not evolve
+     * fields or model a material. All lengths and fields use units.h scales.
+     * The laboratory electric field is zero. The field is independent of x and
+     * has hyperbolic dependence on y, with no finite transverse aperture.
+     * Constructor and evaluation are host/device callable; store the object by
+     * value in the particle-push kernel. FreeElectronLaserManager first converts
+     * particle positions to the lab frame, samples this object, then boosts its
+     * E/B pair into the moving frame.
+     *
+     * @note The fringe profile is prescribed, not a magnetostatic boundary-value
+     * solution. Its phase is fixed independently at each end; it matches the
+     * sinusoidal exit values when length is an integer number of periods.
+     * No such length constraint is checked by this class.
      */
     template <typename scalar>
     struct Undulator {
         undulator_parameters<scalar> uparams;  ///< Parameters of the undulator.
-        scalar distance_to_entry;              ///< Distance to the entry of the undulator.
-        scalar k_u;                            ///< Wavenumber of the undulator.
+        scalar distance_to_entry;              ///< Laboratory z coordinate of entry, internal length.
+        scalar k_u;                            ///< Wavenumber 2*pi/lambda_u, inverse internal length.
 
         /**
          * @brief Constructor to initialize undulator parameters and calculate k_u.
          *
-         * @param p Parameters of the undulator.
-         * @param dte Distance to the entry of the undulator.
+         * @param p Host-prepared internal-unit undulator parameters.
+         * @param dte Laboratory z coordinate of entry in internal length units.
+         * @pre p.lambda_u is finite and positive; this class performs no validation.
          */
         KOKKOS_FUNCTION Undulator(const undulator_parameters<scalar>& p, scalar dte)
             : uparams(p)
@@ -46,11 +81,28 @@ namespace ippl {
             , k_u(2 * M_PI / p.lambda_u) {}
 
         /**
-         * @brief Overloaded operator() to compute magnetic field components.
+         * @brief Evaluate the laboratory (E,B) pair without allocations.
          *
-         * @param position_in_lab_frame Position vector in the lab frame.
-         * @return Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>>
-         *         Pair containing magnetic field and its derivative.
+         * Inside the sinusoidal section, with @f$\zeta=z-z_{\rm entry}@f$,
+         * @f[
+         * E_x=E_y=E_z=B_x=0,\qquad
+         * B_y=B_0\cosh(k_u y)\sin(k_u\zeta),\qquad
+         * B_z=B_0\sinh(k_u y)\cos(k_u\zeta).
+         * @f]
+         * Before entry use @f$\delta=z-z_{\rm entry}<0@f$; at/after exit use
+         * @f$\delta=z-z_{\rm entry}-L\ge0@f$. Both fringes are implemented as
+         * @f[
+         * f=\exp[-(k_u\delta)^2/2],\qquad
+         * B_y=B_0\cosh(k_u y)k_u\delta f,\qquad
+         * B_z=B_0\sinh(k_u y)f.
+         * @f]
+         * @param position_in_lab_frame Laboratory (x,y,z) in internal length units.
+         * @return Pair first=E (zero), second=B, in internal field units.
+         * No derivative is returned.
+         * @note The current strict entrance comparisons leave the field zero at
+         * exactly z=distance_to_entry. At nonzero y this differs from the limiting
+         * longitudinal field of the adjacent branches. Large |k_u*y| can overflow
+         * the hyperbolic functions; the intended use is near the undulator axis.
          */
         KOKKOS_INLINE_FUNCTION Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>>
         operator()(const ippl::Vector<scalar, 3>& position_in_lab_frame) const noexcept {
@@ -61,9 +113,9 @@ namespace ippl {
             using Kokkos::sinh;
 
             Kokkos::pair<ippl::Vector<scalar, 3>, ippl::Vector<scalar, 3>>
-                ret;             // Return pair containing magnetic field and its derivative.
-            ret.first  = scalar(0);  // Initialize magnetic field vector.
-            ret.second = scalar(0);  // Initialize derivative vector.
+                ret;             // First is laboratory E; second is laboratory B.
+            ret.first  = scalar(0);  // No laboratory electric field.
+            ret.second = scalar(0);  // Magnetic field defaults to zero.
 
             // If the position is before the undulator entry.
             if (position_in_lab_frame[2] < distance_to_entry) {

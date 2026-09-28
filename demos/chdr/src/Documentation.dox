@@ -1,0 +1,40 @@
+/**
+ * @defgroup chdr_config Input configuration
+ * @brief Read and validate the version-1 YAML into laboratory-frame SI values.
+ *
+ * Start with chdr::MeshConfig and chdr::readMeshConfig(). Parser helpers enforce
+ * the geometry/material contract before any large field allocation occurs.
+ */
+
+/**
+ * @defgroup chdr_geometry Analytic radiator geometry
+ * @brief Host-validated, device-copyable prism and brick point predicates.
+ *
+ * Both shapes expose contains(x,y,z) and volume(). They have no shared base
+ * class: mesh construction selects a template instantiation for the shape.
+ */
+
+/**
+ * @defgroup chdr_mesh Distributed mesh construction
+ * @brief FEL-compatible fields, cell-centre sampling, halo checks and MPI diagnostics.
+ *
+ * Read mesh-1.cpp in execution order, starting at main() and construct().
+ * This stage constructs a static material field and does not advance Maxwell's
+ * equations or particles.
+ */
+
+/**
+ * @defgroup chdr_output Output and visualization
+ * @brief Self-contained Python generation for analytic surfaces and sampled-field PDFs.
+ *
+ * The C++ emitter writes Python source. Python later creates the PDF and optional
+ * interactive view. Keep this separation when adding output features.
+ */
+
+/**
+ * @defgroup chdr_tests Unit and integration checks
+ * @brief Known geometry cases, invalid-input checks and independent output verification.
+ *
+ * test_geometry.cpp exercises building blocks. verify_mesh_output.py validates
+ * complete mesh runs and compares diagnostics across MPI decompositions.
+ */

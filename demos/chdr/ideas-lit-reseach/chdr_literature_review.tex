@@ -8,6 +8,7 @@
 \usepackage{booktabs,tabularx,array}
 \usepackage{enumitem}
 \usepackage{xcolor}
+\usepackage{graphicx}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,patterns}
 \usepackage{caption}
@@ -744,7 +745,292 @@ The listed simulations and convergence checks are recommendations;
 no field simulation or solver modification was performed for this report.
 
 \clearpage
+\section{Measured Cherenkov bands and the current 1D study}
+\label{sec:measurement-bands}
+
+The experimental literature supports a GHz ChDR bunch-length diagnostic
+for our present beam parameters. Optical ChDR has also been measured,
+but matching its wavelength does not establish comparable coupling or
+demonstrate sensitivity to optical microbunching.
+
+\textbf{Parameters for this comparison.}
+The current 1D study uses \(K=60\unit{MeV}\) kinetic energy,
+\(|Q|=1\unit{nC}\) and \(\sigma_z=1\unit{mm}\) rms. These are the
+updated study values, distinct from the original \(5\unit{nC}\),
+\(3\unit{mm}\) setup retained in Sec.~\ref{sec:setup}.
+They give \(N=6.242\times10^9\), \(\gamma=118.417\),
+\(\beta=0.9999643\) and \(\sigma_t=\sigma_z/(\beta c)=3.33576\unit{ps}\).
+We retain \(\sigma_x=\sigma_y=1\unit{mm}\); the actual beam-centre--surface
+gap \(a\) is still to be chosen. Our two cases are the full bunch envelope
+and longitudinal features near the vacuum wavelength
+\(\lambda_0=0.5\unit{\mu m}\).
+
+\subsection{Direct GHz and sub-THz ChDR measurements}
+
+A \emph{filter passband}, a detector's response band, the interval retained
+for spectral reconstruction and a source linewidth describe different
+quantities. Table~\ref{tab:measured-ghz} keeps these distinctions explicit.
+The closest geometry has electrons passing beside a dielectric, although
+some experiments operated in air or used a hollow radiator.
+
+\begin{table}[!ht]
+\centering
+\small
+\renewcommand{\arraystretch}{1.14}
+\begin{tabularx}{\linewidth}{@{}p{0.20\linewidth}Y Y@{}}
+\toprule
+Experiment & Beam and radiator & Verified measured band / observable\\
+\midrule
+Tomsk 2010\newline Potylitsyn et al.\ \cite{potylitsyn2010diagnostics}
+& \(6.1\unit{MeV}\), up to about \(16\unit{pC}\) per bunch;
+  \(\sigma_z=1.2\unit{mm}\). Long train, external PTFE prism in air,
+  \(a=25\unit{mm}\).
+& Integrated angular/power scans. Detector response calibrated over
+  \(17.6\)--\(27.3\unit{GHz}\) (\(11\)--\(17\unit{mm}\));
+  not a resolved spectrum.\\[5pt]
+CLEAR 2020\newline Curcio et al.\ \cite{curcio2020bunchlength}
+& About \(200\unit{MeV}\) facility context; examples use
+  \(100\unit{pC}\) and about \(400\unit{pC}\).
+  Hollow PTFE prism, \(5\unit{mm}\) bore radius.
+& Filter channels \(60\pm1\), \(84\pm1\),
+  \(113.5\pm9\unit{GHz}\). Bunch lengths checked with an RF deflector.\\[5pt]
+CLARA 2020\newline Curcio et al.\ \cite{curcio2020bunchlength}
+& \(35\unit{MeV}\), \(70\unit{pC}\); external PTFE prism,
+  \(a=1\unit{mm}\). Reconstructed duration
+  \(686\pm14\unit{fs}\) FWHM.
+& Interferometric spectrum; \(300\)--\(800\unit{GHz}\)
+  retained for reconstruction, with extrapolation outside that interval.\\[5pt]
+CLEAR 2025\newline Davut et al.\ \cite{davut2025monitor}
+& Experimental range \(167.0\)--\(167.9\unit{MeV}\),
+  \(87.5\)--\(115.5\unit{pC}\),
+  \(0.098\)--\(1.167\unit{ps}\) rms; two alumina radiators.
+& Integrated detector channels \(60\)--\(90\) and
+  \(400\)--\(600\unit{GHz}\), without bandpass filters.
+  Responsivity-weighted centres: \(76.2\), \(503.5\unit{GHz}\).\\
+\bottomrule
+\end{tabularx}
+\caption{Selected electron ChDR measurements. Frequency intervals are
+instrument or analysis bands, not the full emission bandwidth.}
+\label{tab:measured-ghz}
+\end{table}
+
+Tomsk is close in bunch length; CLEAR 2020 supplies useful few-ps
+measurement channels. CLARA has a nearby energy but a much shorter bunch.
+CLEAR 2025 targets sub-ps bunches; its high-frequency channel need not suit
+our envelope. Its AWAKE application concerns CERN's experiment, distinct
+from Argonne's AWA. Train-integrated yields cannot be compared directly
+with a single AWA bunch, and a facility's available energy range does not
+identify the energy of a particular measurement.
+
+\clearpage
+\subsection{What the measured bands mean for a 1 mm bunch}
+
+Let \(g(t)\) be the normalized arrival-time density at a fixed longitudinal
+plane, so that \(\int g(t)\,\dd t=1\). Its form factor is
+\begin{equation}
+ F(f)=\int g(t)e^{i2\pi ft}\,\dd t,\qquad
+ |F(f)|^2=e^{-(2\pi f\sigma_t)^2},\qquad
+ f_*\equiv\frac{1}{2\pi\sigma_t}=47.712\unit{GHz}.
+ \label{eq:current-form-factor}
+\end{equation}
+The Gaussian expression is the spectral factor used, for example, in
+Ref.~\cite{curcio2020bunchlength}, Eq.~(10).
+\(F\) is the complex amplitude surviving the addition of phases across
+the normalized smooth bunch; \(|F|^2\) weights the coherent pair term.
+The scale \(f_*\), where \(|F|^2=1/e\), corresponds to
+\(\lambda_0=6.283\unit{mm}\). It is not the peak of the emitted spectrum.
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=\linewidth]{output/measurement_bandwidth/measurement_bands_vs_bunch.pdf}
+\caption{Our calculated Gaussian squared form factor and published bands
+from Refs.~\cite{potylitsyn2010diagnostics,curcio2020bunchlength,davut2025monitor}.
+The bars retain the differing band definitions. The curve excludes the
+radiator response, transverse beam distribution and detector response;
+it is not a predicted measured spectrum.}
+\label{fig:measurement-bands}
+\end{figure}
+
+At \(60\), \(84\) and \(113.5\unit{GHz}\), our \(|F|^2\) is
+\(0.206\), \(0.0451\) and \(0.00349\), respectively; at
+\(400\unit{GHz}\) it is \(2.99\times10^{-31}\).
+An initial \textbf{\(20\)--\(120\unit{GHz}\) study range} therefore samples
+the useful slope and overlaps published channels. This is a proposed
+design range, subject to collection efficiency and signal-to-noise ratio,
+not a final detector specification.
+
+For \(N\) independent electrons following identical trajectories,
+the expected spectral energy satisfies
+\begin{equation}
+ \langle\mathcal W_N(f)\rangle
+ =\bigl[N+N(N-1)|F(f)|^2\bigr]\mathcal W_1(f),
+ \label{eq:measurement-expected-spectrum}
+\end{equation}
+where \(\mathcal W_1=\dd W_1/\dd f\) is the single-electron spectrum in
+the same collection geometry. The expectation is over unknown electron
+arrival times drawn from \(g\); taking data from many bunches is not
+required to define the exact spectrum of one bunch. Pair and self terms
+are equal when \((N-1)|F|^2=1\), here at \(226.6\unit{GHz}\).
+This crossover is not a detector sensitivity threshold.
+
+\clearpage
+\subsection{Optical measurements and the gap at 60 MeV}
+
+\begin{table}[!ht]
+\centering
+\small
+\renewcommand{\arraystretch}{1.17}
+\begin{tabularx}{\linewidth}{@{}p{0.21\linewidth}Y Y@{}}
+\toprule
+Experiment & Verified optical measurement & Interpretation\\
+\midrule
+CESR 2020\newline Kieffer et al.\ \cite{kieffer2020incoherent}
+& \(5.3\unit{GeV}\) electrons at \(600\pm10\unit{nm}\);
+  \(2.1\unit{GeV}\) electrons imaged with an unfiltered camera
+  sensitive over \(0.8\)--\(1.7\unit{\mu m}\).
+& Incoherent ChDR from fused silica; transverse diagnostics.
+  The camera range is not a resolved NIR spectrum.\\[5pt]
+ATF2 2019\newline Bergamaschi et al.\ \cite{bergamaschi2019diagnostics}
+& \(1.3\unit{GeV}\) electrons; \(700\unit{nm}\) filter,
+  model FB700-40 (nominal \(40\unit{nm}\) FWHM).
+& Filtered ChDR beam-profile measurement, not a longitudinal
+  microbunching demonstration.\\[5pt]
+CLEAR 2019\newline Alves et al.\ \cite{alves2019diagnostics}
+& \(200\unit{MeV}\), \(500\unit{pC}\), transverse rms
+  \(130\unit{\mu m}\); \(600\pm10\unit{nm}\) filter.
+& Preliminary in-air fused-silica measurement. Signal beyond
+  \(7\unit{mm}\) gap requires separate interpretation.\\
+\bottomrule
+\end{tabularx}
+\caption{Electron optical ChDR measurements relevant to the
+\(0.5\unit{\mu m}\) target. Optical coverage alone does not establish
+microbunching sensitivity.}
+\label{tab:measured-optical}
+\end{table}
+
+For CESR, captions specify \(600\pm10\unit{nm}\), whereas the prose
+says \(10\unit{nm}\) bandpass: a \(20\unit{nm}\) FWHM is therefore
+not established. The ATF2 filter manufacturer's specification is
+\(40\pm8\unit{nm}\) FWHM.\footnote{Thorlabs catalogue,
+\href{https://www.thorlabs.com/catalogpages/V21/395.pdf}{p.~395, FB700-40}.}
+The preliminary CLEAR result uses a different environment; its large-gap
+signal needs a mechanism and background assessment before comparison
+with the ideal vacuum planar model.
+
+For that model, \(k_z=\omega/v\) and vacuum dispersion give
+\begin{equation}
+ \kappa_{\min}=\frac{\omega}{\gamma v},\qquad
+ \ell_\perp=\frac{1}{\kappa_{\min}}
+ =\frac{\gamma\beta\lambda_0}{2\pi},\qquad
+ \frac{\mathcal W_{k_y=0}(a)}{\mathcal W_{k_y=0}(0)}
+ =e^{-2a/\ell_\perp}.
+ \label{eq:optical-gap-comparison}
+\end{equation}
+Here \(\ell_\perp\) is the amplitude decay length of the least-evanescent
+Fourier component; the last expression is its power suppression at gap
+\(a\), not a complete camera signal. At \(60\unit{MeV}\) and
+\(\lambda_0=0.5\unit{\mu m}\),
+\(f=599.6\unit{THz}\) and \(\ell_\perp=9.42\unit{\mu m}\).
+The modal power factors at \(a=10\unit{\mu m}\) and
+\(1\unit{mm}\) are \(0.120\) and \(6.6\times10^{-93}\).
+For comparison, \(5.3\unit{GeV}\) and \(600\unit{nm}\) give an
+amplitude scale of about \(1\unit{mm}\).
+
+Thus transferring a GeV optical experiment to \(60\unit{MeV}\) requires
+a new clearance assessment. Placing a beam with \(\sigma_x=1\unit{mm}\)
+only \(10\unit{\mu m}\) from a flat surface would intercept a substantial
+fraction. The prototype's \(10\unit{\mu m}\) optical example represents
+identical tracks, not a selected clearance for this transverse beam size.
+At \(60\unit{GHz}\), by contrast, \(\ell_\perp\simeq94\unit{mm}\):
+millimetre gaps are much less strongly suppressed.
+
+The reviewed optical measurements establish incoherent yield, position
+or transverse-profile diagnostics. \textbf{No optical ChDR microbunching
+demonstration was found in this source set.} Our smooth envelope has
+negligible optical form factor. The second study case must prescribe a
+longitudinal modulation and its bunching factor, then compare its signal
+with shot noise. A mean electron spacing of \(0.5\unit{\mu m}\) alone
+does not select an emission line at that wavelength.
+
+\clearpage
+\subsection{Other geometries and the meaning of narrow bandwidth}
+
+\textbf{Long bunch trains.}
+Karataev et al.~\cite{karataev2020superradiant} measured external-prism
+ChDR harmonics near \(7.87\)--\(21\unit{GHz}\), spaced by
+\(2.63\unit{GHz}\), using \(6.1\unit{MeV}\) electrons.
+The fitted individual bunch length was \(\sigma_z=8.16\unit{mm}\),
+with approximately 8297 bunches per train. Their reported
+\(317\pm8\unit{kHz}\) width is from the peak to the first minimum,
+not FWHM. Such a narrow comb records the long train structure; it is
+not evidence for submicrometre structure inside one bunch.
+
+\textbf{Dielectric-lined vacuum channels.}
+Cook et al.~\cite{cook2009narrowband,cook2009pac} used approximately
+\(10\)--\(11\unit{MeV}\), \(200\unit{pC}\) electrons with
+\(\sigma_z=165\pm15\unit{\mu m}\) in a cylindrical dielectric-lined
+waveguide. Their PAC09 report gives peaks at \(268\pm2\) and
+\(367\pm3\unit{GHz}\), with measured \(15\)--\(50\unit{GHz}\)
+3~dB linewidths limited by interferogram scan duration. Peak-frequency
+uncertainties are not linewidths. The cylindrical boundary selects the
+modes, making this a different validation geometry. At
+\(268\unit{GHz}\), our smooth bunch has
+\((N-1)|F|^2\simeq1.2\times10^{-4}\): its coherent pair contribution
+is already below its self term.
+
+\textbf{Intercepting optical Cherenkov radiation.}
+Nanbu et al.~\cite{nanbu2018aerogel} measured short bunches with a
+\(1\unit{mm}\) silica-aerogel radiator and a streak camera, using
+\(22\)--\(30\unit{MeV}\), approximately \(4\unit{pC}\) electrons.
+Their slit-width measurement used a \(700\unit{nm}\) longpass filter;
+the effective upper cutoff was not specified. The often-quoted
+\(400\)--\(850\unit{nm}\) interval belongs to a calculated photon
+yield, not the measurement passband. Optical photons carry the
+arrival-time envelope to the streak camera, so optical coherence across
+the entire bunch is unnecessary. This differs from inferring bunch
+length through a coherent spectral form factor.
+
+\subsection{Consequences for modelling and experimental comparison}
+
+\begin{enumerate}[itemsep=5pt]
+ \item \textbf{Full-bunch case.} Begin with \(20\)--\(120\unit{GHz}\),
+       varying bunch length and gap. The CLEAR 2020 channels are useful
+       reference bands. Add transverse size and the finite prism before
+       estimating an absolute detector signal at \(1\unit{nC}\).
+ \item \textbf{Optical-feature case.} Establish a consistent beam-size/gap
+       pair, material dispersion, prescribed modulation and collection
+       geometry. Then estimate collected photons and contrast with the
+       shot-noise contribution.
+ \item \textbf{Instrument model.} Compare measurements with calibrated
+       channel integrals, rather than only evaluating a spectrum at a
+       nominal centre frequency.
+\end{enumerate}
+In particular, channel \(i\) has expected response
+\begin{equation}
+ S_i=\int\!\int R_i(\omega,\Omega)
+ \frac{\dd^2W_N}{\dd\omega\,\dd\Omega}
+ \,\dd\omega\,\dd\Omega,
+ \label{eq:measurement-channel-response}
+\end{equation}
+where \(\Omega\) is observation solid angle and \(R_i\) contains
+collection, polarization, filter transmission and detector responsivity.
+Broad channels can weight a rapidly changing form factor strongly;
+electronic oscilloscope bandwidth is a separate quantity.
+
+The planar Python reference supplies radiation into an infinite dielectric
+per unit path length. Finite-radiator extraction, apertures and instrument
+response remain necessary for measured-signal predictions. Likewise,
+\(\epsilon_r=2.13\) is illustrative, not a characterization spanning GHz
+and optical bands. The derived values and Fig.~\ref{fig:measurement-bands}
+are reproduced by \path{compare_measurement_bands.py}; primary-source
+locations and further qualifications are recorded in
+\path{chdr_measurement_bandwidth_review.md} (checked 23 September 2026).
+
+\clearpage
 \renewcommand{\bibsection}{\section{Literature and software references}}
+\begingroup
+\interlinepenalty=10000
 \bibliography{chdr_references}
+\endgroup
 
 \end{document}

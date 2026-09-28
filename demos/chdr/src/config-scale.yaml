@@ -1,0 +1,36 @@
+# Explicit scale case: 102,400,000 cells, with 0.25 mm spacing.
+# Run deliberately: memory also includes halos, preview/output and temporaries.
+# This constructs geometry only; cubic spacing is not accepted by FEL's active
+# NonStandardFDTDSolver. No Maxwell solver is instantiated by mesh-1.
+schema_version: 1
+units:
+  length: mm
+
+domain:
+  lower_corner: [-58.0, -50.0, -55.0]
+  size: [100.0, 100.0, 160.0]
+  background: vacuum
+
+mesh:
+  cells: [400, 400, 640]
+  material_sampling: cell_center_staircase
+  decompose: [true, true, true]
+
+materials:
+  vacuum: {epsilon_r: 1.0, mu_r: 1.0}
+  radiator: {epsilon_r: 2.13, mu_r: 1.0}
+
+geometry:
+  - name: radiator_prism
+    type: prism
+    material: radiator
+    vertices:
+      - [0.0, -20.0, 0.0]
+      - [-25.0, -20.0, 25.0]
+      - [0.0, -20.0, 50.0]
+    axis: [0.0, 1.0, 0.0]
+    height: 40.0
+
+output:
+  path: mesh-1-scale-output
+  preview_max_points_per_axis: 256

@@ -1,0 +1,31 @@
+# Axis-aligned rectangular radiator as sketched in LaTeX Figure 1.
+# The dimensions are illustrative, using the existing prism's bounding box.
+# Coordinates (x,y,z) in mm; beam travels +z in vacuum at x=a>0.
+schema_version: 1
+units:
+  length: mm
+
+domain:
+  lower_corner: [-58.0, -50.0, -55.0]
+  size: [100.0, 100.0, 160.0]
+  background: vacuum
+
+mesh:
+  cells: [40, 40, 64]
+  material_sampling: cell_center_staircase
+  decompose: [false, false, true]
+
+materials:
+  vacuum: {epsilon_r: 1.0, mu_r: 1.0}
+  radiator: {epsilon_r: 2.13, mu_r: 1.0}
+
+geometry:
+  - name: radiator_brick
+    type: brick
+    material: radiator
+    lower_corner: [-25.0, -20.0, 0.0]
+    size: [25.0, 40.0, 50.0]
+
+output:
+  path: mesh-1-brick-output
+  preview_max_points_per_axis: 256

@@ -1,17 +1,18 @@
 # Combined ChDR literature report
 
-The report combines the setup, analytical single-electron models, FDTD interface treatment and IPPL implementation implications, with 16 numbered literature/software references. Section 4.1 identifies the FEL particle/source capabilities to reuse, the remaining initialization and conservation checks, and the moving-electron-source example in the volume co-edited by Taflove.
+The report combines the setup, analytical single-electron models, FDTD interface treatment and IPPL implementation implications, with 25 numbered literature/software references. Section 4.1 identifies the FEL particle/source capabilities to reuse, the remaining initialization and conservation checks, and the moving-electron-source example in the volume co-edited by Taflove. Section 5 compares measured GHz and optical Cherenkov bands with the current 1D study (60 MeV kinetic, 1 nC, 1 mm rms bunch length), including the comparison figure and experimental references.
 
 ## Files required to compile
 
 - `chdr_literature_review.tex`: the canonical consolidated source containing the setup, fixed beam parameters, proof-of-concept scope, literature review and implementation assessment. Its bibliography uses standard BibTeX with natbib and the unsrtnat style.
 - `chdr_references.bib`: the reference database; the three undated Meep entries are explicitly marked `n.d.` (no date).
+- `output/measurement_bandwidth/measurement_bands_vs_bunch.pdf`: the external comparison figure used in Section 5. Keep this relative path when copying the sources.
 
-The finite-radiator TikZ figure is embedded in the source; no external images or custom bibliography styles are needed. The original Markdown reviews and `../chdr_setup.tex` remain as historical working material, but all report content is maintained in the consolidated source.
+The finite-radiator TikZ figure is embedded in the source. The bandwidth plot is an external vector PDF; no custom bibliography style is needed. The original Markdown reviews remain as working material, with the integrated report maintained in the consolidated source.
 
 ## Coordinate convention
 
-The report consistently uses Cartesian order `(x,y,z)`, with the electron moving along `+z`. The planar reference has its interface at `x=0`, vacuum at `x>0`, dielectric at `x<0`, and gap `a` measured along `x`. The longitudinal bunch length is `sigma_z = 3 mm`; `sigma_x` and `sigma_y` are transverse sizes.
+The report consistently uses Cartesian order `(x,y,z)`, with the electron moving along `+z`. The planar reference has its interface at `x=0`, vacuum at `x>0`, dielectric at `x<0`, and gap `a` measured along `x`. The original setup uses `sigma_z = 3 mm` and 5 nC; Section 5 explicitly uses the current `sigma_z = 1 mm` and 1 nC study. `sigma_x` and `sigma_y` are transverse sizes.
 
 The trajectory, charge/current source, spectral equations, form factor, interface-component descriptions and job-file mapping use this convention. The electron trajectory is `(a,0,vt)`, phase matching fixes `k_z = omega/v`, and the remaining Fourier integral is over `k_y`. Relabelling the axes leaves the numerical beam parameters and internal Cherenkov angle unchanged. The legacy standalone setup is retained separately without edits.
 
@@ -40,7 +41,11 @@ The finished PDF is written beside the source and copied to `output/pdf/`. The s
 
     latexmk -pdf -interaction=nonstopmode -halt-on-error chdr_literature_review.tex
 
-In Overleaf, upload the two source files and select `chdr_literature_review.tex` as the main document with pdfLaTeX.
+In Overleaf, upload `output/pdf/chdr_latex_sources.zip` or the source files plus the figure at its relative path. Select `chdr_literature_review.tex` as the main document with pdfLaTeX.
+
+To regenerate the comparison figure and its wide presentation variant, run
+`MPLCONFIGDIR=/tmp/chdr-bandwidth-mpl ~/.venv-h6/bin/python compare_measurement_bands.py`.
+The script requires NumPy, pandas and Matplotlib. TeXShop needs only the already-generated PDF to compile the report.
 
 ## Bibliography repair and validation
 
@@ -48,6 +53,15 @@ The source previously requested Biber, but TeXShop ran BibTeX, leaving an empty 
 
 The old user-local `biblatex.bst` is no longer involved; this report does not require biblatex or Biber. The temporary compatibility style used during diagnosis was removed. No files in the user's TeX installation or TeXShop preferences were changed.
 
-The final BibTeX and LaTeX build has no warnings or unresolved references. The three Meep software/documentation entries are marked `n.d.` (no date), with their existing access dates retained. All 16 entries appear in the bibliography. The Taflove additions include the 2013 edited volume, the moving-source chapter by Oskooi and Johnson, and the 2005 textbook by Taflove and Hagness. These entries are included in `chdr_references.bib`; the separate research bibliography is not needed to compile the report.
+The final BibTeX and LaTeX build has no warnings or unresolved references. The three Meep software/documentation entries are marked `n.d.` (no date), with their existing access dates retained. All 25 entries appear in the bibliography. The Taflove additions include the 2013 edited volume, the moving-source chapter by Oskooi and Johnson, and the 2005 textbook by Taflove and Hagness. The measurement additions include Tomsk, CLEAR, CESR, ATF2, dielectric-lined-channel and aerogel results. These entries are included in `chdr_references.bib`; the separate research bibliography is not needed to compile the report.
 
-No physics code was changed or simulated. `output/pdf/chdr_latex_sources.zip` is a snapshot of the delivered revision, including these instructions and the build script.
+No physics code was changed or simulated. `output/pdf/chdr_latex_sources.zip` is a snapshot of the delivered revision, including these instructions, the build script and the required comparison figure.
+
+## Implementation plan
+
+The edited `chdr_implementation_plan.tex` uses the same `chdr_references.bib`
+database with numeric BibTeX citations. Keep these two files together. In
+TeXShop, select **pdflatexmk** and Typeset, or run LaTeX > BibTeX > LaTeX > LaTeX.
+The source includes the appropriate TeXShop engine hints. The implementation
+plan cites 13 works, including MITHRA, Taflove/Hagness, Chew and Ryu. Its PDF is
+available beside the source and in `output/pdf/chdr_implementation_plan.pdf`.

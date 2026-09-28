@@ -25,6 +25,10 @@ if(IPPL_ENABLE_FEL)
   add_subdirectory(fel)
 endif()
 
+if(IPPL_ENABLE_CHDR)
+  add_subdirectory(chdr)
+endif()
+
 if(IPPL_ENABLE_COLLISIONS)
   add_subdirectory(collisions)
 endif()

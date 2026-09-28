@@ -7,7 +7,7 @@
 # Responsibilities:
 #   - Fetch or find Kokkos, using version and backends from Platforms.cmake
 #   - Fetch Heffte if IPPL_ENABLE_FFT is ON, using CUDA or AVX2 based on platform
-#   - Fetch or find Catalyst when in-situ support or the FEL demo is enabled
+#   - Fetch or find Catalyst when in-situ support, FEL, or ChDR is enabled
 #
 # Not responsible for:
 #   - Selecting platform backends            → Platforms.cmake
@@ -493,7 +493,7 @@ endif()
 # ------------------------------------------------------------------------------
 # Catalyst (libcatalyst SDK and bundled Conduit parser)
 # ------------------------------------------------------------------------------
-if(IPPL_ENABLE_CATALYST OR IPPL_ENABLE_FEL)
+if(IPPL_ENABLE_CATALYST OR IPPL_ENABLE_FEL OR IPPL_ENABLE_CHDR)
   enable_language(C)
 
   if(NOT Catalyst_VERSION)

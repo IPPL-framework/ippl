@@ -27,3 +27,13 @@ target_link_libraries(
 
 target_include_directories(FreeElectronLaser PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(FreeElectronLaser SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stb)
+
+# Focused student/API reference; generation is opt-in, outside normal application builds.
+find_program(FEL_DOXYGEN_EXECUTABLE NAMES doxygen)
+if(FEL_DOXYGEN_EXECUTABLE)
+  add_custom_target(fel-docs
+    COMMAND "${FEL_DOXYGEN_EXECUTABLE}" Doxyfile
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    COMMENT "Generating focused FEL student documentation"
+    VERBATIM)
+endif()
