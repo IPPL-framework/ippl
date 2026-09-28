@@ -200,7 +200,7 @@ ippl_producer = PVTrivialProducer(registrationName=parsed.channel_name)
 
 # subset_extractor
 # subset_extractor = ExtractBlock(registrationName='Selected_Parts', Input=ippl_producer)
-# subset_extractor.Selectors = ['//block_main'] 
+# subset_extractor.Selectors = ['//particles'] 
 # ippl_particle = MergeBlocks(registrationName='Merged_Subset', Input=subset_extractor)
 # ippl_particle.MergePartitionsOnly = 0
 
@@ -229,9 +229,9 @@ f_info = data_info.GetFieldDataInformation()
 #                 registrationName=f"{cname[15:]}_bunch_png_ext",
 #                 Input=ippl_particle_p,
 #                 Assembly = 'Hierarchy',
-#                 # Selectors=['//block_main']
+#                 # Selectors=['//particles']
 #                 Selectors=['//main']
-#                 # Selectors=['/Root/block_main']
+#                 # Selectors=['/Root/particles']
 #                 # Selectors=['/Root/main']
 #             )
 # ippl_particle_e.UpdatePipeline()
@@ -251,9 +251,9 @@ ippl_particle_bunch = ExtractBlock(
                 registrationName=f"{cname[15:]}_bunch_png_ext",
                 Input=ippl_particle_p,
                 Assembly = 'Hierarchy',
-                Selectors=['//block_main']
+                Selectors=['//particles']
                 # Selectors=['//main']
-                # Selectors=['/Root/block_main']
+                # Selectors=['/Root/particles']
                 # Selectors=['/Root/main']
             )
 hide_source_from_gui(ippl_particle_bunch)
@@ -262,9 +262,9 @@ ippl_particle_box = ExtractBlock(
                 registrationName=f"{cname[15:]}_box_png_ext",
                 Input=ippl_particle_p,
                 Assembly = 'Hierarchy',
-                Selectors=['//block_help']
+                Selectors=['//boundingbox']
                 # Selectors=['//main']
-                # Selectors=['/Root/block_main']
+                # Selectors=['/Root/particles']
                 # Selectors=['/Root/main']
             )
 hide_source_from_gui(ippl_particle_box)

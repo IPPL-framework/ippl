@@ -107,56 +107,19 @@ namespace ippl {
     };  // Button
 
     /**
-     * @brief Host-side 1D mask view (0/1) used for ghost/halo flags.
-     */
-    using HostMaskView1D_t = Kokkos::View<unsigned char*, Kokkos::LayoutLeft, Kokkos::HostSpace>;
-
-    /**
-     * @brief Cache key for ghosted data.
-     *
-     * Tuple components:
-     *  - pointer identifying the mesh/topology
-     *  - pointer identifying the owning view/container
-     *  - size/extent of the ghost region
-     */
-    using GhostKey_t = std::tuple<const void*, const void*, size_t>;
-
-    /**
-     * @brief Hash functor for GhostKey_t used in unordered caches.
-     */
-    struct GhostKeyHash {
-        std::size_t operator()(const GhostKey_t& k) const {
-            // Get the hash for each element in the tuple
-            auto h1 = std::hash<const void*>{}(std::get<0>(k));
-            auto h2 = std::hash<const void*>{}(std::get<1>(k));
-            auto h3 = std::hash<size_t>{}(std::get<2>(k));
-
-            // Combine the hashes. This is a common pattern (based on boost::hash_combine)
-            // It xors and bit-shifts to mix the bits well.
-            h1 ^= h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2);
-            h1 ^= h3 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2);
-            return h1;
-        }
-    };
-
-    /**
      * @class CatalystAdaptor
      * @brief High-level orchestrator for Catalyst initialization, execution, and steering.
      *
-     * The adaptor wires up registered fields/particles and steerables to Conduit `node_m`
-     * instances, invokes Catalyst scripts, and forwards/fetches steering values between the
-     * simulation and the GUI. Use the runtime registry API (Initialize/Execute)
-     * for flexible, non-templated integration.
+     * The adaptor builds Conduit channels for registered meshes, mesh blocks and particle
+     * containers (addMeshChannel/addMeshBlock/addParticleChannel), invokes Catalyst scripts,
+     * and forwards/fetches steering values between the simulation and the GUI.
      */
     class CatalystAdaptor {
     public:
-        struct InitVisitor;
-        struct ExecVisitor;
         struct SteerInitVisitor;
         struct SteerForwardVisitor;
         struct SteerFetchVisitor;
 
-        using VisVisitorVariant_t = std::variant<InitVisitor*, ExecVisitor*>;
         using SteerVisitorVariant_t =
             std::variant<SteerInitVisitor*, SteerForwardVisitor*, SteerFetchVisitor*>;
 
@@ -180,11 +143,9 @@ namespace ippl {
             return experimentName;
         }
 
-        std::shared_ptr<ippl::VisRegistryRuntime> visRegistry_m;
         std::shared_ptr<ippl::VisRegistryRuntime> steerRegistry_m;
 
-        // New channel-based viz path (replaces visRegistry_m + viewRegistry_m
-        // for visualization).  Steering still uses steerRegistry_m.
+        // Channel-based viz path.  Steering uses steerRegistry_m.
         std::vector<std::shared_ptr<Channel>> channels_m;
         // True after the channel Conduit tree has been built (first Execute)
         bool channelsBuilt_m = false;
@@ -216,20 +177,11 @@ namespace ippl {
         const bool visEnabled_m;
         const bool liveEnabled_m;
         const bool steerEnabled_m;
-        const bool pngExtracts_m;
-        const bool vtkExtracts_m;
         const int outputLevel_m;
         const bool useGhostMasks_m;
 
         const std::filesystem::path resourceDir_m;
         const std::filesystem::path outputDir_m;
-
-        std::unordered_map<std::string, bool> forceHostCopy_m;
-
-        std::unordered_map<GhostKey_t, HostMaskView1D_t, GhostKeyHash> ghostMaskCache_m;
-
-        /// Per-label bunch-to-lab transform data published as one-point polydata channels.
-        std::unordered_map<std::string, TransformData> transformChannels_m;
 
     public:
         /**
@@ -254,9 +206,7 @@ namespace ippl {
             , proxyOption_m(environmentValue("IPPL_CATALYST_PROXY_OPTION", "ON"))
             , visEnabled_m(catalystVis_m != "OFF")
             , liveEnabled_m(catalystLive_m == "ON")
-            , steerEnabled_m(catalystSteer_m == "ON")
-            , pngExtracts_m(catalystPng_m == "ON")
-            , vtkExtracts_m(catalystVtk_m == "ON")
+            , steerEnabled_m(catalystSteer_m == "ON" && catalystLive_m == "ON")
             , outputLevel_m(std::stoi(catalystVerbosity_m))
             , useGhostMasks_m(catalystGhostMask_m == "ON")
             , resourceDir_m(IPPL_CATALYST_SCRIPTS_DIR)
@@ -285,14 +235,14 @@ namespace ippl {
             catalystInfo_m << level4
                            << "::CatalystAdaptor()   using outputDir_m = " << outputDir_m.string()
                            << endl;
-            if (pngExtracts_m) {
+            if (catalystPng_m == "ON") {
                 catalystInfo_m << level4 << "::CatalystAdaptor()   PNG extraction ACTIVATED"
                                << endl;
             } else {
                 catalystInfo_m << level4 << "::CatalystAdaptor()   PNG extraction DEACTIVATED"
                                << endl;
             }
-            if (vtkExtracts_m) {
+            if (catalystVtk_m == "ON") {
                 catalystInfo_m << level4 << "::CatalystAdaptor()   VTK extraction ACTIVATED"
                                << endl;
             } else {
@@ -304,6 +254,11 @@ namespace ippl {
                                << endl;
             } else {
                 catalystInfo_m << level4 << "::CatalystAdaptor()   Steering       DEACTIVATED"
+                               << endl;
+            }
+            if (catalystSteer_m == "ON" && !liveEnabled_m) {
+                catalystWarn_m << "::CatalystAdaptor()   IPPL_CATALYST_STEER=ON requires "
+                                  "IPPL_CATALYST_LIVE=ON; steering is disabled."
                                << endl;
             }
         }
@@ -325,146 +280,6 @@ namespace ippl {
         void setNodeScript(conduit_cpp::Node nodePath,
                            // const char* envVar,
                            const std::string envVar, const std::filesystem::path defaultFilePath);
-
-    public:
-        // ==========================================================
-        // VISUALIZATION CHANNEL INITIALIZERS =======================
-        // ==========================================================
-
-        /* SCALAR FIELDS - handles both reference and shared_ptr */
-        // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>*
-        /**
-         * @brief Initializes a Conduit `node_m` instance entry for a scalar field.
-         *
-         * @tparam T Field value type.
-         * @tparam Dim Field dimension.
-         * @tparam ViewArgs Additional template arguments for the field.
-         * @param entry The scalar field to initialize.
-         * @param label The label for the field/channel.
-         */
-        template <typename T, unsigned Dim, class... ViewArgs>
-            requires(!is_vector_v<T>)
-        void InitVizChannel([[maybe_unused]] const Field<T, Dim, ViewArgs...>& entry,
-                            const std::string label);
-
-        /* VECTOR FIELDS - handles both reference and shared_ptr */
-        // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>*
-        /**
-         * @brief Initializes a Conduit `node_m` instance entry for a vector field.
-         *
-         * @tparam T Vector value type.
-         * @tparam Dim Field dimension.
-         * @tparam Dim_v Vector dimension.
-         * @tparam ViewArgs Additional template arguments for the field.
-         * @param entry The vector field to initialize.
-         * @param label The label for the field/channel.
-         */
-        template <typename T, unsigned Dim, unsigned Dim_v, class... ViewArgs>
-        void InitVizChannel([[maybe_unused]] const Field<Vector<T, Dim_v>, Dim, ViewArgs...>& entry,
-                            const std::string label);
-
-        // PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:
-        // == ippl::ParticleBaseBase -> ParticleBase<PLayout<T, Dim>, ... , ... >
-        /**
-         * @brief Initializes a Conduit `node_m` instance entry for a particle container derived
-         * from ParticleBaseBase.
-         *
-         * @tparam T Particle container type (must derive from ippl::ParticleBaseBase).
-         * @param entry The particle container to initialize.
-         * @param label The label for the container/channel.
-         */
-        template <typename T>
-            requires std::derived_from<std::decay_t<T>, ParticleBaseBase>
-        void InitVizChannel([[maybe_unused]] const T& entry, const std::string label);
-
-        /* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
-        /**
-         * @brief Dispatcher for InitVizChannel: unwraps shared_ptr and dispatches to the
-         * appropriate overload.
-         *
-         * @tparam T Entry type.
-         * @param entry Shared pointer to the entry.
-         * @param label The label for the entry/channel.
-         */
-        template <typename T>
-        void InitVizChannel(const std::shared_ptr<T>& entry, const std::string label);
-
-        // BASE CASE:
-        // only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
-        /**
-         * @brief Fallback for InitVizChannel: handles types not derived from ParticleBaseBase
-         * and not having specific overloads. Should never be called since these types are already
-         * filtered out inside a Visitor struct with AllowedVisType_v.
-         *
-         * @tparam T Entry type.
-         * @param entry The entry to initialize (not a particle container).
-         * @param label The label for the entry/channel.
-         */
-        template <typename T>
-            requires(!std::derived_from<std::decay_t<T>, ParticleBaseBase>)
-        void InitVizChannel([[maybe_unused]]
-                            // T&& entry
-                            const T& entry,
-                            const std::string label);
-
-        // ==========================================================
-        // VISUALIZATION CHANNEL EXECUTIONERS =======================
-        // ==========================================================
-
-        /* SCALAR FIELDS - handles both reference and shared_ptr */
-        /* VECTOR FIELDS - handles both reference and shared_ptr */
-        // == ippl::Field<double, 3, ippl::UniformCartesian<double, 3>, Cell>
-        // == ippl::Field<ippl::Vector<double, 3>, 3, ippl::UniformCartesian<double, 3>, Cell>
-        /**
-         * @brief Executes a scalar/vector field entry, populating the Conduit `node_m` instance and
-         * updating the view registry.
-         *
-         * @tparam T Field value type.
-         * @tparam Dim Field dimension.
-         * @tparam ViewArgs Additional template arguments for the field.
-         * @param entry The scalar/vector field to execute.
-         * @param label The label for the field/channel.
-         *
-         */
-        template <typename T, unsigned Dim, class... ViewArgs>
-        void ExecVizChannel(const Field<T, Dim, ViewArgs...>& entry, const std::string label);
-
-        // PARTICLECONTAINERS DERIVED FROM PARTICLEBASE:
-        /**
-         * @brief Executes a particle container entry (derived from ParticleBaseBase), populating
-         * the Conduit `node_m` instance and updating the view registry.
-         *
-         * @tparam T Particle container type (must derive from ippl::ParticleBaseBase).
-         * @param entry The particle container to execute.
-         * @param label The label for the container/channel.
-         */
-        template <typename T>
-            requires(std::derived_from<std::decay_t<T>, ParticleBaseBase>)
-        void ExecVizChannel(const T& entry, const std::string label);
-
-        // BASE CASE: only enabled if EntryT is NOT derived from ippl::ParticleBaseBase
-        /**
-         * @brief Fallback for ExecVizChannel: handles types not derived from ParticleBaseBase.
-         *
-         * @tparam T Entry type.
-         * @param label The label for the entry/channel.
-         * @param entry The entry to execute (not a particle container).
-         */
-        template <typename T>
-            requires(!std::derived_from<std::decay_t<T>, ParticleBaseBase>)
-        void ExecVizChannel([[maybe_unused]] T&& entry, const std::string label);
-
-        /* SHARED_PTR DISPATCHER - automatically unwraps and dispatches to appropriate overload */
-        /**
-         * @brief Dispatcher for ExecVizChannel: unwraps shared_ptr and dispatches to the
-         * appropriate overload.
-         *
-         * @tparam T Entry type.
-         * @param entry Shared pointer to the entry.
-         * @param label The label for the entry/channel.
-         */
-        template <typename T>
-        void ExecVizChannel(const std::shared_ptr<T>& entry, const std::string label);
 
     private:
         // ==========================================================
@@ -690,6 +505,33 @@ namespace ippl {
                                          const UniformCartesian<double, Dim>& mesh,
                                          const FieldLayout<Dim>& layout, int nghost = 0,
                                          bool useGhostMasks = false);
+
+        /**
+         * @brief Registers a mesh block inside an existing particle multimesh.
+         *
+         * The mesh is written into
+         *   catalyst/channels/<parentName>/data/<blockName>
+         * instead of a top-level channel.  The caller is responsible for
+         * adding the corresponding assembly entry
+         *   catalyst/channels/<parentName>/assembly/<role> = "<blockName>"
+         * (typically done in the particle channel's init function).
+         *
+         * @tparam Dim Mesh dimension (1, 2, or 3).
+         * @param parentName Name of the parent particle channel.
+         * @param blockName Block name within the parent multimesh.
+         * @param mesh The IPPL mesh (must outlive the adaptor).
+         * @param layout The field layout (must outlive the adaptor).
+         * @param nghost Number of ghost layers.
+         * @param useGhostMasks Whether to publish ghost cells.
+         * @param geometryPolicy Whether to re-read mesh origin/spacing per step.
+         * @return Handle for chaining addArray() calls.
+         */
+        template <unsigned Dim>
+        MeshChannelHandle addMeshBlock(const std::string& parentName, const std::string& blockName,
+                                       const UniformCartesian<double, Dim>& mesh,
+                                       const FieldLayout<Dim>& layout, int nghost = 0,
+                                       bool useGhostMasks            = false,
+                                       GeometryPolicy geometryPolicy = GeometryPolicy::Dynamic);
 
         /**
          * @brief Registers a particle channel (one per particle container).

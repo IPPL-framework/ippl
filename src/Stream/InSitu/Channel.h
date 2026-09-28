@@ -39,6 +39,17 @@ namespace ippl {
     };
 
     // ==================================================================
+    // Geometry policy (viz-only)
+    // ==================================================================
+
+    enum class GeometryPolicy {
+        Dynamic,  ///< Re-read mesh origin/spacing every Execute (default;
+                  ///<   bunch may have moved)
+        Static,   ///< Mesh origin/spacing set once at init, never re-read.
+                  ///<   Zero per-step geometry cost.
+    };
+
+    // ==================================================================
     // Transform data (shared with CatalystAdaptor)
     // ==================================================================
 
@@ -148,7 +159,9 @@ namespace ippl {
         using Layout_t = FieldLayout<Dim>;
 
         MeshChannelT(const std::string& name, const Mesh_t& mesh, const Layout_t& layout,
-                     int nghost, bool useGhostMasks);
+                     int nghost, bool useGhostMasks,
+                     GeometryPolicy geometryPolicy = GeometryPolicy::Dynamic,
+                     const std::string& basePath = "");
 
         ~MeshChannelT() override = default;
 
@@ -177,6 +190,8 @@ namespace ippl {
         const Layout_t& layout_m;
         int nghost_m;
         bool useGhostMasks_m;
+        GeometryPolicy geometryPolicy_m = GeometryPolicy::Dynamic;
+        std::string basePath_m;
 
         std::vector<std::unique_ptr<MeshFieldArrayBase>> arrays_m;
 
@@ -205,7 +220,7 @@ namespace ippl {
      *
      * All host mirrors (R, ID, attributes, iota, rank_id) are allocated once
      * and reused on every execute.  The transform is published as a
-     * block_transform block (compatible with existing scripts).
+     * transform block (compatible with existing scripts).
      *
      * The type-specific work (attribute iteration, Conduit multimesh setup,
      * D2H copies) is delegated to function objects set by

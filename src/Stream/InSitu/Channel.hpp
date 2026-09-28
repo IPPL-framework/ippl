@@ -167,12 +167,15 @@ namespace ippl {
 
     template <unsigned Dim>
     MeshChannelT<Dim>::MeshChannelT(const std::string& name, const Mesh_t& mesh,
-                                    const Layout_t& layout, int nghost, bool useGhostMasks)
+                                    const Layout_t& layout, int nghost, bool useGhostMasks,
+                                    GeometryPolicy geometryPolicy, const std::string& basePath)
         : Channel(name)
         , mesh_m(mesh)
         , layout_m(layout)
         , nghost_m(nghost)
-        , useGhostMasks_m(useGhostMasks) {}
+        , useGhostMasks_m(useGhostMasks)
+        , geometryPolicy_m(geometryPolicy)
+        , basePath_m(basePath) {}
 
     template <unsigned Dim>
     template <typename T, class... ViewArgs>
@@ -316,9 +319,20 @@ namespace ippl {
 
     template <unsigned Dim>
     void MeshChannelT<Dim>::init(conduit_cpp::Node& root, int rank) {
-        auto channel = root["catalyst/channels/" + name_m];
-        channel["type"].set_string("mesh");
-        auto data = channel["data"];
+        // When basePath_m is set, this mesh is a block inside a parent
+        // multimesh channel (catalyst/channels/<basePath>/data/<name>).
+        // Otherwise it is a top-level channel (catalyst/channels/<name>).
+        auto data = basePath_m.empty()
+                        ? root["catalyst/channels/" + name_m]["data"]
+                        : root["catalyst/channels/" + basePath_m]["data/" + name_m];
+        if (basePath_m.empty()) {
+            root["catalyst/channels/" + name_m]["type"].set_string("mesh");
+        } else {
+            // Each block in a multimesh needs its own type field.
+            // Also add the assembly entry so the parent knows about this block.
+            data["type"].set_string("mesh");
+            root["catalyst/channels/" + basePath_m]["assembly/" + name_m] = name_m;
+        }
 
         // Build shared coordset + topology
         buildCoordset(data, rank);
@@ -341,19 +355,39 @@ namespace ippl {
         state["time"].set(time);
         state["domain_id"].set(rank);
 
-        auto channel = root["catalyst/channels/" + name_m];
-        auto data    = channel["data"];
+        auto data = basePath_m.empty()
+                        ? root["catalyst/channels/" + name_m]["data"]
+                        : root["catalyst/channels/" + basePath_m]["data/" + name_m];
 
-        // Check for mesh repartition
-        if (dimsChanged()) {
-            // Rebuild coordset + RankID, re-init all arrays
+        // When basePath_m is set, the parent particle channel may have
+        // reset this node (on particle count change).  If the node is
+        // empty (no type field), re-initialize from scratch, including
+        // the assembly entry on the parent.
+        if (!basePath_m.empty() && !data.has_path("type")) {
+            data["type"].set_string("mesh");
+            root["catalyst/channels/" + basePath_m]["assembly/" + name_m] = name_m;
             buildCoordset(data, rank);
             buildRankID(data, rank);
             for (auto& array : arrays_m) {
                 array->initConduit(data, "fmesh_topo", rank,
                                    *std::make_unique<Inform>("MeshChannel").get());
             }
-        } else {
+        }
+        // Check for mesh repartition
+        else if (dimsChanged()) {
+            // Rebuild coordset + RankID, re-init all arrays.
+            // When basePath_m is set, the parent particle channel may have
+            // reset this node (on particle count change), so re-set type.
+            if (!basePath_m.empty()) {
+                data["type"].set_string("mesh");
+            }
+            buildCoordset(data, rank);
+            buildRankID(data, rank);
+            for (auto& array : arrays_m) {
+                array->initConduit(data, "fmesh_topo", rank,
+                                   *std::make_unique<Inform>("MeshChannel").get());
+            }
+        } else if (geometryPolicy_m == GeometryPolicy::Dynamic) {
             // Update coordset spacing/origin (bunch may have moved)
             const auto Origin_        = mesh_m.getOrigin();
             const auto Spacing_       = mesh_m.getMeshSpacing();
@@ -382,8 +416,11 @@ namespace ippl {
                 data["coordsets/cart_uniform_coords/origin/z"].set(Oz);
                 data["topologies/fmesh_topo/origin/z"].set(Oz);
             }
+        }
+        // When GeometryPolicy::Static, skip geometry update entirely.
 
-            // Refresh dynamic field arrays
+        // Refresh dynamic field arrays
+        {
             auto info = std::make_unique<Inform>("MeshChannel");
             for (auto& array : arrays_m) {
                 if (array->needsRefresh()) {
