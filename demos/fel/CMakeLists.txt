@@ -21,9 +21,11 @@ add_custom_command(
 add_custom_target(ippl_fel_config DEPENDS "${IPPL_FEL_CONFIG_BUILD}")
 add_dependencies(FreeElectronLaser ippl_fel_config)
 
-target_link_libraries(
-    FreeElectronLaser
-    PRIVATE IPPL::ippl catalyst::catalyst)
+target_link_libraries(FreeElectronLaser PRIVATE IPPL::ippl)
+
+if(IPPL_ENABLE_CATALYST)
+  target_link_libraries(FreeElectronLaser PRIVATE catalyst::catalyst)
+endif()
 
 target_include_directories(FreeElectronLaser PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(FreeElectronLaser SYSTEM PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stb)
