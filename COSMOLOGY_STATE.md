@@ -40,9 +40,12 @@ hashes, and script SHA. Python module switch3.14.4→3.11.11 verified on login h
 (version query only); no environment installed yet. Local helper tests pass:
 fixture comparison11, launcher guards5 (arguments, non-Slurm, allocation bounds,
 login-host refusal, shell syntax). Frozen sources and numerical budgets untouched.
-Next: push deployment helpers, fast-forward detached remote worktree without
-touching original checkout; run on compute nodes only after access/hardware is
-available. Prepared launcher has NOT been runtime-validated. This entry supersedes
+Deployment helpers committed/pushed as6bfc807f963b9b64f7685f4b49023fe0908e4f0d;
+isolated remote worktree fast-forwarded to that commit, clean, remote bash -n
+passes. Original remote checkout still has only its pre-existing HANDOFF.md.
+All24 local frozen source/source-copy hashes verified again; user queue empty.
+Next: run on compute nodes only after access/hardware is available. Prepared
+launcher has NOT been runtime-validated. This entry supersedes
 the old no-push/disk-only next-action notes below; Mac resume remains possible.
 
 ## Current work: spatial robustness and common-phase Gaussian evolution
