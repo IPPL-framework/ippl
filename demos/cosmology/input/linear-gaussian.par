@@ -1,0 +1,21 @@
+# Local CDM run: 32^3 particles and mesh cells, one cold matter species.
+np = 32
+nt = 100
+box_size = 200.0
+seed = 73452342811
+z_in = 49.0
+z_fi = 9.0
+hubble = 0.7
+Omega_m = 0.3
+Omega_bar = 0.05
+Sigma_8 = 0.8
+n_s = 0.96
+Omega_r = 0.0
+Omega_nu = 0.0
+w_de = -1.0
+f_NL = 0.0
+TFFlag = 4
+ic_mode = gaussian
+output = cosmology-gaussian-output
+diagnostics_every = 10
+write_particles = true

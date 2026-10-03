@@ -1,0 +1,9 @@
+np = 16
+nt = 10
+box_size = 200.0
+z_in = 49.0
+z_fi = 9.0
+ic_mode = uniform
+output = cosmology-uniform-output
+diagnostics_every = 1
+write_particles = true

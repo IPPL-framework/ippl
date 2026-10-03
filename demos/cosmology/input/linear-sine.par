@@ -1,0 +1,14 @@
+# The density amplitude is specified at z_in, not at z=0.
+np = 32
+nt = 100
+box_size = 200.0
+z_in = 49.0
+z_fi = 9.0
+ic_mode = sine
+amplitude = 0.001
+mode_x = 1
+mode_y = 0
+mode_z = 0
+output = cosmology-sine-output
+diagnostics_every = 10
+write_particles = true
