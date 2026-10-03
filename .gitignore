@@ -26,3 +26,7 @@ build*/
 
 # lsp info
 compile_commands.json
+
+# Local cosmology validation evidence and Python import caches
+/cosmology-validation-*/
+/demos/cosmology/**/__pycache__/

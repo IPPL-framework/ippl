@@ -1,5 +1,118 @@
 # Cosmology task state
 
+## Current work: matched-particle plain-PM evolution
+
+User explicitly accepted the preceding discrepancies as an engineering baseline
+and authorized the next evolution stage. Original measurements and failed mass
+gate remain unchanged; acceptance does not imply universal nonlinear validity.
+
+Plan: import one identical x,p CSV into both real integrators; compare synchronized
+checkpoints through planar shell crossing and a coupled smooth3D nonlinear test;
+measure timestep self-convergence, fixed-particle force-mesh refinement and MPI1–4.
+Use pinned native FastPM FORCE_PM/CIC/NAIVE, no modified FastPM/COLA stepping,
+no upstream source changes, no Nyquist filtering or fitted normalizations.
+
+Shared CLI: NP NM L Omega_m a_initial a_final n_steps n_checkpoints input.csv output_dir.
+CSV: id,x,y,z,px,py,pz,mass, exactly NP³ unique IDs0..NP³−1, unit masses; p=a²dx/d(H0t).
+Logarithmic full-step endpoints and geometric kick midpoints; outputs at full
+synchronized steps only, avoiding native snapshot interpolation/velocity conversion.
+FastPM v/acc remain float32 and x/FFT double; physical coordinates shifted by
+−L/(2NM) on import and restored on output. Radiation-free flat Lambda background.
+
+IPPL change scope: extract existing KDK body without arithmetic changes; diagnostic
+import count override; normalize deposited mass by NM³/NP³ only when counts differ
+(preserve exact existing subtract-one branch for NP=NM). No general IC/config
+API expansion. Fields/kicks/drifts remain in configured Kokkos memory/execution
+spaces; only diagnostic CSV input/output copies host data. Unequal-grid support
+changes the intended mean-density normalization, not the force kernel.
+
+Native full solver initialization rejects NM not divisible by ranks although
+FFTW/ghost exchange already passed uneven-slab frozen tests. The reference adapter
+directly initializes native PM/store/cosmology/VPM for imported particles,
+bypassing the lattice/divisibility precheck only; actual solver_evolve, force,
+kick/drift and decomposition stay native. Explicitly qualify rank3, not assume it.
+Old FastPMForce executable/manifest remain untouched; separate evolution linker,
+executable and manifest verify pinned source/library hashes before and after build.
+
+Ownership: background agent native evolution adapter/build; validation agent
+IPPL adapter/refactor and import regressions; physics-audit agent independent
+integrator/protocol review and analysis tests; root campaign/fixtures/CMake/docs.
+Fixed bounded campaign: NP32, NM16/32/64, nt64/128/256, ai.02→af.2, Omega_m.31,
+L168.75; planar linear-final amplitude1.5 and coupled few-mode3D IC. Numerical
+gates were fixed before comparisons; native Nyquist differences stay an
+explicit comparison uncertainty, not an excuse to label unmatched fields equal.
+Predeclared limits (before any matched comparison): compare actual imported x
+within 128 eps64 L and p exactly after one shared float32 quantization; independent
+native drift/kick quadrature 1e-8 relative. Rank differences: IPPL dx/h and dp/pRMS
+1e-10 (plus position roundoff allowance), FastPM 5e-5. Planar cross-code dx/h and
+dp/pRMS 1e-3. Direct particle Fourier modes 0<|m|<=4, unique +/- pairs: aggregate
+power ratio and complex-coefficient difference 5/2/1% for NM16/32/64, correlation
+at least .995/.999/.9995. Characterize raw3D trajectories and shell powers;
+do not gate them as if Nyquist force operators were identical.
+
+Timestep differences nt64→128 versus128→256: ratio2–6 at checkpoint4 (pre-crossing),
+at least1.5 at final; finest final dx/h and dp/pRMS <=.002. Predeclared analysis
+floors 1e-6 cells,1e-5 relative momentum and1e-5 relative complex modes; below-floor
+status is not evidence of roundoff dominance or a measured convergence order.
+NM32→64 final aggregate resolved power change<=5% at fixed NP32; not a continuum
+limit. Mean momentum conservation relative to actual imported mean (not zero)
+<=1e-10 IPPL /5e-5 FastPM, normalized by observed pRMS. Original mass gate2e-12
+remains separately recorded, not relaxed. IPPL CIC mesh-sum residual and native
+unit-particle count residual are explicitly distinct. Actual planar final sampled
+Jacobian must be<-.01. Snapshots remain recoverable as hash-verified lossless gzip.
+
+Adapter regressions:19 MPI runs/13 checks passed in evolution-adapter-6sh1wmue,
+including exact import, ballistic ranks1–4, nonuniform unequal-mesh oracle and
+production-driver equivalence. Unsupported tiny local mesh extent is explicitly
+rejected before core halo assertion. Native8-run smoke passed ballistic/EdS
+shell-crossed cases1–4r; checkpoint0 export was corrected to actual native
+state instead of echoed input before comparison execution. Native final smoke
+evidence: build_fastpm/evolution/smoke-6_q_d9uu/results.json. Executable SHA256
+177cb831e0379648566b749286801862a481d9709404c6af28d3a9b1d1108a5e; manifest
+9ddb833a5304efc188320e9970e741c6cc0947748e01184bd7d2fd86eac2fa11.
+
+Completed quick8/441 checks in matched-evolution-_x5sqrt5 (all pass),15 registered
+CTests (all pass),20 independent analysis tests (all pass;5 additions reject
+malformed native factor schedules), and full existing linear22/275 (all pass)
+in cosmology-validation-irdp24fl. Full32 campaign completed under
+build_openmp/demos/cosmology/matched-evolution-5v7u3y98:1723/1725 checks pass.
+All source/input/executable hashes unchanged before/after. Failures only final
+coupled3D128→256 momentum difference:IPPL .002763434661810358,FastPM
+.002755553597039562 versus unchanged .002 budget. Both reduction ratios~4.03.
+All cross-code/rank/initial/factor/netmomentum/shellcross and mesh-budget gates
+pass. Raw3D trajectories not gated; maximumresolvedpower .243%,complex .338%.
+Mesh32→64 power changes:pancake3.63%,3D2.67–2.84%; pancake mesh changes are NOT
+monotone decreasing, so no continuum convergence claim. New maxCICmass1.22e-12
+does not invalidate earlier retained analytical-pancake failure.
+
+Bounded follow-up completed: separate validate_evolution_refinement.py and two
+coupled3D NP32/NM32/r1 nt512 runs, exactoriginal imported input, unchangedlimits,
+reuse128/256 savedstates. Results:evolution-refinement-k2qeaylz,99/99 checks pass.
+Final256→512 momentum differences .0006962128512831455IPPL and
+.0006942805963183412FastPM, below .002. Position differences .00044926/.00044838
+mesh cells. Finalmeasuredorders~1.97–2.01; pre-cross momentum belowanalysisfloor
+does notyieldorder. This is single-rank timestep qualification, not newMPI/mesh
+coverage, and noterroragainsttruth. All original/new source/executable/input,
+parentreport and reusedcompressed snapshot hashes unchanged. Originalfullreport
+SHA25634568aa5978c7c651410f1b8187478648ded7dd47bb5b98ac3a2ed77bd101b1d;
+two originalfailures verbatim retained, failures_superseded=false.
+
+Plotting completed:two publication-quality PNG/SVG summaries, plotted-data JSON
+andverifiedSHAmanifest in matched-evolution-5v7u3y98/figures-release. RootvisualQA
+confirmed titleoverlapfixed, canonicalunits/uniqueFourierband/actualzeroresults
+legible; original128→256 failedgates explicitlycaptioned. Seven plot tests pass.
+Newrefinementhelper11synthetic tests pass (includingmockedonlytwo-runorchestration)
+and all13parentprovenance/eightreusedsnapshot hashes preflightpass. Source/config
+diff reviewed independently; originalmaincheckout/oldreferenceartifacts untouched.
+
+Next scientific work:joint particle/mesh refinement and phase-shift tests before
+claiming continuum density convergence; then common-phase GaussianCDM nonlinear
+statistics at several epochs against nativeplainPM. GPU parity, scalableI/O,
+loadbalance andmultinode scaling remain separate qualification stages. No general
+nonlinearLCDM, continuum, GPU or exascale validity claimed. Final16/16 registered
+cosmologyCTests passed in40.54s; git diff --check clean. Source changes complete,
+ready for local commit; no push authorized or performed.
+
 ## Plotting frozen-force and pancake evidence
 
 User requested plots of the completed validation stage. Reproduce static PNG/SVG

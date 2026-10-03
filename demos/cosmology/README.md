@@ -469,8 +469,8 @@ This next stage separates the particle-mesh force operator from time evolution.
 `Simulation::solveForce()` (CIC scatter, FFT solve, CIC gather). Its host-side CSV
 I/O and ID checks are diagnostic only: production fields/particles remain in
 their configured Kokkos execution/memory spaces and are distributed by IPPL.
-The only production-header addition is the diagnostic method declaration; no
-force, initialization, or integration kernel has changed. Conservation,
+In that frozen-force stage the only production-header addition was the diagnostic
+method declaration; no force, initialization, or integration kernel changed. Conservation,
 stability, floating-point ordering and production data movement are unchanged.
 The adapter additionally copies fields and particles to host for output, so it
 is not a performance or exascale benchmark.
@@ -602,16 +602,18 @@ adapter valid/invalid-input tests and quick frozen/pancake tests. Full pancake
 coverage is `cosmology_validate_pancake`. Set
 `IPPL_COSMOLOGY_FASTPM_EXECUTABLE` and optionally
 `IPPL_COSMOLOGY_FASTPM_MANIFEST` to enable `cosmology_validate_frozen_force`.
-The reference adapter does **not** yet advance particles: matched-particle
-plain-PM FastPM versus IPPL evolution is the subsequent stage, not a result of
-these frozen-force tests.
+The frozen-force adapter does not advance particles. The separate matched
+evolution adapter described below does; these are distinct qualification stages.
 
-Before that next stage: choose a documented common Nyquist treatment (or
+The follow-up requirements identified at that stage were: choose a documented common Nyquist treatment (or
 explicitly limit which observables are compared); verify the worst-epoch mass
 with accurate summation; and investigate grid/lattice-locking by separating
 particle and force-mesh resolution or shifting the pancake phase. A native
 kernel mismatch must not be interpreted as an integration error, and the
 current spatial convergence does not establish nonlinear density convergence.
+The user accepted these discrepancies as a local engineering baseline; original
+measurements and the failed mass gate remain intact. The subsequent comparison
+keeps native operators and explicitly limits its acceptance observables.
 
 ### Plot the saved force and pancake evidence
 
@@ -646,16 +648,222 @@ saved campaign structure and retained failure so that these annotations cannot
 silently be reused as an all-pass claim. Its extraction self-tests can be run
 with `python -B demos/cosmology/tests/test_plot_pm_validation.py`.
 
+## Matched-particle native plain-PM evolution
+
+This stage uses exactly the same imported particle positions and canonical
+momenta in IPPL and the pinned native FastPM `FASTPM_FORCE_PM` integrator.
+It is not FastPM's modified stepping or COLA. `CompareCosmologyEvolution` calls
+the production IPPL force and KDK methods. The KDK body was extracted without
+changing its arithmetic. A diagnostic-only particle-count override permits
+holding particles fixed while changing the force mesh: deposited cell mass is
+normalized by `NM³/NP³` before subtracting one. The default `NP=NM` production
+path retains its original subtraction and floating-point operation order.
+Fields, scatter/gather and integration stay in their configured Kokkos memory
+and execution spaces; import and diagnostic CSV output use host copies.
+
+### Reproduce
+
+First build the pinned frozen-force reference above. The separate evolution
+linker verifies its sources and libraries without rebuilding or modifying them:
+
+```sh
+cmake --build build_openmp --target CompareCosmologyEvolution Cosmology
+bash demos/cosmology/reference/build_fastpm_evolution.sh "$PWD/build_fastpm"
+env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_evolution.py \
+    --ippl-exe build_openmp/demos/cosmology/CompareCosmologyEvolution \
+    --fastpm-exe build_fastpm/evolution/FastPMEvolution \
+    --fastpm-manifest build_fastpm/evolution/build-manifest.txt
+```
+
+`--quick` selects eight smaller smoke runs, not the full refinement study.
+`--output-dir` must be new or empty; otherwise a unique `matched-evolution-*`
+directory is created beside the IPPL executable. Launcher options and `--timeout`
+follow the other validators. Each invocation preserves the common initial CSVs,
+commands, logs, synchronized snapshots, diagnostics, native time-factor probes,
+source/input/executable hashes, fixed limits, every check, and `results.json`.
+Snapshots are losslessly gzip-compressed after verifying their decompressed
+SHA256; the recorded original CSV bytes remain recoverable by decompression.
+The runner exits nonzero on a failed gate or incomplete execution.
+
+Optional CMake integration (no automatic reference downloads or builds):
+
+```sh
+cmake -S . -B build_openmp \
+  -DIPPL_COSMOLOGY_PYTHON_VALIDATION=ON \
+  -DPython3_EXECUTABLE=/Users/adelmann/.venv-h6/bin/python \
+  -DIPPL_COSMOLOGY_FASTPM_EVOLUTION_EXECUTABLE="$PWD/build_fastpm/evolution/FastPMEvolution" \
+  -DIPPL_COSMOLOGY_FASTPM_EVOLUTION_MANIFEST="$PWD/build_fastpm/evolution/build-manifest.txt"
+ctest --test-dir build_openmp -L cosmology --output-on-failure
+cmake --build build_openmp --target cosmology_validate_evolution
+```
+
+The analysis tests and IPPL import regression are available without native
+FastPM. Its explicit configuration additionally registers the matched quick
+CTest and full build target. Import tests cover 19 MPI runs: exact state import,
+ballistic motion on ranks1–4, a nonuniform unequal-mesh one-step CIC/KDK oracle,
+production-driver equivalence and malformed/unsupported input rejection.
+
+Both diagnostic executables take
+`NP NM L Omega_m a_initial a_final n_steps n_checkpoints input.csv output_dir`.
+The shared CSV has columns `id,x,y,z,px,py,pz,mass`, exactly `NP³` unique IDs
+`0..NP³−1`, and unit masses. This is a diagnostic import contract, not a new
+production initial-condition format or scalable restart interface.
+
+### Physics and comparison contract
+
+The reference retains native CIC, NAIVE spectral forces, no softening, no
+deconvolution, float32 particle momentum/acceleration, and double positions/FFT.
+Initial momenta are rounded once to float32 and those exact values supplied to
+both codes. The explicit origin conversion is `x_native=wrap(x_IPPL−L/(2NM))`.
+All exported coordinates, including checkpoint zero, come from actual native
+state rebased into IPPL coordinates. The background is radiation-free flat
+Lambda-CDM. Canonical momentum is `p=a² dx/d(H0t)` in both implementations.
+
+The reference initializes native PM/store/cosmology directly, bypassing only
+the upstream generated-lattice and mesh-divisibility precheck. This permits the
+separately tested uneven three-rank decomposition. Force, migration, native
+`fastpm_solver_evolve`, kick/drift factors and scheduling are unchanged. Output
+uses native synchronized full-step transition events, not interpolated snapshots
+or velocity-unit conversions. Both codes use logarithmic full endpoints and a
+geometric kick midpoint. Native split drifts are additive counterparts of the
+IPPL full drift. Actual native time factors are checked against independent
+quadrature, with complete interval and row-count checks.
+
+The full campaign has 32 runs, `NP=32`, `L=168.75 Mpc/h`, `Omega_m=.31`, and
+`a=.02→.2`. The pancake has extrapolated final linear amplitude1.5; actual final
+particle-sheet folding is required. The second fixture has nine coupled low-k
+growing modes with final linear density RMS1. It is a deterministic synthetic
+nonlinear test, **not** a sigma8-normalized Gaussian CDM realization. Each code
+runs `nt=64/128/256` at `NM=32`, `NM=16/32/64` at `nt=256`, and ranks1–4 at
+`NM=32,nt=128`, with nine synchronized checkpoints per run.
+
+Particle differences are periodic and matched by global ID. Density coefficients
+are measured directly as `mean(exp(-i k·x))`, independently of either mesh, on
+unique conjugate pairs with `0<|k|/k_fundamental<=4`; only active axis modes are
+used for the pancake. There is no CIC deconvolution or shot-noise subtraction.
+Power, complex-coefficient residuals, and signed cross-correlation are distinct
+observables. Raw3D trajectory differences and individual radial shells are
+characterized, not gated as though the differing Nyquist operators were equal.
+
+Acceptance limits precede runs and are saved verbatim. Aggregate resolved power
+and complex residual limits are 5/2/1% for `NM=16/32/64`; minimum correlations are
+.995/.999/.9995. Planar cross-code trajectory and momentum budgets are1e-3 cell
+and1e-3 relative RMS. Rank budgets are1e-10 for IPPL (plus a position roundoff
+allowance),5e-5 for FastPM. Mean momentum drift is relative to the actual imported
+mean, not zero after quantization. Refinement compares successive timestep
+differences before and after crossing, and the finest force-mesh pair at fixed
+particles. Below an explicit analysis floor no order is inferred; that status
+does not demonstrate machine-roundoff dominance. Fixed-particle mesh refinement
+does not establish a continuum Vlasov limit.
+
+IPPL's mass diagnostic is a CIC mesh sum; the native adapter's is a unit-particle
+count. They are not interchangeable. The earlier strict2e-12 mesh-mass limit is
+recorded separately without changing its previous failed result. Neither
+post-crossing code agreement nor an aggregate low-k test proves local density
+accuracy or an analytical post-crossing solution.
+
+### Local evolution result (2026-10-03)
+
+The full campaign completed all32 runs with **1,723/1,725 checks passing** at
+`build_openmp/demos/cosmology/matched-evolution-5v7u3y98/results.json`. No source,
+input, executable or limit changed during the campaign. All cross-code, imported
+state, rank1–4, native factor, momentum-conservation and sheet-crossing checks
+passed. The two failures are the final coupled3D momentum timestep differences:
+`nt128→256` gives0.27634% IPPL and0.27556% FastPM versus the unchanged0.2% budget.
+Both show difference-reduction factors near4; these are accuracy-budget failures,
+not a failure of the measured timestep convergence trend. They remain recorded.
+
+| Measurement across the full campaign | Result |
+| --- | --- |
+| Pancake cross-code position RMS / mesh spacing | <=1.72e-6 |
+| Pancake cross-code momentum relative RMS | <=3.83e-7 |
+| Coupled3D aggregate resolved-power difference | <=0.243% |
+| Coupled3D complex density-coefficient difference | <=0.338% |
+| Coupled3D signed density cross-correlation | >=0.99999449 |
+| IPPL rank position / momentum relative differences | <=2.07e-15 cell /1.65e-15 |
+| FastPM rank position / momentum relative differences | <=5.95e-8 cell /4.68e-8 |
+| Final pancake / coupled3D finest-mesh power changes |3.63% /2.67–2.84% |
+| Maximum IPPL CIC mass-sum residual |1.22e-12 |
+
+The raw3D particle differences reach0.0321 mesh cell and1.01% relative momentum;
+those are characterized, not accepted as identical-operator trajectories. The
+pancake's16→32→64 mesh power changes are not monotone decreasing, despite the
+finest-pair sensitivity being below5%. Do not infer continuum spatial convergence.
+The historical higher-resolution analytical-pancake mass failure remains intact;
+a smaller residual in these new fixed-NP tests does not overturn it.
+
+The independently tested analysis has20 passing tests, the refinement extension
+has11 synthetic tests, and the existing full linear22-run/275-check suite was
+rerun and passes after the KDK extraction. All16 final registered cosmology
+CTests pass. The separate targeted512-step
+follow-up passes99/99 checks across two new runs:
+`build_openmp/demos/cosmology/evolution-refinement-k2qeaylz/results.json`.
+Final256→512 momentum differences are0.06962% IPPL and0.06943% FastPM, below the
+unchanged0.2% budget; position differences are0.0004493/0.0004484 mesh cells.
+Final difference-reduction ratios are about4, with observed orders1.97–2.01
+for the assessed3D quantities. These are successive-resolution differences,
+not errors against truth. Pre-crossing momentum differences fall below the
+predeclared analysis floor, so no convergence order is inferred for those two
+checks. This follow-up does not relabel the original full campaign as all-pass.
+
+Reproduce that bounded follow-up with the saved parent campaign:
+
+```sh
+env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_evolution_refinement.py \
+    --parent build_openmp/demos/cosmology/matched-evolution-5v7u3y98/results.json
+```
+
+This strict evidence extension verifies the original sources, executables,
+manifest, exact input CSV and reused snapshots against their hashes. It runs
+only the two additional single-rank `NP=NM=32,nt=512` coupled3D cases and applies
+the unchanged limits to128/256/512-step differences. It never regenerates the
+ICs or overwrites the parent report. `--check-only` performs read-only provenance
+verification without simulations. A source change after the parent campaign
+deliberately prevents this extension; create a fresh full campaign instead.
+The new result preserves the parent's failed status and failures verbatim.
+
+The targeted extension qualifies only the tested NP32/NM32 single-rank finer
+stepping. MPI agreement comes from the original128-step rank study, not an
+unperformed512-step multi-rank study. The default full-validation target retains
+the original64/128/256 protocol and thus still reports those two failed budgets
+on this setup; run the explicit follow-up above to inspect the finer-step result.
+
+### Plot the matched evolution evidence
+
+The saved-data plotting script does not run simulations or alter validation gates:
+
+```sh
+/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/plot_evolution.py \
+  build_openmp/demos/cosmology/matched-evolution-5v7u3y98/results.json \
+  --output-dir build_openmp/demos/cosmology/evolution-plots-new
+```
+
+It produces PNG/SVG phase portraits at three epochs and a resolved-density
+evolution figure, plus `plotted-data.json` and a SHA256 manifest. Requires
+Matplotlib, NumPy and pandas. Snapshot hashes are verified; particle IDs are
+matched. Phase-space curves connect the same32 particles in one transverse
+Lagrangian row, with periodic-edge breaks, not an interpolated distribution.
+The density panels use recorded direct particle coefficients and reproduce the
+saved comparison norms. Linear residual axes retain true zeros; undefined
+normalizations remain gaps. The two original failed timestep checks remain
+visible even though they are not cross-code density failures.
+Inspected release figures are under
+`build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release`.
+
 ## Scope of the result
 
 These checks establish local linear-regime behavior and the qualified frozen
-force comparisons above; the finite-amplitude pancake evidence retains its
-stated limitations. CIC suppresses short-wavelength
+force comparisons above, plus matched-particle resolved-observable agreement
+through the tested planar shell crossing and synthetic coupled3D evolution.
+The finite-amplitude pancake and refinement evidence retain their stated
+limitations. CIC suppresses short-wavelength
 forces, so agreement with continuum growth is assessed at resolved wavelengths
 and through convergence, rather than by requiring all modes to be exact.
 
 This is a starting point for a trusted dark-matter application. It does not yet
-validate nonlinear halo statistics, shell crossing, close encounters, 2LPT,
+validate general nonlinear halo statistics, arbitrary shell crossing, close encounters, 2LPT,
 neutrinos, radiation, non-Gaussian initial conditions, or alternative dark energy.
 The local OpenMP/MPI result does not establish GPU correctness or performance,
 multi-node scaling, restart reliability, or exascale capability. Those require

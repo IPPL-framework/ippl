@@ -75,8 +75,11 @@ class Simulation {
     double initialModeAmplitude_m = 0.0;
     double massError_m = 0.0;
     double maxImaginary_m = 0.0;
+    // Only the imported-evolution diagnostic sets this; normal ICs remain Nmesh^3.
+    std::uint64_t expectedParticleCount_m = 0;
 
     std::uint64_t totalParticles() const {
+        if (expectedParticleCount_m != 0) return expectedParticleCount_m;
         const auto n = static_cast<std::uint64_t>(config_m.nGrid);
         return n * n * n;
     }
@@ -290,7 +293,13 @@ class Simulation {
         massError_m = std::abs(density_m.sum() / double(totalParticles()) - 1.0);
         if (!std::isfinite(massError_m) || massError_m > 1.e-10)
             throw std::runtime_error("CIC mass conservation failed");
-        density_m = density_m - 1.0; // one unit-mass particle per cell
+        if (totalParticles() == config_m.particleCount()) {
+            density_m = density_m - 1.0; // preserve the production one-particle-per-cell path
+        } else {
+            // Imported particles may be held fixed while the force mesh changes.
+            // Unit masses give mean cell mass Nparticles/Ncells; solve for delta.
+            density_m = density_m * (double(config_m.particleCount()) / double(totalParticles())) - 1.0;
+        }
         solveFromDensity();
         gather(particles_m->force, force_m, particles_m->R);
     }
@@ -302,6 +311,14 @@ class Simulation {
     void drift(double integral) {
         particles_m->R = particles_m->R + particles_m->momentum * integral;
         updateParticles();
+    }
+
+    void advanceStep(double a0, double a1) {
+        const double half = std::sqrt(a0 * a1);
+        kick(background_m.kick(a0, half));
+        drift(background_m.drift(a0, a1));
+        solveForce();
+        kick(background_m.kick(half, a1));
     }
 
     void diagnose(int step, double a) {
@@ -384,6 +401,12 @@ public:
     // Diagnostic-only entry point, defined by tests/CompareCosmologyForce.cpp.
     // Imports validated equal-mass particles and exercises the production CIC/FFT/gather path.
     void compareFrozenForce(const std::string& inputCsv, const std::string& outputDirectory);
+
+    // Imported phase-space diagnostic, defined by tests/CompareCosmologyEvolution.cpp.
+    // Uses the same production KDK/force path, with optional fixed-particle mesh refinement.
+    void compareImportedEvolution(int particleGrid, const std::string& inputCsv,
+                                  const std::string& outputDirectory, double aInitial,
+                                  double aFinal, int checkpoints);
 
     explicit Simulation(const Config& config) : config_m(config), background_m(config) {
         config_m.validate();
@@ -528,11 +551,7 @@ public:
         for (int step = 0; step < config_m.nSteps; ++step) {
             const double a0 = config_m.aInitial() * std::exp(step * logStep);
             const double a1 = config_m.aInitial() * std::exp((step + 1) * logStep);
-            const double half = std::sqrt(a0 * a1);
-            kick(background_m.kick(a0, half));
-            drift(background_m.drift(a0, a1));
-            solveForce();
-            kick(background_m.kick(half, a1));
+            advanceStep(a0, a1);
             if ((step + 1) % config_m.diagnosticsEvery == 0 || step + 1 == config_m.nSteps)
                 diagnose(step + 1, a1);
         }
