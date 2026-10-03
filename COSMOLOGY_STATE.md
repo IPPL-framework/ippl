@@ -43,7 +43,13 @@ that suite. Bothshelllaunchers passbash-n; diffcheckclean. Independentreviews
 caught/fixed venvsymlinkidentity, preservationof1rank/2hostthreads, recomputation
 ofintegrityflags, andper-runlaunch-to-archive linkage. All24 oldCPU source/source-
 copyhashesverifiedagain; CPUworktreeclean. ScientificconstantsASTauditunchanged.
-No simulationswereexecutedbythesehelpertests. Next executable step:
+No simulationswereexecutedbythesehelpertests. Functionalchange6bd52b76b committed
+andpushed; remote isolated /data/user/adelmann/ippl-cosmology-a100 createdatthat
+commit, clean, shellsyntaxandMPIlauncherexecutablemodechecked. Originalremote
+checkoutstillonlypre-existingHANDOFF.md. At21:24UTC rechecknodeDOWN, emptyqueue,
+CPUaccountdry-runagainrejected; noactualjobsubmitted. Bothrequired scientific
+executionstagesremainunverifiedonA100; CPU18-runGaussiancampaignnotyetstarted.
+Next executable step:
 waitforauthorizedcomputeavailability, finishCPU
 campaign, then build/runA100. No login-nodebuild or simulation is permitted.
 
