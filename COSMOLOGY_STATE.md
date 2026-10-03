@@ -1,5 +1,29 @@
 # Cosmology task state
 
+## Latest execution: local CPU 44/52; infrastructure blocked
+
+2026-10-03 21:38 UTC: CPU worktree completed three more frozen-source local runs:
+NP64/NM64 z49 native nt2048 (43/43 checks), IPPL nt1024 (39/39), native nt1024
+(43/43). All 27 new checkpoint archives and retained provenance independently
+verified. Report is now 44/52 runs, including 10/18 Gaussian; Gaussian stage and
+its qualification remain incomplete. Spatial results/failures are unchanged.
+See /Users/adelmann/git/ippl-cosmology-linear/COSMOLOGY_STATE.md for evidence.
+
+The next local preflight returned exit3: required 1,750,073,344 free bytes,
+available 1,667,796,992; no launch. No simulation/controller remains running.
+At 21:35 UTC Merlin still reports merlin-g-100 down/not responding and an empty
+queue. Only gmerlin6/gwendolen is authorized; CPU maintenance-account dry-run
+was rejected. This is the third consecutive goal turn with the same compute
+blocker, and no further guarded local run fits. Goal is not achieved; mark
+blocked pending compute availability or more local space. CPU remains first.
+
+No actual Slurm job, CUDA build or GPU simulation has run. Functional A100
+preparation remains at6bd52b76b; documentation updates do not add runtime evidence.
+Do not resume the old CPU study with this branch's changed provenance hashes,
+reduce disk/scientific guards, run on a login node, or relabel failed checks.
+Next: finish the prepared Linux CPU campaign, then build/run the full A100
+workflow. Original user checkouts remain untouched. No monitoring automation.
+
 ## Current goal: finish spatial and Gaussian validation on CPU and A100
 
 Goal continuation on2026-10-03: previous turn was PROGRESS (deployment plus
