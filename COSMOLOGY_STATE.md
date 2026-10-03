@@ -1,5 +1,30 @@
 # Cosmology task state
 
+## Plotting frozen-force and pancake evidence
+
+User requested plots of the completed validation stage. Reproduce static PNG/SVG
+figures from frozen-force-5_li99qh, pancake-validation-rs1o9glb and its diagnostic
+audit, without rerunning simulations or changing tolerances. Root owns plotting
+script, data/hash manifest, visual inspection and README; independent reviewer
+audited the saved quantities and annotations. Show native-operator disagreement,
+global/time convergence, unresolved local gradients and the retained mass gate.
+Do not floor undefined uniform-force relative errors onto a logarithmic axis,
+subtract RMS magnitudes to estimate residuals, or turn the partial pancake
+qualification into an overall pass.
+
+Completed: four publication-quality PNG/SVG figures plus plot_data.json and
+source/output SHA256 manifest at build_openmp/demos/cosmology/pm-validation-plots-release.
+New plot_pm_validation.py reads saved evidence only; no model runs or source-data
+changes. README contains reproduction command. Ten focused synthetic plot tests
+pass (residual norms, component/vector RMS scaling, missing ranks, exact zeros,
+and marker visibility). Independent review found and fixed a clipped small-error
+marker. Visual QA corrected legend/footnote overlap and crowded log tick labels;
+all figures now inspected, annotations derive numerical orders/counts from data.
+Earlier drafts remain under pm-validation-plots and pm-validation-plots-final.
+Retained pancake failure and local-gradient nonconvergence remain explicit.
+No physics, tolerance, or parallel execution changes; next scientific work is
+unchanged from the validation handoff below.
+
 ## Current work: analytical pancake and plain-PM FastPM comparison
 
 User approved the next validation stage, starting with frozen forces. Preserve

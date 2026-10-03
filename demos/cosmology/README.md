@@ -613,6 +613,39 @@ particle and force-mesh resolution or shifting the pancake phase. A native
 kernel mismatch must not be interpreted as an integration error, and the
 current spatial convergence does not establish nonlinear density convergence.
 
+### Plot the saved force and pancake evidence
+
+```sh
+/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/plot_pm_validation.py \
+  --frozen build_openmp/demos/cosmology/frozen-force-5_li99qh/results.json \
+  --pancake build_openmp/demos/cosmology/pancake-validation-rs1o9glb/results.json \
+  --audit build_openmp/demos/cosmology/pancake-diagnostics-rs1o9glb/diagnostics.json \
+  --output-dir build_openmp/demos/cosmology/pm-validation-plots-new
+```
+
+Requires Matplotlib, NumPy and pandas. Use a new or empty output directory;
+existing final figures are in `build_openmp/demos/cosmology/pm-validation-plots-release`.
+The script produces four PNG/SVG figures, `plot_data.json`, and a SHA256 manifest:
+
+- `frozen_force_comparison`: each native operator versus its own independent
+  oracle, plus raw/predicted cross-code differences and the residual field.
+  Each plotted value is the maximum over ranks1–4. Exactly-zero uniform forces
+  have undefined relative errors and are explicitly omitted from the log plot.
+- `pancake_convergence`: global continuum trajectory errors versus resolution,
+  and successive fixed-mesh timestep differences. Momentum and position use
+  their respective analytical RMS scales. Slope guides are not fitted models.
+- `pancake_local_errors`: displacement and interval-Jacobian errors along one
+  transverse row. The exact map is finite-differenced identically. These are
+  not Eulerian CIC density curves and do not establish local-density convergence.
+- `pancake_mass_diagnostic`: saved N64 mass-error histories, the unchanged
+  acceptance gate and the retained failure. Accurate endpoint sums do not
+  verify the unsaved intermediate maximum.
+
+No simulation or gate is changed. This plotting entry point checks the expected
+saved campaign structure and retained failure so that these annotations cannot
+silently be reused as an all-pass claim. Its extraction self-tests can be run
+with `python -B demos/cosmology/tests/test_plot_pm_validation.py`.
+
 ## Scope of the result
 
 These checks establish local linear-regime behavior and the qualified frozen
