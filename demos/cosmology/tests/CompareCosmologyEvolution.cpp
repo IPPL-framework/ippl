@@ -258,16 +258,15 @@ void Simulation::compareImportedEvolution(int particleGrid, const std::string& i
         if (!checkpointOutput) rootError = "Checkpoint table close failed";
         std::ofstream metadata(std::filesystem::path(outputDirectory) / "metadata.txt");
         metadata << std::setprecision(17)
-                 << "mode=imported particles; production Simulation::advanceStep and solveForce\n"
-                 << "ranks=" << ranks << "\nthreads=" << Kokkos::DefaultExecutionSpace().concurrency()
+                 << "mode=imported particles; production Simulation::advanceStep and solveForce\n";
+        writeExecutionMetadata(metadata);
+        metadata << "ranks=" << ranks
                  << "\nn_particles_grid=" << particleGrid << "\nn_grid=" << config_m.nGrid
                  << "\nn_steps=" << config_m.nSteps << "\nn_checkpoints=" << checkpoints
                  << "\nbox_size=" << config_m.boxSize << "\nomega_m=" << config_m.omegaMatter
                  << "\na_initial=" << aInitial << "\na_final=" << aFinal << "\nparticles=" << total
                  << "\nmaximum_mass_error=" << maximumMassError
                  << "\nmax_inverse_imaginary=" << maxImaginary_m
-                 << "\nexecution_space=" << Kokkos::DefaultExecutionSpace::name()
-                 << "\nmemory_space=" << Kokkos::DefaultExecutionSpace::memory_space::name()
                  << "\nposition_unit=Mpc/h\nmomentum=p=a^2 dx/d(H0 t)\nparticle_mass=1\n"
                  << "ic_generation=none; imported momenta retained without growth rescaling\n"
                  << "mesh_origin=cell centers at (index+0.5)*L/Nmesh\n"

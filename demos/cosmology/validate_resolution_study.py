@@ -25,6 +25,7 @@ import validate_evolution as baseline
 from gaussian_fixture import make_gaussian_fixture
 from study_spectra import analyze_spectrum, unique_modes, ShellEdges
 from study_storage import StudyStorage, DiskSpaceBlocked, GiB, sha256
+from runtime_metadata import validate_runtime_metadata
 
 
 Parameters = {"box_size": 168.75, "omega_m": .31, "checkpoints": 8,
@@ -42,6 +43,7 @@ Codes = ("ippl", "fastpm")
 SourceNames = ("validate_resolution_study.py", "study_storage.py", "study_spectra.py",
                "gaussian_fixture.py", "validate_evolution.py", "validate_linear.py",
                "CosmologySimulation.h", "CosmologyPhysics.h", "CosmologyConfig.h",
+               "ExecutionMetadata.h", "runtime_metadata.py",
                "tests/CompareCosmologyEvolution.cpp", "reference/FastPMEvolution.c",
                "reference/build_fastpm_evolution.sh")
 
@@ -225,7 +227,7 @@ class Study:
                 "smoke_overrides": ({"spatial_af": .04, "gaussian_af": .02, "gaussian_cutoff": 6}
                                     if args.smoke else None),
                 "state": "prepared", "complete": False, "passed": False,
-                "limitations": ["Local CPU studies, not halo-statistics, continuum or exascale qualification",
+                "limitations": ["Finite-resolution studies with recorded backend/rank metadata, not halo-statistics, continuum or exascale qualification",
                     "Gaussian initial modes fixed at |n|<=12; one seed, no variance fitting",
                     "Pure BBKS omits baryonic transfer features; radiation-free flat Lambda, 1LPT",
                     "Qualified comparisons capped at direct Fourier |n|<=4; higher modes characterized only",
@@ -369,9 +371,10 @@ class Study:
         name = case.name + "_" + code
         output = Path(archived["descriptor"]["output"])
         metadata = dict(line.split("=", 1) for line in (output / "metadata.txt").read_text().splitlines() if "=" in line)
+        execution = validate_runtime_metadata(metadata, case.ranks, code=code)
         ai, af = epochs(case, self.args.smoke)
         contract = {"n_particles_grid": case.particles, "n_grid": case.mesh, "n_steps": case.steps,
-                    "n_checkpoints": Parameters["checkpoints"], "ranks": case.ranks, "threads": 1,
+                    "n_checkpoints": Parameters["checkpoints"], "ranks": case.ranks,
                     "box_size": Parameters["box_size"], "omega_m": Parameters["omega_m"], "a_initial": ai, "a_final": af}
         if any(float(metadata[key]) != value for key, value in contract.items()):
             raise ValueError("Execution metadata violates requested contract")
@@ -391,7 +394,7 @@ class Study:
             self.check_factors(output, name, case, ai, af)
             expected_e = np.sqrt(Parameters["omega_m"] / expected_a**3 + 1 - Parameters["omega_m"])
             self.upper(name + "/background", float(np.max(abs(table.E / expected_e - 1))), 1e-12, case=case)
-        record = {"name": name, **asdict(case), "code": code, "metadata": metadata,
+        record = {"name": name, **asdict(case), "code": code, "metadata": metadata, "execution": execution,
                   "storage_output": str(output), "input_sha256": archived["descriptor"]["input_sha256"],
                   "checkpoints": table.to_dict(orient="records"), "density": [], "observations": [],
                   "mass_note": "IPPL is deposited mesh mass; native is unit-particle count, not equivalent diagnostics"}

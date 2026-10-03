@@ -35,6 +35,7 @@ import numpy as np
 import pandas as pd
 
 from validate_linear import bbks_spectrum, growth_reference
+from runtime_metadata import validate_runtime_metadata
 
 
 Seeds = (1234567, 7654321, 104729, 130363, 32452843, 49979687, 67867967, 86028121)
@@ -306,7 +307,9 @@ class Validation:
             if path.is_file() and path.suffix in (".h", ".cpp")}
         for name, path in (("ippl_executable", self.args.ippl_exe), ("zarija_executable", self.args.zarija_exe),
                            ("transfer_table", self.args.transfer_file), ("analysis_script", Path(__file__)),
-                           ("independent_reference_script", Path(__file__).with_name("validate_linear.py"))):
+                           ("independent_reference_script", Path(__file__).with_name("validate_linear.py")),
+                           ("execution_metadata_header", Path(__file__).with_name("ExecutionMetadata.h")),
+                           ("runtime_metadata_script", Path(__file__).with_name("runtime_metadata.py"))):
             provenance[name] = {"path": str(path), "sha256": sha256(path)}
         shutil.copy2(self.args.transfer_file, target/"transfer.tf")
         # All runs read the captured transfer artifact, not a mutable source path.
@@ -424,8 +427,8 @@ class Validation:
     def background_check(self, name, directory, code, metrics, ranks):
         if code == "ippl":
             meta = dict(line.split("=", 1) for line in (directory/"output"/"metadata.txt").read_text().splitlines() if "=" in line)
-            self.check(name+": actual execution topology", int(meta["ranks"]) == ranks and int(meta["threads"]) == 1,
-                       actual_ranks=int(meta["ranks"]), actual_threads=int(meta["threads"]))
+            execution = validate_runtime_metadata(meta, ranks)
+            self.check(name+": actual MPI/backend/host-thread configuration", True, execution=execution)
             diagnostics = pd.read_csv(directory/"output"/"diagnostics.csv")
             first = diagnostics.iloc[0]
             error = max(abs(first["D"]/metrics["theory_D"]-1), abs(first["f"]/metrics["theory_f"]-1))
@@ -556,7 +559,8 @@ class Validation:
                    changed_files=[name for name in expected if expected[name] != actual[name]])
         self.results["artifact_sha256_after"] = {}
         for name in ("ippl_executable", "zarija_executable", "transfer_table",
-                     "captured_transfer_table", "analysis_script", "independent_reference_script"):
+                     "captured_transfer_table", "analysis_script", "independent_reference_script",
+                     "execution_metadata_header", "runtime_metadata_script"):
             artifact = provenance[name]
             path = Path(artifact["path"])
             current = sha256(path) if path.is_file() else None

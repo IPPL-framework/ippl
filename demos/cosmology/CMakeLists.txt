@@ -111,6 +111,13 @@ if(BUILD_TESTING)
       set_tests_properties(cosmology_${analysis}_analysis PROPERTIES LABELS cosmology TIMEOUT 120
         ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
     endforeach()
+    foreach(analysis runtime_metadata compare_fixture_files merlin_cpu_launcher
+                     merlin_gpu_rank merlin_gpu_mpiexec merlin_a100_launcher a100_completion_audit)
+      add_test(NAME cosmology_${analysis}_analysis COMMAND ${Python3_EXECUTABLE} -B
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_${analysis}.py)
+      set_tests_properties(cosmology_${analysis}_analysis PROPERTIES LABELS cosmology TIMEOUT 120
+        ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
+    endforeach()
     execute_process(COMMAND ${Python3_EXECUTABLE} -c "import matplotlib"
                     RESULT_VARIABLE cosmology_plot_python_status OUTPUT_QUIET ERROR_QUIET)
     if(cosmology_plot_python_status EQUAL 0)

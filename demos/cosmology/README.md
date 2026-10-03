@@ -1059,6 +1059,75 @@ python -B demos/cosmology/tests/test_compare_fixture_files.py
 python -B demos/cosmology/tests/test_merlin_cpu_launcher.py
 ```
 
+## Isolated A100 validation
+
+GPU preparation is isolated on `codex/cosmology-a100-validation`, local worktree
+`/Users/adelmann/git/ippl-cosmology-a100`. The CPU study and its original source
+hashes remain in `codex/cosmology-linear`. Do not resume the macOS CPU journal
+using this successor: its execution-metadata source contract intentionally differs.
+No equations, force assignments, arithmetic order, particle transfers or numerical
+acceptance budgets are changed by the metadata patch.
+
+Historical `threads` is retained as `DefaultExecutionSpace.concurrency()`.
+CUDA execution capacity is not a CPU thread count. New output adds actual
+`host_threads`, `execution_concurrency`, `execution_space` and `memory_space`.
+Validators require consistent explicit GPU metadata, retain strict legacy CPU
+and native-reference checks, and record backend evidence. The one-rank/two-host-
+thread regression checks host configuration, not GPU throughput or GPU scaling.
+
+`merlin/a100_validation.sh` requires completed CPU Gaussian evidence before either
+GPU job. Build with one A100; then use four full, non-MIG A100s for the run job.
+Both jobs request exactly four CPUs on one node. Replace the evidence paths below
+with the completed CPU campaign and a new GPU directory; submit the second job
+only after the first job has successfully completed. The launcher is prepared
+but **CUDA compilation and cluster runtime validation remain unperformed**.
+
+```sh
+cd /data/user/adelmann/ippl-cosmology-a100
+sbatch --clusters=gmerlin6 --account=gwendolen --partition=gwendolen \
+  --nodes=1 --ntasks=4 --cpus-per-task=1 --ntasks-per-core=2 \
+  --gres-flags=disable-binding --gpus-per-node=1 --mem=32G --time=06:00:00 \
+  --job-name=cosmology-a100-build --output=cosmology-a100-build-%j.log \
+  demos/cosmology/merlin/a100_validation.sh build \
+  /data/user/adelmann/cosmology-cpu-COMPLETE /data/user/adelmann/cosmology-a100-NEW
+
+sbatch --clusters=gmerlin6 --account=gwendolen --partition=gwendolen \
+  --nodes=1 --ntasks=4 --cpus-per-task=1 --ntasks-per-core=2 \
+  --gres-flags=disable-binding --gpus-per-node=4 --mem=32G --time=12:00:00 \
+  --job-name=cosmology-a100-run --output=cosmology-a100-run-%j.log \
+  demos/cosmology/merlin/a100_validation.sh run \
+  /data/user/adelmann/cosmology-cpu-COMPLETE /data/user/adelmann/cosmology-a100-NEW
+```
+
+The CUDA+OpenMP build pins AMPERE80 for both Kokkos and heFFTe. In pinned
+heFFTe v2.4.1, `Heffte_ENABLE_GPU_AWARE_MPI=OFF` stages FFT reshape buffers even
+when IPPL requests GPU-aware plans. IPPL particle migration and halo exchanges
+still pass device buffers to MPI, so **CUDA-aware MPI remains required**. Actual
+single-/multi-GPU regressions must establish that this installed MPI stack works;
+no configure flag or mocked launcher test substitutes for those executions.
+
+The run job executes the cosmology CTests, eight-run smoke and the full spatial34
+plus Gaussian18 matrix. Its26 IPPL runs use CUDA and26 native plain-PM FastPM
+reference runs remain CPU-only. The previous completed CPU spatial evidence is
+retained separately; the new GPU spatial study is not skipped. No tolerance is
+relaxed when a check fails.
+
+`gpu_rank.py` selects only from the scheduler's visible tokens; the MPI wrapper
+preserves adapter arguments and records each actual rank/PCI binding. The
+controller queries only allocated devices, requiring A100 model and disabled MIG.
+Every successful GPU launch must show distinct devices belonging to that pinned
+allocation. Native-reference launches bypass the GPU helper. Launch tools,
+executables, allocation records and raw logs are hashed. The final audit joins
+each full-study execution to exactly one launch manifest, checks all52 run
+descriptors, requires CUDA device memory for IPPL, and verifies saved archives.
+It explicitly separates completed execution/provenance from failed scientific
+gates and does not independently recompute physics metrics. Figures preserve all
+failed gates and qualified-band limitations.
+
+No GPU performance, multi-node scaling or exascale claim follows from these
+preparatory changes. The cluster node was still down at the latest check; no CPU
+or GPU cluster job has been submitted by this task.
+
 ## Scope of the result
 
 These checks establish local linear-regime behavior and the qualified frozen

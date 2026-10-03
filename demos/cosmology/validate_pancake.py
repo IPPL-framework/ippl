@@ -199,6 +199,7 @@ class PancakeValidation(Validation):
         sourceDirectory = Path(__file__).resolve().parent
         sourcePaths = [sourceDirectory/name for name in (
             "Cosmology.cpp", "CosmologyConfig.h", "CosmologyPhysics.h", "CosmologySimulation.h",
+            "ExecutionMetadata.h", "runtime_metadata.py",
             "validate_linear.py", "validate_pancake.py", "tests/test_validate_pancake.py")]
         self.provenancePaths = [arguments.exe.resolve(), *sourcePaths]
         self.hashes = {str(path): sha256(path) for path in self.provenancePaths}

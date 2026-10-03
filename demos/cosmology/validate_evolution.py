@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 
 from validate_linear import growth_reference
+from runtime_metadata import validate_runtime_metadata
 
 
 Parameters = {"particle_grid": 32, "box_size": 168.75, "omega_m": .31,
@@ -324,6 +325,7 @@ class Campaign:
         source = Path(__file__).resolve().parent
         sources = [source / name for name in (
             "validate_evolution.py", "validate_linear.py", "CosmologySimulation.h", "CosmologyPhysics.h",
+            "ExecutionMetadata.h", "runtime_metadata.py",
             "CosmologyConfig.h", "tests/CompareCosmologyEvolution.cpp", "reference/FastPMEvolution.c",
             "reference/build_fastpm_evolution.sh")]
         sources.extend(self.executables.values())
@@ -339,7 +341,7 @@ class Campaign:
                        "limitations": ["Synthetic smooth ICs, not a Gaussian LCDM halo-statistics qualification",
                            "Native Nyquist and float32 behavior preserved; raw3D trajectories characterized only",
                            "Fixed particle sampling; finer mesh is not a Vlasov continuum limit",
-                           "No analytic post-shell-crossing reference", "CPU local MPI1–4, one thread, no scaling claim"],
+                           "No analytic post-shell-crossing reference", "Local MPI1–4, one host thread, backend recorded; no scaling claim"],
                        "passed": False, "complete": False}
         self.save()
 
@@ -393,9 +395,10 @@ class Campaign:
         launch(command, self.root / (name + ".log"), self.args.timeout)
         archived = archive_snapshots(output)
         metadata = dict(line.split("=", 1) for line in (output / "metadata.txt").read_text().splitlines() if "=" in line)
+        execution = validate_runtime_metadata(metadata, case.ranks, code=code)
         table = pd.read_csv(output / "checkpoints.csv", float_precision="round_trip")
         contract = {"n_particles_grid": p["particle_grid"], "n_grid": case.mesh, "n_steps": case.steps,
-                    "n_checkpoints": p["checkpoints"], "ranks": case.ranks, "threads": 1,
+                    "n_checkpoints": p["checkpoints"], "ranks": case.ranks,
                     "box_size": p["box_size"], "omega_m": p["omega_m"],
                     "a_initial": p["a_initial"], "a_final": p["a_final"]}
         if any(float(metadata[key]) != value for key, value in contract.items()):
@@ -417,7 +420,7 @@ class Campaign:
             expansion = np.sqrt(p["omega_m"] / table.a**3 + 1 - p["omega_m"])
             self.upper(name + "/background", float(np.max(abs(table.E / expansion - 1))), 1e-12)
         record = {"name": name, **case.__dict__, "code": code, "command": command, "output": str(output),
-                  "input_sha256": self.hashes[input_path], "metadata": metadata,
+                  "input_sha256": self.hashes[input_path], "metadata": metadata, "execution": execution,
                   "snapshots": archived, "checkpoints": table.to_dict(orient="records"),
                   "diagnostic_note": "IPPL mass_error is a CIC mesh sum; FastPM mass_error is particle-count mass. Not interchangeable."}
         self.report["runs"].append(record)

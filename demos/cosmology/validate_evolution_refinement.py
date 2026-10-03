@@ -28,6 +28,7 @@ Codes = ("ippl", "fastpm")
 Steps = (128, 256, 512)
 Checkpoints = (4, 8)
 SourceNames = ("validate_evolution.py", "validate_linear.py", "CosmologySimulation.h",
+               "ExecutionMetadata.h", "runtime_metadata.py",
                "CosmologyPhysics.h", "CosmologyConfig.h", "tests/CompareCosmologyEvolution.cpp",
                "reference/FastPMEvolution.c", "reference/build_fastpm_evolution.sh")
 

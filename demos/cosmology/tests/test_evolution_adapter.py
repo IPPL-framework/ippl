@@ -26,6 +26,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import validate_frozen_force as oracle
+from runtime_metadata import validate_runtime_metadata
 
 
 ParticleGrid = 8
@@ -63,6 +64,7 @@ class EvolutionAdapterTests:
         source = Path(__file__).resolve().parents[1]
         tracked = [self.executable, self.production, Path(__file__).resolve(),
                    source / "tests/CompareCosmologyEvolution.cpp", source / "CosmologySimulation.h",
+                   source / "ExecutionMetadata.h", source / "runtime_metadata.py",
                    source / "CosmologyPhysics.h", source / "validate_frozen_force.py"]
         self.results = {"passed": False, "expected_runs": 19, "runs": [], "checks": [],
                         "hashes_before": {str(path): sha256(path) for path in tracked},
@@ -155,7 +157,8 @@ class EvolutionAdapterTests:
     def read_evolution(self, directory, ranks, mesh, ai, af, steps, checkpoints, omega=1.0):
         metadata = dict(line.split("=", 1) for line in
                         (directory / "metadata.txt").read_text().splitlines() if "=" in line)
-        for key, value in (("ranks", ranks), ("threads", 1), ("n_particles_grid", ParticleGrid),
+        validate_runtime_metadata(metadata, ranks)
+        for key, value in (("ranks", ranks), ("n_particles_grid", ParticleGrid),
                            ("n_grid", mesh), ("n_steps", steps), ("n_checkpoints", checkpoints)):
             require(int(metadata[key]) == value, f"Incorrect metadata {key}")
         require(float(metadata["box_size"]) == BoxSize, "Incorrect box size")

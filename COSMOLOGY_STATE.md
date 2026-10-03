@@ -1,5 +1,52 @@
 # Cosmology task state
 
+## Current goal: finish spatial and Gaussian validation on CPU and A100
+
+Goal continuation on2026-10-03: previous turn was PROGRESS (deployment plus
+read-only scheduler evidence), not a verified live-job wait. This is the second
+consecutive observation of the same infrastructure blocker. At21:10UTC ssh
+confirmed merlin-g-100 still DOWN, queue empty, only gmerlin6/gwendolen account,
+remoteCPUcheckout clean at7e3bbb313. No job handle exists. CPU must run first;
+no GPU computation has been started. Goal is not achieved.
+
+Made concrete preparation progress instead of claiming runtime success:
+new isolated local worktree /Users/adelmann/git/ippl-cosmology-a100,
+branch codex/cosmology-a100-validation, starts at7e3bbb313. Original CPU-linear
+worktree and its frozen12 source files/evidence are unchanged. A real CUDA
+validation blocker was found: legacy threads reportsDefaultExecutionSpace
+concurrency (GPU capacity), but validators required1/2 CPU threads. Metadata-only
+header now preserves threads and adds actualhost_threads,execution_concurrency,
+backend/memoryspace. Allreader contracts are strict, legacyCPU/native remains
+accepted, GPUmissingfields/CPUfallback rejected whereCudaexpected. Equations,
+numerical constants/budgets and kernel arithmetic/communication are unchanged.
+New helper/header are covered by changedGPUbranch source-provenance lists.
+OldCPUjournals cannot be resumed with the successor source hashes.
+
+New GPUbinding helper and MPIlauncher preserve scheduler tokens/adapterargs,
+verify/pin executable/helper/config/allocation/log hashes, permit one-rank/two-host-
+thread configuration check while nonlinearrunsremain1thread/rank, and validate
+distinct physicalPCI membership in allocatedA100/MIG-disabled evidence. NoGPU
+enumeration outsideallocation. NativeFastPM reference runs bypassGPUhelper.
+A100driver is two jobs: build4CPUs1GPU; run4CPUs4GPUs, single-node. Both require
+completedCPU18-runGaussian integrity evidence. Run includesCTest1–4ranks,
+8-runpipeline smoke, thenfull52 (34spatial+18Gaussian), followedby provenance/
+backend/archive/launch-linkage audit and plots. Do not replacefullGPUmatrix
+withGaussianonly. Failedscientificchecks are retained, not relabelledPASS.
+
+Correction to earlier GPU-aware warning below: pinnedheFFTev2.4.1 forcesreshape
+host-staging whenHeffte_ENABLE_GPU_AWARE_MPI=OFF even ifIPPLrequestsGPU-awareplans.
+IPPL particle/halo MPIstill usesdevicebuffers, soCUDA-awareMPI remainsessential.
+No runtimeCUDAclaim. Allthree changedC++ adapters passCPU syntax-only compilation;
+finalPython regressiondiscovery230tests PASS in8.995s. GPUrank/helperandMPIlauncher
+32mocked testsPASS; metadata11, completionaudit6, A100shellguard1 coveredwithin
+that suite. Bothshelllaunchers passbash-n; diffcheckclean. Independentreviews
+caught/fixed venvsymlinkidentity, preservationof1rank/2hostthreads, recomputation
+ofintegrityflags, andper-runlaunch-to-archive linkage. All24 oldCPU source/source-
+copyhashesverifiedagain; CPUworktreeclean. ScientificconstantsASTauditunchanged.
+No simulationswereexecutedbythesehelpertests. Next executable step:
+waitforauthorizedcomputeavailability, finishCPU
+campaign, then build/runA100. No login-nodebuild or simulation is permitted.
+
 ## Current work: Merlin6 CPU continuation before A100
 
 2026-10-03: user authorized ssh merlin6, branch push/pull, and subsequently

@@ -4,6 +4,7 @@
 #include "Ippl.h"
 #include "CosmologyConfig.h"
 #include "CosmologyPhysics.h"
+#include "ExecutionMetadata.h"
 #include <Kokkos_MathematicalConstants.hpp>
 #include <algorithm>
 #include <cmath>
@@ -564,10 +565,9 @@ public:
                 << "position_unit=Mpc/h\np=a^2 dx/d(H0 t)\npeculiar_velocity_km_s=100*p/a\n"
                 << "fft=forward 1/N^3; inverse unnormalized\n"
                 << "rng=SplitMix64 canonical Fourier pair; Box-Muller\n"
-                << "nyquist=IC Nyquist planes zero; force differentiated Nyquist component zero\n"
-                << "execution_space=" << Kokkos::DefaultExecutionSpace::name()
-                << "\nmemory_space=" << Kokkos::DefaultExecutionSpace::memory_space::name() << '\n'
-                << "ranks=" << ippl::Comm->size() << "\nthreads=" << Kokkos::DefaultExecutionSpace().concurrency()
+                << "nyquist=IC Nyquist planes zero; force differentiated Nyquist component zero\n";
+            writeExecutionMetadata(metadata);
+            metadata << "ranks=" << ippl::Comm->size()
                 << "\nnp=" << config_m.nGrid << "\nnt=" << config_m.nSteps
                 << "\nbox_size=" << config_m.boxSize << "\nseed=" << config_m.seed
                 << "\nz_in=" << config_m.zInitial << "\nz_fi=" << config_m.zFinal
