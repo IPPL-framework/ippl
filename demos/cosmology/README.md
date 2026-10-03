@@ -233,6 +233,203 @@ Gaussian input completed a four-rank smoke test. That smoke test is not a separa
 nonlinear qualification. Exact result locations are recorded in the repository's
 `COSMOLOGY_STATE.md`; regenerating the suite creates a fresh result directory.
 
+## Compare initial conditions with Zarija
+
+The independent reference is the supplied source tree at
+`/Users/adelmann/git/zarija-cosmicic-b0e794e34384`. The comparison uses its actual
+initializer executable and public cosmology routines in the shared flat,
+Gaussian, radiation-free CDM subset. Both implementations receive the same
+`hubble`, `Omega_m`, `Omega_bar`, `Sigma_8`, `n_s`, box size, resolution, and initial
+redshift. The original reference source and its `cmb.tf` remain unchanged.
+
+### Build and provenance
+
+The reference requires MPI-enabled FFTW3. The build script copies the source into
+its build area, downloads the pinned FFTW 3.3.10 release from
+[the FFTW project](https://www.fftw.org/download.html), verifies its SHA-256, and
+builds static MPI FFTW libraries locally. It performs no global installation and
+applies no source patches. From the IPPL repository root, the local command is:
+
+```sh
+env ZARIJA_CC=/opt/homebrew/opt/llvm@21/bin/clang \
+    ZARIJA_CXX=/opt/homebrew/opt/llvm@21/bin/clang++ \
+    ZARIJA_MPICC=/opt/homebrew/bin/mpicc \
+    ZARIJA_MPICXX=/opt/homebrew/bin/mpicxx \
+    ZARIJA_JOBS=4 \
+  bash demos/cosmology/reference/build_zarija.sh \
+    /Users/adelmann/git/zarija-cosmicic-b0e794e34384 \
+    build_zarija/reference
+```
+
+On other machines, select the corresponding compiler and MPI wrappers through
+the same environment variables. An existing static MPI FFTW installation can be
+selected with `ZARIJA_FFTW_PREFIX`; it must contain `include/fftw3-mpi.h` and the
+static `libfftw3_mpi.a` and `libfftw3.a` libraries. Otherwise the script builds
+FFTW inside its own output directory.
+
+The durable local executable is
+`/Users/adelmann/git/ippl-cosmology-linear/build_zarija/reference/init`.
+The C++ build uses `-O2 -std=c++11 -DDOUBLE_REAL -DFFTW3 -DUSENAMESPACE` and
+`-DOMPI_OMIT_MPI1_COMPAT_DECLS=0`; the C sources use `-O2 -std=c99 -DDOUBLE_REAL`.
+The Open MPI declaration flag exposes retained MPI-1 symbols needed to compile
+an unused datatype helper in the original code. It changes neither the original
+source nor the initializer's executed physics. `TESTING` and `LONG_INTEGER` are
+not enabled.
+
+The build area preserves `source.sha256` and `copied-source.sha256` for all copied
+source, header, and supplied input files; the script requires them to match.
+`build-manifest.txt` records compiler flags and versions, source/build paths,
+FFTW archive and library hashes, the executable hash, and the measured output
+ABI. FFTW's configure, build, and install logs remain under `fftw-build/`.
+For this local artifact, those historical FFTW logs retain the original temporary
+build prefix; the relocated executable was relinked against the local static
+archives and has no runtime dependency on that temporary directory. A fresh
+invocation of the build script creates a complete build at its requested path.
+
+### Reference output and comparison conventions
+
+Use `PrintFormat=2` for per-rank binary snapshots. In the measured local ABI,
+`real` is an 8-byte double, `integer` is 4 bytes, `IDtype` is an 8-byte `long`,
+and byte order is little-endian. Every binary record is **52 bytes**:
+`x,vx,y,vy,z,vz` as six doubles, followed by four bytes from the particle ID.
+For these small runs the stored ID fits in that four-byte field. Serial binary
+`PrintFormat=1` has a legacy `long`/`int` MPI ID-transfer mismatch, so it is not
+used for multi-rank reference output. ASCII `PrintFormat=0` prints 16 significant
+digits with `DOUBLE_REAL`; it is suitable for inspection but binary avoids decimal
+round-trip loss.
+
+Reference coordinates are comoving Mpc/h. Inspection of the actual reference
+`set_particles` and `grid2phys` implementation shows that its `vZ` output is
+`100 dx/d(H0 t)`, despite the generic km/s label in its README. Therefore the
+comparison converts it to the IPPL canonical momentum as `p=a² vZ/100`; physical
+peculiar velocity is `a vZ`. The reference lattice lies on integer grid sites;
+IPPL uses cell centers. Comparisons recover displacements relative to each
+lattice and account for that origin difference.
+
+The reference parser stores seeds in a signed 32-bit integer, so matched campaigns
+use seeds below `2147483648`. Its legacy random sequence differs from IPPL's
+global-Fourier-index random generator: the same numeric seed does not imply the
+same phases or pointwise-identical particles. The comparison must distinguish
+deterministic background/transfer/normalization checks from statistical IC checks.
+The reference's slab decomposition also requires the grid size to be divisible by
+its rank count; for power-of-two grids use reference ranks 1, 2, or 4. IPPL's
+independent 1–4-rank tests include the non-dividing three-rank case.
+
+The public-API comparison can be run separately from the full initializer:
+
+```sh
+/Users/adelmann/.venv-h6/bin/python \
+  demos/cosmology/reference/compare_zarija_physics.py \
+  --reference-source /Users/adelmann/git/zarija-cosmicic-b0e794e34384 \
+  --ippl-build build_openmp \
+  --output-dir build_zarija/physics-comparison \
+  --np 32 --box-size 168.75
+```
+
+Use a fresh output directory. The probe compiles the actual reference
+`Cosmology.cpp` and `MT_Random.cpp`, preserves hashes before and after the run, and
+writes per-quantity comparison CSVs and `results.json`. It records the known
+legacy first-table-row normalization and zero-wave-number differences explicitly;
+see [LINEAR_PHYSICS.md](LINEAR_PHYSICS.md) for the IPPL convention. The table
+comparison includes both the original supplied file and a separately normalized
+input copy; it does not edit the supplied file.
+
+For the full matched-IC campaign, the optional CMake integration runs that public
+API probe before the initializer comparisons. Configure the preserved source and
+separately built executable explicitly:
+
+```sh
+cmake -S . -B build_openmp \
+  -DIPPL_COSMOLOGY_PYTHON_VALIDATION=ON \
+  -DPython3_EXECUTABLE=/Users/adelmann/.venv-h6/bin/python \
+  -DIPPL_COSMOLOGY_ZARIJA_SOURCE=/Users/adelmann/git/zarija-cosmicic-b0e794e34384 \
+  -DIPPL_COSMOLOGY_ZARIJA_EXECUTABLE=/Users/adelmann/git/ippl-cosmology-linear/build_zarija/reference/init
+cmake --build build_openmp --target cosmology_validate_zarija
+```
+
+`cosmology_compare_zarija_physics` runs only the deterministic public-API stage.
+The `cosmology_zarija_analysis` CTest checks the comparison analysis on synthetic
+data, independently of an external reference executable. Neither an ordinary
+build nor CTest downloads or builds the external initializer; it is selected only
+through the explicit reference configuration above. Full matched-IC qualification
+uses the dedicated build target and its saved outputs.
+
+### Matched-IC protocol
+
+The full campaign uses a 32³ mesh and 32³ particles, box length 168.75 Mpc/h,
+`Omega_m=0.31`, `Omega_bar=0.0487`, `hubble=0.675`, `Sigma_8=0.82`, and
+`n_s=0.965`. It exercises BBKS and the supplied transfer table at z=49 and 200,
+with eight fixed, independent seeds per code and case. These 64 serial runs
+are supplemented by 20 MPI runs: IPPL on 2/3/4 ranks and Zarija on 2/4 ranks
+for the first seed in each case. The box length makes the original code's
+single-precision output conversion factors exactly representable.
+
+The analysis reconstructs the Lagrangian displacement from particle IDs and
+wrapped positions, checks its longitudinal character and momentum relation,
+and recovers the z=0 density Fourier coefficients. It excludes DC and every
+Nyquist plane, where the implementations deliberately differ, and retains one
+member of each conjugate pair. Each eight-seed ensemble has 119,160 independent
+complex modes. Repeated seeds across redshifts or transfer functions are checked
+for deterministic scaling, not counted as additional independent samples.
+
+Power normalization is calculated independently: Gauss quadrature for BBKS and
+knot-split Gauss16 integration for the table, not either implementation's
+quadrature. Gaussian means, power moments, six radial power bins and inter-seed
+correlations use predeclared six-standard-error limits. Reference power checks
+also allow a 5e-4 deterministic floor for its coarse normalization quadrature.
+The IPPL same-transfer redshift limit is 1e-9; its same-redshift transfer limit
+is 1e-8, declared before the campaign because independent table integration and
+production log-Simpson normalization differ by 6.34e-9 in power. No amplitude
+or normalization is fitted to the generated particles.
+
+The runner can be invoked directly with `--ippl-exe`, `--zarija-exe`, and
+`--zarija-source`; `--transfer-file` defaults to `cmb.tf` in the reference source.
+`--mpiexec`, repeated `--mpi-arg`, `--numproc-flag`, and `--timeout` select the
+launcher and per-run timeout. `--work-dir` must be new or empty; otherwise a
+unique `zarija-validation-*` directory is created in the working directory.
+`--quick` uses two seeds and 36 runs, and is not the full qualification gate.
+Inputs, particle outputs, logs, build ABI, source/executable/table hashes and
+every numerical check remain in the results directory. Original source and
+artifact hashes are verified again when the campaign finishes.
+
+### Matched-IC result (2026-10-03)
+
+**Passed:** 4,655 deterministic comparison gates and all 1,047 checks across
+84 initializer runs. The seven registered cosmology CTests also passed,
+including eight analytic self-tests of this comparison harness. No production
+cosmology physics or original Zarija source was changed, and no limits were
+relaxed after campaign execution.
+
+| Measurement | Result |
+| --- | --- |
+| Resolved transfer functions, maximum relative difference | 4.94e-16 |
+| BBKS / tabulated power, maximum relative difference | 4.76e-7 / 3.26e-5 |
+| Growth D / derivative, maximum relative difference | 3.33e-7 / 7.25e-7 |
+| Ensemble mean power / independent theory | IPPL 0.995737; Zarija 0.998164–0.998196 |
+| Canonical momentum relation, maximum relative L2 error | IPPL 2.00e-12; Zarija 3.92e-7 |
+| Longitudinal displacement, maximum relative L2 residual | 2.12e-13 |
+| IPPL 1–4-rank position / momentum RMS difference | 6.51e-16 Mpc/h / 1.34e-17 canonical units |
+
+The power ratios are finite-ensemble fluctuations, not fitted amplitudes; both
+pass the predeclared statistical limits. Component means, second power moments,
+all six power bins, seed correlations, redshift/transfer scaling, and all MPI
+checks pass. These tests examine specified Gaussian statistics, not every
+possible distributional property. Matching parameters does not produce identical
+particles across codes because the random generators differ.
+
+The result is restricted to common interior Fourier modes. Zarija leaves the
+first supplied transfer row unnormalized, producing a malformed tiny-k interval;
+its normalization quadrature misses that interval. The probe records this
+defect separately and also tests a normalized **input copy**. It does not hide
+the difference or modify the reference source. Neither that unresolved interval
+nor the differing Nyquist treatment is qualified as equivalent.
+
+The complete local evidence is preserved at:
+
+- `build_openmp/demos/cosmology/zarija-physics-hd3av78e/results.json`
+- `build_openmp/demos/cosmology/zarija-validation-f2c9zb42/results.json`
+- `build_openmp/Testing/Temporary/LastTest.log`
+
 ## Scope of the result
 
 These checks establish local linear-regime behavior, including the expected

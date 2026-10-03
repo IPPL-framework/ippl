@@ -1,5 +1,99 @@
 # Cosmology task state
 
+## Matched-cosmology IC validation against Zarija
+
+User approved the existing model and requested validation against the supplied
+Zarija generator. Scope remains the shared flat, radiation-free Gaussian CDM
+subset, with BBKS and supplied CMBFAST-table spectra; no additional physics or
+legacy-input compatibility is being implemented.
+
+Plan: (1) build a traceable reference from preserved original sources; (2) directly
+compare original/new transfer, spectrum normalization, growth and velocity
+factors; (3) run matched-parameter IC ensembles, reconstruct displacement/density
+Fourier modes and compare statistical power, momentum and lattice conventions;
+(4) check IPPL rank independence and record known reference differences explicitly.
+RNGs differ, so identical seeds do not authorize particle-by-particle comparisons
+between codes. Acceptance limits must be stated before the relevant run.
+
+Ownership: background agent builds reference and reproducible build script;
+validation agent implements deterministic physics probes; physics-audit agent
+implements the ensemble runner and analytic tests; root owns integration, final
+runs and report. Original source tree remains untouched.
+
+Current state: unmodified reference source compiles with LLVM21/OpenMPI5 and a
+locally built, SHA256-pinned FFTW3.3.10. An OpenMPI macro exposes deprecated MPI-1
+declarations; no reference source patches. Double-precision 16^3 smoke runs passed
+on 1, 2 and 4 ranks. Reference executable and build manifest are durable under
+build_zarija/reference; static FFTW libraries have no temporary runtime dependency.
+
+Protocol fixed before ensemble execution: N=32, L=168.75 Mpc/h (legacy float
+output conversion factors exactly representable), Omega_m=.31, Omega_bar=.0487,
+h=.675, sigma8=.82, n_s=.965, z=49 and 200, TF flags4 and0; eight positive int32
+seeds. Reference format2 avoids its serial-MPI long/int ID-transfer mismatch.
+Compare independent interior Fourier pairs, excluding DC and Nyquist planes;
+correct node/cell-centered lattice and x/z-fastest ID conventions explicitly.
+Reference generic velocities map to canonical p=a^2*v/100. Check amplitude,
+shape, Gaussian moments, seed independence, longitudinality and p/displacement;
+rank tests compare IPPL1–4 directly, reference1/2/4 statistically.
+
+Initial public-API probe result: all 4655 deterministic gates passed for BBKS,
+raw supplied table, and input-normalized table, at the final matched L=168.75.
+Max relative differences roughly 5e-16 in sampled T, 4.8e-7 BBKS P, 3.3e-5 table P,
+3.3e-7 D, 7.3e-7 Ddot. Evidence:
+build_openmp/demos/cosmology/zarija-physics-8p5qjy_c/results.json.
+This scalar-only run was superseded by the complete two-stage target below.
+Known reference first-row normalization/extrapolation defect remains explicit:
+its low-k transfer is malformed, but its coarse normalization quadrature misses
+that narrow interval. No reference-physics edits or post-run tolerance relaxation.
+
+Before the first ensemble run, independent knot-split Gauss16 integration found
+a 6.33736e-9 P normalization difference from IPPL's log-Simpson table integral.
+Therefore IPPL transfer-scaling tolerance is separately declared as 1e-8;
+same-transfer redshift scaling remains 1e-9. No fitted normalization is used.
+Runner synthetic tests cover origin/order/units, binary ABI, unique-mode count,
+and intentional bad momentum, transverse displacement and amplitude.
+
+Completed validation: full CMake target cosmology_validate_zarija succeeded.
+Final deterministic probe: all 4655 gates pass; original source unchanged.
+Evidence: build_openmp/demos/cosmology/zarija-physics-hd3av78e/results.json.
+Final initializer campaign: all 84 runs / 1047 checks pass, zero failures.
+Evidence: build_openmp/demos/cosmology/zarija-validation-f2c9zb42/results.json.
+44 IPPL runs cover ranks1/2/3/4; 40 reference runs cover ranks1/2/4. End-of-run
+source, executable, table and analysis hashes match the captured provenance.
+All seven cosmology CTests pass, including 8 analytic comparison self-tests,
+the prior quick evolution suite, and spectral/migration checks on ranks1–4.
+
+Measured ensemble mean P/theory: IPPL .995736642–.995736648; reference
+.998164308–.998196423, within predeclared finite-ensemble limits. Maximum
+momentum-relation relative L2 errors: IPPL1.998e-12, reference3.921e-7.
+Maximum longitudinal residual2.111e-13. All12 IPPL rank comparisons pass:
+maximum position RMS6.502e-16 Mpc/h; momentum RMS1.339e-17 canonical units.
+Same-TF redshift scaling: IPPL6.263e-13, reference5.138e-8; transfer scaling:
+IPPL3.169e-9, reference1.604e-5. No fitted normalization, no post-run tolerance
+relaxation, no production physics or original reference source changes.
+
+Changed files for this goal: CMakeLists.txt and README.md in demos/cosmology;
+new validate_zarija.py, tests/test_validate_zarija.py, reference/build_zarija.sh,
+reference/ReferenceABI.cpp, reference/CompareZarijaPhysics.cpp,
+reference/compare_zarija_physics.py; this state file. Build/test artifacts remain
+local and ignored. Reproduction protocol and result summary are in the README.
+
+Qualification remains the shared flat Gaussian CDM 1LPT subset on local CPUs,
+for this matched cosmology and the common non-DC/non-Nyquist Fourier modes.
+The reference low-k table defect, different RNGs and different Nyquist handling
+are explicit exclusions from equivalence. This does not qualify additional
+reference physics, nonlinear evolution, GPUs, or exascale performance.
+Final review complete: independent audit checked all 84 input hashes and required
+logs/snapshots, 1047 unique passing checks, exact ensemble/rank coverage, scalar
+gate completeness and preserved provenance. All nine intentionally ungated
+legacy-difference diagnostic rows remain in the scalar report. git diff --check
+and reference build-script syntax check pass. Only task-generated Python caches
+were removed; all numerical evidence remains. Original dirty IPPL checkout is
+unchanged. Goal COMPLETE for the stated scope; saved on codex/cosmology-linear,
+with no push. Further physics or machine-scale qualification is a separate goal.
+
+## Completed preceding goal
+
 Goal: provide a local IPPL cold-dark-matter model with linear evolution verified
 on one through four MPI ranks. Worktree `/Users/adelmann/git/ippl-cosmology-linear`,
 branch `codex/cosmology-linear`, based on `edb8794cd`.
