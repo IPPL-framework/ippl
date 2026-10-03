@@ -1,5 +1,49 @@
 # Cosmology task state
 
+## Latest execution: 44/52 local CPU runs; compute and disk blocked
+
+2026-10-03 21:38 UTC: three additional local CPU runs completed with the frozen
+sources, executables, inputs and unchanged acceptance budgets. Each was launched
+separately with `--resume resolution-study-cffjva__ --stop-after 1` after passing
+the original peak-space guard, including its 1 GiB reserve:
+
+- Native FastPM, NP64/NM64, nt2048, z49, rank1: 43/43 per-run checks passed.
+- IPPL, NP64/NM64, nt1024, z49, rank1: 39/39 per-run checks passed.
+- Native FastPM, NP64/NM64, nt1024, z49, rank1: 43/43 per-run checks passed.
+
+All three processes returned zero and all 27 checkpoints were archived. An
+independent audit verified archive file hashes and numerical digests, complete
+IDs, finite values, retained artifact/input/executable hashes, all 28 original
+provenance hashes and 12 source-copy hashes. No frozen numerical source changed.
+Campaign now has 44/52 runs: 34 spatial and 10/18 Gaussian. Gaussian comparisons
+and qualification remain incomplete; per-run passes do not establish cross-code,
+resolution, starting-redshift, timestep or rank agreement. Earlier spatial
+failures and its restricted first-shell qualification are unchanged.
+
+The next guarded resume (session68516) returned exit3 with an actual disk block:
+need 1,750,073,344 free bytes, have 1,667,796,992. No simulation was launched.
+Report/storage are resumable; next case is Gaussian NP64/NM64 nt4096 z49 IPPL.
+Eight runs remain. The earlier sessions42825,93400,16621 are finished; no local
+simulation/controller is running. Do not reduce the reserve or delete evidence.
+
+Merlin was checked again at 21:35 UTC: merlin-g-100 is still down/not responding,
+user queue empty, both isolated deployments clean. Only gmerlin6/gwendolen is
+authorized; the CPU maintenance-account dry-run was rejected. No actual Slurm
+job was submitted and no login-node build or simulation was run. This is the
+third consecutive goal turn with the same external compute blocker. Local disk
+now blocks further numerical progress too. Goal is not achieved; mark blocked
+until an authorized compute allocation or sufficient local space is available.
+No automatic monitoring was requested or created.
+
+Next: CPU first. Restore gwendolen or obtain another authorized CPU queue, run
+the prepared fresh Linux campaign in /data/user/adelmann/ippl-cosmology-linear,
+then the isolated A100 workflow. Do not resume Mac journals on Linux. Alternatively
+resume this exact local frozen study after freeing sufficient space for the
+remaining eight runs. GPU branch codex/cosmology-a100-validation contains the
+prepared metadata/launcher successor (functional commit6bd52b76b); see
+/Users/adelmann/git/ippl-cosmology-a100/COSMOLOGY_STATE.md. CUDA has not been built
+or runtime-validated. Preserve the original dirty user checkout on both hosts.
+
 ## Current work: Merlin6 CPU continuation before A100
 
 2026-10-03: user authorized ssh merlin6, branch push/pull, and subsequently
