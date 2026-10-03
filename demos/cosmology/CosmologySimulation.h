@@ -381,6 +381,10 @@ class Simulation {
     }
 
 public:
+    // Diagnostic-only entry point, defined by tests/CompareCosmologyForce.cpp.
+    // Imports validated equal-mass particles and exercises the production CIC/FFT/gather path.
+    void compareFrozenForce(const std::string& inputCsv, const std::string& outputDirectory);
+
     explicit Simulation(const Config& config) : config_m(config), background_m(config) {
         config_m.validate();
         for (int d = 0; d < 3; ++d) domain_m[d] = ippl::Index(config_m.nGrid);

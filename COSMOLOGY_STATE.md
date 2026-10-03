@@ -1,5 +1,113 @@
 # Cosmology task state
 
+## Current work: analytical pancake and plain-PM FastPM comparison
+
+User approved the next validation stage, starting with frozen forces. Preserve
+all earlier qualification; do not infer nonlinear or exascale validity from IC
+agreement. Work remains on codex/cosmology-linear in the isolated sibling tree.
+
+Plan: (1) build a pinned independent FastPM reference and expose IPPL's existing
+force path through a diagnostic particle-import/force-output adapter; (2) feed
+identical equal-mass particles to both and an independent NumPy CIC+spectral
+oracle, checking force/density, indexing, units, periodic wrapping and ranks1–4;
+(3) validate finite-amplitude planar evolution against the analytical solution
+before shell crossing with timestep/mesh convergence; (4) only after these gates
+pass, establish the requirements for matched-particle nonlinear evolution.
+
+Ownership: background agent owns FastPM acquisition/build/native-force harness;
+validation agent owns IPPL adapter in CosmologySimulation.h and separate test
+executable; physics-audit agent owns kernel review and pancake runner/self-tests;
+root owns frozen-force fixtures/oracle/runner, CMake integration, final runs/docs.
+Source physics in FastPM must not be altered to force agreement. Any build-only
+compatibility changes must be isolated, hashed and documented. Main IPPL solver
+and current initialization/evolution algorithms are not to change in this stage.
+
+Contract: CSV input id,x,y,z,mass with N³ unique IDs and unit masses. Positions
+are comoving Mpc/h; compare canonical force F=-grad(phi0), whose source is
+1.5 Omega_m delta. Output particle forces by ID and density by global cell index.
+IPPL field samples are cell-centered; any FastPM grid-origin conversion must be
+explicit. Use plain PM, CIC scatter/gather, spectral ik/k², no deconvolution or
+extra softening. IPPL uses +i*k*1.5*Omega_m/k^2. FastPM native acceleration has
+the opposite sign, and its normal kick supplies -1.5*Omega_m; the export applies
+that documented conversion. FastPM node coordinates are x_IPPL-h/2 modulo L.
+IPPL zeros each differentiated Nyquist plane; native FastPM only zeros the eight
+fully self-conjugate corners. Preserve this difference and predict it with an
+independent native R2C oracle; raw forces must agree only on fixtures without
+Nyquist power. Compare all common-band mesh modes, never filter native solves.
+FastPM double FFT/CIC/grid fields retain float32 k/k^2 tables and particle acc.
+
+Predeclared frozen limits: IPPL density RMS 2e-12+2e-12*reference_RMS,
+force RMS 2e-13*L+2e-11*reference_RMS; FastPM density 5e-12+5e-12*reference_RMS
+(double CIC confirmed before any reference run), force 5e-9*L+5e-6*reference_RMS
+(native float32 k/acc). Additional position, net force, rank-invariance, kernel,
+gather and cross-code residual gates are explicit in validate_frozen_force.py.
+No post-run relaxation. Eight deterministic fixtures include a common-band
+single-mode deposition, deformations, wrapped/shuffled jitter and a dense cluster.
+
+Pancake protocol: Omega_m=.31, L=168.75, zi49->zf9, final deformation .5/.8;
+N16/32/64, nt128 for mesh study; nt16/32/64/128 for time study; x/y/z and (1,1,0);
+ranks1-4. Finest-grid RMS x/p error budgets 1%/2% at .5 and 2%/4% at .8;
+mesh error reduction >=2 and time successive-difference ratio 2.8..5.5.
+These are engineering budgets, not assumed accuracy or exascale qualification.
+
+Current status: FastPM official source pinned to
+15b6c4fd7502a81d99dd13f54fcc9cfa44be1331 under build_fastpm/source; build and
+API inspection completed; double FFTW/PFFT/GSL reference build and smoke testing
+underway. IPPL adapter 11 smoke/negative cases pass, and the independent oracle
+passes 7 analytical self-tests. IPPL full frozen campaign passed32 runs/362 checks
+at build_openmp/demos/cosmology/frozen-force-ig_p42r9/results.json. An earlier
+analysis attempt stopped on header-only empty-rank particle files in the cluster
+fixture; the reader is corrected without numerical changes.
+
+First pancake campaign:15 runs/364 checks,363 pass, one retained failure:
+N64,Afinal=.8 mass diagnostic max2.072e-12 exceeds predeclared2e-12.
+Evidence build_openmp/demos/cosmology/pancake-validation-f3couj_8/results.json.
+All trajectory/MPI/time/mesh gates pass, but measured spatial orders are not
+asymptotically second order and local minimum-Jacobian convergence is not proved.
+Mass failure under independent summation audit; no tolerance relaxation.
+
+Completed frozen stage: pinned, unmodified FastPM reference built successfully
+(double FFTW/PFFT/GSL; compile harness by basename to avoid upstream fixed-size
+__FILE__ diagnostic buffer overflow; standard transposed FFTW path). Native
+high-k and common-band smokes pass ranks1-4. Full CMake target
+cosmology_validate_frozen_force passes64 runs/790 checks, no failures:
+build_openmp/demos/cosmology/frozen-force-5_li99qh/results.json.
+Executable/source/manifest hashes unchanged through the campaign. Particle
+force relative RMS vs independent own-operator oracle: IPPL<=6.75e-14,
+FastPM<=3.21e-8; native mesh errors<=6.48e-14. Raw cross-code common-band
+particle error3.87e-8. Raw oblique/jitter discrepancies2.47%/11.71% are correctly
+predicted by the different Nyquist conventions; arbitrary full forces are NOT
+qualified as equivalent. No original FastPM/Zarija physics changed.
+
+Final rebuilt Cosmology binary repeats identical pancake results at
+build_openmp/demos/cosmology/pancake-validation-rs1o9glb/results.json:
+15 runs,363/364 checks pass, same retained mass failure. Current executable and
+all physics/analysis hashes match the final campaign. Read-only audit is at
+build_openmp/demos/cosmology/pancake-diagnostics-rs1o9glb/diagnostics.json and
+reproduced by tests/analyze_pancake_diagnostics.py. Initial/final redeposition
+with math.fsum gives exact total262144; worst epoch (step89) has no saved field,
+so roundoff diagnosis is strong evidence, not a proof for that epoch. Standard
+uncompensated-sum error bound2.91e-11 covers the observed2.07e-12 discrepancy.
+All trajectories and convergence budgets pass; N64 Af.8 displacement/momentum
+RMS0.414%/0.736%. Spatial orders1.43-1.76 and nonconvergent local Jacobian L∞
+errors indicate unresolved grid-scale defects (grid locking is an inference).
+No post-crossing/random-CDM/local-density/nonlinear-reference claim is made.
+
+All12 cosmology CTests pass (including12 adapter launches with six negative
+cases,7 frozen-oracle unit tests,8 pancake-oracle unit tests, previous spectral,
+linear and Zarija-analysis tests). The quick CTests intentionally do not hide
+the full N64 pancake gate failure. Independent code review found no blockers;
+bash syntax and git diff --check pass. Original dirty checkout untouched.
+
+Changed files: production header diagnostic declaration only; CMake/README;
+new CompareCosmologyForce.cpp, FastPMForce.c/build_fastpm.sh, frozen-force and
+pancake runners, their unit tests, adapter regressions and pancake audit.
+Next: agree shared Nyquist comparison policy; export/check the peak-epoch field
+with accurate summation and improve diagnostic reduction if justified; test
+independent particle/mesh resolution and pancake phase before matched nonlinear
+FastPM evolution. No tolerance relaxation, production physics edits, GPU/multi-
+node/exascale claims, external publication or repository push in this stage.
+
 ## Plotting follow-up
 
 User requested plots of the validated results. Added a reproducible Matplotlib

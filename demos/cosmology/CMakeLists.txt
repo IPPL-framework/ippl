@@ -16,6 +16,9 @@ add_executable(Cosmology Cosmology.cpp)
 target_link_libraries(Cosmology PRIVATE IPPL::ippl)
 
 if(BUILD_TESTING)
+  add_executable(CompareCosmologyForce tests/CompareCosmologyForce.cpp)
+  target_include_directories(CompareCosmologyForce PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  target_link_libraries(CompareCosmologyForce PRIVATE IPPL::ippl)
   add_executable(TestCosmologyPhysics tests/TestCosmologyPhysics.cpp)
   target_include_directories(TestCosmologyPhysics PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   target_link_libraries(TestCosmologyPhysics PRIVATE IPPL::ippl)
@@ -55,6 +58,49 @@ if(BUILD_TESTING)
     add_test(NAME cosmology_zarija_analysis
              COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_validate_zarija.py)
     set_tests_properties(cosmology_zarija_analysis PROPERTIES LABELS cosmology TIMEOUT 120)
+
+    foreach(analysis frozen_force pancake)
+      add_test(NAME cosmology_${analysis}_analysis
+               COMMAND ${Python3_EXECUTABLE} -B
+                       ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_validate_${analysis}.py)
+      set_tests_properties(cosmology_${analysis}_analysis PROPERTIES LABELS cosmology TIMEOUT 120)
+    endforeach()
+    set(cosmology_frozen_command ${Python3_EXECUTABLE} -B
+        ${CMAKE_CURRENT_SOURCE_DIR}/validate_frozen_force.py
+        --ippl-exe $<TARGET_FILE:CompareCosmologyForce> --mpiexec ${MPIEXEC_EXECUTABLE}
+        --numproc-flag=${MPIEXEC_NUMPROC_FLAG})
+    set(cosmology_pancake_command ${Python3_EXECUTABLE} -B
+        ${CMAKE_CURRENT_SOURCE_DIR}/validate_pancake.py
+        --exe $<TARGET_FILE:Cosmology> --mpiexec ${MPIEXEC_EXECUTABLE}
+        --numproc-flag=${MPIEXEC_NUMPROC_FLAG})
+    set(cosmology_adapter_command ${Python3_EXECUTABLE} -B
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_frozen_adapter.py
+        --exe $<TARGET_FILE:CompareCosmologyForce> --mpiexec ${MPIEXEC_EXECUTABLE}
+        --numproc-flag=${MPIEXEC_NUMPROC_FLAG})
+    foreach(flag IN LISTS MPIEXEC_PREFLAGS)
+      foreach(command frozen pancake adapter)
+        list(APPEND cosmology_${command}_command --mpi-arg=${flag})
+      endforeach()
+    endforeach()
+    add_test(NAME cosmology_frozen_quick COMMAND ${cosmology_frozen_command} --quick)
+    add_test(NAME cosmology_pancake_quick COMMAND ${cosmology_pancake_command} --quick)
+    add_test(NAME cosmology_frozen_adapter COMMAND ${cosmology_adapter_command})
+    set_tests_properties(cosmology_frozen_quick cosmology_pancake_quick cosmology_frozen_adapter
+      PROPERTIES PROCESSORS 4 TIMEOUT 900 LABELS "cosmology;cosmology_evolution")
+    add_custom_target(cosmology_validate_pancake COMMAND ${cosmology_pancake_command}
+      DEPENDS Cosmology USES_TERMINAL
+      COMMENT "Finite-amplitude analytical pancake, convergence and ranks 1-4")
+    set(IPPL_COSMOLOGY_FASTPM_EXECUTABLE "" CACHE FILEPATH "Pinned native FastPM frozen-force harness")
+    set(IPPL_COSMOLOGY_FASTPM_MANIFEST "" CACHE FILEPATH "Pinned FastPM build provenance manifest")
+    if(IPPL_COSMOLOGY_FASTPM_EXECUTABLE)
+      list(APPEND cosmology_frozen_command --fastpm-exe ${IPPL_COSMOLOGY_FASTPM_EXECUTABLE})
+      if(IPPL_COSMOLOGY_FASTPM_MANIFEST)
+        list(APPEND cosmology_frozen_command --fastpm-manifest ${IPPL_COSMOLOGY_FASTPM_MANIFEST})
+      endif()
+      add_custom_target(cosmology_validate_frozen_force COMMAND ${cosmology_frozen_command}
+        DEPENDS CompareCosmologyForce USES_TERMINAL
+        COMMENT "Frozen native FastPM/IPPL forces and independent mesh oracle, ranks 1-4")
+    endif()
 
     # Reference qualification is opt-in: never download or build external code
     # during a normal configure, build, or CTest invocation.

@@ -462,10 +462,162 @@ The mask excludes DC and all Nyquist planes; the largest radial bins contain
 cube-corner modes and do not have complete angular coverage. The two transfer
 cases also reuse phases, explaining the nearly identical normalized residuals.
 
+## Frozen-force comparison and finite-amplitude pancake
+
+This next stage separates the particle-mesh force operator from time evolution.
+`CompareCosmologyForce` imports small, equal-mass fixtures and calls the existing
+`Simulation::solveForce()` (CIC scatter, FFT solve, CIC gather). Its host-side CSV
+I/O and ID checks are diagnostic only: production fields/particles remain in
+their configured Kokkos execution/memory spaces and are distributed by IPPL.
+The only production-header addition is the diagnostic method declaration; no
+force, initialization, or integration kernel has changed. Conservation,
+stability, floating-point ordering and production data movement are unchanged.
+The adapter additionally copies fields and particles to host for output, so it
+is not a performance or exascale benchmark.
+
+### Build and run the native reference
+
+`reference/build_fastpm.sh` builds official FastPM at commit
+`15b6c4fd7502a81d99dd13f54fcc9cfa44be1331`, plus pinned GSL/PFFT/FFTW dependencies,
+in a separate local directory. It verifies tracked upstream sources are
+unchanged and records compiler/dependency/source/executable provenance. Nothing
+is fetched during a normal IPPL configure, build, or CTest run. An existing
+static double-precision MPI FFTW installation can be reused through
+`FASTPM_FFTW_PREFIX`; otherwise the script builds FFTW locally.
+
+```sh
+cmake --build build_openmp --target CompareCosmologyForce Cosmology
+FASTPM_CC=/opt/homebrew/opt/llvm/bin/clang \
+FASTPM_MPICC=/opt/homebrew/bin/mpicc \
+FASTPM_FFTW_PREFIX="$PWD/build_zarija/reference/fftw-install" \
+  bash demos/cosmology/reference/build_fastpm.sh "$PWD/build_fastpm"
+
+/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_frozen_force.py \
+  --ippl-exe build_openmp/demos/cosmology/CompareCosmologyForce \
+  --fastpm-exe build_fastpm/FastPMForce \
+  --fastpm-manifest build_fastpm/build-manifest.txt --mpi-arg=--oversubscribe
+```
+
+The compiler paths above describe the tested macOS environment; choose local
+MPI/compiler paths elsewhere. The frozen runner retains a fresh evidence
+directory beside the IPPL executable, with input fixtures, logs, per-rank
+snapshots, protocol, hashes and `results.json`. `--output` selects another new
+or empty directory. Omitting `--fastpm-exe` tests IPPL against NumPy only and
+must not be described as a cross-code comparison. `--quick` uses two fixtures
+on ranks1/2; full coverage uses eight fixtures on ranks1/2/3/4, including
+subcell shifts, axis/oblique deformations, shuffled/wrapped particles, a dense
+cluster, two mesh sizes, and two matter densities.
+
+Both executables accept `N L Omega_m input.csv output_dir`. CSV input is
+`id,x,y,z,mass`, with exactly N³ unique IDs from0 to N³−1 and mass1. Positions
+are comoving Mpc/h. Output is `forces_rankR.csv` (`id,x,y,z,fx,fy,fz`) and
+`density_rankR.csv` (`ix,iy,iz,delta,fx,fy,fz`), plus convention metadata.
+The independent NumPy oracle constructs CIC weights, deposition, mesh forces
+and reciprocal gather without calling either solver.
+
+| Convention | IPPL | Native FastPM diagnostic |
+|---|---|---|
+| Mesh origin | Cell centres `(i+1/2)L/N` | Node mesh; input shifted by `−L/(2N)` explicitly |
+| Compared force | `F0=−grad(phi0)`, `laplacian(phi0)=1.5 Omega_m delta` | Native acceleration multiplied by `−1.5 Omega_m`, as in FastPM's kick |
+| Force kernel | Spectral `ik/k²`, CIC twice, no deconvolution | `FASTPM_KERNEL_NAIVE`, CIC twice, no softening/deconvolution |
+| Nyquist derivative | Zero differentiated component plane | Only eight self-conjugate corners zeroed; native R2C behavior preserved |
+| Precision | Double | Double FFT/CIC/mesh, float32 wavevector tables and particle acceleration |
+
+Because the native Nyquist operators differ, full particle forces are **not
+assumed equivalent** for arbitrary fixtures. Tests retain and quantify their
+raw difference, compare each full operator to its independent oracle, predict
+the native difference, and compare common-band mesh modes. A specially designed
+particle fixture deposits just one strictly sub-Nyquist mode and additionally
+requires raw particle-force agreement. The diagnostic projection is never
+applied inside either native solve. Reference limits account for native float32
+tables/acceleration; density uses a separate double-precision limit. All limits
+are recorded before execution; there is no fitted force normalization.
+
+The full local frozen campaign passes **64 runs / 790 checks**, with all
+source/executable hashes unchanged during execution. Maximum nonzero-fixture
+relative RMS errors against each code's own independent oracle are6.75e−14
+for IPPL particle forces and3.21e−8 for FastPM particle forces; mesh-force errors
+are below6.48e−14. Raw particle-force disagreement is3.87e−8 for the common-band
+fixture, but2.47% for the oblique deformation and11.71% for wrapped jitter.
+The latter differences are predicted by the preserved native Nyquist operators,
+not covered up by a relaxed raw-agreement tolerance. These are operator tests,
+not evidence that arbitrary unfiltered native force fields are interchangeable.
+Evidence: `build_openmp/demos/cosmology/frozen-force-5_li99qh/results.json`.
+
+### Analytical planar evolution
+
+```sh
+cd build_openmp/demos/cosmology
+/Users/adelmann/.venv-h6/bin/python -B \
+  ../../../demos/cosmology/validate_pancake.py --exe ./Cosmology \
+  --mpi-arg=--oversubscribe
+```
+
+The exact plane-symmetric growing solution is used **only before shell
+crossing**: `x=q−A(a) sin(k.q) k/k²`, with independently computed growth and
+canonical `p=a² E(a) f(a) (x−q)`. Final deformation amplitudes0.5 and0.8
+correspond to continuum peak density contrasts1 and4. The comparison is of
+particle trajectories, not the linear Eulerian density amplitude: nonlinear
+Eulerian harmonics are recorded separately.
+
+The full15-run protocol varies N16/32/64, nt16/32/64/128, axis/oblique orientation
+and ranks1–4. Timestep convergence uses successive solution differences at
+fixed mesh; spatial convergence uses continuum trajectory errors at fixed
+nt128. Particles and mesh resolution remain coupled. Quick mode omits both
+convergence studies. Limits in `validate_pancake.py` are predeclared engineering
+budgets, not a promise of second-order spatial accuracy or local density accuracy.
+
+The first full pancake campaign passes363 of364 checks: all trajectory, MPI,
+and time/mesh convergence gates pass, but the N64,Afinal0.8 mass diagnostic
+reaches2.072e−12 against its unchanged2e−12 limit. This failure remains recorded.
+The uncompensated production mass reduction is a plausible roundoff source;
+independent initial/final CIC sums alone do not prove conservation at the
+intermediate worst epoch. No physics or tolerance was changed to make it pass.
+Local displacement-gradient convergence is also not established: narrowing
+grid-scale trajectory defects are consistent with slower-than-second-order
+global spatial convergence. These issues require follow-up before declaring
+nonlinear evolution qualified.
+
+The final rebuilt-binary campaign reproduces the initial numerical results:
+`build_openmp/demos/cosmology/pancake-validation-rs1o9glb/results.json`.
+At N64,Afinal0.8, displacement/momentum RMS errors are0.414%/0.736%; measured
+spatial orders across the suite are1.43–1.76. All12 cosmology CTests pass,
+including the quick pancake subset; **that does not override the retained
+failure in the full higher-resolution pancake campaign**.
+Reproduce its additional, read-only diagnostic audit with:
+
+```sh
+/Users/adelmann/.venv-h6/bin/python -B \
+  demos/cosmology/tests/analyze_pancake_diagnostics.py \
+  --campaign build_openmp/demos/cosmology/pancake-validation-rs1o9glb \
+  --output-dir build_openmp/demos/cosmology/pancake-diagnostics-new
+```
+
+The audit records endpoint mass sums, the unsaved intermediate-epoch caveat,
+per-grid displacement/Jacobian profiles and the original failed gate. Existing
+audit: `build_openmp/demos/cosmology/pancake-diagnostics-rs1o9glb/diagnostics.json`.
+
+With `IPPL_COSMOLOGY_PYTHON_VALIDATION=ON`, CTest includes analytic oracle tests,
+adapter valid/invalid-input tests and quick frozen/pancake tests. Full pancake
+coverage is `cosmology_validate_pancake`. Set
+`IPPL_COSMOLOGY_FASTPM_EXECUTABLE` and optionally
+`IPPL_COSMOLOGY_FASTPM_MANIFEST` to enable `cosmology_validate_frozen_force`.
+The reference adapter does **not** yet advance particles: matched-particle
+plain-PM FastPM versus IPPL evolution is the subsequent stage, not a result of
+these frozen-force tests.
+
+Before that next stage: choose a documented common Nyquist treatment (or
+explicitly limit which observables are compared); verify the worst-epoch mass
+with accurate summation; and investigate grid/lattice-locking by separating
+particle and force-mesh resolution or shifting the pancake phase. A native
+kernel mismatch must not be interpreted as an integration error, and the
+current spatial convergence does not establish nonlinear density convergence.
+
 ## Scope of the result
 
-These checks establish local linear-regime behavior, including the expected
-finite-resolution particle-mesh force error. CIC suppresses short-wavelength
+These checks establish local linear-regime behavior and the qualified frozen
+force comparisons above; the finite-amplitude pancake evidence retains its
+stated limitations. CIC suppresses short-wavelength
 forces, so agreement with continuum growth is assessed at resolved wavelengths
 and through convergence, rather than by requiring all modes to be exact.
 
