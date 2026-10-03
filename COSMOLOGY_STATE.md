@@ -1,5 +1,25 @@
 # Cosmology task state
 
+## Plotting follow-up
+
+User requested plots of the validated results. Added a reproducible Matplotlib
+script, demos/cosmology/plot_zarija.py, to read the saved campaign and scalar
+probe without rerunning simulations or changing physics. Planned figures:
+dimensional shell power plus mean per-mode residuals at z49 (z200 phases reused,
+not pooled), background D and sub-ppm cross-code differences, and MPI rank
+consistency as a fraction of each recorded tolerance. Reconstruct raw shell
+power from snapshots; theoretical Gaussian errors account for varying P(k)
+within each shell. Finished: three PNG/SVG figures, plot_data.json and a hash
+manifest are in build_openmp/demos/cosmology/zarija-plots-final. Reconstructed
+24 shell means agree with the saved checks within1e-12, with exact pair counts.
+Analysis-script and captured-table hashes match the validated campaign. All
+figures were visually inspected; clarified acceptance labels and moved a growth
+annotation to avoid a curve. Initial draft outputs remain in zarija-plots.
+README documents reproduction. No new simulations, physics changes or tolerance
+changes; these plots visualize the existing evidence and its scope limits.
+Independent review confirmed the weighted shell variance and plot conventions;
+all eight analysis tests and final source/output hash verification pass.
+
 ## Matched-cosmology IC validation against Zarija
 
 User approved the existing model and requested validation against the supplied

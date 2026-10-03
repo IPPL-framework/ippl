@@ -430,6 +430,38 @@ The complete local evidence is preserved at:
 - `build_openmp/demos/cosmology/zarija-validation-f2c9zb42/results.json`
 - `build_openmp/Testing/Temporary/LastTest.log`
 
+### Plot saved results
+
+The plotting script reads existing evidence without launching simulations:
+
+```sh
+/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/plot_zarija.py \
+  --campaign build_openmp/demos/cosmology/zarija-validation-f2c9zb42/results.json \
+  --physics build_openmp/demos/cosmology/zarija-physics-hd3av78e/results.json \
+  --output-dir build_openmp/demos/cosmology/zarija-plots-final
+```
+
+Use a new or empty output directory and a Python environment with Matplotlib,
+NumPy and pandas. It produces three PNG/SVG figures, `plot_data.json`, and a
+source/output-hash manifest:
+
+- `matched_ic_power`: measured shell power and per-mode residuals against
+  independent theory, with Gaussian one-standard-error bars and the saved
+  six-standard-error reference acceptance band (including its deterministic
+  floor). Raw dimensional shell errors account for variation of P(k) within
+  the shell; reconstructed ratios must agree with the saved validation checks.
+- `matched_growth`: background D(a) and sub-ppm cross-code differences in D,
+  its H0t derivative and f. This is not measured particle evolution.
+- `mpi_rank_consistency`: RMS initial phase-space differences relative to each
+  saved tolerance, compared with one rank. This is not a performance plot.
+
+Power is reconstructed from Lagrangian IC displacements and extrapolated to
+z=0, not measured by Eulerian density deposition. Only the z49 ensemble is shown:
+z200 reuses the same phases and is not pooled as extra independent samples.
+The mask excludes DC and all Nyquist planes; the largest radial bins contain
+cube-corner modes and do not have complete angular coverage. The two transfer
+cases also reuse phases, explaining the nearly identical normalized residuals.
+
 ## Scope of the result
 
 These checks establish local linear-regime behavior, including the expected
