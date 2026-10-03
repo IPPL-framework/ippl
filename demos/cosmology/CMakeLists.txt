@@ -105,6 +105,20 @@ if(BUILD_TESTING)
       ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_evolution_refinement.py)
     set_tests_properties(cosmology_evolution_refinement_analysis PROPERTIES LABELS cosmology TIMEOUT 120
       ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
+    foreach(analysis gaussian_fixture study_spectra study_storage resolution_study)
+      add_test(NAME cosmology_${analysis}_analysis COMMAND ${Python3_EXECUTABLE} -B
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_${analysis}.py)
+      set_tests_properties(cosmology_${analysis}_analysis PROPERTIES LABELS cosmology TIMEOUT 120
+        ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
+    endforeach()
+    execute_process(COMMAND ${Python3_EXECUTABLE} -c "import matplotlib"
+                    RESULT_VARIABLE cosmology_plot_python_status OUTPUT_QUIET ERROR_QUIET)
+    if(cosmology_plot_python_status EQUAL 0)
+      add_test(NAME cosmology_resolution_plot_analysis COMMAND ${Python3_EXECUTABLE} -B
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_plot_resolution_study.py)
+      set_tests_properties(cosmology_resolution_plot_analysis PROPERTIES LABELS cosmology TIMEOUT 120
+        ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
+    endif()
     add_custom_target(cosmology_validate_pancake COMMAND ${cosmology_pancake_command}
       DEPENDS Cosmology USES_TERMINAL
       COMMENT "Finite-amplitude analytical pancake, convergence and ranks 1-4")

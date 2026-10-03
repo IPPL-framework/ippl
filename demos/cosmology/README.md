@@ -852,6 +852,152 @@ visible even though they are not cross-code density failures.
 Inspected release figures are under
 `build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release`.
 
+## Crossed resolution and common-phase Gaussian study
+
+`validate_resolution_study.py` extends the unchanged native plain-PM comparison
+with a predeclared 52-run study. It does not change either simulation executable.
+Particle and force-mesh sizes are varied independently over32 and64, rather than
+only doubling both together. Spatial tests evolve the pancake and coupled3D
+fixtures through `a=.02→.2`, compare a fixed physical subcell translation, and
+add512/1024/2048-step controls plus a three-rank finest-grid case.
+
+The Gaussian stage uses one mode-keyed realization (seed20261003) sampled at
+both particle resolutions, with identical rounded-once momenta supplied to both
+codes. Its spherical initial band is `0<|n|<=12`; parameters are
+`Omega_m=.31, Omega_bar=.0487, h=.675, n_s=.965, sigma8=.82, L=168.75 Mpc/h`.
+Sigma8 normalizes the continuous BBKS spectrum, not the finite realization.
+This is flat, radiation-free1LPT with no baryonic transfer features. Evolution
+ends at `a=1`, with1024/2048/4096-step controls, starting redshifts49/99, and a
+four-rank finest-grid case. Different starts are compared only at their exact
+common final epoch using4096 steps, without snapshot interpolation.
+
+Run from the worktree root after building the two evolution executables:
+
+```sh
+env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_resolution_study.py \
+    --ippl-exe build_openmp/demos/cosmology/CompareCosmologyEvolution \
+    --fastpm-exe build_fastpm/evolution/FastPMEvolution \
+    --fastpm-manifest build_fastpm/evolution/build-manifest.txt
+```
+
+`--smoke` instead runs eight small pipeline checks; it is not a physical
+resolution qualification. `--stage spatial` or `--stage gaussian` selects a
+standalone stage. `--stop-after N` saves an incomplete batch after N additional
+analyzed runs. New output defaults to a unique `resolution-study-*` directory
+beside the IPPL executable, not `/tmp`. Completed stage comparisons are saved
+before the next stage starts.
+
+Every launch requires a conservative raw-output/archive peak plus at least1GiB
+free-space reserve. A disk block returns exit3 with a resumable report; it is
+neither a scientific failure nor a pass. Resume after making space with:
+
+```sh
+env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_resolution_study.py \
+    --resume build_openmp/demos/cosmology/resolution-study-EXISTING
+```
+
+Resume verifies frozen source/build/input hashes and completed numerical
+archives. Only this study's newly generated CSV snapshots are replaced, after
+successful exit and verified archival, by exact uint64/float64 NPZ data. Original
+CSV bytes are hashed but are not reconstructible from the numerical archive.
+Earlier evidence is never removed. Ambiguous interrupted simulations are
+retained and rejected, not silently rerun. This diagnostic storage is not a
+production distributed checkpoint/restart system.
+
+Scientific qualification uses direct particle Fourier sums on `0<|n|<=4`,
+split into three contiguous radial shells. A shell edge at4.5 does not extend
+the measured band beyond4. Fixed128³ interlaced PCS with sinc⁴ window correction
+characterizes higher modes through12. Its low-band extraction must independently
+agree with direct sums within `max(1e-12,1e-3*norm_direct)`; passing that check
+does not qualify the higher band. PCS is analysis only: both forces remain CIC.
+The initial CIC diagnostic's failed smoke report and exact sources are retained
+under `resolution-study-_ajzgvkl`; improving the measurement did not relax a gate.
+
+Budgets are recorded before execution: paired-code shell power/complex residuals
+2% atNM32 and1% atNM64; particle/mesh sensitivity5%; translation power1% and
+complex2%; start-redshift power2% and complex3%; finest temporal complex0.2%.
+Each also retains its recorded correlation condition. Original import, native
+factor, rank, momentum, planar trajectory and temporal controls remain in force.
+Qualification reports the largest contiguous passing low-shell prefix and is
+vetoed by failed global controls. Completion is separate from acceptance; no
+failed budget is hidden or automatically relaxed. One seed and this finite band
+cannot establish continuum or halo-statistics accuracy.
+
+Plot a completed stage from the saved report without opening particle archives
+or running simulations (Matplotlib is also required):
+
+```sh
+/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/plot_resolution_study.py \
+  --report build_openmp/demos/cosmology/resolution-study-EXISTING/results.json \
+  --output-dir build_openmp/demos/cosmology/resolution-plots-NEW
+```
+
+The plotter independently recomputes displayed shell metrics from the recorded
+Fourier coefficients and refuses incomplete stages. It produces PNG/SVG control
+figures, plotted-data JSON, a byte-exact compressed copy of the input report and
+a hash manifest. A finished spatial stage can be plotted while Gaussian runs
+continue; the report version used by that figure is preserved. Failed checks
+and qualified prefixes remain explicit, and higher-band FFT points are marked
+as characterization. These controls are finite-resolution sensitivities, not
+errors against truth.
+
+### Spatial result (2026-10-03)
+
+The spatial stage in `resolution-study-cffjva__` completed all 34 runs:
+2,083 of 2,213 checks passed. All global import, native-factor, mean-momentum,
+timestep and three-rank checks passed. The 130 retained failures are per-shell
+controls: 56 particle-resolution, 51 mesh-resolution, 20 translation, and
+3 paired-code checks. Both fixtures qualify only their first contiguous shell,
+`0<|n|<1.5`, across the entire declared matrix (planar mode1; three-dimensional
+integer modes through sqrt(2)). This is not all-band or continuum qualification.
+The separately recorded historical2e-12 CIC mesh-mass diagnostic is exceeded
+in four pancake runs, with a maximum2.951e-12. The previously accepted engineering
+baseline keeps those flags separate from the current qualified-band controls;
+neither their failed diagnostic status nor the historical limit is changed.
+
+The crossed controls expose particle sampling and grid alignment that close
+code-to-code agreement alone would miss. The maximum shell-power sensitivity
+is16.77% for the pancake and19.27% for the coupled3D fixture, versus the5% budget.
+The pancake's fixed-NP64 mesh refinement passes all three shells, but fixed-NP32
+does not. Its finest-mesh translation fails the final modes3,4 power test at
+1.336% versus1%. The coupled3D translation complex residual reaches4.16%
+versus2%. The undersampled NP32/NM64 coupled3D cross-code comparison reaches
+1.391% complex residual versus1%; the matched NP64/NM64 case stays below0.0025%.
+All epochs, including weak early higher harmonics, remain in these maxima.
+
+Time refinement is much tighter: final1024→2048 momentum differences are about
+2.3e-6 for the pancake and2.68e-4 for coupled3D, versus the unchanged0.002 limit.
+Coupled3D late position/momentum differences exhibit approximately second-order
+reduction. Pancake momentum/global-density differences are below the declared
+analysis floor; no measured order is claimed for those. Three-rank differences
+are below5.9e-15 cell/5.1e-15 relative momentum for IPPL and1.16e-7 cell/8.63e-8
+for native plain PM. These are local CPU results, not a performance comparison.
+
+The inspected spatial figure and its exact report snapshot are saved under
+`resolution-study-cffjva__/figures-spatial-release`. Gaussian execution is a
+separate stage; its status must be read from the current `results.json`, not
+inferred from the completed spatial figure.
+
+The combined campaign subsequently stopped safely at41/52 runs because the next
+launch required1,750,073,344 free bytes but only1,669,689,344 were available.
+All34 spatial and7 Gaussian runs are archived. Gaussian has285 passing per-run
+checks, but its paired-code/resolution/time/starting-redshift/MPI study is
+incomplete and has no qualified band. No interrupted simulation must be rerun;
+the next unstarted run is native plain PM at NP64/NM64,2048 steps,z49,r1.
+After making space (roughly3GiB additional is a conservative working allowance
+for the remaining11 runs), resume the unchanged protocol:
+
+```sh
+env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_resolution_study.py \
+    --resume build_openmp/demos/cosmology/resolution-study-cffjva__
+```
+
+The reserve/peak check remains authoritative even after making space. Do not
+edit the frozen simulation or analysis sources before resuming this campaign.
+
 ## Scope of the result
 
 These checks establish local linear-regime behavior and the qualified frozen

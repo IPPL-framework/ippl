@@ -1,5 +1,139 @@
 # Cosmology task state
 
+## Current work: spatial robustness and common-phase Gaussian evolution
+
+User authorized points 1 and 2 on 2026-10-03; they will make disk space.
+Work remains in isolated codex/cosmology-linear at baseline 19a7d952e. Preserve
+every earlier report/source/executable; no production physics or tolerance edits.
+Root owns a new study runner, integration/docs; background owns Gaussian IC
+fixtures/tests; validation owns disk-aware numerical storage/tests; physics audit
+owns spectrum extraction/tests and independent protocol review.
+
+Predeclared spatial matrix: NP,NM in {32,64}, pancake and coupled3D, both codes,
+nt1024, ai=.02 to af=.2 (16 runs); rigidly translated NP64 at NM32/64 (8 runs),
+same physical shift (.37,.23,.41)*L/64; finest64/64 nt512 and2048 (8 runs), plus
+finest coupled3D nt1024 rank3 (2 runs). Compare translated positions after removing
+the known offset and Fourier coefficients after removing the known phase.
+This is a crossed study, not only simultaneous particle/mesh refinement.
+
+Predeclared Gaussian matrix: physical-mode-keyed seed20261003, one continuous
+BBKS realization, fixed spherical initial band 0<|n|<=12, same field sampled at
+NP32/64. Omega_m=.31,Omega_bar=.0487,h=.675,n_s=.965,sigma8=.82,L=168.75.
+Sigma8 normalizes the continuous spectrum, not realized finite-box variance;
+pure BBKS has no baryonic transfer features. Radiation-free flat Lambda, 1LPT.
+z49 NP/NM crossed32/64 nt2048 both codes (8 runs); finest64/64 z49 nt1024/4096
+(4 runs); finest64/64 z99 nt2048/4096 (4 runs); finest z49 nt2048 rank4 (2 runs).
+af=1, nine logarithmic checkpoints; compare starting redshifts only at exact
+common final a=1 using4096 outputs. No interpolation between unequal epochs.
+Combined full study52 runs. Shared rounded-once float32 p as before.
+
+Budgets frozen before simulations: original rank, initial-state, native factor,
+momentum and timestep limits retained. Finest temporal dx/h and dp/pRMS<=.002,
+ratio>=1.5 final (pre-cross toy ratio2–6; below-analysis-floor is not order).
+New shell density temporal finest difference<=.002. Shell edges .5,1.5,2.5,4.5,
+6.5,8.5,10.5,12.5. Paired-code per-shell P and complex budgets2% at NM32,1% at
+NM64, with correlation>=.999/.9995. Particle/mesh sensitivity per-shell P/complex
+<=5%, correlation>=.999. Toy translation P<=1%,complex<=2%,correlation>=.9998.
+Gaussian z49/z99 P<=2%,complex<=3%,correlation>=.999. All defined-signal shared
+epochs considered; widest contiguous low-k prefix passing applicable controls
+is reported, with all failures retained. Nonmonotonic changes are not hidden.
+
+Qualification capped at |n|<=4, measured by direct particle Fourier sums. The
+Gaussian spectrum through12 also uses fixed128^3 interlaced/window-corrected PCS
+for characterization; direct low4 extraction comparison has absolute/relative
+budget max(1e-12,1e-3*norm_direct). Passing low4 does not qualify extraction above4.
+No continuum/halo precision/GPU/exascale claim. Preserve local pancake phase-space
+and sampled Jacobian diagnostics, including pre-cross analytic residuals.
+
+Disk: initially1.9GiB free. New storage reserves1GiB plus conservative full-run
+CSV/archive peak before each launch. Only current study's generated CSVs may be
+replaced by verified exact uint64/float64 numerical NPZ archives; original CSV
+bytes are hashed but not recoverable from NPZ. Old evidence is untouched. Disk
+blocks are explicit/resumable, not passes or scientific failures. No ambiguous
+interrupted simulation is automatically rerun. Next: finish/review helpers and
+runner, run synthetic/pipeline tests, then execute guarded spatial and Gaussian
+batches as capacity permits. Save results after each run for safe continuation.
+
+Progress: storage helper16 tests, Gaussian fixture15 tests, original spectrum
+helper18 tests and new runner19 tests pass. Source snapshots now accompany new
+studies, and prepared initialization plus stale-report resume were hardened.
+Initial pipeline smoke resolution-study-_ajzgvkl completed8 runs/364 checks with
+36 failed auxiliary Gaussian FFT extraction checks (0.9–1.14% vs unchanged0.1%
+limit); every import/physics/rank/storage check passed. This is coherent particle
+lattice aliasing in the diagnostic CIC estimator, not a solver disagreement.
+Exact direct low-mode measurements remain independent. All12 source versions
+for that smoke are preserved and hash-verified in its source-snapshot directory.
+Physics audit replaced only the diagnostic assignment with interlaced PCS
+(four-point cubic B-spline, sinc^4 window correction) at128; retain all CIC APIs,
+tests and failed evidence. Simulation CIC forces and measurement budgets do not
+change. All24 spectrum tests pass; problematic Gaussian initial-state extraction
+residuals improved from0.75–1.14% to below0.0001%, retaining the0.1% gate. Runner
+now saves completed-stage comparisons before starting the next stage, so a later
+disk block cannot hide spatial results, including exact --stop-after boundaries.
+Independent PCS review confirmed the piecewise cubic kernel within4.45e-16;
+all20 registered CTests pass (44.84s), including new15/24/16/23 helper tests.
+Fresh pipeline resolution-study-_v58pjf8 passes8 runs/364 checks. Full52-run
+campaign now running in build_openmp/demos/cosmology/resolution-study-cffjva__;
+no source/protocol changes permitted while executing/resuming that campaign.
+Root owns run monitoring/docs; physics audit owns a new saved-evidence plotting
+script/tests (now implemented,15 tests pass; optional plotting CTest passes).
+Independent final storage review found no blocker: do a read-only final source
+snapshot hash audit in addition to the runner's original-source hash audit.
+Atomic journal replacement/process-interruption recovery is tested; do not claim
+guaranteed sudden-power-loss durability (parent directory entries not fsynced).
+No production executable changed. Disk subsequently measured3.7GiB
+free; /tmp and worktree share the same filesystem, explained to the user.
+Provisional read-only inspection after12 runs: all four unshifted pancake pairs
+have shell-power cross-code differences<=2.155e-6. Mesh32 translation passes;
+mesh64 finala=.2 shell2 (axis modes3,4) translation power sensitivity is
+1.3362646%IPPL/1.3362803%FastPM, above the unchanged1% budget in both. These
+will be recorded as failures by completed-stage comparisons; not a reason to
+adjust budgets. Source fixtures/coefficients already persist in results.json.
+Independent pancake audit after all16 runs:12 archives (two codes × three nt ×
+checkpoints4/8) passed SHA, numerical digest and IDs; independently recovered
+density coefficients match saved values within3.54e-13. Finest1024→2048 final
+dx/h=7.20695e-6IPPL/8.99486e-6native, dp/p=2.28023e-6/2.32935e-6; shell complex
+residuals<=2.066e-6, all below .002. Position ratios pass (early4.119/3.435,
+late4.042/3.241). Momentum/global-density differences below1e-5 analysis floors
+do not establish an order. FixedNP32 mesh refinement fails n2/n3,4 (max powers
+6.514%/16.772%); fixedNP64 mesh refinement passes all3 shells. Particle refinement
+itself fails n3,4 complex/correlation gates at both meshes. Only planar n1
+survives examined spatial controls; completed-stage/global qualification pending.
+Spatial stage is now COMPLETE:34 runs,2083/2213 checks pass;130 failures are
+cross3,particle56,mesh51,translation20. Bothfixtures qualify firstshellonly;
+allglobalcontrols/time/rank pass. Rank3 maxima IPPLdx/h5.89051e-15,dp/p5.02162e-15;
+native1.15919e-7/8.62141e-8. Independent coupled3D archive/source audit passed;
+finestfinaldx/h .000267841/.000267870,dp/p .000268284/.000268373; lateorders~2.
+Saved and root-inspected spatial PNG/SVG/data/manifest at
+resolution-study-cffjva__/figures-spatial-release, shown to user. Exact inputreport
+SHA11ee94361853d92f87d66c703cc0145f4bd3f2ab003e7895d071c261b49d56d7 is preserved
+byte-for-byte in input-report.json.gz; report was still overall incomplete.
+Gaussian stage now running:36 totalruns,82 Gaussian per-run checks allpass as of
+last inspection; no Gaussian qualification yet. Free disk1.887GiB; guard remains.
+Historical strictmass diagnostic flags separately retained in four current
+pancake NP64NM64 IPPLruns (base1024,shift1024,base512,base2048), max2.95097e-12
+versus unchanged2e-12. Current band qualification uses the previously accepted
+engineering baseline and does not relabel those flags as passes. README/user
+notified explicitly. Mean-momentum conservation gates allpass as stated.
+CURRENT STOP: main study exited3 (disk guard),41/52 analyzed runs. All34 spatial
+plus7 Gaussian runs completed and archived;285 Gaussian per-run checks pass,
+but fullGaussian controls/qualification are NOT complete. Next nativeplainPM
+GaussianNP64NM64nt2048z49r1 was not launched. Preflight required1750073344 bytes,
+had1669689344 (about1.555GiB). Told user to free roughly3GiB extra for remaining11
+runs; no prior campaign files removed. No simulation process remains from this
+main study. Resume exactly from worktree root:
+env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_resolution_study.py --resume build_openmp/demos/cosmology/resolution-study-cffjva__
+Keep all12 frozen source files, native manifest/artifacts, executables and inputs
+unchanged. Source content hashes (not Git HEAD) govern resume. Root final checks:
+all21CTests PASS in51.50s;560 provenance/source-copy/input/retained-output/archive
+hashes PASS, covering369 numerical snapshot archives from41 completed runs.
+Plot output hashes, source hash and decompressed exact-report hash also pass.
+Independent audit reproduced all1107 spatial shell comparisons/pass flags within
+6.66e-16. Final diff reviewed; git diff --check clean. New campaign occupies2.0GiB;
+about1.5GiB remains. Next action requires more disk, then the exact resume command
+above; do not infer Gaussian qualification from its285 passing per-run checks.
+No push authorized/performed. Original worktree untouched.
+
 ## Current work: matched-particle plain-PM evolution
 
 User explicitly accepted the preceding discrepancies as an engineering baseline
