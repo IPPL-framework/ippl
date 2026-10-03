@@ -998,6 +998,67 @@ env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
 The reserve/peak check remains authoritative even after making space. Do not
 edit the frozen simulation or analysis sources before resuming this campaign.
 
+## Merlin6 CPU continuation
+
+`merlin/cpu_validation.sh` prepares a fresh Linux CPU reference and IPPL build,
+runs the cosmology CTests (including ranks 1–4), the eight-run pipeline smoke,
+and the complete 18-run Gaussian matrix. This intentionally repeats the seven
+Gaussian runs already executed on macOS: compiler, architecture, binaries and
+absolute provenance paths differ, so the macOS journal cannot be resumed on
+Merlin. The completed local spatial evidence remains separate and unchanged.
+The new study uses the same seed, parameters and budgets, but does not assume
+cross-platform byte-identical regenerated ICs. No GPU job is part of this script.
+
+Run only through Slurm, with a new absolute evidence directory whose parent
+exists. The script refuses login hosts, non-four-CPU allocations and existing
+evidence directories. It uses one controller, four build workers, sequential
+CTest/MPI runs, and one OpenMP thread per nonlinear rank. The linear regression
+also checks one rank with two threads, still within the four-CPU allocation.
+No GPU is requested, even when CPU work is scheduled on `gwendolen`.
+
+```sh
+ssh merlin6
+cd /data/user/adelmann/ippl-cosmology-linear
+sbatch --clusters=gmerlin6 --account=gwendolen --partition=gwendolen \
+  --nodes=1 --ntasks=4 --cpus-per-task=1 --ntasks-per-core=2 \
+  --gres-flags=disable-binding --mem=16G --time=06:00:00 \
+  --job-name=cosmology-cpu --output=cosmology-cpu-%j.log \
+  demos/cosmology/merlin/cpu_validation.sh \
+  /data/user/adelmann/cosmology-cpu-NEW
+```
+
+The cluster launcher is prepared but **not runtime-validated yet**. At the
+2026-10-03 inspection, `merlin-g-100` was `DOWN+NOT_RESPONDING`; `gwendolen`
+submission dry-run reported no available node configuration. The ordinary
+`merlin6/cpu-maint` queue rejected this user's account combination. No job was
+submitted, and no computation was moved onto the login node. Restore access or
+select an authorized available CPU partition/account before submitting.
+
+The script pins GCC14.3/OpenMPI5.0.10, Kokkos5.2.0, heFFTe v2.4.1 and the
+existing unmodified FastPM reference commit. A private Python3.11 environment
+uses the same NumPy/pandas/Matplotlib package versions as the local study.
+Tracked source hashes, compiler/MPI/package versions, CMake cache, executable
+hashes and Slurm job identity accompany the existing per-run provenance.
+Builds, dependencies and scientific outputs remain on cluster storage.
+An exit status of 1 from a completed study retains failed numerical gates;
+completion is not synonymous with acceptance. Other setup/runtime failures and
+the disk guard also remain explicit. This launcher does not implement automatic
+retry or migration of an interrupted run.
+
+After generating remote fixtures, `compare_fixture_files.py original.csv
+remote.csv --box-size 168.75 --output NEW.json` records both CSV hashes, sorted
+exact values and periodic position/canonical-momentum residuals. It validates
+complete IDs and unit masses but applies no physical acceptance tolerance.
+Exit zero means comparison completed, not that the inputs are identical.
+Optional `--cell-grid N` selects the displacement normalization; otherwise it
+is explicitly the particle-lattice spacing, not an assumed force mesh.
+Local deployment-helper checks (no Slurm job or simulation is launched):
+
+```sh
+python -B demos/cosmology/tests/test_compare_fixture_files.py
+python -B demos/cosmology/tests/test_merlin_cpu_launcher.py
+```
+
 ## Scope of the result
 
 These checks establish local linear-regime behavior and the qualified frozen

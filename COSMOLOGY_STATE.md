@@ -1,5 +1,50 @@
 # Cosmology task state
 
+## Current work: Merlin6 CPU continuation before A100
+
+2026-10-03: user authorized ssh merlin6, branch push/pull, and subsequently
+explicitly requested finishing CPU validation before GPU work. Read OPALX
+HANDOFF.md and October build/MPI scripts, plus remote IPPL HANDOFF.md/AGENTS.md.
+Pushed codex/cosmology-linear at affc58ece1a10f662c39806699200783ed940fc4.
+Preserved remote ~/git/ippl (symlink to /data/user/adelmann/ippl), branch
+593-gh200-warnings, HEAD e6b996346, untracked HANDOFF.md. Fetched and created a
+separate detached worktree /data/user/adelmann/ippl-cosmology-linear at affc58ece.
+Remote filesystem has approximately192TiB available; no local scientific data
+was deleted or transferred. Original local dirty checkout is untouched.
+
+Plan: fresh Linux OpenMP build plus pinned native FastPM, all cosmology tests,
+eight-run smoke, then complete18-run Gaussian matrix; preserve completed local
+spatial results and all41 old runs. Do not use --resume with Mac provenance on
+Linux. Same Gaussian protocol/seed, but regenerated IC byte equality is not
+assumed. A new standalone fixture comparison utility will record input hashes
+and numerical differences without inventing a cross-platform tolerance.
+New merlin/cpu_validation.sh is compute-only, exclusive-new-evidence-directory,
+four-CPU guarded, serial tests/run controller, -j4 build, one thread/nonlinear
+rank. Same numerical sources/budgets remain frozen and unchanged. GPU work is
+deferred; its future MPI/FFT communication must be qualified explicitly because
+use_heffte_defaults sets GPU-aware behavior independent of the CMake default.
+
+INFRASTRUCTURE BLOCK: ssh succeeds; accessible gmerlin6/gwendolen node
+merlin-g-100 is DOWN+NOT_RESPONDING, since2026-10-03T03:25:33, reason Not responding.
+No user jobs are active. Default visible CPU partitions are absent for user;
+`sinfo -a -M merlin6` exposes other groups' and maintenance partitions, but
+`sbatch --test-only -M merlin6 -A merlin -p cpu-maint` is denied with invalid
+account/account-partition. gmerlin6/gwendolen CPU-only dry-run reports requested
+node configuration unavailable. Account query shows gmerlin6/gwendolen only.
+No actual job submitted, no build/scientific execution on login node. Asked user
+whether another authorized CPU account/partition is available or to wait for
+gwendolen. No automatic monitoring created. Do not claim CPU/GPU validation ran.
+Launcher review complete: record explicit final report state (exit1 can also be
+an execution exception), actual dependency Git revisions, source/executable
+hashes, and script SHA. Python module switch3.14.4→3.11.11 verified on login host
+(version query only); no environment installed yet. Local helper tests pass:
+fixture comparison11, launcher guards5 (arguments, non-Slurm, allocation bounds,
+login-host refusal, shell syntax). Frozen sources and numerical budgets untouched.
+Next: push deployment helpers, fast-forward detached remote worktree without
+touching original checkout; run on compute nodes only after access/hardware is
+available. Prepared launcher has NOT been runtime-validated. This entry supersedes
+the old no-push/disk-only next-action notes below; Mac resume remains possible.
+
 ## Current work: spatial robustness and common-phase Gaussian evolution
 
 User authorized points 1 and 2 on 2026-10-03; they will make disk space.
