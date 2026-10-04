@@ -980,23 +980,16 @@ The inspected spatial figure and its exact report snapshot are saved under
 separate stage; its status must be read from the current `results.json`, not
 inferred from the completed spatial figure.
 
-The combined campaign subsequently stopped safely at41/52 runs because the next
-launch required1,750,073,344 free bytes but only1,669,689,344 were available.
-All34 spatial and7 Gaussian runs are archived. Gaussian has285 passing per-run
-checks, but its paired-code/resolution/time/starting-redshift/MPI study is
-incomplete and has no qualified band. No interrupted simulation must be rerun;
-the next unstarted run is native plain PM at NP64/NM64,2048 steps,z49,r1.
-After making space (roughly3GiB additional is a conservative working allowance
-for the remaining11 runs), resume the unchanged protocol:
-
-```sh
-env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
-  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_resolution_study.py \
-    --resume build_openmp/demos/cosmology/resolution-study-cffjva__
-```
-
-The reserve/peak check remains authoritative even after making space. Do not
-edit the frozen simulation or analysis sources before resuming this campaign.
+The original macOS campaign ultimately stopped safely at44/52 runs because the
+next launch required1,750,073,344 free bytes but only1,667,796,992 were available.
+All34 spatial and10 Gaussian runs remain archived, with410 passing Gaussian
+per-run checks. That partial Gaussian report does not establish its comparison
+gates or a qualified band. No local simulation is running or awaiting a retry;
+the next unstarted local case would be IPPL NP64/NM64,4096 steps,z49,r1.
+The fresh Merlin campaign below is the CPU completion route. Its evidence is
+separate, not a continuation of the macOS journal, and no earlier data is deleted.
+The original peak-space guard and frozen-source requirement remain in force if
+the macOS journal is ever resumed.
 
 ## Merlin6 CPU continuation
 
@@ -1043,9 +1036,10 @@ bash -l demos/cosmology/merlin/cpu_validation.sh --login \
   /data/user/adelmann/cosmology-cpu-login-NEW
 ```
 
-Login-mode preparation is undergoing runtime validation; see `COSMOLOGY_STATE.md`
-for the actual campaign state. This permission does not authorize GPU use on
-the login node. Default Slurm mode remains available when compute access returns.
+Login-mode CPU execution completed successfully on 2026-10-04; the scientific
+result and its limits are recorded below and in `COSMOLOGY_STATE.md`. This
+permission does not authorize GPU use on the login node. Default Slurm mode
+remains available when compute access returns.
 
 The script pins GCC14.3/OpenMPI5.0.10, Kokkos5.2.0, heFFTe v2.4.1 and the
 existing unmodified FastPM reference commit. A private Python3.11 environment
@@ -1072,6 +1066,78 @@ Local deployment-helper checks (no Slurm job or simulation is launched):
 python -B demos/cosmology/tests/test_compare_fixture_files.py
 python -B demos/cosmology/tests/test_merlin_cpu_launcher.py
 ```
+
+After all 18 Gaussian runs finish, `merlin/audit_cpu_study.py` checks the
+canonical matrix, the exact 1,355-check inventory, comparison/qualification
+consistency, metadata, source/build/input hashes and all 162 numerical archives.
+Exit zero means the evidence is complete and internally consistent, not that
+all scientific gates passed. It preserves failed gates and does not independently
+recompute the particle evolution. Its output path must be new.
+
+```sh
+python -B demos/cosmology/merlin/audit_cpu_study.py \
+  /ABSOLUTE/EVIDENCE/gaussian/results.json \
+  --source-dir /ABSOLUTE/FROZEN_CHECKOUT/demos/cosmology \
+  --output /ABSOLUTE/EVIDENCE/cpu-completion-audit.json
+```
+
+The explicit source directory permits copying the auditor outside a frozen
+checkout. Keep the campaign checkout pinned even after completion: its full
+source manifest includes documentation, so pulling later handover updates would
+invalidate that manifest. Use another worktree for later development/builds.
+Focused audit tests: `python -B demos/cosmology/tests/test_cpu_completion_audit.py`.
+
+### Completed Merlin CPU result (2026-10-04)
+
+Evidence: `/data/user/adelmann/cosmology-cpu-login-20261004` on Merlin,
+using the frozen checkout at `296fd04c0`. All 21 cosmology CTests passed,
+including ranks 1–4; the eight-run pipeline smoke passed all 364 checks.
+The fresh Gaussian stage completed 18 runs and 1,355 checks: 1,239 passed,
+with 116 retained failures (58 particle-resolution and 58 mesh-resolution).
+All integrity, measurement, paired-code, timestep, starting-redshift and
+one-versus-four-rank checks passed. The controller's final exit 1 records these
+scientific failures, not an execution failure. No numerical tolerance changed.
+
+The full-matrix Gaussian qualification is **0/3 shells**. Even the lowest shell
+exceeds the 5% power-sensitivity budget: particle refinement reaches 6.246%, and
+mesh refinement 8.137%, at intermediate epochs. Both codes exhibit this behavior;
+the lowest-shell complex/correlation controls still pass. Higher-shell maximum
+power changes reach 27.91% and 30.61%, respectively. Selecting a better-behaved
+resolution pair or only the final epoch would not qualify the declared matrix.
+
+Matched-discretization agreement is much tighter. Across all direct-band paired
+checks, the largest power difference is 0.2116%, complex difference 0.8027%, and
+minimum correlation 0.9999678; all 243 paired-code gates pass. For NP=NM64,
+z49, 2048 steps at a=1, the respective worst shell differences are 0.001208% and
+0.003629%, with correlation at least 0.99999999934. These are code differences,
+not errors relative to continuum truth.
+
+Starting at z49 versus 99 changes final low-shell power by at most 1.463% and
+complex coefficients by 2.649%, within the declared budgets. The largest final
+2048→4096 position and momentum differences are 3.971e-6 cells and 2.448e-6
+relative; the worst shell temporal complex difference is 1.303e-6. Final z49
+position orders are 2.0003 for IPPL and 1.7405 for native plain PM. For the final
+z49 momentum/density comparisons, differences are below the predeclared analysis
+floor, so no order or machine-precision saturation is inferred for them; z99 has
+only two step sizes. One-versus-four-rank position/momentum maxima are 3.14e-15
+cells/1.27e-15 relative for IPPL and 2.33e-8 cells/1.85e-8 relative for native
+plain PM.
+
+The completion audit passed: 162 numerical archives and 268 file hashes verified,
+with the exact check inventory and qualification consistency intact. Report
+SHA256: `82cb91aae41986c7655a742e71c59150a175f926db1a5e1d2d2709a9ae8156b2`.
+The separate Mac/Linux IC comparison found identical canonical momenta and
+position RMS differences of about 1.9e-15 Mpc/h, not byte-identical CSVs.
+
+Plots, their byte-exact compressed report, and the audit are under
+`build_openmp/demos/cosmology/merlin-cpu-login-20261004` in the local worktree;
+the inspected figure is `figures-gaussian-release/gaussian-controls.png` (also
+SVG). This small bundle is about 15 MiB; particle archives and builds stay on
+Merlin. The earlier 34-run local spatial result remains separate and unchanged.
+This completes the planned CPU study, not Gaussian resolution qualification,
+GPU validation, halo-statistics validation or exascale scaling. A larger crossed
+particle/mesh matrix is the next accuracy study; A100 execution remains deferred
+until the hardware is available.
 
 ## Scope of the result
 

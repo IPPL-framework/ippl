@@ -1,6 +1,77 @@
 # Cosmology task state
 
-## Current work: authorized login-node CPU completion
+## Latest result: planned CPU study complete; resolution qualification remains open
+
+2026-10-04: completed the user's authorized Merlin login-node CPU request.
+No simulation or progress reader remains running for this campaign. GPU work
+remains deferred for the reported hardware problem; the broader CPU/A100 goal
+is not complete. This is a completed validation study, not all-band accuracy
+qualification or exascale evidence.
+
+Evidence root on Merlin: `/data/user/adelmann/cosmology-cpu-login-20261004`.
+Frozen source: `/data/user/adelmann/ippl-cosmology-linear`, commit296fd04c0.
+Keep this checkout pinned EVEN AFTER COMPLETION: source.sha256 covers all
+tracked files, including documentation. Use another worktree for future work;
+never pull later handoff/audit commits into this evidence checkout.
+Local code: `/Users/adelmann/git/ippl-cosmology-linear`, codex/cosmology-linear.
+Launcher/guards committed296fd04c0; independent completion auditor/tests720cb83e0.
+Original dirty local/remote user checkouts and all earlier evidence are untouched.
+
+Results:21/21 cosmology CTests PASS (ranks1–4), eight-run smoke364/364 PASS.
+Fresh Gaussian stage18/18 runs complete;1,239/1,355 checks PASS. The116 failures
+are exactly58 particle-resolution and58 mesh-resolution checks. Integrity,
+measurement, paired-code, timestep, start-z and rank checks all pass. All three
+Gaussian shells fail the full resolution matrix, so qualified prefix is0/3;
+global controls pass with no veto. Controller records
+`phase=gaussian_study_finished exit=1`, correctly preserving scientific failures.
+No execution/disk error, no rerun and no numerical tolerance change occurred.
+The earlier34-run LOCAL spatial study remains separately qualified in only
+its first shell with130 retained failures; it was not rerun on Merlin.
+
+Key Gaussian evidence: paired-code direct-shell power/complex maxima0.211604%/
+0.802740%, r_min0.999967822. Final NP=NM64,z49,2048-step shell maxima0.00120759%/
+0.00362866%. Lowest-shell particle/mesh power sensitivities reach6.24615%/8.13703%
+against5%, at intermediate epochs, in both codes. Higher-shell maxima reach
+27.9131%/30.6141%. Excellent matched-discretization agreement does not establish
+resolution robustness; do not retrospectively select a passing subset.
+Final starting-z power/complex maxima1.463041%/2.649273% pass. Finest temporal
+position/momentum maxima3.970146e-6 cells/2.447939e-6 relative pass; worst shell
+complex1.302529e-6. Final z49 position order IPPL2.000311/native1.740539; final
+momentum/density are below the predeclared analysis floor, not a measured order
+or proof of machine-precision saturation. z99 has only two timestep levels.
+Rank1vs4 maxima IPPL3.139787e-15 cells/1.261642e-15 relative momentum;
+native2.323930e-8 cells/1.847336e-8 relative momentum.
+
+Completion audit PASS: exact18-run/1355-check/254-comparison/8-temporal inventory,
+162 numerical archives and268 file hashes verified. Full source/build manifest
+checks also passed in the controller. Final report SHA256:
+82cb91aae41986c7655a742e71c59150a175f926db1a5e1d2d2709a9ae8156b2.
+Auditor tests10 PASS, launcher tests11 PASS, fixture-comparison tests11 PASS.
+Independent reviewers verified the scientific interpretation and downloaded
+artifact/snapshot linkage; root visually inspected the complete PNG.
+
+Local small evidence bundle (about15MiB):
+`build_openmp/demos/cosmology/merlin-cpu-login-20261004`.
+Contains regression/smoke/build records, cpu-completion-audit.json, status,
+Mac/Linux fixture comparisons, and figures-gaussian-release with PNG/SVG,
+plot_data.json, manifest.json and byte-exact input-report.json.gz. All19 local
+files readable; four figure-output hashes and decompressed report verified.
+Rsync reported directory-mode fchmodat warnings, not content errors; independent
+verification confirmed the complete intended contents. Large particle archives,
+dependencies and builds remain on Merlin. No earlier data was deleted.
+Mac/Linux regenerated ICs have exactly equal canonical momenta, position RMS
+about1.9e-15 Mpc/h; their CSV bytes are not identical. This does not substitute
+for nonlinear cross-platform validation.
+
+Next: propose a larger crossed particle/mesh resolution matrix (rather than
+relaxing the failed5% budget), and validate the prepared A100 backend after
+hardware recovery. No larger campaign or GPU run was launched during this CPU
+continuation. Keep the single-seed/finite-band/BBKS/1LPT,
+no-radiation and no-halo-statistics limits explicit. Final independent physics
+and artifact reviews PASS; root's documentation diff review and git diff --check
+PASS. No simulation or analysis work remains for this planned CPU study.
+
+## Execution record: authorized login-node CPU completion (finished)
 
 2026-10-04: user explicitly authorizes CPU execution on the Merlin login node,
 up to eight MPI ranks, while the GPU partition has a hardware problem. This
@@ -26,7 +97,118 @@ execution, docs and final evidence. Root reviewed launcher changes; unchanged
 fixture-comparison tests11 pass. New evidence path will be
 /data/user/adelmann/cosmology-cpu-login-20261004 with task-only tmux session
 cosmology-cpu-20261004, for resilience to SSH disconnection. No build/study has
-started yet. Next: finish helper tests, commit/push/deploy, then launch once.
+started at that initial inspection. Launcher tests11 and fixture tests11 pass;
+the mocked process-substitution test required sandbox escalation, not a code fix.
+Commit296fd04c0 pushed and clean isolated remote worktree fast-forwarded. Started
+exactly one task-owned tmux session cosmology-cpu-20261004, initial panePID359362,
+running `bash -l .../cpu_validation.sh --login` with the evidence path above.
+Do not restart while live. Inspect controller.log and controller-exit.txt for
+phase/result; preserve all sources on the remote checkout until its final hash
+check completes. Local state updates must not be pulled remotely mid-campaign.
+Next: follow build, regression/smoke gates and the18-run Gaussian campaign.
+At06:28UTC Python dependencies installed successfully and FFTW3.3.10 is compiling
+with four workers. Read-only live log follower uses local tool session93669;
+poll it rather than starting repeated SSH sessions. The actual controller lives
+in tmux independently of this reader. Source checkout must remain frozen until
+the final integrity check; later audit helper will be copied outside the checkout.
+New (not yet committed/deployed) merlin/audit_cpu_study.py and its8 passing tests
+provide a read-only CPU completion audit: canonical18 runs, exact1355 checks,
+254 comparisons,8 temporal rows,162 numerical archives, source/build/input/
+artifact integrity, and preserved failed science flags. Root reran8 tests PASS.
+CLI: `python -B audit_cpu_study.py RESULTS --source-dir FROZEN/demos/cosmology
+--output NEW.json`; use evidenceRoot/matplotlib-cache. This verifies scope and
+integrity, not an independent recomputation of particle physics. No new tests or
+helper should be pulled into the live remote source checkout mid-campaign.
+At06:38UTC native reference and all four IPPL targets built successfully;
+21/21 cosmology CTests passed, followed by full8-run smoke with364 checks and
+zero failures. Fresh18-run Gaussian study is now live under evidenceRoot/gaussian.
+Do not rerun. Audit reviewer found check-name/qualification consistency gaps
+in the new helper (not numerical code); agent is tightening only those new files
+before the final audit. Recopy the finalized helper to the evidence directory.
+At06:46UTC first4 Gaussian runs are analyzed (NP32/NM32 and NP32/NM64, both
+codes). No operational failure. Regression duration112.78s. Continue polling
+the live log reader93669; never restart from missing finalreport alone. Full
+remaining matrix includes NP64, timestep and starting-redshift refinements and
+rank4 comparisons, so completion will take substantially longer than the smoke.
+At06:52UTC five runs complete, zero per-run failures. Audit helper fixes now
+pass10 tests independently and under root; both original false-acceptance probes
+reject, all410 existing local Gaussian checks match the exact identity contract.
+Finalized helper being recopied outside frozen checkout. It validates exact
+scientific names/tags, shell-row linkage and regenerated qualification summary.
+Keep the remote CPU checkout pinned at296fd04c0 even after completion: the full
+source.sha256 includes documentation, so pulling later handover-only commits
+would invalidate that retained manifest. Push later code/docs as needed without
+fast-forwarding this evidence checkout; use a new worktree for a future build.
+At07:00UTC seven Gaussian runs are analyzed; native NP64/NM64 nt2048 is next.
+Final audit helper was copied and remote/local SHA256 verified equal:
+13e8d113c4ca08e9fdc754bbfaff05763104fab8339d870f6cd0a2a4aa3da89e.
+Independent reviewer reran10 tests and verified both false-acceptance probes now
+reject; root reran10 PASS too. New helper/tests are being committed/pushed only;
+do not pull those commits into the frozen remote source tree.
+Auditor committed/pushed as720cb83e0; remote study checkout remains296fd04c0.
+At07:08UTC eight Gaussian runs are analyzed: all four NP/NM32/64 crossed
+resolution pairs. Next canonical run is finest64/64 nt1024 IPPL. Continue
+the already-live controller;10 timestep/start-redshift/rank cases remain.
+Latest explicit per-run failure check at7 completed runs was zero. No Gaussian
+qualification yet, because the full18-run stage has not completed. README and
+state have uncommitted follow-up documentation; no numerical source edits.
+At07:15UTC10/18 complete (nt1024 finest pair done); nt4096 IPPL next. Validation
+agent now owns a bounded fixture comparison: upload only local NP32/NP64 z49
+CSV fixtures into NEW remote evidenceRoot/mac-fixture-comparison and compare
+against fresh Linux fixtures using the existing helper, one analysis CPU while
+the simulation is rank1. No source edits, no new physical tolerance. This checks
+cross-platform IC reproducibility without assuming byte equality. Root should
+collect its resulting JSONs with the final small-artifact download.
+At07:21UTC optional fixture comparison completed. Initial SCP was denied by
+auto-review; independent full-row validation established generated-only numeric
+data, complete IDs and unit masses plus frozen generator/fixture hashes. Root's
+reviewed retry with that evidence was approved; SCP completed and remote uploaded
+hashes match local originals. No alternate/encoded transfer was used.
+Mac/Linux CSV and sorted-value bit identity differ, but canonical momenta match
+exactly (all dp metrics zero). Position RMS differences: NP32 1.899093625698928e-15
+Mpc/h (3.601244208732782e-16 cells); NP64 1.919970963373044e-15 Mpc/h
+(7.28166765368147e-16 cells). Maximum component difference2.842170943040401e-14
+Mpc/h for both. Differing position components1768/15654. No acceptance tolerance
+was invented; these are measured residuals. Helper/source checkout untouched.
+Artifacts: evidenceRoot/mac-fixture-comparison/fixture-parity-p32-z49.json
+SHAe4e28fdebea5862e6e3061676d5a21bb0b205627a511db60e76afb41efc411fc and
+fixture-parity-p64-z49.json SHAa46b2dab4a4f86a7247cc111503499955e5d24a48b193a2165958f1dbe0b73c7.
+At07:28UTC11/18 complete; native finest64/64 nt4096 z49 running. New read-only
+live checkpoint follower is local tool session81328 (preferred for progress);
+old log-tail session93669 also remains read-only and exits with the controller.
+Both readers are separate from the real tmux simulation controller. After full
+completion inspect controller-exit.txt/report state; exit1 can mean completed
+scientific failures, not an execution failure. Then run the copied auditor
+against gaussian/results.json with --source-dir pointing at frozen296fd04c0,
+--output evidenceRoot/cpu-completion-audit.json (new), and render with frozen
+plot_resolution_study.py --output-dir evidenceRoot/figures-gaussian-release.
+Use evidenceRoot/python/bin/python, OMP/BLAS/MKL1, MPLBACKEND=Agg and existing
+evidenceRoot/matplotlib-cache. Fetch only small plots/reports/manifests, not
+particle archives, to the Mac; all large evidence stays on Merlin.
+At07:36:46UTC12/18 analyzed, zero per-run failures. The full z49 resolution
+cross and1024/2048/4096 timestep pairs are done. Active case is finest64/64
+z99 nt2048 IPPL, initial a=.01. Six runs remain: z99 nt2048 pair, z99 nt4096
+pair, and z49 nt2048 rank4 pair. Do not compare intermediate checkpoint indices
+across starting redshifts: the canonical start-z comparison uses final a=1 only.
+At07:45UTC13/18 analyzed, zero per-run failures; native z99 nt2048 active at
+checkpoint5/8. Replaced only read-only status readerPID8814/session81328 after
+its empty-checkpoint startup race. New read-only reader tool session26025 safely
+handles an empty file. Actual tmux controller and simulations were unaffected.
+Old log reader93669 remains separate and read-only. Next five cases are native
+z99 nt2048, z99 nt4096 pair, and z49 nt2048 rank4 pair. No restart needed.
+At07:57:26UTC15/18 analyzed, zero per-run failures. IPPL z99 nt4096 is complete;
+native z99 nt4096 has just started. Only the z49 nt2048 rank4 pair follows it.
+Independent prerequisite review reconfirmed21/21 unique passing CTests and
+8/8 smoke runs,364/364 unique passing checks. Saved metadata matches actual
+OpenMP/Host, one thread and ranks1/2 for smoke; CTests cover ranks1–4. Build is
+Release GCC14.3/OpenMPI5.0.10, Kokkos OpenMP ON/CUDA OFF. No GPU qualification.
+Small evidence bundle created locally at build_openmp/demos/cosmology/
+merlin-cpu-login-20261004; downloaded only environment/dependency/source/build
+records, CMake records, CTest LastTest.log and smoke/results.json. The latter
+two hashes match independent remote inspection. No particle snapshots copied.
+At08:11:05UTC16/18 analyzed, zero per-run failures. All timestep/start-redshift
+rank1 cases are done. Four-rank IPPL z49 nt2048 is active (checkpoint2/8); native
+four-rank repeat is last. Root reran the finalized auditor's10 tests PASS.
 
 ## Latest execution: 44/52 local CPU runs; compute and disk blocked
 
