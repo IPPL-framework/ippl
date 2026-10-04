@@ -1,5 +1,33 @@
 # Cosmology task state
 
+## Current work: authorized login-node CPU completion
+
+2026-10-04: user explicitly authorizes CPU execution on the Merlin login node,
+up to eight MPI ranks, while the GPU partition has a hardware problem. This
+supersedes the older compute-only restriction for this CPU task. We retain a
+conservative four-worker/four-rank limit, one thread per nonlinear rank and
+serial campaigns. GPU execution remains deferred. No unrelated process will
+be stopped (an existing OPALX regression/salloc process is unrelated).
+
+Plan: add an explicit guarded --login mode to the deployment launcher, verify
+RHEL8 login compiler/Python/MPI compatibility, push and fast-forward only the
+isolated CPU worktree, then build fresh and run 21 cosmology regressions,
+eight-run pipeline smoke and all 18 Gaussian cases. Keep the completed local
+spatial evidence separate. Do not transplant or resume the macOS journal.
+Retain failed numerical gates and produce Gaussian plots when the stage is
+complete. Frozen numerical sources, local evidence and tolerances are unchanged.
+
+Initial inspection: merlin-l-001.psi.ch, RHEL8.10, 88 logical CPUs, load about1.5,
+192 TiB free on /data/user. Isolated CPU worktree clean at3b59ef1a6. Toolchain
+probe passed: GCC/G++14.3.0, CMake4.4.0, Python3.11.11, OpenMPI5.0.10_slurm;
+UCX_TLS=sm,self with four-rank hostname launch succeeds (libxml version warning).
+Agent validation owns launcher and mocked guard tests; root owns deployment,
+execution, docs and final evidence. Root reviewed launcher changes; unchanged
+fixture-comparison tests11 pass. New evidence path will be
+/data/user/adelmann/cosmology-cpu-login-20261004 with task-only tmux session
+cosmology-cpu-20261004, for resilience to SSH disconnection. No build/study has
+started yet. Next: finish helper tests, commit/push/deploy, then launch once.
+
 ## Latest execution: 44/52 local CPU runs; compute and disk blocked
 
 2026-10-03 21:38 UTC: three additional local CPU runs completed with the frozen

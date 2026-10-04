@@ -1002,18 +1002,21 @@ edit the frozen simulation or analysis sources before resuming this campaign.
 
 `merlin/cpu_validation.sh` prepares a fresh Linux CPU reference and IPPL build,
 runs the cosmology CTests (including ranks 1–4), the eight-run pipeline smoke,
-and the complete 18-run Gaussian matrix. This intentionally repeats the seven
+and the complete 18-run Gaussian matrix. This intentionally repeats the ten
 Gaussian runs already executed on macOS: compiler, architecture, binaries and
 absolute provenance paths differ, so the macOS journal cannot be resumed on
 Merlin. The completed local spatial evidence remains separate and unchanged.
 The new study uses the same seed, parameters and budgets, but does not assume
 cross-platform byte-identical regenerated ICs. No GPU job is part of this script.
 
-Run only through Slurm, with a new absolute evidence directory whose parent
-exists. The script refuses login hosts, non-four-CPU allocations and existing
-evidence directories. It uses one controller, four build workers, sequential
+Use a new absolute evidence directory whose parent exists. The default mode
+requires a four-CPU single-node Slurm allocation and refuses login hosts.
+An explicit `--login` mode is available for authorized login-node CPU work:
+it requires a `merlin-l-*` host and rejects an inherited Slurm job context.
+Both modes refuse existing evidence directories. The script uses one controller,
+four build workers, sequential
 CTest/MPI runs, and one OpenMP thread per nonlinear rank. The linear regression
-also checks one rank with two threads, still within the four-CPU allocation.
+also checks one rank with two threads, still within the four-CPU limit.
 No GPU is requested, even when CPU work is scheduled on `gwendolen`.
 
 ```sh
@@ -1027,18 +1030,29 @@ sbatch --clusters=gmerlin6 --account=gwendolen --partition=gwendolen \
   /data/user/adelmann/cosmology-cpu-NEW
 ```
 
-The cluster launcher is prepared but **not runtime-validated yet**. At the
-2026-10-03 inspection, `merlin-g-100` was `DOWN+NOT_RESPONDING`; `gwendolen`
-submission dry-run reported no available node configuration. The ordinary
-`merlin6/cpu-maint` queue rejected this user's account combination. No job was
-submitted, and no computation was moved onto the login node. Restore access or
-select an authorized available CPU partition/account before submitting.
+On 2026-10-04 the user explicitly authorized login-node CPU work up to eight
+ranks while the GPU partition has a hardware problem. This launcher deliberately
+keeps the smaller four-rank/four-worker limit. The login build is separate from
+any later RHEL9 compute-node build; do not reuse its CMake cache across hosts.
+The authorized direct launch is:
+
+```sh
+ssh merlin6
+cd /data/user/adelmann/ippl-cosmology-linear
+bash -l demos/cosmology/merlin/cpu_validation.sh --login \
+  /data/user/adelmann/cosmology-cpu-login-NEW
+```
+
+Login-mode preparation is undergoing runtime validation; see `COSMOLOGY_STATE.md`
+for the actual campaign state. This permission does not authorize GPU use on
+the login node. Default Slurm mode remains available when compute access returns.
 
 The script pins GCC14.3/OpenMPI5.0.10, Kokkos5.2.0, heFFTe v2.4.1 and the
 existing unmodified FastPM reference commit. A private Python3.11 environment
 uses the same NumPy/pandas/Matplotlib package versions as the local study.
 Tracked source hashes, compiler/MPI/package versions, CMake cache, executable
-hashes and Slurm job identity accompany the existing per-run provenance.
+hashes and execution mode/host identity (plus Slurm job identity when applicable)
+accompany the existing per-run provenance.
 Builds, dependencies and scientific outputs remain on cluster storage.
 An exit status of 1 from a completed study retains failed numerical gates;
 completion is not synonymous with acceptance. Other setup/runtime failures and

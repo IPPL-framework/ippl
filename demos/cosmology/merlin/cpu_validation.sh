@@ -1,20 +1,35 @@
 #!/bin/bash -l
-# Run once inside a four-CPU, single-node Slurm allocation, never on a login node.
-# Usage: bash -l cpu_validation.sh ABSOLUTE_NEW_EVIDENCE_DIRECTORY
+# Default: run once inside a four-CPU, single-node Slurm allocation.
+# Explicit --login: user-authorized Merlin login-host execution, capped at four CPUs.
+# Usage: bash -l cpu_validation.sh [--login] ABSOLUTE_NEW_EVIDENCE_DIRECTORY
 # Source is the checkout containing this script. Outputs must be on cluster storage.
 set -euo pipefail
 
+executionMode=slurm
+if [[ ${1:-} == --login ]]; then
+    executionMode=login
+    shift
+fi
 if [[ $# != 1 || $1 != /* ]]; then
-    printf 'Usage: bash -l %s ABSOLUTE_NEW_EVIDENCE_DIRECTORY\n' "$0" >&2
+    printf 'Usage: bash -l %s [--login] ABSOLUTE_NEW_EVIDENCE_DIRECTORY\n' "$0" >&2
     exit 2
 fi
-test -n "${SLURM_JOB_ID:-}"
-test "${SLURM_JOB_NUM_NODES:-0}" -eq 1
-test "${SLURM_NTASKS:-0}" -eq 4
-test "${SLURM_CPUS_PER_TASK:-0}" -eq 1
-test "${SLURM_CPUS_ON_NODE:-999}" -eq 4
-case $(hostname -s) in merlin-c-*|merlin-g-*) ;; *)
-    printf 'Refusing a non-compute host.\n' >&2; exit 2;; esac
+if [[ "$executionMode" == login ]]; then
+    if [[ -n ${SLURM_JOB_ID:-} ]]; then
+        printf 'Refusing --login with an inherited Slurm job allocation.\n' >&2
+        exit 2
+    fi
+    case $(hostname -s) in merlin-l-*) ;; *)
+        printf 'Refusing --login outside a Merlin login host.\n' >&2; exit 2;; esac
+else
+    test -n "${SLURM_JOB_ID:-}"
+    test "${SLURM_JOB_NUM_NODES:-0}" -eq 1
+    test "${SLURM_NTASKS:-0}" -eq 4
+    test "${SLURM_CPUS_PER_TASK:-0}" -eq 1
+    test "${SLURM_CPUS_ON_NODE:-999}" -eq 4
+    case $(hostname -s) in merlin-c-*|merlin-g-*) ;; *)
+        printf 'Refusing a non-compute host.\n' >&2; exit 2;; esac
+fi
 
 scriptDir=$(cd "$(dirname "$0")" && pwd -P)
 sourceRoot=$(cd "$scriptDir/../../.." && pwd -P)
@@ -43,8 +58,13 @@ mkdir "$MPLCONFIGDIR"
     date -u '+%Y-%m-%dT%H:%M:%SZ'
     hostname
     uname -a
-    printf 'slurm_job=%s ranks_max=4 threads_per_rank=1 backend=OPENMP\n' "$SLURM_JOB_ID"
-    printf 'linear_ctest_exception=one_rank_two_threads (within four allocated CPUs)\n'
+    printf 'execution_mode=%s ranks_max=4 build_jobs=4 threads_per_rank=1 backend=OPENMP\n' "$executionMode"
+    if [[ "$executionMode" == slurm ]]; then
+        printf 'slurm_job=%s cpu_budget=4 source=Slurm_allocation\n' "$SLURM_JOB_ID"
+    else
+        printf 'slurm_job=none cpu_budget=4 source=explicit_user_authorized_login_mode\n'
+    fi
+    printf 'linear_ctest_exception=one_rank_two_threads (within four-CPU budget)\n'
     printf 'source_root=%s\nevidence_root=%s\nUCX_TLS=%s\n' "$sourceRoot" "$evidenceRoot" "$UCX_TLS"
     git -C "$sourceRoot" rev-parse HEAD
     sha256sum "$scriptDir/cpu_validation.sh"
@@ -54,7 +74,9 @@ mkdir "$MPLCONFIGDIR"
     mpicc --showme
     cmake --version
     python3 --version
-    scontrol -M "$SLURM_CLUSTER_NAME" show job "$SLURM_JOB_ID"
+    if [[ "$executionMode" == slurm ]]; then
+        scontrol -M "$SLURM_CLUSTER_NAME" show job "$SLURM_JOB_ID"
+    fi
 } > "$evidenceRoot/environment.txt"
 (
     cd "$sourceRoot"
