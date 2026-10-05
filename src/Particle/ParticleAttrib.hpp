@@ -32,6 +32,20 @@
 
 namespace ippl {
     namespace detail {
+        /**
+         * @brief Assign a value without NVCC's translation-unit-local lambda copy helpers.
+         *
+         * Named functors remain safe when the host linker coalesces parallel_for instantiations
+         * emitted by different translation units.
+         */
+        template <typename View, typename Value>
+        struct ParticleAttribAssignFunctor {
+            View view_m;
+            Value value_m;
+
+            KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const { view_m(i) = value_m; }
+        };
+
         template <bool UseHashView, typename HashView>
         KOKKOS_INLINE_FUNCTION size_t scatterMappedIndex(const size_t idx,
                                                          const HashView& hashView) {
@@ -172,11 +186,10 @@ namespace ippl {
 
     template <typename T, class... Properties>
     ParticleAttrib<T, Properties...>& ParticleAttrib<T, Properties...>::operator=(T x) {
-        auto dview        = dview_m;
-        using policy_type = Kokkos::RangePolicy<execution_space>;
-        Kokkos::parallel_for(
-            "ParticleAttrib::operator=()", policy_type(0, *(this->localNum_mp)),
-            KOKKOS_LAMBDA(const size_t i) { dview(i) = x; });
+        using policy_type  = Kokkos::RangePolicy<execution_space>;
+        using functor_type = detail::ParticleAttribAssignFunctor<view_type, T>;
+        Kokkos::parallel_for("ParticleAttrib::operator=()", policy_type(0, *(this->localNum_mp)),
+                             functor_type{dview_m, x});
         return *this;
     }
 
