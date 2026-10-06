@@ -36,9 +36,23 @@ PMGRID patch. It is pinned to the existing Merlin campaign and does not create
 a new random realization. At the last preflight the campaign/run/output paths
 were absent; the frozen executable matched SHA256
 `3b1668629958329d3e5e9913717548e3d690dea3201f45816bddfafb6d90a0ac`, the
-converted IC existed, and `/data/user` had about 192 TiB free. The GADGET solver
-has not yet been launched by this continuation. Next: fresh process check, then
-the authorized eight-rank login run; keep its data, analysis, and plots on Merlin.
+converted IC existed, and `/data/user` had about 192 TiB free. Two wrapper
+attempts stopped before MPI: first the copied wrapper lacked its executable bit;
+then the frozen estimator was found flattened instead of at its expected import
+path. Both failures left no campaign record, output, or task MPI process. The
+exact estimator hash matched the preserved source; a guarded compatibility
+symlink now exposes it in the repository-style location.
+
+The authorized login run began 2026-10-06 19:25:28 UTC on `merlin-l-001.psi.ch`
+in tmux session `cosmo-gadget2-np256-20261006-retry2`. Remote campaign record
+`/data/user/adelmann/gadget2-zeldovich-np256-20261006/campaign.json` reports
+`running`, `authorized_login`, 8 ranks, and 1 thread/rank. A fresh `/proc` audit
+found exactly eight solver processes in the recorded private session, each with
+`OMP_NUM_THREADS=1`. Controller PID/session is 2320799. Current launch log is
+`logs/gadget2-np256-login-20261006-retry2.log`; source, data and output remain on
+Merlin. No rebuild or physics/tolerance changes occurred. Existing follow-up
+`finish-merlin-gadget-comparison` was updated and activated for this 256³ run;
+next is completion audit and its guarded matched z=0 plot.
 
 ## Latest result: planned CPU study complete; resolution qualification remains open
 
