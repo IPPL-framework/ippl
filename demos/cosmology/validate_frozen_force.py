@@ -20,6 +20,8 @@ import tempfile
 import numpy as np
 import pandas as pd
 
+from runtime_metadata import validate_runtime_metadata
+
 
 # Fixed before simulation comparisons. Absolute floors scale with the box for
 # forces (which have length units); relative budgets cover native float32 k/acc.
@@ -228,6 +230,7 @@ def run(args):
         executables["fastpm"] = Path(args.fastpm_exe).resolve()
     source_root = Path(__file__).resolve().parent
     tracked = [Path(__file__).resolve(), source_root / "CosmologySimulation.h",
+               source_root / "ExecutionMetadata.h", source_root / "runtime_metadata.py",
                source_root / "CosmologyConfig.h", source_root / "CosmologyPhysics.h",
                source_root / "tests/CompareCosmologyForce.cpp"] + list(executables.values())
     if args.fastpm_exe:
@@ -283,10 +286,10 @@ def run(args):
                 with (root / f"{name}-{code}-{ranks}r.log").open("w") as log:
                     launch(command, log, environment)
                 actual = read_output(out, n, ranks)
-                if (int(actual["metadata"]["threads"]) != 1
-                        or float(actual["metadata"]["box_size"]) != box
+                execution = validate_runtime_metadata(actual["metadata"], ranks, code=code)
+                if (float(actual["metadata"]["box_size"]) != box
                         or float(actual["metadata"]["omega_m"]) != omega):
-                    raise ValueError(f"{out}: mismatched threads or cosmology metadata")
+                    raise ValueError(f"{out}: mismatched cosmology metadata")
                 if code == "fastpm":
                     contract = {"upstream_commit": FASTPM_COMMIT, "kernel": "FASTPM_KERNEL_NAIVE",
                                 "softening": "FASTPM_SOFTENING_NONE", "painter": "FASTPM_PAINTER_CIC",
@@ -297,7 +300,8 @@ def run(args):
                         raise ValueError(f"{out}: native reference does not match the pinned operator contract")
                 output[code][ranks] = actual
                 records.append({"name": label, "command": command, "output": str(out),
-                                "input_sha256": sha(input_path), "metadata": actual["metadata"]})
+                                "input_sha256": sha(input_path), "metadata": actual["metadata"],
+                                "execution": execution})
                 checks.compare(label + "/positions", actual["positions"], positions, box * 2e-14)
                 checks.compare(label + "/density", actual["delta"], delta, da, dr)
                 checks.scalar(label + "/mass", abs(float(actual["delta"].mean())), da)

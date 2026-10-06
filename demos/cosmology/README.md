@@ -1139,6 +1139,116 @@ GPU validation, halo-statistics validation or exascale scaling. A larger crossed
 particle/mesh matrix is the next accuracy study; A100 execution remains deferred
 until the hardware is available.
 
+## Matched GADGET-2 256³ comparison
+
+The PMGRID=256 GADGET-2 workflow lives in `demos/cosmology/gadget2/`. It
+consumes the existing shared z=99 CSV realization (SHA256
+`3b4a3e1864ad535369444b98779c117750e1e980cbe7d01afedc20f8329cda11`) used by
+the IPPL/FastPM comparison; it does not generate another random realization.
+The converter checks that hash and certifies the format-1 float32 round trip.
+The run controller then verifies the IC and prior IPPL/FastPM reports, the
+PMGRID=256 binary/build inputs, eight-rank/one-thread execution mode, and the
+final GADGET snapshot header. Analysis and plotting retain provenance checks and
+write a matched three-code z=0 power-spectrum figure.
+
+These scripts are campaign-pinned to the existing Merlin directory
+`/data/user/adelmann/gadget2-zeldovich-np256-20261006`; they are not a generic
+GADGET-2 installer. On Merlin, install the tracked workflow scripts into that
+campaign's `source/` directory while preserving its input and run records. The
+shared realization must first be converted to GADGET format-1 (this writes only
+the specified new output/sidecar and refuses overwrite):
+
+```sh
+/data/user/adelmann/cosmology-cpu-login-20261004/python/bin/python -B \
+  convert_shared_ic.py \
+  --input /data/user/adelmann/cosmology-zeldovich-np256-20261006/ics/shared-z99.csv \
+  --output /data/user/adelmann/gadget2-zeldovich-np256-20261006/ics/shared-z99-gadget2.bin \
+  --redshift 99 \
+  --expected-sha256 3b4a3e1864ad535369444b98779c117750e1e980cbe7d01afedc20f8329cda11
+```
+
+The build script touches only the isolated `build/gadget-work-256` tree and
+refuses to rebuild once the 256³ run exists:
+
+```sh
+cd /data/user/adelmann/gadget2-zeldovich-np256-20261006/source
+./build_gadget2_np256.sh
+```
+
+The login wrapper is restricted by the controller to `merlin-l-*` outside
+Slurm. It executes the guarded eight-rank simulation, then the matched-spectrum
+analysis and plotter. The alternative Slurm wrapper requests eight ranks on a
+single node:
+
+```sh
+./run_gadget2_np256.login.sh
+# or, only in the approved Slurm allocation:
+sbatch run_gadget2_np256.sbatch
+```
+
+Campaign inputs, numerical outputs, analysis and permanent plots stay on Merlin.
+Neither a completed run nor a new GADGET result is claimed by this script
+consolidation.
+
+## A100 validation preparation
+
+The A100 backend preparation from `codex/cosmology-a100-validation` is now part
+of the canonical `codex/cosmology-linear` history. The former local A100
+checkout is only a duplicate source checkout; Merlin deployment/evidence
+directories remain separate and must not be removed. The CPU study and its
+source hashes remain authoritative for the completed CPU campaign. This metadata
+and launcher work changes no force assignment, arithmetic order, particle
+transfer, equation, or numerical acceptance budget.
+
+Historical `threads` records `DefaultExecutionSpace.concurrency()`, not the host
+thread count for CUDA. New output adds `host_threads`, `execution_concurrency`,
+`execution_space`, and `memory_space`. Validators require consistent explicit
+GPU metadata while retaining strict legacy CPU and native-reference checks. The
+one-rank/two-host-thread regression validates host configuration only; it is not
+a GPU throughput or scaling result.
+
+`merlin/a100_validation.sh` requires completed CPU Gaussian evidence before
+either GPU job. Build with one A100, then run with four full, non-MIG A100s on a
+single node. The prepared launcher is **not evidence of successful CUDA
+compilation or cluster runtime validation**. Substitute the completed CPU
+evidence path and a fresh GPU output path before submitting:
+
+```sh
+cd /data/user/adelmann/ippl-cosmology-a100
+sbatch --clusters=gmerlin6 --account=gwendolen --partition=gwendolen \
+  --nodes=1 --ntasks=4 --cpus-per-task=1 --ntasks-per-core=2 \
+  --gres-flags=disable-binding --gpus-per-node=1 --mem=32G --time=06:00:00 \
+  --job-name=cosmology-a100-build --output=cosmology-a100-build-%j.log \
+  demos/cosmology/merlin/a100_validation.sh build \
+  /data/user/adelmann/cosmology-cpu-COMPLETE /data/user/adelmann/cosmology-a100-NEW
+
+sbatch --clusters=gmerlin6 --account=gwendolen --partition=gwendolen \
+  --nodes=1 --ntasks=4 --cpus-per-task=1 --ntasks-per-core=2 \
+  --gres-flags=disable-binding --gpus-per-node=4 --mem=32G --time=12:00:00 \
+  --job-name=cosmology-a100-run --output=cosmology-a100-run-%j.log \
+  demos/cosmology/merlin/a100_validation.sh run \
+  /data/user/adelmann/cosmology-cpu-COMPLETE /data/user/adelmann/cosmology-a100-NEW
+```
+
+The CUDA+OpenMP build pins AMPERE80 for Kokkos and heFFTe. With pinned heFFTe
+v2.4.1, `Heffte_ENABLE_GPU_AWARE_MPI=OFF` stages FFT reshape buffers even when
+IPPL requests GPU-aware plans. IPPL particle migration and halo exchanges still
+pass device buffers to MPI, so CUDA-aware MPI remains required; actual regressions
+must verify this MPI stack.
+
+The GPU run executes cosmology CTests, the eight-run smoke, and the complete
+spatial-34 plus Gaussian-18 matrix. IPPL runs use CUDA; native plain-PM FastPM
+reference runs remain CPU-only. The new GPU spatial study is not skipped and no
+tolerance is relaxed on failure. Device selection is restricted to scheduler
+tokens; each successful IPPL launch must verify distinct A100 devices from its
+allocation with MIG disabled. The final audit joins each run to one launch
+manifest, checks all 52 run descriptors, backend evidence and saved archives,
+and separates completed execution/provenance from failed scientific gates.
+
+No GPU performance, multi-node scaling, or exascale claim follows from these
+preparatory changes. The cluster has previously been unavailable; check current
+cluster state before submitting any job.
+
 ## Scope of the result
 
 These checks establish local linear-regime behavior and the qualified frozen

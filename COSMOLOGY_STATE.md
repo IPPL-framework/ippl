@@ -1,5 +1,18 @@
 # Cosmology task state
 
+## Canonical checkout consolidation (2026-10-06)
+
+The chosen canonical local checkout is `/Users/adelmann/git/ippl-cosmology-linear`
+on `codex/cosmology-linear`. The A100 branch (`codex/cosmology-a100-validation`,
+ending at `18ff72cc5`) has been merged locally; its metadata, launcher, tests and
+documentation are preparation only, not successful GPU execution. The CPU-next
+branch points at the same source commit as this checkout (`9506f1e52`); its
+uncommitted study artifacts are not being bulk-imported. Only the requested
+GADGET-2 build/execute support is added from that worktree. Keep Merlin deployment
+and evidence directories intact; later A100 deployment fixes can be brought
+back deliberately. The unrelated `/Users/adelmann/git/ippl` checkout is also
+preserved. No push is authorized.
+
 ## Latest result: planned CPU study complete; resolution qualification remains open
 
 2026-10-04: completed the user's authorized Merlin login-node CPU request.

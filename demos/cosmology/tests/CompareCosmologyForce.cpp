@@ -231,8 +231,9 @@ void Simulation::compareFrozenForce(const std::string& inputCsv, const std::stri
     if (rank == 0) {
         std::ofstream metadata(output / "metadata.txt");
         metadata << std::setprecision(17)
-                 << "mode=frozen particles; production Simulation::solveForce\n"
-                 << "ranks=" << ranks << "\nthreads=" << Kokkos::DefaultExecutionSpace().concurrency()
+                 << "mode=frozen particles; production Simulation::solveForce\n";
+        writeExecutionMetadata(metadata);
+        metadata << "ranks=" << ranks
                  << "\nn_grid=" << config_m.nGrid << "\nbox_size=" << config_m.boxSize
                  << "\nomega_m=" << config_m.omegaMatter << "\nparticles=" << total
                  << "\nmass_error=" << massError_m << "\nmax_inverse_imaginary=" << maxImaginary_m

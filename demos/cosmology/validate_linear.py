@@ -37,6 +37,8 @@ import time
 import numpy as np
 import pandas as pd
 
+from runtime_metadata import validate_runtime_metadata
+
 
 # CIC scatter and gather approximately filter the continuum force by
 # product_j sinc(k_j h/2)^4. These predeclared acceptance limits allow
@@ -224,6 +226,7 @@ class Validation:
             "executable": str(arguments.exe.resolve()),
             "command": sys.argv,
             "quick": arguments.quick,
+            "execution_scope": "MPI/backend/host-thread configuration; the two-host-thread check is not GPU scaling",
             "tolerances": {
                 "axis_growth": AxisGrowthTolerance,
                 "oblique_growth": ObliqueGrowthTolerance,
@@ -333,12 +336,10 @@ class Validation:
     def check_common(self, case: Case) -> None:
         metadata = dict(line.split("=", 1) for line in
                         (case.directory / "metadata.txt").read_text().splitlines() if "=" in line)
-        actualRanks = int(metadata.get("ranks", "-1"))
-        actualThreads = int(metadata.get("threads", "-1"))
-        self.check(case.name + ": actual MPI/OpenMP execution", bool(
-            actualRanks == case.ranks and actualThreads == case.threads),
-            actual_ranks=actualRanks, requested_ranks=case.ranks,
-            actual_threads=actualThreads, requested_threads=case.threads)
+        execution = validate_runtime_metadata(metadata, case.ranks, case.threads)
+        self.check(case.name + ": actual MPI/backend/host-thread configuration", True,
+                   execution=execution, requested_ranks=case.ranks,
+                   requested_host_threads=case.threads)
         data = case.diagnostics
         if not set(DiagnosticColumns).issubset(data.columns):
             raise ValueError(f"{case.name}: missing diagnostic columns")

@@ -28,6 +28,9 @@ import time
 import numpy as np
 import pandas as pd
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from runtime_metadata import validate_runtime_metadata
+
 
 GridSize = 8
 BoxSize = 10.0
@@ -59,6 +62,7 @@ class AdapterTests:
         sourceDirectory = Path(__file__).resolve().parents[1]
         sources = (self.executable, Path(__file__).resolve(),
                    sourceDirectory / "tests/CompareCosmologyForce.cpp",
+                   sourceDirectory / "ExecutionMetadata.h", sourceDirectory / "runtime_metadata.py",
                    sourceDirectory / "CosmologySimulation.h")
         self.results = {
             "passed": False, "command": sys.argv,
@@ -109,8 +113,7 @@ class AdapterTests:
                 "Positions are outside the periodic box")
         metadata = dict(line.split("=", 1) for line in
                         (directory / "metadata.txt").read_text().splitlines() if "=" in line)
-        require(int(metadata["ranks"]) == ranks and int(metadata["threads"]) == 1,
-                "Execution topology differs from requested MPI/OpenMP settings")
+        validate_runtime_metadata(metadata, ranks)
         require(int(metadata["n_grid"]) == GridSize and float(metadata["box_size"]) == BoxSize
                 and float(metadata["omega_m"]) == OmegaMatter,
                 "Metadata does not match frozen-force arguments")
