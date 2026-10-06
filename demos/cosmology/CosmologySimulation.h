@@ -176,6 +176,11 @@ class Simulation {
         if (total != totalParticles()) throw std::runtime_error("Global particle count changed");
     }
 
+    // NVCC's extended-lambda transformation requires each enclosing member
+    // function to be public. These CUDA-capable implementation routines keep
+    // their existing calculations; the simulation state above remains private.
+public:
+
     /**
      * @brief Wrap particle positions and migrate all attributes to current owners.
      *
