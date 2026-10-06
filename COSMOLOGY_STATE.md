@@ -13,6 +13,33 @@ and evidence directories intact; later A100 deployment fixes can be brought
 back deliberately. The unrelated `/Users/adelmann/git/ippl` checkout is also
 preserved. No push is authorized.
 
+Local integration completed in merge commit `dd0f14d69`, with parents
+`9506f1e52` (CPU-linear/CPU-next) and `18ff72cc5` (A100 preparation). The branch
+is local-only and four commits ahead of `origin/codex/cosmology-linear`. The
+duplicate A100 and CPU-next worktree directories were removed after verification.
+The CPU-next tracked, untracked, and ignored worktree contents were preserved in
+`stash@{0}` (`Preserve cpu-next working tree before canonical cosmology
+consolidation`); both topic branch refs remain. The original `/Users/adelmann/git/ippl`
+checkout and all Merlin deployment/evidence directories were left untouched.
+
+Verification after merge: all 246 cosmology Python tests passed; the shared-IC
+converter's 3 focused tests passed against the canonical copy; `Cosmology`,
+`TestCosmologyPhysics`, `CompareCosmologyEvolution`, and `CompareCosmologyForce`
+built; the 5 physics/spectral CTests passed for 1–4 ranks. Shell/Python syntax
+checks passed. The hash-pinned PMGRID patch retains its original SHA256
+(`326211f5…fdcac5`) and has two trailing-whitespace lines by design; the rest of
+the staged diff passes whitespace checks.
+
+The GADGET-2 workflow is committed under `demos/cosmology/gadget2/`, including
+build/run controllers, shared-IC conversion, matched-result audit/plot, and the
+PMGRID patch. It is pinned to the existing Merlin campaign and does not create
+a new random realization. At the last preflight the campaign/run/output paths
+were absent; the frozen executable matched SHA256
+`3b1668629958329d3e5e9913717548e3d690dea3201f45816bddfafb6d90a0ac`, the
+converted IC existed, and `/data/user` had about 192 TiB free. The GADGET solver
+has not yet been launched by this continuation. Next: fresh process check, then
+the authorized eight-rank login run; keep its data, analysis, and plots on Merlin.
+
 ## Latest result: planned CPU study complete; resolution qualification remains open
 
 2026-10-04: completed the user's authorized Merlin login-node CPU request.
