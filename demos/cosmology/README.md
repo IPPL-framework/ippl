@@ -1148,14 +1148,20 @@ the IPPL/FastPM comparison; it does not generate another random realization.
 The converter checks that hash and certifies the format-1 float32 round trip.
 The run controller then verifies the IC and prior IPPL/FastPM reports, the
 PMGRID=256 binary/build inputs, eight-rank/one-thread execution mode, and the
-final GADGET snapshot header. Analysis and plotting retain provenance checks and
-write a matched three-code z=0 power-spectrum figure.
+final GADGET snapshot header. Its analysis reuses the tracked
+`analyze_zeldovich_benchmark.py` periodic CIC estimator; the estimator, shared
+IC and both prior-run reports are recorded in run provenance. Analysis and
+plotting retain provenance checks and write a matched three-code z=0 power
+spectrum figure.
 
 These scripts are campaign-pinned to the existing Merlin directory
 `/data/user/adelmann/gadget2-zeldovich-np256-20261006`; they are not a generic
 GADGET-2 installer. On Merlin, install the tracked workflow scripts into that
-campaign's `source/` directory while preserving its input and run records. The
-shared realization must first be converted to GADGET format-1 (this writes only
+campaign's `source/` directory while preserving its input and run records; keep
+the shared estimator at `source/demos/cosmology/analyze_zeldovich_benchmark.py`
+with its existing `gaussian_fixture.py` and `validate_linear.py` import
+dependencies available on that Python path. The shared realization must first
+be converted to GADGET format-1 (this writes only
 the specified new output/sidecar and refuses overwrite):
 
 ```sh
