@@ -19,6 +19,59 @@ public:
     using bunch_type = ippl::ParticleBase<layout_type>;
     using vector_type = ippl::Vector<T, 3>;
 
+    void checkExchange(bool initiallyEmptyRanks) {
+        const int rank = ippl::Comm->rank();
+        const int nRanks = ippl::Comm->size();
+        if (nRanks < 8) {
+            GTEST_SKIP() << "Requires at least eight ranks for remote migration";
+        }
+
+        ippl::NDIndex<3> domain(ippl::Index(4), ippl::Index(4), ippl::Index(4 * nRanks));
+        std::array<bool, 3> parallel{false, false, true};
+        ippl::FieldLayout<3> fieldLayout(MPI_COMM_WORLD, domain, parallel);
+        mesh_type mesh(domain, vector_type(T(1)), vector_type(T(0)));
+        layout_type layout(fieldLayout, mesh, T(0.5));
+        bunch_type bunch(layout);
+        constexpr unsigned N = 8;
+        bunch.create(initiallyEmptyRanks && rank % 2 != 0 ? 0 : N);
+
+        const auto regions = layout.getRegionLayout().gethLocalRegions();
+        auto center = [&](int owner) {
+            vector_type position;
+            for (unsigned d = 0; d < 3; ++d) {
+                position[d] = (regions(owner)[d].min() + regions(owner)[d].max()) / T(2);
+            }
+            return position;
+        };
+        const int destination = (rank + 3) % nRanks;
+        auto positions = bunch.R.getHostMirror();
+        for (unsigned i = 0; i < bunch.getLocalNum(); ++i) {
+            positions(i) = center(destination);
+            positions(i)[0] += T(i) / T(32);
+        }
+        Kokkos::deep_copy(bunch.R.getView(), positions);
+
+        // Exercise the production allocation of particleRanks, which direct locate calls bypass.
+        layout.particleExchange(bunch);
+
+        const int source = (rank + nRanks - 3) % nRanks;
+        const unsigned expected = initiallyEmptyRanks && source % 2 != 0 ? 0 : N;
+        ASSERT_EQ(bunch.getLocalNum(), expected);
+        const auto received =
+            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), bunch.R.getView());
+        std::vector<T> actualX;
+        std::vector<T> expectedX;
+        for (unsigned i = 0; i < expected; ++i) {
+            actualX.push_back(received(i)[0]);
+            expectedX.push_back(center(rank)[0] + T(i) / T(32));
+            for (unsigned d = 1; d < 3; ++d) {
+                EXPECT_EQ(received(i)[d], center(rank)[d]);
+            }
+        }
+        std::sort(actualX.begin(), actualX.end());
+        EXPECT_EQ(actualX, expectedX);
+    }
+
     void checkDestinations(bool overlapTwoRemoteRanks) {
         const int rank = ippl::Comm->rank();
         const int nRanks = ippl::Comm->size();
@@ -151,6 +204,14 @@ TYPED_TEST(ParticleOverlapLocateTest, SparseOutsideIds) {
 
 TYPED_TEST(ParticleOverlapLocateTest, SparseOutsideIdsWithRemoteGhost) {
     this->checkDestinations(true);
+}
+
+TYPED_TEST(ParticleOverlapLocateTest, ExchangeRemoteParticles) {
+    this->checkExchange(false);
+}
+
+TYPED_TEST(ParticleOverlapLocateTest, ExchangeWithInitiallyEmptyRanks) {
+    this->checkExchange(true);
 }
 
 int main(int argc, char* argv[]) {
