@@ -108,10 +108,13 @@ namespace ippl {
                       resourceDir_m / "pipeline_default.py");
         conduit_cpp::Node args = node_m["catalyst/scripts/script/args"];
 
-        // Pass channel names from registered channels
+        // Pass channel names from registered channels.  Mesh blocks nested
+        // inside a parent multimesh are reported as "<parent>/<block>" so
+        // scripts can locate them within the parent's producer.
         args.append().set_string("--channel_names");
         for (const auto& ch : channels_m) {
-            args.append().set_string(ch->name());
+            const std::string parent = ch->basePath();
+            args.append().set_string(parent.empty() ? ch->name() : parent + "/" + ch->name());
         }
 
         // Pass channel types so scripts can dispatch without name-pattern matching
@@ -120,11 +123,29 @@ namespace ippl {
             args.append().set_string(ch->conduitType());
         }
 
+        // Ghost layers included in each channel's export (0 when stripped)
+        args.append().set_string("--channel_ghosts");
+        for (const auto& ch : channels_m) {
+            args.append().set_string(std::to_string(ch->ghostLayers()));
+        }
+
         args.append().set_string("--verbosity");
         args.append().set_string(std::to_string(catalystInfo_m.getOutputLevel()));
 
         args.append().set_string("--VTKextract");
         args.append().set_string(catalystVtk_m);
+
+        args.append().set_string("--png");
+        args.append().set_string(catalystPng_m);
+
+        // Directory for extracts written by the pipeline script
+        args.append().set_string("--extracts_output_dir");
+        args.append().set_string((outputDir_m / "vtk_extracts").string());
+
+        if (experimentName_m) {
+            args.append().set_string("--experiment_name");
+            args.append().set_string(*experimentName_m);
+        }
 
         args.append().set_string("--live");
         args.append().set_string(catalystLive_m);

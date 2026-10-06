@@ -94,6 +94,14 @@ namespace ippl {
         /// Used by CatalystAdaptor to pass channel type metadata to scripts.
         virtual const char* conduitType() const = 0;
 
+        /// Parent channel name for blocks nested inside another channel
+        /// (empty for top-level channels).
+        virtual std::string basePath() const { return {}; }
+
+        /// Ghost layers included in this channel's export (0 when ghost
+        /// layers are stripped or the channel has no mesh).
+        virtual int ghostLayers() const { return 0; }
+
         const std::string& name() const noexcept { return name_m; }
 
     protected:
@@ -161,7 +169,7 @@ namespace ippl {
         MeshChannelT(const std::string& name, const Mesh_t& mesh, const Layout_t& layout,
                      int nghost, bool useGhostMasks,
                      GeometryPolicy geometryPolicy = GeometryPolicy::Dynamic,
-                     const std::string& basePath = "");
+                     const std::string& basePath   = "");
 
         ~MeshChannelT() override = default;
 
@@ -177,6 +185,8 @@ namespace ippl {
 
         MeshFieldArrayBase* findArray(const std::string& arrayName) const override;
         const char* conduitType() const override { return "mesh"; }
+        std::string basePath() const override { return basePath_m; }
+        int ghostLayers() const override { return useGhostMasks_m ? nghost_m : 0; }
 
         void init(conduit_cpp::Node& root, int rank) override;
         void execute(conduit_cpp::Node& root, int cycle, double time, int rank) override;
