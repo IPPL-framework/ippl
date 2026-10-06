@@ -739,9 +739,11 @@ namespace ippl {
             Kokkos::parallel_for(
                 "ParticleSpatialLayout::leftParticles()", policy_type(0, outsideCount),
                 KOKKOS_LAMBDA(const size_t& i) {
-                    /// pID: (local) ID of the particle that is currently being searched.
+                    // outsideCounts uses the compact outsideIds index, not as before the full
+                    // particle ID. This is not a problem on larger overallocation and only produces
+                    // silently wrong results, but seg-faults otherwise.
                     const size_type pId    = outsideIds(i);
-                    const size_type offset = rankOffsets(pId) + counts(pId) - outsideCounts(pId);
+                    const size_type offset = rankOffsets(pId) + counts(pId) - outsideCounts(i);
                     for (size_t local_count = 0, j = 0; j < nonNeighborsView.extent(0); ++j) {
                         const auto rank = nonNeighborsView(j);
                         if (positionInRegion(is, positions(pId), regions(rank), overlap)) {
