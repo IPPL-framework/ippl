@@ -1,0 +1,103 @@
+/**
+@page cosmology_model Model, units and linear growth
+
+@section model_assumptions Assumptions and notation
+
+The application evolves collisionless cold matter in a periodic comoving cube.
+It assumes @f$\Omega_\Lambda=1-\Omega_m@f$, @f$0<\Omega_m\le1@f$,
+@f$\Omega_r=\Omega_\nu=0@f$ and @f$w=-1@f$. Baryon density weights an
+optional transfer table; it does not introduce a second evolved species.
+The background scale factor is @f$a=(1+z)^{-1}@f$ and
+@f$\tau=H_0 t@f$, with @f$H_0=100h\,\mathrm{km\,s^{-1}\,Mpc^{-1}}@f$.
+@f$H(a)=H_0E(a)@f$, where
+@f[ E(a)=\sqrt{\Omega_m a^{-3}+1-\Omega_m}. @f]
+
+| Quantity | Definition | Stored/numerical unit |
+|---|---|---|
+| @f$\boldsymbol x,\boldsymbol q,L@f$ | Eulerian/Lagrangian comoving positions and box side | Mpc/h |
+| @f$\boldsymbol p@f$ | @f$a^2d\boldsymbol x/d\tau@f$ | Mpc/h |
+| @f$\boldsymbol F_0@f$ | Scaled comoving force below | Mpc/h |
+| @f$\phi_0@f$ | Scaled peculiar potential below | (Mpc/h)^2 |
+| @f$k@f$ | Comoving angular wavenumber | h/Mpc |
+| @f$P(k)@f$ | Comoving density-contrast spectrum | (Mpc/h)^3 |
+| @f$D,f,E,\delta@f$ | Growth, growth rate, expansion and density contrast | dimensionless |
+
+The physical peculiar velocity is
+@f[ \boldsymbol v_{\rm pec}=100\boldsymbol p/a\quad\mathrm{km\,s^{-1}}. @f]
+The factor is 100, not 100h, because stored comoving lengths already carry h^-1.
+The original Zarija generic ASCII coordinate velocity instead maps as
+@f$\boldsymbol p=a^2\boldsymbol v_{\rm ascii}/100@f$; confusing that convention
+with physical peculiar velocity changes a power of a.
+
+@section model_force Force and canonical equations
+
+With @f$\delta=\rho/\bar\rho-1@f$, the implemented potential is defined by
+@f[ \nabla_x^2\phi_0=\tfrac32\Omega_m\delta,\qquad
+\boldsymbol F_0=-\nabla_x\phi_0. @f]
+If @f$\Phi@f$ denotes the dimensional peculiar potential, the normalization is
+@f$\phi_0=a\Phi/H_0^2@f$ after consistent physical length conversion. Thus
+@f$\phi_0@f$ contains neither an extra 1/a nor H0^2 in the numerical Poisson solve.
+The particle equations are
+@f[ \frac{d\boldsymbol p}{da}=\frac{\boldsymbol F_0}{a^2E(a)},\qquad
+\frac{d\boldsymbol x}{da}=\frac{\boldsymbol p}{a^3E(a)}. @f]
+The periodic mean (DC mode) has zero force; an absolute potential offset has no
+physical meaning. Background expansion is prescribed, not solved from the
+finite particle realization. These conventions are implemented by
+@ref cosmology::Background and @ref cosmology::Simulation.
+
+@section model_growth Growing mode
+
+For the above matter-plus-Lambda background, the pressure-free growing solution
+has the integral representation discussed by Heath @cite heath1977 :
+@f[ I(a)=\int_0^a\frac{da'}{a'^3E(a')^3},\quad
+G(a)=\frac{5\Omega_m}{2}E(a)I(a),\quad D(a)=G(a)/G(1). @f]
+Differentiation gives the implemented logarithmic rate
+@f[ f(a)=\frac{d\ln D}{d\ln a}
+=-\frac32\frac{\Omega_m}{a^3E(a)^2}
++\frac{1}{a^2E(a)^3I(a)}. @f]
+In Einstein-de Sitter, @f$D(a)=a@f$ and @f$f(a)=1@f$.
+The substitution @f$a'=as^2@f$ gives a smooth endpoint integrand:
+@f[ I(a)=2a^{5/2}\int_0^1
+\frac{s^4\,ds}{[\Omega_m+(1-\Omega_m)a^3s^6]^{3/2}}. @f]
+Growth and kick/drift integrals run on the host using adaptive Simpson
+quadrature. The absolute recursion budget is initialized from 10^-11 times the
+first Simpson estimate, with a 10^-100 scale floor and depth limit 24. A failed
+depth limit raises an exception; the code does not silently accept a residual.
+
+@section model_spectrum Spectrum and sigma8
+
+The z=0 density spectrum is @f$P_0(k)=Ak^{n_s}T(k)^2@f$ and
+@f$P(k,a)=D(a)^2P_0(k)@f$. For BBKS @cite bbks1986 :
+@f[ q=\frac{k}{\Omega_m h},\qquad
+T(q)=\frac{\ln(1+2.34q)}{2.34q}
+[1+3.89q+(16.1q)^2+(5.46q)^3+(6.71q)^4]^{-1/4}. @f]
+This is a pure CDM shape with no baryon acoustic features. The transfer-table
+option forms
+@f[ T_m(k)=\frac{(\Omega_m-\Omega_b)T_{\rm cdm}(k)+\Omega_bT_b(k)}{\Omega_m}, @f]
+normalizes every row by the first weighted value and interpolates linearly in k.
+Below the first row T=1; above the last row is an error. The original initializer's
+unnormalized first-row bug is explicitly corrected here; this is a documented
+compatibility difference, not a claim of whole-code equivalence. A table must
+cover @f$\sqrt3\pi N_M/L@f$.
+
+Amplitude is fixed by the finite numerical sigma8 contract
+@f[ \sigma_8^2=\frac1{2\pi^2}\int_0^{k_{\max}}k^2P_0(k)W(8k)^2\,dk,
+\quad W(u)=3\frac{\sin u-u\cos u}{u^3}. @f]
+Here kmax=10 h/Mpc for BBKS and the final table k for tabulated transfers.
+This is not the formal infinite-upper-limit definition. The implementation uses
+65,536 log-k Simpson intervals starting at 10^-8 h/Mpc and the analytic
+small-k contribution @f$k_{\min}^{3+n_s}/(3+n_s)@f$ before normalization.
+For small u, @f$W(u)=1-u^2/10+u^4/280-u^6/15120@f$ avoids cancellation.
+Finite volume, band limits and realization variance mean that a particular box
+need not realize the ensemble sigma8.
+
+@section model_mass Particle masses
+
+Production particles carry unit weights; the initial load has one particle per
+mesh cell. The physical mass represented by a particle is
+@f[ m_p=\Omega_m\rho_{\mathrm{crit},0}L^3/N_P^3. @f]
+When lengths are Mpc/h, the critical-density numerical convention is
+@f$\rho_{\mathrm{crit},0}=2.77536627\times10^{11}\,
+M_\odot h^2\mathrm{Mpc}^{-3}@f$ in the GADGET conversion helper, giving masses
+in Msun/h. Unit IPPL weights are not already solar masses.
+*/

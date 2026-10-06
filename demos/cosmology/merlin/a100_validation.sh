@@ -102,7 +102,7 @@ if [[ "$action" == build ]]; then
         -DIPPL_ENABLE_KOKKOS_KERNELS=OFF -DKokkos_VERSION=git.5.2.0 -DHeffte_VERSION=git.v2.4.1 \
         -DHeffte_ENABLE_FFTW=OFF -DHeffte_ENABLE_MKL=OFF -DHeffte_ENABLE_GPU_AWARE_MPI=OFF \
         -DIPPL_COSMOLOGY_PYTHON_VALIDATION=ON -DPython3_EXECUTABLE="$pythonExe" \
-        -DMPIEXEC_EXECUTABLE="$scriptDir/gpu_mpiexec.py" -DMPIEXEC_NUMPROC_FLAG=-n \
+        -DMPIEXEC_EXECUTABLE="$scriptDir/../python/merlin/gpu_mpiexec.py" -DMPIEXEC_NUMPROC_FLAG=-n \
         "-DMPIEXEC_PREFLAGS=--config;$config" \
         -DIPPL_COSMOLOGY_FASTPM_EXECUTABLE="$referenceDir/FastPMForce" \
         -DIPPL_COSMOLOGY_FASTPM_MANIFEST="$referenceDir/build-manifest.txt" \
@@ -116,7 +116,7 @@ if [[ "$action" == build ]]; then
         git -C "$buildDir/_deps/$dependency-src" diff --exit-code HEAD --
     done > "$gpuRoot/dependencies.txt"
     phase=launcher_configuration
-    "$pythonExe" - "$gpuRoot" "$scriptDir" "$referenceDir" "$pythonExe" "$(command -v mpiexec)" <<'PY'
+    "$pythonExe" - "$gpuRoot" "$scriptDir/../python/merlin" "$referenceDir" "$pythonExe" "$(command -v mpiexec)" <<'PY'
 import hashlib, json, pathlib, sys
 root, scripts, native, python, mpi = map(pathlib.Path, sys.argv[1:])
 gpu = [root/'ippl/demos/cosmology'/name for name in
@@ -146,11 +146,11 @@ sha256sum -c "$gpuRoot/build-complete.sha256"
 mkdir "$gpuRoot/runtime/launches"
 phase=cuda_regressions
 ctest --test-dir "$buildDir" -L cosmology -j1 --output-on-failure
-studyCommand=("$pythonExe" -B "$sourceRoot/demos/cosmology/validate_resolution_study.py"
+studyCommand=("$pythonExe" -B "$sourceRoot/demos/cosmology/python/validate_resolution_study.py"
     --ippl-exe "$buildDir/demos/cosmology/CompareCosmologyEvolution"
     --fastpm-exe "$referenceDir/evolution/FastPMEvolution"
     --fastpm-manifest "$referenceDir/evolution/build-manifest.txt"
-    --mpiexec "$scriptDir/gpu_mpiexec.py" --numproc-flag=-n "--mpi-arg=--config=$config"
+    --mpiexec "$scriptDir/../python/merlin/gpu_mpiexec.py" --numproc-flag=-n "--mpi-arg=--config=$config"
     --reserve-gib 4 --timeout 3600)
 phase=cuda_pipeline_smoke
 "${studyCommand[@]}" --smoke --stage all --output-dir "$gpuRoot/runtime/smoke"
@@ -161,11 +161,11 @@ set +e
 studyStatus=$?
 set -e
 phase=cuda_completion_audit
-"$pythonExe" "$scriptDir/audit_a100_study.py" "$gpuRoot/runtime/full/results.json" \
+"$pythonExe" "$scriptDir/../python/merlin/audit_a100_study.py" "$gpuRoot/runtime/full/results.json" \
     --cpu-report "$cpuRoot/gaussian/results.json" --launch-evidence "$gpuRoot/runtime/launches" \
     --output "$gpuRoot/runtime/completion-audit.json"
 phase=cuda_figures
-"$pythonExe" -B "$sourceRoot/demos/cosmology/plot_resolution_study.py" \
+"$pythonExe" -B "$sourceRoot/demos/cosmology/python/plot_resolution_study.py" \
     --report "$gpuRoot/runtime/full/results.json" --output-dir "$gpuRoot/runtime/figures"
 sha256sum -c "$gpuRoot/build-complete.sha256"
 (cd "$sourceRoot"; sha256sum -c "$gpuRoot/source.sha256")

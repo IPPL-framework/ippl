@@ -1,3 +1,8 @@
+/** @file TestCosmologyPhysics.cpp
+ * @brief Independent host sanity checks for the configuration, growth, quadrature and spectrum.
+ * @ingroup cosmology_diagnostics
+ * @see cosmology_contracts cosmology_validation cosmology_references
+ */
 #include "CosmologyPhysics.h"
 
 #include <chrono>
@@ -9,6 +14,14 @@
 
 namespace {
 
+/**
+ * @brief Assert finite host model agreement within a fixed absolute tolerance.
+ * @see cosmology_contracts cosmology_validation
+ * @param actual Computed host model value, required finite.
+ * @param expected Independent or analytical expected host value.
+ * @param tolerance Predeclared absolute/relative error budget in the metric's stated convention.
+ * @param message Failure text retained for the fixed-budget check.
+ */
 void close(double actual, double expected, double tolerance, const std::string& message) {
     if (!std::isfinite(actual) || std::abs(actual - expected) > tolerance) {
         std::ostringstream error;
@@ -19,6 +32,13 @@ void close(double actual, double expected, double tolerance, const std::string& 
 }
 
 template <class Function>
+/**
+ * @brief Require the supplied host callable to reject unsupported input by exception.
+ * @see cosmology_contracts cosmology_validation
+ * @tparam Function Host callable with the rejection under test.
+ * @param function Host callable used by the rejection/oracle check.
+ * @param message Failure text retained for the fixed-budget check.
+ */
 void rejects(const Function& function, const std::string& message) {
     bool failed = false;
     try { function(); }
@@ -28,6 +48,13 @@ void rejects(const Function& function, const std::string& message) {
 
 // Independent growing-mode ODE in ln(a), integrated by fixed-step RK4.
 // y=[D,dD/dln(a)]; initialized in the matter era, then normalized at a=1.
+/**
+ * @brief Integrate an independent growing-mode ODE in ln(a) by fixed-step RK4; the caller supplies a=1 normalization.
+ * @see cosmology_contracts cosmology_validation
+ * @param omegaMatter Matter fraction at a=1 in the flat pressure-free background.
+ * @param a Finite positive dimensionless scale factor.
+ * @return Pair of dimensionless unnormalized growing solution and its ln(a) derivative; normalized by the caller.
+ */
 std::array<double, 2> odeGrowth(double omegaMatter, double a) {
     constexpr double InitialA = 1.0e-6;
     constexpr int Steps = 16000;
@@ -55,6 +82,12 @@ std::array<double, 2> odeGrowth(double omegaMatter, double a) {
 }
 
 // Independent linear-k midpoint integration of P(k), contrasting the log-k Simpson algorithm.
+/**
+ * @brief Cross-check finite-cutoff sigma8 with independent uniform-k midpoint quadrature.
+ * @see cosmology_contracts cosmology_validation
+ * @param spectrum Normalized host power model; its declared kmax defines the finite integration endpoint.
+ * @return Dimensionless sigma8 from 200000 midpoint intervals on [0,kmax].
+ */
 double midpointSigma8(const cosmology::PowerSpectrum& spectrum) {
     constexpr int Intervals = 200000;
     constexpr double Pi = Kokkos::numbers::pi_v<double>;
@@ -69,19 +102,28 @@ double midpointSigma8(const cosmology::PowerSpectrum& spectrum) {
     return std::sqrt(variance * step / (2.0 * Pi * Pi));
 }
 
+/** @brief Test-owned temporary directory, released by scoped cleanup. */
 struct TemporaryDirectory {
-    std::filesystem::path path_m;
+    std::filesystem::path path_m; ///< Unique host directory owned only by this test instance.
+    /** @brief Create one isolated temporary test directory. */
     TemporaryDirectory() {
         const auto stamp = std::chrono::steady_clock::now().time_since_epoch().count();
         path_m = std::filesystem::temp_directory_path()
                  / ("ippl-cosmology-physics-" + std::to_string(stamp));
         std::filesystem::create_directory(path_m);
     }
+    /** @brief Remove only the temporary directory created by this instance. */
     ~TemporaryDirectory() { std::filesystem::remove_all(path_m); }
 };
 
 }  // namespace
 
+/**
+ * @brief Run independent host sanity checks for the configuration, growth, quadrature and spectrum.
+ * @see cosmology_contracts cosmology_validation
+ * @return Zero on successful completion; malformed/native fatal errors return nonzero or abort the communicator.
+ * Fatal distributed failures must terminate communicator peers; the host-only test uses ordinary process status.
+ */
 int main() {
     try {
         cosmology::Config config;

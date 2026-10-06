@@ -1,0 +1,83 @@
+/**
+@page cosmology_spectra Independent spectra and comparison metrics
+
+@section spectra_direct Particle Fourier coefficients
+
+For equal-mass particles and a nonzero integer mode,
+@f[ \delta_{\boldsymbol n}=N_p^{-1}\sum_{p=1}^{N_p}
+ \exp[-2\pi i\boldsymbol n\cdot\boldsymbol x_p/L]. @f]
+This direct particle sum is independent of the simulation force mesh and is
+used for the explicitly qualified low-mode band. A periodic translation
+@f$\boldsymbol s@f$ multiplies the coefficient by
+@f$\exp[-2\pi i\boldsymbol n\cdot\boldsymbol s/L]@f$; comparison code removes
+that known phase analytically, without fitting a shift.
+
+@section spectra_assignment Assignment windows and aliases
+
+For an analysis grid N_A and a tensor-product order-p assignment,
+@f[ W_p(\boldsymbol n)=\prod_d\operatorname{sinc}(n_d/N_A)^p,\qquad
+\operatorname{sinc}(u)=\frac{\sin(\pi u)}{\pi u}. @f]
+CIC has p=2; PCS (cubic B-spline) has p=4. Dividing a Fourier amplitude by Wp
+corrects its assignment window. Power correction divides by Wp squared, not by
+Wp. Interlacing two grids separated by half a cell removes odd alias images
+after the phase alignment @cite sefusatti2016. It does not remove every alias.
+The analysis grid and assignment kernel are separate from the simulation's
+CIC force mesh. PCS higher-band measurements remain characterization unless
+explicitly qualified against resolution and sampling controls.
+
+@section spectra_shells Fourier shells and shot noise
+
+Figure A11 uses radial shells @f$b=\lfloor|\boldsymbol n|+1/2\rfloor@f$.
+The cutoff argument in the legacy shell estimator selects the largest rounded
+bin index: bin b spans @f$b-1/2\le|\boldsymbol n|<b+1/2@f$.
+Thus a last bin labelled 48 includes some modes above radial length 48, whereas
+the generated initial-condition sphere is strictly @f$|\boldsymbol n|\le48@f$.
+These two ceilings must not be conflated.
+For R2C storage, the omitted conjugate partner is represented with multiplicity
+2, except the stored zero and Nyquist planes whose multiplicity is 1.
+The shell center and corrected power are weighted averages:
+@f[ k_b=\frac{\sum_{\boldsymbol n\in b}w_{\boldsymbol n}(2\pi/L)|\boldsymbol n|}
+{\sum_{\boldsymbol n\in b}w_{\boldsymbol n}},\qquad
+P_b^{\rm raw}=\frac{\sum_{\boldsymbol n\in b}w_{\boldsymbol n}L^3
+|\widehat\delta_{\boldsymbol n}|^2/|W_2(\boldsymbol n)|^2}
+{\sum_{\boldsymbol n\in b}w_{\boldsymbol n}}. @f]
+The plotted convention subtracts Poisson shot noise
+@f[ P_b^{\rm sub}=P_b^{\rm raw}-L^3/N_p. @f]
+The legacy `analyze_zeldovich_benchmark.cic_power` implementation uses its
+module-level BoxSize in the raw power-volume factor. Its supported amplitude
+contract requires the passed box_size to equal that fixed 168.75 Mpc/h value;
+the local A11 runner satisfies this requirement. Changing the box argument
+alone does not produce a correctly renormalized general-box spectrum.
+
+This subtraction is a measurement convention, not proof that a displaced
+lattice has independent Poisson sampling noise. Nonpositive corrected values
+remain in the saved data and are omitted from log plots and corresponding
+ratios; no arbitrary positive floor is substituted. A shell is a Fourier bin,
+not a physical layer of particles in the box.
+
+@section spectra_metrics Cross-code and refinement metrics
+
+For displacement differences, use the minimum periodic image
+@f$\Delta\boldsymbol x=\boldsymbol x_A-\boldsymbol x_B
+-L\operatorname{rint}[(\boldsymbol x_A-\boldsymbol x_B)/L]@f$.
+Vector RMS means @f$\sqrt{\langle|\boldsymbol v|^2\rangle}@f$; componentwise RMS
+is different by a factor of sqrt(3) for an isotropic field. Every comparison
+must state which convention and normalization it uses.
+For two complex coefficient arrays A,B, common shell metrics include
+@f[ \epsilon_c=\frac{\|A-B\|_2}{\|B\|_2},\quad
+\epsilon_P=\frac{\sum|A|^2}{\sum|B|^2}-1,\quad
+r=\frac{\operatorname{Re}\sum AB^*}
+{\sqrt{\sum|A|^2\sum|B|^2}}. @f]
+Check the calling validator for its chosen denominator, absolute versus signed
+reporting and shell cuts. Small denominators and zero fields need explicit
+handling; a finite reporting floor is not an accuracy qualification.
+
+Successive refinements with step-size ratio 2 give an observed order
+@f$p=\log_2(\|u_h-u_{h/2}\|/\|u_{h/2}-u_{h/4}\|)@f$
+only above the declared numerical floor. These are successive-solution
+differences, not errors against a continuum truth. Planar Zel'dovich evolution
+is an analytical reference only before shell crossing.
+The A11 lower panel uses
+@f$100(P_A^{\rm sub}/P_{\rm FastPM}^{\rm sub}-1)@f$; the native TreePM force
+and adaptive time schedule differ from both plain-PM implementations.
+*/

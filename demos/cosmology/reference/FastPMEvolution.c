@@ -1,3 +1,8 @@
+/** @file FastPMEvolution.c
+ * @brief Native plain-PM evolution harness with imported phase space and synchronized CSV exports.
+ * @ingroup cosmology_reference
+ * @see cosmology_contracts cosmology_validation cosmology_references
+ */
 /* Imported-particle evolution with unmodified native fastpm_solver_evolve.
  * Only initialization and synchronized CSV output are adapted. No kick, drift,
  * force, ghost exchange, migration, or time scheduling is reimplemented here.
@@ -23,32 +28,45 @@
 #error "Build with build_fastpm_evolution.sh to record the upstream source pin"
 #endif
 
+/** @brief Native host particle/run context; units and output conventions follow the file contract. */
 typedef struct {
-    size_t particleGrid;
-    size_t meshGrid;
-    size_t particleCount;
-    double length;
-    double omegaM;
-    double aInitial;
-    double aFinal;
-    int steps;
-    int checkpoints;
-    int rank;
-    int ranks;
-    const char *outputDirectory;
-    double *timeSteps;
-    FILE *checkpointFile;
-    int lastCheckpoint;
+    size_t particleGrid; ///< Particle lattice NP per dimension.
+    size_t meshGrid; ///< Force mesh NM per dimension.
+    size_t particleCount; ///< Exact expected global count NP^3.
+    double length; ///< Comoving periodic box side in Mpc/h.
+    double omegaM; ///< Matter fraction at a=1.
+    double aInitial; ///< Initial scale factor.
+    double aFinal; ///< Final scale factor.
+    int steps; ///< Positive integration step count.
+    int checkpoints; ///< Requested synchronized output intervals.
+    int rank; ///< Current MPI rank.
+    int ranks; ///< Communicator size.
+    const char *outputDirectory; ///< Fresh native diagnostic output directory.
+    double *timeSteps; ///< Host array of uniform-log(a) native endpoint scale factors.
+    FILE *checkpointFile; ///< Root-owned checkpoint diagnostic stream.
+    int lastCheckpoint; ///< Last exported synchronized checkpoint index.
 } RunContext;
 
+/**
+ * @brief Report a native-reference error and abort MPI_COMM_WORLD before exiting.
+ * @see cosmology_contracts cosmology_validation
+ * @param message Failure text retained for the fixed-budget check.
+ */
 static void fail(const char *message) {
-    int rank;
+    int rank; ///< Current MPI rank.
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     fprintf(stderr, "FastPMEvolution rank %d: %s\n", rank, message);
     MPI_Abort(MPI_COMM_WORLD, 2);
     exit(2);
 }
 
+/**
+ * @brief Allocate zeroed host memory after checking multiplication overflow and allocation success.
+ * @see cosmology_contracts cosmology_validation
+ * @param count Allocation element count checked against SIZE_MAX overflow.
+ * @param size Size in bytes of each element.
+ * @return Zeroed valid host allocation; failures abort the native communicator.
+ */
 static void *checkedAlloc(size_t count, size_t size) {
     if (size && count > SIZE_MAX / size) fail("allocation size overflow");
     void *result = calloc(count ? count : 1, size);
@@ -56,6 +74,12 @@ static void *checkedAlloc(size_t count, size_t size) {
     return result;
 }
 
+/**
+ * @brief Parse a strictly positive int without overflow or trailing input.
+ * @see cosmology_contracts cosmology_validation
+ * @param value Serialized scalar argument, validated according to the parser's strict range.
+ * @return Positive scalar int within INT_MAX.
+ */
 static int parsePositiveInt(const char *value) {
     char *end;
     errno = 0;
@@ -65,6 +89,12 @@ static int parsePositiveInt(const char *value) {
     return (int)result;
 }
 
+/**
+ * @brief Parse a finite strictly positive floating scalar without trailing input.
+ * @see cosmology_contracts cosmology_validation
+ * @param value Serialized scalar argument, validated according to the parser's strict range.
+ * @return Finite positive double.
+ */
 static double parsePositiveDouble(const char *value) {
     char *end;
     errno = 0;
@@ -74,25 +104,49 @@ static double parsePositiveDouble(const char *value) {
     return result;
 }
 
+/**
+ * @brief Wrap a finite reference-coordinate value into its periodic interval.
+ * @see cosmology_contracts cosmology_validation
+ * @param x Finite periodic coordinate in the caller's comoving length unit.
+ * @param length Positive periodic box side in the same coordinate unit.
+ * @return Coordinate in [0,length).
+ */
 static double wrap(double x, double length) {
     double result = fmod(x, length);
     if (result < 0) result += length;
     return result >= length ? 0 : result;
 }
 
+/**
+ * @brief Open one diagnostic output file below the selected run directory.
+ * @see cosmology_contracts cosmology_validation
+ * @param run Native RunContext with consistent particle/mesh sizes, epochs and output controls.
+ * @param name Scalar/diagnostic filename or label used in error reporting and output identity.
+ * @return Host FILE stream ready for diagnostic output.
+ */
 static FILE *openOutput(const RunContext *run, const char *name) {
     char path[4096];
-    int length = snprintf(path, sizeof(path), "%s/%s", run->outputDirectory, name);
+    int length = snprintf(path, sizeof(path), "%s/%s", run->outputDirectory, name); ///< Comoving periodic box side in Mpc/h.
     if (length < 0 || (size_t)length >= sizeof(path)) fail("output path too long");
     FILE *file = fopen(path, "wx");
     if (!file) fail("cannot create output file; existing files are never overwritten");
     return file;
 }
 
+/**
+ * @brief Close a diagnostic output stream and reject a flush/close failure.
+ * @see cosmology_contracts cosmology_validation
+ * @param file Open native diagnostic stream; closing errors are fatal.
+ */
 static void closeOutput(FILE *file) {
     if (ferror(file) || fclose(file)) fail("writing output failed");
 }
 
+/**
+ * @brief Create a native-reference output location without overwriting previous evidence.
+ * @see cosmology_contracts cosmology_validation
+ * @param run Native RunContext with consistent particle/mesh sizes, epochs and output controls.
+ */
 static void createOutputDirectory(const RunContext *run) {
     if (run->rank == 0) {
         if (mkdir(run->outputDirectory, 0777) && errno != EEXIST)
@@ -108,6 +162,14 @@ static void createOutputDirectory(const RunContext *run) {
     MPI_Barrier(MPI_COMM_WORLD);
 }
 
+/**
+ * @brief Validate unit-mass phase space and populate native FastPM particle stores with the half-cell coordinate rebase.
+ * @see cosmology_contracts cosmology_validation
+ * @param path Input CSV or comparison output path following the exact file contract.
+ * @param run Native RunContext with consistent particle/mesh sizes, epochs and output controls.
+ * @param pm Native PM geometry whose node-centered positions require the documented half-cell rebase.
+ * @param particles Native FastPMStore owning imported IDs, positions and float32 canonical momenta.
+ */
 static void importParticles(const char *path, RunContext *run, PM *pm, FastPMStore *particles) {
     FILE *input = fopen(path, "r");
     if (!input) fail("cannot open input CSV");
@@ -157,6 +219,14 @@ static void importParticles(const char *path, RunContext *run, PM *pm, FastPMSto
     particles->meta.a_x = particles->meta.a_v = run->aInitial;
 }
 
+/**
+ * @brief Export the actual native full-step state only when positions and momenta are synchronized.
+ * @see cosmology_contracts cosmology_validation
+ * @param context Native solver event context supplied to the callback.
+ * @param baseEvent Native event whose endpoint/synchronization state is checked before output.
+ * @param userdata RunContext pointer retaining checkpoint cadence and output state.
+ * @return Native event callback status; output is gated by actual synchronization and cadence.
+ */
 static int writeSynchronizedCheckpoint(void *context, FastPMEvent *baseEvent, void *userdata) {
     FastPMSolver *solver = context;
     FastPMTransitionEvent *event = (FastPMTransitionEvent *)baseEvent;
@@ -215,6 +285,12 @@ static int writeSynchronizedCheckpoint(void *context, FastPMEvent *baseEvent, vo
     return 0;
 }
 
+/**
+ * @brief Record native plain-PM background kick/drift factors without replacing native integration.
+ * @see cosmology_contracts cosmology_validation
+ * @param solver Initialized native plain-PM solver; its own factors/operators are recorded, not reimplemented.
+ * @param run Native RunContext with consistent particle/mesh sizes, epochs and output controls.
+ */
 static void writeNativeFactorProbe(FastPMSolver *solver, const RunContext *run) {
     FILE *output = run->rank == 0 ? openOutput(run, "factors.csv") : NULL;
     if (output) fprintf(output, "step,a0,ah,a1,drift,canonical_kick0,canonical_kick1\n");
@@ -242,6 +318,14 @@ static void writeNativeFactorProbe(FastPMSolver *solver, const RunContext *run) 
     if (output) closeOutput(output);
 }
 
+/**
+ * @brief Run native plain-pm evolution harness with imported phase space and synchronized csv exports.
+ * @see cosmology_contracts cosmology_validation
+ * @param argc Program argument count; this executable checks its own exact usage.
+ * @param argv Program argument vector; see the file/workflow contract for scalar and path units.
+ * @return Zero on successful completion; malformed/native fatal errors return nonzero or abort the communicator.
+ * Fatal distributed failures must terminate communicator peers; the host-only test uses ordinary process status.
+ */
 int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
     RunContext run = {0};

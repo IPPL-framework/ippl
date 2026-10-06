@@ -1,0 +1,722 @@
+/**
+@page cosmology_tools Source and workflow catalog
+
+Every maintained simulation/reference source and Python/shell workflow is listed below.
+Generated result trees, the paper source and downloaded upstream dependency trees are evidence or external inputs, not part of this API extraction.
+Commands run from the repository root. `python` denotes the configured OPALX environment (`/Users/adelmann/.venv-h6/bin/python` locally).
+Uppercase values are placeholders; use the tool-specific usage/help to select actual fresh paths and native executables.
+CLI guard bodies are source-browser material, not importable APIs; this does not exclude the functions they call.
+
+@section tools_binaries Compiled programs and shared model
+| File | Purpose | Entry point/contract |
+|---|---|---|
+| @ref Cosmology.cpp | Main generated-IC evolution | `Cosmology input.par` or `Cosmology --self-test` |
+| @ref CosmologyConfig.h | Validated parameter object | @ref cosmology::Config |
+| @ref CosmologyPhysics.h | Host growth/spectrum/quadrature | @ref cosmology::Background and @ref cosmology::PowerSpectrum |
+| @ref CosmologySimulation.h | Distributed CIC/FFT/KDK state | @ref cosmology::Simulation |
+| @ref ExecutionMetadata.h | Host/device execution reporting | @ref cosmology::writeExecutionMetadata |
+| @ref CompareCosmologyForce.cpp | Shared frozen-force import | `CompareCosmologyForce N L Omega_m input.csv output_dir` |
+| @ref CompareCosmologyEvolution.cpp | Shared synchronized phase-space evolution | `CompareCosmologyEvolution NP NM L Omega_m ai af steps checkpoints input.csv output_dir` |
+| @ref TestCosmologyPhysics.cpp | Host numerical/regression sanity | `TestCosmologyPhysics` (no MPI launcher required) |
+| @ref FastPMForce.c | Native pinned force harness | `FastPMForce N L Omega_m input.csv output_dir` |
+| @ref FastPMEvolution.c | Native ordinary plain-PM harness | `FastPMEvolution NP NM L Omega_m ai af steps checkpoints input.csv output_dir` |
+| @ref CompareZarijaPhysics.cpp | Original-initializer public-model probe | `CompareZarijaPhysics input.par output.csv` |
+| @ref ReferenceABI.cpp | Original-initializer ABI sizes/endian probe | Built and run by the Zarija reference builder |
+
+All native applications preserve their stated model/precision assumptions. Import adapters are diagnostics, not a distributed checkpoint API. See @ref cosmology_contracts and @ref cosmology_references.
+
+@section tools_python Python programs and helper modules
+
+@subsection tool_python_analyze_zeldovich_benchmark_py python/analyze_zeldovich_benchmark.py
+@ref analyze_zeldovich_benchmark.py "Source/API reference".
+
+**Purpose.** Audit saved broadband IPPL/FastPM snapshots and compute CIC power spectra.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/analyze_zeldovich_benchmark.py
+@endcode
+
+@subsection tool_python_compare_fixture_files_py python/compare_fixture_files.py
+@ref compare_fixture_files.py "Source/API reference".
+
+**Purpose.** Read-only cross-host comparison of common-particle cosmology fixture CSVs.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/compare_fixture_files.py ORIGINAL COMPARISON --box-size BOX_SIZE --output OUTPUT
+@endcode
+
+@subsection tool_python_gadget2_analyze_gadget2_np256_py python/gadget2/analyze_gadget2_np256.py
+@ref analyze_gadget2_np256.py "Source/API reference".
+
+**Purpose.** Verify a completed matched Gadget-2 256^3 run and measure its z=0 spectrum.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/gadget2/analyze_gadget2_np256.py
+@endcode
+This is the historical fixed Merlin 256³ workflow; its host/root/hash restrictions remain intact. The portable local 128³ workflow is run_three_code_campaign.py, not a silent retargeting of these records.
+
+@subsection tool_python_gadget2_convert_shared_ic_py python/gadget2/convert_shared_ic.py
+@ref convert_shared_ic.py "Source/API reference".
+
+**Purpose.** Convert the frozen shared cosmology CSV IC to GADGET-2 format-1.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/gadget2/convert_shared_ic.py --input INPUT --output OUTPUT --redshift REDSHIFT --expected-sha256 EXPECTED_SHA256
+@endcode
+
+@subsection tool_python_gadget2_plot_three_code_np256_py python/gadget2/plot_three_code_np256.py
+@ref plot_three_code_np256.py "Source/API reference".
+
+**Purpose.** Plot matched 256^3-particle IPPL, FastPM, and GADGET-2 z=0 spectra.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/gadget2/plot_three_code_np256.py
+@endcode
+This is the historical fixed Merlin 256³ workflow; its host/root/hash restrictions remain intact. The portable local 128³ workflow is run_three_code_campaign.py, not a silent retargeting of these records.
+
+@subsection tool_python_gadget2_run_gadget2_np256_py python/gadget2/run_gadget2_np256.py
+@ref run_gadget2_np256.py "Source/API reference".
+
+**Purpose.** Run an audited GADGET-2 TreePM 256^3-particle/mesh comparison on Merlin.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/gadget2/run_gadget2_np256.py
+@endcode
+This is the historical fixed Merlin 256³ workflow; its host/root/hash restrictions remain intact. The portable local 128³ workflow is run_three_code_campaign.py, not a silent retargeting of these records.
+
+@subsection tool_python_gaussian_fixture_py python/gaussian_fixture.py
+@ref gaussian_fixture.py "Source/API reference".
+
+**Purpose.** Common-particle, band-limited Gaussian 1LPT fixtures for local PM studies.
+
+**Usage.**
+@code{.sh}
+PYTHONPATH=demos/cosmology/python python -c "import gaussian_fixture"
+@endcode
+This is an importable host helper, not a standalone simulation driver. Its function-level contracts define array shapes, units and returned records.
+
+@subsection tool_python_ippl_cosmology_scripts_prepare_validation_assets_py python/ippl-cosmology/scripts/prepare_validation_assets.py
+@ref prepare_validation_assets.py "Source/API reference".
+
+**Purpose.** Copy nine released validation PNGs without rerendering or changing evidence.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/ippl-cosmology/scripts/prepare_validation_assets.py --validation-root VALIDATION_ROOT
+@endcode
+
+@subsection tool_python_merlin_audit_a100_study_py python/merlin/audit_a100_study.py
+@ref audit_a100_study.py "Source/API reference".
+
+**Purpose.** Verify complete A100/CPU study scope and saved hashes, not physical acceptance.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/merlin/audit_a100_study.py GPU_REPORT --cpu-report CPU_REPORT --launch-evidence LAUNCH_EVIDENCE --output OUTPUT
+@endcode
+Machine evidence and allocated-device identity must match the strict launcher/audit configuration. It does not grant permission to operate on an unrelated process or imply GPU accuracy.
+
+@subsection tool_python_merlin_audit_cpu_study_py python/merlin/audit_cpu_study.py
+@ref audit_cpu_study.py "Source/API reference".
+
+**Purpose.** Audit a completed 18-run CPU Gaussian study without rerunning simulations.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/merlin/audit_cpu_study.py REPORT --source-dir SOURCE_DIR --output OUTPUT
+@endcode
+Machine evidence and allocated-device identity must match the strict launcher/audit configuration. It does not grant permission to operate on an unrelated process or imply GPU accuracy.
+
+@subsection tool_python_merlin_gpu_mpiexec_py python/merlin/gpu_mpiexec.py
+@ref gpu_mpiexec.py "Source/API reference".
+
+**Purpose.** Strict, evidence-producing MPI launcher for the single-node Merlin campaign.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/merlin/gpu_mpiexec.py --config CONFIG_JSON -n RANKS TARGET [TARGET_ARGUMENTS ...]
+@endcode
+Machine evidence and allocated-device identity must match the strict launcher/audit configuration. It does not grant permission to operate on an unrelated process or imply GPU accuracy.
+
+@subsection tool_python_merlin_gpu_rank_py python/merlin/gpu_rank.py
+@ref gpu_rank.py "Source/API reference".
+
+**Purpose.** Bind one OpenMPI local rank to one scheduler-visible GPU, then exec.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/merlin/gpu_rank.py TARGET [TARGET_ARGUMENTS ...]
+@endcode
+Machine evidence and allocated-device identity must match the strict launcher/audit configuration. It does not grant permission to operate on an unrelated process or imply GPU accuracy.
+
+@subsection tool_python_plot_evolution_py python/plot_evolution.py
+@ref plot_evolution.py "Source/API reference".
+
+**Purpose.** Render two static summaries of a completed matched-evolution campaign.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/plot_evolution.py RESULTS --output-dir OUTPUT_DIR
+@endcode
+
+@subsection tool_python_plot_pm_validation_py python/plot_pm_validation.py
+@ref plot_pm_validation.py "Source/API reference".
+
+**Purpose.** Static scientific plots of saved PM-force and pre-crossing pancake evidence.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/plot_pm_validation.py --frozen FROZEN --pancake PANCAKE --audit AUDIT --output-dir OUTPUT_DIR
+@endcode
+
+@subsection tool_python_plot_resolution_study_py python/plot_resolution_study.py
+@ref plot_resolution_study.py "Source/API reference".
+
+**Purpose.** Plot recorded resolution-study evidence; never open snapshots or run models.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/plot_resolution_study.py --report REPORT --output-dir OUTPUT_DIR
+@endcode
+
+@subsection tool_python_plot_zarija_py python/plot_zarija.py
+@ref plot_zarija.py "Source/API reference".
+
+**Purpose.** Reproduce static scientific figures from an existing matched-Zarija campaign.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/plot_zarija.py --campaign CAMPAIGN --physics PHYSICS --output-dir OUTPUT_DIR
+@endcode
+
+@subsection tool_python_reference_compare_zarija_physics_py python/reference/compare_zarija_physics.py
+@ref compare_zarija_physics.py "Source/API reference".
+
+**Purpose.** Build and run public-API probes against unmodified Zarija sources.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/reference/compare_zarija_physics.py --reference-source REFERENCE_SOURCE --ippl-build IPPL_BUILD
+@endcode
+
+@subsection tool_python_run_three_code_campaign_py python/run_three_code_campaign.py
+@ref run_three_code_campaign.py "Source/API reference".
+
+**Purpose.** Build, run and analyze a local three-code reproduction of paper Figure A11.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/run_three_code_campaign.py
+@endcode
+
+@subsection tool_python_runtime_metadata_py python/runtime_metadata.py
+@ref runtime_metadata.py "Source/API reference".
+
+**Purpose.** Strict CPU/GPU execution metadata, independent of numerical acceptance gates.
+
+**Usage.**
+@code{.sh}
+PYTHONPATH=demos/cosmology/python python -c "import runtime_metadata"
+@endcode
+This is an importable host helper, not a standalone simulation driver. Its function-level contracts define array shapes, units and returned records.
+
+@subsection tool_python_source_paths_py python/source_paths.py
+@ref source_paths.py "Source/API reference".
+
+**Purpose.** Resolve cosmology source paths after Python scripts were grouped together.
+
+**Usage.**
+@code{.sh}
+PYTHONPATH=demos/cosmology/python python -c "import source_paths"
+@endcode
+This is an importable host helper, not a standalone simulation driver. Its function-level contracts define array shapes, units and returned records.
+
+@subsection tool_python_study_spectra_py python/study_spectra.py
+@ref study_spectra.py "Source/API reference".
+
+**Purpose.** Independent equal-mass particle-density measurements for local PM studies.
+
+**Usage.**
+@code{.sh}
+PYTHONPATH=demos/cosmology/python python -c "import study_spectra"
+@endcode
+This is an importable host helper, not a standalone simulation driver. Its function-level contracts define array shapes, units and returned records.
+
+@subsection tool_python_study_storage_py python/study_storage.py
+@ref study_storage.py "Source/API reference".
+
+**Purpose.** Disk-aware execution and lossless *numerical* archives for cosmology studies.
+
+**Usage.**
+@code{.sh}
+PYTHONPATH=demos/cosmology/python python -c "import study_storage"
+@endcode
+This is an importable host helper, not a standalone simulation driver. Its function-level contracts define array shapes, units and returned records.
+
+@subsection tool_python_tests_analyze_pancake_diagnostics_py python/tests/analyze_pancake_diagnostics.py
+@ref analyze_pancake_diagnostics.py "Source/API reference".
+
+**Purpose.** Read-only follow-up of saved pancake mass and local-gradient diagnostics.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/analyze_pancake_diagnostics.py --campaign CAMPAIGN --output-dir OUTPUT_DIR
+@endcode
+
+@subsection tool_python_tests_test_a100_completion_audit_py python/tests/test_a100_completion_audit.py
+@ref test_a100_completion_audit.py "Source/API reference".
+
+**Purpose.** Synthetic evidence contract checks; no hardware or physics pass is fabricated.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_a100_completion_audit.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_analyze_zeldovich_benchmark_py python/tests/test_analyze_zeldovich_benchmark.py
+@ref test_analyze_zeldovich_benchmark.py "Source/API reference".
+
+**Purpose.** Tests for periodic CIC power normalization and compression integrity helpers.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_analyze_zeldovich_benchmark.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_compare_fixture_files_py python/tests/test_compare_fixture_files.py
+@ref test_compare_fixture_files.py "Source/API reference".
+
+**Purpose.** Small synthetic fixture comparison tests; no MPI or physical tolerances.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_compare_fixture_files.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_cpu_completion_audit_py python/tests/test_cpu_completion_audit.py
+@ref test_cpu_completion_audit.py "Source/API reference".
+
+**Purpose.** CPU audit contract tests with synthetic reports and tiny numerical archives.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_cpu_completion_audit.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_evolution_adapter_py python/tests/test_evolution_adapter.py
+@ref test_evolution_adapter.py "Source/API reference".
+
+**Purpose.** Imported-evolution adapter checks: input integrity, KDK reuse and MPI1--4.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_evolution_adapter.py --exe EXE --production-exe PRODUCTION_EXE
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_evolution_refinement_py python/tests/test_evolution_refinement.py
+@ref test_evolution_refinement.py "Source/API reference".
+
+**Purpose.** Synthetic provenance and numerical-analysis tests; no MPI or simulations.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_evolution_refinement.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_frozen_adapter_py python/tests/test_frozen_adapter.py
+@ref test_frozen_adapter.py "Source/API reference".
+
+**Purpose.** MPI input/output regressions for CompareCosmologyForce.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_frozen_adapter.py --exe EXE
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_gaussian_fixture_py python/tests/test_gaussian_fixture.py
+@ref test_gaussian_fixture.py "Source/API reference".
+
+**Purpose.** Independent synthesis, statistics, units, and provenance checks; no simulations.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_gaussian_fixture.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_merlin_a100_launcher_py python/tests/test_merlin_a100_launcher.py
+@ref test_merlin_a100_launcher.py "Source/API reference".
+
+**Purpose.** A100 allocation guards; no modules or device queries run in these tests.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_merlin_a100_launcher.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_merlin_cpu_launcher_py python/tests/test_merlin_cpu_launcher.py
+@ref test_merlin_cpu_launcher.py "Source/API reference".
+
+**Purpose.** Launcher preflight tests; never run modules, builds, MPI, or network calls.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_merlin_cpu_launcher.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_merlin_gpu_mpiexec_py python/tests/test_merlin_gpu_mpiexec.py
+@ref test_merlin_gpu_mpiexec.py "Source/API reference".
+
+**Purpose.** Pure/mocked launcher checks. No MPI, GPU, Slurm command, or network call.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_merlin_gpu_mpiexec.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_merlin_gpu_rank_py python/tests/test_merlin_gpu_rank.py
+@ref test_merlin_gpu_rank.py "Source/API reference".
+
+**Purpose.** GPU binding tests with fake CUDA functions and exec; no GPU is queried.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_merlin_gpu_rank.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_plot_evolution_py python/tests/test_plot_evolution.py
+@ref test_plot_evolution.py "Source/API reference".
+
+**Purpose.** Small mathematical/provenance regression tests for the static summary.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_plot_evolution.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_plot_pm_validation_py python/tests/test_plot_pm_validation.py
+@ref test_plot_pm_validation.py "Source/API reference".
+
+**Purpose.** Focused numerical extraction tests for saved-evidence PM figures.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_plot_pm_validation.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_plot_resolution_study_py python/tests/test_plot_resolution_study.py
+@ref test_plot_resolution_study.py "Source/API reference".
+
+**Purpose.** Bounded synthetic report tests; no executable, particle archive or MPI I/O.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_plot_resolution_study.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_resolution_study_py python/tests/test_resolution_study.py
+@ref test_resolution_study.py "Source/API reference".
+
+**Purpose.** Independent matrix, comparison, qualification and control-flow checks.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_resolution_study.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_runtime_metadata_py python/tests/test_runtime_metadata.py
+@ref test_runtime_metadata.py "Source/API reference".
+
+**Purpose.** CPU/GPU execution metadata regressions; no device or simulation required.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_runtime_metadata.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_study_spectra_py python/tests/test_study_spectra.py
+@ref test_study_spectra.py "Source/API reference".
+
+**Purpose.** Synthetic independent density-estimator tests; no simulations or MPI.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_study_spectra.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_study_storage_py python/tests/test_study_storage.py
+@ref test_study_storage.py "Source/API reference".
+
+**Purpose.** Temporary, mocked execution tests. No MPI, simulation, or previous data use.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_study_storage.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_three_code_campaign_py python/tests/test_three_code_campaign.py
+@ref test_three_code_campaign.py "Source/API reference".
+
+**Purpose.** Regression checks for shared ICs, cached builds and the Figure A11 denominator.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_three_code_campaign.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_validate_evolution_py python/tests/test_validate_evolution.py
+@ref test_validate_evolution.py "Source/API reference".
+
+**Purpose.** Independent synthetic/corruption tests for matched-particle evolution analysis.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_validate_evolution.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_validate_frozen_force_py python/tests/test_validate_frozen_force.py
+@ref test_validate_frozen_force.py "Source/API reference".
+
+**Purpose.** Analytical tests of the frozen-force oracle; no simulation binaries needed.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_validate_frozen_force.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_validate_pancake_py python/tests/test_validate_pancake.py
+@ref test_validate_pancake.py "Source/API reference".
+
+**Purpose.** Independent analytic pancake oracle tests; no simulation or MPI required.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_validate_pancake.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_tests_test_validate_zarija_py python/tests/test_validate_zarija.py
+@ref test_validate_zarija.py "Source/API reference".
+
+**Purpose.** Fast analytic tests of the independent cross-generator analysis (no MPI).
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/tests/test_validate_zarija.py
+@endcode
+Runs isolated regression assertions. Adapter tests additionally require their native executable arguments; a unit-test pass is not a new physical qualification.
+
+@subsection tool_python_validate_evolution_py python/validate_evolution.py
+@ref validate_evolution.py "Source/API reference".
+
+**Purpose.** Matched imported-particle evolution: IPPL versus pinned native plain-PM FastPM.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/validate_evolution.py --ippl-exe IPPL_EXE --fastpm-exe FASTPM_EXE
+@endcode
+
+@subsection tool_python_validate_evolution_refinement_py python/validate_evolution_refinement.py
+@ref validate_evolution_refinement.py "Source/API reference".
+
+**Purpose.** Opt-in 128/256/512-step follow-up of the completed coupled3d evolution case.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/validate_evolution_refinement.py --parent PARENT
+@endcode
+
+@subsection tool_python_validate_frozen_force_py python/validate_frozen_force.py
+@ref validate_frozen_force.py "Source/API reference".
+
+**Purpose.** Frozen CIC/PM qualification; never advances particles or fits a normalization.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/validate_frozen_force.py --ippl-exe IPPL_EXE
+@endcode
+
+@subsection tool_python_validate_linear_py python/validate_linear.py
+@ref validate_linear.py "Source/API reference".
+
+**Purpose.** Reproducible CPU/MPI validation of the IPPL linear cosmology demonstration.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/validate_linear.py --exe build_openmp/demos/cosmology/Cosmology --quick
+@endcode
+
+@subsection tool_python_validate_pancake_py python/validate_pancake.py
+@ref validate_pancake.py "Source/API reference".
+
+**Purpose.** Validate finite-amplitude planar collapse before shell crossing.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/validate_pancake.py --exe EXE
+@endcode
+
+@subsection tool_python_validate_resolution_study_py python/validate_resolution_study.py
+@ref validate_resolution_study.py "Source/API reference".
+
+**Purpose.** Disk-guarded crossed-resolution and common-phase Gaussian PM studies.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/validate_resolution_study.py --ippl-exe IPPL_EXE --fastpm-exe FASTPM_EXE --fastpm-manifest MANIFEST --stage all --smoke
+@endcode
+
+@subsection tool_python_validate_zarija_py python/validate_zarija.py
+@ref validate_zarija.py "Source/API reference".
+
+**Purpose.** Compare actual Zarija and IPPL Gaussian 1LPT initial conditions.
+
+**Usage.**
+@code{.sh}
+python -B demos/cosmology/python/validate_zarija.py --ippl-exe IPPL_EXE --zarija-exe ZARIJA_EXE --zarija-source ZARIJA_SOURCE
+@endcode
+
+@section tools_shell Build and deployment scripts
+
+@subsection tool_reference_build_fastpm_sh reference/build_fastpm.sh
+**Purpose.** Build pinned native FastPM and host dependencies with checksum/source provenance.
+
+**Usage.**
+@code{.sh}
+bash demos/cosmology/reference/build_fastpm.sh BUILD_DIRECTORY
+@endcode
+FASTPM_CC, FASTPM_MPICC, FASTPM_FFTW_PREFIX, FASTPM_JOBS select local compiler/dependency settings. This is opt-in acquisition, not a normal CTest dependency.
+
+**Source.**
+@verbinclude build_fastpm.sh
+
+@subsection tool_reference_build_fastpm_evolution_sh reference/build_fastpm_evolution.sh
+**Purpose.** Link the native evolution harness to the frozen-force libraries, verifying them before/after.
+
+**Usage.**
+@code{.sh}
+bash demos/cosmology/reference/build_fastpm_evolution.sh FASTPM_BUILD_DIRECTORY [OUTPUT_DIRECTORY]
+@endcode
+Does not rebuild/modify the frozen-force libraries or replace native evolution. Retains a separate manifest.
+
+**Source.**
+@verbinclude build_fastpm_evolution.sh
+
+@subsection tool_reference_build_gadget2_sh reference/build_gadget2.sh
+**Purpose.** Build missing periodic double-precision GADGET-2/FFTW2 for a chosen PMGRID.
+
+**Usage.**
+@code{.sh}
+bash demos/cosmology/reference/build_gadget2.sh BUILD_DIRECTORY PMGRID GSL_PREFIX
+@endcode
+GADGET_CC, GADGET_MPICC and BUILD_JOBS select toolchain/jobs. Source archives are checksum-pinned; existing executable is reused. Generic ARM configuration handles FFTW2 on Apple Silicon.
+
+**Source.**
+@verbinclude build_gadget2.sh
+
+@subsection tool_reference_build_zarija_sh reference/build_zarija.sh
+**Purpose.** Compile the supplied original initializer separately and retain source/ABI provenance.
+
+**Usage.**
+@code{.sh}
+bash demos/cosmology/reference/build_zarija.sh REFERENCE_SOURCE BUILD_DIRECTORY
+@endcode
+See the script header for compiler/FFTW options. Original source is not edited; binary sizes/endian conventions are recorded.
+
+**Source.**
+@verbinclude build_zarija.sh
+
+@subsection tool_merlin_cpu_validation_sh merlin/cpu_validation.sh
+**Purpose.** Prepare/build/run the declared Merlin CPU study with phase/status evidence.
+
+**Usage.**
+@code{.sh}
+bash -l demos/cosmology/merlin/cpu_validation.sh [--login] ABSOLUTE_NEW_EVIDENCE_DIRECTORY
+@endcode
+Use its printed usage for supported actions and explicit campaign roots. Requires the documented modules/storage/host; does not claim a pass from exit alone.
+
+**Source.**
+@verbinclude cpu_validation.sh
+
+@subsection tool_merlin_a100_validation_sh merlin/a100_validation.sh
+**Purpose.** Build/run/audit the declared allocated-A100 study using strict GPU/MPI evidence.
+
+**Usage.**
+@code{.sh}
+bash -l demos/cosmology/merlin/a100_validation.sh build|run ABS_CPU_EVIDENCE ABS_GPU_EVIDENCE
+@endcode
+Requires the recorded CPU baseline, scheduler allocation, module/toolchain and strict launcher configuration. No new GPU qualification is inferred from preparing a build.
+
+**Source.**
+@verbinclude a100_validation.sh
+
+@subsection tool_gadget2_build_gadget2_np256_sh gadget2/build_gadget2_np256.sh
+**Purpose.** Rebuild only the frozen Merlin PMGRID=256 executable and require its approved binary hash.
+
+**Usage.**
+@code{.sh}
+bash demos/cosmology/gadget2/build_gadget2_np256.sh
+@endcode
+Fixed campaign paths/archive/Makefile/patch/binary hashes; not the portable local builder. Refuses rebuild after the campaign starts.
+
+**Source.**
+@verbinclude build_gadget2_np256.sh
+
+@subsection tool_gadget2_run_gadget2_np256_login_sh gadget2/run_gadget2_np256.login.sh
+**Purpose.** Run the frozen 256³ controller/analysis/plots in its declared login workflow.
+
+**Usage.**
+@code{.sh}
+bash demos/cosmology/gadget2/run_gadget2_np256.login.sh
+@endcode
+This script targets the retained Merlin campaign, not local 128³ paths.
+
+**Source.**
+@verbinclude run_gadget2_np256.login.sh
+
+@subsection tool_gadget2_run_gadget2_np256_sbatch gadget2/run_gadget2_np256.sbatch
+**Purpose.** Submit the frozen 256³ GADGET comparison inside a scheduler allocation.
+
+**Usage.**
+@code{.sh}
+sbatch demos/cosmology/gadget2/run_gadget2_np256.sbatch
+@endcode
+Submission is a separate user action; generating this documentation never submits a job.
+
+**Source.**
+@verbinclude run_gadget2_np256.sbatch
+
+@subsection tools_configuration Build and input configuration
+`CMakeLists.txt` registers the applications, optional Python/native-reference validation and documentation targets. `input/linear-sine.par`, `input/linear-gaussian.par` and `input/linear-uniform.par` are the shipped generated-IC examples. `gadget2/pmgrid256.patch` is the frozen historical PMGRID configuration change, not an IPPL gravity implementation.
+
+@section tools_doc_tools Documentation tools
+`python/build_documentation.py` builds the strict Doxygen site and checks extracted API coverage. `python/doxygen_filter.py` is used only by the documentation parser to recognize bare annotated Python fields; it never executes transformed text. `python/tests/test_documentation.py` checks the documentation infrastructure independently of simulation results.
+
+*/

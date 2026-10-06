@@ -1,3 +1,8 @@
+/** @file FastPMForce.c
+ * @brief Pinned native FastPM frozen-force harness retaining its own Nyquist/precision conventions.
+ * @ingroup cosmology_reference
+ * @see cosmology_contracts cosmology_validation cosmology_references
+ */
 /* Frozen-particle diagnostic using the pinned, unmodified FastPM force routine.
  * This adapter is not a FastPM time integrator. See build_fastpm.sh for the pin.
  * FastPM's native mesh is node-centred; inputs/outputs use IPPL cell centres.
@@ -20,20 +25,33 @@
 #error "Build with build_fastpm.sh to record the upstream source pin"
 #endif
 
+/** @brief Native host particle/run context; units and output conventions follow the file contract. */
 typedef struct {
-    uint64_t id;
-    double physical[3];
-    double native[3];
+    uint64_t id; ///< Global immutable particle label.
+    double physical[3]; ///< Imported IPPL-frame comoving position in Mpc/h.
+    double native[3]; ///< Native node-centered position after half-cell rebase in Mpc/h.
 } InputParticle;
 
+/**
+ * @brief Report a native-reference error and abort MPI_COMM_WORLD before exiting.
+ * @see cosmology_contracts cosmology_validation
+ * @param message Failure text retained for the fixed-budget check.
+ */
 static void fail(const char *message) {
-    int rank;
+    int rank; ///< Current MPI rank.
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     fprintf(stderr, "FastPMForce rank %d: %s\n", rank, message);
     MPI_Abort(MPI_COMM_WORLD, 2);
     exit(2);
 }
 
+/**
+ * @brief Allocate zeroed host memory after checking multiplication overflow and allocation success.
+ * @see cosmology_contracts cosmology_validation
+ * @param n Allocation element count; zero requests still yield a valid minimal allocation.
+ * @param size Size in bytes of each element.
+ * @return Zeroed valid host allocation; failures abort the native communicator.
+ */
 static void *checkedAlloc(size_t n, size_t size) {
     if (size && n > SIZE_MAX / size) fail("allocation size overflow");
     void *result = calloc(n ? n : 1, size);
@@ -41,18 +59,39 @@ static void *checkedAlloc(size_t n, size_t size) {
     return result;
 }
 
+/**
+ * @brief Wrap a finite reference-coordinate value into its periodic interval.
+ * @see cosmology_contracts cosmology_validation
+ * @param x Finite periodic coordinate in the caller's comoving length unit.
+ * @param length Positive periodic box side in the same coordinate unit.
+ * @return Coordinate in [0,length).
+ */
 static double wrap(double x, double length) {
     double result = fmod(x, length);
     if (result < 0) result += length;
     return result >= length ? 0 : result;
 }
 
+/**
+ * @brief Order native particle records by global label for deterministic export.
+ * @see cosmology_contracts cosmology_validation
+ * @param lhs First native particle record for global-ID ordering.
+ * @param rhs Second native particle record for global-ID ordering.
+ * @return Negative/zero/positive C comparator result for the two IDs.
+ */
 static int compareIds(const void *lhs, const void *rhs) {
     const uint64_t a = *(const uint64_t *)lhs;
     const uint64_t b = *(const uint64_t *)rhs;
     return (a > b) - (a < b);
 }
 
+/**
+ * @brief Open one diagnostic output file below the selected run directory.
+ * @see cosmology_contracts cosmology_validation
+ * @param directory Fresh/empty selected diagnostic output directory.
+ * @param name Scalar/diagnostic filename or label used in error reporting and output identity.
+ * @return Host FILE stream ready for diagnostic output.
+ */
 static FILE *openOutput(const char *directory, const char *name) {
     char path[4096];
     const int pathLength = snprintf(path, sizeof(path), "%s/%s", directory, name);
@@ -63,13 +102,26 @@ static FILE *openOutput(const char *directory, const char *name) {
     return file;
 }
 
+/**
+ * @brief Close a diagnostic output stream and reject a flush/close failure.
+ * @see cosmology_contracts cosmology_validation
+ * @param file Open native diagnostic stream; closing errors are fatal.
+ */
 static void closeOutput(FILE *file) {
     if (ferror(file) || fclose(file)) fail("writing output failed");
 }
 
+/**
+ * @brief Run pinned native fastpm frozen-force harness retaining its own nyquist/precision conventions.
+ * @see cosmology_contracts cosmology_validation
+ * @param argc Program argument count; this executable checks its own exact usage.
+ * @param argv Program argument vector; see the file/workflow contract for scalar and path units.
+ * @return Zero on successful completion; malformed/native fatal errors return nonzero or abort the communicator.
+ * Fatal distributed failures must terminate communicator peers; the host-only test uses ordinary process status.
+ */
 int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
-    int rank, ranks;
+    int rank, ranks; ///< Current MPI rank.
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &ranks);
     if (argc != 6)

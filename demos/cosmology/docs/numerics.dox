@@ -1,0 +1,110 @@
+/**
+@page cosmology_numerics Discrete initialization, force and time integration
+
+@section numerics_fourier Fourier normalization and placement
+
+For an N^3 mesh the IPPL transform pair is
+@f[ \widehat u_{\boldsymbol n}=N^{-3}\sum_{\boldsymbol j}u_{\boldsymbol j}
+ e^{-2\pi i\boldsymbol n\cdot\boldsymbol j/N},\qquad
+u_{\boldsymbol j}=\sum_{\boldsymbol n}\widehat u_{\boldsymbol n}
+ e^{+2\pi i\boldsymbol n\cdot\boldsymbol j/N}. @f]
+Physical wavenumbers are @f$\boldsymbol k=2\pi\boldsymbol n/L@f$. Particles
+start at @f$\boldsymbol q=(\boldsymbol j+1/2)L/N@f$. Initial coefficients include
+@f$\exp[i\pi(n_x+n_y+n_z)/N]@f$, the half-cell evaluation phase. Global particle
+IDs are x-fast. Do not change Fourier normalization or centering independently
+of coefficient variance, force kernels or reference coordinate shifts.
+
+@section numerics_ic Initial conditions
+
+Production Gaussian coefficients satisfy
+@f[ \mathbb E[|\widehat\delta_{\boldsymbol n}|^2]=P_0(k)/L^3,\quad
+\widehat\delta_{-\boldsymbol n}=\widehat\delta_{\boldsymbol n}^{*}. @f]
+A canonical conjugate-pair mesh index, the configured uint64 seed and SplitMix64
+finalization define independent open-interval variates. For @f$u_1,u_2\in(0,1)@f$,
+@f[ \widehat\delta=\sqrt{-\ln u_1\,P_0(k)/L^3}
+ [\cos(2\pi u_2)+i\sin(2\pi u_2)]. @f]
+Conjugation flips the imaginary sign for the other member. DC and every
+componentwise IC Nyquist plane are zero. Coefficients are independent of MPI
+ownership and kernel scheduling at a fixed mesh size. The key contains the
+mesh index and N: it is not a promise of common phases across different meshes.
+
+The shared Python Gaussian fixture instead hashes a physical integer mode and
+seed with SHA256, then applies Box-Muller. This continuous-mode contract supplies
+common phases across particle/force-mesh refinements. It deliberately differs
+from production SplitMix64. The standard fixture API caps its band at 12;
+the three-code campaign explicitly constructs the larger band through 48.
+Cross-code initial conditions are shared CSVs, not an assumption that different
+RNG implementations produce identical states from the same seed.
+
+Zel'dovich/1LPT @cite zeldovich1970 uses
+@f[ \widehat{\boldsymbol\psi}_0(\boldsymbol k)
+= i\boldsymbol k\widehat\delta(\boldsymbol k)/k^2,\qquad
+\boldsymbol x=\operatorname{wrap}(\boldsymbol q+D\boldsymbol\psi_0),\quad
+\boldsymbol p=a^2E(a)f(a)D(a)\boldsymbol\psi_0. @f]
+For sine inputs the supplied amplitude is delta at the initial redshift, so the
+coefficient is divided by D(aInitial) before this displacement step. Uniform
+inputs have zero perturbation and canonical momentum. Python shared fixtures
+round canonical momenta once to float32 and return those values as float64;
+this matches the native reference's particle storage, not a production IPPL
+precision restriction. Sampled positive initial-map Jacobians are an initial
+sanity check, not proof of global injectivity.
+
+@section numerics_cic Particle-mesh gravity
+
+CIC uses the tensor-product triangular assignment kernel
+@f[ S(\boldsymbol u)=\prod_{d=1}^3\max(0,1-|u_d|). @f]
+Mass is scattered to neighboring periodic mesh sites, the density contrast is
+formed, and the same assignment kernel gathers mesh forces to particles.
+For unequal imported particle/mesh loads the unit-weight mean cell mass is
+@f$\bar m=N_P^3/N_M^3@f$ and @f$\delta_i=m_i/\bar m-1@f$.
+For the production one-particle-per-cell load this reduces to @f$\delta_i=m_i-1@f$.
+
+The force component implemented by the spectral solve is
+@f[ \widehat F_{0,j}(\boldsymbol k)=
+\frac{3\Omega_m}{2}\frac{i\widetilde k_j}{|\boldsymbol k|^2}
+\widehat\delta(\boldsymbol k). @f]
+At DC it is zero. On the j-th Nyquist plane only @f$\widetilde k_j@f$ is zero;
+the full denominator retains all squared components. This produces a real
+discrete differentiated component without suppressing unrelated transverse
+components. Native FastPM retains its own R2C convention: only its eight
+self-conjugate corners are nulled by its native operator. Frozen-force tests
+compare each solver with its own oracle and separately predict their difference.
+
+There is no CIC deconvolution, extra softening kernel or short-range tree in
+IPPL's force solve. Two assignment operations suppress short wavelengths;
+continuum linear growth must therefore be assessed on resolved scales and under
+refinement. The CIC-window corrections described in @ref cosmology_spectra are
+measurement operations, never inserted into this production force kernel.
+
+@section numerics_kdk Scale-factor kick-drift-kick
+
+For endpoints a0,a1 and geometric midpoint @f$a_h=\sqrt{a_0a_1}@f$:
+@f[ K(a,b)=\int_a^b\frac{da'}{a'^2E(a')},\qquad
+R(a,b)=\int_a^b\frac{da'}{a'^3E(a')}. @f]
+@f[ \boldsymbol p_h=\boldsymbol p_0+K(a_0,a_h)\boldsymbol F_0(\boldsymbol x_0),
+\quad\boldsymbol x_1=\operatorname{wrap}[\boldsymbol x_0+R(a_0,a_1)\boldsymbol p_h], @f]
+@f[ \boldsymbol p_1=\boldsymbol p_h+K(a_h,a_1)\boldsymbol F_0(\boldsymbol x_1). @f]
+The new force is calculated after migration. Positions and momenta are
+synchronized after the second kick. Endpoints obey
+@f$a_i=a_{\rm in}\exp[i\ln(a_{\rm fin}/a_{\rm in})/N_t]@f$.
+The host quadrature evaluates K and R in log(a). Reversed intervals return the
+negative integral and equal endpoints return zero. In Einstein-de Sitter,
+@f[ K(a,b)=2(\sqrt b-\sqrt a),\qquad
+R(a,b)=2(a^{-1/2}-b^{-1/2}). @f]
+This is the production second-order time scheme; it is not FastPM's modified
+large-step prescription @cite feng2016fastpm or COLA @cite tassev2013cola.
+The native evolution harness selects FASTPM_FORCE_PM explicitly.
+Mechanical energy is not constant in an expanding background. Spatial
+convergence, timestep convergence and decomposition reproducibility are
+separate properties; no one of these substitutes for the others.
+
+@section numerics_periodic Periodic ownership
+
+Before every particle ownership update,
+@f$x_d\leftarrow x_d-L\lfloor x_d/L\rfloor@f$ wraps finite overshoots spanning
+multiple boxes. A result rounded to exactly L is reset to zero. The particle
+container's boundary functor is disabled because this wrapper supplies the
+periodicity; field layouts remain periodic. IDs, Lagrangian positions, mass,
+force and momentum migrate together. No dynamic load-balancer hierarchy from
+the removed historical StructureFormation implementation is used.
+*/

@@ -1,3 +1,10 @@
+/**
+ * @brief Scientific implementation and contracts for CosmologySimulation.h.
+ *
+ * @file CosmologySimulation.h
+ * @ingroup cosmology_core
+ * @see cosmology_model cosmology_numerics cosmology_contracts
+ */
 #ifndef IPPL_COSMOLOGY_SIMULATION_H
 #define IPPL_COSMOLOGY_SIMULATION_H
 
@@ -17,24 +24,38 @@
 #include <vector>
 
 namespace cosmology {
-constexpr unsigned Dim = 3;
-using Vector = ippl::Vector<double, Dim>;
-using Mesh = ippl::UniformCartesian<double, Dim>;
-using Layout = ippl::FieldLayout<Dim>;
-using ParticleLayout = ippl::ParticleSpatialLayout<double, Dim, Mesh>;
-using RealField = ippl::Field<double, Dim, Mesh, Mesh::DefaultCentering>;
-using Complex = Kokkos::complex<double>;
-using ComplexField = ippl::Field<Complex, Dim, Mesh, Mesh::DefaultCentering>;
-using VectorField = ippl::Field<Vector, Dim, Mesh, Mesh::DefaultCentering>;
-using FFT = ippl::FFT<ippl::CCTransform, ComplexField>;
-using Index = typename ippl::RangePolicy<Dim>::index_array_type;
+constexpr unsigned Dim = 3; ///< Three-dimensional periodic geometry; compile-time dimensionality.
+using Vector = ippl::Vector<double, Dim>; ///< Concrete IPPL/Kokkos type used by the three-dimensional simulation.
+using Mesh = ippl::UniformCartesian<double, Dim>; ///< Concrete IPPL/Kokkos type used by the three-dimensional simulation.
+using Layout = ippl::FieldLayout<Dim>; ///< Concrete IPPL/Kokkos type used by the three-dimensional simulation.
+using ParticleLayout = ippl::ParticleSpatialLayout<double, Dim, Mesh>; ///< Concrete IPPL/Kokkos type used by the three-dimensional simulation.
+using RealField = ippl::Field<double, Dim, Mesh, Mesh::DefaultCentering>; ///< Concrete IPPL/Kokkos type used by the three-dimensional simulation.
+using Complex = Kokkos::complex<double>; ///< Concrete IPPL/Kokkos type used by the three-dimensional simulation.
+using ComplexField = ippl::Field<Complex, Dim, Mesh, Mesh::DefaultCentering>; ///< Concrete IPPL/Kokkos type used by the three-dimensional simulation.
+using VectorField = ippl::Field<Vector, Dim, Mesh, Mesh::DefaultCentering>; ///< Concrete IPPL/Kokkos type used by the three-dimensional simulation.
+using FFT = ippl::FFT<ippl::CCTransform, ComplexField>; ///< Concrete IPPL/Kokkos type used by the three-dimensional simulation.
+using Index = typename ippl::RangePolicy<Dim>::index_array_type; ///< Concrete IPPL/Kokkos type used by the three-dimensional simulation.
 
+/**
+ * @brief Unit-weight particle state whose attributes migrate together.
+ *
+ * Inherited R stores comoving Mpc/h positions.
+ * Momentum is canonical, force is F0, and lagrangian positions preserve particle labels.
+ */
 class Particles : public ippl::ParticleBase<ParticleLayout> {
 public:
-    ippl::ParticleAttrib<double> mass;
-    ippl::ParticleAttrib<Vector> momentum, force, lagrangian;
-    ippl::ParticleAttrib<std::uint64_t> globalId;
+    ippl::ParticleAttrib<double> mass; ///< Unit particle weights, not masses already expressed in solar units.
+    ippl::ParticleAttrib<Vector> momentum /**< Canonical p in Mpc/h. */, force /**< Scaled comoving F0 in Mpc/h. */, lagrangian /**< Initial q in Mpc/h. */;
+    ippl::ParticleAttrib<std::uint64_t> globalId; ///< Immutable global particle label preserved across migration.
 
+    /**
+     * @brief Register every attribute that must migrate with a particle.
+     *
+     * Mass, canonical momentum, force, Lagrangian positions and IDs migrate together.
+     * The inherited particle boundary functor is disabled; Simulation supplies explicit wrapping.
+     *
+     * @param layout Active particle layout with the same periodic mesh/domain as its owner.
+     */
     explicit Particles(ParticleLayout& layout) : ippl::ParticleBase<ParticleLayout>(layout) {
         addAttribute(mass);
         addAttribute(momentum);
@@ -48,6 +69,14 @@ public:
 
 // SplitMix64 finalizer: a fixed mapping of (seed, canonical global Fourier index).
 // There is no shared RNG pool, rank seed, or dependence on kernel scheduling.
+/**
+ * @brief Apply the fixed SplitMix64 mixing/finalization map.
+ *
+ * Host/device callable. No shared RNG state or rank seed is used.
+ *
+ * @param x Unsigned 64-bit input key; overflow is defined modulo 2^64.
+ * @return Deterministic unsigned 64-bit mixed value.
+ */
 KOKKOS_INLINE_FUNCTION std::uint64_t mixBits(std::uint64_t x) {
     x += 0x9e3779b97f4a7c15ULL;
     x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;
@@ -55,48 +84,91 @@ KOKKOS_INLINE_FUNCTION std::uint64_t mixBits(std::uint64_t x) {
     return x ^ (x >> 31);
 }
 
+/**
+ * @brief Map a mixed key to an open-interval 52-bit uniform variate.
+ *
+ * Host/device callable; supports the Box-Muller logarithm without an endpoint guard.
+ *
+ * @param x Unsigned key passed through mixBits.
+ * @return Double in (0,1); neither endpoint is representable by the mapping.
+ */
 KOKKOS_INLINE_FUNCTION double uniformOpen(std::uint64_t x) {
     // 52 random bits; neither endpoint is reachable, including after rounding.
     return (static_cast<double>(mixBits(x) >> 12) + 0.5) / 4503599627370496.0;
 }
 
+/**
+ * @brief Periodic distributed CIC/FFT particle-mesh cosmology with production KDK.
+ *
+ * @see cosmology_model cosmology_numerics cosmology_parallel
+ * All stateful entry points are communicator-collective and require consistent rank ordering.
+ * No legacy manager hierarchy or independent diagnostic force implementation is used.
+ */
 class Simulation {
-    Config config_m;
-    Background background_m;
-    ippl::NDIndex<Dim> domain_m;
-    std::unique_ptr<Mesh> mesh_m;
-    std::unique_ptr<Layout> layout_m;
-    std::unique_ptr<ParticleLayout> particleLayout_m;
-    std::unique_ptr<Particles> particles_m;
-    RealField density_m;
-    VectorField force_m;
-    ComplexField modes_m, scratch_m;
-    std::unique_ptr<FFT> fft_m;
-    std::ofstream diagnostics_m;
-    double initialModeAmplitude_m = 0.0;
-    double massError_m = 0.0;
-    double maxImaginary_m = 0.0;
+    Config config_m; ///< Validated run parameters; replicated host configuration.
+    Background background_m; ///< Replicated host expansion/growth/quadrature model.
+    ippl::NDIndex<Dim> domain_m; ///< Global mesh-index box.
+    std::unique_ptr<Mesh> mesh_m; ///< Owned uniform comoving mesh with cell-centered default fields.
+    std::unique_ptr<Layout> layout_m; ///< Owned distributed periodic field layout on the IPPL communicator.
+    std::unique_ptr<ParticleLayout> particleLayout_m; ///< Owned particle ownership/layout tied to the mesh distribution.
+    std::unique_ptr<Particles> particles_m; ///< Owned particle attributes in default execution memory.
+    RealField density_m; ///< Mesh density contrast delta after deposition/normalization.
+    VectorField force_m; ///< Three-component mesh F0 in Mpc/h.
+    ComplexField modes_m /**< Fourier density coefficients. */, scratch_m /**< Component inverse-transform scratch. */;
+    std::unique_ptr<FFT> fft_m; ///< Owned distributed complex-complex transform plan.
+    std::ofstream diagnostics_m; ///< Rank-zero production diagnostic CSV stream.
+    double initialModeAmplitude_m = 0.0; ///< Initial measured cosine density amplitude used for a linear expectation.
+    double massError_m = 0.0; ///< Last absolute relative deposited unit-mass residual.
+    double maxImaginary_m = 0.0; ///< Largest globally reduced absolute inverse-transform imaginary residual.
     // Only the imported-evolution diagnostic sets this; normal ICs remain Nmesh^3.
-    std::uint64_t expectedParticleCount_m = 0;
+    std::uint64_t expectedParticleCount_m = 0; ///< Nonzero imported NP^3 override; zero selects production N_M^3 count.
 
+    /**
+     * @brief Return the expected global particle count for the active path.
+     *
+     * Distinguishes fixed-particle force-mesh refinement from the production equal-load path.
+     * @return Imported expected count if set, otherwise nGrid^3.
+     */
     std::uint64_t totalParticles() const {
         if (expectedParticleCount_m != 0) return expectedParticleCount_m;
         const auto n = static_cast<std::uint64_t>(config_m.nGrid);
         return n * n * n;
     }
 
+    /**
+     * @brief Sum a scalar over the active IPPL communicator.
+     *
+     * @pre All ranks enter this collective in the same order. Summation is not promised bitwise reproducible.
+     *
+     * @param value Local scalar in the caller's units.
+     * @return MPI_Allreduce sum on every rank.
+     */
     static double globalSum(double value) {
         double result;
         MPI_Allreduce(&value, &result, 1, MPI_DOUBLE, MPI_SUM, ippl::Comm->getCommunicator());
         return result;
     }
 
+    /**
+     * @brief Maximize a scalar over the active IPPL communicator.
+     *
+     * @pre All ranks enter this collective in the same order.
+     *
+     * @param value Local scalar in the caller's units.
+     * @return MPI_Allreduce maximum on every rank.
+     */
     static double globalMax(double value) {
         double result;
         MPI_Allreduce(&value, &result, 1, MPI_DOUBLE, MPI_MAX, ippl::Comm->getCommunicator());
         return result;
     }
 
+    /**
+     * @brief Verify exact integer conservation of the global particle count.
+     *
+     * Collective MPI_UINT64_T sum.
+     * @throws std::runtime_error If the count differs from totalParticles().
+     */
     void checkParticleCount() const {
         std::uint64_t local = particles_m->getLocalNum(), total = 0;
         MPI_Allreduce(&local, &total, 1, MPI_UINT64_T, MPI_SUM,
@@ -104,6 +176,13 @@ class Simulation {
         if (total != totalParticles()) throw std::runtime_error("Global particle count changed");
     }
 
+    /**
+     * @brief Wrap particle positions and migrate all attributes to current owners.
+     *
+     * Collective. Device wrapping handles finite multi-box overshoots and exact endpoints.
+     * Calls the particle update and then exact global count validation.
+     * @see cosmology_parallel cosmology_numerics
+     */
     void updateParticles() {
         // The legacy IPPL periodic BC assumes small boundary overshoots. Reduce
         // arbitrary finite displacements into the box before ownership lookup.
@@ -121,6 +200,12 @@ class Simulation {
         checkParticleCount();
     }
 
+    /**
+     * @brief Create the local part of a global cell-centered unit-mass lattice.
+     *
+     * Collective ownership-compatible initialization; IDs are x-fast global lattice indices.
+     * Sets Lagrangian coordinates, momentum and force in execution memory.
+     */
     void createLattice() {
         auto dom = layout_m->getLocalNDIndex();
         const std::size_t nx = dom[0].length(), ny = dom[1].length();
@@ -144,6 +229,14 @@ class Simulation {
         });
     }
 
+    /**
+     * @brief Construct the periodic z=0 density coefficients for the selected IC.
+     *
+     * Device coefficients use a replicated host radial P(k) table copied once to execution memory.
+     * DC/all IC Nyquist planes vanish; the half-cell phase is included.
+     * For sine input, amplitude/D(aInitial) implements an initial-redshift density amplitude.
+     * @see cosmology_numerics
+     */
     void initializeModes() {
         auto view = modes_m.getView();
         const auto dom = layout_m->getLocalNDIndex();
@@ -213,6 +306,17 @@ class Simulation {
     // Compute inverse FFT of i*k_component/k² times modes. The full k² is
     // retained on Nyquist planes; only the differentiated Nyquist component
     // is zero, as required for a real discrete derivative.
+    /**
+     * @brief Inverse-transform one i*k/k^2 component of the current density modes.
+     *
+     * Collective FFT/reduction. Full k^2 is retained; only the differentiated Nyquist component is zero.
+     * Updates scratch_m and the maximum absolute imaginary residual.
+     * @pre component is valid; modes_m is initialized.
+     * @see cosmology_numerics
+     *
+     * @param component Cartesian component 0,1 or 2.
+     * @param factor Dimensionless multiplier: 1 for displacement, 1.5*Omega_m for force.
+     */
     void inverseGradient(int component, double factor) {
         const auto dom = layout_m->getLocalNDIndex();
         const int ng = modes_m.getNghost(), n = config_m.nGrid;
@@ -241,6 +345,12 @@ class Simulation {
         maxImaginary_m = std::max(maxImaginary_m, globalMax(imag));
     }
 
+    /**
+     * @brief Apply 1LPT displacement and canonical momentum at the initial epoch.
+     *
+     * Collective; uses x=q+D*psi0 and p=a^2*E*f*D*psi0 in execution memory, then wraps/migrates.
+     * @pre The lattice and initial density modes exist. @cite zeldovich1970
+     */
     void displaceParticles() {
         const auto dom = layout_m->getLocalNDIndex();
         const std::size_t nx = dom[0].length(), ny = dom[1].length();
@@ -263,6 +373,12 @@ class Simulation {
         updateParticles();
     }
 
+    /**
+     * @brief Copy real density contrast to complex storage and perform the forward FFT.
+     *
+     * Collective; density_m must already contain delta, not dimensional density.
+     * Forward normalization is 1/N_M^3.
+     */
     void densityToModes() {
         const auto real = density_m.getView();
         auto complex = modes_m.getView();
@@ -274,6 +390,12 @@ class Simulation {
         fft_m->transform(ippl::FORWARD, modes_m);
     }
 
+    /**
+     * @brief Construct the mesh force from an already deposited density contrast.
+     *
+     * Collective; each component uses 1.5*Omega_m*i*k/k^2 and an inverse FFT.
+     * No particle gather is performed here; no assignment-window compensation is used.
+     */
     void solveFromDensity() {
         densityToModes();
         auto force = force_m.getView();
@@ -288,6 +410,13 @@ class Simulation {
         }
     }
 
+    /**
+     * @brief Execute the production CIC scatter, spectral force and CIC gather.
+     *
+     * Collective. Forms delta using the correct equal/unequal particle-to-mesh mean.
+     * @throws std::runtime_error For nonfinite deposited mass or relative residual above 1e-10.
+     * This force check is distinct from tighter external campaign budgets.
+     */
     void solveForce() {
         density_m = 0.0;
         scatter(particles_m->mass, density_m, particles_m->R);
@@ -305,15 +434,38 @@ class Simulation {
         gather(particles_m->force, force_m, particles_m->R);
     }
 
+    /**
+     * @brief Update canonical momentum with the existing gathered particle force.
+     *
+     * Device attribute expression p += F0*integral. Does not recompute the force.
+     *
+     * @param integral Signed host kick factor integral da/(a^2 E), dimensionless.
+     */
     void kick(double integral) {
         particles_m->momentum = particles_m->momentum + particles_m->force * integral;
     }
 
+    /**
+     * @brief Update comoving positions and migrate particles.
+     *
+     * Device attribute expression x += p*integral followed by collective wrapping/update.
+     *
+     * @param integral Signed host drift factor integral da/(a^3 E), dimensionless.
+     */
     void drift(double integral) {
         particles_m->R = particles_m->R + particles_m->momentum * integral;
         updateParticles();
     }
 
+    /**
+     * @brief Advance one synchronized production kick-drift-kick interval.
+     *
+     * Collective. Requires the force at a0; uses the geometric midpoint, recomputes after drift, ends after second kick.
+     * @see cosmology_numerics
+     *
+     * @param a0 Positive initial scale factor.
+     * @param a1 Positive final scale factor.
+     */
     void advanceStep(double a0, double a1) {
         const double half = std::sqrt(a0 * a1);
         kick(background_m.kick(a0, half));
@@ -322,6 +474,16 @@ class Simulation {
         kick(background_m.kick(half, a1));
     }
 
+    /**
+     * @brief Reduce production particle/mesh observables and write a rank-zero row.
+     *
+     * Collective reductions; reports vector RMS and a direct particle mode. Linear expectation is not a nonlinear truth.
+     * For density-mode interpretation the configured mode must be nonzero; zero measures the DC particle-count sum.
+     * @throws std::runtime_error For nonfinite diagnostics.
+     *
+     * @param step Production step index, including zero for initial state.
+     * @param a Scale factor corresponding to synchronized particle state.
+     */
     void diagnose(int step, double a) {
         const auto r = particles_m->R.getView(), p = particles_m->momentum.getView();
         const auto force = particles_m->force.getView(), q = particles_m->lagrangian.getView();
@@ -377,6 +539,14 @@ class Simulation {
         }
     }
 
+    /**
+     * @brief Write a per-rank host CSV of IDs, positions and canonical momentum.
+     *
+     * Does nothing if writeParticles is false. Explicit host mirrors/deep copies synchronize execution data.
+     * @throws std::runtime_error On open/write failure. This is not a scalable restart format.
+     *
+     * @param name Epoch token used in particles_NAME_rankR.csv.
+     */
     void snapshot(const std::string& name) {
         if (!config_m.writeParticles) return;
         auto r = particles_m->R.getHostMirror(), p = particles_m->momentum.getHostMirror();
@@ -401,14 +571,46 @@ class Simulation {
 public:
     // Diagnostic-only entry point, defined by tests/CompareCosmologyForce.cpp.
     // Imports validated equal-mass particles and exercises the production CIC/FFT/gather path.
+    /**
+     * @brief Import equal-mass positions and exercise the production frozen force path.
+     *
+     * Collective diagnostic adapter, implemented in tests/CompareCosmologyForce.cpp.
+     * Root validates before distribution; no time integration occurs.
+     * @see cosmology_contracts
+     *
+     * @param inputCsv Exact id,x,y,z,mass CSV with every ID in [0,N^3) and unit masses.
+     * @param outputDirectory Fresh or empty diagnostic output directory.
+     */
     void compareFrozenForce(const std::string& inputCsv, const std::string& outputDirectory);
 
     // Imported phase-space diagnostic, defined by tests/CompareCosmologyEvolution.cpp.
     // Uses the same production KDK/force path, with optional fixed-particle mesh refinement.
+    /**
+     * @brief Evolve a shared imported phase-space state with production KDK/PM.
+     *
+     * Collective diagnostic adapter, implemented in tests/CompareCosmologyEvolution.cpp.
+     * Checkpoints are actual synchronized native states after complete second kicks.
+     * @see cosmology_contracts
+     *
+     * @param particleGrid Positive NP with exactly NP^3 imported particles; independent of force mesh.
+     * @param inputCsv Exact id,x,y,z,px,py,pz,mass CSV; finite state, unique contiguous IDs and unit masses.
+     * @param outputDirectory Fresh or empty checkpoint/metadata output directory.
+     * @param aInitial Initial scale factor, strictly between zero and aFinal.
+     * @param aFinal Final scale factor, at most one.
+     * @param checkpoints Positive saved-interval count dividing config.nSteps.
+     */
     void compareImportedEvolution(int particleGrid, const std::string& inputCsv,
                                   const std::string& outputDirectory, double aInitial,
                                   double aFinal, int checkpoints);
 
+    /**
+     * @brief Allocate periodic distributed fields, particle layout and FFT plan.
+     *
+     * Collective construction. Owns execution-space fields and particles; construction does not generate ICs.
+     * Fatal exceptions must lead to communicator-wide handling, as in the application main.
+     *
+     * @param config Consistent validated configuration supplied by every communicator rank.
+     */
     explicit Simulation(const Config& config) : config_m(config), background_m(config) {
         config_m.validate();
         for (int d = 0; d < 3; ++d) domain_m[d] = ippl::Index(config_m.nGrid);
@@ -427,6 +629,12 @@ public:
     }
 
     // Independent manufactured-density test for the actual spectral force path.
+    /**
+     * @brief Test the actual force operator using a manufactured periodic density.
+     *
+     * Collective. Compares against the analytical spectral field and checks real output; independent of particle IC generation.
+     * @throws std::runtime_error On a violated fixed sanity limit.
+     */
     void testSpectralForce() {
         const auto dom = layout_m->getLocalNDIndex();
         const int ng = density_m.getNghost(), n = config_m.nGrid;
@@ -462,6 +670,12 @@ public:
 
     // Force a domain and periodic-boundary crossing independently of the small
     // displacements used by linear-growth tests. Verify every migrated attribute.
+    /**
+     * @brief Force multi-box/rank crossings and verify every migrated attribute.
+     *
+     * Collective. Checks periodic endpoints, domain ownership, exact count, unique IDs and associated state.
+     * @throws std::runtime_error On a violated fixed sanity limit.
+     */
     void testMigration() {
         createLattice();
         const double box = config_m.boxSize;
@@ -526,6 +740,13 @@ public:
         if (ippl::Comm->rank() == 0) std::cout << "particle migration PASS error=" << error << '\n';
     }
 
+    /**
+     * @brief Generate ICs, evolve the production model and record diagnostics/snapshots.
+     *
+     * Collective. Rejects nonempty output, initializes lattice/modes, evolves uniform-log(a) KDK and writes metadata.
+     * @throws std::runtime_error On output, count, reality, mass or finite-state failures.
+     * @see cosmology_contracts cosmology_validation
+     */
     void run() {
         const auto start = MPI_Wtime();
         // Refuse accidental overwrite of an earlier run, including stale rank files.

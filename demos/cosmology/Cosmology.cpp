@@ -1,5 +1,22 @@
+/**
+ * @brief Scientific implementation and contracts for Cosmology.cpp.
+ *
+ * @file Cosmology.cpp
+ * @ingroup cosmology_core
+ * @see cosmology_model cosmology_numerics cosmology_contracts
+ */
 #include "CosmologySimulation.h"
 
+/**
+ * @brief Run the production parameter-file application or collective self-tests.
+ *
+ * Initializes/finalizes IPPL around scoped distributed state.
+ * @see cosmology_contracts cosmology_validation
+ *
+ * @param argc Argument count after IPPL initialization; exactly one application argument is required.
+ * @param argv Program name followed by input.par or --self-test.
+ * @return Zero on normal completion; fatal errors abort the MPI communicator.
+ */
 int main(int argc, char** argv) {
     ippl::initialize(argc, argv);
     try {

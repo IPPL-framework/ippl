@@ -1,3 +1,10 @@
+/**
+ * @brief Scientific implementation and contracts for CosmologyConfig.h.
+ *
+ * @file CosmologyConfig.h
+ * @ingroup cosmology_core
+ * @see cosmology_model cosmology_numerics cosmology_contracts
+ */
 #ifndef IPPL_COSMOLOGY_CONFIG_H
 #define IPPL_COSMOLOGY_CONFIG_H
 
@@ -15,33 +22,65 @@
 namespace cosmology {
 
 /** Parameters shared by the initializer and evolution; length is comoving Mpc/h. */
+/**
+ * @brief Validated configuration shared by initialization and production evolution.
+ *
+ * The default model is flat matter plus Lambda, radiation-free and periodic.
+ * All lengths are comoving Mpc/h. See @ref cosmology_contracts for keys/defaults.
+ * This value object performs host-only work and owns no distributed state.
+ */
 struct Config {
-    int nGrid = 32;
-    int nSteps = 100;
-    double boxSize = 200.0;
-    std::uint64_t seed = 1;
-    double zInitial = 49.0;
-    double zFinal = 9.0;
-    double hubble = 0.7;
-    double omegaMatter = 0.3;
-    double omegaBaryon = 0.05;
-    double sigma8 = 0.8;
-    double spectralIndex = 0.96;
-    int transferFunction = 4;
-    std::string transferFile;
-    std::string icMode = "gaussian";
-    double amplitude = 1.0e-3;
-    std::array<int, 3> mode = {1, 0, 0};
-    std::string output = "cosmology-output";
-    int diagnosticsEvery = 10;
-    bool writeParticles = true;
+    int nGrid = 32; ///< Force-mesh cells per dimension; production also generates nGrid^3 particles; input np.
+    int nSteps = 100; ///< Positive number of uniform-log(a) evolution intervals; input nt.
+    double boxSize = 200.0; ///< Positive comoving box side L in Mpc/h; input box_size.
+    std::uint64_t seed = 1; ///< Full unsigned 64-bit production Fourier RNG seed.
+    double zInitial = 49.0; ///< Initial redshift; must exceed zFinal; input z_in.
+    double zFinal = 9.0; ///< Nonnegative final redshift; input z_fi.
+    double hubble = 0.7; ///< Dimensionless h=H0/(100 km/s/Mpc); transfer-shape parameter.
+    double omegaMatter = 0.3; ///< Total matter fraction at a=1; flat Lambda density is 1-omegaMatter.
+    double omegaBaryon = 0.05; ///< Baryon contribution to the weighted transfer; no separate gas species is evolved.
+    double sigma8 = 0.8; ///< Positive z=0 finite-cutoff top-hat RMS at R=8 Mpc/h.
+    double spectralIndex = 0.96; ///< Primordial power-law index n_s in (0,2).
+    int transferFunction = 4; ///< Transfer selector: 4 for BBKS, 0 for a CMBFAST-style table.
+    std::string transferFile; ///< Transfer table path; relative paths are resolved from the parameter-file directory.
+    std::string icMode = "gaussian"; ///< Initial state selector: gaussian, sine or uniform.
+    double amplitude = 1.0e-3; ///< Initial-redshift sine density amplitude; ignored for Gaussian/uniform initial states.
+    std::array<int, 3> mode = {1, 0, 0}; ///< Signed integer sine-wave components, strictly below every Nyquist plane.
+    std::string output = "cosmology-output"; ///< Output directory resolved from run working directory; nonempty existing simulation output is rejected.
+    int diagnosticsEvery = 10; ///< Positive interval in steps between production diagnostic rows.
+    bool writeParticles = true; ///< Whether production initial/final per-rank particle CSVs are written.
 
+    /**
+     * @brief Convert the configured starting redshift to scale factor.
+     *
+     * @pre validate() has accepted the configuration.
+     * @return Dimensionless aInitial=1/(1+zInitial).
+     */
     double aInitial() const { return 1.0 / (1.0 + zInitial); }
+    /**
+     * @brief Convert the configured final redshift to scale factor.
+     *
+     * @pre validate() has accepted the configuration.
+     * @return Dimensionless aFinal=1/(1+zFinal).
+     */
     double aFinal() const { return 1.0 / (1.0 + zFinal); }
+    /**
+     * @brief Count the production cubic particle load.
+     *
+     * @pre validate() has checked integer overflow. Imported evolution overrides the expected count separately.
+     * @return Exact nGrid^3 as uint64.
+     */
     std::uint64_t particleCount() const {
         return std::uint64_t(nGrid) * std::uint64_t(nGrid) * std::uint64_t(nGrid);
     }
 
+    /**
+     * @brief Reject unsupported physics and unsafe numerical/input ranges.
+     *
+     * @throws std::invalid_argument On an invalid value or unsupported model.
+     * @see cosmology_contracts
+     * Host-only; performs no MPI communication or I/O.
+     */
     void validate() const {
         const auto require = [](bool valid, const std::string& message) {
             if (!valid) throw std::invalid_argument("Cosmology config: " + message);
@@ -84,6 +123,16 @@ struct Config {
         require(diagnosticsEvery > 0, "diagnostics_every must be positive");
     }
 
+    /**
+     * @brief Parse, resolve and validate a cosmology parameter file.
+     *
+     * @throws std::runtime_error If the input file cannot be opened.
+     * @throws std::invalid_argument For malformed/duplicate/unknown input or unsupported physics.
+     * Host-only. Output paths remain relative to the eventual run directory.
+     *
+     * @param fileName Input parameter-file path; transfer paths are relative to its parent directory.
+     * @return Validated configuration with resolved transfer path.
+     */
     static Config fromFile(const std::string& fileName) {
         std::ifstream input(fileName);
         if (!input) throw std::runtime_error("Cannot open cosmology config: " + fileName);

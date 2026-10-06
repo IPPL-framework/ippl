@@ -478,7 +478,7 @@ GaussianNP64NM64nt2048z49r1 was not launched. Preflight required1750073344 bytes
 had1669689344 (about1.555GiB). Told user to free roughly3GiB extra for remaining11
 runs; no prior campaign files removed. No simulation process remains from this
 main study. Resume exactly from worktree root:
-env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_resolution_study.py --resume build_openmp/demos/cosmology/resolution-study-cffjva__
+env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/python/validate_resolution_study.py --resume build_openmp/demos/cosmology/resolution-study-cffjva__
 Keep all12 frozen source files, native manifest/artifacts, executables and inputs
 unchanged. Source content hashes (not Git HEAD) govern resume. Root final checks:
 all21CTests PASS in51.50s;560 provenance/source-copy/input/retained-output/archive
@@ -739,7 +739,7 @@ node/exascale claims, external publication or repository push in this stage.
 ## Plotting follow-up
 
 User requested plots of the validated results. Added a reproducible Matplotlib
-script, demos/cosmology/plot_zarija.py, to read the saved campaign and scalar
+script, demos/cosmology/python/plot_zarija.py, to read the saved campaign and scalar
 probe without rerunning simulations or changing physics. Planned figures:
 dimensional shell power plus mean per-mode residuals at z49 (z200 phases reused,
 not pooled), background D and sub-ppm cross-code differences, and MPI rank

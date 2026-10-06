@@ -1,0 +1,71 @@
+/**
+@mainpage IPPL cosmology: model, algorithms and validation
+
+This manual documents the implementation in `demos/cosmology` and its external
+validation harnesses. It distinguishes the governing equations, discrete
+operators, file contracts and the evidence supporting individual claims.
+The source tree is the authority for implemented behavior; papers supply
+scientific context, not a claim that every method in those papers is implemented.
+
+@section doc_navigation Reading the manual
+
+1. @ref cosmology_model "Model, units and linear growth": physical definitions
+   and the exact potential/momentum convention.
+2. @ref cosmology_numerics "Discrete algorithms": Fourier signs, Gaussian
+   initialization, CIC, Nyquist handling and kick-drift-kick integration.
+3. @ref cosmology_spectra "Independent observables": direct Fourier sums,
+   assignment windows, interlacing, shell power and shot noise.
+4. @ref cosmology_contracts "Configuration and file contracts": accepted
+   parameters, snapshots, diagnostic imports and failure behavior.
+5. @ref cosmology_parallel "Parallel execution": collectives, ownership,
+   memory placement, host copies and reproducibility.
+6. @ref cosmology_validation "Validation and limits": which checks establish
+   which property, without promoting a passed integrity audit to physics accuracy.
+7. @ref cosmology_tools "Tool and workflow catalog": every maintained source
+   file, its purpose, invocation and relation to the API.
+8. @ref cosmology_references "References and implementation provenance".
+
+@section doc_core Core API
+
+The model is expressed by @ref cosmology::Config, @ref cosmology::Background,
+@ref cosmology::PowerSpectrum, @ref cosmology::Particles and
+@ref cosmology::Simulation. The normal application generates its own initial
+conditions. `CompareCosmologyForce` and `CompareCosmologyEvolution` are diagnostic
+imports into the same production force/integration routines, not independent
+IPPL implementations.
+
+@section doc_scope Supported scope
+
+The physical model is periodic, flat, radiation-free Lambda-CDM with one
+collisionless matter species and Gaussian first-order Lagrangian initial data
+(or a uniform lattice or prescribed sine mode). There is no hydrodynamics,
+neutrino species, primordial non-Gaussianity, 2LPT, adaptive force mesh,
+short-range correction or production restart interface in the IPPL application.
+The stored force is a scaled comoving force, and the stored momentum is not a
+velocity in km/s. The local qualification concerns OpenMP and tested MPI ranks;
+GPU/multi-node/performance claims require separate evidence.
+
+@section doc_build Build and check the documentation
+
+From the repository root:
+@code{.sh}
+/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/python/build_documentation.py
+cmake --build build_openmp --target cosmology_docs
+@endcode
+
+The builder requires Doxygen and BibTeX. It writes HTML, XML, a warning log and
+a machine-readable coverage report under the selected build directory; it
+changes no simulation outputs. Mathematical formulas use offline SVG when the complete TeX/Ghostscript/PDF-to-SVG toolchain is present,
+with an explicit MathJax alternative on machines without those tools. The strict
+build fails on documentation errors and on missing required API contracts.
+See @ref cosmology_documentation_quality for the checks and their limits.
+
+@defgroup cosmology_core Core physical and numerical API
+@brief Configuration, background, initial spectrum, particle state and evolution.
+@defgroup cosmology_diagnostics Diagnostic adapters and sanity tests
+@brief Manufactured operators, migrated attributes and shared-CSV imports.
+@defgroup cosmology_reference External reference harnesses
+@brief Native FastPM, original Zarija and pinned GADGET-2 build contracts.
+@defgroup cosmology_python Python validation and analysis
+@brief Host-side fixtures, observables, comparisons, archives and figures.
+*/

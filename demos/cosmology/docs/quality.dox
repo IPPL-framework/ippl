@@ -1,0 +1,61 @@
+/**
+@page cosmology_documentation_quality Documentation quality and maintenance
+
+@section quality_contract Required documentation standard
+
+Every maintained C/C++ file and Python module has a purpose and an API/workflow
+entry in @ref cosmology_tools. Model APIs state quantities, units, assumptions,
+parameters, return values, failure behavior and whether operations are
+collective or host/device work. Numerical descriptions identify centering,
+Fourier signs, normalization, DC/Nyquist rules, precision and the relation of
+the implemented algorithm to cited papers. Deployment scripts retain their
+actual command/environment/root constraints rather than hypothetical portability.
+
+The strict builder enables undocumented-member, wrong/incomplete-parameter and
+missing-return warnings. Extraction includes private/static helpers so that
+missing documentation is not hidden behind EXTRACT_ALL. It emits XML and checks
+that required source-level Python callables/classes and all compiled source files
+are represented with documentation. CLI dispatch bodies and imported runtime
+settings are implementation-only source-browser material, not fictitious module
+APIs. Nested local callbacks are implementation details rather than exported
+callables; their owning routines and source remain visible.
+
+@section quality_python Python parser normalization
+
+Doxygen 1.14 does not recognize every required bare annotated dataclass field.
+The documentation-only filter rewrites such a line to a parser placeholder,
+preserving its line count. That transformed text is never imported/executed.
+Initializers are hidden to avoid presenting the placeholder as a runtime default;
+the source browser shows the original unfiltered declaration and its annotation.
+The frozen dataclass and NumPy read-only semantics are documented separately.
+
+@section quality_checks Reproducible checks
+
+The builder records Doxygen version, source roots, extracted counts, warnings,
+coverage failures and the output index. A warning or missing required API
+contract fails the build. Relevant CMake/CTest checks exercise the documentation
+infrastructure and the existing host/MPI physics regressions. C++ comment-only
+equivalence and Python AST equality establish that annotation edits have not
+changed executable logic. Source byte hashes still change: historical campaigns
+must retain the frozen sources they actually hashed.
+
+Offline SVG math is the default when the complete TeX/Ghostscript/PDF-to-SVG toolchain is available.
+The MathJax alternative uses the public CDN and needs network access to render
+equations in the browser; this dependency is explicit, not an offline guarantee.
+Generated HTML is reviewed for formula rendering, readable tables, source links
+and navigation. Doxygen's checks do not prove that a formula is physically
+correct or a citation applicable; those are reviewed against the implementation,
+independent test equations and primary references. API extraction counts are
+coverage evidence, not a scientific qualification. No numerical tolerance,
+force kernel, time schedule or data-movement rule is changed to improve a
+documentation result.
+
+@section quality_upkeep Updating public behavior
+
+When model/numerical/API behavior changes, update the corresponding source
+contract and manual formulas, explain conservation/stability/reproducibility
+impacts, and add the appropriate regression. Run `cosmology_docs` and review its
+warning/coverage reports. Do not change a frozen campaign's recorded failures or
+hashes to accommodate newly edited documentation; create a new campaign or use
+its original retained source snapshot.
+*/

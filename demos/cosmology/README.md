@@ -15,6 +15,30 @@ normalization follow the supplied Zarija Lukic initializer. See
 [the physics and data contract](LINEAR_PHYSICS.md) for the equations and explicit
 differences from the legacy implementation.
 
+Main application guide: [Cosmology](Cosmology.md), covering purpose/model, build, and run instructions.
+
+Local three-code campaign and Figure A11: [ThreeCodeCampaign.md](ThreeCodeCampaign.md).
+
+## Doxygen documentation
+
+The maintained scientific/API manual covers the model, formulas, units, numerical
+operators, MPI/memory contracts, file formats, validation limits and referenced
+methods. Build it with:
+
+```sh
+/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/python/build_documentation.py
+# Or, after CMake configuration with Doxygen >=1.14 available:
+cmake --build build_openmp --target cosmology_docs
+```
+
+Open `build_openmp/docs/cosmology/html/index.html`. The build also emits XML,
+`warnings.log`, and `coverage.json`; warnings and missing required API contracts
+fail the build. Doxygen >=1.14 and BibTeX are required. Formula backend `auto`
+selects offline SVG when TeX, Ghostscript and pdf2svg/inkscape are available;
+otherwise it uses the browser-verified MathJax SVG path (CDN/network required).
+Use `--formulas svg` or `--formulas mathjax` to select explicitly. See
+[docs/quality.dox](docs/quality.dox) for coverage, parser normalization and limits.
+
 ## Build
 
 Requirements are CMake 3.24 or newer, a C++20 compiler, MPI, and an OpenMP runtime.
@@ -150,7 +174,15 @@ for small diagnostic runs; they are not a scalable checkpoint/restart format.
 Use a fresh output location for every run: the program rejects existing simulation
 output to avoid overwriting it.
 
+Python tool inventory: [python.md](python.md).
+
 ## Validate
+
+Standalone validation-tool guides:
+
+- [CompareCosmologyForce](CompareCosmologyForce.md): frozen particle-mesh forces.
+- [CompareCosmologyEvolution](CompareCosmologyEvolution.md): imported-state evolution.
+- [TestCosmologyPhysics](TestCosmologyPhysics.md): configuration and physics sanity checks.
 
 The compiled tests cover configuration, background/growth, transfer functions,
 and a manufactured spectral force plus forced particle migration on 1, 2, 3,
@@ -181,7 +213,7 @@ repository root:
 
 ```sh
 cosmoValidation="$(mktemp -d /tmp/ippl-cosmology-validation.XXXXXX)"
-/Users/adelmann/.venv-h6/bin/python demos/cosmology/validate_linear.py \
+/Users/adelmann/.venv-h6/bin/python demos/cosmology/python/validate_linear.py \
   --exe build_openmp/demos/cosmology/Cosmology \
   --work-dir "$cosmoValidation"
 ```
@@ -318,7 +350,7 @@ The public-API comparison can be run separately from the full initializer:
 
 ```sh
 /Users/adelmann/.venv-h6/bin/python \
-  demos/cosmology/reference/compare_zarija_physics.py \
+  demos/cosmology/python/reference/compare_zarija_physics.py \
   --reference-source /Users/adelmann/git/zarija-cosmicic-b0e794e34384 \
   --ippl-build build_openmp \
   --output-dir build_zarija/physics-comparison \
@@ -434,7 +466,7 @@ The complete local evidence is preserved at:
 The plotting script reads existing evidence without launching simulations:
 
 ```sh
-/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/plot_zarija.py \
+/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/python/plot_zarija.py \
   --campaign build_openmp/demos/cosmology/zarija-validation-f2c9zb42/results.json \
   --physics build_openmp/demos/cosmology/zarija-physics-hd3av78e/results.json \
   --output-dir build_openmp/demos/cosmology/zarija-plots-final
@@ -491,7 +523,7 @@ FASTPM_MPICC=/opt/homebrew/bin/mpicc \
 FASTPM_FFTW_PREFIX="$PWD/build_zarija/reference/fftw-install" \
   bash demos/cosmology/reference/build_fastpm.sh "$PWD/build_fastpm"
 
-/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_frozen_force.py \
+/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/python/validate_frozen_force.py \
   --ippl-exe build_openmp/demos/cosmology/CompareCosmologyForce \
   --fastpm-exe build_fastpm/FastPMForce \
   --fastpm-manifest build_fastpm/build-manifest.txt --mpi-arg=--oversubscribe
@@ -548,7 +580,7 @@ Evidence: `build_openmp/demos/cosmology/frozen-force-5_li99qh/results.json`.
 ```sh
 cd build_openmp/demos/cosmology
 /Users/adelmann/.venv-h6/bin/python -B \
-  ../../../demos/cosmology/validate_pancake.py --exe ./Cosmology \
+  ../../../demos/cosmology/python/validate_pancake.py --exe ./Cosmology \
   --mpi-arg=--oversubscribe
 ```
 
@@ -563,7 +595,7 @@ The full15-run protocol varies N16/32/64, nt16/32/64/128, axis/oblique orientati
 and ranks1–4. Timestep convergence uses successive solution differences at
 fixed mesh; spatial convergence uses continuum trajectory errors at fixed
 nt128. Particles and mesh resolution remain coupled. Quick mode omits both
-convergence studies. Limits in `validate_pancake.py` are predeclared engineering
+convergence studies. Limits in `python/validate_pancake.py` are predeclared engineering
 budgets, not a promise of second-order spatial accuracy or local density accuracy.
 
 The first full pancake campaign passes363 of364 checks: all trajectory, MPI,
@@ -587,7 +619,7 @@ Reproduce its additional, read-only diagnostic audit with:
 
 ```sh
 /Users/adelmann/.venv-h6/bin/python -B \
-  demos/cosmology/tests/analyze_pancake_diagnostics.py \
+  demos/cosmology/python/tests/analyze_pancake_diagnostics.py \
   --campaign build_openmp/demos/cosmology/pancake-validation-rs1o9glb \
   --output-dir build_openmp/demos/cosmology/pancake-diagnostics-new
 ```
@@ -617,7 +649,7 @@ keeps native operators and explicitly limits its acceptance observables.
 ### Plot the saved force and pancake evidence
 
 ```sh
-/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/plot_pm_validation.py \
+/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/python/plot_pm_validation.py \
   --frozen build_openmp/demos/cosmology/frozen-force-5_li99qh/results.json \
   --pancake build_openmp/demos/cosmology/pancake-validation-rs1o9glb/results.json \
   --audit build_openmp/demos/cosmology/pancake-diagnostics-rs1o9glb/diagnostics.json \
@@ -645,7 +677,7 @@ The script produces four PNG/SVG figures, `plot_data.json`, and a SHA256 manifes
 No simulation or gate is changed. This plotting entry point checks the expected
 saved campaign structure and retained failure so that these annotations cannot
 silently be reused as an all-pass claim. Its extraction self-tests can be run
-with `python -B demos/cosmology/tests/test_plot_pm_validation.py`.
+with `python -B demos/cosmology/python/tests/test_plot_pm_validation.py`.
 
 ## Matched-particle native plain-PM evolution
 
@@ -669,7 +701,7 @@ linker verifies its sources and libraries without rebuilding or modifying them:
 cmake --build build_openmp --target CompareCosmologyEvolution Cosmology
 bash demos/cosmology/reference/build_fastpm_evolution.sh "$PWD/build_fastpm"
 env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
-  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_evolution.py \
+  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/python/validate_evolution.py \
     --ippl-exe build_openmp/demos/cosmology/CompareCosmologyEvolution \
     --fastpm-exe build_fastpm/evolution/FastPMEvolution \
     --fastpm-manifest build_fastpm/evolution/build-manifest.txt
@@ -810,7 +842,7 @@ Reproduce that bounded follow-up with the saved parent campaign:
 
 ```sh
 env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
-  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_evolution_refinement.py \
+  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/python/validate_evolution_refinement.py \
     --parent build_openmp/demos/cosmology/matched-evolution-5v7u3y98/results.json
 ```
 
@@ -834,7 +866,7 @@ on this setup; run the explicit follow-up above to inspect the finer-step result
 The saved-data plotting script does not run simulations or alter validation gates:
 
 ```sh
-/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/plot_evolution.py \
+/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/python/plot_evolution.py \
   build_openmp/demos/cosmology/matched-evolution-5v7u3y98/results.json \
   --output-dir build_openmp/demos/cosmology/evolution-plots-new
 ```
@@ -853,7 +885,7 @@ Inspected release figures are under
 
 ## Crossed resolution and common-phase Gaussian study
 
-`validate_resolution_study.py` extends the unchanged native plain-PM comparison
+`python/validate_resolution_study.py` extends the unchanged native plain-PM comparison
 with a predeclared 52-run study. It does not change either simulation executable.
 Particle and force-mesh sizes are varied independently over32 and64, rather than
 only doubling both together. Spatial tests evolve the pancake and coupled3D
@@ -874,7 +906,7 @@ Run from the worktree root after building the two evolution executables:
 
 ```sh
 env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
-  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_resolution_study.py \
+  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/python/validate_resolution_study.py \
     --ippl-exe build_openmp/demos/cosmology/CompareCosmologyEvolution \
     --fastpm-exe build_fastpm/evolution/FastPMEvolution \
     --fastpm-manifest build_fastpm/evolution/build-manifest.txt
@@ -893,7 +925,7 @@ neither a scientific failure nor a pass. Resume after making space with:
 
 ```sh
 env OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
-  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/validate_resolution_study.py \
+  /Users/adelmann/.venv-h6/bin/python -B demos/cosmology/python/validate_resolution_study.py \
     --resume build_openmp/demos/cosmology/resolution-study-EXISTING
 ```
 
@@ -928,7 +960,7 @@ Plot a completed stage from the saved report without opening particle archives
 or running simulations (Matplotlib is also required):
 
 ```sh
-/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/plot_resolution_study.py \
+/Users/adelmann/.venv-h6/bin/python -B demos/cosmology/python/plot_resolution_study.py \
   --report build_openmp/demos/cosmology/resolution-study-EXISTING/results.json \
   --output-dir build_openmp/demos/cosmology/resolution-plots-NEW
 ```
@@ -1062,11 +1094,11 @@ is explicitly the particle-lattice spacing, not an assumed force mesh.
 Local deployment-helper checks (no Slurm job or simulation is launched):
 
 ```sh
-python -B demos/cosmology/tests/test_compare_fixture_files.py
-python -B demos/cosmology/tests/test_merlin_cpu_launcher.py
+python -B demos/cosmology/python/tests/test_compare_fixture_files.py
+python -B demos/cosmology/python/tests/test_merlin_cpu_launcher.py
 ```
 
-After all 18 Gaussian runs finish, `merlin/audit_cpu_study.py` checks the
+After all 18 Gaussian runs finish, `python/merlin/audit_cpu_study.py` checks the
 canonical matrix, the exact 1,355-check inventory, comparison/qualification
 consistency, metadata, source/build/input hashes and all 162 numerical archives.
 Exit zero means the evidence is complete and internally consistent, not that
@@ -1074,7 +1106,7 @@ all scientific gates passed. It preserves failed gates and does not independentl
 recompute the particle evolution. Its output path must be new.
 
 ```sh
-python -B demos/cosmology/merlin/audit_cpu_study.py \
+python -B demos/cosmology/python/merlin/audit_cpu_study.py \
   /ABSOLUTE/EVIDENCE/gaussian/results.json \
   --source-dir /ABSOLUTE/FROZEN_CHECKOUT/demos/cosmology \
   --output /ABSOLUTE/EVIDENCE/cpu-completion-audit.json
@@ -1084,7 +1116,7 @@ The explicit source directory permits copying the auditor outside a frozen
 checkout. Keep the campaign checkout pinned even after completion: its full
 source manifest includes documentation, so pulling later handover updates would
 invalidate that manifest. Use another worktree for later development/builds.
-Focused audit tests: `python -B demos/cosmology/tests/test_cpu_completion_audit.py`.
+Focused audit tests: `python -B demos/cosmology/python/tests/test_cpu_completion_audit.py`.
 
 ### Completed Merlin CPU result (2026-10-04)
 
@@ -1148,7 +1180,7 @@ The converter checks that hash and certifies the format-1 float32 round trip.
 The run controller then verifies the IC and prior IPPL/FastPM reports, the
 PMGRID=256 binary/build inputs, eight-rank/one-thread execution mode, and the
 final GADGET snapshot header. Its analysis reuses the tracked
-`analyze_zeldovich_benchmark.py` periodic CIC estimator; the estimator, shared
+`python/analyze_zeldovich_benchmark.py` periodic CIC estimator; the estimator, shared
 IC and both prior-run reports are recorded in run provenance. Analysis and
 plotting retain provenance checks and write a matched three-code z=0 power
 spectrum figure.
@@ -1157,8 +1189,8 @@ These scripts are campaign-pinned to the existing Merlin directory
 `/data/user/adelmann/gadget2-zeldovich-np256-20261006`; they are not a generic
 GADGET-2 installer. On Merlin, install the tracked workflow scripts into that
 campaign's `source/` directory while preserving its input and run records; keep
-the shared estimator at `source/demos/cosmology/analyze_zeldovich_benchmark.py`
-with its existing `gaussian_fixture.py` and `validate_linear.py` import
+the shared estimator at `source/demos/cosmology/python/analyze_zeldovich_benchmark.py`
+with its existing `python/gaussian_fixture.py` and `python/validate_linear.py` import
 dependencies available on that Python path. The shared realization must first
 be converted to GADGET format-1 (this writes only
 the specified new output/sidecar and refuses overwrite):

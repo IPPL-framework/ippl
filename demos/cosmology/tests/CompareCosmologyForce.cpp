@@ -1,3 +1,8 @@
+/** @file CompareCosmologyForce.cpp
+ * @brief Frozen-particle adapter using the production IPPL CIC/FFT/gather path.
+ * @ingroup cosmology_diagnostics
+ * @see cosmology_contracts cosmology_validation cosmology_references
+ */
 // Frozen-particle adapter for independent particle-mesh force comparisons.
 // All force operations use Simulation::solveForce; this file supplies only
 // validated host input, MPI distribution, and diagnostic output.
@@ -12,6 +17,14 @@
 namespace {
 
 template <class Number>
+/**
+ * @brief Parse one host scalar without accepting trailing characters.
+ * @see cosmology_contracts cosmology_validation
+ * @tparam Number Parsed scalar type.
+ * @param text Scalar input string; the complete value must parse without trailing characters.
+ * @param name Scalar/diagnostic filename or label used in error reporting and output identity.
+ * @return Parsed Number value; malformed input raises std::invalid_argument.
+ */
 Number parseNumber(const std::string& text, const std::string& name) {
     std::istringstream stream(text);
     Number value;
@@ -21,6 +34,13 @@ Number parseNumber(const std::string& text, const std::string& name) {
     return value;
 }
 
+/**
+ * @brief Validate an unsigned particle label in the complete expected global ID interval.
+ * @see cosmology_contracts cosmology_validation
+ * @param text Scalar input string; the complete value must parse without trailing characters.
+ * @param total Exact expected particle count; valid IDs occupy [0,total).
+ * @return Global uint64 particle ID after range validation.
+ */
 std::uint64_t parseId(const std::string& text, std::uint64_t total) {
     std::uint64_t value;
     const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
@@ -29,6 +49,13 @@ std::uint64_t parseId(const std::string& text, std::uint64_t total) {
     return value;
 }
 
+/**
+ * @brief Wrap finite comoving positions into the half-open periodic box, including rounded endpoints.
+ * @see cosmology_contracts cosmology_validation
+ * @param value Serialized scalar argument, validated according to the parser's strict range.
+ * @param box Positive periodic side in comoving Mpc/h.
+ * @return Comoving coordinate in [0,box).
+ */
 double wrapPosition(double value, double box) {
     if (!std::isfinite(value)) throw std::invalid_argument("Particle positions must be finite");
     value = std::fmod(value, box);
@@ -38,6 +65,12 @@ double wrapPosition(double value, double box) {
     return value;
 }
 
+/**
+ * @brief Broadcast root input failure text so all communicator ranks take the same error path.
+ * @see cosmology_contracts cosmology_validation
+ * @param error Root-owned diagnostic text; empty means root validation succeeded.
+ * @param communicator Communicator entered by all participating ranks in the same order.
+ */
 void broadcastRootError(std::string& error, MPI_Comm communicator) {
     int length = int(error.size());
     MPI_Bcast(&length, 1, MPI_INT, 0, communicator);
@@ -48,6 +81,14 @@ void broadcastRootError(std::string& error, MPI_Comm communicator) {
     }
 }
 
+/**
+ * @brief Read and validate the exact frozen-force unit-mass CSV, ordered into a host global-ID array.
+ * @see cosmology_contracts cosmology_validation
+ * @param path Input CSV or comparison output path following the exact file contract.
+ * @param total Exact expected particle count; valid IDs occupy [0,total).
+ * @param box Positive periodic side in comoving Mpc/h.
+ * @return Host xyz coordinates ordered by global particle ID, in Mpc/h.
+ */
 std::vector<double> readPositions(const std::string& path, std::uint64_t total, double box) {
     std::ifstream input(path);
     if (!input) throw std::runtime_error("Cannot open frozen particle CSV: " + path);
@@ -254,6 +295,14 @@ void Simulation::compareFrozenForce(const std::string& inputCsv, const std::stri
 
 }  // namespace cosmology
 
+/**
+ * @brief Run frozen-particle adapter using the production ippl cic/fft/gather path.
+ * @see cosmology_contracts cosmology_validation
+ * @param argc Program argument count; this executable checks its own exact usage.
+ * @param argv Program argument vector; see the file/workflow contract for scalar and path units.
+ * @return Zero on successful completion; malformed/native fatal errors return nonzero or abort the communicator.
+ * Fatal distributed failures must terminate communicator peers; the host-only test uses ordinary process status.
+ */
 int main(int argc, char** argv) {
     ippl::initialize(argc, argv);
     try {

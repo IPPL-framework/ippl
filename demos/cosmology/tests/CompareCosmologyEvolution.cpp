@@ -1,3 +1,8 @@
+/** @file CompareCosmologyEvolution.cpp
+ * @brief Shared phase-space adapter using production IPPL force/KDK/migration.
+ * @ingroup cosmology_diagnostics
+ * @see cosmology_contracts cosmology_validation cosmology_references
+ */
 // Matched-particle evolution diagnostic. All kicks, drifts, migration and
 // force solves use the production Simulation methods; no ICs are generated.
 #include "../CosmologySimulation.h"
@@ -11,6 +16,14 @@
 namespace {
 
 template <class Number>
+/**
+ * @brief Parse one host scalar without accepting trailing characters.
+ * @see cosmology_contracts cosmology_validation
+ * @tparam Number Parsed scalar type.
+ * @param text Scalar input string; the complete value must parse without trailing characters.
+ * @param name Scalar/diagnostic filename or label used in error reporting and output identity.
+ * @return Parsed Number value; malformed input raises std::invalid_argument.
+ */
 Number parseNumber(const std::string& text, const std::string& name) {
     std::istringstream stream(text);
     Number value;
@@ -20,6 +33,12 @@ Number parseNumber(const std::string& text, const std::string& name) {
     return value;
 }
 
+/**
+ * @brief Validate NP and compute its cube within the diagnostic MPI/int allocation bounds.
+ * @see cosmology_contracts cosmology_validation
+ * @param grid Particle-lattice side NP; the diagnostic import creates exactly NP^3 labels.
+ * @return Validated exact NP^3 as uint64.
+ */
 std::uint64_t particleCount(int grid) {
     if (grid < 1) throw std::invalid_argument("NP must be a positive integer");
     const auto n = std::uint64_t(grid);
@@ -31,6 +50,13 @@ std::uint64_t particleCount(int grid) {
     return total;
 }
 
+/**
+ * @brief Validate an unsigned particle label in the complete expected global ID interval.
+ * @see cosmology_contracts cosmology_validation
+ * @param text Scalar input string; the complete value must parse without trailing characters.
+ * @param total Exact expected particle count; valid IDs occupy [0,total).
+ * @return Global uint64 particle ID after range validation.
+ */
 std::uint64_t parseId(const std::string& text, std::uint64_t total) {
     std::uint64_t value;
     const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
@@ -39,6 +65,13 @@ std::uint64_t parseId(const std::string& text, std::uint64_t total) {
     return value;
 }
 
+/**
+ * @brief Wrap finite comoving positions into the half-open periodic box, including rounded endpoints.
+ * @see cosmology_contracts cosmology_validation
+ * @param value Serialized scalar argument, validated according to the parser's strict range.
+ * @param box Positive periodic side in comoving Mpc/h.
+ * @return Comoving coordinate in [0,box).
+ */
 double wrapPosition(double value, double box) {
     if (!std::isfinite(value)) throw std::invalid_argument("Particle positions must be finite");
     value = std::fmod(value, box);
@@ -47,6 +80,12 @@ double wrapPosition(double value, double box) {
     return value;
 }
 
+/**
+ * @brief Broadcast root input failure text so all communicator ranks take the same error path.
+ * @see cosmology_contracts cosmology_validation
+ * @param error Root-owned diagnostic text; empty means root validation succeeded.
+ * @param communicator Communicator entered by all participating ranks in the same order.
+ */
 void broadcastRootError(std::string& error, MPI_Comm communicator) {
     int length = int(error.size());
     MPI_Bcast(&length, 1, MPI_INT, 0, communicator);
@@ -57,6 +96,14 @@ void broadcastRootError(std::string& error, MPI_Comm communicator) {
     }
 }
 
+/**
+ * @brief Read and validate canonical phase-space CSV, ordered into a host global-ID array.
+ * @see cosmology_contracts cosmology_validation
+ * @param path Input CSV or comparison output path following the exact file contract.
+ * @param total Exact expected particle count; valid IDs occupy [0,total).
+ * @param box Positive periodic side in comoving Mpc/h.
+ * @return Host xyz and canonical momentum ordered by global particle ID, in Mpc/h.
+ */
 std::vector<double> readPhaseSpace(const std::string& path, std::uint64_t total, double box) {
     std::ifstream input(path);
     if (!input) throw std::runtime_error("Cannot open evolution particle CSV: " + path);
@@ -97,6 +144,14 @@ std::vector<double> readPhaseSpace(const std::string& path, std::uint64_t total,
     return phaseSpace;
 }
 
+/**
+ * @brief Reject unordered epochs, nonpositive intervals and a checkpoint count not dividing the step count.
+ * @see cosmology_contracts cosmology_validation
+ * @param aInitial Initial scale factor, strictly positive and below aFinal.
+ * @param aFinal Final scale factor, ordered after aInitial and at most one.
+ * @param steps Positive integration step count.
+ * @param checkpoints Positive output interval count dividing steps.
+ */
 void validateSchedule(double aInitial, double aFinal, int steps, int checkpoints) {
     if (!std::isfinite(aInitial) || !std::isfinite(aFinal)
         || !(0.0 < aInitial && aInitial < aFinal && aFinal <= 1.0))
@@ -289,6 +344,14 @@ void Simulation::compareImportedEvolution(int particleGrid, const std::string& i
 
 }  // namespace cosmology
 
+/**
+ * @brief Run shared phase-space adapter using production ippl force/kdk/migration.
+ * @see cosmology_contracts cosmology_validation
+ * @param argc Program argument count; this executable checks its own exact usage.
+ * @param argv Program argument vector; see the file/workflow contract for scalar and path units.
+ * @return Zero on successful completion; malformed/native fatal errors return nonzero or abort the communicator.
+ * Fatal distributed failures must terminate communicator peers; the host-only test uses ordinary process status.
+ */
 int main(int argc, char** argv) {
     ippl::initialize(argc, argv);
     try {

@@ -1,0 +1,117 @@
+/**
+@page cosmology_parallel MPI, execution spaces and memory movement
+
+@section parallel_collective Collective operations
+
+Construction of @ref cosmology::Simulation, field FFTs, particle migration,
+particle-count checks, reductions and simulation entry points involve all ranks
+of the active IPPL communicator. Every rank must call them in the same order
+with a consistent configuration. Host scalar quadratures are replicated per
+rank and are not device callbacks. Scalar sums/maxima use MPI_Allreduce;
+particle counts use MPI_UINT64_T, not floating-point accumulation.
+
+Root performs setup/diagnostic filesystem operations; snapshots are per-rank
+files. Diagnostic adapters explicitly broadcast root input errors before
+scatter. The normal application catches fatal exceptions and calls MPI_Abort;
+catching an error on only one rank and continuing would strand other ranks in
+a collective. The class is not a thread-safe API for unrelated concurrent runs
+sharing the same communicator.
+
+@section parallel_device Execution and storage
+
+Production particle attributes and distributed fields use Kokkos's default
+execution/memory spaces. CIC atomics, lattice construction, coefficient
+creation, wrapping, force construction and integration run there. Growth,
+transfer reading, adaptive quadrature, filesystem I/O and metadata formatting
+run on the host. Mathematical calls in device kernels use Kokkos functions;
+host numerical routines use standard-library functions.
+
+Gaussian initialization builds a host radial P(k) table indexed by integer
+squared mode length (at most 3(N/2)^2), then deep-copies it once to execution
+memory. This replicates O(N^2) data on each rank; it is not an exascale-memory
+claim. Snapshot output creates host mirrors and explicitly deep-copies IDs,
+positions and momentum before serialization. Python analysis uses host NumPy
+arrays/DataFrames; its FFTs and archives do not imply device execution.
+
+@section parallel_reproducibility Reproducibility and limits
+
+Global Fourier keys make the production Gaussian mode assignment independent
+of rank ownership at fixed N. MPI reduction trees, CIC atomics, FFT backends and
+floating-point execution ordering can change final rounding. Reproducibility
+means agreement under the stated comparisons, not universal bitwise identity.
+Native FastPM precision and Nyquist behavior are retained rather than patched
+to force agreement. Common-phase Python fixtures have their own explicit
+physical-mode and once-rounded momentum contract.
+
+`threads` in historical metadata means DefaultExecutionSpace.concurrency();
+on CUDA this is not a count of host OpenMP threads or resident GPU threads.
+New metadata also records `execution_concurrency`, `host_threads`,
+`execution_space` and `memory_space`. Neither GPU metadata nor a launcher smoke
+check establishes GPU physics correctness. The default local campaign uses one
+host OpenMP thread per MPI rank. It is a physics comparison, not a strong-scaling
+benchmark. Kokkos and heFFTe are external dependencies @cite trott2022kokkos
+@cite ayala2020heffte; their citations do not qualify untested hardware.
+
+@page cosmology_validation Validation ladder and interpretation
+
+@section validation_ladder Properties established by each layer
+
+| Layer | Entry point | What it checks | What it does not establish |
+|---|---|---|---|
+| Host model | TestCosmologyPhysics | Parser restrictions, independent growth ODE, EdS factors, quadrature, transfer/normalization | Distributed particle forces |
+| Spectral/migration | Cosmology --self-test; ranks 1–4 | Manufactured field force, real output, multi-box wrapping, unique IDs, migrated attributes | Nonlinear halo accuracy |
+| Linear evolution | validate_linear.py | Uniform zero force, Gaussian/sine ICs and resolved linear growth, mesh/time/rank controls | General shell crossing |
+| Frozen native operators | validate_frozen_force.py | Each full CIC/FFT/gather operator against its own oracle; predicted cross-code residual | Identical raw Nyquist operators |
+| Planar analytical evolution | validate_pancake.py | Continuum Zel'dovich trajectories before crossing; temporal/spatial controls | An analytical post-crossing truth |
+| Imported-state regression | test_frozen_adapter.py, test_evolution_adapter.py | Malformed inputs, exact IDs/counts, state imports, ballistic/oracle paths, production-driver equivalence | Production restart robustness |
+| Matched native PM | validate_evolution.py | Common particles, backgrounds, force/integration schedules, resolved observables and refinements | Halo/statistical universality |
+| Crossed resolution | validate_resolution_study.py | Independent particle/mesh controls, translations, timestep/start/rank effects and complete qualification prefixes | A pass inferred from cross-code agreement alone |
+| Three-code A11 | run_three_code_campaign.py | Same local IC, complete z=0 outputs and common spectra for IPPL/FastPM/TreePM | Continuum accuracy or identical force models |
+| Saved completion audits | audit_cpu_study.py, audit_a100_study.py | Expected scope, artifacts, hashes and recorded check identities | A new scientific pass |
+
+@section validation_metrics Conservation, stability and error budgets
+
+Global particle count is exact integer bookkeeping. CIC deposition is expected
+to conserve unit weights, but its floating reduction is not an exact integer
+sum. The production force path rejects a nonfinite relative mass residual or
+one above 10^-10. External campaign budgets may be tighter and remain separate;
+passing the production check does not erase an external failure. Net force,
+mean momentum, symmetry and inverse imaginary residuals are sanity observables,
+not interchangeable proofs of accuracy.
+
+Timestep orders use successive differences above declared floors; linear
+spatial growth is measured on resolved wavelengths. Smaller global RMS does not
+by itself establish local Jacobian/peak-density accuracy. A negative sampled
+initial-map eigenvalue is rejected; it is not repaired by resampling or fitted
+amplitude scaling. A planar analytic map ceases to be a reference after shell
+crossing. Cosmological expansion does not conserve ordinary mechanical energy.
+
+All thresholds belong to the responsible validator and are frozen before a
+campaign. Historical failures are retained in their reports. Successful
+execution, intact archives, and agreement between two discretizations can all
+coexist with failure of a resolution qualification. A band of qualified modes
+requires every declared control; a retrospective favorable subset is not a
+replacement qualification.
+
+@section validation_archive Numerical versus byte-preserving archives
+
+The matched-evolution gzip archives preserve original CSV bytes, verified by
+compressed and decompressed hashes. Disk-aware study NPZ archives instead
+preserve uint64 IDs and float64 phase-space arrays with canonical digests,
+including signed zeros; they do not reconstruct original CSV formatting.
+Qualification is the caller's responsibility, not a side effect of archival
+completion. Provenance includes binaries, relevant source, initial data,
+schedules, logs and output checks; no script should manufacture missing evidence.
+
+@section validation_run Running checks
+
+@code{.sh}
+ctest --test-dir build_openmp -L cosmology --output-on-failure
+/Users/adelmann/.venv-h6/bin/python -B -m unittest discover \
+  -s demos/cosmology/python/tests -p 'test_*.py'
+@endcode
+
+Native reference downloads/builds are opt-in and never part of normal CMake
+configuration or CTest. See @ref cosmology_tools for exact executable/script
+arguments, the separate quick/full workflows and machine-specific launchers.
+*/

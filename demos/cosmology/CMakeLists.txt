@@ -41,7 +41,7 @@ if(BUILD_TESTING)
       message(FATAL_ERROR "Cosmology validation requires NumPy and pandas in Python3_EXECUTABLE")
     endif()
     set(cosmology_validation_command ${Python3_EXECUTABLE}
-        ${CMAKE_CURRENT_SOURCE_DIR}/validate_linear.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/validate_linear.py
         --exe $<TARGET_FILE:Cosmology> --mpiexec ${MPIEXEC_EXECUTABLE}
         --numproc-flag=${MPIEXEC_NUMPROC_FLAG})
     foreach(flag IN LISTS MPIEXEC_PREFLAGS)
@@ -55,33 +55,33 @@ if(BUILD_TESTING)
                       COMMENT "Full 1-4 rank cosmology IC, evolution, and convergence validation")
 
     add_test(NAME cosmology_zarija_analysis
-             COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_validate_zarija.py)
+             COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_validate_zarija.py)
     set_tests_properties(cosmology_zarija_analysis PROPERTIES LABELS cosmology TIMEOUT 120)
 
     foreach(analysis frozen_force pancake evolution)
       add_test(NAME cosmology_${analysis}_analysis
                COMMAND ${Python3_EXECUTABLE} -B
-                       ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_validate_${analysis}.py)
+                       ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_validate_${analysis}.py)
       set_tests_properties(cosmology_${analysis}_analysis PROPERTIES LABELS cosmology TIMEOUT 120)
     endforeach()
     set(cosmology_frozen_command ${Python3_EXECUTABLE} -B
-        ${CMAKE_CURRENT_SOURCE_DIR}/validate_frozen_force.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/validate_frozen_force.py
         --ippl-exe $<TARGET_FILE:CompareCosmologyForce> --mpiexec ${MPIEXEC_EXECUTABLE}
         --numproc-flag=${MPIEXEC_NUMPROC_FLAG})
     set(cosmology_pancake_command ${Python3_EXECUTABLE} -B
-        ${CMAKE_CURRENT_SOURCE_DIR}/validate_pancake.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/validate_pancake.py
         --exe $<TARGET_FILE:Cosmology> --mpiexec ${MPIEXEC_EXECUTABLE}
         --numproc-flag=${MPIEXEC_NUMPROC_FLAG})
     set(cosmology_adapter_command ${Python3_EXECUTABLE} -B
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_frozen_adapter.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_frozen_adapter.py
         --exe $<TARGET_FILE:CompareCosmologyForce> --mpiexec ${MPIEXEC_EXECUTABLE}
         --numproc-flag=${MPIEXEC_NUMPROC_FLAG})
     set(cosmology_evolution_adapter_command ${Python3_EXECUTABLE} -B
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_evolution_adapter.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_evolution_adapter.py
         --exe $<TARGET_FILE:CompareCosmologyEvolution> --production-exe $<TARGET_FILE:Cosmology>
         --mpiexec ${MPIEXEC_EXECUTABLE} --numproc-flag=${MPIEXEC_NUMPROC_FLAG})
     set(cosmology_evolution_command ${Python3_EXECUTABLE} -B
-        ${CMAKE_CURRENT_SOURCE_DIR}/validate_evolution.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/validate_evolution.py
         --ippl-exe $<TARGET_FILE:CompareCosmologyEvolution> --mpiexec ${MPIEXEC_EXECUTABLE}
         --numproc-flag=${MPIEXEC_NUMPROC_FLAG})
     foreach(flag IN LISTS MPIEXEC_PREFLAGS)
@@ -98,27 +98,31 @@ if(BUILD_TESTING)
     set_tests_properties(cosmology_evolution_analysis cosmology_evolution_adapter PROPERTIES
       ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
     add_test(NAME cosmology_evolution_refinement_analysis COMMAND ${Python3_EXECUTABLE} -B
-      ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_evolution_refinement.py)
+      ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_evolution_refinement.py)
     set_tests_properties(cosmology_evolution_refinement_analysis PROPERTIES LABELS cosmology TIMEOUT 120
       ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
     foreach(analysis gaussian_fixture study_spectra study_storage resolution_study)
       add_test(NAME cosmology_${analysis}_analysis COMMAND ${Python3_EXECUTABLE} -B
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_${analysis}.py)
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_${analysis}.py)
       set_tests_properties(cosmology_${analysis}_analysis PROPERTIES LABELS cosmology TIMEOUT 120
         ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
     endforeach()
     foreach(analysis runtime_metadata compare_fixture_files merlin_cpu_launcher
                      merlin_gpu_rank merlin_gpu_mpiexec merlin_a100_launcher a100_completion_audit)
       add_test(NAME cosmology_${analysis}_analysis COMMAND ${Python3_EXECUTABLE} -B
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_${analysis}.py)
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_${analysis}.py)
       set_tests_properties(cosmology_${analysis}_analysis PROPERTIES LABELS cosmology TIMEOUT 120
         ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
     endforeach()
     execute_process(COMMAND ${Python3_EXECUTABLE} -c "import matplotlib"
                     RESULT_VARIABLE cosmology_plot_python_status OUTPUT_QUIET ERROR_QUIET)
     if(cosmology_plot_python_status EQUAL 0)
+      add_test(NAME cosmology_three_code_campaign_analysis COMMAND ${Python3_EXECUTABLE} -B
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_three_code_campaign.py)
+      set_tests_properties(cosmology_three_code_campaign_analysis PROPERTIES LABELS cosmology TIMEOUT 120
+        ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
       add_test(NAME cosmology_resolution_plot_analysis COMMAND ${Python3_EXECUTABLE} -B
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_plot_resolution_study.py)
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_plot_resolution_study.py)
       set_tests_properties(cosmology_resolution_plot_analysis PROPERTIES LABELS cosmology TIMEOUT 120
         ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
     endif()
@@ -160,13 +164,13 @@ if(BUILD_TESTING)
     set(IPPL_COSMOLOGY_ZARIJA_EXECUTABLE "" CACHE FILEPATH "Separately built Zarija initializer")
     if(IPPL_COSMOLOGY_ZARIJA_SOURCE)
       add_custom_target(cosmology_compare_zarija_physics
-        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/reference/compare_zarija_physics.py
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/reference/compare_zarija_physics.py
                 --reference-source ${IPPL_COSMOLOGY_ZARIJA_SOURCE}
                 --ippl-build ${CMAKE_BINARY_DIR} --box-size 168.75
         USES_TERMINAL COMMENT "Compare original Zarija and IPPL cosmology routines")
       if(IPPL_COSMOLOGY_ZARIJA_EXECUTABLE)
         set(cosmology_zarija_command ${Python3_EXECUTABLE}
-            ${CMAKE_CURRENT_SOURCE_DIR}/validate_zarija.py
+            ${CMAKE_CURRENT_SOURCE_DIR}/python/validate_zarija.py
             --ippl-exe $<TARGET_FILE:Cosmology>
             --zarija-exe ${IPPL_COSMOLOGY_ZARIJA_EXECUTABLE}
             --zarija-source ${IPPL_COSMOLOGY_ZARIJA_SOURCE}
@@ -179,5 +183,25 @@ if(BUILD_TESTING)
           COMMENT "Matched-cosmology IC ensembles against the original Zarija generator")
       endif()
     endif()
+  endif()
+endif()
+
+# Documentation is an opt-in target; no generators run during a normal build.
+find_package(Doxygen 1.14 QUIET)
+find_package(Python3 QUIET COMPONENTS Interpreter)
+if(DOXYGEN_FOUND AND Python3_Interpreter_FOUND)
+  add_custom_target(cosmology_docs
+    COMMAND ${Python3_EXECUTABLE} -B
+            ${CMAKE_CURRENT_SOURCE_DIR}/python/build_documentation.py
+            --output ${CMAKE_BINARY_DIR}/docs/cosmology
+            --doxygen ${DOXYGEN_EXECUTABLE}
+    VERBATIM
+    COMMENT "Strict cosmology Doxygen manual, API and coverage checks")
+  if(BUILD_TESTING)
+    add_test(NAME cosmology_documentation_analysis
+      COMMAND ${Python3_EXECUTABLE} -B
+              ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_documentation.py)
+    set_tests_properties(cosmology_documentation_analysis PROPERTIES
+      LABELS "cosmology;documentation" TIMEOUT 120)
   endif()
 endif()

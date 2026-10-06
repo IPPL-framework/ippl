@@ -1,0 +1,54 @@
+/**
+@page cosmology_references References and implementation provenance
+
+@section references_physics Scientific references
+
+- Background growing-mode integral: Heath @cite heath1977.
+- Gaussian CDM transfer shape: BBKS @cite bbks1986. The q convention and
+  finite sigma8 cutoff in this implementation are explicitly documented in
+  @ref cosmology_model; citation alone does not define those implementation choices.
+- First-order Lagrangian displacement: Zel'dovich @cite zeldovich1970.
+- Fourier assignment/interlacing: Sefusatti et al. @cite sefusatti2016. The
+  published accuracy results are not automatic guarantees for this code's grids.
+- Native FastPM context: Feng et al. @cite feng2016fastpm. This harness selects
+  ordinary plain PM; it does not exercise the paper's modified large-step method.
+- COLA context only: Tassev et al. @cite tassev2013cola. COLA is not implemented here.
+- GADGET-2 TreePM: Springel @cite springel2005gadget2. The comparison uses
+  GADGET-2.0.7, periodic TreePM and its declared parameter file, not GADGET-4.
+- IPPL/PIC infrastructure: Muralikrishnan et al. @cite muralikrishnan2024scaling.
+- Execution portability and distributed FFT infrastructure:
+  Kokkos @cite trott2022kokkos and heFFTe @cite ayala2020heffte.
+
+@section references_sources Native sources and compatibility boundaries
+
+FastPM is pinned by the reference builder to commit
+`15b6c4fd7502a81d99dd13f54fcc9cfa44be1331` of
+<a href="https://github.com/fastpm/fastpm">the upstream FastPM repository</a>.
+The harness adapts initialization, centering, convention conversion and CSV
+output; it links native operators and ordinary native evolution without
+reimplementing force or kick/drift kernels. Its source/build manifests record
+what was actually compiled. Float32 particle fields and native Nyquist behavior
+are retained, not hidden by broad equivalence claims.
+
+The GADGET source archive and documentation are available from the
+<a href="https://wwwmpa.mpa-garching.mpg.de/gadget/">official GADGET site</a>.
+MPI FFTW version 2.x is required by GADGET-2; FFTW3 is not a drop-in replacement.
+The portable local builder checks archive SHA256 values and uses command-line
+Makefile options rather than modifying upstream simulation sources. Machine
+configuration, compiler identity and PMGRID remain part of build provenance.
+
+The Zarija initializer is a user-supplied local reference, not a published
+HACC evolution oracle. The separate public-API probe is compiled against its
+unmodified source; its ABI/precision and transfer-table first-row normalization
+require explicit checking. The local manuals/source files, executable hashes
+and reference manifests are implementation provenance rather than an invented
+journal citation. No whole-code feature parity is claimed.
+
+@section references_docs Documentation tooling
+
+Formula syntax, bibliography support and warning settings follow the
+<a href="https://www.doxygen.nl/manual/">official Doxygen manual</a>.
+@ref cosmology_documentation_quality records what the documentation checks cover.
+References provide rationale and context; implemented formulas and actual
+qualification must be verified against source and retained campaign evidence.
+*/

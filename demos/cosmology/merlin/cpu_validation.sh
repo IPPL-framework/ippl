@@ -122,7 +122,7 @@ sha256sum "$buildDir/demos/cosmology/"{Cosmology,TestCosmologyPhysics,CompareCos
 phase=regression_tests
 # One controller, serial CTest; individual tests launch at most four MPI ranks.
 ctest --test-dir "$buildDir" -L cosmology -j1 --output-on-failure
-studyCommand=("$pythonExe" -B "$sourceRoot/demos/cosmology/validate_resolution_study.py"
+studyCommand=("$pythonExe" -B "$sourceRoot/demos/cosmology/python/validate_resolution_study.py"
     --ippl-exe "$buildDir/demos/cosmology/CompareCosmologyEvolution"
     --fastpm-exe "$referenceDir/evolution/FastPMEvolution"
     --fastpm-manifest "$referenceDir/evolution/build-manifest.txt"

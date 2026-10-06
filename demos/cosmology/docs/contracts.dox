@@ -1,0 +1,112 @@
+/**
+@page cosmology_contracts Configuration, imports and output contracts
+
+@section contracts_config Configuration
+
+@ref cosmology::Config is parsed from `name=value` assignments. `#` and `//`
+start comments; surrounding whitespace and an optional pair of double quotes
+are removed. Unknown names, duplicate names, numeric trailing characters and
+unsupported physics are errors. Parameters omitted from a file retain these
+source defaults:
+
+| Input key | Member | Default | Meaning/constraints |
+|---|---|---|---|
+| np | nGrid | 32 | Cells per dimension; even, at least 4; production also generates np^3 particles |
+| nt | nSteps | 100 | Positive number of logarithmic scale-factor steps |
+| box_size | boxSize | 200 | Positive comoving box length, Mpc/h |
+| seed | seed | 1 | Unsigned 64-bit RNG seed |
+| z_in / z_fi | zInitial / zFinal | 49 / 9 | Finite, z_in > z_fi >= 0 |
+| hubble | hubble | 0.7 | Positive h, H0/(100 km/s/Mpc) |
+| Omega_m | omegaMatter | 0.3 | Total matter, 0 < Omega_m <= 1 |
+| Omega_bar | omegaBaryon | 0.05 | Transfer weighting, 0 <= Omega_bar <= Omega_m |
+| Sigma_8 | sigma8 | 0.8 | Positive z=0 finite-cutoff RMS normalization |
+| n_s | spectralIndex | 0.96 | Primordial tilt, 0 < n_s < 2 |
+| TFFlag | transferFunction | 4 | 4 = BBKS; 0 = weighted transfer table |
+| transfer_file | transferFile | empty | Required for flag 0; relative to parameter-file directory |
+| ic_mode | icMode | gaussian | gaussian, sine or uniform |
+| amplitude | amplitude | 0.001 | Initial sine density amplitude, 0 <= A < 1; unused for other modes |
+| mode_x/y/z | mode | (1,0,0) | Nonzero sine mode; every component strictly below Nyquist |
+| output | output | cosmology-output | Output directory relative to run working directory |
+| diagnostics_every | diagnosticsEvery | 10 | Positive diagnostic cadence |
+| write_particles | writeParticles | true | Accepts true/false/1/0 |
+
+Optional `Omega_nu`, `Omega_r` and `f_NL` must be exactly zero; `w_de` must be
+exactly -1. They are accepted compatibility declarations, not enabled physics.
+Grid bounds additionally protect uint64 particle counts and int Fourier-square
+indices. @ref cosmology::Config::particleCount returns the production count;
+imported evolution has a separate expected count when N_P differs from N_M.
+
+@section contracts_production Production files
+
+`Cosmology input.par` creates a fresh or empty output directory. It rejects
+nonempty output to avoid accidental overwrite. Diagnostics are rank-zero CSV
+rows with `step,a,D,f,particles,mass_error,delta_rms,mode_re,mode_im,
+mode_amplitude,expected_amplitude,displacement_rms,momentum_rms,force_rms`.
+The particle mode measurement is @f$N_p^{-1}\sum_p e^{-i\boldsymbol k\cdot x_p}@f$;
+the cosine density amplitude is twice its magnitude for a nonzero mode. A
+configured zero mode instead measures the DC particle-count sum; the diagnostic
+does not subtract that DC component. The expected amplitude
+uses linear growth and is not an analytical nonlinear prediction.
+
+Snapshots are `particles_initial_rankR.csv` and `particles_final_rankR.csv`,
+with `id,x,y,z,px,py,pz`. Ownership changes during migration: compare by global
+ID, not by shard or row order. Positions are comoving Mpc/h, momenta canonical
+as in @ref cosmology_model. `write_particles=false` suppresses these CSVs.
+`metadata.txt` records conventions, configuration, rank/execution information,
+maximum inverse imaginary residual and elapsed wall time. CSVs are diagnostic
+artifacts, not scalable restart files.
+
+@section contracts_force Frozen-force adapter
+
+`CompareCosmologyForce N L Omega_m input.csv output_dir` imports exactly N^3
+unit-mass particles. The exact header is `id,x,y,z,mass`; IDs must be unique and
+cover [0,N^3), values finite and masses exactly 1. Positions are wrapped into
+[0,L), including multiple-box overshoots. Root validates input before MPI
+scatter. Input rejection is broadcast so all ranks take the same failure path.
+The adapter calls @ref cosmology::Simulation::compareFrozenForce and never
+advances particles. It writes per-rank forces and deposited density/mesh forces
+plus convention metadata. The comparison is against the full implemented
+native operator, not merely force magnitudes.
+
+@section contracts_evolution Imported evolution adapter
+
+`CompareCosmologyEvolution NP NM L Omega_m ai af steps checkpoints input.csv output_dir`
+uses NP^3 unit-weight particles on an NM^3 force mesh. The exact header is
+`id,x,y,z,px,py,pz,mass`; IDs cover [0,NP^3), phase space is finite and mass=1.
+The schedule requires 0 < ai < af <= 1, positive checkpoints and steps divisible
+by checkpoints. Input size is bounded by MPI_Scatterv int counts. Root arrays
+are diagnostic, local-memory-oriented adapters, not a distributed IC reader.
+
+A checkpoint is synchronized after a complete second kick; checkpoint zero is
+the actual imported state. Files are `particles_checkpointCCCC_rankR.csv` and
+`checkpoints.csv`, with metadata. IPPL's checkpoint columns are
+`checkpoint,step,a,mass_error,max_inverse_imaginary`. FastPM additionally records
+particle count, mean momenta and E(a); consumers must not assume identical
+schemas. The native reference stores momentum/acceleration in float32 and
+positions/FFT data in float64. A half-cell coordinate rebase aligns its
+node-centered PM convention with IPPL's cell-centered convention; native
+forces and stepping themselves remain unchanged.
+
+@section contracts_gadget GADGET conversion
+
+The three-code comparison shares one ordered CSV, then converts it to
+GADGET-2 format 1. Position blocks contain float32 kpc/h. GADGET input velocities
+are @f$u=v_{\rm pec}/\sqrt a=100p/a^{3/2}@f$ in km/s, because its reader converts
+them to internal canonical variables. Type 1 contains collisionless dark matter;
+IDs are uint32, masses use 10^10 Msun/h, and the header is a 256-byte Fortran
+record. Round-trip residuals and source/output hashes are retained. GADGET's
+legacy short filename buffers require short relative paths; the local runner
+starts it inside the campaign directory. Its final-format reader verifies
+record markers, counts, IDs, finite values, box, background and final epoch.
+
+@section contracts_errors Failure and provenance
+
+Host validation failures raise exceptions; applications abort their MPI
+communicator when peers could otherwise remain inside a collective. Scripts
+return nonzero and retain logs/report states for partial runs. Existing results
+are not repaired by changing acceptance tolerances. An analysis-only run checks
+recorded hashes; source edits can invalidate a campaign's frozen source paths.
+Keep the original source snapshot for historical audits. Data compression,
+source provenance, campaign completion and physical qualification are distinct
+contracts; see @ref cosmology_validation.
+*/

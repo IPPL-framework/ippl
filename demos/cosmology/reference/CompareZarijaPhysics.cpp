@@ -1,3 +1,8 @@
+/** @file CompareZarijaPhysics.cpp
+ * @brief Public-API model probe against the original unmodified Zarija initializer.
+ * @ingroup cosmology_reference
+ * @see cosmology_contracts cosmology_validation cosmology_references
+ */
 // Public-API comparison with the original, unmodified Zarija cosmology code.
 // Compile Cosmology.cpp and MT_Random.cpp with DOUBLE_REAL and USENAMESPACE.
 #include "../CosmologyPhysics.h"
@@ -15,19 +20,36 @@
 namespace {
 // Preset from the algorithms' declared accuracies, before running comparisons:
 // Zarija's midpoint normalization uses EPS=1e-4, and its RK solver EPS=1e-6.
-constexpr double TransferTolerance = 2.0e-12;
-constexpr double PowerTolerance = 5.0e-4;
-constexpr double GrowthTolerance = 2.0e-5;
+constexpr double TransferTolerance = 2.0e-12; ///< Predeclared relative transfer budget 2e-12.
+constexpr double PowerTolerance = 5.0e-4; ///< Predeclared relative power budget 5e-4 reflecting original midpoint normalization accuracy.
+constexpr double GrowthTolerance = 2.0e-5; ///< Predeclared relative growth budget 2e-5 reflecting original growth solver accuracy.
 
+/** @brief Retain public-model comparisons and count only explicitly gated failures. */
 struct Report {
-    std::ofstream stream_m;
-    int failures_m = 0;
+    std::ofstream stream_m; ///< Comparison CSV stream with retained metric identity and budget.
+    int failures_m = 0; ///< Count of failed gated comparisons; ungated characterization is not counted.
 
+    /** @brief Open a fresh comparison CSV and write its metric/budget header.
+     * @param path Host comparison CSV destination.
+     * @throws std::runtime_error If the stream cannot be opened.
+     */
     explicit Report(const char* path) : stream_m(path) {
         if (!stream_m) throw std::runtime_error("Cannot open comparison CSV");
         stream_m << std::setprecision(17)
                  << "quantity,k2,argument,ippl,zarija,relative_error,tolerance,gated,passed,note\n";
     }
+    /**
+     * @brief Write one comparison row and count a failure only when this metric is explicitly gated.
+     * @see cosmology_contracts cosmology_validation
+     * @param quantity Physical/model quantity label for this comparison row.
+     * @param k2 Squared integer Fourier mode index used to identify the sampled wavenumber.
+     * @param argument Scale factor or wavenumber argument, with interpretation retained in quantity.
+     * @param ippl IPPL host model value in the comparison's common units.
+     * @param zarija Original reference value after the explicitly recorded convention conversion.
+     * @param tolerance Predeclared absolute/relative error budget in the metric's stated convention.
+     * @param note Text stating exclusions or interpretation for this metric.
+     * @param gated Whether this diagnostic participates in the failure count; characterization-only rows can remain ungated.
+     */
     void value(const std::string& quantity, int k2, double argument, double ippl,
                double zarija, double tolerance, const std::string& note = "", bool gated = true) {
         const double relative = std::abs(ippl - zarija)
@@ -41,6 +63,14 @@ struct Report {
 };
 }  // namespace
 
+/**
+ * @brief Run public-api model probe against the original unmodified zarija initializer.
+ * @see cosmology_contracts cosmology_validation
+ * @param argc Program argument count; this executable checks its own exact usage.
+ * @param argv Program argument vector; see the file/workflow contract for scalar and path units.
+ * @return Zero on successful completion; malformed/native fatal errors return nonzero or abort the communicator.
+ * Fatal distributed failures must terminate communicator peers; the host-only test uses ordinary process status.
+ */
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     int result = 0;
