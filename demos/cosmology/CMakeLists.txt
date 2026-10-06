@@ -5,10 +5,6 @@
 # -----------------------------------------------------------------------------
 message(STATUS "Configuring demos/cosmology/")
 
-add_executable(StructureFormation StructureFormation.cpp)
-
-target_link_libraries(StructureFormation PRIVATE IPPL::ippl)
-
 if(NOT IPPL_ENABLE_FFT)
   message(FATAL_ERROR "Cosmology requires IPPL_ENABLE_FFT=ON")
 endif()

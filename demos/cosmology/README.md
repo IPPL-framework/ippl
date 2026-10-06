@@ -4,8 +4,8 @@
 particle distribution using IPPL's distributed particle and field containers,
 CIC assignment/interpolation, heFFTe transforms, and kick-drift-kick integration.
 The validated local setup runs on **1–4 MPI ranks**, with an
-OpenMP host backend. It is separate from the historical `StructureFormation`
-demo and does not require that demo's `Data.csv` input.
+OpenMP host backend. Initial conditions are generated internally; no external
+`Data.csv` input is required.
 
 The supported model is flat, radiation-free Lambda-CDM with one collisionless
 matter species. Initial conditions use first-order Lagrangian perturbation theory
@@ -35,8 +35,7 @@ cmake -S . -B build_openmp \
 cmake --build build_openmp --target Cosmology TestCosmologyPhysics -j 4
 ```
 
-`IPPL_ENABLE_SOLVERS` also supports the existing cosmology demo built from this
-directory. The executables are `build_openmp/demos/cosmology/Cosmology` and
+The executables are `build_openmp/demos/cosmology/Cosmology` and
 `build_openmp/demos/cosmology/TestCosmologyPhysics`; with
 `IPPL_USE_STANDARD_FOLDERS=ON`, look under `build_openmp/bin` instead.
 
