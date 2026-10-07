@@ -1,0 +1,126 @@
+/** @page cosmology_quijote Quijote exact-initial-condition comparison
+
+@section quijote_scope Scope and qualification
+The first target is the standard massless-neutrino Quijote fiducial realization:
+512^3 equal-weight collisionless particles in a 1000 Mpc/h periodic box, starting
+at z=127. Published 2LPT positions and velocities are imported exactly to their
+stored precision; an internal 2LPT generator is not needed. Current local tests
+are small-fixture checks, not evidence that this production run has succeeded.
+Parallel HDF5 is deferred until after a successful 512^3 run. The offline serial converter accepts original Gadget format-1 files and the
+current losslessly compressed Gadget HDF5 initial conditions. HDF5 decoding
+requires h5py and, for the official Blosc release, hdf5plugin. This is an input
+conversion step; simulation input remains the canonical serial-read binary.
+Input signatures select the reader; mixed formats, nonlocal HDF5 storage,
+unsupported filters and declared nonzero truncation bits are rejected.
+
+@section quijote_units Background, units and density
+Raw Gadget coordinates are kpc/h and raw velocities obey
+@f$u=v_{\rm pec}/\sqrt a@f$. The canonical import is
+@f[x=x_{\rm Gadget}/1000,\qquad p=a^{3/2}u/100=a v_{\rm pec}/100.@f]
+Apply the square-root factor once, not again after a reader has already returned
+physical peculiar velocities. The type-1 masses must be positive and equal;
+their physical value in Msun/h is retained separately from unit PM weights.
+For N_p particles and N_c force cells, density contrast is
+@f$\delta_i=N_c M_i/N_p-1@f$, where M_i is the deposited unit-weight mass.
+The diagnostic density RMS is @f$[\sum_i\delta_i^2/N_c]^{1/2}@f$,
+independent of the ratio of particle and mesh counts. The background is the
+existing flat radiation-free matter-plus-Lambda model. Header epoch, box,
+Omega_m, Omega_Lambda and h must match configuration at relative 1e-10; this
+checks round-trip metadata, not a tolerance on physical evolution. No input
+power-spectrum normalization or linear-growth rescaling is applied.
+
+@section quijote_wire Binary contract
+The portable stream is little-endian IEEE float64 with a 128-byte header.
+Python's struct descriptor is `<8sQQ6dQ48x`: magic `IPPLPS01`, file-local and
+global uint64 counts, six doubles (a, L, Omega_m, Omega_Lambda, h, physical
+particle mass), a uint64 flags field, then 48 reserved zero bytes.
+Records are `<Q6d`: zero-based uint64 ID, x/y/z, p_x/p_y/p_z (56 bytes).
+A converted complete input has flag 1 and record j must contain ID j. Snapshot
+shards have flag 0, may be empty, and carry the same global count and epoch.
+The exact file length is 128+56*Nlocal; truncation, trailing data, unsupported
+flags, duplicate/missing/out-of-order input IDs and nonfinite values fail.
+Input x=L wraps to zero with no artificial edge displacement. Imported displacement
+RMS measures motion since import, not displacement from an undisplaced lattice. Source Gadget
+IDs are explicitly converted from one-based to zero-based. The converter
+uses bounded chunks and disk-backed ordering, and publishes checksums and
+source metadata in a JSON sidecar. HDF5 provenance includes dataset dtypes,
+storage chunks, filter descriptions and the official CompressionInfo metadata.
+Decoded HDF5 chunks are bounded to 64 MiB; particle iteration remains bounded
+by the requested chunk size. The sidecar is retained by the benchmark runner; matching headers alone do not
+establish catalogue identity, LPT order, baryon fraction or initial spectrum. The
+runner records those provenance limits explicitly; C++ also validates the binary contract.
+
+@section quijote_execution Execution and data movement
+Rank zero reads bounded batches and distributes them through a dedicated MPI
+communicator. Each rank fills its local host mirrors and copies x,p,IDs and
+initial reference positions once into Kokkos execution memory. Migration,
+CIC deposition, FFT force and KDK remain distributed in the configured space.
+Fatal input/I/O errors abort while collective simulation objects are still alive,
+avoiding destructor collectives while peers await data.
+Snapshots explicitly mirror local particle data and publish per-rank binary
+files before rank zero publishes a manifest row. No full global particle array
+or ID sort is needed by this production path. Global counts are exact; two
+modulo-2^64 ID signatures and range checks detect migration corruption but do
+not constitute a collision-free uniqueness proof. Initial ordered-ID checking
+is exact. Floating-point sums may vary with rank/thread execution order;
+regressions use declared tolerances, not bitwise evolution identity.
+On the Merlin launcher, @f$N_{\rm ranks}N_{\rm host\ threads}\leq4@f$ keeps
+MPI2/OpenMP2 validation within the same four-CPU allocation as MPI4/OpenMP1
+production. Device binding and numerical kernels are unchanged.
+The initial serial reader can bottleneck startup and snapshot mirrors consume
+additional host memory; both must be measured at 512^3 before changing I/O.
+
+@section quijote_epochs Epochs and timestep refinement
+The existing @f$\ln a@f$ base schedule is augmented with requested
+@f$a=1/(1+z)@f$ endpoints. An output splits an interval and uses the same
+production KDK equations; no interpolated or relabelled state is written.
+Near-identical endpoints within eight relative machine epsilons are replaced
+by the requested epoch to avoid a vanishing interval. The final endpoint is now
+exactly aFinal even with no requested outputs; compared with the previous
+exponential evaluation this can change final-step rounding by a few ulps. Distinct requested epochs
+within sixteen relative machine epsilons are rejected. Output coordinates and
+momenta are synchronized after the second kick. `nt` is the number of base
+intervals; metadata records the actual number after output splits. The final
+epoch appears once even when explicitly requested. Compare refinement pairs
+with the same output list. Adding endpoints changes finite-step trajectories;
+therefore temporal convergence must be checked again for the chosen schedule.
+
+@section quijote_observables Accuracy and reference limits
+The measurement mesh is independent of the force mesh. Analyze IPPL and the
+reference using the same periodic deposition, Fourier normalization
+@f$P(k)=L^3\langle|\delta_k|^2\rangle@f$, window convention and shell bins.
+Default raw particle power avoids assuming an evolved lattice is Poisson;
+any optional shot-noise subtraction is identified explicitly. Small direct
+Fourier sums provide an independent estimator check. A power ratio and phase
+cross-correlation diagnose distinct errors. Quijote's evolved data may include
+lossy coordinate/velocity quantization, whereas its published ICs do not;
+record that precision floor rather than claiming particlewise machine accuracy.
+The initial HDF5 adapter accepts lossless input only; a future measurement reader
+for lossy evolved HDF5 snapshots must explicitly retain their quantization floor.
+Mesh/time controls and independent realizations are required before reporting
+a resolved k range. The proposed percent-level target is not automatically
+met because execution and file-integrity checks pass.
+
+@section quijote_catalogue Catalogue provenance and access
+The standard realization is the directory /Snapshots/fiducial/0/ICs/ in the
+Rusty Globus collection e0eae0aa-5bca-11ea-9683-0e56c063f437. A matching header
+alone does not distinguish fiducial from fiducial_ZA. Preserve the authenticated
+transfer receipt and exact source hashes together with the converter manifest.
+Official references: https://quijote-simulations.readthedocs.io/en/latest/access.html
+and https://github.com/lgarrison/quijote-compression/blob/main/compress_gadget.py.
+The user's current goal authorizes the actual 512 cubed A100 run. A fresh source
+snapshot and CUDA build/validation precede a full-count import/short-evolution
+pilot, then the requested z=1,0.5,0 evolution. Small synthetic validation cannot
+substitute for the published realization or establish its full-size completion.
+
+@section quijote_next Subsequent production work
+Serial conversion, import and per-rank binary snapshots are the initial path.
+Parallel HDF5 is a later step explicitly conditional on a successful 512^3 run.
+The comparison tool also supports a chosen redshift-space line of sight and raw
+quadrupole/hexadecapole estimators, with
+@f$s_\parallel=x_\parallel+p_\parallel/(a^2 E(a))@f$; E(a)=H(a)/H0.
+Small analytical tests verify the velocity conversion and multipole weights;
+cosmological accuracy still requires comparison to the reference and refinement.
+Qualified production restart remains subsequent work. Do not infer restart
+capability from the word checkpoint on diagnostic CSVs.
+*/

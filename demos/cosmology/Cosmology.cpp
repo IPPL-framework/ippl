@@ -10,7 +10,10 @@
 /**
  * @brief Run the production parameter-file application or collective self-tests.
  *
- * Initializes/finalizes IPPL around scoped distributed state.
+ * Initializes/finalizes IPPL around scoped distributed state. Fatal errors abort
+ * before destroying collective owners, including when only one rank rejects
+ * an imported record while peers are awaiting data. The numerical trajectory
+ * is unchanged for successful runs; see cosmology_quijote for phase-space units.
  * @see cosmology_contracts cosmology_validation
  *
  * @param argc Argument count after IPPL initialization; exactly one application argument is required.
@@ -26,12 +29,26 @@ int main(int argc, char** argv) {
                 cosmology::Config config;
                 config.nGrid = 16;
                 cosmology::Simulation simulation(config);
-                simulation.testSpectralForce();
-                simulation.testMigration();
+                try {
+                    simulation.testSpectralForce();
+                    simulation.testMigration();
+                } catch (const std::exception& error) {
+                    // Abort while collective owners are alive; unwinding their destructors
+                    // first can deadlock when only one rank detects an input/I/O failure.
+                    std::cerr << "Cosmology rank " << ippl::Comm->rank() << ": " << error.what() << '\n';
+                    MPI_Abort(ippl::Comm->getCommunicator(), 1);
+                    return 1;
+                }
             } else {
                 const auto config = cosmology::Config::fromFile(argv[1]);
                 cosmology::Simulation simulation(config);
-                simulation.run();
+                try {
+                    simulation.run();
+                } catch (const std::exception& error) {
+                    std::cerr << "Cosmology rank " << ippl::Comm->rank() << ": " << error.what() << '\n';
+                    MPI_Abort(ippl::Comm->getCommunicator(), 1);
+                    return 1;
+                }
             }
         }
     } catch (const std::exception& error) {

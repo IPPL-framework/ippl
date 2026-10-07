@@ -264,7 +264,9 @@ def allocation_evidence(path):
     return {"path": str(Path(path).resolve()), "sha256": hashlib.sha256(raw).hexdigest(), "devices": devices}
 
 
-## @brief Evaluate the thread environment helper in the documented module workflow.
+## @brief Enforce N_ranks*N_host_threads<=4 within the fixed four-CPU allocation.
+# Two host threads are permitted for one or two GPU ranks. This changes only
+# host scheduling: device binding, kernels, and scientific tolerances are unchanged.
 # @see cosmology_tools
 #
 # @param environment Explicit subprocess environment; it does not by itself qualify an execution backend.
@@ -276,8 +278,8 @@ def thread_environment(environment, ranks, kind):
     if requested not in ("1", "2"):
         raise LaunchError("Only OMP_NUM_THREADS=1 or 2 is permitted")
     threads = int(requested) if kind == "gpu" else 1
-    if (threads == 2 and ranks != 1) or ranks*threads > 4:
-        raise LaunchError("Two host threads require one GPU rank; total CPU use must not exceed four")
+    if ranks*threads > 4:
+        raise LaunchError("Total rank times host-thread CPU use must not exceed four")
     return {**BlasEnvironment, "OMP_NUM_THREADS": str(threads)}
 
 

@@ -12,6 +12,7 @@
 #include "CosmologyConfig.h"
 #include "CosmologyPhysics.h"
 #include "ExecutionMetadata.h"
+#include "PhaseSpaceIO.h"
 #include <Kokkos_MathematicalConstants.hpp>
 #include <algorithm>
 #include <cmath>
@@ -117,6 +118,9 @@ class Simulation {
     ComplexField modes_m /**< Fourier density coefficients. */, scratch_m /**< Component inverse-transform scratch. */;
     std::unique_ptr<FFT> fft_m; ///< Owned distributed complex-complex transform plan.
     std::ofstream diagnostics_m; ///< Rank-zero production diagnostic CSV stream.
+    double particleMass_m = 0.0; ///< Physical equal mass in Msun/h for external/snapshot provenance.
+    std::uint64_t idSum_m = 0; ///< Initial sum of particle labels, modulo 2^64.
+    std::uint64_t idHash_m = 0; ///< Initial sum of mixed particle labels, modulo 2^64.
     double initialModeAmplitude_m = 0.0; ///< Initial measured cosine density amplitude used for a linear expectation.
     double massError_m = 0.0; ///< Last absolute relative deposited unit-mass residual.
     double maxImaginary_m = 0.0; ///< Largest globally reduced absolute inverse-transform imaginary residual.
@@ -526,7 +530,7 @@ public:
                 const double value = ippl::apply(rho, idx);
                 sum += value * value;
             }, density2);
-        density2 = globalSum(density2) / total;
+        density2 = globalSum(density2) / double(config_m.particleCount()); // RMS over mesh cells, independent of particle count.
         const double amplitude = 2 * std::hypot(real, imag);
         if (step == 0) initialModeAmplitude_m = amplitude;
         const double reference = config_m.icMode == "sine" ? config_m.amplitude : initialModeAmplitude_m;
@@ -574,6 +578,13 @@ public:
     }
 
 public:
+    /** @brief Import exact externally supplied phase space via serial bounded root reads. */
+    void initializeExternal();
+    /** @brief Check distributed label conservation without gathering the full particle catalogue. */
+    void verifyParticleLabels(bool initialize);
+    /** @brief Save a versioned binary shard at a synchronized integration endpoint. */
+    void binarySnapshot(const std::string& name, double a);
+
     // Diagnostic-only entry point, defined by tests/CompareCosmologyForce.cpp.
     // Imports validated equal-mass particles and exercises the production CIC/FFT/gather path.
     /**
@@ -746,9 +757,9 @@ public:
     }
 
     /**
-     * @brief Generate ICs, evolve the production model and record diagnostics/snapshots.
+     * @brief Generate or import ICs, evolve the production model and record exact-epoch snapshots.
      *
-     * Collective. Rejects nonempty output, initializes lattice/modes, evolves uniform-log(a) KDK and writes metadata.
+     * Collective. External ICs bypass all mode generation/rescaling. Requested output epochs split the base log(a) schedule.
      * @throws std::runtime_error On output, count, reality, mass or finite-state failures.
      * @see cosmology_contracts cosmology_validation
      */
@@ -766,35 +777,75 @@ public:
                 << "step,a,D,f,particles,mass_error,delta_rms,mode_re,mode_im,mode_amplitude,expected_amplitude,displacement_rms,momentum_rms,force_rms\n";
         }
         ippl::Comm->barrier();
-        createLattice();
-        initializeModes();
-        displaceParticles();
-        if (maxImaginary_m > 1.e-10)
-            throw std::runtime_error("Initial displacements are not real");
+        if (config_m.icMode == "external") initializeExternal();
+        else {
+            createLattice();
+            initializeModes();
+            displaceParticles();
+            // Critical density in Msun h^2/Mpc^3; generated runs retain unit PM weights.
+            particleMass_m = 2.77536627e11 * config_m.omegaMatter * std::pow(config_m.boxSize, 3) / totalParticles();
+            if (maxImaginary_m > 1.e-10) throw std::runtime_error("Initial displacements are not real");
+        }
+        verifyParticleLabels(true);
         solveForce();
         diagnose(0, config_m.aInitial());
-        snapshot("initial");
-        const double logStep = std::log(config_m.aFinal() / config_m.aInitial()) / config_m.nSteps;
-        for (int step = 0; step < config_m.nSteps; ++step) {
-            const double a0 = config_m.aInitial() * std::exp(step * logStep);
-            const double a1 = config_m.aInitial() * std::exp((step + 1) * logStep);
-            advanceStep(a0, a1);
-            if ((step + 1) % config_m.diagnosticsEvery == 0 || step + 1 == config_m.nSteps)
-                diagnose(step + 1, a1);
+        std::ofstream snapshots;
+        if (ippl::Comm->rank() == 0) {
+            snapshots.open(std::filesystem::path(config_m.output) / "snapshots.csv");
+            if (!snapshots) throw std::runtime_error("Cannot create snapshot manifest");
+            snapshots << std::setprecision(17) << "name,step,a,z,ranks,format\n";
         }
-        snapshot("final");
+        const auto save = [&](const std::string& name, int step, double a) {
+            verifyParticleLabels(false);
+            if (!config_m.writeParticles) return;
+            if (config_m.snapshotFormat == "binary") binarySnapshot(name, a);
+            else snapshot(name);
+            ippl::Comm->barrier(); // Publish the manifest row only after every shard is complete.
+            if (ippl::Comm->rank() == 0) {
+                snapshots << name << ',' << step << ',' << a << ',' << 1 / a - 1 << ','
+                          << ippl::Comm->size() << ',' << config_m.snapshotFormat << '\n';
+                snapshots.flush();
+                if (!snapshots) throw std::runtime_error("Snapshot manifest write failed");
+            }
+        };
+        save("initial", 0, config_m.aInitial());
+        const auto points = config_m.timePoints();
+        std::size_t outputIndex = 0;
+        for (std::size_t step = 1; step < points.size(); ++step) {
+            advanceStep(points[step - 1], points[step]);
+            const bool final = step + 1 == points.size();
+            const bool requested = outputIndex < config_m.outputRedshifts.size()
+                && points[step] == 1 / (1 + config_m.outputRedshifts[outputIndex]);
+            if (step % config_m.diagnosticsEvery == 0 || final || requested)
+                diagnose(static_cast<int>(step), points[step]);
+            if (final) save("final", static_cast<int>(step), points[step]);
+            else if (requested) {
+                std::ostringstream name;
+                name << "output_" << std::setfill('0') << std::setw(3) << outputIndex;
+                save(name.str(), static_cast<int>(step), points[step]);
+            }
+            if (requested) ++outputIndex;
+        }
+        if (outputIndex != config_m.outputRedshifts.size())
+            throw std::runtime_error("Not every requested output epoch was reached");
         const double seconds = globalMax(MPI_Wtime() - start);
         if (ippl::Comm->rank() == 0) {
             std::ofstream metadata(std::filesystem::path(config_m.output) / "metadata.txt");
             metadata << std::setprecision(17)
-                << "model=flat Gaussian LCDM; 1LPT IC; periodic CIC particle-mesh KDK\n"
+                << "model=flat radiation-free LCDM; periodic CIC particle-mesh KDK\n"
+                << "initialization=" << (config_m.icMode == "external" ? "external phase space; no IC regeneration or rescaling" : "generated 1LPT") << '\n'
                 << "position_unit=Mpc/h\np=a^2 dx/d(H0 t)\npeculiar_velocity_km_s=100*p/a\n"
                 << "fft=forward 1/N^3; inverse unnormalized\n"
-                << "rng=SplitMix64 canonical Fourier pair; Box-Muller\n"
-                << "nyquist=IC Nyquist planes zero; force differentiated Nyquist component zero\n";
+                << "rng=" << (config_m.icMode == "external" ? "none; imported realization" : "SplitMix64 canonical Fourier pair; Box-Muller") << '\n'
+                << "nyquist=" << (config_m.icMode == "external" ? "IC spectrum preserved as supplied" : "IC Nyquist planes zero")
+                << "; force differentiated Nyquist component zero\n"
+                << "displacement_origin=" << (config_m.icMode == "external" ? "positions at import" : "undisplaced lattice") << '\n';
             writeExecutionMetadata(metadata);
             metadata << "ranks=" << ippl::Comm->size()
                 << "\nnp=" << config_m.nGrid << "\nnt=" << config_m.nSteps
+                << "\nactual_steps=" << points.size() - 1 << "\nparticle_count=" << totalParticles()
+                << "\nparticle_mass_msun_h=" << particleMass_m << "\nic_file=" << config_m.icFile
+                << "\nsnapshot_format=" << config_m.snapshotFormat
                 << "\nbox_size=" << config_m.boxSize << "\nseed=" << config_m.seed
                 << "\nz_in=" << config_m.zInitial << "\nz_fi=" << config_m.zFinal
                 << "\nhubble=" << config_m.hubble << "\nOmega_m=" << config_m.omegaMatter
@@ -805,10 +856,11 @@ public:
                 << "\nmode=" << config_m.mode[0] << ',' << config_m.mode[1] << ',' << config_m.mode[2]
                 << "\nmax_inverse_imaginary=" << maxImaginary_m << "\nwall_seconds=" << seconds << '\n';
             if (!metadata) throw std::runtime_error("Cannot write metadata");
-            std::cout << "Completed " << config_m.nSteps << " steps on " << ippl::Comm->size()
+            std::cout << "Completed " << points.size() - 1 << " steps on " << ippl::Comm->size()
                       << " ranks in " << seconds << " s; output " << config_m.output << '\n';
         }
     }
 };
 } // namespace cosmology
+#include "CosmologyParticleIO.hpp"
 #endif

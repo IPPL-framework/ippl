@@ -23,23 +23,25 @@ scientific context, not a claim that every method in those papers is implemented
    which property, without promoting a passed integrity audit to physics accuracy.
 7. @ref cosmology_tools "Tool and workflow catalog": every maintained source
    file, its purpose, invocation and relation to the API.
-8. @ref cosmology_references "References and implementation provenance".
+8. @ref cosmology_quijote "Quijote exact-IC workflow and staged I/O".
+9. @ref cosmology_references "References and implementation provenance".
 
 @section doc_core Core API
 
 The model is expressed by @ref cosmology::Config, @ref cosmology::Background,
 @ref cosmology::PowerSpectrum, @ref cosmology::Particles and
-@ref cosmology::Simulation. The normal application generates its own initial
-conditions. `CompareCosmologyForce` and `CompareCosmologyEvolution` are diagnostic
+@ref cosmology::Simulation. The application generates initial conditions or imports an exact external
+phase-space realization. `CompareCosmologyForce` and `CompareCosmologyEvolution` are diagnostic
 imports into the same production force/integration routines, not independent
 IPPL implementations.
 
 @section doc_scope Supported scope
 
 The physical model is periodic, flat, radiation-free Lambda-CDM with one
-collisionless matter species and Gaussian first-order Lagrangian initial data
-(or a uniform lattice or prescribed sine mode). There is no hydrodynamics,
-neutrino species, primordial non-Gaussianity, 2LPT, adaptive force mesh,
+collisionless matter species, generated first-order Lagrangian initial data
+(or a uniform lattice or prescribed sine mode), and externally supplied
+phase space such as published 2LPT particles. There is no hydrodynamics,
+neutrino species, primordial non-Gaussianity generation, an internal 2LPT generator, adaptive force mesh,
 short-range correction or production restart interface in the IPPL application.
 The stored force is a scaled comoving force, and the stored momentum is not a
 velocity in km/s. The local qualification concerns OpenMP and tested MPI ranks;

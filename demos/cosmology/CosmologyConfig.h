@@ -8,6 +8,7 @@
 #ifndef IPPL_COSMOLOGY_CONFIG_H
 #define IPPL_COSMOLOGY_CONFIG_H
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -18,6 +19,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace cosmology {
 
@@ -43,12 +45,16 @@ struct Config {
     double spectralIndex = 0.96; ///< Primordial power-law index n_s in (0,2).
     int transferFunction = 4; ///< Transfer selector: 4 for BBKS, 0 for a CMBFAST-style table.
     std::string transferFile; ///< Transfer table path; relative paths are resolved from the parameter-file directory.
-    std::string icMode = "gaussian"; ///< Initial state selector: gaussian, sine or uniform.
+    std::string icMode = "gaussian"; ///< Initial state selector: gaussian, sine, uniform or external.
+    std::string icFile; ///< Canonical binary phase-space input, resolved relative to the parameter file.
+    std::uint64_t importedParticleCount = 0; ///< Explicit external count, independent of the force mesh; input particle_count.
+    std::string snapshotFormat = "csv"; ///< Per-rank csv (legacy default) or binary phase-space snapshots.
+    std::vector<double> outputRedshifts; ///< Strictly decreasing output epochs within [zFinal,zInitial).
     double amplitude = 1.0e-3; ///< Initial-redshift sine density amplitude; ignored for Gaussian/uniform initial states.
     std::array<int, 3> mode = {1, 0, 0}; ///< Signed integer sine-wave components, strictly below every Nyquist plane.
     std::string output = "cosmology-output"; ///< Output directory resolved from run working directory; nonempty existing simulation output is rejected.
     int diagnosticsEvery = 10; ///< Positive interval in steps between production diagnostic rows.
-    bool writeParticles = true; ///< Whether production initial/final per-rank particle CSVs are written.
+    bool writeParticles = true; ///< Whether production per-rank particle snapshots are written.
 
     /**
      * @brief Convert the configured starting redshift to scale factor.
@@ -108,8 +114,29 @@ struct Config {
                 "TFFlag must be 0 (CMBFAST table) or 4 (BBKS)");
         require(transferFunction != 0 || !transferFile.empty(),
                 "transfer_file is required for TFFlag=0");
-        require(icMode == "gaussian" || icMode == "sine" || icMode == "uniform",
-                "ic_mode must be gaussian, sine, or uniform");
+        require(icMode == "gaussian" || icMode == "sine" || icMode == "uniform" || icMode == "external",
+                "ic_mode must be gaussian, sine, uniform, or external");
+        require(snapshotFormat == "csv" || snapshotFormat == "binary", "snapshot_format must be csv or binary");
+        if (icMode == "external") {
+            require(!icFile.empty() && importedParticleCount > 0,
+                    "external IC requires ic_file and positive particle_count");
+            require(importedParticleCount <= (std::numeric_limits<std::uint64_t>::max() - 128) / 56,
+                    "particle_count exceeds the binary file size range");
+        } else {
+            require(icFile.empty() && importedParticleCount == 0,
+                    "ic_file and particle_count apply only to ic_mode=external");
+        }
+        double previousRedshift = zInitial;
+        for (double redshift : outputRedshifts) {
+            require(std::isfinite(redshift) && redshift >= zFinal && redshift < previousRedshift,
+                    "output_redshifts must decrease strictly within [z_fi,z_in)");
+            const double previousA = 1 / (1 + previousRedshift), nextA = 1 / (1 + redshift);
+            require(nextA - previousA > 16 * std::numeric_limits<double>::epsilon() * nextA,
+                    "output epochs must be distinguishable at floating-point precision");
+            require(redshift == zFinal || aFinal() - nextA > 16 * std::numeric_limits<double>::epsilon() * aFinal(),
+                    "output epoch is indistinguishable from final epoch");
+            previousRedshift = redshift;
+        }
         require(std::isfinite(amplitude) && amplitude >= 0.0 && amplitude < 1.0,
                 "amplitude must satisfy 0 <= amplitude < 1");
         if (icMode == "sine") {
@@ -121,6 +148,31 @@ struct Config {
         }
         require(!output.empty(), "output must name an output directory");
         require(diagnosticsEvery > 0, "diagnostics_every must be positive");
+    }
+
+    /**
+     * @brief Union uniform-log(a) step endpoints with requested exact output epochs.
+     * @return Increasing synchronized KDK endpoints, including aInitial and aFinal.
+     * Requested epochs split intervals; nSteps counts the base intervals, not extra splits.
+     * Near-identical endpoints (8 ulps relative) use the requested epoch to avoid zero steps.
+     */
+    std::vector<double> timePoints() const {
+        std::vector<double> points;
+        const double logStep = std::log(aFinal() / aInitial()) / nSteps;
+        for (int step = 0; step <= nSteps; ++step)
+            points.push_back(step == 0 ? aInitial() : step == nSteps ? aFinal()
+                               : aInitial() * std::exp(step * logStep));
+        for (const double redshift : outputRedshifts) {
+            const double a = 1.0 / (1.0 + redshift);
+            auto next = std::lower_bound(points.begin(), points.end(), a);
+            const auto near = [a](double value) {
+                return std::abs(value - a) <= 8 * std::numeric_limits<double>::epsilon() * a;
+            };
+            if (next != points.end() && near(*next)) *next = a;
+            else if (next != points.begin() && near(*(next - 1))) *(next - 1) = a;
+            else points.insert(next, a);
+        }
+        return points;
     }
 
     /**
@@ -185,6 +237,25 @@ struct Config {
             else if (name == "TFFlag") number(result.transferFunction);
             else if (name == "transfer_file") result.transferFile = value;
             else if (name == "ic_mode") result.icMode = value;
+            else if (name == "ic_file") result.icFile = value;
+            else if (name == "particle_count") {
+                if (value.empty() || value.front() == '-') fail("particle_count must be unsigned");
+                number(result.importedParticleCount);
+            }
+            else if (name == "snapshot_format") result.snapshotFormat = value;
+            else if (name == "output_redshifts") {
+                if (value.empty() || value.back() == ',') fail("output_redshifts requires a nonempty comma-separated list");
+                std::istringstream list(value);
+                std::string item;
+                while (std::getline(list, item, ',')) {
+                    std::istringstream entry(item);
+                    double redshift;
+                    if (!(entry >> redshift)) fail("invalid output redshift");
+                    entry >> std::ws;
+                    if (!entry.eof()) fail("trailing characters in output redshift");
+                    result.outputRedshifts.push_back(redshift);
+                }
+            }
             else if (name == "amplitude") number(result.amplitude);
             else if (name == "mode_x") number(result.mode[0]);
             else if (name == "mode_y") number(result.mode[1]);
@@ -211,6 +282,11 @@ struct Config {
             if (transferPath.is_relative())
                 transferPath = std::filesystem::path(fileName).parent_path() / transferPath;
             result.transferFile = transferPath.lexically_normal().string();
+        }
+        if (!result.icFile.empty()) {
+            std::filesystem::path inputPath(result.icFile);
+            if (inputPath.is_relative()) inputPath = std::filesystem::path(fileName).parent_path() / inputPath;
+            result.icFile = inputPath.lexically_normal().string();
         }
         result.validate();
         return result;

@@ -1302,3 +1302,96 @@ neutrinos, radiation, non-Gaussian initial conditions, or alternative dark energ
 The local OpenMP/MPI result does not establish GPU correctness or performance,
 multi-node scaling, restart reliability, or exascale capability. Those require
 separate physics comparisons and machine-scale qualification.
+
+
+## Quijote external initial conditions
+
+The production driver accepts exact imported equal-mass phase space. The first
+512^3 qualification uses serial bounded-buffer input and per-rank binary output;
+parallel HDF5 is deliberately deferred until that run succeeds. No new 2LPT
+state is generated, no growth/amplitude rescaling is applied, and the existing
+CIC/spectral force and synchronized KDK integrator are reused.
+
+See `docs/quijote.dox` for the mathematical contract, wire format, output schedule,
+unit conversions, resource requirements, comparison convention and qualification
+limits. `python/quijote_io.py --help` describes Gadget format-1 conversion;
+`python/quijote_benchmark.py --help` describes preparation and comparison.
+The serial converter supports original Gadget format-1 files and the current
+lossless Gadget HDF5 ICs, including split files. HDF5 input needs `h5py`; the
+official Blosc-compressed release also needs `hdf5plugin`. It still produces the
+same canonical binary consumed by the simulation, without parallel HDF5 I/O.
+
+Production parameter additions are `ic_mode=external`, `ic_file`,
+`particle_count`, `snapshot_format=binary`, and `output_redshifts=1,0.5,0`.
+`np` remains the force mesh side; the imported count is independent of it.
+Input paths are relative to the parameter file. The header's epoch, box,
+Omega_m, Omega_Lambda and h must match the configuration. Full fiducial
+parameters belong in the campaign manifest even though evolution only needs
+its supported matter-plus-Lambda background.
+
+`snapshots.csv` identifies the actual synchronized epochs. Binary shards are
+`particles_NAME_rankR.bin`; `initial` and `final` are written once, and intermediate
+requested epochs use `output_000`, `output_001`, etc. The generated-IC CSV default
+and diagnostic CSV adapters remain available. Never compare different shards by
+row order: IDs migrate with particles. A completed local regression does not
+qualify 512^3 performance or a resolved cosmological k range.
+
+Regression entry points: CTest labels `quijote` and the existing `cosmology`
+physics/evolution checks. Documentation is built on the Mac with
+`python/build_documentation.py`, not on Merlin.
+
+A typical staged invocation from the checkout is:
+
+```sh
+python -B demos/cosmology/python/quijote_io.py /data/quijote/fiducial/0/ICs/ics \
+  --output /data/quijote/ippl/fiducial-0.bin \
+  --expect-count 134217728 --expect-box 1000 --expect-a 0.0078125 \
+  --expect-omega-m 0.3175 --expect-hubble 0.6711
+python -B demos/cosmology/python/quijote_benchmark.py prepare \
+  --ic /data/quijote/ippl/fiducial-0.bin \
+  --exe build_openmp/demos/cosmology/Cosmology \
+  --output-dir /data/quijote/ippl/pilot-NEW --mesh 512 --steps 512 --ranks 8
+python -B demos/cosmology/python/quijote_benchmark.py execute \
+  --manifest /data/quijote/ippl/pilot-NEW/benchmark.json --run
+```
+
+Replace the example data paths and MPI allocation with the selected realization
+and machine. The preparation command validates and writes a frozen plan without
+launching; execution checks input/configuration/executable hashes again and audits
+all declared output shards after exit. Mesh512/steps512 above are pilot choices,
+not established accuracy requirements. The interpreter needs NumPy and SciPy
+(the full existing validation suite also uses pandas). Set and record the OpenMP
+thread count for the allocation before preparing and executing. No catalogue
+files or large runs are downloaded/launched by the regression tests.
+
+An original Gadget format-1 evolved reference snapshot can pass through the same
+converter. The HDF5 reader currently accepts lossless input only; published lossy
+evolved HDF5 snapshots need a measurement reader that records the quantization
+floor. Once a matching reference is available in canonical format, compare with
+identical analysis bins:
+
+```sh
+python -B demos/cosmology/python/quijote_benchmark.py compare \
+  --left /data/quijote/ippl/pilot-NEW/run/snapshots.csv --left-epoch final \
+  --right /data/quijote/reference-z0.bin --grid 512 \
+  --k-max 0.3 --dk 0.01 --workers 8 --memory-limit-gib 16 \
+  --output /data/quijote/ippl/comparison-NEW.json
+```
+
+The report contains raw power, ratios and phase cross-correlation; optional
+`--line-of-sight z` adds the velocity shift and raw P2/P4. Analysis memory
+estimates include two Fourier fields and mesh workspaces; a larger grid needs
+an explicit larger budget and a measured pilot. Restart is not yet qualified.
+
+For the requested Merlin run, retain authenticated download provenance for
+`/Snapshots/fiducial/0/ICs/` from the official Rusty Globus collection
+`e0eae0aa-5bca-11ea-9683-0e56c063f437`. Header values alone cannot distinguish the
+standard 2LPT case from `fiducial_ZA`. The offline HDF5 converter verifies declared
+zero truncation bits, species/mass/header agreement, all IDs and source hashes.
+See the [official access documentation](https://quijote-simulations.readthedocs.io/en/latest/access.html).
+
+The Merlin GPU launcher allows MPI2/OpenMP2 validation because it uses the same
+four allocated host CPUs as MPI4/OpenMP1 production. It continues to enforce
+distinct allocated GPU identities, CUDA execution/memory metadata and source
+hashes. Full-count import and binary-output checks precede the requested run;
+128 cubed or synthetic runs do not constitute its completion.

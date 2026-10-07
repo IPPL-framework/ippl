@@ -23,7 +23,11 @@ source defaults:
 | n_s | spectralIndex | 0.96 | Primordial tilt, 0 < n_s < 2 |
 | TFFlag | transferFunction | 4 | 4 = BBKS; 0 = weighted transfer table |
 | transfer_file | transferFile | empty | Required for flag 0; relative to parameter-file directory |
-| ic_mode | icMode | gaussian | gaussian, sine or uniform |
+| ic_mode | icMode | gaussian | gaussian, sine, uniform or external |
+| ic_file | icFile | empty | Complete canonical external phase-space file; relative to parameter file |
+| particle_count | importedParticleCount | 0 | Required positive uint64 count for external IC; independent of np |
+| snapshot_format | snapshotFormat | csv | csv or binary (IPPLPS01); no HDF5 in this stage |
+| output_redshifts | outputRedshifts | empty | Comma-separated, strictly decreasing epochs in [z_fi,z_in) |
 | amplitude | amplitude | 0.001 | Initial sine density amplitude, 0 <= A < 1; unused for other modes |
 | mode_x/y/z | mode | (1,0,0) | Nonzero sine mode; every component strictly below Nyquist |
 | output | output | cosmology-output | Output directory relative to run working directory |
@@ -54,7 +58,8 @@ ID, not by shard or row order. Positions are comoving Mpc/h, momenta canonical
 as in @ref cosmology_model. `write_particles=false` suppresses these CSVs.
 `metadata.txt` records conventions, configuration, rank/execution information,
 maximum inverse imaginary residual and elapsed wall time. CSVs are diagnostic
-artifacts, not scalable restart files.
+artifacts, not scalable restart files. External input and binary epoch snapshots
+are specified in @ref cosmology_quijote.
 
 @section contracts_force Frozen-force adapter
 

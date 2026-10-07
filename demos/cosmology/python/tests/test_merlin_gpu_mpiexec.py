@@ -262,24 +262,26 @@ class LauncherTests(unittest.TestCase):
                          prefix+[self.files["python"], "-B", self.files["gpu_rank.py"]]+arguments)
         self.assertEqual(launcher.build_command(self.config, 2, "cpu", arguments), prefix+arguments)
 
-    ## @brief Verify two host threads preserved only for one gpu rank.
+    ## @brief Permit MPI1/2 times two host threads while rejecting oversubscription of four CPUs.
     # @see cosmology_tools
     # @return None; success is expressed by the recorded artifact/check or by returning without an exception.
-    def test_two_host_threads_preserved_only_for_one_gpu_rank(self):
-        self.assertEqual(launcher.thread_environment({"OMP_NUM_THREADS": "2"}, 1, "gpu")["OMP_NUM_THREADS"], "2")
+    def test_two_host_threads_preserved_within_four_cpu_allocation(self):
+        for ranks in (1, 2):
+            self.assertEqual(launcher.thread_environment({"OMP_NUM_THREADS": "2"}, ranks, "gpu")["OMP_NUM_THREADS"], "2")
         self.assertEqual(launcher.thread_environment({"OMP_NUM_THREADS": "2"}, 4, "cpu")["OMP_NUM_THREADS"], "1")
-        for ranks in (2, 4):
+        for ranks in (3, 4):
             with self.subTest(ranks=ranks), self.assertRaises(launcher.LaunchError):
                 launcher.thread_environment({"OMP_NUM_THREADS": "2"}, ranks, "gpu")
         with self.assertRaises(launcher.LaunchError):
             launcher.thread_environment({"OMP_NUM_THREADS": "8"}, 1, "gpu")
-        raw = b"GPU_BINDING " + json.dumps(self.binding(0, 1)).encode() + b"\n"
+        raw = b"".join(b"GPU_BINDING " + json.dumps(self.binding(rank, 2)).encode() + b"\n"
+                       for rank in range(2))
         process = Mock(stdout=io.BytesIO(raw), returncode=0)
         process.wait.return_value = process.poll.return_value = 0
         with (patch.dict(os.environ, {**Slurm, "OMP_NUM_THREADS": "2"}, clear=True),
               patch.object(launcher.subprocess, "Popen", return_value=process) as popen,
               redirect_stdout(io.StringIO())):
-            self.assertEqual(launcher.launch(self.configPath, 1, [self.files["Cosmology"]]), 0)
+            self.assertEqual(launcher.launch(self.configPath, 2, [self.files["Cosmology"]]), 0)
         self.assertEqual(popen.call_args.kwargs["env"]["OMP_NUM_THREADS"], "2")
         manifest = json.loads(next((self.root/"evidence").glob("*.json")).read_text())
         self.assertEqual(manifest["thread_environment"]["OMP_NUM_THREADS"], "2")

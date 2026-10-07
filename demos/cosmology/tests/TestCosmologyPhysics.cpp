@@ -194,6 +194,34 @@ int main() {
             { std::ofstream input(inputPath); input << badInput << '\n'; }
             rejects([&] { cosmology::Config::fromFile(inputPath.string()); }, badInput);
         }
+        config = cosmology::Config();
+        config.icMode = "external";
+        config.icFile = "published.bin";
+        config.importedParticleCount = 512;
+        config.nGrid = 16;
+        config.zInitial = 3;
+        config.zFinal = 0;
+        config.nSteps = 3;
+        config.outputRedshifts = {1, 0.5, 0};
+        config.validate();
+        const auto endpoints = config.timePoints();
+        for (const double epoch : {0.25, 0.5, 2.0 / 3.0, 1.0})
+            if (std::count(endpoints.begin(), endpoints.end(), epoch) != 1)
+                throw std::runtime_error("Output epoch missing or duplicated in integration schedule");
+        for (std::size_t i = 1; i < endpoints.size(); ++i)
+            if (!(endpoints[i] > endpoints[i - 1])) throw std::runtime_error("Nonpositive KDK interval");
+        config.outputRedshifts = {0.5, 1};
+        rejects([&] { config.validate(); }, "unordered requested epochs");
+        config.outputRedshifts = {1, 1};
+        rejects([&] { config.validate(); }, "duplicate requested epochs");
+        config.outputRedshifts.clear();
+        config.importedParticleCount = 0;
+        rejects([&] { config.validate(); }, "missing external count");
+        for (const std::string badInput : {"ic_mode=external", "particle_count=-1",
+                 "snapshot_format=hdf5", "output_redshifts=1,", "output_redshifts=1garbage"}) {
+            { std::ofstream input(inputPath); input << badInput << '\n'; }
+            rejects([&] { cosmology::Config::fromFile(inputPath.string()); }, badInput);
+        }
         std::cout << "Cosmology config, LCDM background, quadrature, and spectrum tests passed\n";
     }
     catch (const std::exception& error) {

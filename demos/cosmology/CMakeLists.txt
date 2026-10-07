@@ -32,13 +32,13 @@ if(BUILD_TESTING)
                          PROCESSORS ${ranks} TIMEOUT 120 LABELS cosmology)
   endforeach()
 
-  option(IPPL_COSMOLOGY_PYTHON_VALIDATION "Enable local MPI evolution tests (NumPy and pandas required)" OFF)
+  option(IPPL_COSMOLOGY_PYTHON_VALIDATION "Enable local MPI evolution tests (NumPy, pandas and SciPy required)" OFF)
   if(IPPL_COSMOLOGY_PYTHON_VALIDATION)
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
-    execute_process(COMMAND ${Python3_EXECUTABLE} -c "import numpy; import pandas"
+    execute_process(COMMAND ${Python3_EXECUTABLE} -c "import numpy; import pandas; import scipy.fft"
                     RESULT_VARIABLE cosmology_python_status)
     if(NOT cosmology_python_status EQUAL 0)
-      message(FATAL_ERROR "Cosmology validation requires NumPy and pandas in Python3_EXECUTABLE")
+      message(FATAL_ERROR "Cosmology validation requires NumPy, pandas and SciPy in Python3_EXECUTABLE")
     endif()
     set(cosmology_validation_command ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/python/validate_linear.py
@@ -100,6 +100,23 @@ if(BUILD_TESTING)
     add_test(NAME cosmology_evolution_refinement_analysis COMMAND ${Python3_EXECUTABLE} -B
       ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_evolution_refinement.py)
     set_tests_properties(cosmology_evolution_refinement_analysis PROPERTIES LABELS cosmology TIMEOUT 120
+      ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
+    foreach(analysis quijote_io quijote_benchmark)
+      add_test(NAME cosmology_${analysis} COMMAND ${Python3_EXECUTABLE} -B
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_${analysis}.py)
+      set_tests_properties(cosmology_${analysis} PROPERTIES LABELS "cosmology;quijote" TIMEOUT 180
+        ENVIRONMENT "OMP_NUM_THREADS=1;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
+    endforeach()
+    set(cosmology_external_command ${Python3_EXECUTABLE} -B
+      ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_external_cosmology.py
+      --exe $<TARGET_FILE:Cosmology> --reference-exe $<TARGET_FILE:CompareCosmologyEvolution>
+      --mpiexec ${MPIEXEC_EXECUTABLE} --numproc-flag=${MPIEXEC_NUMPROC_FLAG})
+    foreach(flag IN LISTS MPIEXEC_PREFLAGS)
+      list(APPEND cosmology_external_command --mpi-arg=${flag})
+    endforeach()
+    add_test(NAME cosmology_external_ic COMMAND ${cosmology_external_command})
+    set_tests_properties(cosmology_external_ic PROPERTIES PROCESSORS 4 TIMEOUT 900
+      LABELS "cosmology;quijote;cosmology_evolution"
       ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
     foreach(analysis gaussian_fixture study_spectra study_storage resolution_study)
       add_test(NAME cosmology_${analysis}_analysis COMMAND ${Python3_EXECUTABLE} -B
