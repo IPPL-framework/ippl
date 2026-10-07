@@ -242,10 +242,10 @@
   <option  id='TREEVIEW_WIDTH' default='yes' type='int'><value>250</value></option>
   <option  id='EXT_LINKS_IN_WINDOW' default='yes' type='bool'><value>NO</value></option>
   <option  id='OBFUSCATE_EMAILS' default='yes' type='bool'><value>YES</value></option>
-  <option  id='HTML_FORMULA_FORMAT' default='yes' type='string'><value>png</value></option>
+  <option  id='HTML_FORMULA_FORMAT' default='no' type='string'><value>svg</value></option>
   <option  id='FORMULA_FONTSIZE' default='yes' type='int'><value>10</value></option>
   <option  id='FORMULA_MACROFILE' default='yes' type='string'><value><![CDATA[]]></value></option>
-  <option  id='USE_MATHJAX' default='no' type='bool'><value>YES</value></option>
+  <option  id='USE_MATHJAX' default='yes' type='bool'><value>NO</value></option>
   <option  id='MATHJAX_VERSION' default='no' type='string'><value>MathJax_3</value></option>
   <option  id='MATHJAX_FORMAT' default='no' type='string'><value>SVG</value></option>
   <option  id='MATHJAX_RELPATH' default='yes' type='string'><value><![CDATA[]]></value></option>
@@ -267,7 +267,9 @@
   <option  id='LATEX_MAKEINDEX_CMD' default='yes' type='string'><value><![CDATA[makeindex]]></value></option>
   <option  id='COMPACT_LATEX' default='yes' type='bool'><value>NO</value></option>
   <option  id='PAPER_TYPE' default='yes' type='string'><value>a4</value></option>
-  <option  id='EXTRA_PACKAGES' default='yes' type='stringlist'>
+  <option  id='EXTRA_PACKAGES' default='no' type='stringlist'>
+    <value><![CDATA[amsmath]]></value>
+    <value><![CDATA[amssymb]]></value>
   </option>
   <option  id='LATEX_HEADER' default='yes' type='string'><value><![CDATA[]]></value></option>
   <option  id='LATEX_FOOTER' default='yes' type='string'><value><![CDATA[]]></value></option>

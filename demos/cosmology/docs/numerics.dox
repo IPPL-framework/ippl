@@ -117,11 +117,21 @@ three little-endian signed int32 canonical components with SHA256. Interpret
 bytes 0..7 and 8..15 as little-endian uint64 values, shift right by 12, then set
 @f$u_j=(b_j+1/2)/2^{52}@f$. The canonical Gaussian coefficient is
 @f$G=\sqrt{-\ln u_1}\exp(2\pi i u_2)@f$; its partner is the complex conjugate.
-Thus @f$\langle|G|^2\rangle=1@f$, and
+In the ideal independent continuous-uniform Box-Muller model
+@cite box1958normal, @f$\langle|G|^2\rangle=1@f$, so we use
 @f$\delta_{0,\boldsymbol m}=\sqrt{P_0(k)/L^3}G@f$.
+Actual hash-derived midpoint uniforms are discrete: their bounds are
+@f$2^{-53}\le u_j\le1-2^{-53}@f$, giving the finite pre-rounding bound
+@f$|G|\le\sqrt{53\ln2}@f$. Exact Gaussianity or statistical independence is
+not established by the hash or the fixed-vector regression.
 This protocol has no mesh dimension, rank, traversal order or backend in its key.
 Transcendental/FFT rounding is backend dependent; integer digest bits are exact.
 The legacy branch retains the previous index-keyed realizations.
+CosmologyICRandom.h gives the byte-offset table, endianness transitions,
+normalization derivation and test limits. SHA-256 follows FIPS 180-4
+@cite nist2015sha256; the specific key and extraction layout are the local v1
+contract. The stateless-generation literature @cite salmon2011parallel is
+context rather than a claim that this code implements Random123.
 
 A positive `ic_mode_cutoff=M` retains @f$0<|\boldsymbol m|\le M<N/2@f$.
 Neither the model normalization nor realization amplitude is readjusted after

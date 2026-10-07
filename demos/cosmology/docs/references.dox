@@ -19,6 +19,31 @@
 - Execution portability and distributed FFT infrastructure:
   Kokkos @cite trott2022kokkos and heFFTe @cite ayala2020heffte.
 
+@section references_native_rng Native Fourier-mode random draws
+
+CosmologyICRandom.h documents the exact `mode_hash_v1` byte layout and its
+mapping to signed physical modes. Three references serve different purposes:
+
+- NIST FIPS 180-4 @cite nist2015sha256 specifies SHA-256: padding and parsing
+  (Secs. 5.1.1/5.2.1), initial state (Sec. 5.3.3), functions and constants
+  (Secs. 4.1.2/4.2.2), and compression (Sec. 6.2.2). Our fixed message, seed/mode
+  serialization and digest-to-uniform conversion are application conventions.
+- Box and Muller @cite box1958normal gives the real-normal transform. We divide
+  its complex combination by @f$\sqrt{2}@f$ so ideal real/imaginary variances are
+  each 1/2, giving @f$E[|G|^2]=1@f$. Finite midpoint uniforms approximate that
+  ideal model; they do not produce a mathematically continuous distribution.
+- Salmon et al. @cite salmon2011parallel explains stateless keyed generation in
+  parallel simulations. The authors maintain the
+  <a href="https://github.com/DEShawResearch/random123">Random123 implementation</a>.
+  It is conceptual context: this code uses SHA-256 for compatibility with the
+  saved Python fixture and does not implement Philox, Threefry or Random123.
+
+The published Random123 statistical/performance results do not qualify this
+custom mapping. Its evidence consists of independent fixed-vector checks and
+native-versus-saved IC validation. The Python `gaussian_fixture.py` protocol and
+`TestCosmologyICRandom.cpp` vectors define compatibility; a protocol-changing
+optimization needs a new RNG version and new evidence.
+
 @section references_sources Native sources and compatibility boundaries
 
 FastPM is pinned by the reference builder to commit
