@@ -37,7 +37,8 @@ import uuid
 
 ## @var GpuNames
 # @brief Named GpuNames protocol/schema value; the source initializer records its exact contents.
-GpuNames = {"Cosmology", "CompareCosmologyForce", "CompareCosmologyEvolution"}
+GpuNames = {"Cosmology", "TestCosmologyICRandom", "TestCosmologyICCheck",
+            "CompareCosmologyForce", "CompareCosmologyEvolution"}
 ## @var CpuNames
 # @brief Named CpuNames protocol/schema value; the source initializer records its exact contents.
 CpuNames = {"FastPMForce", "FastPMEvolution"}

@@ -190,10 +190,24 @@ int main() {
         for (const std::string badInput : {
                  "Omega_nu=0.01", "Omega_r=0.0001", "f_NL=1", "w_de=-0.9", "np=15", "np=100000",
                  "seed=-1", "seed=18446744073709551616", "np=16garbage", "np=16\nnp=32",
-                 "TFFlag=5", "ic_mode=sine\nmode_x=0", "unknown_parameter=1"}) {
+                 "TFFlag=5", "ic_mode=sine\nmode_x=0", "unknown_parameter=1",
+                 "ic_rng=random", "ic_mode_cutoff=-1", "ic_mode_cutoff=16",
+                 "ic_mode_cutoff=2.5", "ic_mode=sine\nic_mode_cutoff=1",
+                 "ic_mode=uniform\nic_rng=mode_hash_v1", "ic_momentum_precision=half",
+                 "ic_only=maybe", "ic_only=true\noutput_redshifts=9"}) {
             { std::ofstream input(inputPath); input << badInput << '\n'; }
             rejects([&] { cosmology::Config::fromFile(inputPath.string()); }, badInput);
         }
+        {
+            std::ofstream input(inputPath);
+            input << "np=64\nic_rng=mode_hash_v1\nic_mode_cutoff=24\n"
+                  << "ic_momentum_precision=float32\nic_only=true\nseed=18446744073709551615\n";
+        }
+        const auto native = cosmology::Config::fromFile(inputPath.string());
+        if (native.icRng != "mode_hash_v1" || native.icModeCutoff != 24
+            || native.icMomentumPrecision != "float32" || !native.icOnly
+            || native.seed != UINT64_MAX)
+            throw std::runtime_error("Native IC options were not preserved by parsing");
         config = cosmology::Config();
         config.icMode = "external";
         config.icFile = "published.bin";
@@ -218,6 +232,7 @@ int main() {
         config.importedParticleCount = 0;
         rejects([&] { config.validate(); }, "missing external count");
         for (const std::string badInput : {"ic_mode=external", "particle_count=-1",
+                 "ic_mode=external\nic_file=unused.bin\nparticle_count=8\nic_momentum_precision=float32",
                  "snapshot_format=hdf5", "output_redshifts=1,", "output_redshifts=1garbage"}) {
             { std::ofstream input(inputPath); input << badInput << '\n'; }
             rejects([&] { cosmology::Config::fromFile(inputPath.string()); }, badInput);

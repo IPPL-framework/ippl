@@ -109,7 +109,7 @@ if [[ "$action" == build ]]; then
         -DIPPL_COSMOLOGY_FASTPM_EVOLUTION_EXECUTABLE="$referenceDir/evolution/FastPMEvolution" \
         -DIPPL_COSMOLOGY_FASTPM_EVOLUTION_MANIFEST="$referenceDir/evolution/build-manifest.txt"
     cmake --build "$buildDir" -j4 --target \
-        Cosmology TestCosmologyPhysics CompareCosmologyForce CompareCosmologyEvolution
+        Cosmology TestCosmologyPhysics TestCosmologyICRandom TestCosmologyICCheck CompareCosmologyForce CompareCosmologyEvolution
     for dependency in kokkos heffte; do
         printf '%s\n' "$dependency"
         git -C "$buildDir/_deps/$dependency-src" rev-parse HEAD
@@ -120,7 +120,8 @@ if [[ "$action" == build ]]; then
 import hashlib, json, pathlib, sys
 root, scripts, native, python, mpi = map(pathlib.Path, sys.argv[1:])
 gpu = [root/'ippl/demos/cosmology'/name for name in
-       ('Cosmology', 'CompareCosmologyForce', 'CompareCosmologyEvolution')]
+       ('Cosmology', 'TestCosmologyICRandom', 'TestCosmologyICCheck',
+        'CompareCosmologyForce', 'CompareCosmologyEvolution')]
 cpu = [native/'FastPMForce', native/'evolution/FastPMEvolution']
 helper = scripts/'gpu_rank.py'
 artifacts = gpu + cpu + [python, mpi, helper, scripts/'gpu_mpiexec.py']
@@ -135,7 +136,7 @@ PY
     (cd "$sourceRoot"; sha256sum -c "$gpuRoot/source.sha256")
     sha256sum "$config" "$buildDir/CMakeCache.txt" "$gpuRoot/source.sha256" \
         "$cpuRoot/gaussian/results.json" "$referenceDir/evolution/build-manifest.txt" \
-        "$buildDir/demos/cosmology/"{Cosmology,TestCosmologyPhysics,CompareCosmologyForce,CompareCosmologyEvolution} \
+        "$buildDir/demos/cosmology/"{Cosmology,TestCosmologyPhysics,TestCosmologyICRandom,TestCosmologyICCheck,CompareCosmologyForce,CompareCosmologyEvolution} \
         > "$gpuRoot/build-complete.sha256"
     phase=build_complete_runtime_not_tested
     exit 0

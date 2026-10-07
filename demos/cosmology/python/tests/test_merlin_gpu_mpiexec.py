@@ -44,7 +44,8 @@ class LauncherTests(unittest.TestCase):
         # @brief Retained files state owned by this instance; see the initialization and workflow contract.
         self.files = {}
         for name in ("mpiexec", "python", "gpu_rank.py", "Cosmology", "CompareCosmologyForce",
-                     "CompareCosmologyEvolution", "FastPMForce", "FastPMEvolution", "provenance.txt"):
+                     "CompareCosmologyEvolution", "TestCosmologyICRandom", "TestCosmologyICCheck",
+                     "FastPMForce", "FastPMEvolution", "provenance.txt"):
             path = self.root / name
             path.write_text("mock artifact " + name)
             path.chmod(0o755)
@@ -79,14 +80,15 @@ class LauncherTests(unittest.TestCase):
     # @param rank MPI rank or local-rank integer specified by the launcher/test.
     # @param ranks Positive MPI rank count; all expected snapshot shards must exist.
     # @return The computed value or retained diagnostic record described by this routine; physical units follow the module contract.
-    def binding(self, rank, ranks=2):
+    # @param target Allowlisted executable whose per-rank GPU evidence is being modeled.
+    def binding(self, rank, ranks=2, target="Cosmology"):
         return {"schema": "ippl-gpu-binding-v1", "host": "merlin-test-node", "rank": rank,
             "local_rank": rank, "local_size": ranks, "world_size": ranks,
             "runtime_device_count": 1, "visible_device_ordinal": 0,
             "allocated_tokens": ["GPU-aaaa", "GPU-bbbb", "GPU-cccc", "GPU-dddd"],
             "visible_token": ["GPU-aaaa", "GPU-bbbb", "GPU-cccc", "GPU-dddd"][rank],
-            "pci": f"0000:{rank+1:02x}:00.0", "executable": self.files["Cosmology"],
-            "requested_executable": self.files["Cosmology"], "helper_path": self.files["gpu_rank.py"],
+            "pci": f"0000:{rank+1:02x}:00.0", "executable": self.files[target],
+            "requested_executable": self.files[target], "helper_path": self.files["gpu_rank.py"],
             "helper_sha256": self.config["sha256"][self.files["gpu_rank.py"]]}
 
     ## @brief Validate the documented module workflow.
@@ -161,7 +163,8 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual((target, kind), (self.files["Cosmology"], "gpu"))
         self.assertEqual(digest, launcher.sha256(self.configPath))
         self.assertIn(self.files["provenance.txt"], config["sha256"])
-        for artifact in ("mpiexec", "python", "gpu_rank.py", "Cosmology", "FastPMEvolution"):
+        for artifact in ("mpiexec", "python", "gpu_rank.py", "Cosmology", "TestCosmologyICRandom",
+                         "TestCosmologyICCheck", "FastPMEvolution"):
             missing = deepcopy(self.config)
             del missing["sha256"][self.files[artifact]]
             self.configPath.write_text(json.dumps(missing))
@@ -340,6 +343,27 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual(record["hashes"][str(self.configPath)], launcher.sha256(self.configPath))
         self.assertEqual(record["allocation_evidence"]["sha256"], launcher.sha256(self.allocationPath))
         self.assertEqual(record["hashes"][str(self.allocationPath)], launcher.sha256(self.allocationPath))
+
+    ## @brief Require each native IC test to use pinned GPU dispatch and valid rank bindings.
+    # @see cosmology_validation
+    # @return None; missing hashes, helper bypass or mismatched binding identity fail the test.
+    def test_native_ic_tests_use_hashed_gpu_dispatch(self):
+        for target in ("TestCosmologyICRandom", "TestCosmologyICCheck"):
+            with self.subTest(target=target):
+                rows = [self.binding(rank, target=target) for rank in range(2)]
+                result, record, popen, _, _ = self.mocked_launch(rows, target=target)
+                self.assertEqual(result, 0)
+                self.assertEqual(record["target"], self.files[target])
+                self.assertEqual(record["target_kind"], "gpu")
+                self.assertEqual(record["hashes"][self.files[target]], launcher.sha256(self.files[target]))
+                command = popen.call_args.args[0]
+                self.assertEqual(command[7:11], [self.files["python"], "-B",
+                                              self.files["gpu_rank.py"], self.files[target]])
+                # Other-executable binding evidence must not qualify the selected IC test.
+                wrong = [self.binding(rank) for rank in range(2)]
+                result, record, _, _, _ = self.mocked_launch(wrong, target=target)
+                self.assertEqual(result, 2)
+                self.assertEqual(record["status"], "launcher_rejected")
 
     ## @brief Verify native failure or invalid bindings never become success.
     # @see cosmology_tools

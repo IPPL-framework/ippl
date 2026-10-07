@@ -46,6 +46,10 @@ struct Config {
     int transferFunction = 4; ///< Transfer selector: 4 for BBKS, 0 for a CMBFAST-style table.
     std::string transferFile; ///< Transfer table path; relative paths are resolved from the parameter-file directory.
     std::string icMode = "gaussian"; ///< Initial state selector: gaussian, sine, uniform or external.
+    std::string icRng = "legacy"; ///< Gaussian RNG: legacy mesh-indexed pairs or mode_hash_v1 resolution-independent physical modes.
+    int icModeCutoff = 0; ///< Spherical integer-mode radius; 0 retains all non-Nyquist modes; positive values must be below np/2.
+    std::string icMomentumPrecision = "double"; ///< Native 1LPT p precision: double, or one float32 rounding for saved-IC compatibility.
+    bool icOnly = false; ///< Validate/export initial state with no KDK evolution; output_redshifts must be empty.
     std::string icFile; ///< Canonical binary phase-space input, resolved relative to the parameter file.
     std::uint64_t importedParticleCount = 0; ///< Explicit external count, independent of the force mesh; input particle_count.
     std::string snapshotFormat = "csv"; ///< Per-rank csv (legacy default) or binary phase-space snapshots.
@@ -116,6 +120,17 @@ struct Config {
                 "transfer_file is required for TFFlag=0");
         require(icMode == "gaussian" || icMode == "sine" || icMode == "uniform" || icMode == "external",
                 "ic_mode must be gaussian, sine, uniform, or external");
+        require(icRng == "legacy" || icRng == "mode_hash_v1",
+                "ic_rng must be legacy or mode_hash_v1");
+        require(icModeCutoff >= 0 && icModeCutoff < nGrid / 2,
+                "ic_mode_cutoff must be zero or a positive integer strictly below np/2");
+        require(icMode == "gaussian" || (icRng == "legacy" && icModeCutoff == 0),
+                "ic_rng and ic_mode_cutoff overrides apply only to Gaussian ICs");
+        require(icMomentumPrecision == "double" || icMomentumPrecision == "float32",
+                "ic_momentum_precision must be double or float32");
+        require(icMode != "external" || icMomentumPrecision == "double",
+                "external IC momenta are preserved; ic_momentum_precision must be double");
+        require(!icOnly || outputRedshifts.empty(), "ic_only cannot request evolved output_redshifts");
         require(snapshotFormat == "csv" || snapshotFormat == "binary", "snapshot_format must be csv or binary");
         if (icMode == "external") {
             require(!icFile.empty() && importedParticleCount > 0,
@@ -237,6 +252,14 @@ struct Config {
             else if (name == "TFFlag") number(result.transferFunction);
             else if (name == "transfer_file") result.transferFile = value;
             else if (name == "ic_mode") result.icMode = value;
+            else if (name == "ic_rng") result.icRng = value;
+            else if (name == "ic_mode_cutoff") number(result.icModeCutoff);
+            else if (name == "ic_momentum_precision") result.icMomentumPrecision = value;
+            else if (name == "ic_only") {
+                if (value == "true" || value == "1") result.icOnly = true;
+                else if (value == "false" || value == "0") result.icOnly = false;
+                else fail("ic_only must be true, false, 1, or 0");
+            }
             else if (name == "ic_file") result.icFile = value;
             else if (name == "particle_count") {
                 if (value.empty() || value.front() == '-') fail("particle_count must be unsigned");

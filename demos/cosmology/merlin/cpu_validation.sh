@@ -109,14 +109,14 @@ cmake -S "$sourceRoot" -B "$buildDir" \
     -DIPPL_COSMOLOGY_FASTPM_EVOLUTION_EXECUTABLE="$referenceDir/evolution/FastPMEvolution" \
     -DIPPL_COSMOLOGY_FASTPM_EVOLUTION_MANIFEST="$referenceDir/evolution/build-manifest.txt"
 cmake --build "$buildDir" -j4 --target \
-    Cosmology TestCosmologyPhysics CompareCosmologyForce CompareCosmologyEvolution
+    Cosmology TestCosmologyPhysics TestCosmologyICRandom TestCosmologyICCheck CompareCosmologyForce CompareCosmologyEvolution
 for dependency in kokkos heffte; do
     dependencySource="$buildDir/_deps/$dependency-src"
     printf '%s\n' "$dependencySource"
     git -C "$dependencySource" rev-parse HEAD
     git -C "$dependencySource" diff --exit-code HEAD --
 done > "$evidenceRoot/dependencies.txt"
-sha256sum "$buildDir/demos/cosmology/"{Cosmology,TestCosmologyPhysics,CompareCosmologyForce,CompareCosmologyEvolution} \
+sha256sum "$buildDir/demos/cosmology/"{Cosmology,TestCosmologyPhysics,TestCosmologyICRandom,TestCosmologyICCheck,CompareCosmologyForce,CompareCosmologyEvolution} \
     "$buildDir/CMakeCache.txt" > "$evidenceRoot/ippl-build.sha256"
 
 phase=regression_tests

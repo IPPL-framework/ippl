@@ -21,6 +21,24 @@ if(BUILD_TESTING)
   add_executable(TestCosmologyPhysics tests/TestCosmologyPhysics.cpp)
   target_include_directories(TestCosmologyPhysics PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   target_link_libraries(TestCosmologyPhysics PRIVATE IPPL::ippl)
+  add_executable(TestCosmologyICRandom tests/TestCosmologyICRandom.cpp)
+  target_include_directories(TestCosmologyICRandom PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  target_link_libraries(TestCosmologyICRandom PRIVATE IPPL::ippl)
+  add_test(NAME cosmology_ic_random
+    COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 1 ${MPIEXEC_PREFLAGS}
+      $<TARGET_FILE:TestCosmologyICRandom> ${MPIEXEC_POSTFLAGS})
+  set_tests_properties(cosmology_ic_random PROPERTIES LABELS "cosmology;cosmology_ic" TIMEOUT 120)
+  add_executable(TestCosmologyICCheck tests/TestCosmologyICCheck.cpp)
+  target_include_directories(TestCosmologyICCheck PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  target_link_libraries(TestCosmologyICCheck PRIVATE IPPL::ippl)
+  foreach(ranks 1 2)
+    add_test(NAME cosmology_ic_check_${ranks}r
+      COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${ranks}
+        ${MPIEXEC_PREFLAGS} $<TARGET_FILE:TestCosmologyICCheck> ${MPIEXEC_POSTFLAGS})
+    set_tests_properties(cosmology_ic_check_${ranks}r PROPERTIES
+      LABELS "cosmology;cosmology_ic" TIMEOUT 180 PROCESSORS ${ranks}
+      ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false")
+  endforeach()
   add_test(NAME cosmology_physics COMMAND TestCosmologyPhysics)
   set_tests_properties(cosmology_physics PROPERTIES LABELS cosmology TIMEOUT 120)
   foreach(ranks 1 2 3 4)
@@ -118,7 +136,7 @@ if(BUILD_TESTING)
     set_tests_properties(cosmology_external_ic PROPERTIES PROCESSORS 4 TIMEOUT 900
       LABELS "cosmology;quijote;cosmology_evolution"
       ENVIRONMENT "OMP_NUM_THREADS=1;OMP_PROC_BIND=false;OPENBLAS_NUM_THREADS=1;MKL_NUM_THREADS=1")
-    foreach(analysis gaussian_fixture study_spectra study_storage resolution_study)
+    foreach(analysis gaussian_fixture native_ic_validation study_spectra study_storage resolution_study)
       add_test(NAME cosmology_${analysis}_analysis COMMAND ${Python3_EXECUTABLE} -B
         ${CMAKE_CURRENT_SOURCE_DIR}/python/tests/test_${analysis}.py)
       set_tests_properties(cosmology_${analysis}_analysis PROPERTIES LABELS cosmology TIMEOUT 120

@@ -1395,3 +1395,32 @@ four allocated host CPUs as MPI4/OpenMP1 production. It continues to enforce
 distinct allocated GPU identities, CUDA execution/memory metadata and source
 hashes. Full-count import and binary-output checks precede the requested run;
 128 cubed or synthetic runs do not constitute its completion.
+
+## Native 1LPT with a common field across resolutions
+
+`input/native-common-field.par` replaces the Python preparation step for the
+64/128/256/512 resolution experiment. Set `ic_rng=mode_hash_v1`, keep
+`ic_mode_cutoff=24`, seed, box and cosmology fixed, and change only `np`.
+Both random amplitudes and phases then refer to the same physical Fourier modes.
+The cutoff does not renormalize the remaining power. Existing inputs retain
+`ic_rng=legacy`; select the new mode protocol explicitly.
+
+Every production run validates its initial state before the first force solve.
+`ic_check.json` records deterministic acceptance and Gaussian-scatter diagnostics;
+`pk_initial.csv` reports the initial **linear displacement-field** spectrum, with
+no shot-noise subtraction. Native 1LPT checks include the momentum/displacement
+identity and selected complex Fourier modes. External phase space receives
+structural checks but is not assumed to be 1LPT. A hard failure stops evolution.
+
+Use `ic_only=true` to write a checked initial binary snapshot and stop with zero
+KDK steps; the initial force/diagnostics are still evaluated. For evolution set
+`ic_only=false`. No evolved output epochs may be requested in IC-only mode.
+`ic_momentum_precision=float32` reproduces the saved experiment's single rounding
+of initial momentum; the default is double. CPU/GPU FFT and transcendental
+rounding can differ, so reproducibility means matching physical modes within
+declared numerical tolerances, not identical bytes across backends.
+
+See `docs/numerics.dox` for the exact SHA256 byte protocol and normalization, and
+`python/validate_native_ic.py` for independent comparison against saved ICs and
+final snapshots. Validation evidence for this change is recorded in
+`NATIVE_IC_STATE.md` at the repository root.

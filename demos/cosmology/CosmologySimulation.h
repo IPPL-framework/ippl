@@ -10,6 +10,7 @@
 
 #include "Ippl.h"
 #include "CosmologyConfig.h"
+#include "CosmologyICRandom.h"
 #include "CosmologyPhysics.h"
 #include "ExecutionMetadata.h"
 #include "PhaseSpaceIO.h"
@@ -106,6 +107,7 @@ KOKKOS_INLINE_FUNCTION double uniformOpen(std::uint64_t x) {
  * No legacy manager hierarchy or independent diagnostic force implementation is used.
  */
 class Simulation {
+    friend struct InitialConditionTest; ///< Test-only access for deliberate preflight corruption; no production bypass.
     Config config_m; ///< Validated run parameters; replicated host configuration.
     Background background_m; ///< Replicated host expansion/growth/quadrature model.
     ippl::NDIndex<Dim> domain_m; ///< Global mesh-index box.
@@ -243,6 +245,9 @@ public:
      *
      * Device coefficients use a replicated host radial P(k) table copied once to execution memory.
      * DC/all IC Nyquist planes vanish; the half-cell phase is included.
+     * With mode_hash_v1, delta_m=sqrt(P(k)/L^3)*G(seed,m) is independent of mesh
+     * and MPI layout. A positive cutoff retains |m|<=icModeCutoff without rescaling P.
+     * Only the sample-origin phase exp(i*pi*sum(m)/N) depends on mesh resolution.
      * For sine input, amplitude/D(aInitial) implements an initial-redshift density amplitude.
      * @see cosmology_numerics
      */
@@ -258,9 +263,11 @@ public:
         const ippl::Vector<int, 3> mode(config_m.mode[0], config_m.mode[1], config_m.mode[2]);
         const bool gaussian = config_m.icMode == "gaussian";
         const bool sine = config_m.icMode == "sine";
+        const bool modeHash = config_m.icRng == "mode_hash_v1";
+        const int cutoff = config_m.icModeCutoff;
         // Isotropic P(k) only depends on the squared integer wave number. This
         // compact host table avoids host copies of distributed 3D fields.
-        const int maxK2 = 3 * (n / 2) * (n / 2);
+        const int maxK2 = cutoff > 0 ? cutoff * cutoff : 3 * (n / 2) * (n / 2);
         Kokkos::View<double*> power("Cosmology radial P(k)", maxK2 + 1);
         auto hostPower = Kokkos::create_mirror_view(power);
         hostPower(0) = 0.0;
@@ -286,7 +293,7 @@ public:
                     nyquist = nyquist || (g[d] == n / 2);
                 }
                 Complex delta(0.0, 0.0);
-                if (k2 != 0 && !nyquist) {
+                if (k2 != 0 && !nyquist && (cutoff == 0 || k2 <= cutoff * cutoff)) {
                     if (sine) {
                         bool positive = true, negative = true;
                         for (int d = 0; d < 3; ++d) {
@@ -294,6 +301,8 @@ public:
                             negative = negative && k[d] == -mode[d];
                         }
                         if (positive || negative) delta = Complex(amplitude / 2, 0);
+                    } else if (gaussian && modeHash) {
+                        delta = modeGaussian(seed, k[0], k[1], k[2]) * Kokkos::sqrt(power(k2) / volume);
                     } else if (gaussian) {
                         const std::uint64_t key = (std::uint64_t(g[0]) * n + g[1]) * n + g[2];
                         const std::uint64_t other = (std::uint64_t(neg[0]) * n + neg[1]) * n + neg[2];
@@ -311,6 +320,14 @@ public:
                 ippl::apply(view, idx) = delta;
             });
     }
+
+    /**
+     * @brief Collectively accept or reject initial phase space before the first force solve.
+     * @details Native checks recover -i*k dot FFT(x-q) and test p=a^2 E f (x-q).
+     * Writes ic_check.json and the initial linear-field spectrum; Gaussian scatter is diagnostic.
+     * @throws std::runtime_error On structural or deterministic numerical failures.
+     */
+    void validateInitialConditions();
 
     // Compute inverse FFT of i*k_component/k² times modes. The full k² is
     // retained on Nyquist planes; only the differentiated Nyquist component
@@ -358,6 +375,8 @@ public:
      * @brief Apply 1LPT displacement and canonical momentum at the initial epoch.
      *
      * Collective; uses x=q+D*psi0 and p=a^2*E*f*D*psi0 in execution memory, then wraps/migrates.
+     * Optional float32 momentum compatibility rounds p once before widening; positions,
+     * growth and force arithmetic stay double. This changes initial rounding only.
      * @pre The lattice and initial density modes exist. @cite zeldovich1970
      */
     void displaceParticles() {
@@ -366,6 +385,7 @@ public:
         const int ng = scratch_m.getNghost();
         const double a = config_m.aInitial(), growth = background_m.D(a);
         const double momentumFactor = a * a * background_m.E(a) * background_m.f(a) * growth;
+        const bool roundMomentum = config_m.icMomentumPrecision == "float32";
         auto r = particles_m->R.getView(), p = particles_m->momentum.getView();
         const auto count = particles_m->getLocalNum();
         for (int d = 0; d < 3; ++d) {
@@ -376,7 +396,8 @@ public:
                     const auto i = l % nx + ng, j = (l / nx) % ny + ng, k = l / (nx * ny) + ng;
                     const double psi = displacement(i, j, k).real();
                     r(l)[d] += growth * psi;
-                    p(l)[d] = momentumFactor * psi;
+                    const double momentum = momentumFactor * psi;
+                    p(l)[d] = roundMomentum ? static_cast<double>(static_cast<float>(momentum)) : momentum;
                 });
         }
         updateParticles();
@@ -784,8 +805,9 @@ public:
             displaceParticles();
             // Critical density in Msun h^2/Mpc^3; generated runs retain unit PM weights.
             particleMass_m = 2.77536627e11 * config_m.omegaMatter * std::pow(config_m.boxSize, 3) / totalParticles();
-            if (maxImaginary_m > 1.e-10) throw std::runtime_error("Initial displacements are not real");
+            // The collective startup gate records the reality test before rejecting.
         }
+        validateInitialConditions();
         verifyParticleLabels(true);
         solveForce();
         diagnose(0, config_m.aInitial());
@@ -809,7 +831,8 @@ public:
             }
         };
         save("initial", 0, config_m.aInitial());
-        const auto points = config_m.timePoints();
+        const auto points = config_m.icOnly ? std::vector<double>{config_m.aInitial()}
+                                            : config_m.timePoints();
         std::size_t outputIndex = 0;
         for (std::size_t step = 1; step < points.size(); ++step) {
             advanceStep(points[step - 1], points[step]);
@@ -836,7 +859,7 @@ public:
                 << "initialization=" << (config_m.icMode == "external" ? "external phase space; no IC regeneration or rescaling" : "generated 1LPT") << '\n'
                 << "position_unit=Mpc/h\np=a^2 dx/d(H0 t)\npeculiar_velocity_km_s=100*p/a\n"
                 << "fft=forward 1/N^3; inverse unnormalized\n"
-                << "rng=" << (config_m.icMode == "external" ? "none; imported realization" : "SplitMix64 canonical Fourier pair; Box-Muller") << '\n'
+                << "rng=" << (config_m.icMode == "external" ? "none; imported realization" : (config_m.icRng == "mode_hash_v1" ? "SHA256 physical Fourier pair v1; Box-Muller" : "SplitMix64 canonical Fourier pair; Box-Muller")) << '\n'
                 << "nyquist=" << (config_m.icMode == "external" ? "IC spectrum preserved as supplied" : "IC Nyquist planes zero")
                 << "; force differentiated Nyquist component zero\n"
                 << "displacement_origin=" << (config_m.icMode == "external" ? "positions at import" : "undisplaced lattice") << '\n';
@@ -852,7 +875,11 @@ public:
                 << "\nOmega_bar=" << config_m.omegaBaryon << "\nSigma_8=" << config_m.sigma8
                 << "\nn_s=" << config_m.spectralIndex << "\nTFFlag=" << config_m.transferFunction
                 << "\ntransfer_file=" << config_m.transferFile
-                << "\nic_mode=" << config_m.icMode << "\namplitude=" << config_m.amplitude
+                << "\nic_mode=" << config_m.icMode
+                << "\nic_rng=" << config_m.icRng << "\nic_mode_cutoff=" << config_m.icModeCutoff
+                << "\nic_momentum_precision=" << config_m.icMomentumPrecision
+                << "\nic_only=" << (config_m.icOnly ? "true" : "false")
+                << "\namplitude=" << config_m.amplitude
                 << "\nmode=" << config_m.mode[0] << ',' << config_m.mode[1] << ',' << config_m.mode[2]
                 << "\nmax_inverse_imaginary=" << maxImaginary_m << "\nwall_seconds=" << seconds << '\n';
             if (!metadata) throw std::runtime_error("Cannot write metadata");
@@ -863,4 +890,5 @@ public:
 };
 } // namespace cosmology
 #include "CosmologyParticleIO.hpp"
+#include "CosmologyICCheck.hpp"
 #endif

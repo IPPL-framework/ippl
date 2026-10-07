@@ -107,4 +107,44 @@ container's boundary functor is disabled because this wrapper supplies the
 periodicity; field layouts remain periodic. IDs, Lagrangian positions, mass,
 force and momentum migrate together. No dynamic load-balancer hierarchy from
 the removed historical StructureFormation implementation is used.
+
+@section numerics_native_mode_hash Resolution-independent native 1LPT
+
+For `ic_rng=mode_hash_v1`, an integer physical mode @f$\boldsymbol m@f$ is
+canonical when its first nonzero Cartesian component is positive. Hash the exact
+bytes `IPPL-band-limited-Gaussian-v1\0` followed by little-endian uint64 seed and
+three little-endian signed int32 canonical components with SHA256. Interpret
+bytes 0..7 and 8..15 as little-endian uint64 values, shift right by 12, then set
+@f$u_j=(b_j+1/2)/2^{52}@f$. The canonical Gaussian coefficient is
+@f$G=\sqrt{-\ln u_1}\exp(2\pi i u_2)@f$; its partner is the complex conjugate.
+Thus @f$\langle|G|^2\rangle=1@f$, and
+@f$\delta_{0,\boldsymbol m}=\sqrt{P_0(k)/L^3}G@f$.
+This protocol has no mesh dimension, rank, traversal order or backend in its key.
+Transcendental/FFT rounding is backend dependent; integer digest bits are exact.
+The legacy branch retains the previous index-keyed realizations.
+
+A positive `ic_mode_cutoff=M` retains @f$0<|\boldsymbol m|\le M<N/2@f$.
+Neither the model normalization nor realization amplitude is readjusted after
+truncation. Increasing N therefore samples the same continuous band-limited
+field when seed, box, spectrum and cutoff agree. DC and Nyquist planes vanish.
+Cell-centred FFT coefficients include @f$\exp(i\pi\sum_d m_d/N)@f$; removing that
+sampling phase gives the same physical coefficient across resolutions.
+
+The existing distributed inverse FFT yields @f$\boldsymbol\psi_0@f$ and then
+@f$\boldsymbol x=\boldsymbol q+D(a_i)\boldsymbol\psi_0@f$,
+@f$\boldsymbol p=a_i^2 E(a_i)f(a_i)D(a_i)\boldsymbol\psi_0@f$.
+`ic_momentum_precision=float32` rounds the last expression once and widens it
+back to double solely for compatibility with saved Python ICs. Default double
+retains the original native arithmetic. No Poisson solver or KDK update changes.
+
+The initializer runs in Kokkos execution memory and generates each local lattice
+piece directly on its owning rank. Only the small radial spectrum table moves
+host-to-device; no full particle IC file or host mesh is required. Scalar and
+small-shell reductions in the automatic startup gate add communication but do
+not alter particles, Fourier coefficients or subsequent force arithmetic.
+The gate checks deterministic identities before evolution; realization scatter
+in Gaussian shell powers is reported without rejecting or selecting seeds.
+`pk_initial.csv` is the linear density spectrum associated with the displacement,
+not a nonlinear particle/CIC spectrum and has no Poisson noise subtraction.
+
 */

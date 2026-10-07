@@ -1,0 +1,25 @@
+# Native equivalent of the saved ok-check 1LPT realization.
+# Change np to 128,256,... with the same box/seed/cutoff to retain the same field.
+np = 64
+nt = 2400
+box_size = 168.75
+seed = 1
+z_in = 99
+z_fi = 0
+hubble = 0.675
+Omega_m = 0.31
+Omega_bar = 0.0487
+Sigma_8 = 0.82
+n_s = 0.965
+TFFlag = 4
+ic_mode = gaussian
+ic_rng = mode_hash_v1
+ic_mode_cutoff = 24
+# Compatibility with the saved Python ICs; double is the production default.
+ic_momentum_precision = float32
+# Set false to evolve after the automatic checks pass.
+ic_only = true
+snapshot_format = binary
+write_particles = true
+diagnostics_every = 240
+output = native-common-field-output

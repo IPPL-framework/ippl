@@ -24,6 +24,10 @@ source defaults:
 | TFFlag | transferFunction | 4 | 4 = BBKS; 0 = weighted transfer table |
 | transfer_file | transferFile | empty | Required for flag 0; relative to parameter-file directory |
 | ic_mode | icMode | gaussian | gaussian, sine, uniform or external |
+| ic_rng | icRng | legacy | Gaussian only: legacy mesh-indexed RNG or mode_hash_v1 signed-mode SHA256 RNG |
+| ic_mode_cutoff | icModeCutoff | 0 | Gaussian only: 0 for full interior spectrum; positive integer radius below np/2 |
+| ic_momentum_precision | icMomentumPrecision | double | Native p computed in double, optionally rounded once to float32; external momenta never changed |
+| ic_only | icOnly | false | Check/export initial state, zero KDK steps; disallows evolved output_redshifts |
 | ic_file | icFile | empty | Complete canonical external phase-space file; relative to parameter file |
 | particle_count | importedParticleCount | 0 | Required positive uint64 count for external IC; independent of np |
 | snapshot_format | snapshotFormat | csv | csv or binary (IPPLPS01); no HDF5 in this stage |
