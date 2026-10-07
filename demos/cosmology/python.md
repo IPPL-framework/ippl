@@ -569,11 +569,11 @@ python -B demos/cosmology/python/ippl-cosmology/scripts/prepare_validation_asset
 ```
 
 
-## Local Figure A11 campaign
+## Local and Merlin6 Figure A11 campaign
 
 ### [`run_three_code_campaign.py`](python/run_three_code_campaign.py)
 
-**Purpose:** Build missing FastPM, GADGET-2 and Cosmology executables; run matched local 128³ evolution; produce Figure A11 and its plotted data.
+**Purpose:** Build missing local FastPM, GADGET-2 and Cosmology executables; run matched 128³ evolution; submit dependency-linked A100 Slurm builds/runs on Merlin6; validate exact shared ICs and physical GPU bindings; extend Figure A11 with the GPU spectra.
 
 **Usage:**
 
@@ -581,11 +581,11 @@ python -B demos/cosmology/python/ippl-cosmology/scripts/prepare_validation_asset
 python -B demos/cosmology/python/run_three_code_campaign.py --ranks 4
 ```
 
-Use `--build-only`, `--plan`, `--smoke`, or `--analyze-only CAMPAIGN` for individual stages. See [ThreeCodeCampaign.md](ThreeCodeCampaign.md) for model, options and outputs.
+Omitting `--cluster` selects local execution; `--rank` defaults to 1 (`--ranks` remains an alias). Use `--cluster merlin6 --rank 1,4 --shared-ic BASELINE/ics/shared-z99.csv` for A100 submissions, then `--extend-figure BASELINE --gpu-result GPU1 --gpu-result GPU4 --output NEW_COMPARISON` to merge completed downloaded results. Use `--build-only`, `--plan`, `--smoke`, or `--analyze-only CAMPAIGN` for individual stages. See [ThreeCodeCampaign.md](ThreeCodeCampaign.md) for model, options and outputs.
 
 ### [`tests/test_three_code_campaign.py`](python/tests/test_three_code_campaign.py)
 
-**Purpose:** Check shared IC conventions, cached-build behavior, final snapshot integrity, and the Figure A11 FastPM ratio denominator.
+**Purpose:** Check shared IC conventions, cached builds, final snapshot integrity, CLI defaults, Slurm dependency/resource requests, distinct-GPU binding validation, downloaded evidence hashes and the Figure A11 FastPM ratio denominator.
 
 **Usage:**
 

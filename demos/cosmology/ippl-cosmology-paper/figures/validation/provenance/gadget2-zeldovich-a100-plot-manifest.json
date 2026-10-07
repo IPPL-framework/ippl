@@ -1,0 +1,73 @@
+{
+  "schema": "ippl-cpu-a100-fastpm-gadget2-z99-z0-power-v1",
+  "created_utc": "2026-10-05T20:03:48.605885+00:00",
+  "input_hashes": {
+    "/data/user/adelmann/cosmology-zeldovich-broadband-20261004/analysis/results.json": "b345da2fbbf22e9a57091a06352be15da72d6296809502a571fdc130453f6122",
+    "/data/user/adelmann/gadget2-zeldovich-20261004/analysis/gadget2-z99-z0-results.json": "8ad14e25a766665ce3f8c347c250637a2692fd54e06f1a0ea8ac8d3f9b5605a9",
+    "/data/user/adelmann/gadget2-zeldovich-20261004/campaign.json": "9d7c0fa83907641272c2a7fa677857e475e897cf858349ea8c7a50fbc35cf80d",
+    "/data/user/adelmann/cosmology-a100-zeldovich-20261005/runs/z99-ippl-a100-np128-nm128/run.json": "2e6303a2bb0c8fdf8f553f6b7eeb9199ddcb9a9d179136fa2238781721faf900",
+    "/data/user/adelmann/cosmology-a100-zeldovich-20261005/runs/z99-ippl-a100-np128-nm128/particles_checkpoint0024_rank0.csv": "e5a922bf02a02a93989879c9d76d92247a5455ae7bc5f202261649302fe08f98",
+    "/data/user/adelmann/cosmology-zeldovich-broadband-20261004/ics/shared-z99.csv": "5698e25ce2ebd6dc35880dca1f8d4a24af4dc3c9e4860c011d4c212dd76a4afa"
+  },
+  "dependencies": {
+    "/data/user/adelmann/cosmology-a100-zeldovich-20261005/source/plot_a100_zeldovich_comparison.py": "3777bba100f1b29c155312130fcab06b173b5e99b708f08e31747f0fd963bcf0",
+    "/data/user/adelmann/cosmology-zeldovich-broadband-20261004/source/demos/cosmology/analyze_zeldovich_benchmark.py": "4197e949dfe5504a7bc626a98b59a7aa734f3b9e618549a84efcda24e2a8486b"
+  },
+  "shared_input_csv_sha256": "5698e25ce2ebd6dc35880dca1f8d4a24af4dc3c9e4860c011d4c212dd76a4afa",
+  "campaign_complete": true,
+  "runs": {
+    "ippl_cpu_8r": {
+      "label": "IPPL \u00b7 CPU, 8 ranks",
+      "wall_seconds": null
+    },
+    "fastpm_cpu_8r": {
+      "label": "FastPM \u00b7 CPU, 8 ranks",
+      "wall_seconds": null
+    },
+    "gadget2_treepm": {
+      "label": "GADGET-2 \u00b7 TreePM",
+      "wall_seconds": null
+    },
+    "ippl_a100_1gpu": {
+      "label": "IPPL \u00b7 A100, 1 rank",
+      "wall_seconds": null
+    }
+  },
+  "source_commit": "296fd04c06130ce46b8510eb540dac620e83a8de",
+  "source_header_sha256": "5b2446fc27df286a5cf1147a7a921208296b48daa846af012d1f9e00cc7142fb",
+  "a100_solver_wall_seconds": 187.92,
+  "power_definition": {
+    "deposition": "periodic CIC on 128^3 mesh; counts normalized by mean",
+    "fft": "rfftn; full real-mode multiplicities restored",
+    "power": "P=V*<|delta_k|^2>, CIC window power deconvolved; Poisson 1/nbar subtracted",
+    "shells": "integer |n| shells, centers from measured weighted mean |n| times 2pi/L; |n|<=48",
+    "shot_noise_mpc_over_h_cubed": 2.291402779519558,
+    "qualification": "measured realization and code differences; no new pass thresholds"
+  },
+  "limitations": [
+    "single shared Gaussian realization; not an ensemble uncertainty estimate",
+    "GADGET-2 uses TreePM with a short-range tree while IPPL/FastPM use plain PM; differences include force-model differences",
+    "same external CIC mesh estimator and shot-noise subtraction; modes |n|<=48 are characterization, not a high-k convergence claim",
+    "GADGET-2 adaptive/synchronized time stepping is not the fixed log(a) schedule used by IPPL/FastPM",
+    "A100 IPPL used one rank/one A100; CPU IPPL/FastPM used 8 MPI ranks",
+    "one shared realization; the CPU/GPU overlay is not a performance-scaling or convergence study",
+    "CUDA build used an access-only NVCC extended-lambda compatibility adjustment; formulas are unchanged"
+  ],
+  "outputs": [
+    {
+      "path": "/data/user/adelmann/cosmology-a100-zeldovich-20261005/plots/a100-z99-z0-v1/a100-z99-z0-power.png",
+      "bytes": 233800,
+      "sha256": "56bcf3fd94ebdcee5bffc127cedcc8797261c7f66e90c273be1d52e980a65d0b"
+    },
+    {
+      "path": "/data/user/adelmann/cosmology-a100-zeldovich-20261005/plots/a100-z99-z0-v1/a100-z99-z0-power.svg",
+      "bytes": 68620,
+      "sha256": "6c89f283545ad69c5d2aead39f677972e860c04525adaadb65f2f06185bd10e4"
+    },
+    {
+      "path": "/data/user/adelmann/cosmology-a100-zeldovich-20261005/plots/a100-z99-z0-v1/plotted_values.json",
+      "bytes": 13941,
+      "sha256": "570687bd3384191a36dbdb643e2084012180bf9f5fea1ad03fcbba776c4ea226"
+    }
+  ]
+}

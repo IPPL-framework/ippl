@@ -1,0 +1,566 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{pdflscape}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{xspace}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  citecolor=blue!55!black,
+  urlcolor=blue!55!black
+}
+
+\newcommand{\IPPL}{\textnormal{\textsc{ippl}}\xspace}
+\newcommand{\todo}[1]{\textcolor{red!70!black}{[TODO: #1]}}
+\newcommand{\validationplot}[3]{%
+  \begin{landscape}
+  \begin{figure}[p]
+    \centering
+    \includegraphics[width=\linewidth,height=.78\textheight,keepaspectratio]{figures/validation/#1}
+    \caption{#2}\label{#3}
+  \end{figure}
+  \end{landscape}%
+}
+
+\title{A Performance-Portable Particle--Mesh Framework for Cosmological
+Structure Formation with \IPPL}
+\author{\todo{author list and affiliations}}
+\date{Draft of \today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present the first cosmological structure-formation application built on the
+Independent Parallel Particle Layer (\IPPL), a C++ framework for distributed,
+performance-portable particle--mesh algorithms.  The present model evolves one
+collisionless cold-matter species in a periodic flat $\Lambda$CDM universe.  It
+combines Gaussian first-order Lagrangian perturbation theory initial conditions,
+cloud-in-cell particle--mesh coupling, a distributed spectral Poisson solve, and
+kick--drift--kick integration in the scale factor.  The implementation inherits
+the MPI, Kokkos, and heFFTe abstractions previously exercised by \IPPL's plasma
+particle-in-cell mini-applications, while adding cosmological background
+evolution, transfer functions, reproducible Fourier-space initialization, and
+cosmology-specific validation.
+
+The validation establishes linear evolution on one to four MPI ranks with an
+OpenMP backend and matched initial-condition statistics against an independent
+generator.  It also tests frozen forces, analytical pre-crossing trajectories,
+and nonlinear evolution against native plain-PM FastPM.  Matched-discretization
+agreement is close, but crossed particle/mesh studies retain resolution failures;
+the completed Gaussian matrix does not yet establish a qualified resolution
+band.  These bounded results position the code as a portable particle--mesh
+research and verification platform, not a replacement for mature production
+cosmology codes.  Higher-resolution studies, second-order initial conditions,
+short-range gravity, scalable output, and accelerator and multi-node qualification
+remain necessary for broader scientific and performance claims.
+\end{abstract}
+
+\paragraph{Scope and contribution.}
+The contribution is twofold.  First, it translates a validated particle--mesh
+software stack from plasma physics to cosmological gravity without duplicating
+the portability layer.  Second, it defines a staged validation path in which
+background cosmology, initial conditions, discretized force, time integration,
+parallel invariance, and performance are tested independently before nonlinear
+science claims are made.  The initial linear results were summarized at
+development snapshot \texttt{0f2953bde}; Appendix~\ref{app:validation} records
+the completed validation campaigns through 4 October 2026, their separate
+provenance, and their retained failures.  Results marked \todo{measurement}
+are planned rather than completed.
+
+\subsection*{Position in computational cosmology}
+
+Cosmological simulation is a mature field with several distinct algorithmic
+families.  GADGET-4 combines tree or fast-multipole short-range gravity with a
+particle--mesh long-range solver and includes hydrodynamics, on-the-fly structure
+finding, and second-order initial conditions~\cite{springel2021gadget4}.  SWIFT
+uses fine-grained tasking and couples fast-multipole gravity to an optional
+Fourier particle--mesh solver, alongside hydrodynamics and galaxy-formation
+models~\cite{schaller2024swift}.  HACC was designed for extreme-scale
+cosmological simulations and uses an architecture-dependent short-range solver
+around a common long-range spectral method~\cite{habib2016hacc}.  Abacus attains
+high force accuracy and throughput with a specialized near/far decomposition;
+the AbacusSummit campaign evolved roughly 60 trillion particles over many
+cosmologies~\cite{maksimova2021abacussummit}.  Mesh and adaptive-mesh codes such
+as RAMSES and Nyx occupy a complementary Eulerian niche, particularly when gas
+dynamics and refinement are central~\cite{teyssier2002ramses,almgren2013nyx}.
+
+Pure and approximate particle--mesh methods are an equally important comparison.
+FastPM modifies the kick and drift operators to preserve linear displacement
+growth with few time steps and targets fast mock-catalog generation, while COLA
+evolves residual motion around perturbative trajectories for a similar
+purpose~\cite{feng2016fastpm,tassev2013cola}.  CONCEPT couples a PM long-range
+solver to a short-range particle--particle method and adaptive stepping, with
+tight integration of cosmological initial conditions and analysis
+products~\cite{dakin2022concept}.  Thus neither particle--mesh cosmology nor
+high-throughput ensemble generation is by itself a novelty claim for this work.
+The research question is instead whether a reusable particle-and-field framework
+can retain cosmological accuracy and useful efficiency while holding the
+high-level implementation fixed across vendor architectures.
+
+Against these production systems, the near-term role of an \IPPL-based code is
+not feature parity.  Its distinctive value is a compact, open particle--mesh
+test bed in which the same application-level C++ code targets multiple CPU and
+GPU programming backends through Kokkos, distributed FFTs through heFFTe, and
+domain decomposition through \IPPL.  This makes it suitable for controlled
+studies of portable deposition and interpolation kernels, FFT-based gravity,
+reproducible distributed initialization, load balancing, mixed precision, and
+new Poisson or time-integration algorithms.  The approach mirrors the role of
+the ALPINE plasma mini-apps as an interface between physics, algorithms, and
+computer architecture~\cite{muralikrishnan2024scaling}.
+
+Table~\ref{tab:positioning} summarizes the intended positioning.  The immediate
+scientific target is periodic collisionless large-scale structure in the
+linear and mildly nonlinear regimes.  High-dynamic-range halo and galaxy
+formation requires a short-range force method and, for baryonic science,
+hydrodynamics and subgrid physics.  Those additions should be motivated by a
+specific science case rather than treated as prerequisites for a useful
+particle--mesh research code.
+
+\begin{table}[htbp]
+  \centering
+  \caption{A functional comparison that clarifies the intended role of the
+  \IPPL cosmology application.  ``Planned'' denotes work not qualified by the
+  results in this paper.}
+  \label{tab:positioning}
+  \begin{tabular}{@{}p{0.23\linewidth}p{0.31\linewidth}p{0.36\linewidth}@{}}
+    \toprule
+    Capability & Mature production landscape & \IPPL cosmology status and role \\
+    \midrule
+    Periodic long-range gravity & Spectral PM is common in HACC, TreePM/FMM--PM
+      codes, and other large-volume solvers & Implemented with CIC and a
+      distributed spectral Poisson solve; primary current capability \\
+    Short-range force & Trees, FMM, P$^3$M, AMR, or specialized near-field
+      algorithms & Not implemented; required for halo-scale accuracy \\
+    Initial conditions & 2LPT and external production generators are standard &
+      Deterministic distributed 1LPT, BBKS and tabulated transfer functions;
+      2LPT is planned \\
+    Heterogeneous hardware & Often optimized through code-specific CPU/GPU
+      paths & Single-source Kokkos abstraction inherited from \IPPL; accelerator
+      cosmology runs remain to be qualified \\
+    Baryonic physics & Available in codes such as SWIFT, GADGET-4, Nyx, and
+      RAMSES & Outside the present paper; possible through future IPPL fields or
+      coupling to a hydrodynamics package \\
+    Research use & Precision survey production and astrophysical prediction &
+      Portable algorithms, verification, performance studies, and rapid
+      particle--mesh method development \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Cosmology model}
+\label{sec:model}
+
+\subsection{Background expansion}
+
+The current model is a spatially flat, radiation-free $\Lambda$CDM cosmology
+with one collisionless matter species.  The scale factor $a$ is normalized to
+unity today and is related to redshift by $a=(1+z)^{-1}$.  With
+$\Omega_\Lambda=1-\Omega_m$, the dimensionless Hubble function is
+\begin{equation}
+  E(a) \equiv \frac{H(a)}{H_0}
+  = \left(\frac{\Omega_m}{a^3}+\Omega_\Lambda\right)^{1/2}.
+  \label{eq:hubble}
+\end{equation}
+Radiation, curvature, massive neutrinos, evolving dark energy, and modified
+gravity are not included in the present validation envelope.
+
+Positions $\boldsymbol{x}$ are comoving and expressed in
+$h^{-1}\,\mathrm{Mpc}$.  We introduce the dimensionless time
+$\tau=H_0t$ and canonical momentum
+\begin{equation}
+  \boldsymbol{p}=a^2\frac{d\boldsymbol{x}}{d\tau}.
+  \label{eq:momentum}
+\end{equation}
+The physical peculiar velocity is then
+$\boldsymbol{v}_{\rm pec}=100\,\boldsymbol{p}/a$ in
+$\mathrm{km}\,\mathrm{s}^{-1}$ for coordinates in $h^{-1}\,\mathrm{Mpc}$.
+
+\subsection{Collisionless particle--mesh equations}
+
+Let $\delta=\rho/\bar\rho-1$ be the matter density contrast.  We define a
+rescaled potential $\phi_0$ through
+\begin{equation}
+  \nabla^2\phi_0 = \frac{3}{2}\Omega_m\delta,
+  \qquad
+  \boldsymbol{F}=-\nabla\phi_0.
+  \label{eq:poisson}
+\end{equation}
+Using $a$ as the independent variable gives
+\begin{equation}
+  \frac{d\boldsymbol{p}}{da}
+    = \frac{\boldsymbol{F}}{a^2E(a)},
+  \qquad
+  \frac{d\boldsymbol{x}}{da}
+    = \frac{\boldsymbol{p}}{a^3E(a)}.
+  \label{eq:eom}
+\end{equation}
+The periodic zero mode is explicitly removed.  Equations~\eqref{eq:poisson}
+and~\eqref{eq:eom} are discretized with a uniform cell-centered mesh, equal-mass
+macro-particles, and cloud-in-cell (CIC) assignment.  The same shape function is
+used for scatter and gather, which avoids an asymmetric particle--mesh coupling.
+
+One simulation step is a kick--drift--kick composition.  For a force held fixed
+during a kick and a momentum held fixed during a drift, the cosmological factors
+are
+\begin{equation}
+  K(a_0,a_1)=\int_{a_0}^{a_1}\frac{da}{a^2E(a)},
+  \qquad
+  D_{\rm drift}(a_0,a_1)=\int_{a_0}^{a_1}\frac{da}{a^3E(a)}.
+  \label{eq:factors}
+\end{equation}
+Steps are uniform in $\ln a$, with the geometric midpoint separating the two
+kicks.  Host-side adaptive quadrature evaluates Eq.~\eqref{eq:factors}; particle
+and mesh kernels remain in the selected Kokkos execution space.  The scheme is
+second order in time.  Mechanical energy is not expected to remain constant in
+an expanding background; validation instead uses the linear growing mode,
+convergence, mass conservation, and parallel consistency.
+
+\subsection{Current physical limits}
+
+The mesh supplies the only force resolution.  There is no CIC-window
+deconvolution, sub-cell short-range force, adaptive mesh, or independent force
+softening parameter.  The present application is therefore well matched to
+linear modes and large-volume algorithm studies but not yet to precision halo
+internal structure.  A credible nonlinear extension should add and separately
+validate one of the following: P$^3$M, TreePM/FMM--PM, or a refined mesh.  This
+choice affects conservation, scaling, load balance, and portability and should
+be treated as a central research decision.
+
+\section{Initial conditions}
+\label{sec:ics}
+
+\subsection{Linear spectrum and growth}
+
+The $z=0$ linear matter spectrum is
+\begin{equation}
+  P(k)=A k^{n_s}T^2(k),
+  \label{eq:pk}
+\end{equation}
+with $k$ in $h\,\mathrm{Mpc}^{-1}$ and $P$ in
+$(h^{-1}\,\mathrm{Mpc})^3$.  The amplitude $A$ is fixed by
+\begin{equation}
+  \sigma_8^2=\frac{1}{2\pi^2}
+  \int dk\,k^2P(k)W^2(8k),
+  \quad
+  W(x)=3\frac{\sin x-x\cos x}{x^3}.
+  \label{eq:sigma8}
+\end{equation}
+The implementation supports the BBKS analytic CDM transfer function and a
+CMBFAST-style table containing cold-dark-matter and baryon transfer columns.
+For the table option, the total matter transfer function is formed with the
+configured baryon fraction and normalized at low $k$.  The input table must
+cover the largest three-dimensional mesh wave number; extrapolation beyond the
+last tabulated wave number is rejected.
+
+The growing solution is evaluated as
+\begin{equation}
+  D_{\rm raw}(a)=\frac{5\Omega_m}{2}E(a)
+  \int_0^a\frac{da'}{a'^3E^3(a')},
+  \qquad
+  D(a)=\frac{D_{\rm raw}(a)}{D_{\rm raw}(1)},
+  \label{eq:growth}
+\end{equation}
+with logarithmic growth rate $f=d\ln D/d\ln a$.  This integral solution is
+cross-checked against an independent growth-ODE calculation.
+
+\subsection{Distributed Gaussian 1LPT}
+
+Particles begin on a cell-centered Lagrangian lattice
+$\boldsymbol{q}=(\boldsymbol{i}+1/2)L/N$.  Independent Gaussian Fourier
+coefficients obey
+\begin{equation}
+  \left\langle|\widehat\delta(\boldsymbol{k},a)|^2\right\rangle
+  = \frac{D^2(a)P(k)}{L^3},
+  \label{eq:fourier_variance}
+\end{equation}
+under the transform convention used by the implementation.  Hermitian partners
+are constructed explicitly; the DC mode and initial-condition Nyquist planes
+are zero.  First-order Lagrangian perturbation theory gives
+\begin{align}
+  \widehat{\boldsymbol{\psi}}_0(\boldsymbol{k})
+    &= \frac{i\boldsymbol{k}}{k^2}\widehat\delta(\boldsymbol{k},a=1),\\
+  \boldsymbol{x}(a_i)
+    &= \boldsymbol{q}+D(a_i)\boldsymbol{\psi}_0,\\
+  \boldsymbol{p}(a_i)
+    &= a_i^2E(a_i)f(a_i)D(a_i)\boldsymbol{\psi}_0.
+  \label{eq:1lpt}
+\end{align}
+
+Random values are generated from a configured 64-bit seed and a canonical
+global Fourier-mode index.  Consequently, a mode receives the same coefficient
+for different MPI decompositions and OpenMP schedules.  This is stronger than
+merely using the same seed on every rank and enables direct phase-space
+comparisons across rank counts.
+
+The application also provides a single sinusoidal mode and a uniform lattice.
+The former isolates force and growth errors; the latter tests the periodic
+zero-force equilibrium.  Production cosmology will require second-order
+Lagrangian perturbation theory to reduce transients and a documented path for
+ingesting community initial-condition formats.
+
+\section{A performance-portable implementation}
+\label{sec:implementation}
+
+\subsection{Reuse of the \IPPL particle--mesh stack}
+
+The implementation follows the software decomposition established for \IPPL's
+plasma particle-in-cell applications~\cite{muralikrishnan2024scaling}.  MPI
+distributes fields and particles across ranks.  Kokkos views hold field and
+particle attributes and Kokkos execution policies map kernels to the selected
+on-node backend~\cite{trott2022kokkos}.  heFFTe supplies distributed transforms
+with CPU and GPU backends~\cite{ayala2020heffte}.  Particle migration uses a
+pack--send--receive--unpack path, while field boundary communication uses halo
+cells.  Communication buffers can be overallocated to reduce repeated device
+allocation costs.  Orthogonal recursive bisection is available when particle
+clustering produces load imbalance.
+
+This decomposition carries over directly to gravity:
+\begin{enumerate}
+  \item CIC scatter deposits particle mass onto the distributed mesh.
+  \item The mean density is subtracted and the periodic Poisson equation is
+        solved in Fourier space.
+  \item The differentiated potential gives the mesh force.
+  \item CIC gather interpolates the force to particle positions.
+  \item Kokkos kernels apply kick and drift operations, periodic wrapping, and
+        particle migration.
+\end{enumerate}
+No plasma-specific charge or Boris-push logic is reused.  The reusable layer is
+the particle--mesh infrastructure and its parallel implementation.
+
+\subsection{Memory, execution, and reproducibility}
+
+Particle positions, canonical momenta, forces, global identifiers, and
+Lagrangian coordinates remain in the configured Kokkos memory space during
+evolution.  The background integrals are scalar host calculations.  A radial
+$P(k)$ lookup is prepared on the host and copied to execution memory for initial
+condition generation.  In the current prototype this lookup uses
+$\mathcal{O}(N^2)$ replicated storage per rank, which is acceptable for local
+validation but should be replaced or distributed before extreme-scale runs.
+
+MPI reductions, deposition atomics, and FFT algorithms may change floating-point
+summation order across decompositions and devices.  Reproducibility is therefore
+defined in two layers: Fourier random phases and global particle identifiers are
+deterministic; evolved floating-point fields are required to agree within
+declared tolerances rather than bit for bit.  Any mixed-precision study must
+report its effect on the power spectrum, force error, and growth in addition to
+speed and memory savings.
+
+\subsection{Performance methodology}
+
+The plasma study showed that useful portability evidence separates component
+costs rather than reporting only total runtime~\cite{muralikrishnan2024scaling}.
+The cosmology campaign will therefore time CIC scatter, halo exchange, forward
+and inverse FFTs, spectral Green-function and gradient kernels, CIC gather,
+particle push, migration, load balancing, diagnostics, and output.  We will
+report particle updates per second, mesh cells solved per second, time per step,
+memory per particle and cell, and the fraction of runtime in communication.
+
+Strong-scaling tests will fix particle and mesh counts; weak-scaling tests will
+fix both per rank.  At least one CPU and one GPU platform should be tested, and
+preferably two accelerator vendors, before claiming performance portability.
+Performance-portability efficiency should be reported relative to an optimized
+backend-specific baseline where available, not inferred from successful
+execution alone.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Planned performance matrix.  Empty cells are intentional: the
+  present draft does not contain accelerator or multi-node cosmology results.}
+  \label{tab:performance-plan}
+  \begin{tabular}{@{}p{0.25\linewidth}p{0.14\linewidth}p{0.16\linewidth}p{0.37\linewidth}@{}}
+    \toprule
+    Platform & Backend & Scale & Required evidence \\
+    \midrule
+    Local multicore CPU & OpenMP & 1--4 MPI ranks & completed correctness baseline \\
+    \todo{CPU cluster} & OpenMP & multi-node & strong/weak scaling and communication split \\
+    \todo{NVIDIA system} & CUDA & multi-node & kernel, FFT, migration, and end-to-end rates \\
+    \todo{AMD system} & HIP & multi-node & same metrics and portability comparison \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Validation}
+\label{sec:validation}
+
+\subsection{Validation hierarchy}
+
+The validation is organized so that a failure can be attributed to one layer.
+Host unit tests cover configuration, Eq.~\eqref{eq:hubble}, the growth integral
+and an independent ODE oracle, Einstein--de Sitter kick and drift factors,
+transfer interpolation, and $\sigma_8$ normalization.  Distributed tests then
+exercise a manufactured spectral force, particle migration, and periodic
+wrapping on one through four MPI ranks.
+
+End-to-end tests include:
+\begin{itemize}
+  \item a uniform lattice, which must retain zero force and conserve mass and
+        particle number;
+  \item axis-aligned and oblique modes, which measure scale-dependent spatial
+        error and linear growth;
+  \item Gaussian fields, for which reconstructed Fourier coefficients test the
+        requested spectrum, Hermiticity, longitudinal displacement, and the
+        momentum--displacement relation;
+  \item rank and thread comparisons sorted by deterministic particle ID;
+  \item time-step and mesh-refinement sequences assessed independently; and
+  \item matched initial-condition ensembles against an independent Zarija
+        Luki\'c implementation in the common flat, Gaussian, radiation-free CDM
+        subset.
+\end{itemize}
+
+The two initial-condition generators use different random-number algorithms, so
+equal numeric seeds do not imply equal phases.  Their comparison therefore
+separates deterministic background, transfer, normalization, and velocity-factor
+checks from statistical ensemble checks.  Known lattice-origin, transform-order,
+velocity-unit, and Nyquist conventions are handled explicitly rather than fitted.
+
+\subsection{Current linear-regime results}
+
+Table~\ref{tab:validation-results} records the current local qualification.  The
+full native campaign comprised 22 simulations and 275 checks.  The matched
+reference campaign comprised 84 runs and 1047 checks, including \IPPL runs on
+one, two, three, and four ranks and reference runs on one, two, and four ranks.
+All acceptance limits were declared before the corresponding campaign and were
+not relaxed after execution.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Selected measurements from the local OpenMP qualification at
+  initial development snapshot \texttt{0f2953bde}.  These results establish
+  linear-regime behavior; later nonlinear comparisons and provenance limits
+  are documented separately in Appendix~\ref{app:validation}.}
+  \label{tab:validation-results}
+  \begin{tabular}{@{}p{0.51\linewidth}p{0.38\linewidth}@{}}
+    \toprule
+    Test & Measured result \\
+    \midrule
+    Manufactured spectral force, ranks 1--4 & maximum relative error
+      approximately $2\times10^{-15}$ \\
+    Forced migration, ranks 1--4 & ownership and all IDs/attributes preserved;
+      exact endpoints handled \\
+    Reconstructed Gaussian Fourier coefficients & relative $L_2$ error
+      $4.8\times10^{-12}$ \\
+    Gaussian low-$k$ linear growth on a $32^3$ mesh & weighted complex error
+      $0.333\%$ \\
+    Late-$\Lambda$ single-mode growth, $z=9$ to $z=0$ & error $0.943\%$ \\
+    Time convergence, position / momentum & observed order 1.988 / 1.995 \\
+    Mesh refinement $16^3\rightarrow32^3\rightarrow64^3$ & growth-error
+      reduction $3.899\times$ / $3.849\times$ \\
+    Matched-IC ensemble mean $P_{\rm measured}/P_{\rm theory}$ & \IPPL:
+      0.995736642--0.995736648; reference: 0.998164308--0.998196423 \\
+    \IPPL{} rank agreement in matched campaign & maximum position RMS
+      $6.502\times10^{-16}\,h^{-1}\mathrm{Mpc}$; momentum RMS
+      $1.339\times10^{-17}$ in canonical units \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The result most relevant to the physical model is not any single small residual,
+but the combination of second-order temporal convergence, improving spatial
+error, correct Gaussian statistics, and rank-independent phases.  The remaining
+sub-percent growth error at finite mesh spacing is expected for CIC PM without
+window deconvolution or a short-range correction and decreases under mesh
+refinement.
+
+\subsection{Completed nonlinear comparisons and resolution controls}
+
+The staged evidence now extends beyond this initial linear baseline.
+Appendix~\ref{app:validation} documents an independent frozen-force comparison,
+analytical pre-crossing pancake evolution, 32 matched nonlinear native plain-PM
+runs, a separate targeted timestep extension, 34 local spatial-control runs,
+and a fresh 18-run Gaussian study on Merlin CPUs.  It provides the experiment
+matrices, comparison conventions, declared criteria, figures and report inventory.
+The native reference uses ordinary PM evolution, not modified FastPM or COLA
+stepping.
+
+The latest Gaussian study passes every paired-code, timestep, starting-redshift,
+MPI and integrity criterion, but retains 116 particle/mesh-resolution failures
+among 1,355 checks.  No Gaussian shell qualifies over that full matrix.  The
+local spatial study qualifies only its first low-mode shell for each fixture,
+and earlier mass-sum and timestep failures remain explicitly recorded.
+These results support the implementation comparison while identifying the
+remaining accuracy limitations; they are not halo or continuum validation.
+
+\subsection{Remaining scientific and performance validation}
+
+The paper is not complete until the following evidence is added:
+\begin{enumerate}
+  \item Extend the present matched-PM comparison to larger crossed resolutions,
+        independent realizations, converged nonlinear power spectra and halo
+        statistics against an established production code.  Published
+        multi-code comparisons suggest percent-level power-spectrum agreement is
+        a meaningful target over a declared resolved range~\cite{angulo2022review}.
+  \item Quantify force error versus separation and mesh resolution, including
+        anisotropy and the effect of any future short-range solver.
+  \item Add a Layzer--Irvine or equivalent expanding-universe energy diagnostic,
+        while retaining mass, momentum, and particle-count checks.
+  \item Validate 2LPT against an independent generator and measure transient
+        suppression relative to 1LPT.
+  \item Repeat correctness tests on each advertised Kokkos backend and on at
+        least two multi-node systems.
+  \item Populate Table~\ref{tab:performance-plan} with strong/weak scaling,
+        component profiles, memory usage, and device-to-device comparisons.
+  \item Replace diagnostic CSV output with scalable parallel snapshots and add
+        restart, power-spectrum, light-cone or halo-catalog workflows appropriate
+        to the selected science target.
+\end{enumerate}
+
+\section*{Discussion and roadmap}
+
+The current prototype demonstrates that \IPPL's particle--mesh abstraction is
+not specific to electrostatic plasma physics.  Density deposition, a global
+Poisson solve, field interpolation, particle migration, and load imbalance are
+also the central computational motifs of long-range cosmological gravity.  The
+cosmological application can therefore reuse a portability layer whose critical
+components have already been studied on heterogeneous pre-exascale systems,
+while keeping cosmological equations and validation independent.
+
+The most defensible research program has three stages.  Stage I, represented by
+this draft, is a linear PM mini-app plus a staged verification suite and bounded
+nonlinear comparisons, with unresolved resolution sensitivities kept explicit.
+Stage II adds larger-resolution accuracy studies, 2LPT, scalable I/O and restart,
+and accelerator and multi-node qualification.  Stage III is science-case dependent: a
+short-range gravity method for halo resolution; neutrino or modified-gravity
+particles for beyond-baseline cosmology; or coupling to a mesh hydrodynamics
+solver for baryonic applications.  This staged scope retains the value of a
+small portable test bed while providing a clear path toward scientifically
+competitive simulations.
+
+\section*{Code and data availability}
+
+\IPPL is open source at \url{https://github.com/IPPL-framework/ippl}.  The
+cosmology implementation and validation artifacts described here are currently
+maintained on development branch \texttt{codex/cosmology-linear}; the results in
+Table~\ref{tab:validation-results} correspond to commit \texttt{0f2953bde} and
+its recorded development history.  Appendix~\ref{app:provenance} identifies the
+later campaign reports; the Merlin run used frozen source \texttt{296fd04c0},
+with documentation handoff at \texttt{9506f1e52}.  The manuscript includes
+verified figure assets and their provenance manifest, not the full particle
+archives.  \todo{Replace the development reference with a
+public release DOI, archive input files and machine-readable results, and state
+licenses before submission.}
+
+\section*{Acknowledgements}
+\todo{Funding, computing allocations, software projects, and contributors.}
+
+\clearpage
+\appendix
+\numberwithin{equation}{section}
+\numberwithin{figure}{section}
+\numberwithin{table}{section}
+\input{appendix-validation}
+
+\clearpage
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}

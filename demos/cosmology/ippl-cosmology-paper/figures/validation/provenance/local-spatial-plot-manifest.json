@@ -1,0 +1,49 @@
+{
+  "schema": "ippl-resolution-plot-manifest-v1",
+  "input_report": {
+    "path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/results.json",
+    "sha256": "11ee94361853d92f87d66c703cc0145f4bd3f2ab003e7895d071c261b49d56d7",
+    "snapshot": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/figures-spatial-release/input-report.json.gz"
+  },
+  "script": {
+    "path": "/Users/adelmann/git/ippl-cosmology-linear/demos/cosmology/plot_resolution_study.py",
+    "sha256": "30340ff226ad010e01e903c8cd8c8d59b3e6238a4795ee255c3143c5428b0e53"
+  },
+  "source_report_unchanged_during_plot": true,
+  "input_snapshot_contract": "gzip stores the exact input bytes read once; decompressed SHA256 equals input_report.sha256",
+  "completed_stages": [
+    "spatial"
+  ],
+  "omitted_stages": {
+    "gaussian": "Not every planned run is recorded"
+  },
+  "campaign_complete": false,
+  "campaign_passed": false,
+  "failed_check_count": 130,
+  "software": {
+    "numpy": "2.4.6",
+    "matplotlib": "3.10.9"
+  },
+  "outputs": [
+    {
+      "path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/figures-spatial-release/input-report.json.gz",
+      "sha256": "f3b68413aa7f541f4755095f7d4081e9e9ca10efd5df167e95ab042cbb679ed8",
+      "bytes": 1654453
+    },
+    {
+      "path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/figures-spatial-release/spatial-controls.png",
+      "sha256": "3fb8c20b392a7cc9345e0a0e6aca45a07166fa559522ad11238bc8260c514988",
+      "bytes": 587305
+    },
+    {
+      "path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/figures-spatial-release/spatial-controls.svg",
+      "sha256": "ec27c6210ebe8ba748c494055bca85e144ca7e9686d01d887791fce90d1808a2",
+      "bytes": 86331
+    },
+    {
+      "path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/figures-spatial-release/plot_data.json",
+      "sha256": "70c9d07556b0a6204aa218605f2350edc999a6b2c909856d46cb37fd4e5eec8d",
+      "bytes": 145400
+    }
+  ]
+}

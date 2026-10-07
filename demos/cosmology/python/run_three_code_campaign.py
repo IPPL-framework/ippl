@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 ## @file run_three_code_campaign.py
-# @brief Build, run and analyze a local three-code reproduction of paper Figure A11.
+# @brief Build, run and analyze local and Slurm three-code comparisons of paper Figure A11.
 # @ingroup cosmology_python
 # @see cosmology_tools cosmology_validation
 # @see cosmology_model cosmology_numerics cosmology_spectra
-"""Build, run and analyze a local three-code reproduction of paper Figure A11.
+"""Build, run and analyze local and Slurm three-code comparisons of paper Figure A11.
 
 Default: shared 128^3 Gaussian 1LPT ICs, z=99 to 0, 2400 plain-PM steps.
 The IPPL import adapter runs the production Cosmology kernels. Existing
@@ -441,27 +441,35 @@ def render_figure(root,data):
     import matplotlib.pyplot as plt
     plt.rcParams.update({'font.family':'DejaVu Sans','font.size':10,'svg.fonttype':'none'})
     labels = {'ippl':'IPPL · PM','fastpm':'FastPM · plain PM','gadget2':'GADGET-2 · TreePM'}
-    colors = {'ippl':'#0072B2','fastpm':'#D55E00','gadget2':'#009E73'}
+    colors = {'ippl':'#0072B2','fastpm':'#D55E00','gadget2':'#009E73','ippl_gpu1':'#CC79A7','ippl_gpu4':'#6B51A3'}
+    labels.update(ippl_gpu1='IPPL · A100 ×1',ippl_gpu4='IPPL · A100 ×4')
+    plotCodes=tuple(data['spectra'])
+    if not set(Codes).issubset(plotCodes) or not set(plotCodes).issubset(labels):
+        raise ValueError('Unknown or missing spectrum series')
     rows=data['spectra']; config=data['configuration']
     k=np.asarray([row['k_h_per_mpc'] for row in rows['fastpm']])
-    powers={code:np.asarray([row['P_shot_subtracted'] for row in rows[code]]) for code in Codes}
-    for code in Codes:
+    powers={code:np.asarray([row['P_shot_subtracted'] for row in rows[code]]) for code in plotCodes}
+    for code in plotCodes:
         if len(rows[code])!=config['cutoff'] or not np.array_equal(k,[row['k_h_per_mpc'] for row in rows[code]]):
             raise ValueError('All three spectra must share the same Fourier shells')
     fig,(axis,ratio)=plt.subplots(2,1,figsize=(9.2,7.2),sharex=True,
         gridspec_kw={'height_ratios':[2.1,1],'hspace':.08})
     plotted=pd.DataFrame({'k_h_per_mpc':k,'shell':np.arange(1,len(k)+1)})
-    for code in Codes:
+    for code in plotCodes:
         positive=powers[code]>0
         axis.plot(k[positive],powers[code][positive],color=colors[code],lw=1.7,
-                  marker='o',ms=3,markevery=4,label=labels[code])
+                  marker='^' if code=='ippl_gpu1' else 's' if code=='ippl_gpu4' else 'o',
+                  ms=3,markevery=(2,4) if code=='ippl_gpu4' else 4,
+                  linestyle=':' if code=='ippl_gpu4' else '--' if 'gpu' in code else '-',label=labels[code])
         plotted[code+'_P_shot_subtracted']=powers[code]
-    for code in ('ippl','gadget2'):
+    for code in (code for code in plotCodes if code!='fastpm'):
         valid=(powers[code]>0)&(powers['fastpm']>0)
         offset=np.full(len(k),np.nan)
         offset[valid]=100*(powers[code][valid]/powers['fastpm'][valid]-1)
-        ratio.plot(k[valid],offset[valid],color=colors[code],lw=1.5,marker='o',ms=3,
-                   markevery=4,label=labels[code]+' / FastPM - 1')
+        ratio.plot(k[valid],offset[valid],color=colors[code],lw=1.5,
+                   marker='^' if code=='ippl_gpu1' else 's' if code=='ippl_gpu4' else 'o',ms=3,
+                   markevery=(2,4) if code=='ippl_gpu4' else 4,
+                   linestyle=':' if code=='ippl_gpu4' else '--' if 'gpu' in code else '-',label=labels[code]+' / FastPM - 1')
         plotted[code+'_offset_vs_fastpm_percent']=offset
     axis.set(xscale='log',yscale='log',ylabel=r'$P(k)\ [(\mathrm{Mpc}/h)^3]$')
     title='z = 0 matter power · shared Zel’dovich ICs at zᵢ = 99'
@@ -561,6 +569,199 @@ def campaign(args,paths,builds):
         raise
 
 
+## @brief Select native compilation inputs independently of frozen Python/Slurm launch inputs.
+# @param hashes Absolute source/compiler paths mapped to their recorded SHA256 values.
+# @return Hash registry for C/C++/CUDA/CMake inputs and the selected NVCC wrapper.
+# Cached binaries retain their original complete build provenance; launcher changes
+# do not force recompilation when native inputs and binary/cache hashes match.
+def native_source_hashes(hashes):
+    return {name:digest for name,digest in hashes.items()
+            if Path(name).suffix in ('.h','.hpp','.cpp','.c','.cu','.cuh','.cmake')
+            or Path(name).name in ('CMakeLists.txt','nvcc_wrapper')}
+
+
+## @brief Parse distinct positive MPI counts without silently dropping duplicate cases.
+# @param value Single decimal count or comma-separated counts, for example 1,4.
+# @return Ordered list of distinct positive rank counts.
+def parse_rank_list(value):
+    try:
+        ranks=[int(part) for part in str(value).split(',')]
+    except ValueError as error:
+        raise ValueError('rank must be a positive integer or comma-separated integers') from error
+    if not ranks or any(rank<1 for rank in ranks) or len(set(ranks))!=len(ranks):
+        raise ValueError('rank counts must be positive and distinct')
+    return ranks
+
+
+## @brief Prepare exact shared ICs and submit a dependency-linked A100 build and GPU runs.
+# @param args Validated CLI options; cluster is merlin6, rank counts are 1 or 4.
+# @return None; submission.json retains Slurm IDs and all resolved settings.
+# No science or CUDA build is executed on a login node. Invocation from a local host
+# transfers the input and invokes this same controller on Merlin6 through SSH.
+def submit_merlin(args):
+    stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    root=args.output or Path('/data/user/adelmann')/f'a11-merlin6-{stamp}'
+    if not root.is_absolute():raise ValueError('Merlin --output must be an absolute remote path')
+    if args.plan:
+        print(json.dumps({'cluster':'merlin6','scheduler_cluster':'gmerlin6',
+            'partition':'gwendolen','account':'gwendolen','rank':args.rank_list,
+            'output':str(root),'shared_ic':str(args.shared_ic),
+            'grid':args.grid,'steps':args.steps,'cutoff':args.cutoff},indent=2))
+        return
+    if not socket.gethostname().startswith('merlin'):
+        if not args.shared_ic.is_file():raise FileNotFoundError(args.shared_ic)
+        setup=' && '.join((shlex.join(['mkdir','-p',str(root.parent)]),shlex.join(['mkdir',str(root)]),shlex.join(['mkdir',str(root/'input')])))
+        subprocess.run(['ssh','merlin6',setup],check=True)
+        subprocess.run(['scp',str(args.shared_ic),f'merlin6:{root}/input/shared-z99.csv'],check=True)
+        manifest=args.shared_ic.parent/'ic-manifest.json'
+        if not manifest.is_file():raise ValueError('Shared IC requires sibling ic-manifest.json')
+        subprocess.run(['scp',str(manifest),f'merlin6:{root}/input/ic-manifest.json'],check=True)
+        command=[args.remote_python,'-B',str(Path(args.remote_root)/'demos/cosmology/python/run_three_code_campaign.py'),
+            '--cluster','merlin6','--rank',','.join(map(str,args.rank_list)),
+            '--shared-ic',str(root/'input/shared-z99.csv'),'--output',str(root),
+            '--grid',str(args.grid),'--cutoff',str(args.cutoff),'--steps',str(args.steps),
+            '--checkpoints',str(args.checkpoints),'--seed',str(args.seed),'--timeout',str(args.timeout),
+            '--remote-python',args.remote_python]
+        if args.ippl_build!=Repository/'build_openmp':command += ['--ippl-build',str(args.ippl_build)]
+        if args.nvcc_wrapper is not None:command += ['--nvcc-wrapper',str(args.nvcc_wrapper)]
+        if args.smoke:command.append('--smoke')
+        if args.build_only:command.append('--build-only')
+        subprocess.run(['ssh','merlin6','module unload Python/3.14.4; module load Python/3.11.11; '+shlex.join(command)],check=True)
+        return
+    root.mkdir(parents=True,exist_ok=True)
+    if (root/'submission.json').exists():raise ValueError('Refusing duplicate submission into existing campaign')
+    inputDir=root/'input';inputDir.mkdir(exist_ok=True)
+    ic=inputDir/'shared-z99.csv';manifest=inputDir/'ic-manifest.json'
+    if args.shared_ic.resolve()!=ic.resolve():
+        shutil.copy2(args.shared_ic,ic)
+        shutil.copy2(args.shared_ic.parent/'ic-manifest.json',manifest)
+    metadata=json.loads(manifest.read_text())
+    if metadata['csv_sha256']!=sha256(ic) or metadata['particle_grid']!=args.grid or metadata['seed']!=args.seed:
+        raise ValueError('Shared IC digest, particle grid or seed differs')
+    if metadata['cutoff_fundamental']!=args.cutoff or metadata['redshift_initial']!=99:
+        raise ValueError('Shared IC cutoff or epoch differs')
+    sources=[CosmologySource/name for name in ('CosmologySimulation.h','CosmologyPhysics.h',
+        'CosmologyConfig.h','ExecutionMetadata.h','Cosmology.cpp','tests/CompareCosmologyEvolution.cpp',
+        'tests/CompareCosmologyForce.cpp','merlin/a11_job.sh','python/merlin/gpu_rank.py',
+        'python/run_three_code_campaign.py')]
+    sources += [CosmologySource/'python'/name for name in ('gaussian_fixture.py','validate_linear.py','runtime_metadata.py','analyze_zeldovich_benchmark.py')]
+    sources += [path for path in (Repository/'src').rglob('*') if path.is_file() and path.suffix in ('.h','.hpp','.cpp','.c')]
+    sources += [Repository/'CMakeLists.txt',CosmologySource/'CMakeLists.txt']
+    sources += list((Repository/'cmake/auto_tune/sm_80').glob('*.csv'))
+    selectedBuild=getattr(args,'ippl_build',None)
+    if selectedBuild is None or selectedBuild==Repository/'build_openmp':selectedBuild=Repository/'build_a11_a100'
+    if not selectedBuild.is_absolute():raise ValueError('Merlin build directory must be absolute')
+    wrapper=getattr(args,'nvcc_wrapper',None) or Repository/'build_a100/_deps/kokkos-src/bin/nvcc_wrapper'
+    if not executable(wrapper):raise FileNotFoundError(f'Expected cached Kokkos CUDA compiler wrapper: {wrapper}')
+    sources.append(wrapper)
+    config={'schema':'ippl-a11-merlin6-v1','cluster':'merlin6','scheduler_cluster':'gmerlin6',
+        'grid':args.grid,'cutoff':args.cutoff,'seed':args.seed,'steps':args.steps,
+        'checkpoints':args.checkpoints,'smoke':args.smoke,'shared_ic':str(ic),
+        'shared_ic_sha256':sha256(ic),'source_root':str(Repository),'python':args.remote_python,
+        'build_dir':str(selectedBuild),'nvcc_wrapper':str(wrapper),'timeout':args.timeout,
+        'mpi_environment':{'OMPI_MCA_pml':'ucx','OMPI_MCA_pml_ucx_tls':'any','OMPI_MCA_pml_ucx_devices':'any','UCX_TLS':'sm,self,cuda_copy,cuda_ipc'},
+        'source_sha256':{str(path):sha256(path) for path in sources}}
+    write_json(root/'configuration.json',config)
+    jobs={}
+    def submit(action,rank,dependency=None):
+        command=['sbatch','--parsable','-M','gmerlin6','-A','gwendolen','-p','gwendolen',
+            '--nodes=1',f'--ntasks={rank}',f'--cpus-per-task={4 if action=="build" else 1}',
+            f'--gres=gpu:{1 if action=="build" else rank}','--mem=32G','--time=04:00:00',
+            f'--job-name=a11-{action}-{rank}',f'--output={root}/slurm-{action}-{rank}-%j.log']
+        if dependency:command.append(f'--dependency=afterok:{dependency}')
+        command += [str(CosmologySource/'merlin/a11_job.sh'),action,str(root),str(rank)]
+        result=subprocess.run(command,text=True,capture_output=True,check=True)
+        identifier=result.stdout.strip().split(';')[0]
+        if not identifier.isdecimal():raise RuntimeError(f'Unexpected sbatch result: {result.stdout}')
+        return {'job_id':identifier,'command':command}
+    # Build job also verifies a cached binary against its retained source manifest.
+    jobs['build']=submit('build',1)
+    write_json(root/'submission.json',{'configuration':config,'jobs':jobs})
+    if not args.build_only:
+        for rank in args.rank_list:
+            jobs[f'gpu{rank}']=submit('run',rank,jobs['build']['job_id'])
+            write_json(root/'submission.json',{'configuration':config,'jobs':jobs})
+    print(json.dumps({'output':str(root),'jobs':jobs},indent=2),flush=True)
+
+
+## @brief Validate A100 bindings and exact imported state, then measure the common CIC spectrum.
+# @param root Completed rank-result directory, containing configuration.json and GPU snapshots.
+# @return None; gpu-analysis.json retains spectra, source/input/output hashes and binding evidence.
+def analyze_gpu(root):
+    root=Path(root);config=json.loads((root/'configuration.json').read_text());rank=config['ranks']
+    for path,digest in config['source_sha256'].items():
+        if sha256(path)!=digest:raise ValueError(f'GPU frozen source changed: {path}')
+    if sha256(config['shared_ic'])!=config['shared_ic_sha256']:raise ValueError('GPU IC changed')
+    build=json.loads((root.parent/'build-manifest.json').read_text())
+    for path,digest in build['artifacts'].items():
+        if sha256(path)!=digest:raise ValueError(f'GPU build artifact changed: {path}')
+    allocation=pd.read_csv(root/'allocated-gpus.csv',header=None,skipinitialspace=True)
+    if len(allocation)!=rank or allocation.shape[1]!=4 or not allocation[0].str.contains('A100').all() or not (allocation[3]=='Disabled').all():
+        raise ValueError('Require allocated full A100 GPUs with disabled MIG')
+    bindings=[json.loads(line.split('GPU_BINDING ',1)[1]) for line in (root/'solver.log').read_text().splitlines() if 'GPU_BINDING ' in line]
+    if (len(bindings)!=rank or {row['rank'] for row in bindings}!=set(range(rank))
+        or len({row['pci'] for row in bindings})!=rank or len({row['host'] for row in bindings})!=1
+        or any(row['world_size']!=rank or row['local_size']!=rank or row['runtime_device_count']!=1
+               or row['visible_device_ordinal']!=0 for row in bindings)):
+        raise ValueError('GPU bindings do not prove one distinct physical GPU per rank')
+    def pci(value):return tuple(int(part,16) for part in value.replace('.',':').split(':'))
+    if {pci(row['pci']) for row in bindings}!={pci(value) for value in allocation[2]}:
+        raise ValueError('Bound GPUs differ from scheduler allocation')
+    metadata=(root/'run/metadata.txt').read_text()
+    metadataFields=dict(line.split('=',1) for line in metadata.splitlines() if '=' in line)
+    if metadataFields.get('execution_space')!='Cuda' or metadataFields.get('memory_space') not in ('Cuda','CudaSpace'):
+        raise ValueError('Expected CUDA execution and memory spaces')
+    frame,paths=read_pm_snapshot(root/'run',config['checkpoints'],config['grid'],rank)
+    imported,initialPaths=read_pm_snapshot(root/'run',0,config['grid'],rank)
+    initial=pd.read_csv(config['shared_ic'],dtype={'id':np.uint64},float_precision='round_trip')
+    delta=imported[['x','y','z']].to_numpy()-initial[['x','y','z']].to_numpy();delta-=168.75*np.rint(delta/168.75)
+    positionError=float(np.sqrt(np.mean(np.sum(delta**2,axis=1)))/(168.75/config['grid']))
+    momentumError=float(np.linalg.norm(imported[['px','py','pz']].to_numpy()-initial[['px','py','pz']].to_numpy())/np.linalg.norm(initial[['px','py','pz']].to_numpy()))
+    if positionError>1e-9 or momentumError>1e-6:raise ValueError('GPU imported state differs from exact shared fixture')
+    table=validate_pm_diagnostics(root/'run/checkpoints.csv',config['checkpoints'],config['steps'],config['grid'])
+    if table.mass_error.abs().max()>2e-12:raise ValueError('GPU mass conservation failed')
+    spectra=cic_power(frame[['x','y','z']].to_numpy(),particle_grid=config['grid'],mesh_grid=config['grid'],box_size=168.75,cutoff=config['cutoff'])
+    artifacts=paths+initialPaths+[root/'run/checkpoints.csv',root/'run/metadata.txt',root/'solver.log',root/'allocated-gpus.csv',root/'configuration.json']
+    write_json(root/'gpu-analysis.json',{'schema':'ippl-a11-gpu-analysis-v1','complete':True,'configuration':config,
+        'spectra':spectra,'bindings':bindings,'source_sha256':config['source_sha256'],
+        'artifacts':{str(path):sha256(path) for path in artifacts},'build':build,
+        'initial_state_roundtrip':{'position_rms_cells':positionError,'momentum_relative_l2':momentumError},
+        'maximum_checkpoint_mass_error':float(table.mass_error.abs().max())})
+
+
+## @brief Extend verified local spectra with completed GPU spectra in a fresh figure directory.
+# @param baseline Completed local three-code campaign directory; recorded analysis hash must match.
+# @param gpu_results Downloaded GPU rank directories, each with complete gpu-analysis.json.
+# @param output New comparison directory; original baseline evidence is preserved.
+# @return None; analysis.json and Figure A11 retain all five measured series and provenance.
+def extend_figure(baseline,gpu_results,output):
+    baseline=Path(baseline);report=json.loads((baseline/'campaign.json').read_text())
+    if not report.get('complete') or sha256(baseline/'analysis.json')!=report['analysis_sha256']:
+        raise ValueError('Baseline is incomplete or its analysis changed')
+    data=json.loads((baseline/'analysis.json').read_text())
+    inputs={str(baseline/'analysis.json'):sha256(baseline/'analysis.json'),str(baseline/'campaign.json'):sha256(baseline/'campaign.json')}
+    for path,digest in data['input_hashes'].items():
+        if sha256(path)!=digest:raise ValueError(f'Baseline output changed: {path}')
+    icDigest=report['provenance'][str((baseline/'ics/shared-z99.csv').resolve())]
+    for directory in gpu_results:
+        directory=Path(directory);path=directory/'gpu-analysis.json';gpu=json.loads(path.read_text())
+        config=gpu['configuration'];rank=config['ranks'];code=f'ippl_gpu{rank}'
+        if not gpu.get('complete') or rank not in (1,4) or code in data['spectra']:
+            raise ValueError('Invalid, duplicate or incomplete GPU result')
+        if config['shared_ic_sha256']!=icDigest or any(config[key]!=data['configuration'][key] for key in ('grid','cutoff','steps','checkpoints','seed','smoke')):
+            raise ValueError('GPU IC or campaign settings differ from baseline')
+        for remote,digest in gpu['artifacts'].items():
+            # Download the complete rank directory without rewriting recorded remote paths.
+            local=directory/Path(remote).relative_to(Path(config['result_root']))
+            if sha256(local)!=digest:raise ValueError(f'Downloaded GPU artifact changed: {local}')
+        data['spectra'][code]=gpu['spectra'];inputs[str(path.resolve())]=sha256(path)
+        data.setdefault('gpu_results',{})[code]=gpu
+    output=Path(output);output.mkdir(parents=True,exist_ok=False)
+    data['comparison_inputs']=inputs
+    write_json(output/'analysis.json',data);render_figure(output,data)
+    print(f'Extended Figure A11: {output}/figures/figure-A11.png')
+
+
 ## @brief Parse the documented command-line interface and execute its selected workflow, retaining nonzero failures.
 # @see cosmology_tools
 # @return The computed value or retained diagnostic record described by this routine; physical units follow the module contract.
@@ -576,7 +777,14 @@ def main():
     parser.add_argument('--steps',type=int,default=2400)
     parser.add_argument('--checkpoints',type=int,default=1,help='Saved intervals, default initial/final only to limit disk use')
     parser.add_argument('--seed',type=int,default=20261003)
-    parser.add_argument('--ranks',type=int,default=4)
+    parser.add_argument('--rank','--ranks',dest='rank',default='1',help='MPI ranks; comma-separated 1,4 submits both Merlin GPU cases; default 1')
+    parser.add_argument('--cluster',choices=['merlin6'],help='Submit A100 jobs via Slurm on Merlin6; omitted means local')
+    parser.add_argument('--nvcc-wrapper',type=Path,help='Cluster-local cached Kokkos nvcc_wrapper; default remote build_a100/_deps/kokkos-src/bin/nvcc_wrapper')
+    parser.add_argument('--shared-ic',type=Path,help='Existing exact shared-z99.csv for Merlin; use the completed local campaign IC')
+    parser.add_argument('--remote-root',default='/data/user/adelmann/ippl')
+    parser.add_argument('--remote-python',default='/data/user/adelmann/cosmology-cpu-login-20261004/python/bin/python')
+    parser.add_argument('--extend-figure',type=Path,metavar='BASELINE',help='Verified complete local baseline to extend without changing its evidence')
+    parser.add_argument('--gpu-result',type=Path,action='append',default=[],help='Downloaded completed Merlin rank result; repeat for 1 and 4 GPUs')
     parser.add_argument('--jobs',type=int,default=4)
     parser.add_argument('--timeout',type=float,default=86400,help='Per-solver limit in seconds')
     parser.add_argument('--reserve-gib',type=float,default=2)
@@ -589,6 +797,15 @@ def main():
     parser.add_argument('--gadget-build',type=Path,default=Repository/'build_gadget2')
     parser.add_argument('--gsl-prefix',type=Path)
     args=parser.parse_args()
+    try:
+        args.rank_list=parse_rank_list(args.rank)
+    except ValueError as error:
+        parser.error(str(error))
+    args.ranks=args.rank_list[0]
+    if args.extend_figure:
+        if args.output is None or not args.gpu_result:parser.error('Figure extension needs --output NEW_DIR and --gpu-result')
+        extend_figure(args.extend_figure,args.gpu_result,args.output)
+        return 0
     if args.analyze_only:
         analyze(args.analyze_only)
         return 0
@@ -598,6 +815,13 @@ def main():
             or args.ranks<1 or args.jobs<1 or not math.isfinite(args.timeout) or args.timeout<=0
             or not math.isfinite(args.reserve_gib) or args.reserve_gib<0 or not 0<=args.seed<2**64):
         parser.error('Invalid grid/cutoff/schedule/ranks/jobs/time/disk/seed; this local runner supports grids <=128')
+    if args.cluster:
+        if args.shared_ic is None:parser.error('--cluster merlin6 requires --shared-ic from the completed baseline')
+        if any(rank not in (1,4) for rank in args.rank_list):parser.error('Merlin supports rank 1 or 4')
+        if args.grid!=128 and not args.smoke:parser.error('Merlin science campaign is 128 cubed; use --smoke for an engineering check')
+        submit_merlin(args)
+        return 0
+    if len(args.rank_list)!=1:parser.error('Local runs accept one --rank; Merlin accepts comma-separated ranks')
     for key in ('output','ippl_build','fastpm_build','gadget_build','gsl_prefix'):
         if getattr(args,key) is not None:setattr(args,key,getattr(args,key).expanduser().resolve())
     args.build_logs=args.gadget_build/'controller-logs'
@@ -614,7 +838,7 @@ def main():
 if __name__=='__main__':
     try:
         sys.exit(main())
-    except (ValueError,RuntimeError,OSError,subprocess.TimeoutExpired) as error:
+    except (ValueError,RuntimeError,OSError,subprocess.TimeoutExpired,subprocess.CalledProcessError) as error:
         print(f'Campaign error: {error}',file=sys.stderr)
         sys.exit(1)
 ## @endcond

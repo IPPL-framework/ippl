@@ -122,7 +122,7 @@ class ThreeCodeCampaignTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
             (root/'analysis.json').write_text('{}')
-            powers={'ippl':[2.,-1.],'fastpm':[1.,2.],'gadget2':[3.,4.]}
+            powers={'ippl':[2.,-1.],'fastpm':[1.,2.],'gadget2':[3.,4.],'ippl_gpu1':[1.5,3.],'ippl_gpu4':[1.,2.]}
             data={'configuration':{'grid':8,'steps':24,'cutoff':2,'seed':1,'smoke':True},
                   'spectra':{code:[{'k_h_per_mpc':.1*(i+1),'P_shot_subtracted':power}
                                    for i,power in enumerate(values)] for code,values in powers.items()}}
@@ -130,10 +130,129 @@ class ThreeCodeCampaignTests(unittest.TestCase):
             frame=pd.read_csv(root/'figures/plotted_values.csv')
             self.assertEqual(frame.ippl_offset_vs_fastpm_percent.iloc[0],100.)
             self.assertEqual(frame.gadget2_offset_vs_fastpm_percent.iloc[0],200.)
+            self.assertEqual(frame.ippl_gpu1_offset_vs_fastpm_percent.iloc[0],50.)
+            self.assertEqual(frame.ippl_gpu4_offset_vs_fastpm_percent.iloc[0],0.)
             self.assertTrue(np.isnan(frame.ippl_offset_vs_fastpm_percent.iloc[1]))
             self.assertEqual(frame.ippl_P_shot_subtracted.iloc[1],-1.)
             manifest=json.loads((root/'figures/manifest.json').read_text())
             self.assertEqual(manifest['ratio_denominator'],'FastPM')
+
+    ## @brief Verify rank parsing rejects duplicates and invalid counts.
+    # @return None; assertions verify CLI rank contracts.
+    def test_rank_list(self):
+        self.assertEqual(campaign.parse_rank_list('1'),[1])
+        self.assertEqual(campaign.parse_rank_list('1,4'),[1,4])
+        for value in ('0','1,1','1,','gpu','-4'):
+            with self.assertRaises(ValueError):campaign.parse_rank_list(value)
+
+    ## @brief Verify omitted cluster selects local execution with one rank.
+    # @return None; assertions verify resolved CLI defaults without any builds.
+    def test_default_local_and_cluster_plan(self):
+        import contextlib,io
+        stream=io.StringIO()
+        with patch.object(sys,'argv',['runner','--plan']),contextlib.redirect_stdout(stream):
+            self.assertEqual(campaign.main(),0)
+        resolved=json.loads(stream.getvalue());self.assertIsNone(resolved['cluster']);self.assertEqual(resolved['ranks'],1)
+        stream=io.StringIO()
+        with patch.object(sys,'argv',['runner','--cluster','merlin6','--rank','1,4','--shared-ic','fixture.csv','--plan']),contextlib.redirect_stdout(stream):
+            self.assertEqual(campaign.main(),0)
+        resolved=json.loads(stream.getvalue());self.assertEqual(resolved['rank'],[1,4]);self.assertEqual(resolved['scheduler_cluster'],'gmerlin6')
+
+    ## @brief Require exact baseline IC identity before accepting supplementary GPU powers.
+    # @return None; an otherwise complete GPU record with a different IC is rejected.
+    def test_gpu_merge_rejects_different_shared_ic(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);base=root/'base';gpu=root/'gpu';base.mkdir();gpu.mkdir()
+            data={'configuration':{'grid':8,'cutoff':2,'steps':24,'checkpoints':1,'seed':1,'smoke':True},'spectra':{},'input_hashes':{}}
+            campaign.write_json(base/'analysis.json',data)
+            campaign.write_json(base/'campaign.json',{'complete':True,'analysis_sha256':campaign.sha256(base/'analysis.json'),'provenance':{str((base/'ics/shared-z99.csv').resolve()):'original'}})
+            config={**data['configuration'],'ranks':1,'shared_ic_sha256':'different'}
+            campaign.write_json(gpu/'gpu-analysis.json',{'complete':True,'configuration':config})
+            with self.assertRaisesRegex(ValueError,'IC'):
+                campaign.extend_figure(base,[gpu],root/'new')
+
+    ## @brief Verify GPU jobs depend on a successful build and request one physical GPU per rank.
+    # @return None; mocked Slurm calls are checked without submitting any jobs.
+    def test_slurm_dependencies_and_gpu_requests(self):
+        from types import SimpleNamespace
+        import contextlib,io
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);ic=root/'shared-z99.csv';ic.write_text('fixture')
+            campaign.write_json(root/'ic-manifest.json',{'csv_sha256':'digest','particle_grid':8,'seed':1,'cutoff_fundamental':2,'redshift_initial':99})
+            args=SimpleNamespace(output=root/'remote',plan=False,shared_ic=ic,grid=8,seed=1,cutoff=2,steps=24,checkpoints=1,smoke=True,timeout=300,remote_python='/python',rank_list=[1,4],build_only=False)
+            identifiers=[SimpleNamespace(stdout=f'{value};gmerlin6\n') for value in (101,102,103)]
+            with patch.object(campaign.socket,'gethostname',return_value='merlin-l-001'),patch.object(campaign,'sha256',return_value='digest'),patch.object(campaign,'executable',return_value=True),patch.object(campaign.subprocess,'run',side_effect=identifiers) as submit,contextlib.redirect_stdout(io.StringIO()):
+                campaign.submit_merlin(args)
+            commands=[call.args[0] for call in submit.call_args_list]
+            self.assertEqual(len(commands),3)
+            self.assertIn('--gres=gpu:1',commands[0]);self.assertIn('--cpus-per-task=4',commands[0])
+            for rank,command in zip((1,4),commands[1:]):
+                self.assertIn(f'--gres=gpu:{rank}',command);self.assertIn(f'--ntasks={rank}',command)
+                self.assertIn('--dependency=afterok:101',command)
+            self.assertEqual(json.loads((args.output/'submission.json').read_text())['jobs']['gpu4']['job_id'],'103')
+
+    ## @brief Reject several MPI ranks bound to the same physical GPU before computing a spectrum.
+    # @return None; aliased PCI binding evidence raises a validation error.
+    def test_gpu_analysis_rejects_shared_physical_device(self):
+        with tempfile.TemporaryDirectory() as directory:
+            parent=Path(directory);root=parent/'gpu4';root.mkdir();ic=parent/'ic';ic.write_text('fixture')
+            campaign.write_json(root/'configuration.json',{'ranks':4,'source_sha256':{},'shared_ic':str(ic),'shared_ic_sha256':campaign.sha256(ic)})
+            campaign.write_json(parent/'build-manifest.json',{'artifacts':{}})
+            (root/'allocated-gpus.csv').write_text(''.join(f'NVIDIA A100, GPU-{rank}, 00000000:{rank+1:02x}:00.0, Disabled\n' for rank in range(4)))
+            records=[{'rank':rank,'pci':'0000:01:00.0','host':'merlin-g-100','world_size':4,'local_size':4,'runtime_device_count':1,'visible_device_ordinal':0} for rank in range(4)]
+            (root/'solver.log').write_text(''.join('GPU_BINDING '+json.dumps(row)+'\n' for row in records))
+            with self.assertRaisesRegex(ValueError,'distinct physical GPU'):
+                campaign.analyze_gpu(root)
+
+    ## @brief Verify downloaded-path relocation, GPU ratios and rejection of altered downloaded evidence.
+    # @return None; five-series outputs are checked and tampering is rejected.
+    def test_downloaded_gpu_figure_merge_and_hash_verification(self):
+        import contextlib,io
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);base=root/'base';base.mkdir()
+            config={'grid':8,'cutoff':2,'steps':24,'checkpoints':1,'seed':1,'smoke':True}
+            rows=[{'k_h_per_mpc':.1*(i+1),'P_shot_subtracted':float(i+1)} for i in range(2)]
+            data={'configuration':config,'spectra':{code:rows for code in campaign.Codes},'input_hashes':{}}
+            campaign.write_json(base/'analysis.json',data)
+            campaign.write_json(base/'campaign.json',{'complete':True,'analysis_sha256':campaign.sha256(base/'analysis.json'),'provenance':{str((base/'ics/shared-z99.csv').resolve()):'shared'}})
+            directories=[]
+            for rank in (1,4):
+                gpu=root/f'gpu{rank}';gpu.mkdir();(gpu/'solver.log').write_text('retained log')
+                remote=f'/remote/gpu{rank}'
+                record={'complete':True,'configuration':{**config,'ranks':rank,'shared_ic_sha256':'shared','result_root':remote},'spectra':rows,'artifacts':{remote+'/solver.log':campaign.sha256(gpu/'solver.log')}}
+                campaign.write_json(gpu/'gpu-analysis.json',record);directories.append(gpu)
+            with contextlib.redirect_stdout(io.StringIO()):campaign.extend_figure(base,directories,root/'comparison')
+            actual=pd.read_csv(root/'comparison/figures/plotted_values.csv')
+            np.testing.assert_array_equal(actual.ippl_gpu1_offset_vs_fastpm_percent,[0.,0.])
+            np.testing.assert_array_equal(actual.ippl_gpu4_offset_vs_fastpm_percent,[0.,0.])
+            self.assertEqual(len(json.loads((root/'comparison/analysis.json').read_text())['spectra']),5)
+            (directories[0]/'solver.log').write_text('altered log')
+            with self.assertRaisesRegex(ValueError,'artifact changed'):
+                campaign.extend_figure(base,directories,root/'bad')
+
+    ## @brief Reject an existing remote output directory before any shared IC upload.
+    # @return None; a failed exclusive directory creation stops SCP before touching evidence.
+    def test_remote_existing_output_stops_before_upload(self):
+        from types import SimpleNamespace
+        import subprocess
+        with tempfile.TemporaryDirectory() as directory:
+            ic=Path(directory)/'shared-z99.csv';ic.write_text('fixture')
+            args=SimpleNamespace(output=Path('/remote/existing'),plan=False,shared_ic=ic)
+            with patch.object(campaign.socket,'gethostname',return_value='local'),patch.object(campaign.subprocess,'run',side_effect=subprocess.CalledProcessError(1,['ssh'])) as run:
+                with self.assertRaises(subprocess.CalledProcessError):campaign.submit_merlin(args)
+            self.assertEqual(run.call_count,1)
+            command=run.call_args.args[0];self.assertEqual(command[:2],['ssh','merlin6'])
+            self.assertIn('mkdir /remote/existing && mkdir /remote/existing/input',command[2])
+
+    ## @brief Permit cache reuse after launcher changes while rejecting changed native compilation inputs.
+    # @return None; hash-scope comparisons preserve the original native build contract.
+    def test_native_cache_and_launch_hash_scopes(self):
+        before={'/src/Field.h':'header','/src/CMakeLists.txt':'configure','/tools/nvcc_wrapper':'compiler','/src/runner.py':'python','/src/a11_job.sh':'shell','/src/tuning.csv':'runtime-data'}
+        runtime={**before,'/src/runner.py':'new-python','/src/a11_job.sh':'new-shell','/src/tuning.csv':'new-runtime-data'}
+        self.assertEqual(campaign.native_source_hashes(before),campaign.native_source_hashes(runtime))
+        changed={**runtime,'/src/Field.h':'changed-header'}
+        self.assertNotEqual(campaign.native_source_hashes(before),campaign.native_source_hashes(changed))
+        self.assertEqual(set(campaign.native_source_hashes(before)),{'/src/Field.h','/src/CMakeLists.txt','/tools/nvcc_wrapper'})
 
 
 ## @cond CLI_DISPATCH

@@ -1,0 +1,231 @@
+{
+  "asset_count": 9,
+  "assets": [
+    {
+      "asset": "ic-power.png",
+      "bundle": "initial-conditions",
+      "bytes": 219921,
+      "copy_contract": "byte-identical released PNG; no plot edits",
+      "original_manifest_output_path": "matched_ic_power.png",
+      "sha256": "cf2f1e38a60757ab2cf5a4ab0a8aad0a13cc36435906525bac0bdf0ca0847eca",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/zarija-plots-final/plot_manifest.json",
+      "source_manifest_sha256": "f6dbe62d203cd167dde67f183f9e3f41ba4cdb09bdf9b8b9f14be2bf4ff65cf0",
+      "source_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/zarija-plots-final/matched_ic_power.png"
+    },
+    {
+      "asset": "ic-mpi.png",
+      "bundle": "initial-conditions",
+      "bytes": 137836,
+      "copy_contract": "byte-identical released PNG; no plot edits",
+      "original_manifest_output_path": "mpi_rank_consistency.png",
+      "sha256": "b1fb440c2b9f98c3c2bbaa929645eb23156ad0cd43eb5692629df5e6b0b349de",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/zarija-plots-final/plot_manifest.json",
+      "source_manifest_sha256": "f6dbe62d203cd167dde67f183f9e3f41ba4cdb09bdf9b8b9f14be2bf4ff65cf0",
+      "source_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/zarija-plots-final/mpi_rank_consistency.png"
+    },
+    {
+      "asset": "frozen-force.png",
+      "bundle": "particle-mesh",
+      "bytes": 216308,
+      "copy_contract": "byte-identical released PNG; no plot edits",
+      "original_manifest_output_path": "frozen_force_comparison.png",
+      "sha256": "e8ee7a503326c68065b6b5a605465133ae10d1d42cb97c0d1b738d3bf5028891",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pm-validation-plots-release/manifest.json",
+      "source_manifest_sha256": "fd78c962b212d20f3a9dcdb945c1c01b88abed1e211654f7828130ccd543020b",
+      "source_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pm-validation-plots-release/frozen_force_comparison.png"
+    },
+    {
+      "asset": "pancake-convergence.png",
+      "bundle": "particle-mesh",
+      "bytes": 353458,
+      "copy_contract": "byte-identical released PNG; no plot edits",
+      "original_manifest_output_path": "pancake_convergence.png",
+      "sha256": "ab6f07a42278f925a3f05be97107863814a2fed8094da132a6e4b5696f56e4e9",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pm-validation-plots-release/manifest.json",
+      "source_manifest_sha256": "fd78c962b212d20f3a9dcdb945c1c01b88abed1e211654f7828130ccd543020b",
+      "source_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pm-validation-plots-release/pancake_convergence.png"
+    },
+    {
+      "asset": "pancake-local.png",
+      "bundle": "particle-mesh",
+      "bytes": 450656,
+      "copy_contract": "byte-identical released PNG; no plot edits",
+      "original_manifest_output_path": "pancake_local_errors.png",
+      "sha256": "dd50029fe027958054dd8890ff3ca655c0c5a8d42047db5fea0f6e50f0f17c8f",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pm-validation-plots-release/manifest.json",
+      "source_manifest_sha256": "fd78c962b212d20f3a9dcdb945c1c01b88abed1e211654f7828130ccd543020b",
+      "source_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pm-validation-plots-release/pancake_local_errors.png"
+    },
+    {
+      "asset": "nonlinear-phase-space.png",
+      "bundle": "nonlinear-evolution",
+      "bytes": 260875,
+      "copy_contract": "byte-identical released PNG; no plot edits",
+      "original_manifest_output_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release/pancake-phase-space.png",
+      "sha256": "7369749f40cda8f95381e8cad3df71d070de7f332d23389df202d1cc515bdfee",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release/sha256-manifest.json",
+      "source_manifest_sha256": "301a9b4996f73b30d4164cbb9d5c24cc083d017c33d80ae71fbc48fb1917f34d",
+      "source_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release/pancake-phase-space.png"
+    },
+    {
+      "asset": "nonlinear-modes.png",
+      "bundle": "nonlinear-evolution",
+      "bytes": 394674,
+      "copy_contract": "byte-identical released PNG; no plot edits",
+      "original_manifest_output_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release/resolved-density-evolution.png",
+      "sha256": "68ceb691bc24df9b6e7dd83a7a67bea927bf7d8db376ff2e175a0c0926c1ceb5",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release/sha256-manifest.json",
+      "source_manifest_sha256": "301a9b4996f73b30d4164cbb9d5c24cc083d017c33d80ae71fbc48fb1917f34d",
+      "source_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release/resolved-density-evolution.png"
+    },
+    {
+      "asset": "spatial-controls.png",
+      "bundle": "local-spatial",
+      "bytes": 587305,
+      "copy_contract": "byte-identical released PNG; no plot edits",
+      "original_manifest_output_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/figures-spatial-release/spatial-controls.png",
+      "sha256": "3fb8c20b392a7cc9345e0a0e6aca45a07166fa559522ad11238bc8260c514988",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/figures-spatial-release/manifest.json",
+      "source_manifest_sha256": "05b209996d0edf2286bd97e0cb98121846e36c8fda0ea1e72ba618fd04291447",
+      "source_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/figures-spatial-release/spatial-controls.png"
+    },
+    {
+      "asset": "gaussian-controls.png",
+      "bundle": "merlin-cpu-gaussian",
+      "bytes": 574296,
+      "copy_contract": "byte-identical released PNG; no plot edits",
+      "original_manifest_output_path": "/data/user/adelmann/cosmology-cpu-login-20261004/figures-gaussian-release/gaussian-controls.png",
+      "sha256": "09eac8081e1ceefc1591337fb6aa519f8c56810a401c76ac2dfefadbff387082",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/merlin-cpu-login-20261004/figures-gaussian-release/manifest.json",
+      "source_manifest_sha256": "72d1e676fe2bec9148c6ef847cbe8945cb179593de6ab019e0ddabe5d8a447a8",
+      "source_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/merlin-cpu-login-20261004/figures-gaussian-release/gaussian-controls.png"
+    }
+  ],
+  "output_dir": "/Users/adelmann/git/ippl/papers/ippl-cosmology/figures/validation",
+  "plots_rerendered": false,
+  "provenance": [
+    {
+      "bundle": "initial-conditions",
+      "preserved_manifest": "provenance/initial-conditions-plot-manifest.json",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/zarija-plots-final/plot_manifest.json",
+      "source_manifest_bytes": 9543,
+      "source_manifest_sha256": "f6dbe62d203cd167dde67f183f9e3f41ba4cdb09bdf9b8b9f14be2bf4ff65cf0",
+      "source_reports": [
+        {
+          "bytes": 391590,
+          "copied": false,
+          "original_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/zarija-validation-f2c9zb42/results.json",
+          "sha256": "9e0a75c7120ff854e28481c87b55828f1d431825ac51d21320ef27b55a338c10",
+          "verification": "exact report bytes",
+          "verified_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/zarija-validation-f2c9zb42/results.json"
+        },
+        {
+          "bytes": 11386,
+          "copied": false,
+          "original_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/zarija-physics-hd3av78e/results.json",
+          "sha256": "aa3004fc8ab29f72ff6bda31ebeadb2a50a0999a415a7be2c30882e1adef3fdc",
+          "verification": "exact report bytes",
+          "verified_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/zarija-physics-hd3av78e/results.json"
+        }
+      ]
+    },
+    {
+      "bundle": "particle-mesh",
+      "preserved_manifest": "provenance/particle-mesh-plot-manifest.json",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pm-validation-plots-release/manifest.json",
+      "source_manifest_bytes": 2463,
+      "source_manifest_sha256": "fd78c962b212d20f3a9dcdb945c1c01b88abed1e211654f7828130ccd543020b",
+      "source_reports": [
+        {
+          "bytes": 321517,
+          "copied": false,
+          "original_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/frozen-force-5_li99qh/results.json",
+          "sha256": "0d9a3e3bf431517e3d23eb8d7b9f87a1827ff73da30f80852e22f1dedbe128fb",
+          "verification": "exact report bytes",
+          "verified_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/frozen-force-5_li99qh/results.json"
+        },
+        {
+          "bytes": 121799,
+          "copied": false,
+          "original_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pancake-validation-rs1o9glb/results.json",
+          "sha256": "93f42541337d8e5addc8705060f27232008048de9dd6c94d33783bdc89e172b1",
+          "verification": "exact report bytes",
+          "verified_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pancake-validation-rs1o9glb/results.json"
+        },
+        {
+          "bytes": 57354,
+          "copied": false,
+          "original_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pancake-diagnostics-rs1o9glb/diagnostics.json",
+          "sha256": "32d1e07881b401cc84894d53baf24d06f8ef21aad792fa3ed46dc1d6cdfeaa39",
+          "verification": "exact report bytes",
+          "verified_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pancake-diagnostics-rs1o9glb/diagnostics.json"
+        }
+      ]
+    },
+    {
+      "bundle": "nonlinear-evolution",
+      "preserved_manifest": "provenance/nonlinear-evolution-plot-manifest.json",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release/sha256-manifest.json",
+      "source_manifest_bytes": 3092,
+      "source_manifest_sha256": "301a9b4996f73b30d4164cbb9d5c24cc083d017c33d80ae71fbc48fb1917f34d",
+      "source_reports": [
+        {
+          "bytes": 2428593,
+          "copied": false,
+          "original_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/results.json",
+          "sha256": "34568aa5978c7c651410f1b8187478648ded7dd47bb5b98ac3a2ed77bd101b1d",
+          "verification": "exact report bytes",
+          "verified_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/results.json"
+        }
+      ]
+    },
+    {
+      "bundle": "local-spatial",
+      "preserved_manifest": "provenance/local-spatial-plot-manifest.json",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/figures-spatial-release/manifest.json",
+      "source_manifest_bytes": 2216,
+      "source_manifest_sha256": "05b209996d0edf2286bd97e0cb98121846e36c8fda0ea1e72ba618fd04291447",
+      "source_reports": [
+        {
+          "copied": false,
+          "original_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/results.json",
+          "sha256": "11ee94361853d92f87d66c703cc0145f4bd3f2ab003e7895d071c261b49d56d7",
+          "snapshot_bytes": 1654453,
+          "snapshot_original_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/figures-spatial-release/input-report.json.gz",
+          "snapshot_sha256": "f3b68413aa7f541f4755095f7d4081e9e9ca10efd5df167e95ab042cbb679ed8",
+          "verification": "exact decompressed release snapshot",
+          "verified_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/resolution-study-cffjva__/figures-spatial-release/input-report.json.gz"
+        }
+      ]
+    },
+    {
+      "bundle": "merlin-cpu-gaussian",
+      "preserved_manifest": "provenance/merlin-cpu-gaussian-plot-manifest.json",
+      "source_manifest": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/merlin-cpu-login-20261004/figures-gaussian-release/manifest.json",
+      "source_manifest_bytes": 1891,
+      "source_manifest_sha256": "72d1e676fe2bec9148c6ef847cbe8945cb179593de6ab019e0ddabe5d8a447a8",
+      "source_reports": [
+        {
+          "copied": false,
+          "original_path": "/data/user/adelmann/cosmology-cpu-login-20261004/gaussian/results.json",
+          "sha256": "82cb91aae41986c7655a742e71c59150a175f926db1a5e1d2d2709a9ae8156b2",
+          "snapshot_bytes": 12359573,
+          "snapshot_original_path": "/data/user/adelmann/cosmology-cpu-login-20261004/figures-gaussian-release/input-report.json.gz",
+          "snapshot_sha256": "b1d2531d55278d4b11ef849ef3da52978b7480a7fec827fd845239fa272e4e75",
+          "verification": "exact decompressed release snapshot",
+          "verified_path": "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/merlin-cpu-login-20261004/figures-gaussian-release/input-report.json.gz"
+        }
+      ]
+    }
+  ],
+  "schema": "ippl-cosmology-paper-validation-assets-v1",
+  "scope": "Figure-byte provenance only; retained scientific failures are unchanged.",
+  "script": {
+    "path": "/Users/adelmann/git/ippl/papers/ippl-cosmology/scripts/prepare_validation_assets.py",
+    "sha256": "cb127849c2de56b164bfbba4092392aca6d9dbd22af0b482de1aa3bcbbee0330"
+  },
+  "simulations_run": false,
+  "source_reports_copied": false,
+  "total_png_bytes": 3195329,
+  "validation_root": "/Users/adelmann/git/ippl-cosmology-linear"
+}

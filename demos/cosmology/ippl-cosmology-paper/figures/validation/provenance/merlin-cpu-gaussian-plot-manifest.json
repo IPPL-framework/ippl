@@ -1,0 +1,47 @@
+{
+  "schema": "ippl-resolution-plot-manifest-v1",
+  "input_report": {
+    "path": "/data/user/adelmann/cosmology-cpu-login-20261004/gaussian/results.json",
+    "sha256": "82cb91aae41986c7655a742e71c59150a175f926db1a5e1d2d2709a9ae8156b2",
+    "snapshot": "/data/user/adelmann/cosmology-cpu-login-20261004/figures-gaussian-release/input-report.json.gz"
+  },
+  "script": {
+    "path": "/data/user/adelmann/ippl-cosmology-linear/demos/cosmology/plot_resolution_study.py",
+    "sha256": "30340ff226ad010e01e903c8cd8c8d59b3e6238a4795ee255c3143c5428b0e53"
+  },
+  "source_report_unchanged_during_plot": true,
+  "input_snapshot_contract": "gzip stores the exact input bytes read once; decompressed SHA256 equals input_report.sha256",
+  "completed_stages": [
+    "gaussian"
+  ],
+  "omitted_stages": {},
+  "campaign_complete": true,
+  "campaign_passed": false,
+  "failed_check_count": 116,
+  "software": {
+    "numpy": "2.4.6",
+    "matplotlib": "3.10.9"
+  },
+  "outputs": [
+    {
+      "path": "/data/user/adelmann/cosmology-cpu-login-20261004/figures-gaussian-release/input-report.json.gz",
+      "sha256": "b1d2531d55278d4b11ef849ef3da52978b7480a7fec827fd845239fa272e4e75",
+      "bytes": 12359573
+    },
+    {
+      "path": "/data/user/adelmann/cosmology-cpu-login-20261004/figures-gaussian-release/gaussian-controls.png",
+      "sha256": "09eac8081e1ceefc1591337fb6aa519f8c56810a401c76ac2dfefadbff387082",
+      "bytes": 574296
+    },
+    {
+      "path": "/data/user/adelmann/cosmology-cpu-login-20261004/figures-gaussian-release/gaussian-controls.svg",
+      "sha256": "a9fe0709cc1f711f9946e9132ba2ab053491213b4084f0bfb3b1e066cd160de8",
+      "bytes": 125538
+    },
+    {
+      "path": "/data/user/adelmann/cosmology-cpu-login-20261004/figures-gaussian-release/plot_data.json",
+      "sha256": "8fd1154a7393385304371e900c655e39625b0b087856975deeda3ca7e8e956b9",
+      "bytes": 142645
+    }
+  ]
+}

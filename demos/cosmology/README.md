@@ -17,7 +17,7 @@ differences from the legacy implementation.
 
 Main application guide: [Cosmology](Cosmology.md), covering purpose/model, build, and run instructions.
 
-Local three-code campaign and Figure A11: [ThreeCodeCampaign.md](ThreeCodeCampaign.md).
+Local three-code campaign, Merlin6 A100 extension and Figure A11: [ThreeCodeCampaign.md](ThreeCodeCampaign.md).
 
 ## Doxygen documentation
 

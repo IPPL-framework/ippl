@@ -1,4 +1,4 @@
-# Local three-code campaign (Figure A11)
+# Local and Merlin6 campaign (Figure A11)
 
 ## Purpose/Model
 
@@ -135,6 +135,73 @@ nonzero exit code. Partial solver outputs are retained; automatic simulation
 restart is not implemented. Timeout cleanup applies only to the process group
 started by this runner.
 
-The script has configurable build directories, compiler settings and MPI arguments
-for later Merlin use. This version runs locally; it does not connect to Merlin,
-submit Slurm jobs or claim GPU qualification.
+## Merlin6 A100 execution
+
+Omitting `--cluster` runs locally. `--rank` defaults to `1`; `--ranks` remains
+an alias. A comma-separated `--rank 1,4` is supported for Merlin6 submissions.
+
+From the local repository, reuse the completed baseline's exact IC CSV:
+
+```sh
+~/.venv-h6/bin/python -B demos/cosmology/python/run_three_code_campaign.py \
+  --cluster merlin6 --rank 1,4 \
+  --shared-ic /ABS/BASELINE/ics/shared-z99.csv \
+  --output /data/user/adelmann/NEW_A11_CAMPAIGN
+```
+
+The CSV requires its sibling `ic-manifest.json`. The controller copies both
+through SSH/SCP to Merlin6 and invokes the same runner in `~/git/ippl`.
+Use `--remote-root` or `--remote-python` to override the remote checkout and
+Python environment. The remote checkout must contain this version of the
+runner and `merlin/a11_job.sh`; no automatic Git pull or push is performed.
+The same command can also be run directly on Merlin6 with a cluster-local IC.
+`--plan` prints settings without SSH, copying, compiling or submitting jobs.
+
+The user-facing cluster name is `merlin6`; its Slurm GPU cluster is
+`gmerlin6`, partition/account `gwendolen`. The controller submits a one-A100,
+four-CPU build job and dependency-linked single-node GPU runs with one MPI
+rank per full A100 and one host thread per rank. CUDA AMPERE80, GCC 14.3,
+CUDA 12.9.1, OpenMPI 5.0.10 and pinned Kokkos/heFFTe are selected.
+C++ compilation uses the SHA256-recorded Kokkos `nvcc_wrapper` already cached
+in `build_a100/_deps/kokkos-src/bin` with GCC as its host compiler. Builds live
+in `build_a11_a100`. Cached binaries are reused only when their recorded native compilation
+inputs and artifact hashes match. Python/Slurm launcher and tuning-table
+hashes are frozen independently for each run; changes to those do not
+misrepresent the original binary build or force unnecessary recompilation. A changed cache requires a fresh build
+rather than silently accepting a stale executable. Select a fresh cluster-local
+build path with `--ippl-build /ABS/NEW_BUILD`; `--nvcc-wrapper` selects another
+existing cluster-local Kokkos wrapper. Compilation and simulation
+run inside Slurm allocations, never on a login host.
+
+These supplementary jobs run **IPPL only**. The original FastPM and GADGET-2
+results remain the reference curves. Spectral self-tests run on each requested
+rank count. Each rank's CUDA wrapper narrows the scheduler-provided GPU mask;
+The launcher explicitly selects OpenMPI CUDA-aware UCX (`--mca pml ucx`),
+with intra-node shared-memory, CUDA-copy and CUDA-IPC transports; it avoids
+the site default BTL/UCT host-copy path that failed during four-rank particle
+migration. See [OpenMPI CUDA transport documentation](https://docs.open-mpi.org/en/v5.0.x/tuning-apps/networking/cuda.html).
+Analysis verifies distinct physical PCI identities, full A100 allocation,
+CUDA execution/memory metadata, exact IC hashes, import roundtrip, particle
+IDs/counts, finite phase space, mass conservation and the final epoch. This
+changes execution backend and floating-point reduction order; no bitwise
+CPU/GPU equality or continuum convergence is assumed.
+
+Monitor job IDs from `submission.json` with `squeue -M gmerlin6` and
+`sacct -M gmerlin6`. Each completed `gpu1`/`gpu4` directory includes
+`gpu-analysis.json`, original rank snapshots, logs and scheduler evidence.
+Failed jobs retain their outputs and require an explicit new campaign path;
+there is no automatic resubmission.
+
+Download the complete `gpu1` and `gpu4` directories and extend Figure A11:
+
+```sh
+~/.venv-h6/bin/python -B demos/cosmology/python/run_three_code_campaign.py \
+  --extend-figure /ABS/BASELINE \
+  --gpu-result /ABS/DOWNLOADED/gpu1 --gpu-result /ABS/DOWNLOADED/gpu4 \
+  --output /ABS/NEW_COMPARISON
+```
+
+The merger checks the baseline's recorded analysis/output hashes, exact IC
+identity and all downloaded GPU artifact hashes. It writes a new five-curve
+Figure A11 and comparison provenance, preserving the original campaign and
+figures. All ratios continue to use the original FastPM spectrum.

@@ -1,0 +1,28 @@
+{
+  "source_sha256": {
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/frozen-force-5_li99qh/results.json": "0d9a3e3bf431517e3d23eb8d7b9f87a1827ff73da30f80852e22f1dedbe128fb",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pancake-validation-rs1o9glb/results.json": "93f42541337d8e5addc8705060f27232008048de9dd6c94d33783bdc89e172b1",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pancake-diagnostics-rs1o9glb/diagnostics.json": "32d1e07881b401cc84894d53baf24d06f8ef21aad792fa3ed46dc1d6cdfeaa39",
+    "/Users/adelmann/git/ippl-cosmology-linear/demos/cosmology/plot_pm_validation.py": "ed5cfc653a3f8de4401d62794b32d775bb849d4b5c43d7b52fd1e03134e0bb7d",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pancake-validation-rs1o9glb/axis_a5_n64/output/diagnostics.csv": "90a3071f7081ebaa4e5cee8ab84b9bf190c860aad48b4f3f309e2a032a0eab5a",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/pancake-validation-rs1o9glb/axis_a8_n64/output/diagnostics.csv": "c13bd6b2eead30060acc5d09762c218c894f2a7b319216432625ca9f9cef4471"
+  },
+  "output_sha256": {
+    "frozen_force_comparison.png": "e8ee7a503326c68065b6b5a605465133ae10d1d42cb97c0d1b738d3bf5028891",
+    "frozen_force_comparison.svg": "85e8b05060dbcfe03ce64d455fd8082601f22a52f06e2f6d79bb9fe686a102cf",
+    "pancake_convergence.png": "ab6f07a42278f925a3f05be97107863814a2fed8094da132a6e4b5696f56e4e9",
+    "pancake_convergence.svg": "404cc5c4b922e27beee7549056c9df56eacdc68f9da587b7282e231761755046",
+    "pancake_local_errors.png": "dd50029fe027958054dd8890ff3ca655c0c5a8d42047db5fea0f6e50f0f17c8f",
+    "pancake_local_errors.svg": "d980a1aee91793118525a3bc45f7c9b8d3810d58ab6cd2685e96157a032e5d72",
+    "pancake_mass_diagnostic.png": "44b055bda14c696215977f77ace13cb2ed9f718507e77c17d5639b15e8118a43",
+    "pancake_mass_diagnostic.svg": "704b586876a78e2e619648472f14e91089348ceee8865fca6b6ae18bda67671b",
+    "plot_data.json": "2cb06b18339b26940207f8a186c545751619e28a712e5cf807be11da0adbd276"
+  },
+  "notes": [
+    "Saved evidence only; no simulations or changed tolerances",
+    "Force residual is field-difference RMS, never difference of RMS magnitudes",
+    "Uniform relative force errors are undefined, not floored",
+    "Frozen operator qualification passes; full pancake retains mass failure",
+    "No post-crossing, local-density, GPU or exascale qualification"
+  ]
+}

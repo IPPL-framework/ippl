@@ -720,3 +720,16 @@ Submission is a separate user action; generating this documentation never submit
 `python/build_documentation.py` builds the strict Doxygen site and checks extracted API coverage. `python/doxygen_filter.py` is used only by the documentation parser to recognize bare annotated Python fields; it never executes transformed text. `python/tests/test_documentation.py` checks the documentation infrastructure independently of simulation results.
 
 */
+
+/** @page cosmology_a11_cluster Merlin6 A100 Figure A11 extension
+ * The maintained runner accepts --cluster merlin6 and --rank 1,4. Without
+ * --cluster execution is local and --rank defaults to 1. The Slurm-only
+ * launcher submits dependency-linked AMPERE80 compilation and one rank per
+ * allocated full A100. Exact IC byte hashes, CUDA memory/execution metadata,
+ * physical PCI bindings, imported-state roundtrip and mass are checked before
+ * adding GPU powers to the unchanged FastPM-relative estimator. Backend and
+ * parallel reduction order may change floating-point results; this is not a
+ * bitwise reproducibility or continuum-convergence assertion. See
+ * @ref run_three_code_campaign.py and ThreeCodeCampaign.md for full usage.
+ * @verbinclude a11_job.sh
+ */

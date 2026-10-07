@@ -1,0 +1,89 @@
+{
+  "schema": "ippl-zeldovich-matched-spectrum-and-movie-v1",
+  "campaign_json": {
+    "path": "/data/user/adelmann/cosmology-zeldovich-broadband-20261004/campaign.json",
+    "sha256": "340b497e334d50767bf83020185650e328ec644db498e3b0b2988d7d63ce0129"
+  },
+  "analysis": {
+    "path": "/data/user/adelmann/cosmology-zeldovich-broadband-20261004/analysis/results.json",
+    "sha256": "b345da2fbbf22e9a57091a06352be15da72d6296809502a571fdc130453f6122"
+  },
+  "legacy_fastpm_comparison": {
+    "manifest": "/data/user/adelmann/cosmology-resolution-64-128-20261004/fastpm-z0-plots-v2/manifest.json",
+    "manifest_sha256": "586716413feca7f7fa1067c3895eab7b9d5a2bfca7f6fd7ee3f276dc13dac1f7",
+    "report_sha256": "9334b83f1bfa9f22ed43809bb3a5d0860a837ae4dfa68d7c0c1c1401e2ce9193",
+    "plotted_values_sha256": "68c6dc4e815f495c64af3d2633461c6d73734c17fb15db98966a0f738f5a94fe",
+    "verified_source_build_hashes": {
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/validate_resolution_study.py": "114cabb62722e512890cc7a6d21deb069daef516c9dd556858b275408188e018",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/study_storage.py": "93dbf46921eb3ed41abdc219054e585dcf3b1f2c0c0db908f3b0064d1b7ffdd4",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/study_spectra.py": "e6e7f9c01aa12481a1d662df5987fe16d717680a5387cfa97868fd156749613c",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/gaussian_fixture.py": "4739a303944f2cb3b30a69f125d343e33bf29cf62e3c11dbe460709796b91d73",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/validate_evolution.py": "09ad7539f606487c3c84d7dbd07a1756f95d4069cb161201ec36f60f07e376e8",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/validate_linear.py": "bebc281723c7b8b20ca70b6844a7824b09a0f562952debd035238d506d5c978a",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/CosmologySimulation.h": "9f62d65ef2f818071f3db17e121f16ade99047988ab8ba57891d526486c1b643",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/CosmologyPhysics.h": "a65dd35ef5b702753c483db7b59976127f7c6b2d2052a5ac49f7972c1b100111",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/CosmologyConfig.h": "3b7a5501f986fdf07f490c96aa398febf00972a9eef3c08a9d6f33fe3e76a860",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/tests/CompareCosmologyEvolution.cpp": "c46c5a262afff55ac72b3c68d81dfcb7a3d2cc1852a4d87db13c935816bda45f",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/reference/FastPMEvolution.c": "41708f1056096c4a282bb4a70825a28ba3c77e0d70d8e8426ebba7f6bf16f92c",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/reference/build_fastpm_evolution.sh": "4a6eb08811ed35183dab316363d42654a5a78372d166e95a9f636e1c25d279d1",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/source/demos/cosmology/validate_resolution_extension.py": "a3aba6b88224a2d87a30547168cf6e14087473358fb70ef1010dac0103f1136e",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/ippl/demos/cosmology/CompareCosmologyEvolution": "e338b9740fedb5b3084646955c4ea3547ff3b14def6acd619425c302ed52efc0",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/evolution/FastPMEvolution": "83a7215090483fb2ab3f74fc2179faa5a41e438d870e6d2b5cdfac1b638485c1",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/evolution/build-manifest.txt": "e30524171152b15b05dd96f0eaa1b7f27b49adb1dad7b4d396fd25cd21a5b493",
+      "/data/user/adelmann/ippl-cosmology-linear/demos/cosmology/reference/FastPMEvolution.c": "41708f1056096c4a282bb4a70825a28ba3c77e0d70d8e8426ebba7f6bf16f92c",
+      "/data/user/adelmann/ippl-cosmology-linear/demos/cosmology/reference/build_fastpm_evolution.sh": "4a6eb08811ed35183dab316363d42654a5a78372d166e95a9f636e1c25d279d1",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/evolution/frozen-force-build-manifest.txt": "9d5ec517ff37eb3d2a7a40797c418bb00e8399060afde321090bfa9711ebe21f",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/source/libfastpm/libfastpm.a": "fedba61b4036a769d427cc7b40c5f251c8c99a90b6c42c739cc209f70b30ecca",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/install/lib/libmpsort-mpi.a": "f6d4f28e87fc0af8595879bd35c0fa50a81468e3bbeed3c9ce47f0fe126fd887",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/install/lib/libradixsort.a": "8851d0559e927c949314b0c283f748d34c401fb83cdac88e293ff6bc6315d620",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/install/lib/libbigfile-mpi.a": "5a7c02cebf33995f17d8a50a08e1a662ad924c482e965d56ac252cc63b23b650",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/install/lib/libbigfile.a": "f26d2fdc68af128a59dc8b13f6f2a20bfe0913d0a35f185bb2ce0417679b8b33",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/install/lib/libkdcount.a": "ba55e32c11561ae789177b64a6eec609d306aacc3dd67fb128c02aafcb83a90f",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/install/lib/libchealpix.a": "d7272342b68e78592732f19a989ada51a2010bc67f57f26c61c36dc38aa4f24a",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/install/lib/libpfft.a": "57b4e57a81d36208d1613420fa65d1a10485e4317d27f498b8ac0847e08ac41f",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/fftw-install/lib/libfftw3_mpi.a": "21c92187947bba3187502a3889ef3a7a7b46653a5cf9464118482f8367784ba4",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/fftw-install/lib/libfftw3.a": "fbb41e156598d3383218621f93d571424c82b682cdceee9541254bde5d2b27e6",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/install/lib/libgsl.a": "9f649184e50aa0eb266c4ceea2ae8e392bac0455b4ffb8ef7ed474932772a6de",
+      "/data/user/adelmann/cosmology-cpu-login-20261004/fastpm/install/lib/libgslcblas.a": "966bcab623457558b436288b4489f94e0a94e5fb84086d8b24472da88855be52",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/validate_resolution_study.py": "114cabb62722e512890cc7a6d21deb069daef516c9dd556858b275408188e018",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/study_storage.py": "93dbf46921eb3ed41abdc219054e585dcf3b1f2c0c0db908f3b0064d1b7ffdd4",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/study_spectra.py": "e6e7f9c01aa12481a1d662df5987fe16d717680a5387cfa97868fd156749613c",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/gaussian_fixture.py": "4739a303944f2cb3b30a69f125d343e33bf29cf62e3c11dbe460709796b91d73",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/validate_evolution.py": "09ad7539f606487c3c84d7dbd07a1756f95d4069cb161201ec36f60f07e376e8",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/validate_linear.py": "bebc281723c7b8b20ca70b6844a7824b09a0f562952debd035238d506d5c978a",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/CosmologySimulation.h": "9f62d65ef2f818071f3db17e121f16ade99047988ab8ba57891d526486c1b643",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/CosmologyPhysics.h": "a65dd35ef5b702753c483db7b59976127f7c6b2d2052a5ac49f7972c1b100111",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/CosmologyConfig.h": "3b7a5501f986fdf07f490c96aa398febf00972a9eef3c08a9d6f33fe3e76a860",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/tests/CompareCosmologyEvolution.cpp": "c46c5a262afff55ac72b3c68d81dfcb7a3d2cc1852a4d87db13c935816bda45f",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/reference/FastPMEvolution.c": "41708f1056096c4a282bb4a70825a28ba3c77e0d70d8e8426ebba7f6bf16f92c",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/reference/build_fastpm_evolution.sh": "4a6eb08811ed35183dab316363d42654a5a78372d166e95a9f636e1c25d279d1",
+      "/data/user/adelmann/cosmology-resolution-64-128-20261004/gaussian/source-snapshot/validate_resolution_extension.py": "a3aba6b88224a2d87a30547168cf6e14087473358fb70ef1010dac0103f1136e"
+    }
+  },
+  "plot_and_movie_source": "/data/user/adelmann/cosmology-zeldovich-broadband-20261004/source/demos/cosmology/plot_zeldovich_benchmark.py",
+  "plot_and_movie_source_sha256": "8672db9e89c85e8ed32b380a92e6a0159301abb0ad3ac71a9764e2a9b57d191f",
+  "particle_sample": {
+    "movie_case": "z99_ippl",
+    "count": 60000,
+    "total_particles": 2097152,
+    "selection": "PCG64 seed 51099, choice without replacement, sorted global IDs"
+  },
+  "solver_launches": 0,
+  "outputs": [
+    {
+      "path": "/data/user/adelmann/cosmology-zeldovich-broadband-20261004/plots/fastpm-ippl-zeldovich-spectrum.png",
+      "bytes": 335290,
+      "sha256": "c872f82e846c16825134d2193dbc74692816b4ff2151f13b1543986db20d311c"
+    },
+    {
+      "path": "/data/user/adelmann/cosmology-zeldovich-broadband-20261004/plots/fastpm-ippl-zeldovich-spectrum.svg",
+      "bytes": 141918,
+      "sha256": "a11af5f456a3743a08cfd9414c7465cb08833bbb9b59c15e200bbe74b09d5d57"
+    },
+    {
+      "path": "/data/user/adelmann/cosmology-zeldovich-broadband-20261004/movies/dark-matter-z99-ippl.gif",
+      "bytes": 3727096,
+      "sha256": "2b272ecb340881b5b7433f466b9c21c1e7287e93aa53d5cc75d27a65f3768257"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "ippl-evolution-figures-v1",
+  "inputs_sha256": {
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/results.json": "34568aa5978c7c651410f1b8187478648ded7dd47bb5b98ac3a2ed77bd101b1d",
+    "/Users/adelmann/git/ippl-cosmology-linear/demos/cosmology/plot_evolution.py": "760fd4d5936e66a91ef697176fe518a8cc9c9bb0b32220c7ef3f33e107b59417",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/pancake_m32_t256_r1_ippl/particles_checkpoint0000_rank0.csv.gz": "f2e61949a9124248c5a315eea78daedb5c275fc5a93103c43719704f045fcf90",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/pancake_m32_t256_r1_fastpm/particles_checkpoint0000_rank0.csv.gz": "1676ed02d6acf3852115b486e9a531f5acb53b6590ecd88ee8c97286973a7961",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/pancake_m32_t256_r1_ippl/particles_checkpoint0004_rank0.csv.gz": "11494f7e958ca659a836001b681bb66f1238fabb25a1050c1e7f70498777e8d0",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/pancake_m32_t256_r1_fastpm/particles_checkpoint0004_rank0.csv.gz": "8492c52464553395b708aa78142dda882e831064683badc47e05405cf33089ee",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/pancake_m32_t256_r1_ippl/particles_checkpoint0008_rank0.csv.gz": "364ba84202d92ceb0b6c8ef63ec6e3a0085ae64d1a7617066de149d072cd8e9c",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/pancake_m32_t256_r1_fastpm/particles_checkpoint0008_rank0.csv.gz": "c516df507874356670fcadfd8fc45b040b5bfbdc37bd2c133585d6f766da9f6a"
+  },
+  "outputs_sha256": {
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release/plotted-data.json": "e09f90cdd7f9ea814cd7edd964d24cecaf2c9695e861a0c7df9b0e8ffc572f58",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release/pancake-phase-space.png": "7369749f40cda8f95381e8cad3df71d070de7f332d23389df202d1cc515bdfee",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release/pancake-phase-space.svg": "ad1f50575d6c77e6da5d6b8b89d41bb6196bc1d03df468cfbcba5ce664fecb1b",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release/resolved-density-evolution.png": "68ceb691bc24df9b6e7dd83a7a67bea927bf7d8db376ff2e175a0c0926c1ceb5",
+    "/Users/adelmann/git/ippl-cosmology-linear/build_openmp/demos/cosmology/matched-evolution-5v7u3y98/figures-release/resolved-density-evolution.svg": "a15b82fbde84f07a22b6f7d672f49d381fcf32d205fe2f23e6991cb3fe53a847"
+  },
+  "dpi": 240,
+  "numpy": "2.4.6",
+  "pandas": "3.0.3",
+  "matplotlib": "3.10.9",
+  "campaign_passed": false,
+  "failed_checks_count": 2,
+  "simulations_run": false
+}

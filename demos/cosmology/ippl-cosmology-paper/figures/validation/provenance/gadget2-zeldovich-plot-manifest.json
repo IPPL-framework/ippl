@@ -1,0 +1,61 @@
+{
+  "schema": "ippl-fastpm-gadget2-z99-z0-power-plot-v1",
+  "created_utc": "2026-10-04T20:30:23.269734+00:00",
+  "input_hashes": {
+    "/data/user/adelmann/cosmology-zeldovich-broadband-20261004/analysis/results.json": "b345da2fbbf22e9a57091a06352be15da72d6296809502a571fdc130453f6122",
+    "/data/user/adelmann/gadget2-zeldovich-20261004/analysis/gadget2-z99-z0-results.json": "8ad14e25a766665ce3f8c347c250637a2692fd54e06f1a0ea8ac8d3f9b5605a9",
+    "/data/user/adelmann/gadget2-zeldovich-20261004/campaign.json": "9d7c0fa83907641272c2a7fa677857e475e897cf858349ea8c7a50fbc35cf80d"
+  },
+  "dependencies": {
+    "/data/user/adelmann/gadget2-zeldovich-20261004/source/plot_three_code_z0_power.py": "7b4bbdd01977c0d6de878c796bc0517deee332d1813036a173272f6ea1236d09"
+  },
+  "shared_input_csv_sha256": "5698e25ce2ebd6dc35880dca1f8d4a24af4dc3c9e4860c011d4c212dd76a4afa",
+  "campaign_complete": true,
+  "initial_redshift": 99,
+  "final_redshift": 0,
+  "runs": {
+    "z99_ippl": {
+      "force_model": "IPPL \u00b7 PM",
+      "wall_seconds": null
+    },
+    "z99_fastpm": {
+      "force_model": "FastPM \u00b7 plain PM",
+      "wall_seconds": null
+    },
+    "gadget2": {
+      "force_model": "GADGET-2 \u00b7 TreePM",
+      "wall_seconds": 2891.676358964294
+    }
+  },
+  "power_definition": {
+    "deposition": "periodic CIC on 128^3 mesh; counts normalized by mean",
+    "fft": "rfftn; full real-mode multiplicities restored",
+    "power": "P=V*<|delta_k|^2>, CIC window power deconvolved; Poisson 1/nbar subtracted",
+    "shells": "integer |n| shells, centers from measured weighted mean |n| times 2pi/L; |n|<=48",
+    "shot_noise_mpc_over_h_cubed": 2.291402779519558,
+    "qualification": "measured realization and code differences; no new pass thresholds"
+  },
+  "limitations": [
+    "single shared Gaussian realization; not an ensemble uncertainty estimate",
+    "GADGET-2 uses TreePM with a short-range tree while IPPL/FastPM use plain PM; differences include force-model differences",
+    "same external CIC mesh estimator and shot-noise subtraction; modes |n|<=48 are characterization, not a high-k convergence claim",
+    "GADGET-2 adaptive/synchronized time stepping is not the fixed log(a) schedule used by IPPL/FastPM"
+  ],
+  "outputs": [
+    {
+      "path": "/data/user/adelmann/gadget2-zeldovich-20261004/plots/three-code-z99-z0-v3/three-code-z99-z0-power.png",
+      "bytes": 211864,
+      "sha256": "5890ad8f315e9cf2fe0979aa7ac02755a49562a4be338b1a1d74e8747b4948f6"
+    },
+    {
+      "path": "/data/user/adelmann/gadget2-zeldovich-20261004/plots/three-code-z99-z0-v3/three-code-z99-z0-power.svg",
+      "bytes": 64734,
+      "sha256": "50af42a631038f24ddb04286149b7b1bd18adcc7c9a94388c77aa88804f1ac7b"
+    },
+    {
+      "path": "/data/user/adelmann/gadget2-zeldovich-20261004/plots/three-code-z99-z0-v3/plotted_values.json",
+      "bytes": 8644,
+      "sha256": "bb0afa256ccd24b9ee3a855f3d7d2977df4b03f3bde68806069c33373c6d57d2"
+    }
+  ]
+}

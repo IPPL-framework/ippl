@@ -1,0 +1,897 @@
+\section{Validation}
+\label{app:validation}
+
+This appendix records the evidence available through 5 October 2026.  It separates
+verification of equations and discrete operators, agreement between independent
+implementations, and sensitivity to numerical resolution.  These are different
+questions: agreement between two PM codes does not by itself establish a
+continuum solution, halo accuracy, or performance portability.  All results
+below concern periodic, flat, radiation-free cosmology with one collisionless
+species.  Cosmological initial conditions are tested only at first Lagrangian
+order; frozen-force fixtures need not be cosmological realizations.  The numerical campaigns
+used an OpenMP CPU backend; no cosmological GPU, multi-node, or exascale result
+is claimed.
+
+The validation was cumulative, but it was not one homogeneous experiment.
+Early campaigns were run locally on macOS; the Gaussian campaign G, broadband
+campaign ZB, and subsequent GADGET-2 comparison GT are distinct executions on
+the Merlin Linux login host.  Repeated cases,
+reused snapshots, and related checks must not be counted as independent
+statistical samples.  A \emph{check} is a recorded acceptance predicate, not an
+independent measurement.  Table~\ref{tab:app-campaigns} retains the failed
+predicates as well as the passing ones.  Completion of a campaign and acceptance
+of all its scientific criteria are explicitly distinguished.
+
+\begin{longtable}{@{}p{.10\textwidth}p{.35\textwidth}p{.14\textwidth}p{.31\textwidth}@{}}
+\caption{Completed validation campaigns used in this appendix.  Report keys
+are resolved in Section~\ref{app:provenance}.  ``Runs'' counts executable runs,
+not independent realizations.  The scalar probe is a separate set of numerical
+comparisons.}\label{tab:app-campaigns}\\
+\toprule
+Key & Experiment & Runs & Recorded outcome \\
+\midrule
+\endfirsthead
+\toprule Key & Experiment & Runs & Recorded outcome \\
+\midrule
+\endhead
+L & Linear evolution, rank/thread and refinement tests & 22 & 275/275 checks pass \\
+ZP & Zarija background/transfer scalar probe & --- & 4,655 gated comparisons pass;
+  nine additional diagnostics are not gated \\
+ZI & Matched-cosmology initial conditions & 84 & 1,047/1,047 checks pass \\
+F & Frozen forces versus native FastPM and independent operators & 64 &
+  790/790 checks pass \\
+P & Analytical pre-crossing pancake & 15 & 363/364 pass;
+  one strict mass-sum check fails \\
+E & Matched nonlinear native plain-PM evolution & 32 & 1,723/1,725 pass;
+  two final momentum timestep checks fail \\
+ER & Targeted 512-step extension of E & 2 new & 99/99 pass;
+  original E failures are unchanged \\
+S & Crossed particle/mesh, translation and timestep controls, local CPU & 34 &
+  2,083/2,213 pass; 130 retained failures \\
+G & Common-phase Gaussian controls, Merlin CPU & 18 &
+  1,239/1,355 pass; 116 resolution failures \\
+ZB & Broadband 1LPT evolution versus native plain-PM FastPM, Merlin CPU & 4 &
+  All launches and integrity checks complete; final code differences measured, not gated \\
+GT & Matched $z_i=99$ evolution with GADGET-2 TreePM, Merlin CPU & 1 integration &
+  Complete from checkpoint/restart; 48 Fourier bins compared, no new acceptance gate \\
+\bottomrule
+\end{longtable}
+
+\subsection{Conventions, observables, and independent checks}
+\label{app:metrics}
+
+Lengths are comoving $h^{-1}\,\mathrm{Mpc}$ and time is
+$\tau=H_0t$.  Canonical momentum is $\boldsymbol p=a^2d\boldsymbol x/d\tau$;
+it is neither physical peculiar velocity nor the raw velocity exported by the
+Zarija generator.  Particle and mesh resolutions are denoted by $N_P$ and
+$N_M$, respectively: there are $N_P^3$ particles and $N_M^3$ mesh cells, with
+cell width $\Delta x=L/N_M$.  Particle comparisons are sorted by global ID,
+require complete unique IDs and finite attributes, and use the minimum-image
+periodic position difference.  In the matched evolution studies,
+\begin{equation}
+ e_x=\frac{\bigl[N_P^{-3}\sum_j|\Delta\boldsymbol x_j|^2\bigr]^{1/2}}
+ {\Delta x},\qquad
+ e_p=\frac{\bigl[\sum_j|\Delta\boldsymbol p_j|^2\bigr]^{1/2}}
+ {\bigl[\sum_j|\boldsymbol p_{j,\mathrm{ref}}|^2\bigr]^{1/2}}.
+ \label{eq:app-phase}
+\end{equation}
+The analytical pancake instead normalizes trajectory errors by the corresponding
+analytical displacement or momentum RMS; its percentages should not be confused
+with position errors in mesh cells.
+
+For the direct-mode nonlinear comparisons E, S, and G, nonzero density modes
+are measured directly from the particle positions, independently of either
+force mesh:
+\begin{equation}
+ \widehat\delta_{\boldsymbol n}=
+ \frac{1}{N_P^3}\sum_j\exp\!\left[-\frac{2\pi i}{L}
+ \boldsymbol n\!\cdot\!\boldsymbol x_j\right].
+ \label{eq:app-direct}
+\end{equation}
+For the vectors $\boldsymbol d_A,\boldsymbol d_B$ of coefficients in a common
+mode set, define $S_A=\|\boldsymbol d_A\|_2^2$ and $S_B=\|\boldsymbol d_B\|_2^2$.
+The reported power discrepancy, symmetric complex residual, and signed
+cross-correlation are
+\begin{equation}
+ e_P=\left|\frac{S_A}{S_B}-1\right|,\qquad
+ e_\delta=\frac{\|\boldsymbol d_A-\boldsymbol d_B\|_2}{(S_AS_B)^{1/4}},
+ \qquad
+ r=\frac{\operatorname{Re}(\boldsymbol d_B^\dagger\boldsymbol d_A)}
+ {\sqrt{S_AS_B}}.
+ \label{eq:app-density}
+\end{equation}
+Absolute differences are retained when the signal is undefined; relative
+metrics are not manufactured by flooring an absent signal.  In these density
+comparisons the saved definition treats $\min(S_A,S_B)\le10^{-28}$ as undefined.
+For plotted shell powers in E, S, and G,
+$P(k)=L^3\langle|\widehat\delta|^2\rangle$ and no shot-noise subtraction is
+applied.  The separate ZB shell estimator uses periodic CIC assignment, applies
+the CIC window correction, and subtracts Poisson shot noise as described in
+Section~\ref{app:zeldovich-fastpm}.
+
+Independent tests exercise the background growth ODE, Einstein--de Sitter
+integrals, transfer interpolation, normalization quadrature, manufactured
+spectral forces, CIC scatter/gather, periodic wrapping, and particle migration.
+The wrapping regression includes exact box endpoints and excursions by multiple
+box lengths; ownership, IDs and migrated attributes are checked on ranks 1--4.
+Manufactured spectral-force errors are approximately $2\times10^{-15}$.
+These component tests isolate implementation defects before a dynamical
+comparison is interpreted as evidence about cosmology.
+
+\subsection{Linear evolution and refinement}
+\label{app:linear}
+
+Campaign L uses $L=200\,h^{-1}\mathrm{Mpc}$,
+$(\Omega_m,\Omega_b,h,n_s)=(0.31,0.0487,0.675,0.965)$ and BBKS transfer.
+The Gaussian case deliberately sets $\sigma_8=0.02$ to remain linear; it is
+not the later $\sigma_8=0.82$ nonlinear experiment.  Most runs evolve from
+$z=49$ to $24$.  Axis-aligned and oblique $(1,1,1)$ perturbations start with
+density amplitude $10^{-3}$; the late-$\Lambda$ test evolves $z=9$ to $0$
+with amplitude $10^{-4}$.  Uniform, axial and Gaussian cases cover ranks 1--4,
+and a separate one-rank/two-thread run checks OpenMP reproducibility.
+
+All uniform configurations retain exactly zero displacement, momentum and
+force.  Axis/oblique growth errors are approximately $0.1561\%/0.1578\%$;
+late-$\Lambda$ growth differs from the independent reference by $0.9427\%$.
+The Gaussian low-$k$ complex-growth error over 13 selected modes is $0.3332\%$,
+and independent reconstruction of the initial Gaussian coefficients gives
+relative $L_2$ error $4.804\times10^{-12}$.  The largest recorded mass residual
+is $1.686\times10^{-12}$, below the declared $2\times10^{-12}$ criterion.
+
+The 4/8/16-step sequence measures successive-solution temporal orders
+1.9881 in position and 1.9954 in momentum.  Joint particle/mesh refinement
+$N_P=N_M=16,32,64$ at 64 steps reduces the growth errors from
+$5.9551\times10^{-3}$ to $1.5275\times10^{-3}$ and $3.9681\times10^{-4}$,
+with reduction factors 3.8985 and 3.8495.  This is evidence for the tested
+linear discretization, not an independent fixed-particle mesh study.
+The early report contains the measured outcomes but lacks the executable/source
+hash linkage added in later campaigns; a subsequent rebuilt executable must not
+be described as cryptographically identified by that report.
+
+\subsection{Matched initial conditions against Zarija}
+\label{app:zarija}
+
+\paragraph{Matched physical subset and deterministic probes.}
+Campaigns ZP and ZI compare the original Zarija Luki\'c generator with \IPPL
+only in their common flat, Gaussian, radiation-free CDM/1LPT subset:
+$\Omega_\nu=\Omega_r=f_{\mathrm{NL}}=0$ and $w=-1$.  BBKS and a supplied
+CMBFAST-style table correspond to reference transfer flags 4 and 0.
+The original reference sources and transfer input were preserved.
+The scalar probe evaluates the public reference cosmology implementation,
+independently of particle statistics.  Its 4,655 gated comparisons pass;
+the additional nine excluded DC/legacy-table diagnostics are not passing
+acceptance tests (one BBKS DC diagnostic and eight table-interval diagnostics).
+
+Across the sampled simulation wavenumbers, transfer discrepancies are below
+$5\times10^{-16}$, against a $2\times10^{-12}$ gate.  Power-normalization
+differences are $4.763\times10^{-7}$ for BBKS and $3.255\times10^{-5}$ for the
+table, against $5\times10^{-4}$.  At $z=0,9,49,200$, maximum relative differences
+in $D$, $dD/d\tau$ and $f$ are $3.334\times10^{-7}$,
+$7.255\times10^{-7}$ and $3.921\times10^{-7}$, respectively, below
+$2\times10^{-5}$.  The reference's finite-start growth solution and numerical
+integration accuracy are distinct from the \IPPL growing-mode quadrature.
+
+\paragraph{Ensemble design and convention conversion.}
+The particle experiment fixes $N_P=N_M=32$, $L=168.75\,h^{-1}\mathrm{Mpc}$ and
+$(\Omega_m,\Omega_b,h,\sigma_8,n_s)=(0.31,0.0487,0.675,0.82,0.965)$.
+Two transfers, starting redshifts 49 and 200, and eight seeds are used:
+1234567, 7654321, 104729, 130363, 32452843, 49979687, 67867967 and 86028121.
+The 64 serial realizations are augmented by 12 \IPPL runs on ranks 2, 3 and 4,
+and eight reference runs on ranks 2 and 4, using the first seed for each
+transfer/redshift combination.  Thus the 84 runs comprise 44 \IPPL and 40
+reference executions.  The uneven three-rank case is an \IPPL test, not a
+claimed reference slab-decomposition test.
+
+Different generators use different random-number algorithms, so identical
+numeric seeds do not imply equal cross-code phases.  Cross-code agreement is
+therefore assessed statistically.  Within-code changes in redshift and transfer
+use phase-matched comparisons.  Rank changes are phase matched only for \IPPL;
+the reference's MPI runs test statistics because its RNG realization changes
+with decomposition.  ID-derived Lagrangian
+coordinates, the node/cell-centred lattice offset, the half-cell Fourier phase,
+transform ordering and velocity units are handled explicitly.  For the reference
+velocity $\boldsymbol v_Z$, the conversion is
+$\boldsymbol p=a^2\boldsymbol v_Z/100$; the physical peculiar velocity is
+$100\boldsymbol p/a=a\boldsymbol v_Z$ in $\mathrm{km}\,\mathrm{s}^{-1}$.
+
+The analysis reconstructs displacement and then the $z=0$ density coefficients
+from $-i\boldsymbol k\cdot\widehat{\boldsymbol\psi}_0$; it does not infer the
+linear spectrum from nonlinear Eulerian CIC density.  It excludes DC and every
+componentwise Nyquist plane and retains one member of each conjugate pair:
+14,895 independent complex modes per seed, or 119,160 per eight-seed ensemble.
+Redshift-reused realizations are not additional independent samples.
+
+\paragraph{Results and statistical meaning.}
+All 1,047 checks pass.  Ensemble means of modewise recovered/theoretical power
+are approximately 0.995737 for \IPPL and 0.99816--0.99820 for the reference.
+Six-standard-error criteria are based on the expected Gaussian statistics;
+the reference additionally carries a predeclared $5\times10^{-4}$ deterministic
+normalization allowance.  The mean-power half-widths are 0.01738145 and
+0.01788145, respectively.  Thus these means are consistent with the expected
+finite-ensemble scatter; they are not a fitted amplitude correction.
+Figure~\ref{fig:app-ic-power} distinguishes theoretical one-standard-error bars
+from the wider acceptance band.
+
+Maximum canonical-momentum relation errors are $1.998\times10^{-12}$ for
+\IPPL and $3.921\times10^{-7}$ for Zarija.  Longitudinal-displacement residuals
+remain below $2.111\times10^{-13}$ in both.  Same-transfer redshift-scaling
+errors are $6.263\times10^{-13}$ and $5.138\times10^{-8}$; transfer-scaling
+errors are $3.169\times10^{-9}$ and $1.604\times10^{-5}$.
+The 12 \IPPL MPI comparisons give maximum componentwise position RMS
+$6.501\times10^{-16}\,h^{-1}\mathrm{Mpc}$ and componentwise momentum RMS
+$1.339\times10^{-17}$ in canonical units
+(Figure~\ref{fig:app-ic-mpi}).
+
+\paragraph{An explicit legacy exclusion.}
+The original table's first weighted transfer entry, about $1.9965\times10^7$,
+is left unnormalized by the reference.  Independent integration of this narrow,
+malformed low-$k$ interval contributes 1.6618 times the legacy routine's reported
+total raw variance, revealing that its quadrature misses the discontinuity.
+Agreement on the simulation band therefore does not validate that interval.
+A separately normalized copy diagnoses the issue without modifying the original
+input.  Different RNGs, Nyquist handling, this interval, and untested reference
+physics are exclusions from equivalence; the experiment does not establish
+feature parity with the whole Zarija code or identical production input formats.
+
+\validationplot{ic-power.png}{Recovered $z=0$ Lagrangian power from eight
+independent realizations per code at $z_i=49$, for BBKS and tabulated transfers.
+Lower panels show ensemble means of modewise power ratios, not ratios of shell
+means.  Error bars are theoretical Gaussian one-standard-error uncertainties;
+the shaded band is the saved six-standard-error reference criterion including
+its normalization allowance.  DC and componentwise Nyquist planes are excluded;
+the highest shells have incomplete angular coverage.  Source: ZI/ZP.}
+{fig:app-ic-power}
+
+\validationplot{ic-mpi.png}{ID-matched \IPPL initial-position and canonical-
+momentum componentwise RMS differences on ranks 2--4 relative to one rank, normalized by the
+declared limits.  Both transfers and initialization redshifts are included.
+This is a decomposition-reproducibility test, not a strong-scaling, GPU or
+throughput measurement.  Source: ZI.}{fig:app-ic-mpi}
+
+\subsection{Frozen-force comparison with native FastPM}
+\label{app:force}
+
+The frozen experiment isolates scatter, the mesh force, and gather without
+advancing particles.  Reference FastPM~\cite{feng2016fastpm} is pinned at commit
+\texttt{15b6c4fd7502a81d99dd13f54fcc9cfa44be1331}; the tracked upstream sources
+are unchanged.  Eight fixtures on ranks 1--4 in both codes give 64 runs.
+They include a uniform state, a strictly common-band mode, axis and oblique
+deformations, subcell shifts, shuffled/wrapped jitter, a dense cluster, a second
+mesh size, and an Einstein--de Sitter case.  Most use $N=16$,
+$L=168.75\,h^{-1}\mathrm{Mpc}$ and $\Omega_m=0.31$; the matrix also contains
+$N=32$ and $\Omega_m=1$ cases.
+
+The compared force is that of Eq.~\eqref{eq:poisson}, with CIC scatter and
+gather and no window deconvolution.  Native FastPM uses its \texttt{NAIVE}
+spectral kernel without softening.  The node-mesh origin receives the explicit
+shift $\boldsymbol x_F=\operatorname{wrap}(\boldsymbol x_I-L/(2N_M))$ in each
+coordinate.  Its exported native acceleration is multiplied by
+$-3\Omega_m/2$ to obtain the common force convention; this is a documented
+unit/sign conversion, not a fitted normalization.
+
+The full native discrete operators are \emph{not identical}.  \IPPL zeros the
+differentiated component's Nyquist plane, whereas native FastPM zeros only the
+eight self-conjugate corners and retains its native real-to-complex behavior.
+FastPM FFT, mesh and CIC operations are double precision, but its wavevector
+tables and particle accelerations use float32.  Independent NumPy constructions
+of CIC deposition, each complete native spectral operator and reciprocal gather
+test each code against its own oracle.  The expected difference between these
+operators is then compared with the actual residual field.  A diagnostic
+common-band projection is never inserted into either production solve.
+
+All 790 checks pass.  Maximum relative RMS particle-force errors against the
+respective independent oracles are $6.741\times10^{-14}$ for \IPPL and
+$3.205\times10^{-8}$ for FastPM; mesh-force errors are
+$5.672\times10^{-14}$ and $6.474\times10^{-14}$.
+The specially constructed common-band fixture has raw particle-force agreement
+within $4.142\times10^{-8}$ over ranks 1--4.  In contrast, raw oblique and
+wrapped-jitter differences reach $2.467\%$ and $11.714\%$ and are predicted by
+the preserved Nyquist operators.  These are not hidden by a looser raw-force
+gate.  Uniform relative-force errors are undefined when both forces are zero.
+Figure~\ref{fig:app-force} reports residual fields, not a difference between
+the separate force magnitudes.
+
+\validationplot{frozen-force.png}{Frozen operators on ranks 1--4.  Each native
+code is compared with its own independent CIC/spectral/gather oracle; raw and
+predicted cross-code differences retain the different Nyquist conventions.
+Values are maxima over tested ranks.  Exactly zero uniform-force cases are
+omitted from relative logarithmic plots, not assigned a positive floor.
+Passing this test does not make arbitrary unfiltered native forces identical.
+Source: F.}{fig:app-force}
+
+\subsection{Analytical pancake before shell crossing}
+\label{app:pancake}
+
+An independent planar growing-mode solution tests actual evolution, not just
+the force at a prescribed state.  Before crossing,
+\begin{equation}
+ \boldsymbol x=\boldsymbol q-
+ A(a)\sin(\boldsymbol k\cdot\boldsymbol q)\frac{\boldsymbol k}{k^2},
+ \qquad
+ \boldsymbol p=a^2E(a)f(a)(\boldsymbol x-\boldsymbol q),
+ \label{eq:app-pancake}
+\end{equation}
+where $A(a)$ follows independently evaluated growth.  The Jacobian along the
+normal is $J=1-A\cos(\boldsymbol k\cdot\boldsymbol q)$, and
+$\rho/\bar\rho=J^{-1}$ while the map is single valued.  Final amplitudes 0.5
+and 0.8 give peak density contrasts 1 and 4; the analytic oracle is never
+continued past crossing.
+
+Campaign P evolves $z=49$ to $9$ and varies coupled particle/mesh sizes
+16/32/64, timestep counts 16/32/64/128, axis/oblique orientation and ranks 1--4.
+Spatial errors compare with continuum trajectories at 128 steps; temporal
+errors compare successive numerical solutions at fixed mesh.  At $N=64$ and
+$A_f=0.8$, displacement and momentum relative RMS errors are
+$0.413790\%$ and $0.735828\%$.  Spatial orders span 1.4337--1.7603 and temporal
+orders 1.7994--2.0183.  These results pass their engineering trajectory budgets
+but do not establish second-order spatial accuracy
+(Figure~\ref{fig:app-pancake-convergence}).
+
+One of 364 checks fails: the mass diagnostic reaches
+$2.07200923\times10^{-12}$ against $2\times10^{-12}$ at step 89,
+$a=0.0612396326$, for expected total unit mass 262,144.  The absolute reported
+discrepancy is $5.43165\times10^{-7}$.  Independent endpoint CIC redepositions
+summed with \texttt{math.fsum} recover exactly 262,144, but the worst intermediate
+state was not saved.  Summation roundoff is therefore a plausible explanation,
+not a proved resolution of that failed gate.  Neither a summation-error bound
+nor the user's acceptance of a practical engineering baseline changes the
+original failed status.
+
+Local gradients are a separate limitation.  At $A_f=0.8$, sampled minimum
+Jacobians change $0.207978\to0.181079\to0.172239$ on 16/32/64, rather than
+converging monotonically to the continuum value 0.2.  Maximum errors against
+the identically finite-differenced analytical map remain about 0.19.
+Figure~\ref{fig:app-pancake-local} shows why shrinking support of a trajectory
+defect can improve a global RMS while leaving local density unresolved.
+Grid/lattice locking is a possible explanation, not an established cause.
+
+\validationplot{pancake-convergence.png}{Analytical pre-crossing pancake:
+global continuum trajectory errors under joint particle/mesh refinement and
+successive-solution differences under fixed-mesh temporal refinement.  Position
+and momentum use their respective analytical RMS scales.  Slope guides are
+not fitted results.  The original mass-sum failure is retained; passing global
+trajectory tests does not establish local-density accuracy.  Source: P.}
+{fig:app-pancake-convergence}
+
+\validationplot{pancake-local.png}{Local displacement and interval-Jacobian
+errors along one transverse Lagrangian row.  Numerical and exact maps are
+finite-differenced identically.  These are not Eulerian CIC density curves.
+The persistent local defects explain why the global trajectory results alone
+cannot qualify peak density or caustic structure.  Source: P and its saved
+diagnostic audit.}{fig:app-pancake-local}
+
+\subsection{Matched nonlinear evolution and the targeted time refinement}
+\label{app:evolution}
+
+Campaign E advances identical imported positions and canonical momenta with
+the production \IPPL force/KDK methods and native
+\texttt{fastpm\_solver\_evolve} in \texttt{FASTPM\_FORCE\_PM} mode.
+It does not use the modified FastPM stepping scheme or COLA.  Initial momenta
+are rounded once to float32 and those same values are supplied to both codes;
+native momentum/acceleration remain float32 and positions/FFTs remain double.
+Origin shifts are reversed when actual native states are exported.
+Logarithmic full-step endpoints, geometric kick midpoints and synchronized
+native outputs are compared without snapshot interpolation.  Actual native
+kick/drift factors agree with independent quadrature within
+$6.740\times10^{-14}$, below the $10^{-8}$ gate.
+
+The 32-run matrix fixes $N_P=32$, $L=168.75\,h^{-1}\mathrm{Mpc}$,
+$\Omega_m=0.31$ and $a=0.02\to0.2$.  A planar fixture has extrapolated final
+linear amplitude 1.5 and must exhibit actual sheet folding; a second fixture
+contains nine coupled three-dimensional growing modes with final linear
+density RMS 1.  The latter is a deterministic nonlinear test, not a
+$\sigma_8$-normalized Gaussian realization.  Meshes 16/32/64, 64/128/256 steps
+and ranks 1--4 are tested, with nine synchronized checkpoints per run.
+Unequal particle/mesh counts use the explicit cell-mass normalization
+$N_M^3/N_P^3$ before subtracting unity.
+
+The accepted density band consists of 128 unique conjugate pairs with
+$0<|\boldsymbol n|\le4$, or four active harmonics for the planar fixture,
+measured with Eq.~\eqref{eq:app-direct}.  Aggregate power/complex budgets are
+5/2/1\% for $N_M=16/32/64$, with minimum correlations 0.995/0.999/0.9995.
+Planar cross-code position and momentum budgets are $10^{-3}$ cells and
+$10^{-3}$ relative RMS.  Raw three-dimensional trajectories and individual
+shells are characterized rather than gated as identical-operator solutions.
+
+All imported-state, paired-code, rank, native-factor, mean-momentum and folding
+checks pass.  Planar cross-code differences stay below
+$1.719\times10^{-6}$ cells and $3.821\times10^{-7}$ relative momentum.
+Coupled-3D aggregate power/complex differences reach only
+$0.24245\%/0.33780\%$, with $r\ge0.999994495$.
+Raw 3D particle differences nevertheless reach 0.03205 cells and $1.0072\%$
+relative momentum.  Figures~\ref{fig:app-phase-space} and
+\ref{fig:app-nonlinear-modes} illustrate this matched discrete comparison,
+not an analytical solution after crossing.
+
+The two failures in E are final 128-to-256-step momentum differences:
+$0.276343\%$ for \IPPL and $0.275555\%$ for native FastPM, exceeding the
+unchanged $0.2\%$ criterion despite reduction factors near four.  The separate
+two-run ER extension adds 512 steps only at $N_P=N_M=32$ on one rank.
+Its 256-to-512 differences are $0.0696213\%/0.0694281\%$ in momentum and
+$0.000449258/0.000448378$ cells in position; all 99 checks pass, with final
+observed orders 1.9725--2.0083 for the assessed 3D quantities.  Below the
+predeclared analysis floors no order is inferred.  ER does not relabel E as
+all-pass and supplies no unperformed 512-step MPI comparison.
+
+Fixed-particle mesh sensitivity is not continuum convergence: the pancake
+power changes increase from $0.5367\%$ on 16-to-32 meshes to $3.6296\%$ on
+32-to-64.  The maximum \IPPL CIC mass residual in E is
+$1.219\times10^{-12}$; that smaller residual does not overturn P's distinct
+failed mass check.  Native unit-particle counts and \IPPL deposited-CIC sums
+are different diagnostics and are never treated as interchangeable measures.
+
+\validationplot{nonlinear-phase-space.png}{Matched particle-sheet phase
+portraits at three saved epochs, including the folded final sheet.  Curves
+connect the same 32 ID-matched particles in one transverse Lagrangian row,
+with breaks at periodic edges; they are not an interpolated distribution.
+The pre-crossing analytical result is not an oracle for the final folded state.
+Source: original 32-run campaign E.}{fig:app-phase-space}
+
+\validationplot{nonlinear-modes.png}{Resolved-density evolution from exact
+particle sums, with $N_P=32$, meshes 16/32/64, 256 steps and one rank.  The
+3D comparison uses 128 unique low-mode pairs; the pancake uses four
+active harmonics.  The figure retains E's two failed timestep checks, which
+are not failures of the plotted cross-code density comparison.  The separate
+512-step follow-up ER is described in the text, not substituted into this
+figure.}{fig:app-nonlinear-modes}
+
+\subsection{Crossed spatial resolution and translation controls}
+\label{app:spatial}
+
+Campaign S removes an ambiguity of earlier tests by varying particle sampling
+and force-mesh size independently.  For each planar/coupled-3D fixture, it
+crosses $N_P=32,64$ with $N_M=32,64$ at 1,024 steps, adds rigid translations
+at $N_P=64$ on both meshes, and adds 512/2,048-step cases at $N_P=N_M=64$.
+The coupled-3D finest standard case is also repeated on three ranks.  Seventeen
+paired cases give 34 runs, with the same $L$, $\Omega_m$ and $a=0.02\to0.2$
+as E and nine saved epochs per run.  The fixed physical translation is
+$\boldsymbol\Delta=(0.37,0.23,0.41)L/64$; its known Fourier phase is removed
+before comparing coefficients.
+
+Direct modes with $0<|\boldsymbol n|\le4$ are separated into three shells:
+$0<|\boldsymbol n|<1.5$, $1.5\le|\boldsymbol n|<2.5$, and
+$2.5\le|\boldsymbol n|\le4$.  A bookkeeping edge at 4.5 does not extend the
+measured band beyond 4.  For campaign G only, fixed $128^3$ interlaced PCS
+extraction, with its assignment-window correction, characterizes higher modes
+through 12.  Its
+low-mode coefficients must independently agree with the direct sums within
+$\max(10^{-12},10^{-3}\|\boldsymbol d_{\rm direct}\|_2)$.
+PCS is an analysis tool; the simulation forces remain CIC.
+
+\begin{table}[htbp]
+\centering
+\caption{Predeclared shell-wise controls in S and G.  Percentages denote
+$e_P$ or $e_\delta$ in Eq.~\eqref{eq:app-density}, not errors against truth.
+All applicable saved epochs and both codes enter the controls.}
+\label{tab:app-budgets}
+\begin{tabular}{@{}lrrr@{}}
+\toprule Control & $e_P$ limit & $e_\delta$ limit & Minimum $r$ \\
+\midrule
+Paired codes, $N_M=32$ & $2\%$ & $2\%$ & 0.999 \\
+Paired codes, $N_M=64$ & $1\%$ & $1\%$ & 0.9995 \\
+Particle or mesh refinement & $5\%$ & $5\%$ & 0.999 \\
+Dephased translation (S) & $1\%$ & $2\%$ & 0.9998 \\
+Starting redshift (G, final epoch) & $2\%$ & $3\%$ & 0.999 \\
+Finest timestep shell difference & --- & $0.2\%$ & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Qualification requires a contiguous prefix of shells for which \emph{every}
+applicable control passes.  Failed integrity, extraction, rank or global-time
+controls veto qualification.  Passing an aggregate low-mode norm or choosing a
+favorable final epoch is not an alternative to this rule.
+
+Of 2,213 checks, 130 fail: 56 particle-resolution, 51 mesh-resolution,
+20 translation and three paired-code shell checks.  Both fixtures qualify only
+the first shell, $0<|\boldsymbol n|<1.5$, over the declared matrix.
+For the 3D fixture the largest measured mode in that shell is $\sqrt2$;
+for the planar fixture it is the fundamental mode.  All required global,
+timestep and rank controls pass.
+
+The maximum power sensitivity is $16.77\%$ for the pancake and $19.27\%$ for
+coupled 3D.  The finest-mesh translated pancake reaches $1.336\%$ power
+difference versus $1\%$; coupled-3D translation reaches $4.160\%$ complex
+difference versus $2\%$.  The three cross-code failures occur only for the
+undersampled $N_P=32,N_M=64$ coupled-3D third shell at intermediate epochs:
+complex differences of approximately 1.11--1.39\% exceed 1\%, while the power
+and correlation conditions pass.  Close matched $64^3/64^3$ agreement does
+not remove these failures from the crossed matrix.
+
+Final 1,024-to-2,048-step coupled-3D momentum differences are approximately
+$2.683\times10^{-4}$ relative, with near-second-order late-time reduction.
+Some pancake differences are below the predeclared analysis floor, and no
+order is inferred for them.  Three-rank differences stay below
+$5.9\times10^{-15}$ cells/$5.1\times10^{-15}$ relative momentum for \IPPL
+and $1.16\times10^{-7}$ cells/$8.63\times10^{-8}$ for native PM.
+Four separate \IPPL pancake runs also exceed the historical $2\times10^{-12}$
+mass diagnostic, with maximum $2.951\times10^{-12}$.  These explicitly retained
+historical flags are not recast as passing tests or added to the new shell-gate
+count.  Figure~\ref{fig:app-spatial} shows why code agreement alone would
+have missed the particle-sampling and grid-alignment sensitivities.
+
+\validationplot{spatial-controls.png}{Independent particle and force-mesh
+controls on the local CPU platform.  Rows show planar and coupled-3D fixtures.
+Power/translation panels are worst-case envelopes over both codes and nine
+saved epochs, not ensemble uncertainties or continuum errors.  Translation
+phases are removed analytically.  Temporal panels compare 512/1,024/2,048 steps
+at $N_P=N_M=64$.  Only the first exact shell meets every declared control;
+all 130 failures remain recorded.  Source: S.}{fig:app-spatial}
+
+\subsection{Common-phase Gaussian evolution on Merlin}
+\label{app:gaussian}
+
+Campaign G is a fresh Linux/OpenMP experiment, not a resumed macOS journal.
+It uses one mode-keyed Gaussian BBKS realization (seed 20261003) with common
+physical phases at both particle resolutions, initial band
+$0<|\boldsymbol n|\le12$, $L=168.75\,h^{-1}\mathrm{Mpc}$, and
+$(\Omega_m,\Omega_b,h,n_s,\sigma_8)=(0.31,0.0487,0.675,0.965,0.82)$.
+The BBKS choice has no baryonic acoustic transfer features; the baryon parameter
+does not make this a full baryon-physics experiment.  $\sigma_8$ normalizes the
+continuous spectrum, not the measured finite box or truncated realization.
+Both codes receive the identical imported, rounded-once canonical momenta.
+
+Nine paired cases comprise the four crossed $N_P,N_M=32,64$ combinations
+at $z_i=49$, 2,048 steps; finest-grid 1,024/4,096-step controls at $z_i=49$;
+finest-grid 2,048/4,096-step controls at $z_i=99$; and the standard finest case
+on four ranks.  All 18 runs end at $a=1$, saving nine synchronized epochs.
+Starting-redshift comparisons use only the final epoch at 4,096 steps:
+intermediate indices denote different scale factors for different starts.
+No interpolation is used.
+
+The build uses GCC 14.3, OpenMPI 5.0.10, Kokkos 5.2.0, heFFTe 2.4.1 and
+the pinned native reference.  Metadata records OpenMP/Host execution and
+actual MPI size: at most four ranks/workers, one thread per nonlinear rank,
+no GPUs.  Login-host timings are not performance results.  All 21 cosmology
+CTests pass, including ranks 1--4; an eight-run pipeline smoke passes 364 checks.
+Neither substitutes for the full scientific matrix.
+
+All 1,355 checks are present: 1,239 pass and 116 fail, equally divided between
+particle and mesh resolution.  Every integrity, measurement, paired-code,
+timestep, start-redshift and rank check passes, but \emph{none of the three
+shells qualifies across the complete resolution matrix}.  Lowest-shell power
+sensitivities reach $6.246\%$ (particles) and $8.137\%$ (mesh) at intermediate
+epochs, exceeding 5\%; its complex and correlation criteria pass.
+Higher-shell power changes reach $27.91\%$ and $30.61\%$, respectively, in
+both implementations.  No retrospective subset or relaxed tolerance removes them.
+
+\begin{table}[htbp]
+\centering
+\caption{Gaussian CPU results in G.  Paired-code values concern the exact
+direct band $0<|\boldsymbol n|\le4$.  Finest-case values are at $a=1$,
+$N_P=N_M=64$, $z_i=49$, 2,048 steps.  Temporal/rank differences are not truth
+errors.}
+\label{tab:app-gaussian}
+\small
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{.55\linewidth}>{\raggedright\arraybackslash}p{.40\linewidth}@{}}
+\toprule Observable & Result \\
+\midrule
+Largest paired-code power / complex difference & $0.211604\%$ / $0.802740\%$ \\
+Minimum paired-code correlation & 0.999967822 \\
+Finest-case power / complex difference & $0.00120759\%$ / $0.00362866\%$ \\
+Finest-case minimum correlation & 0.999999999342 \\
+Starting-$z$ power / complex sensitivity & $1.463041\%$ / $2.649273\%$ \\
+Largest final 2,048-to-4,096 position difference & $3.970\times10^{-6}$ cells \\
+Largest final 2,048-to-4,096 momentum difference & $2.448\times10^{-6}$ relative \\
+Largest shell temporal complex difference & $1.303\times10^{-6}$ \\
+Rank 1 versus 4, \IPPL position / momentum & $3.14\times10^{-15}$ cells /
+  $1.26\times10^{-15}$ relative \\
+Rank 1 versus 4, native PM position / momentum & $2.33\times10^{-8}$ cells /
+  $1.85\times10^{-8}$ relative \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Final $z_i=49$ position orders are 2.0003 for \IPPL and 1.7405 for native PM.
+The corresponding final momentum/density differences are below the predeclared
+analysis floor; this does not demonstrate machine-precision saturation.
+The two $z_i=99$ step counts measure a refinement difference, not an order.
+The largest Gaussian \IPPL mass residual is $5.018\times10^{-14}$, without
+changing any earlier mass failure.  The practical conclusion of
+Figure~\ref{fig:app-gaussian} is strong matched-discretization agreement but
+insufficient particle/mesh robustness in the tested 32/64 matrix.
+
+\validationplot{gaussian-controls.png}{Merlin OpenMP evolution of one common
+band-limited Gaussian BBKS realization.  Top: final spectra and paired-code
+residuals for the crossed 32/64 grids at $z_i=49$, 2,048 steps.  Filled symbols
+use exact modes $|\boldsymbol n|\le4$; open symbols and the higher shaded band
+are PCS characterization only.  Bottom: worst-epoch spatial sensitivities,
+starting-redshift changes at 4,096 steps, and time refinement.  All 116
+resolution failures remain visible, leaving zero qualified shells.  Source: G.}
+{fig:app-gaussian}
+
+\subsection{Broadband Zel'dovich evolution against native FastPM}
+\label{app:zeldovich-fastpm}
+
+Campaign ZB follows the low-band frozen-force and nonlinear checks with a
+matched, broadband particle evolution.  One Gaussian realization (seed
+20261003) supplies common 1LPT initial conditions at $z_i=99$ and $49$.
+The spherical Fourier band is $0<|\boldsymbol n|\le48$, or 75\% of the
+particle Nyquist frequency for $N_P=128$.  The periodic box is
+$L=168.75\,h^{-1}\,\mathrm{Mpc}$ with a $128^3$ particle load and a $128^3$
+CIC force mesh.  The recorded background uses $(\Omega_m,h,n_s,\sigma_8)=
+(0.31,0.675,0.965,0.82)$ and a pure BBKS transfer.  Although a baryon density
+is recorded in the input metadata, BBKS here has no baryon-acoustic features;
+the experiment does not model radiation, neutrinos, gas, or baryonic effects.
+
+Both solvers import the same once-rounded float32 particle momenta, without
+growth rescaling.  \IPPL uses the production particle--mesh kick--drift--kick
+adapter; the pinned native FastPM run uses ordinary plain-PM evolution, not
+FastPM's modified fast-force stepping or COLA.  Thus ZB is a cross-code
+comparison of a closely matched PM model, not a comparison with GADGET-2 or an
+independent short-range gravity method.  Each case advances to $a=1$ with 24
+uniform-in-$\ln a$ intervals (2,400 steps from $z_i=99$ and 2,040 from
+$z_i=49$); the two starts have nearly equal step size in $\ln a$.  The change
+in start epoch and step count is a sensitivity comparison, not a convergence
+order test.
+
+Four launches ran sequentially on the Merlin login CPU using eight
+single-threaded MPI ranks.  All completed under the fixed 1,200-second
+per-launch limit.  Each of the four runs saved 25 checkpoints on eight ranks;
+all 800 archived rank shards, output metadata, source/executable provenance,
+and input hashes verified.  The imported initial positions round-trip within
+$7.3\times10^{-16}$ force-mesh cells and momenta match exactly.  The largest
+recorded \IPPL checkpoint mass residual is $7.11\times10^{-15}$.  These are
+integrity and operational checks; no threshold was imposed on the final
+cross-code scientific differences.
+
+At each saved epoch, density was assigned periodically by CIC to the $128^3$
+analysis mesh, the CIC power window was corrected, and Poisson shot noise was
+subtracted.  Shells include modes through $|\boldsymbol n|=48$.  Table
+\ref{tab:app-zeldovich-fastpm} reports final particle-phase-space differences
+and the largest absolute binwise $P(k)$ ratio difference among the 48 shells
+where both shot-noise-subtracted powers are positive.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Final $z=0$ cross-code comparison in ZB.  Momentum differences are
+relative to native FastPM.  The power maximum is over 48 positive
+shot-noise-subtracted shells through the initial-condition mode ceiling.}
+\label{tab:app-zeldovich-fastpm}
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$z_i$ & Position RMS [$\Delta x$] & Momentum RMS [relative] &
+  $\max|P_{\mathrm{IPPL}}/P_{\mathrm{FastPM}}-1|$ & Positive shells \\
+\midrule
+99 & $6.0085\times10^{-3}$ & $1.7052\times10^{-3}$ & $6.6987\times10^{-5}$ & 48 \\
+49 & $5.1486\times10^{-3}$ & $1.6049\times10^{-3}$ & $5.7355\times10^{-5}$ & 48 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The maximum power differences are 0.00670\% ($z_i=99$) and 0.00574\%
+($z_i=49$).  This close agreement is consistent with the shared realization
+and closely matched PM force and integration path.  It does not establish
+agreement with a continuum solution: the run has one realization, uses a
+single particle/mesh resolution, and its high-$k$ bins are characterization
+near the particle Nyquist, not a qualified accuracy band.  The logarithmic
+power spectrum and ratio are shown in Figure~\ref{fig:app-zeldovich-fastpm}.
+The left panel is the older cutoff-12 FastPM-only resolution study and is kept
+separate from the new matched broadband measurements.
+
+\validationplot{zeldovich-fastpm-comparison.png}{Matched broadband 1LPT
+evolution at $z=0$.  Center: periodic-CIC, CIC-window-corrected,
+shot-noise-subtracted spectra from the shared-realization $128^3$ runs and the
+linear BBKS spectrum.  Right: binwise \IPPL/native plain-PM FastPM power ratio
+difference for the two starting redshifts.  The left panel preserves the
+historical cutoff-12 FastPM-only resolution study; it is not merged with ZB.
+The high-$k$ points are characterization, not a convergence claim.  Source:
+ZB.}{fig:app-zeldovich-fastpm}
+
+\subsection{Matched initial-redshift-99 evolution with GADGET-2 TreePM}
+\label{app:gadget2-zeldovich}
+
+Campaign GT adds an independently implemented gravity solver to the saved
+ZB $z_i=99$ comparison.  It is a matched-realization comparison, not a
+random-seed-matched ensemble: IPPL and native FastPM use their common saved
+Gaussian 1LPT phase-space realization, and GADGET-2 is initialized from the
+same CSV fixture (SHA-256 recorded in the GT provenance manifest).  The GADGET
+format-1 conversion changes units and stores position and velocity blocks in
+single precision; its round-trip audit reports position RMS
+$3.43\times10^{-6}$ force-mesh cells and relative momentum RMS
+$2.53\times10^{-8}$.  These are small conversion residuals, not exact
+bitwise equality of the three solver input files.
+
+All three integrations use the same periodic flat-CDM background, box
+$L=168.75\,h^{-1}\,\mathrm{Mpc}$, $128^3$ particles, and the same saved initial
+phases at $z_i=99$.  The GADGET-2.0.7 run uses periodic TreePM
+\cite{springel2005gadget2} with
+$\mathrm{PMGRID}=128$, a short-range tree force, and a halo softening of
+$26.367\,h^{-1}\,\mathrm{kpc}$.  Its declared controls include
+$\texttt{ErrTolIntAccuracy}=0.025$, $\texttt{MaxRMSDisplacementFac}=0.2$,
+$\texttt{MaxSizeTimestep}=0.025$, $\texttt{ErrTolTheta}=0.5$, and
+$\texttt{ErrTolForceAcc}=0.005$.  It uses adaptive synchronized timesteps.
+IPPL and the native FastPM run instead use plain particle--mesh forces on a
+$128^3$ force mesh and the fixed, uniform-in-$\ln a$ schedule described for
+ZB.  Thus the underlying collisionless cosmological model and initial phases
+are matched, but force resolution, short-range treatment, time stepping, and
+input quantization are not identical.  The cross-code difference cannot be
+attributed to the TreePM correction alone.
+
+\paragraph{What a Fourier shell means.}
+Here ``shell'' means a radial bin in Fourier space, not a layer of particles
+in the simulation box.  For integer lattice mode $\boldsymbol n$, the mode
+wavenumber is $\boldsymbol k=(2\pi/L)\boldsymbol n$.  The bin index is
+$b=\lfloor|\boldsymbol n|+1/2\rfloor$, with $b=1,\ldots,48$; all modes in one
+bin have similar $|\boldsymbol k|$.  The plotted center $k_b$ is the
+full-lattice-multiplicity-weighted mean $|\boldsymbol k|$ in that bin.
+The shell power is the correspondingly weighted mean of the CIC-window-corrected
+mode powers, minus Poisson shot noise $1/\bar n=L^3/N_P^3$.  Consequently,
+the horizontal axis is $k$ in $h\,\mathrm{Mpc}^{-1}$ and $P(k)$ has units
+$(\mathrm{Mpc}/h)^3$.  The first bin is the largest-scale measurement; larger
+bin numbers probe progressively smaller scales.
+
+The completed GADGET evolution used eight single-threaded MPI ranks, resumed
+from a verified eight-rank checkpoint, and exited normally at $a=1$.  The final
+snapshot contains $2{,}097{,}152$ dark-matter particles and records
+$z=4.4\times10^{-16}$, numerically zero.  Its measured solver wall time was
+2,891.7 seconds.  The same external periodic-CIC estimator was applied to all
+three final particle sets on a $128^3$ analysis mesh, including CIC power-window
+deconvolution and Poisson shot-noise subtraction.  All 48 bins have positive
+subtracted power for each code; they extend through $|\boldsymbol n|=48$, or
+75\% of the particle Nyquist frequency.  These upper bins are retained as
+characterization, not as a convergence-qualified science band.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Selected binwise $z=0$ power differences for the shared $z_i=99$
+realization.  Offsets are $100(P_A/P_{\mathrm{FastPM}}-1)$; the final column
+uses all 48 positive shot-noise-subtracted bins.  No pass/fail threshold was
+set for GT.}
+\label{tab:app-gadget2-power}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{.38\textwidth}
+                >{\centering\arraybackslash}p{.18\textwidth}
+                >{\centering\arraybackslash}p{.18\textwidth}
+                >{\centering\arraybackslash}p{.20\textwidth}@{}}
+\toprule
+Pair & Bin 1 ($k=0.0475$) & Bin 48 ($k=1.7873$) & Max. absolute offset \\
+ & [$h\,\mathrm{Mpc}^{-1}$] & [$h\,\mathrm{Mpc}^{-1}$] & over 48 bins [\%] \\
+\midrule
+IPPL PM / FastPM plain PM & $+0.00029\%$ & $+0.00558\%$ & $0.00670\%$ \\
+GADGET-2 TreePM / FastPM plain PM & $+0.802\%$ & $+91.241\%$ & $91.241\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The IPPL and FastPM spectra nearly overlap over this measured realization.
+GADGET-2 is close in the first few bins, then rises above the plain-PM spectrum
+toward high $k$; the lower panel reports these offsets relative to FastPM.
+This trend is a useful cross-code diagnostic, not evidence that one curve is
+the continuum answer: the force models and time integrators differ, there is
+only one realization and one resolution, and CIC correction does not remove
+finite-mesh aliasing or nonlinear sampling effects.  In particular, the
+91\% top-bin difference must not be read as a qualified 91\% force error.
+
+\validationplot{gadget2-zeldovich-comparison.png}{Final $z=0$ matter power for
+the shared $z_i=99$ Gaussian 1LPT realization.  Upper panel: shot-noise-
+subtracted spectra from IPPL plain PM, native FastPM plain PM, and GADGET-2
+TreePM using a common periodic-CIC estimator.  Lower panel: binwise power
+offsets relative to FastPM.  A Fourier shell is a radial bin in $|\boldsymbol
+n|$, not a configuration-space particle shell.  The GADGET TreePM short-range
+force and adaptive synchronized steps differ from the two plain-PM runs.  The
+high-$k$ end is characterization, not a convergence claim.  Source: GT.}
+{fig:app-gadget2-zeldovich}
+
+\subsection{Evidence integrity, reproducibility, and remaining claims}
+\label{app:provenance}
+
+Report identifiers below are relative to
+\nolinkurl{build_openmp/demos/cosmology/} in the development worktree, not
+archival DOIs.  The \nolinkurl{figures/validation/asset-manifest.json} records
+copied plots, original manifests, source-report and asset hashes.  These are
+preserved results, not newly executed simulations.
+
+\begingroup
+\small
+\setlength{\LTcapwidth}{\textwidth}
+\begin{longtable}{@{}p{.06\textwidth}>{\raggedright\arraybackslash}p{.89\textwidth}@{}}
+\caption{Report identifiers for the completed campaigns.  S uses its released
+spatial snapshot; G uses the separately archived Merlin report.}
+\label{tab:app-reports}\\
+\toprule Key & Authoritative report or exact report snapshot \\
+\midrule
+\endfirsthead
+\toprule Key & Authoritative report or exact report snapshot \\
+\midrule
+\endhead
+L & \nolinkurl{cosmology-validation-na4rs6e0/results.json} \\
+ZP & \nolinkurl{zarija-physics-hd3av78e/results.json} \\
+ZI & \nolinkurl{zarija-validation-f2c9zb42/results.json} \\
+F & \nolinkurl{frozen-force-5_li99qh/results.json} \\
+P & \nolinkurl{pancake-validation-rs1o9glb/results.json}; local-gradient audit:
+  \nolinkurl{pancake-diagnostics-rs1o9glb/diagnostics.json} \\
+E & \nolinkurl{matched-evolution-5v7u3y98/results.json} \\
+ER & \nolinkurl{evolution-refinement-k2qeaylz/results.json} \\
+S & \nolinkurl{resolution-study-cffjva__/figures-spatial-release/input-report.json.gz} \\
+G & \nolinkurl{merlin-cpu-login-20261004/figures-gaussian-release/input-report.json.gz} \\
+ZB & \nolinkurl{merlin6:/data/user/adelmann/cosmology-zeldovich-broadband-20261004/analysis/results.json};
+  campaign: \nolinkurl{campaign.json}; plot manifest:
+  \nolinkurl{plots/manifest.json} \\
+GT & \nolinkurl{merlin6:/data/user/adelmann/gadget2-zeldovich-20261004/analysis/gadget2-z99-z0-results.json};
+  campaign: \nolinkurl{merlin6:/data/user/adelmann/gadget2-zeldovich-20261004/campaign.json};
+  plot manifest: \nolinkurl{plots/three-code-z99-z0-v3/manifest.json} \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+The local spatial stage is complete even though its parent macOS journal later
+stopped safely on a disk guard at 44/52 planned runs.  Its ten partial Gaussian
+runs are not presented as a completed Gaussian experiment.  G reran all 18
+Gaussian cases on Linux with fresh compiler, executable and absolute-path
+provenance.  A separate Mac/Linux IC comparison found identical canonical
+momenta but position RMS differences about $1.9\times10^{-15}\,h^{-1}\mathrm{Mpc}$;
+the CSV bytes are not identical.  This is an IC portability observation, not
+a nonlinear cross-platform trajectory qualification.
+
+The Merlin execution checkout remains fixed at \texttt{296fd04c0}.
+Documentation/audit handoff is on \texttt{codex/cosmology-linear}, commit
+\texttt{9506f1e52}; it must not be confused with the frozen executable source.
+Its final integrity audit verifies the canonical 18-run matrix, all 1,355
+check identities and qualification flags, 254 comparison records, eight
+time-refinement records, 162 numerical archives and 268 file hashes.
+The report SHA-256 is\\*
+{\footnotesize\texttt{82cb91aae41986c7655a742e71c59150a175f926db1a5e1d2d2709a9ae8156b2}.}
+
+The audit passes while scientific acceptance remains false.  Its role is
+completeness, provenance and internal consistency, not an independent
+recalculation of all particle physics.  The controller's exit 1 records the
+116 scientific failures; there is no execution or disk error in G.
+Full tracked-source and executable manifests are also unchanged after plotting.
+Numerical NPZ archives preserve exact stored arrays and their digests, but
+do not reconstruct the original CSV byte formatting; the earlier gzip-based
+E archive does retain original CSV bytes.  Large data remain on Merlin rather
+than being duplicated with this manuscript.
+
+ZB is a separate follow-up campaign, not an extension of G's crossed
+32/64-resolution matrix.  Its complete analysis report SHA-256 is
+listed with the campaign record SHA-256 below.
+\begin{quote}\small
+Analysis report: \texttt{b345da2fbbf22e9a57091a06352be15d}\\
+\texttt{a72d6296809502a571fdc130453f6122}\\
+Campaign record: \texttt{340b497e334d50767bf83020185650e3}\\
+\texttt{28ec644db498e3b0b2988d7d63ce0129}
+\end{quote}
+The plot manifest verifies the PNG, SVG, movie, analysis report and campaign
+hashes.  A separate copy of the plot manifest is preserved at
+\par\smallskip\noindent
+\nolinkurl{zeldovich-fastpm-plot-manifest.json}.\par\smallskip
+Particle snapshots and the machine-readable spectral arrays remain on Merlin
+and are not bundled with this manuscript.
+
+GT is the subsequent single-realization GADGET-2 comparison described in
+Section~\ref{app:gadget2-zeldovich}.  The plot-manifest sidecar listed in
+Table~\ref{tab:app-reports} records and rechecks the exact report, campaign,
+plot-source, PNG, SVG and machine-readable plot-value hashes.  The paper's
+copied PNG has the same digest as the rendered figure; the snapshot and full
+analysis remain on Merlin.
+\begin{quote}\small
+Analysis report SHA-256:\\
+\texttt{8ad14e25a766665ce3f8c347c250637a}\\
+\texttt{2692fd54e06f1a0ea8ac8d3f9b5605a9}\\
+Campaign record SHA-256:\\
+\texttt{9d7c0fa83907641272c2a7fa677857e4}\\
+\texttt{75e897cf858349ea8c7a50fbc35cf80d}\\
+Snapshot SHA-256:\\
+\texttt{4f10e99fc39146fb5dd17aefc426d07f}\\
+\texttt{229df515a4a2dd458eef8345a7df74b5}\\
+Paper PNG SHA-256:\\
+\texttt{5890ad8f315e9cf2fe0979aa7ac02755}\\
+\texttt{a49562a4be338b1a1d74e8747b4948f6}
+\end{quote}
+
+Together, the CPU campaigns test background/IC conventions, discrete forces,
+bounded trajectories and nonlinear PM comparisons, and MPI reproducibility.
+Limits include unresolved local pancake gradients, retained strict mass-sum
+failures, and insufficient Gaussian resolution robustness.  Halo statistics,
+GPU and multi-node performance remain unqualified.  Larger crossed resolutions,
+independent seeds, 2LPT/transient studies, an expanding-universe energy diagnostic,
+and backend/scaling tests are subsequent work.  A systematic force- and
+step-matched study is still required to isolate the TreePM/plain-PM and
+integrator contributions seen in GT.  ZB's very close matched PM spectrum
+does not remove any S/G resolution failure or supply a converged science band;
+nor does the single-resolution GT comparison qualify a continuum solution.
+No failed threshold is retroactively relaxed, and no precision-cosmology or
+exascale claim follows from the present CPU campaigns.
