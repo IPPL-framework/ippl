@@ -157,4 +157,37 @@ in Gaussian shell powers is reported without rejecting or selecting seeds.
 `pk_initial.csv` is the linear density spectrum associated with the displacement,
 not a nonlinear particle/CIC spectrum and has no Poisson noise subtraction.
 
+
+@section cosmology_stage_timings Production stage timings
+
+Cosmology uses IpplTimings for IC generation (or external IC import), IC
+validation, Gravity solve, Kick, Push, and Output binary/Output CSV. Gravity
+includes CIC deposition, density normalization, the spectral Poisson solve and
+CIC gather. Kick measures the momentum update
+\f$ p \leftarrow p+F_0\int da/(a^2E) \f$; Push measures
+\f$ x \leftarrow x+p\int da/(a^3E) \f$ plus wrapping and migration.
+IC generation excludes the separately timed startup validation and initial
+force solve. Gravity includes the initial force evaluation; KDK calls Kick
+twice and Push once per step. Output includes host copies, file close, the
+existing shard-completion barrier and manifest publication, but excludes the
+preceding ID check. No output interval is recorded when particles are disabled.
+This application currently supports CSV and binary, not HDF5 snapshots.
+
+After successful execution all ranks stop the Main timer and call
+IpplTimings::print() with information level temporarily raised to at least one
+for the report, then restored. No timing CSV is written. Main starts immediately after
+IPPL initialization, before argument parsing and construction. It includes
+field allocation, FFT planning, ICs, evolution, diagnostics, output and state
+destruction; it excludes IPPL initialization/finalization and timing reporting.
+Registry totals accumulate if multiple runs share a
+process; inner IPPL timers overlap these inclusive stage timers and must not
+be summed as disjoint work. metadata.txt records timer_fences.
+The current Cosmology CLI accepts only its input argument, so additional
+IPPL switches cannot yet pass its argument-count check. Timer::enableFences controls Kokkos synchronization: enabled fences measure
+completed device work and can reduce asynchronous overlap; disabled fences
+measure host submission and cannot reliably attribute GPU execution time.
+No extra MPI barrier, memory-space transfer, force expression, integration
+coefficient, reduction order or numerical tolerance is introduced. Physics
+and conservation laws are unchanged; timing overhead can affect throughput.
+
 */

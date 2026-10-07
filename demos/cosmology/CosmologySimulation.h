@@ -9,6 +9,7 @@
 #define IPPL_COSMOLOGY_SIMULATION_H
 
 #include "Ippl.h"
+#include "Utility/IpplTimings.h"
 #include "CosmologyConfig.h"
 #include "CosmologyICRandom.h"
 #include "CosmologyPhysics.h"
@@ -26,6 +27,30 @@
 #include <vector>
 
 namespace cosmology {
+/**
+ * @brief Accumulate a host scope in the existing IPPL timing registry.
+ *
+ * Timer's configured fences delimit device work when enabled; this wrapper adds
+ * no MPI barriers or data transfers. With fences disabled, asynchronous GPU
+ * measurements describe host submission time and may include earlier work.
+ * Timers are inclusive, accumulate across calls, and stop on exception unwind.
+ * @see cosmology_stage_timings
+ */
+class ScopedTiming {
+    IpplTimings::TimerRef timer_m; ///< Registry handle; scope owns start/stop only.
+public:
+    /** @brief Start the named timer. @param name Stable registry label. */
+    explicit ScopedTiming(const char* name) : timer_m(IpplTimings::getTimer(name)) {
+        IpplTimings::startTimer(timer_m);
+    }
+    /** @brief Stop and retain this call's elapsed wall time. */
+    ~ScopedTiming() { IpplTimings::stopTimer(timer_m); }
+    /** @brief Disallow copying a running timer scope. */
+    ScopedTiming(const ScopedTiming&) = delete;
+    /** @brief Disallow transferring timer ownership by assignment. */
+    ScopedTiming& operator=(const ScopedTiming&) = delete;
+};
+
 constexpr unsigned Dim = 3; ///< Three-dimensional periodic geometry; compile-time dimensionality.
 using Vector = ippl::Vector<double, Dim>; ///< Concrete IPPL/Kokkos type used by the three-dimensional simulation.
 using Mesh = ippl::UniformCartesian<double, Dim>; ///< Concrete IPPL/Kokkos type used by the three-dimensional simulation.
@@ -448,6 +473,7 @@ public:
      * This force check is distinct from tighter external campaign budgets.
      */
     void solveForce() {
+        ScopedTiming timing("Gravity solve");
         density_m = 0.0;
         scatter(particles_m->mass, density_m, particles_m->R);
         massError_m = std::abs(density_m.sum() / double(totalParticles()) - 1.0);
@@ -472,6 +498,7 @@ public:
      * @param integral Signed host kick factor integral da/(a^2 E), dimensionless.
      */
     void kick(double integral) {
+        ScopedTiming timing("Kick");
         particles_m->momentum = particles_m->momentum + particles_m->force * integral;
     }
 
@@ -483,6 +510,7 @@ public:
      * @param integral Signed host drift factor integral da/(a^3 E), dimensionless.
      */
     void drift(double integral) {
+        ScopedTiming timing("Push");
         particles_m->R = particles_m->R + particles_m->momentum * integral;
         updateParticles();
     }
@@ -798,17 +826,23 @@ public:
                 << "step,a,D,f,particles,mass_error,delta_rms,mode_re,mode_im,mode_amplitude,expected_amplitude,displacement_rms,momentum_rms,force_rms\n";
         }
         ippl::Comm->barrier();
-        if (config_m.icMode == "external") initializeExternal();
-        else {
-            createLattice();
-            initializeModes();
-            displaceParticles();
-            // Critical density in Msun h^2/Mpc^3; generated runs retain unit PM weights.
-            particleMass_m = 2.77536627e11 * config_m.omegaMatter * std::pow(config_m.boxSize, 3) / totalParticles();
-            // The collective startup gate records the reality test before rejecting.
+        {
+            ScopedTiming timing(config_m.icMode == "external" ? "IC import" : "IC generation");
+            if (config_m.icMode == "external") initializeExternal();
+            else {
+                createLattice();
+                initializeModes();
+                displaceParticles();
+                // Critical density in Msun h^2/Mpc^3; generated runs retain unit PM weights.
+                particleMass_m = 2.77536627e11 * config_m.omegaMatter * std::pow(config_m.boxSize, 3) / totalParticles();
+                // The collective startup gate records the reality test before rejecting.
+            }
         }
-        validateInitialConditions();
-        verifyParticleLabels(true);
+        {
+            ScopedTiming timing("IC validation");
+            validateInitialConditions();
+            verifyParticleLabels(true);
+        }
         solveForce();
         diagnose(0, config_m.aInitial());
         std::ofstream snapshots;
@@ -820,6 +854,7 @@ public:
         const auto save = [&](const std::string& name, int step, double a) {
             verifyParticleLabels(false);
             if (!config_m.writeParticles) return;
+            ScopedTiming timing(config_m.snapshotFormat == "binary" ? "Output binary" : "Output CSV");
             if (config_m.snapshotFormat == "binary") binarySnapshot(name, a);
             else snapshot(name);
             ippl::Comm->barrier(); // Publish the manifest row only after every shard is complete.
@@ -881,6 +916,7 @@ public:
                 << "\nic_only=" << (config_m.icOnly ? "true" : "false")
                 << "\namplitude=" << config_m.amplitude
                 << "\nmode=" << config_m.mode[0] << ',' << config_m.mode[1] << ',' << config_m.mode[2]
+                << "\ntimer_fences=" << (Timer::enableFences ? "true" : "false")
                 << "\nmax_inverse_imaginary=" << maxImaginary_m << "\nwall_seconds=" << seconds << '\n';
             if (!metadata) throw std::runtime_error("Cannot write metadata");
             std::cout << "Completed " << points.size() - 1 << " steps on " << ippl::Comm->size()

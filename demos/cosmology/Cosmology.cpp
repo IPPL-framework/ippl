@@ -14,6 +14,9 @@
  * before destroying collective owners, including when only one rank rejects
  * an imported record while peers are awaiting data. The numerical trajectory
  * is unchanged for successful runs; see cosmology_quijote for phase-space units.
+ * Main timing spans argument parsing, state construction, execution and state
+ * destruction, excluding IPPL initialization/finalization and timing reporting.
+ * All ranks stop Main and call the IPPL summary collectively; no timing CSV is written.
  * @see cosmology_contracts cosmology_validation
  *
  * @param argc Argument count after IPPL initialization; exactly one application argument is required.
@@ -22,6 +25,8 @@
  */
 int main(int argc, char** argv) {
     ippl::initialize(argc, argv);
+    const auto mainTimer = IpplTimings::getTimer("Main");
+    IpplTimings::startTimer(mainTimer);
     try {
         if (argc != 2) throw std::invalid_argument("Usage: Cosmology input.par | --self-test");
         {
@@ -56,6 +61,12 @@ int main(int argc, char** argv) {
         MPI_Abort(ippl::Comm->getCommunicator(), 1);
         return 1;
     }
+    IpplTimings::stopTimer(mainTimer);
+    // The timer report uses level1; expose it even with default quiet logging.
+    const int infoLevel = ippl::Info->getOutputLevel();
+    ippl::Info->setOutputLevel(std::max(1, infoLevel));
+    IpplTimings::print();
+    ippl::Info->setOutputLevel(infoLevel);
     ippl::finalize();
     return 0;
 }

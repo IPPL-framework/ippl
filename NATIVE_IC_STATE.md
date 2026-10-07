@@ -51,3 +51,48 @@ Visual inspection of both the PNG and PDF render passed: axes/units/legends/capt
 User requested substantially expanded CosmologyICRandom.h documentation and external references. Expanded purpose/caller boundaries, canonical Hermitian pairing, exact 50-byte message layout and SHA-256 stages/endian transitions, binary64 midpoint rationale, complex Box-Muller normalization, finite-distribution and reproducibility limits, GPU execution costs and test coverage. Added NIST FIPS180-4, Box/Muller1958 and Salmon et al.2011 bibliography entries with DOI links, and connected references.dox/numerics.dox. Clarified that a positive cutoff below both meshes' Nyquist is needed to retain the same complete field across resolutions.
 
 Header executable-token equality against the pre-edit version passed (1630 tokens); no algorithm, constants or numerical tests changed. Doxygen1.14 strict build in build_openmp/docs/cosmology passed83files/920Python declarations without warnings or missing contracts; bibliography anchors verified. Independent documentation review incorporated. Build command: ~/.venv-h6/bin/python demos/cosmology/python/build_documentation.py --doxygen /opt/local/bin/doxygen --formulas mathjax --output build_openmp/docs/cosmology. Open its html/index.html. Existing separate edits under docs/@OUTPUT_ROOT@ and doxygen/html were left untouched. User's initializer commit37d4c1335 appeared during this follow-up; documentation edits were not staged or committed by the assistant.
+
+## Stage timers (2026-10-07, complete)
+User requested IC, gravity/kick, push and output timers. Added IPPL registry
+scopes and per-rank timings.csv export; CSV/binary only (no existing HDF5).
+Follows existing Timer::enableFences policy, recorded in metadata; no physics
+or extra MPI synchronization changes. Files: CosmologySimulation.h,
+docs/numerics.dox. Merlin job354436 COMPLETED0:0 in2m17s in isolated
+/data/user/adelmann/ok-check/timers-20261007; no prior source/build/results changed.
+One/two-rank OpenMP runs with binary/CSV each passed: generation/validation1,
+gravity3, kick4, push2, output2, total1 samples per rank for two steps;
+all durations finite/nonnegative; diagnostics and particle snapshots byte-equal
+to the original executable at each rank count. Reproducible check.py/run.sbatch
+preserved locally under /Users/adelmann/git/ok-check/timers-20261007.
+Doxygen strict build passed83files/920Python declarations with no warnings.
+Diff reviewed and git diff --check passed. No physics/tolerance changes.
+GPU execution not rerun: use existing IPPL --timer-fences on for meaningful
+GPU stage durations; disabled fences remain supported and recorded in metadata.
+Final header differs from compiled source only in documentation of deleted
+copy/assignment members. No commit/push performed.
+
+## Main timer correction (2026-10-07)
+User requested Main timer and no ToCSV. Moved outer timing into Cosmology.cpp:
+register/start Main after initialize; stop/print after simulation destruction,
+before finalize. Removed run-level total timer and CSV export. Stage timers
+unchanged. Doxygen updated. Validation pending Merlin incremental build and
+one/two-rank checks of printed Main and absence of timing CSV.
+
+Main timing validation update: job354437 compiled but summary assertion failed
+because print() uses Inform level1 and default info level is0. Job354438's
+attempted --info1 workaround was rejected by Cosmology's strict argc==2 check
+(IPPL parses but does not remove these flags). Earlier advice to use
+--timer-fences on is not applicable to the current Cosmology CLI either.
+Resolved reporting locally in main: preserve info level, raise to max(1,level)
+only while calling IpplTimings::print(), then restore. No CLI or physics change.
+Job354439 rebuilds and tests this final implementation. No ToCSV calls remain.
+
+Final main-timer validation: job354439 COMPLETED0:0 in1m21s. All four
+one/two-rank binary/CSV checks passed; Main and every stage visible, no
+timings.csv, baseline diagnostics/snapshots byte-identical. Strict Doxygen
+passed83files/920Python declarations, diff check passed. Retrieved two-rank
+binary log and complete Slurm log verified against remote SHA256 (Slurm log
+was rehashed after completion because first manifest preceded its final row).
+Main wall maximum0.541487s for this16-cubed/two-step smoke run, includes setup
+and destruction. Evidence: ok-check/timers-20261007/main-report-timed-r2-binary.log.
+No GPU rerun or physics/tolerance changes; no commit/push. Task complete.
