@@ -2287,7 +2287,7 @@ namespace ippl {
     // greensFunction() method in structure.
     //
     // After this call, solve() will convolve rho with the shifted kernel.
-    // To restore the standard kernel, call greensFunction() explicitly.
+    // To restore the configured unshifted kernel, call greensFunction() explicitly.
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTOpenPoissonSolver<FieldLHS, FieldRHS>::shiftedGreensFunction(
@@ -2302,17 +2302,12 @@ namespace ippl {
             throw IpplException("FFTOpenPoissonSolver::shiftedGreensFunction",
                                 "Shifted integrated Green's function is only implemented for 3D.");
         }
-        if (greensFunctionType == GreenFunction::TRUNCATED) {
-            throw IpplException("FFTOpenPoissonSolver::shiftedGreensFunction",
-                                "Shifted truncated Green's functions are not supported.");
-        }
-
         // Sync mesh spacing with the current RHS mesh (same logic as solve()'s
         // mesh-change detection). Without this, two failure modes compound:
         //   1. We would compute the shifted kernel at a STALE hr_m.
         //   2. A subsequent solve() would see hr_m != mesh->getMeshSpacing(),
         //      set green=true, and call greensFunction(), overwriting the
-        //      shifted kernel with the standard one.
+        //      shifted kernel with the configured unshifted one.
         // By updating hr_m (and the dependent mesh2_m / meshComplex_m) here,
         // solve()'s mesh check finds no change and leaves grntr_m intact.
         mesh_mp = &(this->rhs_mp->get_mesh());
@@ -2362,6 +2357,12 @@ namespace ippl {
                                     "for 3D.");
             }
         } else {
+            // The P3M image pass needs the full Coulomb field with the same coupling as
+            // its real-bunch split. Keep greens_function unchanged for kernel restoration.
+            const Trhs forceConstant =
+                greensFunctionType == GreenFunction::TRUNCATED
+                    ? this->params_m.template get<Trhs>("force_constant")
+                    : -Trhs(1) / (Trhs(4) * Kokkos::numbers::pi_v<Trhs>);
             // Regularization threshold (axis-min mesh spacing, squared, quartered).
             scalar_type hmin2 = hs[0] * hs[0];
             for (unsigned int d = 1; d < Dim; ++d) {
@@ -2391,12 +2392,10 @@ namespace ippl {
                         rsq += xoff * xoff;
                     }
 
-                    // Sign convention matches greensFunction() (HOCKNEY): grn_mr stores -G0
-                    // so that solve()'s `rho2tr_m = -rho2tr_m * grntr_m` yields +conv(rho,G0)
-                    // where G0(r) = 1/(4 pi |r|).
+                    // solve() multiplies by -G_hat; retain the native coupling and its sign.
                     const bool nearSing = (rsq < regThresh);
                     const scalar_type r = Kokkos::sqrt(rsq + nearSing * regThresh);
-                    apply(view, args)   = -1.0 / (4.0 * pi * r);
+                    apply(view, args)   = forceConstant / r;
                 });
         }
 

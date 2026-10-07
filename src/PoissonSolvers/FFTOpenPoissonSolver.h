@@ -193,6 +193,12 @@ namespace ippl {
          *        {|\mathbf{r}-\mathbf{s}-\mathbf{r}'|}.
          * @f]
          *
+         * For GreenFunction::TRUNCATED, this overwrites the cache with the full
+         * Coulomb kernel `force_constant / |r-shift|`, using STANDARD's near-origin
+         * regularization, without the Ewald erf factor. This supplies the entire
+         * image field for P3M; no image-particle short-range correction is needed.
+         * The configured kernel remains TRUNCATED for subsequent regeneration.
+         *
          * After this call, solve() convolves the RHS with the shifted kernel
          * until greensFunction() is called again or the mesh spacing changes.
          *

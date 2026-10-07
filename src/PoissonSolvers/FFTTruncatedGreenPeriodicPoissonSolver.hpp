@@ -286,6 +286,14 @@ namespace ippl {
 
     template <typename FieldLHS, typename FieldRHS>
     void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::greensFunction() {
+        if (!boundaryInitialized_m) {
+            throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::greensFunction",
+                                "Solver was not initialized");
+        }
+        if (boundaryType_m == BoundaryType::OPEN) {
+            openSolver_m->greensFunction();
+            return;
+        }
         const Trhs alpha         = this->params_m.template get<Trhs>("alpha");
         const Trhs forceConstant = this->params_m.template get<Trhs>("force_constant");
         const Trhs pi            = Kokkos::numbers::pi_v<Trhs>;
@@ -318,5 +326,15 @@ namespace ippl {
                                     * Kokkos::exp(-k2 / (4.0 * alpha * alpha)) / safeK2;
             });
     };
+
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::shiftedGreensFunction(
+        const Vector<double, Dim>& shift) {
+        if (!boundaryInitialized_m || boundaryType_m != BoundaryType::OPEN || !openSolver_m) {
+            throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::shiftedGreensFunction",
+                                "Shifted Green's function requires an initialized OPEN solver");
+        }
+        openSolver_m->shiftedGreensFunction(shift);
+    }
 
 }  // namespace ippl

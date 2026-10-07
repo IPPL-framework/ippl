@@ -74,8 +74,21 @@ namespace ippl {
         // function called in the constructor to initialize the fields
         void initializeFields();
 
-        // compute the periodic Ewald Green's function
+        /** @brief Restore the configured open or periodic Ewald long-range kernel. */
         void greensFunction();
+
+        /**
+         * @brief Overwrite the open mesh kernel with the full shifted Coulomb kernel.
+         *
+         * Uses STANDARD Hockney regularization and `force_constant`, without Ewald smoothing.
+         * The caller reflects/sign-composes this image field and applies particle corrections
+         * only to the real bunch. Call greensFunction() to restore the truncated kernel.
+         * A mesh-spacing change or setRhs() also restores the configured kernel.
+         * @param shift Displacement in mesh coordinates and mesh length units; evaluates
+         * G(r-shift).
+         * @throws IpplException If the solver is uninitialized or uses PERIODIC boundaries.
+         */
+        void shiftedGreensFunction(const Vector<double, Dim>& shift);
 
     private:
         CxField_t rhotr_m;
