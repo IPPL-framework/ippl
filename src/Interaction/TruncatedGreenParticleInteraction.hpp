@@ -40,8 +40,8 @@ namespace ippl {
     template <typename ParticleContainer, typename ScalarAttribute, typename VectorAttribute>
     void TruncatedGreenParticleInteraction<ParticleContainer, ScalarAttribute,
                                            VectorAttribute>::solve() {
-        static IpplTimings::TimerRef solveTimer =
-            IpplTimings::getTimer("TruncatedGreenParticleInteraction::solve()");
+        // The name fits the 20-character timing column; the mesh part is timed by the caller.
+        static IpplTimings::TimerRef solveTimer = IpplTimings::getTimer("P3M: PP interaction");
         IpplTimings::startTimer(solveTimer);
         // get particle data
         auto& Field    = Field_m;
