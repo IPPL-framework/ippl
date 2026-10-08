@@ -301,7 +301,10 @@ namespace ippl {
          */
         detail::copyAttributes(pc, boundaryIndices);
 
-        /* Step 4. set the position of the copied particles to their periodic image */
+        /* Step 4. set the position of the copied particles to their periodic image. The copy may
+         * have reallocated the positions, so take the view again.
+         */
+        const auto ghostPositions = pc.R.getView();
         for (unsigned d = 0; d < Dim; ++d) {
             if (!periodic[d]) {
                 continue;
@@ -315,7 +318,7 @@ namespace ippl {
                 Kokkos::RangePolicy<position_execution_space>(numLoc,
                                                               numLoc + numBoundaryParticles),
                 KOKKOS_LAMBDA(const size_t& i) {
-                    positions(i)[d] += positions(i)[d] > middle ? -length : length;
+                    ghostPositions(i)[d] += ghostPositions(i)[d] > middle ? -length : length;
                 });
         }
 

@@ -3,7 +3,9 @@
 // This program tests the short-range Ewald particle interaction using two unit-charge particles in
 // a periodic ParticleSpatialOverlapLayout. It verifies that zero-distance pairs produce a finite
 // zero field with the default and an updated positive regularization cutoff, and that a
-// non-positive regularization cutoff is rejected.
+// non-positive regularization cutoff is rejected. Pair scenarios check open, periodic, and
+// rank-internal pairs, and periodic ghosts of particles that are not the first ones in the
+// container.
 //
 //   Usage:
 //     srun -n 2 ./TestTruncatedGreenParticleInteraction --info 5
@@ -54,8 +56,10 @@ namespace test_truncated_green_particle_interaction {
         typename Base::particle_position_type E;
     };
 
+    // leadingInteriorParticle puts a partnerless particle at the center before the pair, so the
+    // pair particles are not the first ones copied as periodic ghosts.
     double runPairScenario(ippl::BC particleBC, bool fieldPeriodic, Scalar_t x0, Scalar_t x1,
-                           Scalar_t rcut, Scalar_t alpha) {
+                           Scalar_t rcut, Scalar_t alpha, bool leadingInteriorParticle = false) {
         const ippl::Vector<int, Dim> nr = {8, 8, 8};
         ippl::NDIndex<Dim> owned;
         for (unsigned d = 0; d < Dim; ++d) {
@@ -70,15 +74,20 @@ namespace test_truncated_green_particle_interaction {
         ParticleLayout_t particleLayout(fieldLayout, mesh, rcut);
         TestParticles particles(particleLayout, particleBC);
 
-        const std::size_t localCount = ippl::Comm->rank() == 0 ? 2 : 0;
+        const std::size_t first      = leadingInteriorParticle ? 1 : 0;
+        const std::size_t localCount = ippl::Comm->rank() == 0 ? first + 2 : 0;
         particles.create(localCount);
         if (localCount != 0) {
             auto positions = particles.R.getHostMirror();
             auto charges   = particles.Q.getHostMirror();
-            positions(0)   = Vector_t{x0, 0.5, 0.5};
-            positions(1)   = Vector_t{x1, 0.5, 0.5};
-            charges(0)     = 1.0;
-            charges(1)     = 1.0;
+            for (std::size_t i = 0; i < localCount; ++i) {
+                charges(i) = 1.0;
+            }
+            if (leadingInteriorParticle) {
+                positions(0) = Vector_t(0.5);
+            }
+            positions(first)     = Vector_t{x0, 0.5, 0.5};
+            positions(first + 1) = Vector_t{x1, 0.5, 0.5};
             Kokkos::deep_copy(particles.R.getView(), positions);
             Kokkos::deep_copy(particles.Q.getView(), charges);
         }
@@ -201,17 +210,22 @@ int main(int argc, char* argv[]) {
             runPairScenario(ippl::BC::PERIODIC, true, 0.05, 0.95, pairRcut, pairAlpha);
         const double openInternalBoundaryNorm =
             runPairScenario(ippl::BC::NO, false, 0.45, 0.55, pairRcut, pairAlpha);
+        // The periodic ghosts must be images of the boundary particles, not of the first ones.
+        const double leadingInteriorPeriodicNorm =
+            runPairScenario(ippl::BC::PERIODIC, true, 0.05, 0.95, pairRcut, pairAlpha, true);
 
         if (ippl::Comm->rank() == 0) {
             std::cout << "Pair norms: open-global=" << openBoundaryNorm
                       << ", periodic-global=" << periodicBoundaryNorm
                       << ", open-internal=" << openInternalBoundaryNorm
+                      << ", leading-interior-periodic=" << leadingInteriorPeriodicNorm
                       << ", expected=" << expectedNorm << std::endl;
         }
 
         if (openBoundaryNorm != 0.0
             || std::abs(periodicBoundaryNorm - expectedNorm) / expectedNorm > 1.0e-12
-            || std::abs(openInternalBoundaryNorm - expectedNorm) / expectedNorm > 1.0e-12) {
+            || std::abs(openInternalBoundaryNorm - expectedNorm) / expectedNorm > 1.0e-12
+            || !(std::abs(leadingInteriorPeriodicNorm - expectedNorm) / expectedNorm <= 1.0e-12)) {
             status = 1;
         }
 
