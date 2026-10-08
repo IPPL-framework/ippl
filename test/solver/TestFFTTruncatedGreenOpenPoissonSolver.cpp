@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
         Field_t rho(mesh, layout);
         VField_t efield(mesh, layout);
 
-        constexpr double alpha         = 2.0;
+        double alpha                   = 2.0;
         constexpr double forceConstant = -1.0 / (4.0 * Kokkos::numbers::pi_v<double>);
 
         ippl::ParameterList params;
@@ -218,6 +218,21 @@ int main(int argc, char* argv[]) {
         // A spacing change must rebuild the same truncated kernel, not the standard 1/r kernel.
         hr = Vector_t(0.1);
         mesh.setMeshSpacing(hr);
+        assignPointSource();
+        solver.solve();
+        status |= !verifySolution();
+
+        // A new alpha at unchanged spacing must reach the delegated open solver and rebuild it.
+        alpha = 3.0;
+        solver.updateParameter("alpha", alpha);
+        assignPointSource();
+        solver.solve();
+        status |= !verifySolution();
+
+        // A new alpha also replaces a cached shifted kernel.
+        solver.shiftedGreensFunction(Vector_t(0.25));
+        alpha = 2.5;
+        solver.updateParameter("alpha", alpha);
         assignPointSource();
         solver.solve();
         status |= !verifySolution();

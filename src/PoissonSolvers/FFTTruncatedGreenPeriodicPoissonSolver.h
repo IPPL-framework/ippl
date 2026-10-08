@@ -74,7 +74,12 @@ namespace ippl {
         // function called in the constructor to initialize the fields
         void initializeFields();
 
-        /** @brief Restore the configured open or periodic Ewald long-range kernel. */
+        /**
+         * @brief Restore the configured open or periodic Ewald long-range kernel.
+         *
+         * solve() calls this itself when the mesh spacing or the `alpha` parameter changes, so
+         * updateParameter("alpha", ...) between solves is enough to move the Ewald split.
+         */
         void greensFunction();
 
         /**
@@ -83,7 +88,8 @@ namespace ippl {
          * Uses STANDARD Hockney regularization and `force_constant`, without Ewald smoothing.
          * The caller reflects/sign-composes this image field and applies particle corrections
          * only to the real bunch. Call greensFunction() to restore the truncated kernel.
-         * A mesh-spacing change or setRhs() also restores the configured kernel.
+         * A mesh-spacing change, an `alpha` change, or setRhs() also restores the configured
+         * kernel.
          * @param shift Displacement in mesh coordinates and mesh length units; evaluates
          * G(r-shift).
          * @throws IpplException If the solver is uninitialized or uses PERIODIC boundaries.
@@ -103,6 +109,12 @@ namespace ippl {
 
         BoundaryType boundaryType_m = PERIODIC;
         bool boundaryInitialized_m  = false;
+
+        // alpha of the cached periodic kernel; solve() regenerates the kernel when it changes
+        Trhs kernelAlpha_m = 0;
+
+        // Forward alpha and force_constant to the owned open solver.
+        void syncOpenKernelParameters();
 
         // mesh and layout objects for rho_m (RHS)
         mesh_type* mesh_mp;

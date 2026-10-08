@@ -52,21 +52,23 @@ int main(int argc, char* argv[]) {
         Field_t rho(mesh, layout);
         VField_t efield(mesh, layout);
 
-        constexpr double alpha  = 2.0;
+        double alpha            = 2.0;
         const double pi         = Kokkos::numbers::pi_v<double>;
         const double waveNumber = 2.0 * pi;
-        const double screening  = std::exp(-waveNumber * waveNumber / (4.0 * alpha * alpha));
         const auto& localDomain = layout.getLocalNDIndex();
         const int nghost        = rho.getNghost();
         auto rhoView            = rho.getView();
 
-        Kokkos::parallel_for(
-            "Assign P3M periodic mode", ippl::getRangePolicy(rhoView, nghost),
-            KOKKOS_LAMBDA(const int i, const int j, const int k) {
-                const int ig     = i + localDomain[0].first() - nghost;
-                const double x   = origin[0] + (ig + 0.5) * hr[0];
-                rhoView(i, j, k) = Kokkos::sin(waveNumber * x);
-            });
+        auto assignMode = [&]() {
+            Kokkos::parallel_for(
+                "Assign P3M periodic mode", ippl::getRangePolicy(rhoView, nghost),
+                KOKKOS_LAMBDA(const int i, const int j, const int k) {
+                    const int ig     = i + localDomain[0].first() - nghost;
+                    const double x   = origin[0] + (ig + 0.5) * hr[0];
+                    rhoView(i, j, k) = Kokkos::sin(waveNumber * x);
+                });
+        };
+        assignMode();
 
         ippl::ParameterList params;
         params.add("output_type", Solver_t::SOL_AND_GRAD);
@@ -81,70 +83,81 @@ int main(int argc, char* argv[]) {
         Solver_t solver(efield, rho, params);
         solver.solve();
 
-        auto eView           = efield.getView();
-        double phiErrorLocal = 0.0;
-        double phiNormLocal  = 0.0;
-        double eErrorLocal   = 0.0;
-        double eNormLocal    = 0.0;
+        auto eView          = efield.getView();
+        auto verifySolution = [&]() {
+            const double screening = std::exp(-waveNumber * waveNumber / (4.0 * alpha * alpha));
+            double phiErrorLocal   = 0.0;
+            double phiNormLocal    = 0.0;
+            double eErrorLocal     = 0.0;
+            double eNormLocal      = 0.0;
 
-        Kokkos::parallel_reduce(
-            "P3M periodic potential error", ippl::getRangePolicy(rhoView, nghost),
-            KOKKOS_LAMBDA(const int i, const int j, const int k, double& sum) {
-                const int ig   = i + localDomain[0].first() - nghost;
-                const double x = origin[0] + (ig + 0.5) * hr[0];
-                const double exact =
-                    screening * Kokkos::sin(waveNumber * x) / (waveNumber * waveNumber);
-                const double diff = rhoView(i, j, k) - exact;
-                sum += diff * diff;
-            },
-            Kokkos::Sum<double>(phiErrorLocal));
-        Kokkos::parallel_reduce(
-            "P3M periodic potential norm", ippl::getRangePolicy(rhoView, nghost),
-            KOKKOS_LAMBDA(const int i, const int, const int, double& sum) {
-                const int ig   = i + localDomain[0].first() - nghost;
-                const double x = origin[0] + (ig + 0.5) * hr[0];
-                const double exact =
-                    screening * Kokkos::sin(waveNumber * x) / (waveNumber * waveNumber);
-                sum += exact * exact;
-            },
-            Kokkos::Sum<double>(phiNormLocal));
-        Kokkos::parallel_reduce(
-            "P3M periodic field error", ippl::getRangePolicy(rhoView, nghost),
-            KOKKOS_LAMBDA(const int i, const int j, const int k, double& sum) {
-                const int ig       = i + localDomain[0].first() - nghost;
-                const double x     = origin[0] + (ig + 0.5) * hr[0];
-                const double exact = -screening * Kokkos::cos(waveNumber * x) / waveNumber;
-                const double dx    = eView(i, j, k)[0] - exact;
-                sum += dx * dx + eView(i, j, k)[1] * eView(i, j, k)[1]
-                       + eView(i, j, k)[2] * eView(i, j, k)[2];
-            },
-            Kokkos::Sum<double>(eErrorLocal));
-        Kokkos::parallel_reduce(
-            "P3M periodic field norm", ippl::getRangePolicy(rhoView, nghost),
-            KOKKOS_LAMBDA(const int i, const int, const int, double& sum) {
-                const int ig       = i + localDomain[0].first() - nghost;
-                const double x     = origin[0] + (ig + 0.5) * hr[0];
-                const double exact = -screening * Kokkos::cos(waveNumber * x) / waveNumber;
-                sum += exact * exact;
-            },
-            Kokkos::Sum<double>(eNormLocal));
+            Kokkos::parallel_reduce(
+                "P3M periodic potential error", ippl::getRangePolicy(rhoView, nghost),
+                KOKKOS_LAMBDA(const int i, const int j, const int k, double& sum) {
+                    const int ig   = i + localDomain[0].first() - nghost;
+                    const double x = origin[0] + (ig + 0.5) * hr[0];
+                    const double exact =
+                        screening * Kokkos::sin(waveNumber * x) / (waveNumber * waveNumber);
+                    const double diff = rhoView(i, j, k) - exact;
+                    sum += diff * diff;
+                },
+                Kokkos::Sum<double>(phiErrorLocal));
+            Kokkos::parallel_reduce(
+                "P3M periodic potential norm", ippl::getRangePolicy(rhoView, nghost),
+                KOKKOS_LAMBDA(const int i, const int, const int, double& sum) {
+                    const int ig   = i + localDomain[0].first() - nghost;
+                    const double x = origin[0] + (ig + 0.5) * hr[0];
+                    const double exact =
+                        screening * Kokkos::sin(waveNumber * x) / (waveNumber * waveNumber);
+                    sum += exact * exact;
+                },
+                Kokkos::Sum<double>(phiNormLocal));
+            Kokkos::parallel_reduce(
+                "P3M periodic field error", ippl::getRangePolicy(rhoView, nghost),
+                KOKKOS_LAMBDA(const int i, const int j, const int k, double& sum) {
+                    const int ig       = i + localDomain[0].first() - nghost;
+                    const double x     = origin[0] + (ig + 0.5) * hr[0];
+                    const double exact = -screening * Kokkos::cos(waveNumber * x) / waveNumber;
+                    const double dx    = eView(i, j, k)[0] - exact;
+                    sum += dx * dx + eView(i, j, k)[1] * eView(i, j, k)[1]
+                           + eView(i, j, k)[2] * eView(i, j, k)[2];
+                },
+                Kokkos::Sum<double>(eErrorLocal));
+            Kokkos::parallel_reduce(
+                "P3M periodic field norm", ippl::getRangePolicy(rhoView, nghost),
+                KOKKOS_LAMBDA(const int i, const int, const int, double& sum) {
+                    const int ig       = i + localDomain[0].first() - nghost;
+                    const double x     = origin[0] + (ig + 0.5) * hr[0];
+                    const double exact = -screening * Kokkos::cos(waveNumber * x) / waveNumber;
+                    sum += exact * exact;
+                },
+                Kokkos::Sum<double>(eNormLocal));
 
-        double phiError = 0.0;
-        double phiNorm  = 0.0;
-        double eError   = 0.0;
-        double eNorm    = 0.0;
-        ippl::Comm->allreduce(phiErrorLocal, phiError, 1, std::plus<double>());
-        ippl::Comm->allreduce(phiNormLocal, phiNorm, 1, std::plus<double>());
-        ippl::Comm->allreduce(eErrorLocal, eError, 1, std::plus<double>());
-        ippl::Comm->allreduce(eNormLocal, eNorm, 1, std::plus<double>());
+            double phiError = 0.0;
+            double phiNorm  = 0.0;
+            double eError   = 0.0;
+            double eNorm    = 0.0;
+            ippl::Comm->allreduce(phiErrorLocal, phiError, 1, std::plus<double>());
+            ippl::Comm->allreduce(phiNormLocal, phiNorm, 1, std::plus<double>());
+            ippl::Comm->allreduce(eErrorLocal, eError, 1, std::plus<double>());
+            ippl::Comm->allreduce(eNormLocal, eNorm, 1, std::plus<double>());
 
-        const double relativePhiError = std::sqrt(phiError / phiNorm);
-        const double relativeEError   = std::sqrt(eError / eNorm);
-        if (ippl::Comm->rank() == 0) {
-            std::cout << "Relative potential error: " << relativePhiError << '\n'
-                      << "Relative field error: " << relativeEError << std::endl;
-        }
-        status = (relativePhiError < 1.0e-12 && relativeEError < 1.0e-12) ? 0 : 1;
+            const double relativePhiError = std::sqrt(phiError / phiNorm);
+            const double relativeEError   = std::sqrt(eError / eNorm);
+            if (ippl::Comm->rank() == 0) {
+                std::cout << "Relative potential error: " << relativePhiError << '\n'
+                          << "Relative field error: " << relativeEError << std::endl;
+            }
+            return relativePhiError < 1.0e-12 && relativeEError < 1.0e-12;
+        };
+        status |= !verifySolution();
+
+        // A new alpha at unchanged spacing must rebuild the periodic kernel.
+        alpha = 3.0;
+        solver.updateParameter("alpha", alpha);
+        assignMode();
+        solver.solve();
+        status |= !verifySolution();
     }
     ippl::finalize();
     return status;

@@ -169,6 +169,7 @@ namespace ippl {
                 throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::solve",
                                     "Open-boundary solver was not initialized");
             }
+            syncOpenKernelParameters();
             openSolver_m->solve();
             return;
         }
@@ -194,6 +195,10 @@ namespace ippl {
                 hr_m[i] = mesh_mp->getMeshSpacing(i);
                 green   = true;
             }
+        }
+        // A new alpha invalidates the cached kernel like a spacing change does.
+        if (this->params_m.template get<Trhs>("alpha") != kernelAlpha_m) {
+            green = true;
         }
 
         // set mesh spacing on the other grids again
@@ -291,10 +296,16 @@ namespace ippl {
                                 "Solver was not initialized");
         }
         if (boundaryType_m == BoundaryType::OPEN) {
+            syncOpenKernelParameters();
             openSolver_m->greensFunction();
             return;
         }
-        const Trhs alpha         = this->params_m.template get<Trhs>("alpha");
+        const Trhs alpha = this->params_m.template get<Trhs>("alpha");
+        if (alpha <= 0) {
+            throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::greensFunction",
+                                "alpha must be greater than zero");
+        }
+        kernelAlpha_m            = alpha;
         const Trhs forceConstant = this->params_m.template get<Trhs>("force_constant");
         const Trhs pi            = Kokkos::numbers::pi_v<Trhs>;
         auto view                = grntr_m.getView();
@@ -334,7 +345,17 @@ namespace ippl {
             throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::shiftedGreensFunction",
                                 "Shifted Green's function requires an initialized OPEN solver");
         }
+        syncOpenKernelParameters();
         openSolver_m->shiftedGreensFunction(shift);
+    }
+
+    template <typename FieldLHS, typename FieldRHS>
+    void FFTTruncatedGreenPeriodicPoissonSolver<FieldLHS, FieldRHS>::syncOpenKernelParameters() {
+        // The open solver holds a copy of the parameters made at initialization; forward the
+        // kernel parameters so an updated alpha reaches it. It regenerates on a changed alpha.
+        openSolver_m->updateParameter("alpha", this->params_m.template get<Trhs>("alpha"));
+        openSolver_m->updateParameter("force_constant",
+                                      this->params_m.template get<Trhs>("force_constant"));
     }
 
 }  // namespace ippl

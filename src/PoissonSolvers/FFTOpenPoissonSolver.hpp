@@ -395,6 +395,11 @@ namespace ippl {
                 green   = true;
             }
         }
+        // A new alpha invalidates the cached truncated kernel like a spacing change does.
+        if ((this->params_m.template get<int>("greens_function") == GreenFunction::TRUNCATED)
+            && (this->params_m.template get<Trhs>("alpha") != truncatedAlpha_m)) {
+            green = true;
+        }
 
         // set mesh spacing on the other grids again
         mesh2_m->setMeshSpacing(hr_m);
@@ -1434,7 +1439,8 @@ namespace ippl {
         }
 
         this->params_m.update("greens_function", GreenFunction::TRUNCATED);
-        grn_mr = 0.0;
+        truncatedAlpha_m = alpha;
+        grn_mr           = 0.0;
 
         const scalar_type pi      = Kokkos::numbers::pi_v<scalar_type>;
         auto view                 = grn_mr.getView();
@@ -2316,6 +2322,10 @@ namespace ippl {
         }
         mesh2_m->setMeshSpacing(hr_m);
         meshComplex_m->setMeshSpacing(hr_m);
+        // Likewise sync alpha so solve()'s alpha check also keeps the shifted kernel.
+        if (greensFunctionType == GreenFunction::TRUNCATED) {
+            truncatedAlpha_m = this->params_m.template get<Trhs>("alpha");
+        }
 
         const scalar_type pi = Kokkos::numbers::pi_v<scalar_type>;
 

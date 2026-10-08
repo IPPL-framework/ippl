@@ -169,6 +169,7 @@ namespace ippl {
          * using the `alpha` and `force_constant` parameters. The analytic value
          * @f$2 C \alpha / \sqrt{\pi}@f$ is used at the origin. Calling this method
          * selects GreenFunction::TRUNCATED for subsequent mesh-spacing updates.
+         * solve() also regenerates the kernel when the `alpha` parameter changes.
          *
          * @pre `algorithm == HOCKNEY` and `Dim == 3`.
          */
@@ -200,7 +201,8 @@ namespace ippl {
          * The configured kernel remains TRUNCATED for subsequent regeneration.
          *
          * After this call, solve() convolves the RHS with the shifted kernel
-         * until greensFunction() is called again or the mesh spacing changes.
+         * until greensFunction() is called again, the mesh spacing changes, or,
+         * for GreenFunction::TRUNCATED, the `alpha` parameter changes.
          *
          * Intended use for Dirichlet boundary conditions via the method of
          * images: choose the shift from the plane location and domain center,
@@ -277,6 +279,9 @@ namespace ippl {
         // mesh spacing and mesh size
         vector_type hr_m;
         Vector<int, Dim> nr_m;
+
+        // alpha of the cached truncated kernel; solve() regenerates the kernel when it changes
+        Trhs truncatedAlpha_m = 0;
 
         // string specifying algorithm: Hockney or Vico-Greengard
         std::string alg_m;
