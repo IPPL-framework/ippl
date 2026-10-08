@@ -294,7 +294,7 @@ namespace ippl {
          * particleRankOffsets are the offsets of each particle as a particle
          * can be sent to multiple ranks
          */
-        locate_type particleRanks("particles' MPI ranks");
+        locate_type particleRanks("particles' MPI ranks", 0);
         locate_type particleRankOffsets("particles' MPI rank offsets", localnum + 1);
 
         /* The indices are the indices of the particles,
