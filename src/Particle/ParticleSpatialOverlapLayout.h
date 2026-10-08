@@ -120,6 +120,31 @@ namespace ippl {
         void updateLayout(FieldLayout<Dim>&, Mesh&);
 
         /*!
+         * @brief Updates the regions and the cutoff together.
+         *
+         * The cutoff is checked against the new regions only, so a cutoff that follows the mesh
+         * spacing may grow or shrink with the domain. It takes effect at the next update().
+         * @param rcutoff Positive cutoff, at most half the new local region length in every
+         * dimension
+         * @throws IpplException If the cutoff is not positive or does not fit the local region
+         */
+        void updateLayout(FieldLayout<Dim>&, Mesh&, const T& rcutoff);
+
+        /*!
+         * @brief Sets the cutoff that sizes the halos and the search cells.
+         *
+         * The new cutoff takes effect at the next update(), which rebuilds the halos and the
+         * cells; forEachPair() throws until then. Use the three-argument updateLayout() when the
+         * regions change as well.
+         * @param rcutoff Positive cutoff, at most half the local region length in every dimension
+         * @throws IpplException If the cutoff is not positive or does not fit the local region
+         */
+        void setCutoff(const T& rcutoff);
+
+        /*! @brief Returns the cutoff that sizes the halos and the search cells. */
+        T getCutoff() const { return rcutoff_m; }
+
+        /*!
          * @brief updates particles by exchanging them across ranks according to their positions.
          *         then constructs the particle neighbor list structure
          * @param pc particle container to update
@@ -224,7 +249,7 @@ namespace ippl {
 
     protected:
         ///! overlap in each dimension
-        const T rcutoff_m;
+        T rcutoff_m = 0;
         ///! number of cells in each dimension
         Vector<size_type, Dim> numCells_m;
         ///! strides to compute cell indices
@@ -288,8 +313,10 @@ namespace ippl {
 
         /*!
          * @brief asserts that a particle can overlap at most two ranks per dimension
+         * @param rcutoff Cutoff to check against the local region
+         * @throws IpplException If the cutoff exceeds half the local region length
          */
-        void assertCutoffFitsRegions() const;
+        void assertCutoffFitsRegions(const T& rcutoff) const;
 
         /*!
          * @brief exchange particles by scanning neighbor ranks first, only scan other ranks if

@@ -34,28 +34,59 @@ namespace ippl {
         : Base(fl, mesh)
         , rcutoff_m(rcutoff)
         , numLocalParticles_m(0) {
-        assertCutoffFitsRegions();
+        assertCutoffFitsRegions(rcutoff_m);
         initializeCells();
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::updateLayout(
         FieldLayout<Dim>& fl, Mesh& mesh) {
+        updateLayout(fl, mesh, rcutoff_m);
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::updateLayout(
+        FieldLayout<Dim>& fl, Mesh& mesh, const T& rcutoff) {
+        if (!(rcutoff > 0)) {
+            throw IpplException("ParticleSpatialOverlapLayout::updateLayout",
+                                "The cutoff must be positive.");
+        }
         Base::updateLayout(fl, mesh);
-        assertCutoffFitsRegions();
+        assertCutoffFitsRegions(rcutoff);
+        rcutoff_m = rcutoff;
         // The cell cap depends on the particle count after the exchange, so buildCells rebuilds.
         cellsOutdated_m = true;
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
-    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::assertCutoffFitsRegions()
-        const {
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::setCutoff(const T& rcutoff) {
+        if (!(rcutoff > 0)) {
+            throw IpplException("ParticleSpatialOverlapLayout::setCutoff",
+                                "The cutoff must be positive.");
+        }
+        assertCutoffFitsRegions(rcutoff);
+        rcutoff_m = rcutoff;
+        // Halos and cells were built for the old cutoff; update() rebuilds both.
+        cellsOutdated_m = true;
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::assertCutoffFitsRegions(
+        const T& rcutoff) const {
         const auto rank          = Comm->rank();
         const auto hLocalRegions = this->rlayout_m->gethLocalRegions();
         for (unsigned d = 0; d < Dim; ++d) {
-            PAssert(rcutoff_m <= hLocalRegions(rank)[d].length() / 2 &&
-                "Cutoff is too big with respect to region. "
-                "Particle could be on 3 or more ranks ins one dimension");
+            const T length = hLocalRegions(rank)[d].length();
+            if (!(rcutoff <= length / 2)) {
+                // A larger cutoff would let a particle overlap three or more ranks in one
+                // dimension, which the halo exchange does not handle.
+                std::ostringstream message;
+                message << "The cutoff " << rcutoff << " exceeds half the local region length "
+                        << length << " in dimension " << d << " on rank " << rank
+                        << ". Use fewer ranks in this dimension or a smaller cutoff.";
+                throw IpplException("ParticleSpatialOverlapLayout::assertCutoffFitsRegions",
+                                    message.str());
+            }
         }
     }
 
