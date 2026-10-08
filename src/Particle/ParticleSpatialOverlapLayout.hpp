@@ -15,9 +15,12 @@
 //   determine if load balancing should be done or not.
 //
 #include <Kokkos_MathematicalFunctions.hpp>
+#include <limits>
 #include <numeric>
+#include <sstream>
 #include <vector>
 
+#include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
 #include "Communicate/Window.h"
@@ -65,6 +68,26 @@ namespace ippl {
             numLocalCells_m *= nLocalCells;
         }
         numGhostCells_m = totalCells_m - numLocalCells_m;
+
+        // Cell indices and permutations are stored in int views (hash_type), and forEachPair
+        // launches one team per local cell. Stop before an oversized grid overflows them.
+        constexpr auto maxIndex = static_cast<size_type>(std::numeric_limits<index_t>::max());
+        if (totalCells_m > maxIndex) {
+            std::ostringstream msg;
+            msg << "Rank " << rank << ": the P3M particle-particle cell grid has "
+                << numCells_m[0];
+            for (unsigned d = 1; d < Dim; ++d) {
+                msg << " x " << numCells_m[d];
+            }
+            msg << " = " << totalCells_m << " cells, which exceeds the index limit of "
+                << maxIndex << ".\nThe local region spans";
+            for (unsigned d = 0; d < Dim; ++d) {
+                msg << " " << hLocalRegions(rank)[d].length();
+            }
+            msg << " with cutoff " << rcutoff_m
+                << ".\nIncrease the cutoff, use more ranks, or shorten the tracked range.";
+            throw IpplException("ParticleSpatialOverlapLayout::initializeCells", msg.str());
+        }
 
         /* calculate cell strides to compute flat index from nd-index
          * idx = strides[0] * idx0 + strides[1] * idx1 + ...
@@ -741,7 +764,8 @@ namespace ippl {
                 KOKKOS_LAMBDA(const size_t& i) {
                     /// pID: (local) ID of the particle that is currently being searched.
                     const size_type pId    = outsideIds(i);
-                    const size_type offset = rankOffsets(pId) + counts(pId) - outsideCounts(pId);
+                    // outsideCounts is indexed by position in outsideIds, not by particle ID.
+                    const size_type offset = rankOffsets(pId) + counts(pId) - outsideCounts(i);
                     for (size_t local_count = 0, j = 0; j < nonNeighborsView.extent(0); ++j) {
                         const auto rank = nonNeighborsView(j);
                         if (positionInRegion(is, positions(pId), regions(rank), overlap)) {
@@ -868,6 +892,14 @@ namespace ippl {
         // get local variables of all necessary data as needed for the Kokkos parallel loops
         const auto rank          = Comm->rank();
         const size_type numLoc   = pc.getLocalNum();
+        // Particle offsets per cell are stored in int views (hash_type).
+        if (numLoc > static_cast<size_type>(std::numeric_limits<index_t>::max())) {
+            std::ostringstream msg;
+            msg << "Rank " << rank << " holds " << numLoc
+                << " local and ghost particles, which exceeds the P3M cell index limit of "
+                << std::numeric_limits<index_t>::max() << ". Use more ranks.";
+            throw IpplException("ParticleSpatialOverlapLayout::buildCells", msg.str());
+        }
         const auto positions     = pc.R.getView();
         const auto totalCells    = totalCells_m;
         const auto numLocalCells = numLocalCells_m;
