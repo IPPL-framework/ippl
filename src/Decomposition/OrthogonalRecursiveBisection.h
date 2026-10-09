@@ -10,6 +10,11 @@
 #ifndef IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
 #define IPPL_ORTHOGONAL_RECURSIVE_BISECTION_H
 
+#include <algorithm>
+#include <array>
+#include <numeric>
+#include <vector>
+
 #include "FieldLayout/FieldLayout.h"
 #include "Index/Index.h"
 #include "Index/NDIndex.h"
@@ -44,22 +49,41 @@ namespace ippl {
 
         /*!
          * Performs scatter operation of particle positions in field (weights) and
-         * repartitions FieldLayout's global domain
+         * repartitions FieldLayout's global domain, cutting only axes that are not forbidden.
+         * The FieldLayout and the ORB weight field are updated only after the proposed
+         * domains pass validation.
          * @tparam Attrib the particle attribute type (memory space must be accessible to field
          * memory)
          * @param R Weights to scatter
          * @param fl FieldLayout
          * @param isFirstRepartition boolean which tells whether to scatter or not
+         * @param forbiddenAxes true for axes ORB must not cut. The default allows all axes,
+         * which is the legacy ORB behavior.
          */
         template <typename Attrib>
         bool binaryRepartition(const Attrib& R, FieldLayout<Dim>& fl,
-                               const bool& isFirstRepartition);
+                               const bool& isFirstRepartition,
+                               const std::array<bool, Dim>& forbiddenAxes = {});
 
         /*!
-         * Find cutting axis as the longest axis of the field layout.
+         * Find cutting axis as the longest axis of the field layout that is not forbidden.
          * @param dom Domain to reduce
+         * @param forbiddenAxes true for axes ORB must not cut
+         * @return the cut axis, or -1 if all axes are forbidden
          */
-        int findCutAxis(NDIndex<Dim>& dom);
+        int findCutAxis(const NDIndex<Dim>& dom, const std::array<bool, Dim>& forbiddenAxes = {});
+
+        /*!
+         * Check whether two domains overlap.
+         */
+        bool domainsOverlap(const NDIndex<Dim>& lhs, const NDIndex<Dim>& rhs) const;
+
+        /*!
+         * Check whether proposed domains tile the global domain without cutting forbidden axes.
+         */
+        bool domainsTileAllowedDecomposition(const std::vector<NDIndex<Dim>>& domains,
+                                             const NDIndex<Dim>& globalDomain,
+                                             const std::array<bool, Dim>& forbiddenAxes) const;
 
         /*!
          * Performs reduction on local field in all dimension except that determined
