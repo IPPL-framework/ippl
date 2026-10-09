@@ -12,17 +12,8 @@ namespace ippl {
     template <class Field, class Tp>
     template <typename Attrib>
     bool OrthogonalRecursiveBisection<Field, Tp>::binaryRepartition(
-        const Attrib& R, FieldLayout<Dim>& fl, const bool& isFirstRepartition) {
-        std::array<bool, Dim> allowedAxes;
-        allowedAxes.fill(true);
-        return binaryRepartition(R, fl, isFirstRepartition, allowedAxes);
-    }
-
-    template <class Field, class Tp>
-    template <typename Attrib>
-    bool OrthogonalRecursiveBisection<Field, Tp>::binaryRepartition(
         const Attrib& R, FieldLayout<Dim>& fl, const bool& isFirstRepartition,
-        const std::array<bool, Dim>& allowedAxes) {
+        const std::array<bool, Dim>& forbiddenAxes) {
         // Timings
         static IpplTimings::TimerRef tbasicOp       = IpplTimings::getTimer("basicOperations");
         static IpplTimings::TimerRef tperpReduction = IpplTimings::getTimer("perpReduction");
@@ -63,7 +54,7 @@ namespace ippl {
         while (maxprocs > 1) {
             // Find cut axis
             IpplTimings::startTimer(tbasicOp);
-            int cutAxis = findCutAxis(domains[it], allowedAxes);
+            int cutAxis = findCutAxis(domains[it], forbiddenAxes);
             if (cutAxis < 0) {
                 IpplTimings::stopTimer(tbasicOp);
                 return false;
@@ -126,7 +117,7 @@ namespace ippl {
             IpplTimings::stopTimer(tbasicOp);
             return false;
         }
-        if (!domainsTileAllowedDecomposition(domains, globalDomain, allowedAxes)) {
+        if (!domainsTileAllowedDecomposition(domains, globalDomain, forbiddenAxes)) {
             IpplTimings::stopTimer(tbasicOp);
             return false;
         }
@@ -142,18 +133,11 @@ namespace ippl {
     }
 
     template <class Field, class Tp>
-    int OrthogonalRecursiveBisection<Field, Tp>::findCutAxis(NDIndex<Dim>& dom) {
-        std::array<bool, Dim> allowedAxes;
-        allowedAxes.fill(true);
-        return findCutAxis(dom, allowedAxes);
-    }
-
-    template <class Field, class Tp>
     int OrthogonalRecursiveBisection<Field, Tp>::findCutAxis(
-        const NDIndex<Dim>& dom, const std::array<bool, Dim>& allowedAxes) {
+        const NDIndex<Dim>& dom, const std::array<bool, Dim>& forbiddenAxes) {
         int cutAxis = -1;
         for (unsigned d = 0; d < Dim; ++d) {
-            if (!allowedAxes[d]) {
+            if (forbiddenAxes[d]) {
                 continue;
             }
             if (cutAxis < 0 || dom[d].length() > dom[cutAxis].length()) {
@@ -177,7 +161,7 @@ namespace ippl {
     template <class Field, class Tp>
     bool OrthogonalRecursiveBisection<Field, Tp>::domainsTileAllowedDecomposition(
         const std::vector<NDIndex<Dim>>& domains, const NDIndex<Dim>& globalDomain,
-        const std::array<bool, Dim>& allowedAxes) const {
+        const std::array<bool, Dim>& forbiddenAxes) const {
         size_t globalCells = 1;
         for (unsigned d = 0; d < Dim; ++d) {
             globalCells *= globalDomain[d].length();
@@ -195,7 +179,7 @@ namespace ippl {
                     || domain[d].last() > globalDomain[d].last()) {
                     return false;
                 }
-                if (!allowedAxes[d] && domain[d] != globalDomain[d]) {
+                if (forbiddenAxes[d] && domain[d] != globalDomain[d]) {
                     return false;
                 }
                 domainCells *= domain[d].length();

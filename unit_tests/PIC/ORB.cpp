@@ -166,26 +166,29 @@ TYPED_TEST(ORBTest, Charge) {
     ASSERT_NEAR((charge - totalCharge), 0., tol);
 }
 
-TYPED_TEST(ORBTest, AllowedAxesPreserveDisabledDimensions) {
+TYPED_TEST(ORBTest, ForbiddenAxesAreNotCut) {
     constexpr unsigned Dim = TestFixture::dim;
 
     if constexpr (Dim < 2) {
-        GTEST_SKIP() << "Need at least one disabled dimension.";
+        GTEST_SKIP() << "Need at least one forbidden dimension.";
     } else {
         if (ippl::Comm->size() < 2) {
-            GTEST_SKIP() << "Allowed-axis repartition needs more than one rank.";
+            GTEST_SKIP() << "Forbidden-axis repartition needs more than one rank.";
         }
 
         auto& bunch  = this->bunch;
         auto& layout = this->layout;
         auto& orb    = this->orb;
 
-        std::array<bool, Dim> allowedAxes;
-        allowedAxes.fill(false);
-        allowedAxes[0] = true;
+        std::array<bool, Dim> forbiddenAxes;
+        forbiddenAxes.fill(true);
+        forbiddenAxes[0] = false;
 
+        // Without a scatter the fixture weights are zero, which puts every median cut at the
+        // domain edge and leaves too few cells for more than two ranks.
+        orb.bf_m                 = 1.0;
         bool fromAnalyticDensity = true;
-        ASSERT_TRUE(orb.binaryRepartition(bunch->R, layout, fromAnalyticDensity, allowedAxes));
+        ASSERT_TRUE(orb.binaryRepartition(bunch->R, layout, fromAnalyticDensity, forbiddenAxes));
 
         const auto& globalDomain = layout.getDomain();
         auto localDomains        = layout.getHostLocalDomains();
@@ -209,11 +212,11 @@ TYPED_TEST(ORBTest, AllowedAxesPreserveDisabledDimensions) {
     }
 }
 
-TYPED_TEST(ORBTest, RejectsEmptyAllowedAxisMask) {
+TYPED_TEST(ORBTest, RejectsAllAxesForbidden) {
     constexpr unsigned Dim = TestFixture::dim;
 
     if (ippl::Comm->size() < 2) {
-        GTEST_SKIP() << "Empty allowed-axis mask only fails when ORB needs to cut.";
+        GTEST_SKIP() << "Forbidding all axes only fails when ORB needs to cut.";
     }
 
     auto& bunch  = this->bunch;
@@ -222,11 +225,11 @@ TYPED_TEST(ORBTest, RejectsEmptyAllowedAxisMask) {
 
     auto originalDomains = layout.getHostLocalDomains();
 
-    std::array<bool, Dim> allowedAxes;
-    allowedAxes.fill(false);
+    std::array<bool, Dim> forbiddenAxes;
+    forbiddenAxes.fill(true);
 
     bool fromAnalyticDensity = true;
-    EXPECT_FALSE(orb.binaryRepartition(bunch->R, layout, fromAnalyticDensity, allowedAxes));
+    EXPECT_FALSE(orb.binaryRepartition(bunch->R, layout, fromAnalyticDensity, forbiddenAxes));
 
     auto currentDomains = layout.getHostLocalDomains();
     ASSERT_EQ(originalDomains.size(), currentDomains.size());
