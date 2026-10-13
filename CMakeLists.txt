@@ -138,9 +138,6 @@ endif()
 # ------------------------------------------------------------------------------
 # Include optional source directories
 # ------------------------------------------------------------------------------
-if(IPPL_ENABLE_PYTHON_BRIDGE)
-  add_subdirectory(interop)
-endif()
 
 add_subdirectory(demos)
 

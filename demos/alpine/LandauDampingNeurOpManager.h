@@ -14,7 +14,7 @@ namespace py = pybind11;
 template <typename T, unsigned Dim>
 class LandauDampingNeurOpManager : public LandauDampingManager<T, Dim> {
     private:
-        InferenceBridge* bridge;
+        InferenceBridge* bridge_m;
 
     public:
         using Manager_t = LandauDampingManager<T, Dim>;
@@ -23,7 +23,7 @@ class LandauDampingNeurOpManager : public LandauDampingManager<T, Dim> {
                                double lbt_, std::string& solver_, std::string& stepMethod_,
                                std::vector<std::string>& preconditioner_params_,
                                InferenceBridge* bridge_)
-        : Manager_t(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, preconditioner_params_), bridge(bridge_) {}
+        : Manager_t(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, preconditioner_params_), bridge_m(bridge_) {}
 
         void initializeParticlesPD() {
             Inform m("Initialize Particles");
@@ -151,7 +151,7 @@ class LandauDampingNeurOpManager : public LandauDampingManager<T, Dim> {
             params["L"]  = L;
             params["kw"] = kw;
 
-            bridge->call("init", ippl::Comm->rank(), ippl::Comm->size(), Kokkos::device_id(), params);
+            bridge_m->call("init", ippl::Comm->rank(), ippl::Comm->size(), Kokkos::device_id(), params);
 
             inferField();
             this->dump();
@@ -192,7 +192,7 @@ class LandauDampingNeurOpManager : public LandauDampingManager<T, Dim> {
                 pc->E, kokkos_dlpack::ReadOnly::No, kokkos_dlpack::DLPackVersion::Legacy);
 
             IpplTimings::startTimer(inferTimer);
-            bridge->call("infer", R_cap, E_cap, pc->getLocalNum());
+            bridge_m->call("infer", R_cap, E_cap, pc->getLocalNum());
             Kokkos::fence();
             IpplTimings::stopTimer(inferTimer);
         }

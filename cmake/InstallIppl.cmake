@@ -33,6 +33,12 @@ set(_ippl_install_excludes
     # match your filenames if needed
 )
 
+if(NOT IPPL_ENABLE_PYTHON_BRIDGE)
+  list(
+    APPEND _ippl_install_excludes 
+    PATTERN "Interoperability/*" EXCLUDE)
+endif()
+
 if(NOT IPPL_ENABLE_FFT)
   list(
     APPEND _ippl_install_excludes
