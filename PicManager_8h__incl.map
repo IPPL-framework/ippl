@@ -1,52 +1,52 @@
 <map id="PicManager.h" name="PicManager.h">
-<area shape="rect" id="node1" title=" " alt="" coords="1863,5,1964,31"/>
-<area shape="rect" id="node2" title=" " alt="" coords="2625,753,2693,779"/>
-<area shape="rect" id="node3" title=" " alt="" coords="889,86,967,111"/>
-<area shape="rect" id="node4" title=" " alt="" coords="193,827,252,852"/>
-<area shape="rect" id="node5" href="$OrthogonalRecursiveBisection_8h.html" title=" " alt="" coords="991,79,1166,119"/>
-<area shape="rect" id="node44" href="$BaseManager_8h.html" title=" " alt="" coords="2333,255,2499,280"/>
-<area shape="rect" id="node45" href="$FieldSolverBase_8h.html" title=" " alt="" coords="2325,174,2507,199"/>
-<area shape="rect" id="node6" href="$FieldLayout_8h.html" title=" " alt="" coords="1952,599,2123,625"/>
-<area shape="rect" id="node13" href="$NDIndex_8h.html" title=" " alt="" coords="2296,680,2413,705"/>
-<area shape="rect" id="node17" href="$Index_8h.html" title=" " alt="" coords="2245,753,2344,779"/>
-<area shape="rect" id="node22" href="$ParticleAttrib_8h.html" title=" " alt="" coords="917,174,1072,199"/>
-<area shape="rect" id="node36" href="$ParticleSpatialLayout_8h.html" title=" " alt="" coords="895,504,1049,544"/>
-<area shape="rect" id="node39" href="$NDRegion_8h.html" title=" " alt="" coords="297,680,431,705"/>
-<area shape="rect" id="node43" href="$OrthogonalRecursiveBisection_8hpp.html" title=" " alt="" coords="318,167,493,207"/>
-<area shape="rect" id="node7" title=" " alt="" coords="1293,827,1344,852"/>
-<area shape="rect" id="node8" title=" " alt="" coords="2412,827,2484,852"/>
-<area shape="rect" id="node9" title=" " alt="" coords="1051,827,1098,852"/>
-<area shape="rect" id="node10" href="$ViewTypes_8h.html" title=" " alt="" coords="1625,680,1759,705"/>
-<area shape="rect" id="node12" href="$Communicator_8h.html" title=" " alt="" coords="2488,680,2688,705"/>
-<area shape="rect" id="node20" href="$FieldLayout_8hpp.html" title=" " alt="" coords="1835,680,2019,705"/>
-<area shape="rect" id="node11" title=" " alt="" coords="2067,827,2191,852"/>
-<area shape="rect" id="node14" title=" " alt="" coords="464,900,547,925"/>
-<area shape="rect" id="node15" href="$Vector_8h.html" title=" " alt="" coords="1172,753,1281,779"/>
-<area shape="rect" id="node19" href="$NDIndex_8hpp.html" title=" " alt="" coords="2419,753,2549,779"/>
-<area shape="rect" id="node16" href="$IpplExpressions_8h.html" title=" " alt="" coords="277,827,467,852"/>
-<area shape="rect" id="node18" href="$Index_8hpp.html" title=" " alt="" coords="2239,827,2351,852"/>
-<area shape="rect" id="node21" href="$IpplTimings_8h.html" title=" " alt="" coords="901,753,1037,779"/>
-<area shape="rect" id="node23" title=" " alt="" coords="795,335,856,361"/>
-<area shape="rect" id="node24" href="$CIC_8h.html" title=" " alt="" coords="982,255,1111,280"/>
-<area shape="rect" id="node25" href="$ParticleAttribBase_8h.html" title=" " alt="" coords="670,255,855,280"/>
-<area shape="rect" id="node27" href="$SortBuffer_8h.html" title=" " alt="" coords="2139,511,2277,537"/>
-<area shape="rect" id="node28" href="$ParticleAttrib_8hpp.html" title=" " alt="" coords="1190,255,1359,280"/>
-<area shape="rect" id="node26" href="$IpplTypes_8h.html" title=" " alt="" coords="558,680,685,705"/>
-<area shape="rect" id="node29" href="$Ippl_8h.html" title=" " alt="" coords="2027,335,2080,361"/>
-<area shape="rect" id="node30" href="$Inform_8h.html" title=" " alt="" coords="2560,423,2667,449"/>
-<area shape="rect" id="node31" href="$Environment_8h.html" title=" " alt="" coords="2191,423,2379,449"/>
-<area shape="rect" id="node32" href="$ParallelDispatch_8h.html" title=" " alt="" coords="1387,680,1549,705"/>
-<area shape="rect" id="node33" href="$IpplCore_8h.html" title=" " alt="" coords="1013,423,1093,449"/>
-<area shape="rect" id="node34" href="$ParticleBase_8h.html" title=" " alt="" coords="621,599,776,625"/>
-<area shape="rect" id="node35" href="$ParticleLayout_8h.html" title=" " alt="" coords="709,680,872,705"/>
-<area shape="rect" id="node37" href="$Window_8h.html" title=" " alt="" coords="896,680,1059,705"/>
-<area shape="rect" id="node38" href="$RegionLayout_8h.html" title=" " alt="" coords="1232,599,1387,625"/>
-<area shape="rect" id="node42" href="$ParticleSpatialLayout_8hpp.html" title=" " alt="" coords="1003,592,1157,632"/>
-<area shape="rect" id="node40" href="$PRegion_8h.html" title=" " alt="" coords="543,753,668,779"/>
-<area shape="rect" id="node41" href="$NDRegion_8hpp.html" title=" " alt="" coords="708,753,857,779"/>
-<area shape="rect" id="node46" href="$datatypes_8h.html" title=" " alt="" coords="1977,255,2065,280"/>
-<area shape="rect" id="node47" href="$FEMPoissonSolver_8h.html" title=" " alt="" coords="2105,328,2295,368"/>
-<area shape="rect" id="node48" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="1480,504,1699,544"/>
-<area shape="rect" id="node49" href="$FFTPeriodicPoissonSolver_8h.html" title=" " alt="" coords="1926,504,2114,544"/>
-<area shape="rect" id="node50" href="$FFTTruncatedGreenPeriodicPoissonSolver_8h.html" title=" " alt="" coords="1601,416,1799,456"/>
+<area shape="rect" id="node1" title=" " alt="" coords="440,5,541,31"/>
+<area shape="rect" id="node2" title=" " alt="" coords="273,724,341,749"/>
+<area shape="rect" id="node3" title=" " alt="" coords="1966,86,2045,111"/>
+<area shape="rect" id="node4" title=" " alt="" coords="975,797,1033,823"/>
+<area shape="rect" id="node5" href="$OrthogonalRecursiveBisection_8h.html" title=" " alt="" coords="1767,79,1942,119"/>
+<area shape="rect" id="node46" href="$BaseManager_8h.html" title=" " alt="" coords="446,240,613,265"/>
+<area shape="rect" id="node47" href="$FieldSolverBase_8h.html" title=" " alt="" coords="292,167,473,192"/>
+<area shape="rect" id="node6" title=" " alt="" coords="195,651,269,676"/>
+<area shape="rect" id="node7" title=" " alt="" coords="2928,797,2979,823"/>
+<area shape="rect" id="node8" title=" " alt="" coords="1211,651,1279,676"/>
+<area shape="rect" id="node9" href="$FieldLayout_8h.html" title=" " alt="" coords="2145,570,2316,595"/>
+<area shape="rect" id="node15" href="$NDIndex_8h.html" title=" " alt="" coords="2653,651,2771,676"/>
+<area shape="rect" id="node19" href="$Index_8h.html" title=" " alt="" coords="2648,724,2747,749"/>
+<area shape="rect" id="node24" href="$ParticleAttrib_8h.html" title=" " alt="" coords="1287,167,1441,192"/>
+<area shape="rect" id="node38" href="$ParticleSpatialLayout_8h.html" title=" " alt="" coords="1629,475,1784,515"/>
+<area shape="rect" id="node41" href="$NDRegion_8h.html" title=" " alt="" coords="3147,651,3282,676"/>
+<area shape="rect" id="node45" href="$OrthogonalRecursiveBisection_8hpp.html" title=" " alt="" coords="2018,475,2193,515"/>
+<area shape="rect" id="node10" title=" " alt="" coords="2471,797,2543,823"/>
+<area shape="rect" id="node11" title=" " alt="" coords="1985,797,2031,823"/>
+<area shape="rect" id="node12" href="$ViewTypes_8h.html" title=" " alt="" coords="2393,651,2527,676"/>
+<area shape="rect" id="node14" href="$Communicator_8h.html" title=" " alt="" coords="496,651,696,676"/>
+<area shape="rect" id="node22" href="$FieldLayout_8hpp.html" title=" " alt="" coords="2032,651,2216,676"/>
+<area shape="rect" id="node13" title=" " alt="" coords="1679,797,1803,823"/>
+<area shape="rect" id="node16" title=" " alt="" coords="1905,871,1988,896"/>
+<area shape="rect" id="node17" href="$Vector_8h.html" title=" " alt="" coords="949,724,1059,749"/>
+<area shape="rect" id="node21" href="$NDIndex_8hpp.html" title=" " alt="" coords="2493,724,2624,749"/>
+<area shape="rect" id="node18" href="$IpplExpressions_8h.html" title=" " alt="" coords="759,797,950,823"/>
+<area shape="rect" id="node20" href="$Index_8hpp.html" title=" " alt="" coords="2635,797,2747,823"/>
+<area shape="rect" id="node23" href="$IpplTimings_8h.html" title=" " alt="" coords="1672,724,1808,749"/>
+<area shape="rect" id="node25" title=" " alt="" coords="1507,321,1568,346"/>
+<area shape="rect" id="node26" href="$CIC_8h.html" title=" " alt="" coords="1351,240,1481,265"/>
+<area shape="rect" id="node27" href="$ParticleAttribBase_8h.html" title=" " alt="" coords="1505,240,1690,265"/>
+<area shape="rect" id="node29" href="$SortBuffer_8h.html" title=" " alt="" coords="257,570,396,595"/>
+<area shape="rect" id="node30" href="$ParticleAttrib_8hpp.html" title=" " alt="" coords="1106,240,1275,265"/>
+<area shape="rect" id="node28" href="$IpplTypes_8h.html" title=" " alt="" coords="1542,651,1669,676"/>
+<area shape="rect" id="node31" href="$Ippl_8h.html" title=" " alt="" coords="1164,321,1217,346"/>
+<area shape="rect" id="node32" href="$Inform_8h.html" title=" " alt="" coords="2265,401,2372,427"/>
+<area shape="rect" id="node33" href="$Environment_8h.html" title=" " alt="" coords="727,401,915,427"/>
+<area shape="rect" id="node34" href="$ParallelDispatch_8h.html" title=" " alt="" coords="923,651,1085,676"/>
+<area shape="rect" id="node35" href="$IpplCore_8h.html" title=" " alt="" coords="1761,401,1841,427"/>
+<area shape="rect" id="node36" href="$ParticleBase_8h.html" title=" " alt="" coords="1643,570,1797,595"/>
+<area shape="rect" id="node37" href="$ParticleLayout_8h.html" title=" " alt="" coords="1795,651,1957,676"/>
+<area shape="rect" id="node39" href="$Window_8h.html" title=" " alt="" coords="1304,651,1467,676"/>
+<area shape="rect" id="node40" href="$RegionLayout_8h.html" title=" " alt="" coords="2643,570,2797,595"/>
+<area shape="rect" id="node44" href="$ParticleSpatialLayout_8hpp.html" title=" " alt="" coords="1159,563,1313,603"/>
+<area shape="rect" id="node42" href="$PRegion_8h.html" title=" " alt="" coords="3147,724,3272,749"/>
+<area shape="rect" id="node43" href="$NDRegion_8hpp.html" title=" " alt="" coords="2872,724,3021,749"/>
+<area shape="rect" id="node48" href="$datatypes_8h.html" title=" " alt="" coords="333,240,421,265"/>
+<area shape="rect" id="node49" href="$FEMPoissonSolver_8h.html" title=" " alt="" coords="309,313,499,353"/>
+<area shape="rect" id="node50" href="$FFTOpenPoissonSolver_8h.html" title=" " alt="" coords="977,475,1196,515"/>
 </map>

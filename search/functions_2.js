@@ -11,7 +11,7 @@ var searchData=
   ['beta_8',['beta',['../classippl_1_1nufft_1_1ESKernel.html#a59a43ccc3fda967af8cd1db043002397',1,'ippl::nufft::ESKernel']]],
   ['bin_5fparticles_9',['bin_particles',['../namespaceippl_1_1Interpolation_1_1detail.html#a2f6d21790a9eb5151e0afc438fcef08f',1,'ippl::Interpolation::detail']]],
   ['bin_5fsort_10',['bin_sort',['../namespaceippl_1_1Interpolation_1_1detail.html#ae0a89cb57765fa4f02f2fa171640ea19',1,'ippl::Interpolation::detail']]],
-  ['binaryrepartition_11',['binaryRepartition',['../classippl_1_1OrthogonalRecursiveBisection.html#a57c30bc44ae73bd6b1088a4c12926f7d',1,'ippl::OrthogonalRecursiveBisection']]],
+  ['binaryrepartition_11',['binaryRepartition',['../classippl_1_1OrthogonalRecursiveBisection.html#ac127cd4bcdef1e0bbf89b6e29931b21e',1,'ippl::OrthogonalRecursiveBisection']]],
   ['binkeys_12',['binKeys',['../classippl_1_1detail_1_1BinSortBuffers.html#a4038e82aeded5c81551c35804142373d',1,'ippl::detail::BinSortBuffers']]],
   ['binoffsetcapacity_13',['binOffsetCapacity',['../classippl_1_1detail_1_1BinSortBuffers.html#a6dab3a49e1b523c31d950600139712b3',1,'ippl::detail::BinSortBuffers']]],
   ['binoffsets_14',['binOffsets',['../classippl_1_1detail_1_1BinSortBuffers.html#aaccd31e2f5cce7f1c386dc74915c12b5',1,'ippl::detail::BinSortBuffers']]],
