@@ -5,7 +5,8 @@
 // zero field with the default and an updated positive regularization cutoff, and that a
 // non-positive regularization cutoff is rejected. Pair scenarios check open, periodic, and
 // rank-internal pairs, a cutoff changed between updates, and periodic ghosts of particles that
-// are not the first ones in the container.
+// are not the first ones in the container. An interaction cutoff above the layout cutoff and a
+// pair loop after a rejected updateLayout() must both throw.
 //
 //   Usage:
 //     srun -n 2 ./TestTruncatedGreenParticleInteraction --info 5
@@ -273,6 +274,46 @@ int main(int argc, char* argv[]) {
             if (!rejected) {
                 status = 1;
             }
+        }
+
+        ippl::ParameterList validParams;
+        validParams.add("rcut", rcut);
+        validParams.add("alpha", 8.0);
+        validParams.add("force_constant", 1.0);
+
+        // The cells only find partners within the layout cutoff, so a larger interaction cutoff
+        // is rejected.
+        ippl::ParameterList wideParams = validParams;
+        wideParams.update("rcut", rcut + Scalar_t(0.05));
+        Interaction_t wideInteraction(particles, particles.E, particles.R, particles.Q, wideParams);
+        bool wideRejected = false;
+        try {
+            wideInteraction.solve();
+        } catch (const IpplException&) {
+            wideRejected = true;
+        }
+        if (!wideRejected) {
+            status = 1;
+        }
+
+        // updateLayout() moves the regions before it rejects the cutoff, so the cells are outdated
+        // and the pair loop must not run until the next update().
+        bool relayoutRejected = false;
+        try {
+            particleLayout.updateLayout(fieldLayout, mesh, Scalar_t(0.6));
+        } catch (const IpplException&) {
+            relayoutRejected = true;
+        }
+        Interaction_t staleInteraction(particles, particles.E, particles.R, particles.Q,
+                                       validParams);
+        bool staleRejected = false;
+        try {
+            staleInteraction.solve();
+        } catch (const IpplException&) {
+            staleRejected = true;
+        }
+        if (!relayoutRejected || !staleRejected) {
+            status = 1;
         }
 
         int globalStatus = 0;

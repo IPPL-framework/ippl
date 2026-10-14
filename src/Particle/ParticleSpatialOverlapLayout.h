@@ -270,7 +270,7 @@ namespace ippl {
         static constexpr size_type maxCellsPerParticle_m = 16;
         ///! cap on local cells that applies regardless of the particle count
         static constexpr size_type minCellCap_m = size_type(1) << 24;
-        ///! set by updateLayout; buildCells rebuilds the cells before they are used again
+        ///! true after updateLayout() or setCutoff() until buildCells() rebuilds the cells
         bool cellsOutdated_m = true;
         /*!
          * To ensure the interior particles are at indices 0, ..., numLocalParticles_m - 1 the cells

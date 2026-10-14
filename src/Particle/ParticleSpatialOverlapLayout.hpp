@@ -51,11 +51,12 @@ namespace ippl {
             throw IpplException("ParticleSpatialOverlapLayout::updateLayout",
                                 "The cutoff must be positive.");
         }
+        // The regions change even if the cutoff check below throws, so mark the cells first.
+        // buildCells() rebuilds them after the exchange, which sets the particle count for the cap.
+        cellsOutdated_m = true;
         Base::updateLayout(fl, mesh);
         assertCutoffFitsRegions(rcutoff);
         rcutoff_m = rcutoff;
-        // The cell cap depends on the particle count after the exchange, so buildCells rebuilds.
-        cellsOutdated_m = true;
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
@@ -111,11 +112,12 @@ namespace ippl {
         while (true) {
             double product = 1;
             for (unsigned d = 0; d < Dim; ++d) {
-                // A region is at least 2 * rcutoff_m long, so one cell is never too narrow.
+                // A region shorter than width becomes one cell, which is still wide enough
+                // because every region is at least 2 * rcutoff_m long.
                 counts[d] = std::max<size_type>(1, std::floor(region[d].length() / width));
                 product *= counts[d];
             }
-            // Flooring can leave the product above the cap when a region is shorter than width.
+            // Raising a count to one cell can leave the product above the cap; widen and retry.
             if (product <= maxCells) {
                 return counts;
             }
@@ -130,7 +132,8 @@ namespace ippl {
         const auto hLocalRegions = this->rlayout_m->gethLocalRegions();
 
         /* precompute information of cell structure. Cells are at least rcutoff_m wide (the
-         * overlap length); the boundary cells are local cells of the same width.
+         * overlap length); the ghost cells around the region have the same width as the local
+         * cells.
          */
         const auto localCounts = localCellCounts(numParticles);
         totalCells_m           = 1;
@@ -160,8 +163,7 @@ namespace ippl {
             for (unsigned d = 0; d < Dim; ++d) {
                 msg << " " << hLocalRegions(rank)[d].length();
             }
-            msg << " with cutoff " << rcutoff_m
-                << ".\nIncrease the cutoff, use more ranks, or shorten the tracked range.";
+            msg << " with cutoff " << rcutoff_m << ".\nUse more ranks to split the local region.";
             throw IpplException("ParticleSpatialOverlapLayout::initializeCells", msg.str());
         }
 
@@ -1222,7 +1224,8 @@ namespace ippl {
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::forEachPair(Functor&& f) const {
         if (cellsOutdated_m) {
             throw IpplException("ParticleSpatialOverlapLayout::forEachPair",
-                                "The cells are outdated; call update() after updateLayout().");
+                                "The cells are outdated; call update() after updateLayout() or "
+                                "setCutoff().");
         }
         static IpplTimings::TimerRef interactionTimer = IpplTimings::getTimer("PPInteractionTimer");
         IpplTimings::startTimer(interactionTimer);

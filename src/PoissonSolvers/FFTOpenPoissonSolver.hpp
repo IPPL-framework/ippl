@@ -2367,8 +2367,10 @@ namespace ippl {
                                     "for 3D.");
             }
         } else {
-            // The P3M image pass needs the full Coulomb field with the same coupling as
-            // its real-bunch split. Keep greens_function unchanged for kernel restoration.
+            // STANDARD uses the coupling -1/(4 pi). TRUNCATED uses force_constant without the erf
+            // factor, so image charges get the full Coulomb field with the same coupling as the
+            // truncated kernel. greens_function stays TRUNCATED, so greensFunction() still
+            // restores the truncated kernel.
             const Trhs forceConstant =
                 greensFunctionType == GreenFunction::TRUNCATED
                     ? this->params_m.template get<Trhs>("force_constant")
@@ -2402,7 +2404,9 @@ namespace ippl {
                         rsq += xoff * xoff;
                     }
 
-                    // solve() multiplies by -G_hat; retain the native coupling and its sign.
+                    // Store coupling / r as greensFunction() does. solve() multiplies the
+                    // transformed RHS by -grntr_m, so the coupling -1/(4 pi) gives the
+                    // convolution of rho with 1/(4 pi r).
                     const bool nearSing = (rsq < regThresh);
                     const scalar_type r = Kokkos::sqrt(rsq + nearSing * regThresh);
                     apply(view, args)   = forceConstant / r;

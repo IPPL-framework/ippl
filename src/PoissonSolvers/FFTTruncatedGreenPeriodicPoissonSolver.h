@@ -86,12 +86,12 @@ namespace ippl {
          * @brief Overwrite the open mesh kernel with the full shifted Coulomb kernel.
          *
          * Uses STANDARD Hockney regularization and `force_constant`, without Ewald smoothing.
-         * The caller reflects/sign-composes this image field and applies particle corrections
-         * only to the real bunch. Call greensFunction() to restore the truncated kernel.
-         * A mesh-spacing change, an `alpha` change, or setRhs() also restores the configured
-         * kernel.
-         * @param shift Displacement in mesh coordinates and mesh length units; evaluates
-         * G(r-shift).
+         * The caller turns the result into the field of the image charges and adds it to the
+         * field of the real charges; only the real charges get the short-range particle
+         * correction. Call greensFunction() to restore the truncated kernel. A mesh-spacing
+         * change, an `alpha` change, or setRhs() also restores the configured kernel.
+         * @param shift Displacement in the length units of the mesh spacing; the kernel is
+         * evaluated at r - shift.
          * @throws IpplException If the solver is uninitialized or uses PERIODIC boundaries.
          */
         void shiftedGreensFunction(const Vector<double, Dim>& shift);

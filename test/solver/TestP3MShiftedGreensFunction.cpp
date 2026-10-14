@@ -115,7 +115,8 @@ int main(int argc, char* argv[]) {
                 params.add("boundary_type", Solver::OPEN);
                 Solver solver(field, rho, params);
                 for (double spacing : {0.1, 0.13}) {
-                    // Install the overwrite before solve() can observe the changed spacing.
+                    // shiftedGreensFunction() runs before solve() sees the new spacing, so it
+                    // must sync the spacing itself or solve() replaces the shifted kernel.
                     mesh.setMeshSpacing(Vector(spacing, 1.2 * spacing, 0.8 * spacing));
                     for (Vector shift : {Vector(0.11, -0.08, 0.63), Vector(0.0)}) {
                         deposit(rho);
