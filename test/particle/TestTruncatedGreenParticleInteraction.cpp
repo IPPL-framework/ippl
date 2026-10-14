@@ -3,7 +3,10 @@
 // This program tests the short-range Ewald particle interaction using two unit-charge particles in
 // a periodic ParticleSpatialOverlapLayout. It verifies that zero-distance pairs produce a finite
 // zero field with the default and an updated positive regularization cutoff, and that a
-// non-positive regularization cutoff is rejected.
+// non-positive regularization cutoff is rejected. Pair scenarios check open, periodic, and
+// rank-internal pairs, a cutoff changed between updates, and periodic ghosts of particles that
+// are not the first ones in the container. An interaction cutoff above the layout cutoff and a
+// pair loop after a rejected updateLayout() must both throw.
 //
 //   Usage:
 //     srun -n 2 ./TestTruncatedGreenParticleInteraction --info 5
@@ -14,11 +17,11 @@
 
 #include <cmath>
 #include <iostream>
+#include <limits>
 
 #include "Utility/IpplException.h"
 
 #include "Interaction/TruncatedGreenParticleInteraction.h"
-
 #include "Particle/ParticleSpatialOverlapLayout.h"
 
 namespace test_truncated_green_particle_interaction {
@@ -54,8 +57,14 @@ namespace test_truncated_green_particle_interaction {
         typename Base::particle_position_type E;
     };
 
+    // A positive constructionRcut builds the layout with that cutoff and switches to rcut after a
+    // first update, with setCutoff() or the three-argument updateLayout(); the pair loop must
+    // refuse to run until the next update. Returns NaN if it ran with outdated cells.
+    // leadingInteriorParticle puts a partnerless particle at the center before the pair, so the
+    // pair particles are not the first ones copied as periodic ghosts.
     double runPairScenario(ippl::BC particleBC, bool fieldPeriodic, Scalar_t x0, Scalar_t x1,
-                           Scalar_t rcut, Scalar_t alpha) {
+                           Scalar_t rcut, Scalar_t alpha, Scalar_t constructionRcut = 0,
+                           bool viaUpdateLayout = false, bool leadingInteriorParticle = false) {
         const ippl::Vector<int, Dim> nr = {8, 8, 8};
         ippl::NDIndex<Dim> owned;
         for (unsigned d = 0; d < Dim; ++d) {
@@ -67,18 +76,24 @@ namespace test_truncated_green_particle_interaction {
         const Vector_t hr(0.125);
         const Vector_t origin(0.0);
         TestMesh_t mesh(owned, hr, origin);
-        ParticleLayout_t particleLayout(fieldLayout, mesh, rcut);
+        const bool resized = constructionRcut > 0;
+        ParticleLayout_t particleLayout(fieldLayout, mesh, resized ? constructionRcut : rcut);
         TestParticles particles(particleLayout, particleBC);
 
-        const std::size_t localCount = ippl::Comm->rank() == 0 ? 2 : 0;
+        const std::size_t first      = leadingInteriorParticle ? 1 : 0;
+        const std::size_t localCount = ippl::Comm->rank() == 0 ? first + 2 : 0;
         particles.create(localCount);
         if (localCount != 0) {
             auto positions = particles.R.getHostMirror();
             auto charges   = particles.Q.getHostMirror();
-            positions(0)   = Vector_t{x0, 0.5, 0.5};
-            positions(1)   = Vector_t{x1, 0.5, 0.5};
-            charges(0)     = 1.0;
-            charges(1)     = 1.0;
+            for (std::size_t i = 0; i < localCount; ++i) {
+                charges(i) = 1.0;
+            }
+            if (leadingInteriorParticle) {
+                positions(0) = Vector_t(0.5);
+            }
+            positions(first)     = Vector_t{x0, 0.5, 0.5};
+            positions(first + 1) = Vector_t{x1, 0.5, 0.5};
             Kokkos::deep_copy(particles.R.getView(), positions);
             Kokkos::deep_copy(particles.Q.getView(), charges);
         }
@@ -94,6 +109,24 @@ namespace test_truncated_green_particle_interaction {
         using Interaction_t = ippl::TruncatedGreenParticleInteraction<
             TestParticles, TestParticles::particle_position_type, ippl::ParticleAttrib<Scalar_t>>;
         Interaction_t interaction(particles, particles.E, particles.R, particles.Q, params);
+        if (resized) {
+            if (viaUpdateLayout) {
+                particleLayout.updateLayout(fieldLayout, mesh, rcut);
+            } else {
+                particleLayout.setCutoff(rcut);
+            }
+            bool outdatedRejected = false;
+            try {
+                interaction.solve();
+            } catch (const IpplException&) {
+                outdatedRejected = true;
+            }
+            if (!outdatedRejected || particleLayout.getCutoff() != rcut) {
+                return std::numeric_limits<double>::quiet_NaN();
+            }
+            particles.update();
+            particles.E = Vector_t(0.0);
+        }
         interaction.solve();
 
         const auto field    = particles.E.getView();
@@ -201,17 +234,85 @@ int main(int argc, char* argv[]) {
             runPairScenario(ippl::BC::PERIODIC, true, 0.05, 0.95, pairRcut, pairAlpha);
         const double openInternalBoundaryNorm =
             runPairScenario(ippl::BC::NO, false, 0.45, 0.55, pairRcut, pairAlpha);
+        // Built with a cutoff below the pair distance, then widened: the periodic halo and the
+        // cells must follow the new cutoff.
+        const double resizedPeriodicNorm =
+            runPairScenario(ippl::BC::PERIODIC, true, 0.05, 0.95, pairRcut, pairAlpha, 0.05);
+        const double relayoutPeriodicNorm =
+            runPairScenario(ippl::BC::PERIODIC, true, 0.05, 0.95, pairRcut, pairAlpha, 0.05, true);
+        // The periodic ghosts must be images of the boundary particles, not of the first ones.
+        const double leadingInteriorPeriodicNorm = runPairScenario(
+            ippl::BC::PERIODIC, true, 0.05, 0.95, pairRcut, pairAlpha, 0, false, true);
 
         if (ippl::Comm->rank() == 0) {
             std::cout << "Pair norms: open-global=" << openBoundaryNorm
                       << ", periodic-global=" << periodicBoundaryNorm
                       << ", open-internal=" << openInternalBoundaryNorm
+                      << ", resized-periodic=" << resizedPeriodicNorm
+                      << ", relayout-periodic=" << relayoutPeriodicNorm
+                      << ", leading-interior-periodic=" << leadingInteriorPeriodicNorm
                       << ", expected=" << expectedNorm << std::endl;
         }
 
         if (openBoundaryNorm != 0.0
             || std::abs(periodicBoundaryNorm - expectedNorm) / expectedNorm > 1.0e-12
-            || std::abs(openInternalBoundaryNorm - expectedNorm) / expectedNorm > 1.0e-12) {
+            || std::abs(openInternalBoundaryNorm - expectedNorm) / expectedNorm > 1.0e-12
+            || !(std::abs(resizedPeriodicNorm - expectedNorm) / expectedNorm <= 1.0e-12)
+            || !(std::abs(relayoutPeriodicNorm - expectedNorm) / expectedNorm <= 1.0e-12)
+            || !(std::abs(leadingInteriorPeriodicNorm - expectedNorm) / expectedNorm <= 1.0e-12)) {
+            status = 1;
+        }
+
+        // Invalid cutoffs are rejected: non-positive, or wider than half a local region.
+        for (const Scalar_t invalidRcut : {Scalar_t(0), Scalar_t(0.6)}) {
+            bool rejected = false;
+            try {
+                particleLayout.setCutoff(invalidRcut);
+            } catch (const IpplException&) {
+                rejected = true;
+            }
+            if (!rejected) {
+                status = 1;
+            }
+        }
+
+        ippl::ParameterList validParams;
+        validParams.add("rcut", rcut);
+        validParams.add("alpha", 8.0);
+        validParams.add("force_constant", 1.0);
+
+        // The cells only find partners within the layout cutoff, so a larger interaction cutoff
+        // is rejected.
+        ippl::ParameterList wideParams = validParams;
+        wideParams.update("rcut", rcut + Scalar_t(0.05));
+        Interaction_t wideInteraction(particles, particles.E, particles.R, particles.Q, wideParams);
+        bool wideRejected = false;
+        try {
+            wideInteraction.solve();
+        } catch (const IpplException&) {
+            wideRejected = true;
+        }
+        if (!wideRejected) {
+            status = 1;
+        }
+
+        // updateLayout() moves the regions before it rejects the cutoff, so the cells are outdated
+        // and the pair loop must not run until the next update().
+        bool relayoutRejected = false;
+        try {
+            particleLayout.updateLayout(fieldLayout, mesh, Scalar_t(0.6));
+        } catch (const IpplException&) {
+            relayoutRejected = true;
+        }
+        Interaction_t staleInteraction(particles, particles.E, particles.R, particles.Q,
+                                       validParams);
+        bool staleRejected = false;
+        try {
+            staleInteraction.solve();
+        } catch (const IpplException&) {
+            staleRejected = true;
+        }
+        if (!relayoutRejected || !staleRejected) {
             status = 1;
         }
 
