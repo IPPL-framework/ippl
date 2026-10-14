@@ -76,8 +76,9 @@ public:
             EXPECT_EQ(info["device"].cast<std::string>(), "cuda");
             EXPECT_EQ(info["device_index"].cast<int>(), Kokkos::device_id());
         }
-        EXPECT_EQ(info["dtype"].cast<std::string>(),
-                  std::is_same_v<T, double> ? "torch.float64" : "torch.float32");
+        const std::string expectedDtype =
+            std::is_same_v<T, double> ? "torch.float64" : "torch.float32";
+        EXPECT_EQ(info["dtype"].cast<std::string>(), expectedDtype);
         // zero-copy: torch works on the attribute's memory
         EXPECT_EQ(info["data"].cast<std::uintptr_t>(), reinterpret_cast<std::uintptr_t>(data));
 
