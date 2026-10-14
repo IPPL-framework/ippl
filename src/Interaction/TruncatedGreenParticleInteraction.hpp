@@ -65,10 +65,12 @@ namespace ippl {
         // The search cells and halos only cover the layout cutoff; partners beyond it are missed.
         if (rcut > particleLayout.getCutoff()) {
             IpplTimings::stopTimer(solveTimer);
-            std::ostringstream message;
-            message << "rcut " << rcut << " exceeds the particle layout cutoff "
-                    << particleLayout.getCutoff() << ".";
-            throw IpplException("TruncatedGreenParticleInteraction::solve", message.str());
+            Inform m("TruncatedGreenParticleInteraction::solve");
+            m << level1 << "rcut " << rcut << " exceeds the particle layout cutoff "
+              << particleLayout.getCutoff() << "." << endl;
+
+            throw IpplException("TruncatedGreenParticleInteraction::solve",
+                                "rcut exceeds layout cutoff");
         }
 
         particleLayout.template forEachPair<execution_space>(

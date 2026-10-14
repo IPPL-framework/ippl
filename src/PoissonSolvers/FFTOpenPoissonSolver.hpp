@@ -2354,7 +2354,7 @@ namespace ippl {
                             const int igSigned =
                                 (igVec[d] < nr[d]) ? igVec[d] : igVec[d] - 2 * nr[d];
                             offset[d] = static_cast<scalar_type>(igSigned) * hs[d]
-                                - static_cast<scalar_type>(shft[d]);
+                                        - static_cast<scalar_type>(shft[d]);
                         }
 
                         const scalar_type avg =
@@ -2371,10 +2371,9 @@ namespace ippl {
             // factor, so image charges get the full Coulomb field with the same coupling as the
             // truncated kernel. greens_function stays TRUNCATED, so greensFunction() still
             // restores the truncated kernel.
-            const Trhs forceConstant =
-                greensFunctionType == GreenFunction::TRUNCATED
-                    ? this->params_m.template get<Trhs>("force_constant")
-                    : -Trhs(1) / (Trhs(4) * Kokkos::numbers::pi_v<Trhs>);
+            const Trhs forceConstant = greensFunctionType == GreenFunction::TRUNCATED
+                                           ? this->params_m.template get<Trhs>("force_constant")
+                                           : -Trhs(1) / (Trhs(4) * Kokkos::numbers::pi_v<Trhs>);
             // Regularization threshold (axis-min mesh spacing, squared, quartered).
             scalar_type hmin2 = hs[0] * hs[0];
             for (unsigned int d = 1; d < Dim; ++d) {
