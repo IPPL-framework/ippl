@@ -66,15 +66,14 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            const char* infer_dir = std::getenv("IPPL_INFER_DIR");
-            if (!infer_dir) {
+            const char* inferDir = std::getenv("IPPL_INFER_DIR");
+            if (!inferDir) {
                 throw std::runtime_error("IPPL_INFER_DIR not set");
             }
 
             py::scoped_interpreter guard{};
-            //InferenceBridge bridge(infer_dir, "ippl_inference");
 
-            InferenceBridge bridge(infer_dir, "ippl_inference");
+            ippl::Interoperability::InferenceBridge bridge(inferDir, "ippl_inference");
             LandauDampingNeurOpManager<T, Dim> manager(totalP, nt, nr, lbt, solver,
                                                        step_method, preconditioner_params, &bridge);
             manager.pre_run();

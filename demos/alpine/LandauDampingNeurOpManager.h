@@ -2,19 +2,19 @@
 #define IPPL_LANDAU_DAMPING_NEUROP_MANAGER_H
 
 #include "LandauDampingManager.h"
-#include "IpplDLPack.h"
+#include "Interoperability/IpplDLPack.h"
 
 #include <pybind11/stl.h>
 #include <numeric>
 
-#include "InferenceBridge.h"
+#include "Interoperability/InferenceBridge.h"
 
 namespace py = pybind11;
 
 template <typename T, unsigned Dim>
 class LandauDampingNeurOpManager : public LandauDampingManager<T, Dim> {
     private:
-        InferenceBridge* bridge_m;
+        ippl::Interoperability::InferenceBridge* bridge_m;
 
     public:
         using Manager_t = LandauDampingManager<T, Dim>;
@@ -22,7 +22,7 @@ class LandauDampingNeurOpManager : public LandauDampingManager<T, Dim> {
         LandauDampingNeurOpManager(size_type totalP_, int nt_, Vector_t<int, Dim>& nr_,
                                double lbt_, std::string& solver_, std::string& stepMethod_,
                                std::vector<std::string>& preconditioner_params_,
-                               InferenceBridge* bridge_)
+                               ippl::Interoperability::InferenceBridge* bridge_)
         : Manager_t(totalP_, nt_, nr_, lbt_, solver_, stepMethod_, preconditioner_params_), bridge_m(bridge_) {}
 
         void initializeParticlesPD() {
@@ -185,14 +185,14 @@ class LandauDampingNeurOpManager : public LandauDampingManager<T, Dim> {
             auto pc = this->pcontainer_m;
             Kokkos::fence();
 
-            py::capsule R_cap = ippl_dlpack::attrib_to_dlpack_vec(
-                pc->R, kokkos_dlpack::ReadOnly::Yes, kokkos_dlpack::DLPackVersion::Legacy);
+            py::capsule rCap = ippl::Interoperability::attribToDLPackVec(
+                pc->R, ippl::Interoperability::ReadOnly::Yes, ippl::Interoperability::DLPackVersion::Legacy);
 
-            py::capsule E_cap = ippl_dlpack::attrib_to_dlpack_vec(
-                pc->E, kokkos_dlpack::ReadOnly::No, kokkos_dlpack::DLPackVersion::Legacy);
+            py::capsule eCap = ippl::Interoperability::attribToDLPackVec(
+                pc->E, ippl::Interoperability::ReadOnly::No, ippl::Interoperability::DLPackVersion::Legacy);
 
             IpplTimings::startTimer(inferTimer);
-            bridge_m->call("infer", R_cap, E_cap, pc->getLocalNum());
+            bridge_m->call("infer", rCap, eCap, pc->getLocalNum());
             Kokkos::fence();
             IpplTimings::stopTimer(inferTimer);
         }

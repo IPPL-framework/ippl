@@ -10,47 +10,53 @@
 #include "Ippl.h"
 #include <pybind11/pybind11.h>
 
-namespace py = pybind11;
+namespace ippl {
+    namespace Interoperability {
 
-class InferenceBridge {
-    private:
-        py::module_ mod_m;
+        namespace py = pybind11;
 
-        template <typename F>
-        auto guarded(F&& f) -> decltype(f()) {
-            try { 
-                return f(); 
-            } catch (py::error_already_set& e) {
-                e.restore();
-                PyErr_Print();
-                fflush(stderr);
-            } catch (const std::exception& e) {
-                std::cerr << "[InferenceBridge] rank " << ippl::Comm->rank()
-                          << ": C++ exception: " << e.what() << std::endl;
-            }
-            ippl::Comm->abort();
-            std::abort();
-        }
+        class InferenceBridge {
+            private:
+                py::module_ mod_m;
 
-    public:
-        InferenceBridge(const std::string& dir, const std::string& name) {
-            guarded([&]{
-                py::module_::import("sys").attr("path").attr("insert")(0, dir);
-                mod_m = py::module_::import(name.c_str());
-            });
-        }
+                template <typename F>
+                auto guarded(F&& f) -> decltype(f()) {
+                    try {
+                        return f();
+                    } catch (py::error_already_set& e) {
+                        e.restore();
+                        PyErr_Print();
+                        fflush(stderr);
+                    } catch (const std::exception& e) {
+                        std::cerr << "[InferenceBridge] rank " << ippl::Comm->rank()
+                                  << ": C++ exception: " << e.what() << std::endl;
+                    }
+                    ippl::Comm->abort();
+                    std::abort();
+                }
 
-        //Generic variadic call function, pybind converts params to Python objects
-        // and py::object::operator() is itself a variadic forwarding template
-        template <typename... Args>
-        py::object call(const char* fn, Args&&... args) {
-            return guarded([&]{return mod_m.attr(fn)(std::forward<Args>(args)...); });
-        }
+            public:
+                InferenceBridge(const std::string& dir, const std::string& name) {
+                    guarded([&]{
+                        py::module_::import("sys").attr("path").attr("insert")(0, dir);
+                        mod_m = py::module_::import(name.c_str());
+                    });
+                }
 
-        void finalize() {
-            guarded([&]{ mod_m.attr("finalize")(); });
-            mod_m = py::object();
-        }
-};
+                //Generic variadic call function, pybind converts params to Python objects
+                // and py::object::operator() is itself a variadic forwarding template
+                template <typename... Args>
+                py::object call(const char* fn, Args&&... args) {
+                    return guarded([&]{return mod_m.attr(fn)(std::forward<Args>(args)...); });
+                }
+
+                void finalize() {
+                    guarded([&]{ mod_m.attr("finalize")(); });
+                    mod_m = py::object();
+                }
+        };
+
+    }  // namespace Interoperability
+}  // namespace ippl
 
 #endif
