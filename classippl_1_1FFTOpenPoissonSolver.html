@@ -337,6 +337,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a643fcd4cd2588d447ccf541f27eb7884"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69321480c4407ca6a39d5542082827c3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a69321480c4407ca6a39d5542082827c3">nr_m</a></td></tr>
 <tr class="separator:a69321480c4407ca6a39d5542082827c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab20cb97d7d617e5e5e118f98fd4a9ed1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4055faad2859d213996e3d8d150db2d8">Trhs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab20cb97d7d617e5e5e118f98fd4a9ed1">truncatedAlpha_m</a> = 0</td></tr>
+<tr class="separator:ab20cb97d7d617e5e5e118f98fd4a9ed1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1bafe9d868891bb137dfba434d88ad8"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ac1bafe9d868891bb137dfba434d88ad8">alg_m</a></td></tr>
 <tr class="separator:ac1bafe9d868891bb137dfba434d88ad8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa76013c9e042d480f3d0b2a6bb5c0a97"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa76013c9e042d480f3d0b2a6bb5c0a97">grnL_m</a></td></tr>
@@ -1420,7 +1422,8 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
        {|\mathbf{r}-\mathbf{s}-\mathbf{r}&#39;|}.
 \]
 </p>
-<p >After this call, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ad7efcf5b8a0794782fac3a25d57f192e">solve()</a> convolves the RHS with the shifted kernel until <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a5b32133c36164d4f571297c35b43bc86" title="Compute and cache the FFT of the selected Green function.">greensFunction()</a> is called again or the mesh spacing changes.</p>
+<p >For <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbad8198155ca00d1517aa15c10c527a153">GreenFunction::TRUNCATED</a>, this overwrites the cache with the full Coulomb kernel <code>force_constant / |r-shift|</code>, using STANDARD's near-origin regularization, without the Ewald erf factor. This supplies the entire image field for P3M; no image-particle short-range correction is needed. The configured kernel remains TRUNCATED for subsequent regeneration.</p>
+<p >After this call, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ad7efcf5b8a0794782fac3a25d57f192e">solve()</a> convolves the RHS with the shifted kernel until <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a5b32133c36164d4f571297c35b43bc86" title="Compute and cache the FFT of the selected Green function.">greensFunction()</a> is called again, the mesh spacing changes, or, for <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbad8198155ca00d1517aa15c10c527a153">GreenFunction::TRUNCATED</a>, the <code>alpha</code> parameter changes.</p>
 <p >Intended use for Dirichlet boundary conditions via the method of images: choose the shift from the plane location and domain center, solve with the shifted kernel, then let the caller flip/sign-compose the image contribution. See test/solver/TestShiftedGreensFunction.cpp for the reference orchestration.</p>
 <dl class="section pre"><dt>Precondition</dt><dd><code>algorithm == HOCKNEY</code>. </dd>
 <dd>
@@ -1479,7 +1482,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
                                {|\mathbf{r}|},
 \]
 </p>
-<p> using the <code>alpha</code> and <code>force_constant</code> parameters. The analytic value \(2 C \alpha / \sqrt{\pi}\) is used at the origin. Calling this method selects <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbad8198155ca00d1517aa15c10c527a153">GreenFunction::TRUNCATED</a> for subsequent mesh-spacing updates.</p>
+<p> using the <code>alpha</code> and <code>force_constant</code> parameters. The analytic value \(2 C \alpha / \sqrt{\pi}\) is used at the origin. Calling this method selects <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbad8198155ca00d1517aa15c10c527a153">GreenFunction::TRUNCATED</a> for subsequent mesh-spacing updates. <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ad7efcf5b8a0794782fac3a25d57f192e">solve()</a> also regenerates the kernel when the <code>alpha</code> parameter changes.</p>
 <dl class="section pre"><dt>Precondition</dt><dd><code>algorithm == HOCKNEY</code> and <code>Dim == 3</code>. </dd></dl>
 
 </div>
@@ -2228,7 +2231,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">            <a class="code hl_variable" href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">storage_field</a></div>
-<div class="ttc" id="aclassippl_1_1FFTOpenPoissonSolver_html_a03c8b55bd849928aed963810a620192f"><div class="ttname"><a href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">ippl::FFTOpenPoissonSolver::storage_field</a></div><div class="ttdeci">Field_t storage_field</div><div class="ttdef"><b>Definition:</b> FFTOpenPoissonSolver.h:228</div></div>
+<div class="ttc" id="aclassippl_1_1FFTOpenPoissonSolver_html_a03c8b55bd849928aed963810a620192f"><div class="ttname"><a href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">ippl::FFTOpenPoissonSolver::storage_field</a></div><div class="ttdeci">Field_t storage_field</div><div class="ttdef"><b>Definition:</b> FFTOpenPoissonSolver.h:236</div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -2293,6 +2296,30 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a02807aa60e901bd8629f781902261a28">CxField_t</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::temp_m</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab20cb97d7d617e5e5e118f98fd4a9ed1" name="ab20cb97d7d617e5e5e118f98fd4a9ed1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab20cb97d7d617e5e5e118f98fd4a9ed1">&#9670;&#160;</a></span>truncatedAlpha_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4055faad2859d213996e3d8d150db2d8">Trhs</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::truncatedAlpha_m = 0</td>
         </tr>
       </table>
   </td>

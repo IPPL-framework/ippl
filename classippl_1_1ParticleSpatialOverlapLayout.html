@@ -101,7 +101,7 @@ Inheritance diagram for ippl::ParticleSpatialOverlapLayout&lt; T, Dim, Mesh, Pos
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1ParticleSpatialOverlapLayout__inherit__graph.png" border="0" usemap="#aippl_1_1ParticleSpatialOverlapLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1ParticleSpatialOverlapLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_inherit__map" id="aippl_1_1ParticleSpatialOverlapLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="5,871,279,1424"/>
+<area shape="rect" title=" " alt="" coords="5,871,279,1468"/>
 <area shape="rect" href="classippl_1_1ParticleSpatialLayout.html" title=" " alt="" coords="25,240,259,823"/>
 <area shape="rect" href="classippl_1_1detail_1_1ParticleLayout.html" title=" " alt="" coords="40,5,244,192"/>
 </map>
@@ -111,7 +111,7 @@ Collaboration diagram for ippl::ParticleSpatialOverlapLayout&lt; T, Dim, Mesh, P
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1ParticleSpatialOverlapLayout__coll__graph.png" border="0" usemap="#aippl_1_1ParticleSpatialOverlapLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1ParticleSpatialOverlapLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_coll__map" id="aippl_1_1ParticleSpatialOverlapLayout_3_01T_00_01Dim_00_01Mesh_00_01PositionProperties_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="655,1032,928,1556"/>
+<area shape="rect" title=" " alt="" coords="655,1032,928,1600"/>
 <area shape="rect" href="classippl_1_1ParticleSpatialLayout.html" title=" " alt="" coords="573,445,807,955"/>
 <area shape="rect" href="classippl_1_1detail_1_1ParticleLayout.html" title=" " alt="" coords="5,57,209,243"/>
 <area shape="rect" href="classippl_1_1mpi_1_1rma_1_1Window.html" title=" " alt="" coords="233,5,387,295"/>
@@ -205,6 +205,15 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a623052c8313b838ead5fede3658595a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a227d53c506703cf4bfd14459a3267782"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a227d53c506703cf4bfd14459a3267782">updateLayout</a> (<a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; Dim &gt; &amp;, <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;)</td></tr>
 <tr class="separator:a227d53c506703cf4bfd14459a3267782"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57b7d6993fb9576b6734f99c28e6a3b6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a57b7d6993fb9576b6734f99c28e6a3b6">updateLayout</a> (<a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; Dim &gt; &amp;, <a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;, const T &amp;rcutoff)</td></tr>
+<tr class="memdesc:a57b7d6993fb9576b6734f99c28e6a3b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates the regions and the cutoff together.  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a57b7d6993fb9576b6734f99c28e6a3b6">More...</a><br /></td></tr>
+<tr class="separator:a57b7d6993fb9576b6734f99c28e6a3b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3525fc15e2cfd19019b3ab0ed560286f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a3525fc15e2cfd19019b3ab0ed560286f">setCutoff</a> (const T &amp;rcutoff)</td></tr>
+<tr class="memdesc:a3525fc15e2cfd19019b3ab0ed560286f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the cutoff that sizes the halos and the search cells.  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a3525fc15e2cfd19019b3ab0ed560286f">More...</a><br /></td></tr>
+<tr class="separator:a3525fc15e2cfd19019b3ab0ed560286f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2946da9c106e26ddf2ee832e15a60d74"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a2946da9c106e26ddf2ee832e15a60d74">getCutoff</a> () const</td></tr>
+<tr class="memdesc:a2946da9c106e26ddf2ee832e15a60d74"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the cutoff that sizes the halos and the search cells.  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a2946da9c106e26ddf2ee832e15a60d74">More...</a><br /></td></tr>
+<tr class="separator:a2946da9c106e26ddf2ee832e15a60d74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8d6f4823d4274da354c478bcc0d7470"><td class="memTemplParams" colspan="2">template&lt;class ParticleContainer &gt; </td></tr>
 <tr class="memitem:ab8d6f4823d4274da354c478bcc0d7470"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#ab8d6f4823d4274da354c478bcc0d7470">update</a> (ParticleContainer &amp;pc)</td></tr>
 <tr class="memdesc:ab8d6f4823d4274da354c478bcc0d7470"><td class="mdescLeft">&#160;</td><td class="mdescRight">updates particles by exchanging them across ranks according to their positions. then constructs the particle neighbor list structure  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#ab8d6f4823d4274da354c478bcc0d7470">More...</a><br /></td></tr>
@@ -231,9 +240,15 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a430ecf83a132a00ab903cdcc0d00d60a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a430ecf83a132a00ab903cdcc0d00d60a">getNonNeighborRanks</a> (const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;neighbors_view) const</td></tr>
 <tr class="memdesc:a430ecf83a132a00ab903cdcc0d00d60a"><td class="mdescLeft">&#160;</td><td class="mdescRight">utility function to get a view of all non-neighboring ranks  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a430ecf83a132a00ab903cdcc0d00d60a">More...</a><br /></td></tr>
 <tr class="separator:a430ecf83a132a00ab903cdcc0d00d60a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae86386c508bd7fd304d8eab96cfce3ba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#ae86386c508bd7fd304d8eab96cfce3ba">initializeCells</a> ()</td></tr>
-<tr class="memdesc:ae86386c508bd7fd304d8eab96cfce3ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">initializes all data necessary for the cells  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#ae86386c508bd7fd304d8eab96cfce3ba">More...</a><br /></td></tr>
-<tr class="separator:ae86386c508bd7fd304d8eab96cfce3ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a885c39dadc0d0b859b3d5d615945ee68"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a885c39dadc0d0b859b3d5d615945ee68">initializeCells</a> (<a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a> numParticles=0)</td></tr>
+<tr class="memdesc:a885c39dadc0d0b859b3d5d615945ee68"><td class="mdescLeft">&#160;</td><td class="mdescRight">initializes all data necessary for the cells  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a885c39dadc0d0b859b3d5d615945ee68">More...</a><br /></td></tr>
+<tr class="separator:a885c39dadc0d0b859b3d5d615945ee68"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a60d94075cf39c53a393ddd80fe45e267"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a60d94075cf39c53a393ddd80fe45e267">localCellCounts</a> (<a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a> numParticles) const</td></tr>
+<tr class="memdesc:a60d94075cf39c53a393ddd80fe45e267"><td class="mdescLeft">&#160;</td><td class="mdescRight">number of local cells per dimension for the rank-local region  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a60d94075cf39c53a393ddd80fe45e267">More...</a><br /></td></tr>
+<tr class="separator:a60d94075cf39c53a393ddd80fe45e267"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0590332badf73fa93f38869c3b447a2f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a0590332badf73fa93f38869c3b447a2f">assertCutoffFitsRegions</a> (const T &amp;rcutoff) const</td></tr>
+<tr class="memdesc:a0590332badf73fa93f38869c3b447a2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">asserts that a particle can overlap at most two ranks per dimension  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a0590332badf73fa93f38869c3b447a2f">More...</a><br /></td></tr>
+<tr class="separator:a0590332badf73fa93f38869c3b447a2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6aa9ead0f22845589b23ad9b2e5b24c9"><td class="memTemplParams" colspan="2">template&lt;class ParticleContainer &gt; </td></tr>
 <tr class="memitem:a6aa9ead0f22845589b23ad9b2e5b24c9"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a6aa9ead0f22845589b23ad9b2e5b24c9">particleExchange</a> (ParticleContainer &amp;pc)</td></tr>
 <tr class="memdesc:a6aa9ead0f22845589b23ad9b2e5b24c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">exchange particles by scanning neighbor ranks first, only scan other ranks if needed. assumes overlap is smaller than half the smallest region width.  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a6aa9ead0f22845589b23ad9b2e5b24c9">More...</a><br /></td></tr>
@@ -358,9 +373,9 @@ Static Protected Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a69f8e795e10193994bcfbeb4312ed07a"><td class="memItemLeft" align="right" valign="top">const T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a69f8e795e10193994bcfbeb4312ed07a">rcutoff_m</a></td></tr>
-<tr class="memdesc:a69f8e795e10193994bcfbeb4312ed07a"><td class="mdescLeft">&#160;</td><td class="mdescRight">! overlap in each dimension  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a69f8e795e10193994bcfbeb4312ed07a">More...</a><br /></td></tr>
-<tr class="separator:a69f8e795e10193994bcfbeb4312ed07a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adecb5ccdeb43ddc24197a599d231d118"><td class="memItemLeft" align="right" valign="top">T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#adecb5ccdeb43ddc24197a599d231d118">rcutoff_m</a> = 0</td></tr>
+<tr class="memdesc:adecb5ccdeb43ddc24197a599d231d118"><td class="mdescLeft">&#160;</td><td class="mdescRight">! overlap in each dimension  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#adecb5ccdeb43ddc24197a599d231d118">More...</a><br /></td></tr>
+<tr class="separator:adecb5ccdeb43ddc24197a599d231d118"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a076f4a9a759c962fd38c79296d350784"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>, Dim &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a076f4a9a759c962fd38c79296d350784">numCells_m</a></td></tr>
 <tr class="memdesc:a076f4a9a759c962fd38c79296d350784"><td class="mdescLeft">&#160;</td><td class="mdescRight">! number of cells in each dimension  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a076f4a9a759c962fd38c79296d350784">More...</a><br /></td></tr>
 <tr class="separator:a076f4a9a759c962fd38c79296d350784"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -382,6 +397,9 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:a7a149b9214577a085263747ad99267d5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a7a149b9214577a085263747ad99267d5">numLocalParticles_m</a></td></tr>
 <tr class="memdesc:a7a149b9214577a085263747ad99267d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">! the number of local particles (particles in local cells)  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a7a149b9214577a085263747ad99267d5">More...</a><br /></td></tr>
 <tr class="separator:a7a149b9214577a085263747ad99267d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0144948bd52f205f9337e0e574502665"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a0144948bd52f205f9337e0e574502665">cellsOutdated_m</a> = true</td></tr>
+<tr class="memdesc:a0144948bd52f205f9337e0e574502665"><td class="mdescLeft">&#160;</td><td class="mdescRight">! true after <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a227d53c506703cf4bfd14459a3267782">updateLayout()</a> or <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a3525fc15e2cfd19019b3ab0ed560286f" title="Sets the cutoff that sizes the halos and the search cells.">setCutoff()</a> until <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#ae103def48782551ea15b0c0f5d196ebb" title="builds the cell structure, sorts the particles according to the cells and makes sure only local parti...">buildCells()</a> rebuilds the cells  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a0144948bd52f205f9337e0e574502665">More...</a><br /></td></tr>
+<tr class="separator:a0144948bd52f205f9337e0e574502665"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade7a223fdb151056b15b5007fc81ad74"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#abb5f0eb581ecb03492e482a69c6a03f9">hash_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#ade7a223fdb151056b15b5007fc81ad74">cellPermutationForward_m</a></td></tr>
 <tr class="separator:ade7a223fdb151056b15b5007fc81ad74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c088ab73dd0a3efc1e103883d1d5046"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialLayout.html#abb5f0eb581ecb03492e482a69c6a03f9">hash_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a6c088ab73dd0a3efc1e103883d1d5046">cellPermutationBackward_m</a></td></tr>
@@ -417,6 +435,12 @@ Static Protected Attributes</h2></td></tr>
 <tr class="memitem:a13166c9be7502282c1a93e3c33034d63"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a13166c9be7502282c1a93e3c33034d63">numGhostCellsPerDim_m</a> = 1</td></tr>
 <tr class="memdesc:a13166c9be7502282c1a93e3c33034d63"><td class="mdescLeft">&#160;</td><td class="mdescRight">! number of ghost cells  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a13166c9be7502282c1a93e3c33034d63">More...</a><br /></td></tr>
 <tr class="separator:a13166c9be7502282c1a93e3c33034d63"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6239b403d5afcf4537d308854a562268"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a6239b403d5afcf4537d308854a562268">maxCellsPerParticle_m</a> = 16</td></tr>
+<tr class="memdesc:a6239b403d5afcf4537d308854a562268"><td class="mdescLeft">&#160;</td><td class="mdescRight">! cap on local cells per local or ghost particle of the rank  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a6239b403d5afcf4537d308854a562268">More...</a><br /></td></tr>
+<tr class="separator:a6239b403d5afcf4537d308854a562268"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3dbd6db99be033d2d3c47e735f95eff0"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a3dbd6db99be033d2d3c47e735f95eff0">minCellCap_m</a> = <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>(1) &lt;&lt; 24</td></tr>
+<tr class="memdesc:a3dbd6db99be033d2d3c47e735f95eff0"><td class="mdescLeft">&#160;</td><td class="mdescRight">! cap on local cells that applies regardless of the particle count  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#a3dbd6db99be033d2d3c47e735f95eff0">More...</a><br /></td></tr>
+<tr class="separator:a3dbd6db99be033d2d3c47e735f95eff0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -840,6 +864,40 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a0590332badf73fa93f38869c3b447a2f" name="a0590332badf73fa93f38869c3b447a2f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0590332badf73fa93f38869c3b447a2f">&#9670;&#160;</a></span>assertCutoffFitsRegions()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::assertCutoffFitsRegions </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>rcutoff</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>asserts that a particle can overlap at most two ranks per dimension </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">rcutoff</td><td>Cutoff to check against the local region </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname"><a class="el" href="classIpplException.html">IpplException</a></td><td>If the cutoff exceeds half the local region length </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="ae103def48782551ea15b0c0f5d196ebb" name="ae103def48782551ea15b0c0f5d196ebb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae103def48782551ea15b0c0f5d196ebb">&#9670;&#160;</a></span>buildCells()</h2>
 
@@ -1098,6 +1156,35 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 
 </div>
 </div>
+<a id="a2946da9c106e26ddf2ee832e15a60d74" name="a2946da9c106e26ddf2ee832e15a60d74"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2946da9c106e26ddf2ee832e15a60d74">&#9670;&#160;</a></span>getCutoff()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">T <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::getCutoff </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the cutoff that sizes the halos and the search cells. </p>
+
+</div>
+</div>
 <a id="ae2338e46054d1efe86dd371221fa52b7" name="ae2338e46054d1efe86dd371221fa52b7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae2338e46054d1efe86dd371221fa52b7">&#9670;&#160;</a></span>getFlatNeighbors()</h2>
 
@@ -1269,8 +1356,8 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 
 </div>
 </div>
-<a id="ae86386c508bd7fd304d8eab96cfce3ba" name="ae86386c508bd7fd304d8eab96cfce3ba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae86386c508bd7fd304d8eab96cfce3ba">&#9670;&#160;</a></span>initializeCells()</h2>
+<a id="a885c39dadc0d0b859b3d5d615945ee68" name="a885c39dadc0d0b859b3d5d615945ee68"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a885c39dadc0d0b859b3d5d615945ee68">&#9670;&#160;</a></span>initializeCells()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1278,12 +1365,22 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::initializeCells</td>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::initializeCells </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>&#160;</td>
+          <td class="paramname"><em>numParticles</em> = <code>0</code></td><td>)</td>
+          <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>initializes all data necessary for the cells </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">numParticles</td><td>local and ghost particles of this rank; sets the cell cap </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1512,6 +1609,34 @@ template&lt;std::size_t... Idx&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a60d94075cf39c53a393ddd80fe45e267" name="a60d94075cf39c53a393ddd80fe45e267"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a60d94075cf39c53a393ddd80fe45e267">&#9670;&#160;</a></span>localCellCounts()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; <a class="el" href="namespaceippl_1_1detail.html#ac53bbae790d77825bc093c5b22a63d77">detail::size_type</a>, Dim &gt; <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::localCellCounts </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>&#160;</td>
+          <td class="paramname"><em>numParticles</em></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>number of local cells per dimension for the rank-local region </p>
+<p >Cells are at least rcutoff_m wide, so all partners within the cutoff lie in the 3^Dim neighboring cells. If cells of width rcutoff_m would exceed max(maxCellsPerParticle_m * numParticles, minCellCap_m), all cells are widened uniformly until the count fits. Wider cells add candidate pairs that the cutoff test rejects; they do not change which pairs interact. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">numParticles</td><td>local and ghost particles of this rank </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1778,6 +1903,40 @@ template&lt;std::size_t... Idx&gt; </div>
 
 </div>
 </div>
+<a id="a3525fc15e2cfd19019b3ab0ed560286f" name="a3525fc15e2cfd19019b3ab0ed560286f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3525fc15e2cfd19019b3ab0ed560286f">&#9670;&#160;</a></span>setCutoff()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::setCutoff </td>
+          <td>(</td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>rcutoff</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets the cutoff that sizes the halos and the search cells. </p>
+<p >The new cutoff takes effect at the next <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#ab8d6f4823d4274da354c478bcc0d7470" title="updates particles by exchanging them across ranks according to their positions. then constructs the p...">update()</a>, which rebuilds the halos and the cells; <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#acf043728e1ad2170da94db149ca53fa9" title="call functor for each combination i, j. make sure to call update first">forEachPair()</a> throws until then. Use the three-argument <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a227d53c506703cf4bfd14459a3267782">updateLayout()</a> when the regions change as well. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">rcutoff</td><td>Positive cutoff, at most half the local region length in every dimension </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname"><a class="el" href="classIpplException.html">IpplException</a></td><td>If the cutoff is not positive or does not fit the local region </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a3926101594f88ebd8e2188916a284d1c" name="a3926101594f88ebd8e2188916a284d1c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3926101594f88ebd8e2188916a284d1c">&#9670;&#160;</a></span>toCellIndex()</h2>
 
@@ -1910,7 +2069,7 @@ template&lt;class ParticleContainer &gt; </div>
 </div>
 </div>
 <a id="a227d53c506703cf4bfd14459a3267782" name="a227d53c506703cf4bfd14459a3267782"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a227d53c506703cf4bfd14459a3267782">&#9670;&#160;</a></span>updateLayout()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a227d53c506703cf4bfd14459a3267782">&#9670;&#160;</a></span>updateLayout() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1936,6 +2095,56 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a57b7d6993fb9576b6734f99c28e6a3b6" name="a57b7d6993fb9576b6734f99c28e6a3b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57b7d6993fb9576b6734f99c28e6a3b6">&#9670;&#160;</a></span>updateLayout() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::updateLayout </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classippl_1_1FieldLayout.html">FieldLayout</a>&lt; Dim &gt; &amp;&#160;</td>
+          <td class="paramname"><em>fl</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classippl_1_1Mesh.html">Mesh</a> &amp;&#160;</td>
+          <td class="paramname"><em>mesh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const T &amp;&#160;</td>
+          <td class="paramname"><em>rcutoff</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Updates the regions and the cutoff together. </p>
+<p >The cutoff is checked against the new regions only, so a cutoff that follows the mesh spacing may grow or shrink with the domain. It takes effect at the next <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#ab8d6f4823d4274da354c478bcc0d7470" title="updates particles by exchanging them across ranks according to their positions. then constructs the p...">update()</a>. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">rcutoff</td><td>Positive cutoff, at most half the new local region length in every dimension </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname"><a class="el" href="classIpplException.html">IpplException</a></td><td>If the cutoff is not positive or does not fit the local region </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2042,6 +2251,32 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 
 </div>
 </div>
+<a id="a0144948bd52f205f9337e0e574502665" name="a0144948bd52f205f9337e0e574502665"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0144948bd52f205f9337e0e574502665">&#9670;&#160;</a></span>cellsOutdated_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::cellsOutdated_m = true</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>! true after <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a227d53c506703cf4bfd14459a3267782">updateLayout()</a> or <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a3525fc15e2cfd19019b3ab0ed560286f" title="Sets the cutoff that sizes the halos and the search cells.">setCutoff()</a> until <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#ae103def48782551ea15b0c0f5d196ebb" title="builds the cell structure, sorts the particles according to the cells and makes sure only local parti...">buildCells()</a> rebuilds the cells </p>
+
+</div>
+</div>
 <a id="a8fc5854b75b74d4210f7c008c473ea6d" name="a8fc5854b75b74d4210f7c008c473ea6d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8fc5854b75b74d4210f7c008c473ea6d">&#9670;&#160;</a></span>cellStartingIdx_m</h2>
 
@@ -2117,6 +2352,58 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 </div><div class="memdoc">
 
 <p>! width of cells in each dimension </p>
+
+</div>
+</div>
+<a id="a6239b403d5afcf4537d308854a562268" name="a6239b403d5afcf4537d308854a562268"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6239b403d5afcf4537d308854a562268">&#9670;&#160;</a></span>maxCellsPerParticle_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a> <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::maxCellsPerParticle_m = 16</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>! cap on local cells per local or ghost particle of the rank </p>
+
+</div>
+</div>
+<a id="a3dbd6db99be033d2d3c47e735f95eff0" name="a3dbd6db99be033d2d3c47e735f95eff0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3dbd6db99be033d2d3c47e735f95eff0">&#9670;&#160;</a></span>minCellCap_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a>  = UniformCartesian&lt;T, Dim&gt;, typename... PositionProperties&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a> <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::minCellCap_m = <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>(1) &lt;&lt; 24</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>! cap on local cells that applies regardless of the particle count </p>
 
 </div>
 </div>
@@ -2250,8 +2537,8 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
 
 </div>
 </div>
-<a id="a69f8e795e10193994bcfbeb4312ed07a" name="a69f8e795e10193994bcfbeb4312ed07a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a69f8e795e10193994bcfbeb4312ed07a">&#9670;&#160;</a></span>rcutoff_m</h2>
+<a id="adecb5ccdeb43ddc24197a599d231d118" name="adecb5ccdeb43ddc24197a599d231d118"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adecb5ccdeb43ddc24197a599d231d118">&#9670;&#160;</a></span>rcutoff_m</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2262,7 +2549,7 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const T <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::rcutoff_m</td>
+          <td class="memname">T <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, PositionProperties &gt;::rcutoff_m = 0</td>
         </tr>
       </table>
   </td>

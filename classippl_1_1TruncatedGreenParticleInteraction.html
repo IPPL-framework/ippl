@@ -312,7 +312,7 @@ template&lt;typename ParticleContainer , typename VectorAttribute , typename Sca
     <tr><td class="paramname">F</td><td><a class="el" href="classippl_1_1Field.html">Field</a> attribute, where the evaluated field will be added to </td></tr>
     <tr><td class="paramname">R</td><td>Position attribute </td></tr>
     <tr><td class="paramname">QM</td><td>Charge or Mass like attribute determining the force magnitued </td></tr>
-    <tr><td class="paramname">params</td><td>Parameters, containing at least 'alpha', 'force_constant' and 'rcut'. alpha controls the Ewald split, force_constant scales the interaction, and rcut determines the maximal contributing pair distance. The optional positive regularization_cutoff controls the near-origin softening and defaults to 1e-9. </td></tr>
+    <tr><td class="paramname">params</td><td>Parameters, containing at least 'alpha', 'force_constant' and 'rcut'. alpha controls the Ewald split, force_constant scales the interaction, and rcut determines the maximal contributing pair distance; <a class="el" href="classippl_1_1TruncatedGreenParticleInteraction.html#aeaa45a0a24f7f7b0b871e285086b1f84">solve()</a> rejects an rcut above the cutoff of the particle layout. The optional positive regularization_cutoff controls the near-origin softening and defaults to 1e-9. </td></tr>
   </table>
   </dd>
 </dl>
