@@ -166,10 +166,9 @@ namespace ippl {
                                                  ? "dltensor_versioned"
                                                  : "dltensor";
 
-                // capsule name is "dltensor" or "dltensor_versioned", consumers check it, then
-                // rename to
-                //  "used_<name>" once they have taken ownership.  The capsule
-                //  destructor below only fires if Python never consumed it.
+                // capsule name is "dltensor" or "dltensor_versioned": consumers check it, then
+                // rename it to "used_<name>" once they have taken ownership. The capsule
+                // destructor below only fires if Python never consumed it.
                 return py::capsule(managed, NAME, [](PyObject* obj) {
                     if (PyCapsule_IsValid(obj, NAME)) {
                         auto* p = static_cast<ManagedT*>(PyCapsule_GetPointer(obj, NAME));

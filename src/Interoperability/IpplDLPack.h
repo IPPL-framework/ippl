@@ -66,8 +66,8 @@ namespace ippl {
                 return exportTensor<ScalarT>(v, scalarPtr, std::move(shape), std::move(strides),
                                              readOnly, version);
             } else {
-                // else repack into a flat (localNum * Dim) scalar array in the attribute's memory
-                // space
+                // else repack into a flat (localNum * Dim) scalar array
+                // in the attribute's memory space
                 Kokkos::View<ScalarT*, typename view_type::memory_space> flat(
                     Kokkos::view_alloc("dlpack_repack", Kokkos::WithoutInitializing),
                     localNum * Dim);

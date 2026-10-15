@@ -35,7 +35,7 @@ set(_ippl_install_excludes
 
 if(NOT IPPL_ENABLE_PYTHON_BRIDGE)
   list(
-    APPEND _ippl_install_excludes 
+    APPEND _ippl_install_excludes
     PATTERN "Interoperability/*" EXCLUDE)
 endif()
 
