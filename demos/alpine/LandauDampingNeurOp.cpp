@@ -105,8 +105,6 @@ int main(int argc, char* argv[]) {
                 throw std::runtime_error("IPPL_INFER_DIR not set");
             }
 
-            py::scoped_interpreter guard{};
-
             ippl::Interoperability::InferenceBridge bridge(inferDir, "ippl_inference");
             LandauDampingNeurOpManager<T, Dim> manager(totalP, nt, nr, lbt, solver,
                                                        step_method, preconditioner_params, &bridge);
