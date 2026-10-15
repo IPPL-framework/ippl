@@ -650,3 +650,57 @@ if(IPPL_ENABLE_FEL)
 
   message(STATUS "✅ nlohmann/json loaded for the FEL module.")
 endif()
+
+# ------------------------------------------------------------------------------
+# ~~~
+# Python bridge dependencies (only if IPPL_ENABLE_PYTHON_BRIDGE)
+#   -DPYBIND11_VERSION=X.Y.Z      use an installed pybind11 >= X.Y.Z, else fetch tag vX.Y.Z
+#   -DPYBIND11_VERSION=git.<ref>  always fetch <ref> (tag/branch/sha)
+#   -DDLPACK_VERSION=X.Y          fetch tag vX.Y;  -DDLPACK_VERSION=git.<ref> fetch <ref>
+# ~~~
+# ------------------------------------------------------------------------------
+if(IPPL_ENABLE_PYTHON_BRIDGE)
+  # --- pybind11 ---------------------------------------------------------------
+  if(NOT PYBIND11_VERSION_DEFAULT)
+    set(PYBIND11_VERSION_DEFAULT 2.12.0)
+  endif()
+  if(NOT PYBIND11_VERSION)
+    set(PYBIND11_VERSION ${PYBIND11_VERSION_DEFAULT})
+  endif()
+
+  extract_git_label(PYBIND11_VERSION PYBIND11_VERSION_GIT)
+  if(NOT PYBIND11_VERSION_GIT)
+    find_package(pybind11 ${PYBIND11_VERSION} CONFIG QUIET)
+    set(PYBIND11_VERSION_GIT "v${PYBIND11_VERSION}") # pybind11 release tags are v-prefixed
+  endif()
+
+  if(pybind11_FOUND)
+    colour_message(STATUS ${Green} "✅ pybind11 ${pybind11_VERSION} found externally")
+  else()
+    colour_message(STATUS ${Green} "✅ pybind11 ${PYBIND11_VERSION_GIT} building from source")
+    FetchContent_Declare(pybind11 GIT_REPOSITORY https://github.com/pybind/pybind11.git
+                                  GIT_TAG ${PYBIND11_VERSION_GIT})
+    FetchContent_MakeAvailable(pybind11)
+  endif()
+
+  # --- DLPack (header-only) ---------------------------------------------------
+  # No find_package: DLPack's CMake project() declares a fixed VERSION 0.6 for every
+  # release, so an installed package cannot be version-checked. Always fetch the pinned tag.
+  if(NOT DLPACK_VERSION_DEFAULT)
+    set(DLPACK_VERSION_DEFAULT 1.1)
+  endif()
+  if(NOT DLPACK_VERSION)
+    set(DLPACK_VERSION ${DLPACK_VERSION_DEFAULT})
+  endif()
+
+  extract_git_label(DLPACK_VERSION DLPACK_VERSION_GIT)
+  if(NOT DLPACK_VERSION_GIT)
+    set(DLPACK_VERSION_GIT "v${DLPACK_VERSION}")
+  endif()
+
+  colour_message(STATUS ${Green} "✅ DLPack ${DLPACK_VERSION_GIT} fetched (header-only)")
+  set(BUILD_MOCK OFF CACHE BOOL "Do not build DLPack's mock executable" FORCE)
+  FetchContent_Declare(dlpack GIT_REPOSITORY https://github.com/dmlc/dlpack.git
+                              GIT_TAG ${DLPACK_VERSION_GIT})
+  FetchContent_MakeAvailable(dlpack)
+endif()
