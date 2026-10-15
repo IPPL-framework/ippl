@@ -27,7 +27,7 @@
 //     t_method   = Time-stepping method, only LeapFrog is supported
 //     ovfactor   = Over-allocation factor for the buffers used in the communication
 //     Example:
-//     IPPL_INFER_DIR=<dir> IPPL_CONFIG=<config.yaml> \
+//     export IPPL_INFER_DIR=<dir> IPPL_CONFIG=<config.yaml>
 //     srun ./LandauDampingNeurOp 32 32 32 250000 20 FFT 0.02 LeapFrog --overallocate 2.0 --info 5
 
 constexpr unsigned Dim = 3;
