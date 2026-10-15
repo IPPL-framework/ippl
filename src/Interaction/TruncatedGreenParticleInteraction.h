@@ -12,6 +12,8 @@
 #ifndef IPPL_TRUNCATEDGREEN_SHORTRANGE_H
 #define IPPL_TRUNCATEDGREEN_SHORTRANGE_H
 
+#include <sstream>
+
 #include "ParticleInteractionBase.h"
 
 namespace ippl {
@@ -40,8 +42,9 @@ namespace ippl {
          * @param QM Charge or Mass like attribute determining the force magnitued
          * @param params Parameters, containing at least 'alpha', 'force_constant' and 'rcut'. alpha
          * controls the Ewald split, force_constant scales the interaction, and rcut determines the
-         * maximal contributing pair distance. The optional positive regularization_cutoff controls
-         * the near-origin softening and defaults to 1e-9.
+         * maximal contributing pair distance; solve() rejects an rcut above the cutoff of the
+         * particle layout. The optional positive regularization_cutoff controls the near-origin
+         * softening and defaults to 1e-9.
          */
         TruncatedGreenParticleInteraction(const ParticleContainer& pc, VectorAttribute& F,
                                           const VectorAttribute& R, const ScalarAttribute& QM,

@@ -15,9 +15,14 @@
 //   determine if load balancing should be done or not.
 //
 #include <Kokkos_MathematicalFunctions.hpp>
+#include <algorithm>
+#include <cmath>
+#include <limits>
 #include <numeric>
+#include <sstream>
 #include <vector>
 
+#include "Utility/IpplException.h"
 #include "Utility/IpplTimings.h"
 
 #include "Communicate/Window.h"
@@ -29,35 +34,113 @@ namespace ippl {
         : Base(fl, mesh)
         , rcutoff_m(rcutoff)
         , numLocalParticles_m(0) {
+        assertCutoffFitsRegions(rcutoff_m);
         initializeCells();
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::updateLayout(
         FieldLayout<Dim>& fl, Mesh& mesh) {
-        Base::updateLayout(fl, mesh);
-        initializeCells();
+        updateLayout(fl, mesh, rcutoff_m);
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
-    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::initializeCells() {
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::updateLayout(
+        FieldLayout<Dim>& fl, Mesh& mesh, const T& rcutoff) {
+        if (!(rcutoff > 0)) {
+            throw IpplException("ParticleSpatialOverlapLayout::updateLayout",
+                                "The cutoff must be positive.");
+        }
+        // The regions change even if the cutoff check below throws, so mark the cells first.
+        // buildCells() rebuilds them after the exchange, which sets the particle count for the cap.
+        cellsOutdated_m = true;
+        Base::updateLayout(fl, mesh);
+        assertCutoffFitsRegions(rcutoff);
+        rcutoff_m = rcutoff;
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::setCutoff(const T& rcutoff) {
+        if (!(rcutoff > 0)) {
+            throw IpplException("ParticleSpatialOverlapLayout::setCutoff",
+                                "The cutoff must be positive.");
+        }
+        assertCutoffFitsRegions(rcutoff);
+        rcutoff_m = rcutoff;
+        // Halos and cells were built for the old cutoff; update() rebuilds both.
+        cellsOutdated_m = true;
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::assertCutoffFitsRegions(
+        const T& rcutoff) const {
         const auto rank          = Comm->rank();
         const auto hLocalRegions = this->rlayout_m->gethLocalRegions();
         for (unsigned d = 0; d < Dim; ++d) {
-            PAssert(rcutoff_m <= hLocalRegions(rank)[d].length() / 2 &&
-                "Cutoff is too big with respect to region. "
-                "Particle could be on 3 or more ranks ins one dimension");
+            const T length = hLocalRegions(rank)[d].length();
+            if (!(rcutoff <= length / 2)) {
+                // A larger cutoff would let a particle overlap three or more ranks in one
+                // dimension, which the halo exchange does not handle.
+                std::ostringstream message;
+                message << "The cutoff " << rcutoff << " exceeds half the local region length "
+                        << length << " in dimension " << d << " on rank " << rank
+                        << ". Use fewer ranks in this dimension or a smaller cutoff.";
+                throw IpplException("ParticleSpatialOverlapLayout::assertCutoffFitsRegions",
+                                    message.str());
+            }
         }
+    }
 
-        /* precompute information of cell structure. dividing the region into cells of at least
-         * rcutoff_m length, the length of the overlap. Use std::floor to make sure the boundary
-         * cells are big enough as well.
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    Vector<detail::size_type, Dim>
+    ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::localCellCounts(
+        size_type numParticles) const {
+        const auto region = this->rlayout_m->gethLocalRegions()(Comm->rank());
+        // Leave headroom below the int index limit for the ghost layers.
+        const double maxCells = std::min(
+            static_cast<double>(std::max(maxCellsPerParticle_m * numParticles, minCellCap_m)),
+            static_cast<double>(std::numeric_limits<index_t>::max()) / 2);
+
+        double volume = 1;
+        for (unsigned d = 0; d < Dim; ++d) {
+            volume *= region[d].length();
+        }
+        double width =
+            std::max(static_cast<double>(rcutoff_m), std::pow(volume / maxCells, 1.0 / Dim));
+
+        Vector<size_type, Dim> counts;
+        while (true) {
+            double product = 1;
+            for (unsigned d = 0; d < Dim; ++d) {
+                // A region shorter than width becomes one cell, which is still wide enough
+                // because every region is at least 2 * rcutoff_m long.
+                counts[d] = std::max<size_type>(1, std::floor(region[d].length() / width));
+                product *= counts[d];
+            }
+            // Raising a count to one cell can leave the product above the cap; widen and retry.
+            if (product <= maxCells) {
+                return counts;
+            }
+            width *= 1.05;
+        }
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::initializeCells(
+        size_type numParticles) {
+        const auto rank          = Comm->rank();
+        const auto hLocalRegions = this->rlayout_m->gethLocalRegions();
+
+        /* precompute information of cell structure. Cells are at least rcutoff_m wide (the
+         * overlap length); the ghost cells around the region have the same width as the local
+         * cells.
          */
-        totalCells_m    = 1;
-        numLocalCells_m = 1;
+        const auto localCounts = localCellCounts(numParticles);
+        totalCells_m           = 1;
+        numLocalCells_m        = 1;
         for (unsigned d = 0; d < Dim; ++d) {
             const T length              = hLocalRegions(rank)[d].length();
-            const size_type nLocalCells = std::floor(length / rcutoff_m);
+            const size_type nLocalCells = localCounts[d];
             // two ghost cells, one in each direction
             numCells_m[d]  = nLocalCells + 2 * numGhostCellsPerDim_m;
             cellWidth_m[d] = length / nLocalCells;
@@ -65,6 +148,24 @@ namespace ippl {
             numLocalCells_m *= nLocalCells;
         }
         numGhostCells_m = totalCells_m - numLocalCells_m;
+
+        // Cell indices and permutations are stored in int views (hash_type), and forEachPair
+        // launches one team per local cell. Stop before an oversized grid overflows them.
+        constexpr auto maxIndex = static_cast<size_type>(std::numeric_limits<index_t>::max());
+        if (totalCells_m > maxIndex) {
+            std::ostringstream msg;
+            msg << "Rank " << rank << ": the P3M particle-particle cell grid has " << numCells_m[0];
+            for (unsigned d = 1; d < Dim; ++d) {
+                msg << " x " << numCells_m[d];
+            }
+            msg << " = " << totalCells_m << " cells, which exceeds the index limit of " << maxIndex
+                << ".\nThe local region spans";
+            for (unsigned d = 0; d < Dim; ++d) {
+                msg << " " << hLocalRegions(rank)[d].length();
+            }
+            msg << " with cutoff " << rcutoff_m << ".\nUse more ranks to split the local region.";
+            throw IpplException("ParticleSpatialOverlapLayout::initializeCells", msg.str());
+        }
 
         /* calculate cell strides to compute flat index from nd-index
          * idx = strides[0] * idx0 + strides[1] * idx1 + ...
@@ -124,6 +225,7 @@ namespace ippl {
 
         cellPermutationForward_m  = cellPermutationForward;
         cellPermutationBackward_m = cellPermutationBackward;
+        cellsOutdated_m           = false;
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
@@ -232,7 +334,10 @@ namespace ippl {
          */
         detail::copyAttributes(pc, boundaryIndices);
 
-        /* Step 4. set the position of the copied particles to their periodic image */
+        /* Step 4. set the position of the copied particles to their periodic image. The copy may
+         * have reallocated the positions, so take the view again.
+         */
+        const auto ghostPositions = pc.R.getView();
         for (unsigned d = 0; d < Dim; ++d) {
             if (!periodic[d]) {
                 continue;
@@ -246,7 +351,7 @@ namespace ippl {
                 Kokkos::RangePolicy<position_execution_space>(numLoc,
                                                               numLoc + numBoundaryParticles),
                 KOKKOS_LAMBDA(const size_t& i) {
-                    positions(i)[d] += positions(i)[d] > middle ? -length : length;
+                    ghostPositions(i)[d] += ghostPositions(i)[d] > middle ? -length : length;
                 });
         }
 
@@ -294,7 +399,7 @@ namespace ippl {
          * particleRankOffsets are the offsets of each particle as a particle
          * can be sent to multiple ranks
          */
-        locate_type particleRanks("particles' MPI ranks");
+        locate_type particleRanks("particles' MPI ranks", 0);
         locate_type particleRankOffsets("particles' MPI rank offsets", localnum + 1);
 
         /* The indices are the indices of the particles,
@@ -530,13 +635,13 @@ namespace ippl {
         Kokkos::fence();
 
         // Step 2. Fill remaining ranks
-        Kokkos::View<size_type, position_memory_space> counter("counter");
-        Kokkos::deep_copy(counter, 0);
+        Kokkos::View<size_type*, position_memory_space> counter("counter", 1);
+        Kokkos::deep_copy(counter, size_type{0});
         Kokkos::fence();
         Kokkos::parallel_for(
             "fill_remaining", policy_type(0, total_ranks), KOKKOS_LAMBDA(const size_t& i) {
                 if (is_remaining(i)) {
-                    const size_type idx   = Kokkos::atomic_fetch_inc(&counter());
+                    const size_type idx   = Kokkos::atomic_fetch_inc(&counter(0));
                     nonNeighborRanks(idx) = i;
                 }
             });
@@ -740,8 +845,9 @@ namespace ippl {
                 "ParticleSpatialLayout::leftParticles()", policy_type(0, outsideCount),
                 KOKKOS_LAMBDA(const size_t& i) {
                     /// pID: (local) ID of the particle that is currently being searched.
-                    const size_type pId    = outsideIds(i);
-                    const size_type offset = rankOffsets(pId) + counts(pId) - outsideCounts(pId);
+                    const size_type pId = outsideIds(i);
+                    // outsideCounts is indexed by position in outsideIds, not by particle ID.
+                    const size_type offset = rankOffsets(pId) + counts(pId) - outsideCounts(i);
                     for (size_t local_count = 0, j = 0; j < nonNeighborsView.extent(0); ++j) {
                         const auto rank = nonNeighborsView(j);
                         if (positionInRegion(is, positions(pId), regions(rank), overlap)) {
@@ -764,20 +870,20 @@ namespace ippl {
         Kokkos::fence();
 
         /* compute the ranks to send to and the number of ranks to send to*/
-        Kokkos::View<size_type, position_memory_space> rankSends(
-            "Number of Ranks we need to send to");
+        Kokkos::View<size_type*, position_memory_space> rankSends(
+            "Number of Ranks we need to send to", 1);
         Kokkos::parallel_for(
             "Calculate sends", policy_type(0, nSends_dview.extent(0)),
             KOKKOS_LAMBDA(const size_t rank) {
                 if (nSends_dview(rank) != 0) {
-                    size_type index    = Kokkos::atomic_fetch_inc(&rankSends());
+                    size_type index    = Kokkos::atomic_fetch_inc(&rankSends(0));
                     sends_dview(index) = rank;
                 }
             });
         Kokkos::fence();
-        size_type temp;
-        Kokkos::deep_copy(temp, rankSends);
-        Kokkos::fence();
+        const auto rankSendsHost =
+            Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), rankSends);
+        const size_type temp = rankSendsHost(0);
 
         return {invalidCount, temp};
     }
@@ -866,8 +972,25 @@ namespace ippl {
         IpplTimings::startTimer(cellBuildTimer);
 
         // get local variables of all necessary data as needed for the Kokkos parallel loops
-        const auto rank          = Comm->rank();
-        const size_type numLoc   = pc.getLocalNum();
+        const auto rank        = Comm->rank();
+        const size_type numLoc = pc.getLocalNum();
+        // Particle offsets per cell are stored in int views (hash_type).
+        if (numLoc > static_cast<size_type>(std::numeric_limits<index_t>::max())) {
+            std::ostringstream msg;
+            msg << "Rank " << rank << " holds " << numLoc
+                << " local and ghost particles, which exceeds the P3M cell index limit of "
+                << std::numeric_limits<index_t>::max() << ". Use more ranks.";
+            throw IpplException("ParticleSpatialOverlapLayout::buildCells", msg.str());
+        }
+        bool rebuildCells      = cellsOutdated_m;
+        const auto localCounts = localCellCounts(numLoc);
+        for (unsigned d = 0; d < Dim; ++d) {
+            rebuildCells =
+                rebuildCells || localCounts[d] + 2 * numGhostCellsPerDim_m != numCells_m[d];
+        }
+        if (rebuildCells) {
+            initializeCells(numLoc);
+        }
         const auto positions     = pc.R.getView();
         const auto totalCells    = totalCells_m;
         const auto numLocalCells = numLocalCells_m;
@@ -1099,6 +1222,11 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     template <typename ExecutionSpace, typename Functor>
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::forEachPair(Functor&& f) const {
+        if (cellsOutdated_m) {
+            throw IpplException("ParticleSpatialOverlapLayout::forEachPair",
+                                "The cells are outdated; call update() after updateLayout() or "
+                                "setCutoff().");
+        }
         static IpplTimings::TimerRef interactionTimer = IpplTimings::getTimer("PPInteractionTimer");
         IpplTimings::startTimer(interactionTimer);
 
@@ -1135,7 +1263,7 @@ namespace ippl {
 
                 /* iterate over all cell neighbors */
                 Kokkos::parallel_for(
-                    Kokkos::TeamThreadRange(team, numCellNeighbors), [&](const size_t& n) {
+                    Kokkos::TeamThreadRange(team, numCellNeighbors), [=](const size_t& n) {
                         const auto neighborCellIdx            = cellNeighbors[n];
                         const auto neighborCellParticleOffset = cellStartingIdx(neighborCellIdx);
                         const auto numNeighborCellParticles   = cellParticleCount(neighborCellIdx);
@@ -1145,7 +1273,7 @@ namespace ippl {
                          */
                         Kokkos::parallel_for(Kokkos::ThreadVectorMDRange<Kokkos::Rank<2>, team_t>(
                                                  team, numCellParticles, numNeighborCellParticles),
-                                             [&](const size_t& i, const size_t& j) {
+                                             [=](const size_t& i, const size_t& j) {
                                                  const auto particleIdx = cellParticleOffset + i;
                                                  const auto neighborIdx =
                                                      neighborCellParticleOffset + j;

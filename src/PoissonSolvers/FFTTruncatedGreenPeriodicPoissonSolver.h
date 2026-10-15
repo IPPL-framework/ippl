@@ -74,8 +74,27 @@ namespace ippl {
         // function called in the constructor to initialize the fields
         void initializeFields();
 
-        // compute the periodic Ewald Green's function
+        /**
+         * @brief Restore the configured open or periodic Ewald long-range kernel.
+         *
+         * solve() calls this itself when the mesh spacing or the `alpha` parameter changes, so
+         * updateParameter("alpha", ...) between solves is enough to move the Ewald split.
+         */
         void greensFunction();
+
+        /**
+         * @brief Overwrite the open mesh kernel with the full shifted Coulomb kernel.
+         *
+         * Uses STANDARD Hockney regularization and `force_constant`, without Ewald smoothing.
+         * The caller turns the result into the field of the image charges and adds it to the
+         * field of the real charges; only the real charges get the short-range particle
+         * correction. Call greensFunction() to restore the truncated kernel. A mesh-spacing
+         * change, an `alpha` change, or setRhs() also restores the configured kernel.
+         * @param shift Displacement in the length units of the mesh spacing; the kernel is
+         * evaluated at r - shift.
+         * @throws IpplException If the solver is uninitialized or uses PERIODIC boundaries.
+         */
+        void shiftedGreensFunction(const Vector<double, Dim>& shift);
 
     private:
         CxField_t rhotr_m;
@@ -90,6 +109,12 @@ namespace ippl {
 
         BoundaryType boundaryType_m = PERIODIC;
         bool boundaryInitialized_m  = false;
+
+        // alpha of the cached periodic kernel; solve() regenerates the kernel when it changes
+        Trhs kernelAlpha_m = 0;
+
+        // Forward alpha and force_constant to the owned open solver.
+        void syncOpenKernelParameters();
 
         // mesh and layout objects for rho_m (RHS)
         mesh_type* mesh_mp;

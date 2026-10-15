@@ -297,11 +297,12 @@ namespace ippl {
 
                 const long g0 = static_cast<long>(gDomFull[0].length());
                 const long g1 = static_cast<long>(gDomFull[1].length());
-                const long g2 =
+                [[maybe_unused]] const long g2 =
                     (Dim == 3) ? static_cast<long>(gDomFull[Dim == 3 ? 2 : 0].length()) : 1L;
                 const long m0 = static_cast<long>(modes[0]);
                 const long m1 = static_cast<long>(modes[1]);
-                const long m2 = (Dim == 3) ? static_cast<long>(modes[Dim == 3 ? 2 : 0]) : 1L;
+                [[maybe_unused]] const long m2 =
+                    (Dim == 3) ? static_cast<long>(modes[Dim == 3 ? 2 : 0]) : 1L;
                 const int lf0 = localFirst[0];
                 const int lf1 = localFirst[1];
                 const int lf2 = (Dim == 3) ? localFirst[Dim == 3 ? 2 : 0] : 0;

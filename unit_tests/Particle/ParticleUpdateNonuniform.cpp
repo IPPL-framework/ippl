@@ -877,49 +877,50 @@ TYPED_TEST(TestParticleUpdateORB, SuccessiveDisplacementsAcrossOrbBoundaries) {
 TYPED_TEST(TestParticleUpdateORB, ThreeDCornerMigrationAfterOrb) {
     if constexpr (TestFixture::Dim != 3) {
         GTEST_SKIP() << "3-D specific test";
-    }
-    REQUIRE_RANKS(PREF_RANKS);
-    using T = typename TestFixture::T;
+    } else {
+        REQUIRE_RANKS(PREF_RANKS);
+        using T = typename TestFixture::T;
 
-    bool ok = this->orbGaussian(T(0.2));
-    if (!ok)
-        GTEST_SKIP();
-    this->rebuildPlayout();
+        bool ok = this->orbGaussian(T(0.2));
+        if (!ok)
+            GTEST_SKIP();
+        this->rebuildPlayout();
 
-    auto bunch = this->makeBunch();
+        auto bunch = this->makeBunch();
 
-    // Seed all particles near the origin
-    bunch->create(64);
-    {
-        auto R_host = bunch->R.getHostMirror();
-        auto Q_host = bunch->Q.getHostMirror();
-        for (size_t i = 0; i < bunch->getLocalNum(); ++i) {
-            for (unsigned d = 0; d < 3; d++)
-                R_host(i)[d] = T(0.02) * this->domain[d];
-            Q_host(i) = T(1);
-        }
-        Kokkos::deep_copy(bunch->R.getView(), R_host);
-        Kokkos::deep_copy(bunch->Q.getView(), Q_host);
-    }
-
-    const size_t before = this->totalParticles(*bunch);
-    bunch->update();  // settle near origin
-
-    // Jump diagonally to the opposite corner (wraps periodically)
-    {
-        auto R_host = bunch->R.getHostMirror();
-        Kokkos::deep_copy(R_host, bunch->R.getView());
-        for (size_t i = 0; i < bunch->getLocalNum(); ++i)
-            for (unsigned d = 0; d < 3; d++) {
-                T np         = R_host(i)[d] + T(0.98) * this->domain[d];
-                R_host(i)[d] = this->periodicWrap(np, this->domain[d]);
+        // Seed all particles near the origin
+        bunch->create(64);
+        {
+            auto R_host = bunch->R.getHostMirror();
+            auto Q_host = bunch->Q.getHostMirror();
+            for (size_t i = 0; i < bunch->getLocalNum(); ++i) {
+                for (unsigned d = 0; d < 3; d++)
+                    R_host(i)[d] = T(0.02) * this->domain[d];
+                Q_host(i) = T(1);
             }
-        Kokkos::deep_copy(bunch->R.getView(), R_host);
-    }
+            Kokkos::deep_copy(bunch->R.getView(), R_host);
+            Kokkos::deep_copy(bunch->Q.getView(), Q_host);
+        }
 
-    bunch->update();
-    EXPECT_EQ(before, this->totalParticles(*bunch));
-    EXPECT_EQ(0u, this->countMisplaced(*bunch));
+        const size_t before = this->totalParticles(*bunch);
+        bunch->update();  // settle near origin
+
+        // Jump diagonally to the opposite corner (wraps periodically)
+        {
+            auto R_host = bunch->R.getHostMirror();
+            Kokkos::deep_copy(R_host, bunch->R.getView());
+            for (size_t i = 0; i < bunch->getLocalNum(); ++i)
+                for (unsigned d = 0; d < 3; d++) {
+                    T np         = R_host(i)[d] + T(0.98) * this->domain[d];
+                    R_host(i)[d] = this->periodicWrap(np, this->domain[d]);
+                }
+            Kokkos::deep_copy(bunch->R.getView(), R_host);
+        }
+
+        bunch->update();
+        EXPECT_EQ(before, this->totalParticles(*bunch));
+        EXPECT_EQ(0u, this->countMisplaced(*bunch));
+    }
 }
 
 // ============================================================

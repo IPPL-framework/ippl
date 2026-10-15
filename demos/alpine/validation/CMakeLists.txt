@@ -5,7 +5,7 @@
 # -----------------------------------------------------------------------------
 message(STATUS "Configuring demos/alpine/validation/")
 
-if(BUILD_TESTING AND NOT IPPL_ENABLE_COVERAGE)
+if(IPPL_ENABLE_TESTS AND NOT IPPL_ENABLE_COVERAGE)
   # Build the C++ correctness validation test
   add_executable(LandauDampingCorrectness LandauDampingCorrectness.cpp)
 

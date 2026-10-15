@@ -137,10 +137,12 @@ namespace ippl {
     void BareField<T, Dim, ViewArgs...>::setup() {
         owned_m = layout_m->getLocalNDIndex();
 
-        auto resize = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
-            this->resize((owned_m[Idx].length() + 2 * nghost_m)...);
+        // Reallocate field to correspond to sizes of new updated layout.
+        // Does not preserve field data.
+        auto reallocate = [&]<size_t... Idx>(const std::index_sequence<Idx...>&) {
+            Kokkos::realloc(dview_m, (owned_m[Idx].length() + 2 * nghost_m)...);
         };
-        resize(std::make_index_sequence<Dim>{});
+        reallocate(std::make_index_sequence<Dim>{});
     }
 
     template <typename T, unsigned Dim, class... ViewArgs>
