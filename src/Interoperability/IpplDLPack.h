@@ -16,14 +16,13 @@
 
 #include "KokkosDLPack.h"
 
-
 namespace ippl {
     namespace Interoperability {
 
         /*!
          * @brief Exports a vector-valued ParticleAttrib as a DLPack capsule.
          *
-         * The tensor is of shape (localNum, Dim) and row-major strides, 
+         * The tensor is of shape (localNum, Dim) and row-major strides,
          * and aliases the attribute's memory in its memory space
          * (host or device) without copying. Only this rank's live particles are exported,
          * and the call is rank-local, not collective.
@@ -43,20 +42,20 @@ namespace ippl {
         template <typename Attrib>
         py::capsule attribToDLPackVec(Attrib& attrib, ReadOnly readOnly, DLPackVersion version) {
             // retrieves the shape and type of the bare scalar type underlying a ParticleAttrib:
-            using view_type = typename Attrib::view_type;
-            using vector_type = typename view_type::value_type;
-            using ScalarT = typename vector_type::value_type;
+            using view_type       = typename Attrib::view_type;
+            using vector_type     = typename view_type::value_type;
+            using ScalarT         = typename vector_type::value_type;
             constexpr int64_t Dim = static_cast<int64_t>(vector_type::dim);
 
             static_assert(view_type::rank == 1, "ParticleAttrib is always rank-1");
 
             // gets attribute Kokkos View, trimmed to live particles and their count
-            view_type v = attrib.getView();
+            view_type v            = attrib.getView();
             const int64_t localNum = static_cast<int64_t>(v.extent(0));
 
             // checks to see if zero-copy is possible
             if constexpr (std::is_standard_layout_v<vector_type>
-                && sizeof(vector_type) == Dim * sizeof(ScalarT)) {
+                          && sizeof(vector_type) == Dim * sizeof(ScalarT)) {
                 // if yes, simply reinterpret as bare scalar type
                 auto* scalarPtr = reinterpret_cast<ScalarT*>(v.data());
 
@@ -64,12 +63,11 @@ namespace ippl {
                 shape   = {localNum, Dim};
                 strides = {static_cast<int64_t>(v.stride(0)) * Dim, 1};
 
-                return exportTensor<ScalarT>(
-                    v, scalarPtr,
-                    std::move(shape), std::move(strides),
-                    readOnly, version);
+                return exportTensor<ScalarT>(v, scalarPtr, std::move(shape), std::move(strides),
+                                             readOnly, version);
             } else {
-                // else repack into a flat (localNum * Dim) scalar array in the attribute's memory space
+                // else repack into a flat (localNum * Dim) scalar array in the attribute's memory
+                // space
                 Kokkos::View<ScalarT*, typename view_type::memory_space> flat(
                     Kokkos::view_alloc("dlpack_repack", Kokkos::WithoutInitializing),
                     localNum * Dim);
@@ -84,11 +82,8 @@ namespace ippl {
                     });
                 Kokkos::fence();
 
-                return exportTensor<ScalarT>(
-                    flat, flat.data(),
-                    {localNum, Dim},
-                    {Dim, 1},
-                    readOnly, version);
+                return exportTensor<ScalarT>(flat, flat.data(), {localNum, Dim}, {Dim, 1}, readOnly,
+                                             version);
             }
         }
 

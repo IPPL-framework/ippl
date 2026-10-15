@@ -8,10 +8,9 @@
 //
 #include "Ippl.h"
 
+#include <cstdint>
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
-
-#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -113,8 +112,7 @@ TYPED_TEST(DLPackExportTest, VectorAttribRoundTrip) {
 
     py::capsule cap =
         interop::attribToDLPackVec(R, interop::ReadOnly::No, interop::DLPackVersion::Legacy);
-    this->roundTrip(cap, {static_cast<int64_t>(n), static_cast<int64_t>(Dim)},
-                    R.getView().data());
+    this->roundTrip(cap, {static_cast<int64_t>(n), static_cast<int64_t>(Dim)}, R.getView().data());
 
     // torch's in-place write is visible in the attribute
     auto rHost = R.getHostMirror();

@@ -41,19 +41,17 @@ const char* TestName   = "LandauDampingNeurOp";
 #include <Kokkos_Random.hpp>
 #include <chrono>
 #include <iostream>
+#include <pybind11/embed.h>
 #include <random>
 #include <set>
 #include <string>
 #include <vector>
-
-#include <pybind11/embed.h>
 
 #include "Manager/datatypes.h"
 
 #include "Utility/IpplTimings.h"
 
 #include "LandauDampingNeurOpManager.h"
-
 #include "Manager/PicManager.h"
 
 namespace py = pybind11;
@@ -106,8 +104,8 @@ int main(int argc, char* argv[]) {
             }
 
             ippl::Interoperability::InferenceBridge bridge(inferDir, "ippl_inference");
-            LandauDampingNeurOpManager<T, Dim> manager(totalP, nt, nr, lbt, solver,
-                                                       step_method, preconditioner_params, &bridge);
+            LandauDampingNeurOpManager<T, Dim> manager(totalP, nt, nr, lbt, solver, step_method,
+                                                       preconditioner_params, &bridge);
             manager.pre_run();
 
             IpplTimings::stopTimer(initializeTimer);

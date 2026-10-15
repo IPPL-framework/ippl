@@ -9,12 +9,14 @@
 #ifndef IPPL_KOKKOS_DLPACK_H
 #define IPPL_KOKKOS_DLPACK_H
 
-#include "dlpack/dlpack.h"
-#include <pybind11/pybind11.h>
 #include <Kokkos_Core.hpp>
+
 #include <cstdint>
+#include <pybind11/pybind11.h>
 #include <type_traits>
 #include <vector>
+
+#include "dlpack/dlpack.h"
 
 namespace ippl {
     namespace Interoperability {
@@ -25,21 +27,27 @@ namespace ippl {
          * @brief Whether the consumer may write into the exported memory.
          *
          * Only DLPackVersion::Versioned capsules can carry the read-only flag. For
-         * DLPackVersion::Legacy capsules it is ignored and consumers always treat the memory 
+         * DLPackVersion::Legacy capsules it is ignored and consumers always treat the memory
          * as writable, so it is not enforced there.
          */
-        enum class ReadOnly { No, Yes };
+        enum class ReadOnly {
+            No,
+            Yes
+        };
 
         /*!
          * @brief Which DLPack capsule format to produce.
          *
          * Legacy produces a "dltensor" capsule (DLManagedTensor), accepted by all consumers, but
-         * is deprecated. 
+         * is deprecated.
          * Versioned produces a "dltensor_versioned" capsule
          * (DLManagedTensorVersioned, DLPack >= 1.0), which carries the version and the
          * read-only flag, but is only accepted by newer consumers.
          */
-        enum class DLPackVersion { Legacy, Versioned };
+        enum class DLPackVersion {
+            Legacy,
+            Versioned
+        };
 
         namespace detail {
 
@@ -62,7 +70,8 @@ namespace ippl {
                 } else if constexpr (std::is_unsigned_v<T>) {
                     dt.code = kDLUInt;
                 } else {
-                    static_assert(always_false<T>::value, "unsupported scalar type for DLPack export");
+                    static_assert(always_false<T>::value,
+                                  "unsupported scalar type for DLPack export");
                 }
                 return dt;
             }
@@ -98,8 +107,9 @@ namespace ippl {
                 }
 #endif
                 else {
-                    static_assert(always_false<MemorySpace>::value,
-                              "KokkosDLPack: no DLPack device mapping for this Kokkos memory space");
+                    static_assert(
+                        always_false<MemorySpace>::value,
+                        "KokkosDLPack: no DLPack device mapping for this Kokkos memory space");
                 }
                 return dev;
             }
@@ -125,15 +135,14 @@ namespace ippl {
 
             // builds the managed tensor and its capsule
             template <typename ManagedT, typename ScalarT, typename ViewType>
-            py::capsule exportRaw(ViewType view, ScalarT* scalarPtr,
-                                std::vector<int64_t> shape, std::vector<int64_t> strides,
-                                ReadOnly readOnly) {
+            py::capsule exportRaw(ViewType view, ScalarT* scalarPtr, std::vector<int64_t> shape,
+                                  std::vector<int64_t> strides, ReadOnly readOnly) {
                 using MemorySpace = typename ViewType::memory_space;
 
                 DLDevice device  = deviceOf<MemorySpace>();
                 DLDataType dtype = dtypeOf<ScalarT>();
 
-                auto* ctx     = new ManagerCtx<ViewType>{view, std::move(shape), std::move(strides)};
+                auto* ctx = new ManagerCtx<ViewType>{view, std::move(shape), std::move(strides)};
                 auto* managed = new ManagedT();
 
                 managed->dl_tensor.data        = static_cast<void*>(scalarPtr);
@@ -149,15 +158,18 @@ namespace ippl {
                 if constexpr (std::is_same_v<ManagedT, DLManagedTensorVersioned>) {
                     managed->version.major = DLPACK_MAJOR_VERSION;
                     managed->version.minor = DLPACK_MINOR_VERSION;
-                    managed->flags = (readOnly == ReadOnly::Yes) ? DLPACK_FLAG_BITMASK_READ_ONLY : 0;
+                    managed->flags =
+                        (readOnly == ReadOnly::Yes) ? DLPACK_FLAG_BITMASK_READ_ONLY : 0;
                 }
 
                 constexpr const char* NAME = std::is_same_v<ManagedT, DLManagedTensorVersioned>
-                                                ? "dltensor_versioned" : "dltensor";
+                                                 ? "dltensor_versioned"
+                                                 : "dltensor";
 
-                //capsule name is "dltensor" or "dltensor_versioned", consumers check it, then rename to
-                // "used_<name>" once they have taken ownership.  The capsule
-                // destructor below only fires if Python never consumed it.
+                // capsule name is "dltensor" or "dltensor_versioned", consumers check it, then
+                // rename to
+                //  "used_<name>" once they have taken ownership.  The capsule
+                //  destructor below only fires if Python never consumed it.
                 return py::capsule(managed, NAME, [](PyObject* obj) {
                     if (PyCapsule_IsValid(obj, NAME)) {
                         auto* p = static_cast<ManagedT*>(PyCapsule_GetPointer(obj, NAME));
@@ -193,15 +205,15 @@ namespace ippl {
          * @returns a "dltensor" or "dltensor_versioned" capsule for e.g. torch.from_dlpack
          */
         template <typename ScalarT, typename ViewType>
-        py::capsule exportTensor(ViewType view, ScalarT* scalarPtr,
-                                std::vector<int64_t> shape, std::vector<int64_t> strides,
-                                ReadOnly readOnly, DLPackVersion version) {
+        py::capsule exportTensor(ViewType view, ScalarT* scalarPtr, std::vector<int64_t> shape,
+                                 std::vector<int64_t> strides, ReadOnly readOnly,
+                                 DLPackVersion version) {
             if (version == DLPackVersion::Versioned) {
-                return detail::exportRaw<DLManagedTensorVersioned>(view, scalarPtr, std::move(shape),
-                                                    std::move(strides), readOnly);
+                return detail::exportRaw<DLManagedTensorVersioned>(
+                    view, scalarPtr, std::move(shape), std::move(strides), readOnly);
             } else {
                 return detail::exportRaw<DLManagedTensor>(view, scalarPtr, std::move(shape),
-                                        std::move(strides), readOnly);
+                                                          std::move(strides), readOnly);
             }
         }
 
@@ -220,15 +232,15 @@ namespace ippl {
          */
         template <typename ViewType>
         py::capsule toDLPack(ViewType view, ReadOnly readOnly, DLPackVersion version) {
-            using ScalarT             = typename ViewType::value_type;
-            constexpr int RANK        = static_cast<int>(ViewType::rank);
+            using ScalarT      = typename ViewType::value_type;
+            constexpr int RANK = static_cast<int>(ViewType::rank);
             std::vector<int64_t> shape(RANK), strides(RANK);
             for (int i = 0; i < RANK; ++i) {
                 shape[i]   = static_cast<int64_t>(view.extent(i));
                 strides[i] = static_cast<int64_t>(view.stride(i));
             }
             return exportTensor<ScalarT>(view, view.data(), std::move(shape), std::move(strides),
-                                        readOnly, version);
+                                         readOnly, version);
         }
 
     }  // namespace Interoperability
