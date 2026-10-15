@@ -180,27 +180,27 @@ $(function() {
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>                attribute-&gt;create(nLocal, non_destructive);</div>
 <div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>            });</div>
 <div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span> </div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>            <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (EnableIDs) {</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>                <span class="comment">// Set the unique ID value for these new particles. The new entries</span></div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>                <span class="comment">// live at indices [localNum_m, localNum_m + nLocal); the k-th new</span></div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>                <span class="comment">// particle on this rank gets ID nextID + numNodes * k.</span></div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>                <span class="keyword">using </span>policy_type =</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>                    Kokkos::RangePolicy&lt;size_type, typename particle_index_type::execution_space&gt;;</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>                <span class="keyword">auto</span> pIDs     = ID.getView();</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                <span class="keyword">auto</span> nextID   = this-&gt;nextID_m;</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>                <span class="keyword">auto</span> numNodes = this-&gt;numNodes_m;</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                <span class="keyword">auto</span> offset   = localNum_m;</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>                Kokkos::parallel_for(</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>                    <span class="stringliteral">&quot;ParticleBase&lt;...&gt;::create(size_t,bool)&quot;</span>,</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>                    policy_type(localNum_m, localNum_m + nLocal),</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>                    KOKKOS_LAMBDA(<span class="keyword">const</span> std::int64_t i) {</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                        pIDs(i) = nextID + numNodes * (i - offset);</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>                    });</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>                nextID_m += numNodes_m * nLocal;</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>            }</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span> </div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>            <span class="comment">// remember that we&#39;re creating these new particles</span></div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>            localNum_m += nLocal;</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>            <span class="comment">// remember that we&#39;re creating these new particles. This must happen before</span></div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>            <span class="comment">// ID.getView() below, which only covers the first localNum_m entries.</span></div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>            <span class="keyword">const</span> <a class="code hl_typedef" href="classippl_1_1ParticleBase.html#a33f7a84d63d73359f45796fe4b3be80d">size_type</a> offset = localNum_m;</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>            localNum_m += nLocal;</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span> </div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>            <span class="keywordflow">if</span> <span class="keyword">constexpr</span> (EnableIDs) {</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>                <span class="comment">// Set the unique ID value for these new particles. The new entries</span></div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                <span class="comment">// live at indices [offset, offset + nLocal); the k-th new</span></div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>                <span class="comment">// particle on this rank gets ID nextID + numNodes * k.</span></div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                <span class="keyword">using </span>policy_type =</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>                    Kokkos::RangePolicy&lt;size_type, typename particle_index_type::execution_space&gt;;</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>                <span class="keyword">auto</span> pIDs     = ID.getView();</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>                <span class="keyword">auto</span> nextID   = this-&gt;nextID_m;</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>                <span class="keyword">auto</span> numNodes = this-&gt;numNodes_m;</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                Kokkos::parallel_for(</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>                    <span class="stringliteral">&quot;ParticleBase&lt;...&gt;::create(size_t,bool)&quot;</span>, policy_type(offset, offset + nLocal),</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>                    KOKKOS_LAMBDA(<span class="keyword">const</span> std::int64_t i) {</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>                        pIDs(i) = nextID + numNodes * (i - offset);</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>                    });</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>                nextID_m += numNodes_m * nLocal;</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>            }</div>
 <div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>        }</div>
 <div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span> </div>
 <div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        <a class="code hl_variable" href="namespaceippl.html#abfab7f67f977ee069d97c58cef8bd486">Comm</a>-&gt;allreduce(localNum_m, totalNum_m, 1, std::plus&lt;size_type&gt;());</div>
