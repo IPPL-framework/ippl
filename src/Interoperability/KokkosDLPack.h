@@ -1,18 +1,18 @@
-// Generic bridge that exposes Kokkos::View memory to any
-//DLPack consumer as a py::capsule
-//
-// Independent of IPPL: includes no IPPL headers, only shares the ippl namespace.
-//
-// Requires dlpack/dlpack.h and pybind/pybind11 (https://github.com/dmlc/dlpack)
-
-#ifndef KOKKOS_DLPACK_H
-#define KOKKOS_DLPACK_H
+/*!
+ * @file KokkosDLPack.h
+ * @brief Zero-copy export of Kokkos::View memory as DLPack capsules.
+ *
+ * Exposes Kokkos::View memory to any DLPack consumer (PyTorch, CuPy, JAX,
+ * NumPy, ...) as a py::capsule, without copying.
+ * Tested by unit_tests/Interoperability/DLPackExport.
+ */
+#ifndef IPPL_KOKKOS_DLPACK_H
+#define IPPL_KOKKOS_DLPACK_H
 
 #include "dlpack/dlpack.h"
 #include <pybind11/pybind11.h>
 #include <Kokkos_Core.hpp>
 #include <cstdint>
-#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
@@ -21,20 +21,33 @@ namespace ippl {
 
         namespace py = pybind11;
 
+        /*!
+         * @brief Whether the consumer may write into the exported memory.
+         *
+         * Only DLPackVersion::Versioned capsules can carry the read-only flag. For
+         * DLPackVersion::Legacy capsules it is ignored and consumers always treat the memory 
+         * as writable, so it is not enforced there.
+         */
         enum class ReadOnly { No, Yes };
+
+        /*!
+         * @brief Which DLPack capsule format to produce.
+         *
+         * Legacy produces a "dltensor" capsule (DLManagedTensor), accepted by all consumers, but
+         * is deprecated. 
+         * Versioned produces a "dltensor_versioned" capsule
+         * (DLManagedTensorVersioned, DLPack >= 1.0), which carries the version and the
+         * read-only flag, but is only accepted by newer consumers.
+         */
         enum class DLPackVersion { Legacy, Versioned };
-        //enum class ComponentAxis { Last, First }; //is it shape (N,Dim) or (Dim,N)
 
         namespace detail {
 
-            //static_assert(false) is ill-formed in C++20
+            // static_assert(false) is ill-formed in C++20
             template <typename T>
             struct always_false : std::false_type {};
 
-            // map C++ scalar type to DLDataType
-            // code - uint8_t type code of base types, value should be one of DLDataTypeCode enum values
-            // bits - number of bits of datatype
-            // lanes - number of lanes in the type, for vector types (like float4)
+            // maps a C++ scalar type to its DLDataType
             template <typename T>
             inline DLDataType dtypeOf() {
                 DLDataType dt;
@@ -98,26 +111,19 @@ namespace ippl {
             // vectors live here and not on the stack.
             template <typename ViewType>
             struct ManagerCtx {
-                ViewType view_m; // this holds the refcount
+                ViewType view_m;
                 std::vector<int64_t> shape_m;
-                std::vector<int64_t> strides_m;  // strides are in ELEMENTS, not bytes (DLPack convention)!!
+                std::vector<int64_t> strides_m;  // in elements, not bytes
             };
 
-            // Only when this is called is the view copy deleted, and the view itself able to
-            // potentially be freeed (if not used elsewhere).
+            // Deletes the view copy, allowing it to be freed (if not used elsewhere).
             template <typename ManagedTensorType, typename ViewType>
             void ctxDeleter(ManagedTensorType* self) {
                 delete static_cast<ManagerCtx<ViewType>*>(self->manager_ctx);
                 delete self;
             }
 
-            // The core export.
-            //
-            // scalarPtr, shape and strides are given so callers can
-            // reinterpret a View of small structs (like ippl::Vector<double,3>) as a
-            // dense array of the underlying scalar. view` is only used to keep the
-            // allocation alive (refcount bump).
-            // Strides are in elements, not bytes.
+            // builds the managed tensor and its capsule
             template <typename ManagedT, typename ScalarT, typename ViewType>
             py::capsule exportRaw(ViewType view, ScalarT* scalarPtr,
                                 std::vector<int64_t> shape, std::vector<int64_t> strides,
@@ -130,14 +136,13 @@ namespace ippl {
                 auto* ctx     = new ManagerCtx<ViewType>{view, std::move(shape), std::move(strides)};
                 auto* managed = new ManagedT();
 
-                // DLTensor is the plain C Tensor object
-                managed->dl_tensor.data        = static_cast<void*>(scalarPtr); // Data ptr to allocated data
+                managed->dl_tensor.data        = static_cast<void*>(scalarPtr);
                 managed->dl_tensor.device      = device;
                 managed->dl_tensor.ndim        = static_cast<int32_t>(ctx->shape_m.size());
-                managed->dl_tensor.dtype       = dtype; //Data type of the pointer
+                managed->dl_tensor.dtype       = dtype;
                 managed->dl_tensor.shape       = ctx->shape_m.data();
                 managed->dl_tensor.strides     = ctx->strides_m.data();
-                managed->dl_tensor.byte_offset = 0; // offset in struct to the beginning pointer to data in bytes
+                managed->dl_tensor.byte_offset = 0;
                 managed->manager_ctx           = ctx;
                 managed->deleter               = &ctxDeleter<ManagedT, ViewType>;
 
@@ -165,8 +170,28 @@ namespace ippl {
 
         }  // namespace detail
 
-        // the single public entry point, defers down to version or legacy dltensor depending on
-        // what is supported
+        /*!
+         * @brief Exports Kokkos View memory as a DLPack capsule with caller-defined layout.
+         *
+         * Describes the memory starting at scalarPtr as a tensor of type ScalarT with the given
+         * shape and strides, in the View's memory space (host or device), without copying.
+         * This way a View of structs (e.g. ippl::Vector<double, 3>) can be exported as a
+         * dense array of its scalars. The capsule holds a copy of the View, so the allocation
+         * stays alive until the consumer releases the tensor.
+         *
+         * The call is rank-local. It does not fence, and kernels writing the memory must
+         * finish before the consumer reads it.
+         *
+         * @tparam ScalarT element type of the tensor (bool, integer or floating point)
+         * @tparam ViewType Kokkos::View owning the memory; its memory space sets the device
+         * @param view the View to keep alive; only its reference count is used
+         * @param scalarPtr first element of the tensor, inside the View's allocation
+         * @param shape extent of each tensor dimension
+         * @param strides stride of each dimension, in elements
+         * @param readOnly marks the tensor read-only, only honoured by Versioned capsules
+         * @param version capsule format to produce
+         * @returns a "dltensor" or "dltensor_versioned" capsule for e.g. torch.from_dlpack
+         */
         template <typename ScalarT, typename ViewType>
         py::capsule exportTensor(ViewType view, ScalarT* scalarPtr,
                                 std::vector<int64_t> shape, std::vector<int64_t> strides,
@@ -180,7 +205,19 @@ namespace ippl {
             }
         }
 
-        // exports a kokkos view of plain scalars as is
+        /*!
+         * @brief Exports a Kokkos View of plain scalars as a DLPack capsul eas-is.
+         *
+         * The tensor has the View's rank, extents and strides, and aliases its memory in the
+         * View's memory space (host or device). Has the same lifetime and synchronization rules
+         * as exportTensor() (rank-local, no fence).
+         *
+         * @tparam ViewType Kokkos::View whose value_type is bool, integer or floating point
+         * @param view the View to export
+         * @param readOnly marks the tensor read-only; only honoured by Versioned capsules
+         * @param version capsule format to produce
+         * @returns a "dltensor" or "dltensor_versioned" capsule for e.g. torch.from_dlpack
+         */
         template <typename ViewType>
         py::capsule toDLPack(ViewType view, ReadOnly readOnly, DLPackVersion version) {
             using ScalarT             = typename ViewType::value_type;
@@ -188,7 +225,7 @@ namespace ippl {
             std::vector<int64_t> shape(RANK), strides(RANK);
             for (int i = 0; i < RANK; ++i) {
                 shape[i]   = static_cast<int64_t>(view.extent(i));
-                strides[i] = static_cast<int64_t>(view.stride(i));  // Kokkos strides are in elements
+                strides[i] = static_cast<int64_t>(view.stride(i));
             }
             return exportTensor<ScalarT>(view, view.data(), std::move(shape), std::move(strides),
                                         readOnly, version);

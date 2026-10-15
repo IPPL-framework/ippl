@@ -1,3 +1,35 @@
+// Landau Damping with a Neural Operator
+//   Landau damping where the electric field at the particles is inferred by a
+//   neural operator in Python instead of computed by the PIC field solver. Each
+//   step exports the particle positions R and the field E to Python as DLPack
+//   capsules (zero-copy, on the device) and the model writes E in place.
+//
+//   Requires -DIPPL_ENABLE_PYTHON_BRIDGE=ON. The Python inference module
+//   (ippl_inference.py, with init(rank, size, device_id, params),
+//   infer(R_cap, E_cap, nlocal) and finalize()) and the trained model live in a
+//   separate repository.
+//
+//   Environment:
+//     IPPL_INFER_DIR = directory containing ippl_inference.py
+//     IPPL_CONFIG    = model configuration file read by ippl_inference.py
+//
+//   Usage:
+//     srun ./LandauDampingNeurOp
+//                  <nx> <ny> <nz> <Np> <Nt> <stype> <lbthres>
+//                  <t_method> --overallocate <ovfactor> --info 10
+//     nx, ny, nz = No. cell-centered points in the x-, y-, z-direction
+//     Np         = Total no. of macro-particles in the simulation
+//     Nt         = Number of time steps
+//     stype      = Field solver type; accepted for compatibility with LandauDamping,
+//                  the field is inferred instead
+//     lbthres    = Load balancing threshold; accepted for compatibility with
+//                  LandauDamping, particles do not migrate between ranks
+//     t_method   = Time-stepping method, only LeapFrog is supported
+//     ovfactor   = Over-allocation factor for the buffers used in the communication
+//     Example:
+//     IPPL_INFER_DIR=<dir> IPPL_CONFIG=<config.yaml> \
+//     srun ./LandauDampingNeurOp 32 32 32 250000 20 FFT 0.02 LeapFrog --overallocate 2.0 --info 5
+
 constexpr unsigned Dim = 3;
 using T                = double;
 const char* TestName   = "LandauDampingNeurOp";
@@ -31,6 +63,8 @@ int main(int argc, char* argv[]) {
     ippl::initialize(argc, argv);
     int exit_code = 0;
     {
+        py::scoped_interpreter guard{};
+
         try {
             Inform msg(TestName);
 

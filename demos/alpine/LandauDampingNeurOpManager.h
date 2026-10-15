@@ -41,8 +41,6 @@ class LandauDampingNeurOpManager : public LandauDampingManager<T, Dim> {
                 IpplTimings::getTimer("particlesCreation");
             IpplTimings::startTimer(particleCreation);
 
-            // count set here instead of by sampler
-            // to avoid the inbalanced generation
             const size_type totalP = this->totalP_m;
             const size_type nranks = (size_type)ippl::Comm->size();
             size_type nlocal       = totalP / nranks;
@@ -62,11 +60,8 @@ class LandauDampingNeurOpManager : public LandauDampingManager<T, Dim> {
             using samplingR_t =
                 ippl::random::InverseTransformSampling<double, Dim,
                                                        Kokkos::DefaultExecutionSpace, DistR_t>;
-            // this overload ( withno RegionLayout) calls updateBounds(rmax, rmin),
-            // setting umin/umax from the GLOBAL CDF range, and then nlocal_m =
-            // ntotal_m. So each rank samples the whole domain and gets exactly the
-            // count passed in. The RegionLayout overload instead does a volume
-            // factor per rank...
+            // this overload (no RegionLayout) samples the whole domain on every rank and
+            // generates exactly nlocal particles
             samplingR_t samplingR(distR, rmax, rmin, nlocal);
 
             this->pcontainer_m->create(nlocal);
@@ -165,14 +160,13 @@ class LandauDampingNeurOpManager : public LandauDampingManager<T, Dim> {
 
             double dt = this->dt_m;
             auto pc = this->pcontainer_m;
-            auto fc = this->fcontainer_m;
 
             pc->P = pc->P - 0.5 * dt * pc->E;        // kick
             pc->R = pc->R + dt * pc->P;              // drift
 
             //  Apply the periodic BC only to keep nlocal constant for the whole run.
             auto& layout = pc->getLayout();
-            layout.applyBC(pc->R, layout.getRegionLayout().getDomain());  // just the periodic BC
+            layout.applyBC(pc->R, layout.getRegionLayout().getDomain());
 
             inferField(); //replaced par2grid, pic solver, then grid2par
 
