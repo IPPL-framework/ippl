@@ -226,16 +226,18 @@ namespace ippl {
             });
         Kokkos::fence();
 
-        // Determine the total number of invalid particles in the valid region
-        size_type maxDeleteIndex = 0;
+        // Determine the total number of invalid particles in the valid region. The scan above
+        // fills locDeleteIndex from entry 0, so count the filled entries; this is 0 when every
+        // invalid particle is already in the invalid region.
+        size_type numDeleteIndex = 0;
         Kokkos::parallel_reduce(
             "Reduce in ParticleBase::destroy()", policy_type(0, destroyNum),
-            KOKKOS_LAMBDA(const size_t i, size_t& maxIdx) {
-                if (locDeleteIndex(i) >= 0 && i > maxIdx) {
-                    maxIdx = i;
+            KOKKOS_LAMBDA(const size_t i, size_t& count) {
+                if (locDeleteIndex(i) >= 0) {
+                    count += 1;
                 }
             },
-            Kokkos::Max<size_type>(maxDeleteIndex));
+            numDeleteIndex);
 
         // Find the indices of the valid particles in the invalid region
         Kokkos::parallel_scan(
@@ -271,7 +273,7 @@ namespace ippl {
             using att_memory_space = typename Attribute::memory_space;
             auto& del              = deleteIndex_m.get<att_memory_space>();
             auto& keep             = keepIndex_m.get<att_memory_space>();
-            attribute->destroy(del, keep, maxDeleteIndex + 1);
+            attribute->destroy(del, keep, numDeleteIndex);
         });
     }
 
