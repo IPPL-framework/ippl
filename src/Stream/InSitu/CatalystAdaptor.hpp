@@ -82,9 +82,92 @@ namespace ippl {
     // Channel-based Initialize / Execute
     // =====================================================================================
 
+    inline void CatalystAdaptor::setParticleAttributeSelection(
+        const std::string& label, ParticleAttributeSelection selection) {
+        if (initialized_m) {
+            throw IpplException("CatalystAdaptor::setParticleAttributeSelection",
+                                "Configure particle attributes before Initialize(), or after Finalize().");
+        }
+        if (label.empty()) {
+            throw IpplException("CatalystAdaptor::setParticleAttributeSelection", "Empty channel label.");
+        }
+        particleAttributeSelections_m.insert_or_assign(label, std::move(selection));
+    }
+
+    inline const ParticleAttributeSelection& CatalystAdaptor::getParticleAttributeSelection(
+        const std::string& label) const {
+        static const auto DEFAULT_SELECTION = ParticleAttributeSelection::all();
+        const auto it = particleAttributeSelections_m.find(label);
+        return it == particleAttributeSelections_m.end() ? DEFAULT_SELECTION : it->second;
+    }
+
+    inline void CatalystAdaptor::validateParticleAttributeSelections() const {
+        std::map<std::string, std::vector<std::string>> particleAttributeNames;
+        for (const auto& [label, source] : particleAttributeSources_m) {
+            particleAttributeNames.emplace(label, source());
+        }
+        std::string error;
+        for (const auto& [label, selection] : particleAttributeSelections_m) {
+            if (!particleAttributeNames.contains(label)) {
+                error = "Selection refers to an unknown particle channel: '" + label + "'";
+                break;
+            }
+        }
+
+        // Compare effective policies and schemas, irrespective of registration or request order.
+        std::string signature;
+        auto append = [&](const std::string& value) {
+            signature += std::to_string(value.size()) + ":" + value;
+        };
+        for (const auto& [label, names] : particleAttributeNames) {
+            const auto& selection = getParticleAttributeSelection(label);
+            const auto reason = selection.validationError(names);
+            if (!reason.empty() && error.empty()) {
+                error = "Particle channel '" + label + "': " + reason;
+            }
+            append(label);
+            append(std::to_string(static_cast<int>(selection.mode())));
+            append(selection.includesParticleIds() ? "ids" : "no ids");
+            append(selection.includesRankIds() ? "ranks" : "no ranks");
+            append(std::to_string(selection.names().size()));
+            for (const auto& name : selection.names()) append(name);
+            append(std::to_string(names.size()));
+            for (const auto& name : names) append(name);
+        }
+        if (signature.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+            error = "Particle attribute configuration is too large for MPI validation.";
+        }
+
+        // Every rank must reject invalid configuration before Catalyst enters collectives.
+        int invalid = !error.empty();
+        MPI_Allreduce(MPI_IN_PLACE, &invalid, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        if (invalid) {
+            throw IpplException("CatalystAdaptor::Initialize",
+                                error.empty() ? "Invalid particle attribute selection on another MPI rank."
+                                              : error);
+        }
+        int length = static_cast<int>(signature.size());
+        MPI_Bcast(&length, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        std::string reference = signature;
+        reference.resize(length);
+        MPI_Bcast(reference.data(), length, MPI_CHAR, 0, MPI_COMM_WORLD);
+        invalid = reference != signature;
+        MPI_Allreduce(MPI_IN_PLACE, &invalid, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        if (invalid) {
+            throw IpplException("CatalystAdaptor::Initialize",
+                                "Particle attribute names or selections differ between MPI ranks.");
+        }
+    }
+
     void CatalystAdaptor::Initialize(const std::shared_ptr<VisRegistryRuntime>& steerReg) {
         if (!visEnabled_m)
             return;
+
+        if (initialized_m) {
+            throw IpplException("CatalystAdaptor::Initialize", "Finalize before reinitializing Catalyst.");
+        }
+        validateParticleAttributeSelections();
+        node_m.reset();
 
         catalystInfo_m
             << level4
@@ -253,6 +336,7 @@ namespace ippl {
         // Channel tree will be built on first Execute() and reused thereafter.
         node_m.reset();
         channelsBuilt_m = false;
+        initialized_m = true;
 
         catalystInfo_m
             << level4
@@ -358,6 +442,10 @@ namespace ippl {
         if (err != catalyst_status_ok) {
             std::cerr << "Failed to finalize Catalyst: " << err << std::endl;
         }
+        initialized_m = false;
+        channelsBuilt_m = false;
+        node_m.reset();
+        viewRegistry_m.clear();
     }
 
     // =====================================================================================
@@ -397,14 +485,35 @@ namespace ippl {
         requires std::derived_from<std::decay_t<T>, ParticleBaseBase>
     ParticleChannelHandle CatalystAdaptor::addParticleChannel(const std::string& name,
                                                               const T& pc) {
+        if (initialized_m) {
+            throw IpplException("CatalystAdaptor::addParticleChannel",
+                                "Register channels before Initialize().");
+        }
+        if (name.empty() || particleAttributeSources_m.contains(name)) {
+            throw IpplException("CatalystAdaptor::addParticleChannel",
+                                "Empty or duplicate particle channel name: " + name);
+        }
+        particleAttributeSources_m.emplace(name, [&pc] {
+            std::vector<std::string> names;
+            pc.forAllAttributes([&]<typename Attributes>(const Attributes& attributes) {
+                for (const auto* attribute : attributes) {
+                    if (!pc.isBuiltinAttribute(attribute)) {
+                        names.push_back(attribute->get_name());
+                    }
+                }
+            });
+            std::sort(names.begin(), names.end());
+            return names;
+        });
         auto ch = std::make_shared<ParticleChannel>(
             name, const_cast<void*>(static_cast<const void*>(&pc)));
         auto* raw = ch.get();
 
         // Type-specific init function: builds multimesh, allocates mirrors,
-        // sets Conduit external pointers.  Called once by Initialize().
+        // sets Conduit external pointers on first Execute and after count changes.
         raw->setInitFn([this, name, &pc, raw](conduit_cpp::Node& channel, int rank, Inform& info) {
             const size_t localNum = pc.getLocalNum();
+            const auto& selection = getParticleAttributeSelection(name);
             channel["type"].set_string("multimesh");
             channel["assembly/particles"]   = "particles";
             channel["assembly/boundingbox"] = "boundingbox";
@@ -419,11 +528,15 @@ namespace ippl {
             auto& rankId = const_cast<Kokkos::View<int*, Kokkos::HostSpace>&>(raw->rankId_m);
             if (iota.extent(0) != localNum) {
                 Kokkos::resize(iota, localNum);
+            }
+            if (selection.includesRankIds() && rankId.extent(0) != localNum) {
                 Kokkos::resize(rankId, localNum);
             }
             for (size_t i = 0; i < localNum; ++i) {
-                iota(i)   = static_cast<int64_t>(i);
-                rankId(i) = rank;
+                iota(i) = static_cast<int64_t>(i);
+                if (selection.includesRankIds()) {
+                    rankId(i) = rank;
+                }
             }
 
             // Coordset + topology
@@ -437,7 +550,10 @@ namespace ippl {
             // R host mirror (persistent)
             using RAttrib_t = std::remove_reference_t<decltype(pc.R)>;
             using RHost_t   = typename RAttrib_t::host_mirror_type;
-            static thread_local RHost_t RHost;
+            RHost_t RHost;
+            if (auto* previous = viewRegistry_m.find<RHost_t>(name + "_R")) {
+                RHost = *previous;
+            }
             if (RHost.extent(0) != localNum) {
                 Kokkos::resize(RHost, localNum);
             }
@@ -461,41 +577,57 @@ namespace ippl {
                 }
             }
 
-            // RankID field
-            auto fields    = data["fields"];
-            auto rankField = fields["RankID"];
-            rankField["association"].set_string("vertex");
-            rankField["topology"].set_string("p_unstructured_topo");
-            rankField["volume_dependent"].set_string("false");
-            if (localNum > 0) {
-                rankField["values"].set_external(rankId.data(), localNum);
-            } else {
-                rankField["values"].set_external(static_cast<int*>(nullptr), 0);
+            if (localNum == 0) {
+                using Component = typename RAttrib_t::value_type::value_type;
+                const char* axes[] = {"x", "y", "z"};
+                for (unsigned d = 0; d < ParticleDim && d < 3; ++d) {
+                    data[std::string("coordsets/p_explicit_coords/values/") + axes[d]]
+                        .set_external(static_cast<Component*>(nullptr), 0);
+                }
             }
-            data["metadata/vtk_fields/RankID/attribute_type"].set_string("ProcessIds");
+
+            // RankID field
+            auto fields = data["fields"];
+            if (selection.includesRankIds()) {
+                auto rankField = fields["RankID"];
+                rankField["association"].set_string("vertex");
+                rankField["topology"].set_string("p_unstructured_topo");
+                rankField["volume_dependent"].set_string("false");
+                if (localNum > 0) {
+                    rankField["values"].set_external(rankId.data(), localNum);
+                } else {
+                    rankField["values"].set_external(static_cast<int*>(nullptr), 0);
+                }
+                data["metadata/vtk_fields/RankID/attribute_type"].set_string("ProcessIds");
+            }
 
             // ID field (if enabled)
             if constexpr (T::EnableIDs) {
-                using IDAttrib_t = std::remove_reference_t<decltype(pc.ID)>;
-                using IDHost_t   = typename IDAttrib_t::host_mirror_type;
-                static thread_local IDHost_t IDHost;
-                if (IDHost.extent(0) != localNum) {
-                    Kokkos::resize(IDHost, localNum);
-                }
-                Kokkos::deep_copy(IDHost, pc.ID.getView());
-                viewRegistry_m.set(name + "_ID", IDHost);
+                if (selection.includesParticleIds()) {
+                    using IDAttrib_t = std::remove_reference_t<decltype(pc.ID)>;
+                    using IDHost_t   = typename IDAttrib_t::host_mirror_type;
+                    IDHost_t IDHost;
+                    if (auto* previous = viewRegistry_m.find<IDHost_t>(name + "_ID")) {
+                        IDHost = *previous;
+                    }
+                    if (IDHost.extent(0) != localNum) {
+                        Kokkos::resize(IDHost, localNum);
+                    }
+                    Kokkos::deep_copy(IDHost, pc.ID.getView());
+                    viewRegistry_m.set(name + "_ID", IDHost);
 
-                auto idField = fields["ParticleIDs"];
-                idField["association"].set_string("vertex");
-                idField["topology"].set_string("p_unstructured_topo");
-                idField["volume_dependent"].set_string("false");
-                if (localNum > 0) {
-                    idField["values"].set_external(IDHost.data(), localNum);
-                } else {
-                    using id_value_t = typename IDHost_t::value_type;
-                    idField["values"].set_external(static_cast<id_value_t*>(nullptr), 0);
+                    auto idField = fields["ParticleIDs"];
+                    idField["association"].set_string("vertex");
+                    idField["topology"].set_string("p_unstructured_topo");
+                    idField["volume_dependent"].set_string("false");
+                    if (localNum > 0) {
+                        idField["values"].set_external(IDHost.data(), localNum);
+                    } else {
+                        using id_value_t = typename IDHost_t::value_type;
+                        idField["values"].set_external(static_cast<id_value_t*>(nullptr), 0);
+                    }
+                    data["metadata/vtk_fields/ParticleIDs/attribute_type"].set_string("GlobalIds");
                 }
-                data["metadata/vtk_fields/ParticleIDs/attribute_type"].set_string("GlobalIds");
             }
 
             // Position field (references RHost)
@@ -513,10 +645,19 @@ namespace ippl {
                 }
             }
 
+            if (localNum == 0) {
+                using Component = typename RAttrib_t::value_type::value_type;
+                const char* axes[] = {"x", "y", "z"};
+                for (unsigned d = 0; d < ParticleDim && d < 3; ++d) {
+                    R_field[std::string("values/") + axes[d]]
+                        .set_external(static_cast<Component*>(nullptr), 0);
+                }
+            }
+
             // User-defined attributes (persistent mirrors via prepareConduitNode)
             pc.forAllAttributes([&]<typename Attributes>(const Attributes& atts) {
                 for (auto* attribute : atts) {
-                    if (!pc.isBuiltinAttribute(attribute)) {
+                    if (!pc.isBuiltinAttribute(attribute) && selection.selects(attribute->get_name())) {
                         attribute->prepareConduitNode(localNum, fields, info);
                     }
                 }
@@ -597,6 +738,7 @@ namespace ippl {
         raw->setExecuteFn(
             [this, name, &pc, raw](conduit_cpp::Node& channel, int rank, Inform& info) {
                 const size_t localNum = pc.getLocalNum();
+                const auto& selection = getParticleAttributeSelection(name);
 
                 // If particle count changed, re-init the whole channel
                 // (re-allocate mirrors, re-set external pointers).
@@ -622,15 +764,15 @@ namespace ippl {
                     using IDHost_t =
                         typename std::remove_reference_t<decltype(pc.ID)>::host_mirror_type;
                     auto* IDHost = viewRegistry_m.find<IDHost_t>(name + "_ID");
-                    if (IDHost) {
+                    if (selection.includesParticleIds() && IDHost) {
                         Kokkos::deep_copy(*IDHost, pc.ID.getView());
                     }
                 }
 
-                // Deep-copy all user-defined attributes
+                // Deep-copy selected user-defined attributes
                 pc.forAllAttributes([&]<typename Attributes>(const Attributes& atts) {
                     for (auto* attribute : atts) {
-                        if (!pc.isBuiltinAttribute(attribute)) {
+                        if (!pc.isBuiltinAttribute(attribute) && selection.selects(attribute->get_name())) {
                             attribute->updateConduitData();
                         }
                     }

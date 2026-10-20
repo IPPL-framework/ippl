@@ -17,7 +17,9 @@
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
+#include <limits>
 #include <list>
+#include <map>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -34,6 +36,7 @@
 
 #include "Stream/InSitu/Channel.h"
 #include "Stream/InSitu/ProxyWriter.h"
+#include "Stream/ParticleAttributeSelection.h"
 #include "Stream/Registry/RegistryHelper.h"
 #include "Stream/Registry/ViewRegistry.h"
 
@@ -149,6 +152,11 @@ namespace ippl {
         std::vector<std::shared_ptr<Channel>> channels_m;
         // True after the channel Conduit tree has been built (first Execute)
         bool channelsBuilt_m = false;
+        bool initialized_m = false;
+        std::map<std::string, ParticleAttributeSelection> particleAttributeSelections_m;
+        std::map<std::string, std::function<std::vector<std::string>()>> particleAttributeSources_m;
+
+        void validateParticleAttributeSelections() const;
 
         ViewRegistry viewRegistry_m;
         conduit_cpp::Node node_m;
@@ -547,6 +555,13 @@ namespace ippl {
         template <typename T>
             requires std::derived_from<std::decay_t<T>, ParticleBaseBase>
         ParticleChannelHandle addParticleChannel(const std::string& name, const T& pc);
+
+        /// Configure before Initialize(). Unconfigured particle channels use all().
+        void setParticleAttributeSelection(
+            const std::string& label,
+            ParticleAttributeSelection selection = ParticleAttributeSelection::all());
+
+        const ParticleAttributeSelection& getParticleAttributeSelection(const std::string& label) const;
 
         /**
          * @brief Forces a refresh of a specific array (replaces rememberNow).
