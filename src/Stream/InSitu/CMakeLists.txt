@@ -8,12 +8,6 @@ target_include_directories(ippl
 )
 
 if(IPPL_ENABLE_CATALYST)
-    # ProxyWriter uses Catalyst's Conduit API and is only needed by the Catalyst adaptor.
-    target_sources(ippl
-        PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/ProxyWriter.cpp
-    )
-
     set(_ippl_catalyst_resource_source_dir
         "${CMAKE_CURRENT_SOURCE_DIR}/catalyst_scripts")
     set(_ippl_catalyst_resource_build_dir
@@ -77,8 +71,6 @@ endif()
 
 
 install(FILES
-    ProxyWriter.h
-    ProxyWriter.hpp
     CatalystAdaptor.h
     CatalystAdaptorSteering.hpp
     CatalystAdaptor.hpp
