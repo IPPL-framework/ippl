@@ -304,16 +304,16 @@ namespace ippl {
     void ParticleAttrib<T, Properties...>::internalCopy(const hash_type& indices) {
         auto copySize     = indices.size();
         using policy_type = Kokkos::RangePolicy<execution_space>;
-        auto view         = this->getView();
-        const auto size   = this->getParticleCount();
+        // create() does not change the particle count; the caller sets it after all attributes.
+        const auto size = this->getParticleCount();
 
-        // ada: PR501 comment not taken with logic hunk: snapshot count before create() increments
-        // localNum_mp.
-        create(copySize);  // localNum_mp becomes oldSize + copySize
+        // Growing must keep the existing particles, and the view must be taken afterwards.
+        create(copySize, true);
+        auto view = this->getView();
 
         Kokkos::parallel_for(
             "Copy to temp", policy_type(0, copySize),
-            KOKKOS_LAMBDA(const size_type& i) { view(size + i) = view(i); });
+            KOKKOS_LAMBDA(const size_type& i) { view(size + i) = view(indices(i)); });
 
         Kokkos::fence();
     }

@@ -120,6 +120,31 @@ namespace ippl {
         void updateLayout(FieldLayout<Dim>&, Mesh&);
 
         /*!
+         * @brief Updates the regions and the cutoff together.
+         *
+         * The cutoff is checked against the new regions only, so a cutoff that follows the mesh
+         * spacing may grow or shrink with the domain. It takes effect at the next update().
+         * @param rcutoff Positive cutoff, at most half the new local region length in every
+         * dimension
+         * @throws IpplException If the cutoff is not positive or does not fit the local region
+         */
+        void updateLayout(FieldLayout<Dim>&, Mesh&, const T& rcutoff);
+
+        /*!
+         * @brief Sets the cutoff that sizes the halos and the search cells.
+         *
+         * The new cutoff takes effect at the next update(), which rebuilds the halos and the
+         * cells; forEachPair() throws until then. Use the three-argument updateLayout() when the
+         * regions change as well.
+         * @param rcutoff Positive cutoff, at most half the local region length in every dimension
+         * @throws IpplException If the cutoff is not positive or does not fit the local region
+         */
+        void setCutoff(const T& rcutoff);
+
+        /*! @brief Returns the cutoff that sizes the halos and the search cells. */
+        T getCutoff() const { return rcutoff_m; }
+
+        /*!
          * @brief updates particles by exchanging them across ranks according to their positions.
          *         then constructs the particle neighbor list structure
          * @param pc particle container to update
@@ -224,7 +249,7 @@ namespace ippl {
 
     protected:
         ///! overlap in each dimension
-        const T rcutoff_m;
+        T rcutoff_m = 0;
         ///! number of cells in each dimension
         Vector<size_type, Dim> numCells_m;
         ///! strides to compute cell indices
@@ -241,6 +266,12 @@ namespace ippl {
         size_type numLocalParticles_m;
         ///! number of ghost cells
         static constexpr size_type numGhostCellsPerDim_m = 1;
+        ///! cap on local cells per local or ghost particle of the rank
+        static constexpr size_type maxCellsPerParticle_m = 16;
+        ///! cap on local cells that applies regardless of the particle count
+        static constexpr size_type minCellCap_m = size_type(1) << 24;
+        ///! true after updateLayout() or setCutoff() until buildCells() rebuilds the cells
+        bool cellsOutdated_m = true;
         /*!
          * To ensure the interior particles are at indices 0, ..., numLocalParticles_m - 1 the cells
          * need to be permuted such that local cells are at the beginning and ghost cells at the end
@@ -264,8 +295,28 @@ namespace ippl {
     public:
         /*!
          * @brief initializes all data necessary for the cells
+         * @param numParticles local and ghost particles of this rank; sets the cell cap
          */
-        void initializeCells();
+        void initializeCells(size_type numParticles = 0);
+
+        /*!
+         * @brief number of local cells per dimension for the rank-local region
+         *
+         * Cells are at least rcutoff_m wide, so all partners within the cutoff lie in the 3^Dim
+         * neighboring cells. If cells of width rcutoff_m would exceed
+         * max(maxCellsPerParticle_m * numParticles, minCellCap_m), all cells are widened
+         * uniformly until the count fits. Wider cells add candidate pairs that the cutoff test
+         * rejects; they do not change which pairs interact.
+         * @param numParticles local and ghost particles of this rank
+         */
+        Vector<size_type, Dim> localCellCounts(size_type numParticles) const;
+
+        /*!
+         * @brief asserts that a particle can overlap at most two ranks per dimension
+         * @param rcutoff Cutoff to check against the local region
+         * @throws IpplException If the cutoff exceeds half the local region length
+         */
+        void assertCutoffFitsRegions(const T& rcutoff) const;
 
         /*!
          * @brief exchange particles by scanning neighbor ranks first, only scan other ranks if

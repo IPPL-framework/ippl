@@ -40,8 +40,8 @@ namespace ippl {
     template <typename ParticleContainer, typename ScalarAttribute, typename VectorAttribute>
     void TruncatedGreenParticleInteraction<ParticleContainer, ScalarAttribute,
                                            VectorAttribute>::solve() {
-        static IpplTimings::TimerRef solveTimer =
-            IpplTimings::getTimer("TruncatedGreenParticleInteraction::solve()");
+        // Short name: IpplTimings prints timer names in a 20-character column.
+        static IpplTimings::TimerRef solveTimer = IpplTimings::getTimer("P3M: PP interaction");
         IpplTimings::startTimer(solveTimer);
         // get particle data
         auto& Field    = Field_m;
@@ -49,8 +49,9 @@ namespace ippl {
         const auto& QM = QM_m;
 
         // get simulation specific data
-        const auto rcut2 = std::pow<Scalar_t>(this->params_m.template get<Scalar_t>("rcut"), 2);
-        const auto alpha = this->params_m.template get<Scalar_t>("alpha");
+        const auto rcut           = this->params_m.template get<Scalar_t>("rcut");
+        const auto rcut2          = std::pow<Scalar_t>(rcut, 2);
+        const auto alpha          = this->params_m.template get<Scalar_t>("alpha");
         const auto forceConstant  = this->params_m.template get<Scalar_t>("force_constant");
         const auto regularization = this->params_m.template get<Scalar_t>("regularization_cutoff");
 
@@ -61,6 +62,16 @@ namespace ippl {
         }
 
         const auto& particleLayout = this->pc_m.getLayout();
+        // The search cells and halos only cover the layout cutoff; partners beyond it are missed.
+        if (rcut > particleLayout.getCutoff()) {
+            IpplTimings::stopTimer(solveTimer);
+            Inform m("TruncatedGreenParticleInteraction::solve");
+            m << level1 << "rcut " << rcut << " exceeds the particle layout cutoff "
+              << particleLayout.getCutoff() << "." << endl;
+
+            throw IpplException("TruncatedGreenParticleInteraction::solve",
+                                "rcut exceeds layout cutoff");
+        }
 
         particleLayout.template forEachPair<execution_space>(
             KOKKOS_LAMBDA(const size_t& i, const size_t& j) {
