@@ -97,6 +97,11 @@ namespace ippl {
             ar.deserialize(dview_m, offset, nrecvs);
         }
 
+        void deserializeIndexed(detail::Archive<memory_space>& ar, const hash_type& indices,
+                                size_type nrecvs) override {
+            ar.deserializeIndexed(dview_m, indices, nrecvs);
+        }
+
         KOKKOS_INLINE_FUNCTION virtual ~ParticleAttrib() = default;
 
         size_type size() const override { return dview_m.extent(0); }

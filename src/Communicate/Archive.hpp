@@ -63,6 +63,42 @@ namespace ippl {
             }
         };
 
+        /*
+         * Inverse of SerializeHashFunctor: writes the i-th packed entry to
+         * view_data[hash(i)]. A functor rather than a lambda, because NVCC cannot
+         * name a device lambda inside a template whose pack precedes HashView.
+         * The bytes are gathered into a register and stored as one T: the target
+         * slots are scattered, and byte-wise stores to them would not coalesce.
+         */
+        template <typename T, typename HashView, typename BufferPtr>
+        struct DeserializeHashFunctor {
+            T* view_data;
+            HashView hash;
+            BufferPtr buf;
+            size_t rpos;
+
+            KOKKOS_INLINE_FUNCTION void operator()(const size_t i) const {
+                T value{};
+                copyBytes(reinterpret_cast<char*>(&value), buf + i * sizeof(T) + rpos, sizeof(T));
+                view_data[hash(i)] = value;
+            }
+        };
+
+        template <typename T, unsigned Dim, typename HashView, typename BufferPtr>
+        struct DeserializeHashVectorFunctor {
+            Vector<T, Dim>* view_data;
+            HashView hash;
+            BufferPtr buf;
+            size_t rpos;
+
+            KOKKOS_INLINE_FUNCTION void operator()(const size_t i, const size_t d) const {
+                T value{};
+                copyBytes(reinterpret_cast<char*>(&value), buf + (Dim * i + d) * sizeof(T) + rpos,
+                          sizeof(T));
+                view_data[hash(i)][d] = value;
+            }
+        };
+
         // =================================================================
         // GPU buffer management
         // =================================================================
@@ -376,6 +412,47 @@ namespace ippl {
                 });
             Kokkos::fence();
             readpos_m += Dim * size * nrecvs;
+        }
+
+        // =================================================================
+        // Deserialize — scalar into indexed slots
+        // =================================================================
+
+        template <class... Properties>
+        template <typename T, class... ViewArgs, typename HashView>
+        void Archive<Properties...>::deserializeIndexed(Kokkos::View<T*, ViewArgs...>& view,
+                                                        const HashView& indices, size_type nrecvs) {
+            using exec_space  = typename HashView::execution_space;
+            using policy_type = Kokkos::RangePolicy<exec_space>;
+
+            DeserializeHashFunctor<T, HashView, pointer_type> f{view.data(), indices, bufferData(),
+                                                                readpos_m};
+
+            Kokkos::parallel_for("Archive::deserializeIndexed()", policy_type(0, nrecvs), f);
+            Kokkos::fence();
+            readpos_m += sizeof(T) * nrecvs;
+        }
+
+        // =================================================================
+        // Deserialize — vector into indexed slots
+        // =================================================================
+
+        template <class... Properties>
+        template <typename T, unsigned Dim, class... ViewArgs, typename HashView>
+        void Archive<Properties...>::deserializeIndexed(
+            Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view, const HashView& indices,
+            size_type nrecvs) {
+            using exec_space = typename HashView::execution_space;
+            using mdrange_t =
+                Kokkos::MDRangePolicy<Kokkos::Rank<2>, Kokkos::IndexType<size_type>, exec_space>;
+
+            DeserializeHashVectorFunctor<T, Dim, HashView, pointer_type> f{view.data(), indices,
+                                                                           bufferData(), readpos_m};
+
+            Kokkos::parallel_for("Archive::deserializeIndexed(vector)",
+                                 mdrange_t({0, 0}, {(long int)nrecvs, Dim}), f);
+            Kokkos::fence();
+            readpos_m += Dim * sizeof(T) * nrecvs;
         }
 
         // =================================================================

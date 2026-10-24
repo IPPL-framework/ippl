@@ -98,6 +98,18 @@ namespace ippl {
             void deserialize(Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view, size_type nrecvs);
 
             /*!
+             * Deserialize the i-th received entry into view(indices(i)); the inverse of
+             * serialize(view, hash, nsends). The view must already hold every index.
+             */
+            template <typename T, class... ViewArgs, typename HashView>
+            void deserializeIndexed(Kokkos::View<T*, ViewArgs...>& view, const HashView& indices,
+                                    size_type nrecvs);
+
+            template <typename T, unsigned Dim, class... ViewArgs, typename HashView>
+            void deserializeIndexed(Kokkos::View<Vector<T, Dim>*, ViewArgs...>& view,
+                                    const HashView& indices, size_type nrecvs);
+
+            /*!
              * @returns a pointer to the data of the buffer.
              *          On GPU this is a page-aligned device pointer from cudaMalloc/hipMalloc.
              */

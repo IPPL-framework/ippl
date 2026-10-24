@@ -89,6 +89,9 @@ namespace ippl {
             virtual void deserialize(Archive<memory_space>& ar, size_type nrecvs) = 0;
             virtual void deserialize(detail::Archive<memory_space>& ar, size_type offset,
                                      size_type nrecvs)                            = 0;
+            // Write the i-th received entry to slot indices(i) of existing storage.
+            virtual void deserializeIndexed(detail::Archive<memory_space>& ar,
+                                            const hash_type& indices, size_type nrecvs) = 0;
 
             virtual size_type size() const = 0;
 
