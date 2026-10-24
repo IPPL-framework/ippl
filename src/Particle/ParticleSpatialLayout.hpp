@@ -144,7 +144,7 @@ namespace ippl {
         static IpplTimings::TimerRef locateTimer = IpplTimings::getTimer("locateParticles");
         IpplTimings::startTimer(locateTimer);
 
-        const size_type nInvalid = locateParticlesPacked(pc);
+        locateParticlesPacked(pc);
 
         // Copy metadata to host
         Kokkos::deep_copy(nDest_h_, nDest_d_);
@@ -189,13 +189,12 @@ namespace ippl {
 
         IpplTimings::stopTimer(preprocTimer);
 
-        // 2.2 Particle Sends
+        // 2.2 Send and receive lists
 
-        static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("particleSend");
-        IpplTimings::startTimer(sendTimer);
-
-        std::vector<MPI_Request> requests;
-        requests.reserve(destinationRanks_host_.size());
+        using send_ids_type = decltype(Kokkos::subview(
+            sendIds_d_, Kokkos::pair<size_t, size_t>{size_t(0), size_t(0)}));
+        std::vector<std::pair<int, send_ids_type>> sends;
+        sends.reserve(destinationRanks_host_.size());
 
         int tag = Comm->next_tag(mpi::tag::P_SPATIAL_LAYOUT, mpi::tag::P_LAYOUT_CYCLE);
 
@@ -206,27 +205,18 @@ namespace ippl {
             if (count == 0)
                 continue;
             const size_type begin = static_cast<size_type>(sendOffsets_h_(rank));
-            auto ids_sub = Kokkos::subview(
-                sendIds_d_, Kokkos::pair<size_t, size_t>{static_cast<size_t>(begin),
-                                                         static_cast<size_t>(begin + count)});
-            pc.sendToRank(rank, tag, requests, ids_sub);
+            sends.emplace_back(
+                rank, Kokkos::subview(sendIds_d_, Kokkos::pair<size_t, size_t>{
+                                                      static_cast<size_t>(begin),
+                                                      static_cast<size_t>(begin + count)}));
         }
 
-        IpplTimings::stopTimer(sendTimer);
-
-        // 2.3 Post receives
-
-        static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
-        IpplTimings::startTimer(recvTimer);
-
         std::vector<std::pair<int, size_type>> recvList;
-        size_type totalRecvs = 0;
 
         if (countExchangeMode_ == CountExchange::RMA) {
             for (int rank = 0; rank < nRanks_; ++rank) {
                 if (nRecvs_m[rank] > 0) {
                     recvList.push_back({rank, nRecvs_m[rank]});
-                    totalRecvs += nRecvs_m[rank];
                 }
             }
         } else {
@@ -234,85 +224,16 @@ namespace ippl {
                 Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), recvCounts_d_);
             for (int rank = 0; rank < nRanks_; ++rank) {
                 if (recvCounts_h(rank) > 0) {
-                    recvList.push_back({rank, recvCounts_h(rank)});
-                    totalRecvs += static_cast<size_type>(recvCounts_h(rank));
+                    recvList.push_back({rank, static_cast<size_type>(recvCounts_h(rank))});
                 }
             }
         }
 
-        std::vector<MPI_Request> recvRequests;
-        std::vector<std::function<void(size_type)>> finalizers(recvList.size());
+        // 3. Exchange particles in rounds of bounded messages ================================ //
 
-        for (size_t i = 0; i < recvList.size(); ++i) {
-            auto [rank, count] = recvList[i];
-            auto [req, fin]    = pc.postRecvFromRank(rank, tag, count);
-            recvRequests.insert(recvRequests.end(), req.begin(), req.end());
-            finalizers[i]      = std::move(fin);
-        }
-
-        IpplTimings::stopTimer(recvTimer);
-
-        // 3. Internal destruction of invalid particles ======================================= //
-
-        static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("particleDestroy");
-        IpplTimings::startTimer(destroyTimer);
-
-        // locateParticlesPacked already wrote the per-particle "is leaving"
-        // mask into leaving_d_. Reuse it instead of re-running the full
-        // region search inside the destroy predicate.
-        auto leaving = leaving_d_;
-        pc.template internalDestroy<position_memory_space, position_execution_space>(
-            KOKKOS_LAMBDA(size_t i) { return leaving(i); }, nInvalid);
-        Kokkos::fence();
-        const size_type localAfterDestroy = pc.getLocalNum();
-
-        IpplTimings::stopTimer(destroyTimer);
-
-        static IpplTimings::TimerRef waitTimer = IpplTimings::getTimer("particleWait");
-        IpplTimings::startTimer(waitTimer);
-
-        requests.insert(requests.end(), recvRequests.begin(), recvRequests.end());
-        if (!requests.empty()) {
-            MPI_Waitall(static_cast<int>(requests.size()), requests.data(), MPI_STATUSES_IGNORE);
-        }
-
-        IpplTimings::stopTimer(waitTimer);
-
-        static IpplTimings::TimerRef freeBufferTimer = IpplTimings::getTimer("particleFreeBuffers");
-        IpplTimings::startTimer(freeBufferTimer);
-
-        Comm->freeAllBuffers();
-
-        IpplTimings::stopTimer(freeBufferTimer);
-
-        // 5. Deserialize
-        static IpplTimings::TimerRef deserializeTimer =
-            IpplTimings::getTimer("particleDeserialize");
-        IpplTimings::startTimer(deserializeTimer);
-
-        static IpplTimings::TimerRef deserializeResizeTimer =
-            IpplTimings::getTimer("particleDeserResize");
-        IpplTimings::startTimer(deserializeResizeTimer);
-
-        if (totalRecvs > 0) {
-            const size_type receiveCapacity = localAfterDestroy + totalRecvs;
-            pc.forAllAttributes([&]<typename Attribute>(Attribute*& attribute) {
-                attribute->reserve(receiveCapacity);
-            });
-        }
-
-        IpplTimings::stopTimer(deserializeResizeTimer);
-
-        static IpplTimings::TimerRef deserializeCopyTimer =
-            IpplTimings::getTimer("particleDeserCopy");
-        IpplTimings::startTimer(deserializeCopyTimer);
-
-        for (auto& finalize : finalizers) {
-            finalize(pc.getLocalNum());
-        }
-
-        IpplTimings::stopTimer(deserializeCopyTimer);
-        IpplTimings::stopTimer(deserializeTimer);
+        // Every leaving particle has exactly one destination, so received particles refill
+        // the slots of sent ones and no separate destroy pass is needed.
+        pc.exchangeInRounds(tag, sends, recvList, /*sentParticlesLeave=*/true);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);
     }

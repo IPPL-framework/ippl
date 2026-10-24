@@ -462,12 +462,10 @@ namespace ippl {
 
         IpplTimings::stopTimer(preprocTimer);
 
-        // 2.2 Particle Sends
+        // 2.2 Send and receive lists
 
-        static IpplTimings::TimerRef sendTimer = IpplTimings::getTimer("particleSend");
-        IpplTimings::startTimer(sendTimer);
-
-        std::vector<MPI_Request> requests(0);
+        std::vector<std::pair<int, hash_type>> sends;
+        sends.reserve(nDestinationRanks);
 
         int tag = Comm->next_tag(mpi::tag::P_SPATIAL_LAYOUT, mpi::tag::P_LAYOUT_CYCLE);
 
@@ -478,39 +476,33 @@ namespace ippl {
             }
             hash_type hash("hash", rankSendCount_hview(rank));
             fillHash(rank, particleRanks, particleRankOffsets, hash);
-            pc.sendToRank(rank, tag, requests, hash);
+            sends.emplace_back(rank, hash);
         }
 
-        IpplTimings::stopTimer(sendTimer);
+        std::vector<std::pair<int, size_type>> recvs;
+        for (int rank = 0; rank < nRanks; ++rank) {
+            if (this->nRecvs_m[rank] > 0) {
+                recvs.emplace_back(rank, this->nRecvs_m[rank]);
+            }
+        }
 
-        // 3. Internal destruction of invalid particles ======================================= //
+        // 3. Exchange particles in rounds of bounded messages ================================ //
+
+        // Ghost copies stay on this rank, so received particles are appended instead of
+        // refilling the slots of sent ones.
+        pc.exchangeInRounds(tag, sends, recvs, /*sentParticlesLeave=*/false);
+
+        // 4. Internal destruction of invalid particles ======================================= //
 
         static IpplTimings::TimerRef destroyTimer = IpplTimings::getTimer("particleDestroy");
         IpplTimings::startTimer(destroyTimer);
 
-        pc.internalDestroy(invalidParticles, nInvalid);
+        // The received particles were appended after localnum and stay.
+        pc.template internalDestroy<position_memory_space, position_execution_space>(
+            KOKKOS_LAMBDA(size_t i) { return i < localnum && invalidParticles(i); }, nInvalid);
         Kokkos::fence();
 
         IpplTimings::stopTimer(destroyTimer);
-
-        // 4. Receive Particles ================================================================ //
-
-        static IpplTimings::TimerRef recvTimer = IpplTimings::getTimer("particleRecv");
-        IpplTimings::startTimer(recvTimer);
-
-        for (int rank = 0; rank < nRanks; ++rank) {
-            if (this->nRecvs_m[rank] > 0) {
-                pc.recvFromRank(rank, tag, this->nRecvs_m[rank]);
-            }
-        }
-        IpplTimings::stopTimer(recvTimer);
-
-        IpplTimings::startTimer(sendTimer);
-
-        if (requests.size() > 0) {
-            MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
-        }
-        IpplTimings::stopTimer(sendTimer);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);
     }
