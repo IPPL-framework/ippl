@@ -51,12 +51,17 @@
 #ifndef IPPL_PARTICLE_BASE_H
 #define IPPL_PARTICLE_BASE_H
 
+#include <algorithm>
+#include <deque>
+#include <functional>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "Types/IpplTypes.h"
 
+#include "Utility/IpplTimings.h"
 #include "Utility/TypeUtils.h"
 
 #include "Particle/ParticleLayout.h"
@@ -368,6 +373,42 @@ namespace ippl {
         std::pair<std::vector<MPI_Request>, std::function<void(size_type)>> postRecvFromRank(
             int rank, int tag, size_type nRecvs);
 
+        //! Like sendToRank; the returned function returns the send buffers to the pool once
+        //! the requests completed.
+        template <typename HashType>
+        std::function<void()> postSendToRank(int rank, int tag, std::vector<MPI_Request>& requests,
+                                             const HashType& hash);
+
+        //! Like postRecvFromRank, but the finalizer writes the i-th particle to slot targets(i),
+        //! or to offset + i if targets is null, and returns the receive buffer to the pool.
+        std::pair<std::vector<MPI_Request>,
+                  std::function<void(size_type offset, const hash_container_type* targets)>>
+        postRecvFromRankIndexed(int rank, int tag, size_type nRecvs);
+
+        /**
+         * @brief Exchange particles with other ranks in rounds of bounded messages.
+         * @details Round k sends particles [kC, (k+1)C) of every send list and receives the
+         * matching chunk from every source, with C = Comm->getMaxMessageBytes() divided by the
+         * packed bytes per particle. At most W = Comm->getMessageRoundsInFlight() rounds are in
+         * flight: before round k + W is packed, round k is waited for and unpacked. The buffers
+         * thus hold at most W chunks per peer and direction; W = 1 waits after every round,
+         * W = 2 packs the next round while the previous one is on the wire. Both peers derive
+         * C from the same attributes, so chunks match without extra metadata, and MPI's
+         * non-overtaking order keeps the rounds apart under one tag.
+         * @param tag MPI tag of the first memory space; further spaces use tag + 1, ...
+         * @param sends destination rank and local indices of the particles to send
+         * @param recvs source rank and number of particles to receive
+         * @param sentParticlesLeave true if every sent particle leaves this rank, i.e. appears
+         * in exactly one send list. Received particles then refill the slots freed by earlier
+         * rounds and the unfilled slots are compacted at the end, so the sent particles are
+         * gone on return and storage grows only where receives outpace sends. Otherwise the
+         * received particles are appended and the caller destroys the sent ones.
+         */
+        template <typename HashType>
+        void exchangeInRounds(int tag, const std::vector<std::pair<int, HashType>>& sends,
+                              const std::vector<std::pair<int, size_type>>& recvs,
+                              bool sentParticlesLeave);
+
         /*!
          * Serialize to do MPI calls.
          * @param ar archive
@@ -429,6 +470,11 @@ namespace ippl {
         //! buffers for particle partitioning
         hash_container_type deleteIndex_m;
         hash_container_type keepIndex_m;
+
+        //! exchangeInRounds scratch: slots freed by sent particles, slots of received ones.
+        //! Kept between calls so a migration does not allocate device memory.
+        hash_container_type exchangeSlots_m;
+        hash_container_type exchangeTargets_m;
     };
 }  // namespace ippl
 
