@@ -52,3 +52,14 @@ add_ippl_integration_test(
   10
   --info
   10)
+
+add_ippl_integration_test(
+  benchmarkLargeMessageMigration
+  LABELS
+  integration
+  particle
+  ARGS
+  --particles-per-rank
+  100000
+  --repeats
+  2)
