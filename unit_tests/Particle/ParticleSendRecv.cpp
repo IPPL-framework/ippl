@@ -166,6 +166,75 @@ TYPED_TEST(ParticleSendRecv, SendAndRecieve) {
     }
 }
 
+TYPED_TEST(ParticleSendRecv, SendAndReceiveInRounds) {
+    using bunch_type  = typename TestFixture::bunch_type;
+    using value_type  = typename bunch_type::charge_container_type::value_type;
+    using vector_type = typename bunch_type::vector_type;
+    auto& bunch       = this->bunch;
+
+    // Q is a function of R, so a particle whose attributes were split across chunks fails.
+    const auto signature = [](const vector_type& r) {
+        value_type q = 0;
+        for (unsigned d = 0; d < vector_type::dim; ++d) {
+            q += (d + 1) * r[d];
+        }
+        return q;
+    };
+
+    // The fixture rounds the particle count down to a multiple of the rank count.
+    unsigned int totalBefore = 0;
+    unsigned int localBefore = bunch->getLocalNum();
+    ippl::Comm->allreduce(localBefore, totalBefore, 1, std::plus<unsigned int>());
+
+    const auto previousCap    = ippl::Comm->getMaxMessageBytes();
+    const auto previousWindow = ippl::Comm->getMessageRoundsInFlight();
+    // Three particles per message, plus one byte so the cap is not a multiple of the
+    // particle size: every migrating pair needs several rounds.
+    ippl::Comm->setMaxMessageBytes(3 * (sizeof(vector_type) + sizeof(int) + sizeof(value_type))
+                                   + 1);
+
+    for (unsigned window : {1u, 2u, 5u}) {
+        ippl::Comm->setMessageRoundsInFlight(window);
+
+        // Fresh random positions, so most particles migrate again.
+        std::mt19937_64 eng(17 * window + ippl::Comm->rank());
+        std::uniform_real_distribution<value_type> unif(0, 1);
+        auto R_host = bunch->R.getHostMirror();
+        auto Q_host = bunch->Q.getHostMirror();
+        for (size_t i = 0; i < bunch->getLocalNum(); ++i) {
+            for (unsigned d = 0; d < vector_type::dim; ++d) {
+                R_host(i)[d] = unif(eng) * this->domain[d];
+            }
+            Q_host(i) = signature(R_host(i));
+        }
+        Kokkos::deep_copy(bunch->R.getView(), R_host);
+        Kokkos::deep_copy(bunch->Q.getView(), Q_host);
+        this->computeExpectedRanks();
+
+        bunch->update();
+
+        auto ER_host = bunch->expectedRank.getHostMirror();
+        R_host       = bunch->R.getHostMirror();
+        Q_host       = bunch->Q.getHostMirror();
+        Kokkos::deep_copy(ER_host, bunch->expectedRank.getView());
+        Kokkos::deep_copy(R_host, bunch->R.getView());
+        Kokkos::deep_copy(Q_host, bunch->Q.getView());
+
+        for (size_t i = 0; i < bunch->getLocalNum(); ++i) {
+            ASSERT_EQ(ER_host(i), ippl::Comm->rank()) << "rounds in flight: " << window;
+            ASSERT_EQ(Q_host(i), signature(R_host(i))) << "rounds in flight: " << window;
+        }
+
+        unsigned int totalParticles = 0;
+        unsigned int localParticles = bunch->getLocalNum();
+        ippl::Comm->allreduce(localParticles, totalParticles, 1, std::plus<unsigned int>());
+        ASSERT_EQ(totalBefore, totalParticles) << "rounds in flight: " << window;
+    }
+
+    ippl::Comm->setMaxMessageBytes(previousCap);
+    ippl::Comm->setMessageRoundsInFlight(previousWindow);
+}
+
 int main(int argc, char* argv[]) {
     int success = 1;
     ippl::initialize(argc, argv);
