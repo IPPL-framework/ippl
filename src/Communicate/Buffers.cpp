@@ -22,6 +22,10 @@
 
 #include "Ippl.h"
 
+#include <algorithm>
+#include <climits>
+#include <stdexcept>
+
 #include "Communicator.h"
 
 namespace ippl {
@@ -29,6 +33,20 @@ namespace ippl {
 
         void Communicator::setDefaultOverallocation(double factor) {
             defaultOveralloc_m = factor;
+        }
+
+        void Communicator::setMaxMessageBytes(size_type bytes) {
+            if (bytes == 0) {
+                throw std::invalid_argument("The maximum MPI message size must be positive");
+            }
+            maxMessageBytes_m = std::min(bytes, static_cast<size_type>(INT_MAX));
+        }
+
+        void Communicator::setMessageRoundsInFlight(size_type rounds) {
+            if (rounds == 0) {
+                throw std::invalid_argument("At least one message round must be in flight");
+            }
+            roundsInFlight_m = rounds;
         }
 
         void Communicator::deleteAllBuffers() {

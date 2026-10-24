@@ -146,6 +146,42 @@ namespace ippl {
             double getDefaultOverallocation() const { return defaultOveralloc_m; }
             void setDefaultOverallocation(double factor);
 
+            //! Default for getMaxMessageBytes(); the environment variable
+            //! IPPL_MAX_MESSAGE_BYTES overrides it at ippl::initialize(). With two rounds in
+            //! flight, 64 MiB was never slower than whole-buffer messages on GH200 nodes and
+            //! needed the least buffer memory (test/particle/benchmarkLargeMessageMigration).
+            static constexpr size_type defaultMaxMessageBytes = size_type(64) << 20;
+
+            /**
+             * @brief Upper bound in bytes for one particle-migration message.
+             * @details Particle migration packs at most this many bytes per peer and memory
+             * space into one buffer and waits for the whole round before packing the next, so
+             * communication buffers stay below (number of peers) x this value. Every rank must
+             * use the same value, since both peers derive the chunk boundaries from it.
+             */
+            size_type getMaxMessageBytes() const noexcept { return maxMessageBytes_m; }
+
+            /**
+             * @param bytes positive message bound; values above INT_MAX are clamped to INT_MAX
+             * because MPI byte counts are int.
+             * @throws std::invalid_argument if bytes is zero
+             */
+            void setMaxMessageBytes(size_type bytes);
+
+            //! Default for getMessageRoundsInFlight(); the environment variable
+            //! IPPL_MESSAGE_ROUNDS_IN_FLIGHT overrides it at ippl::initialize().
+            static constexpr size_type defaultMessageRoundsInFlight = 2;
+
+            /**
+             * @brief Number of particle-migration rounds that may be in flight at once.
+             * @details 1 waits for every round before packing the next one; larger values
+             * overlap packing and transfer at the cost of that many buffers per peer.
+             */
+            size_type getMessageRoundsInFlight() const noexcept { return roundsInFlight_m; }
+
+            //! @throws std::invalid_argument if rounds is zero
+            void setMessageRoundsInFlight(size_type rounds);
+
             template <typename MemorySpace = Kokkos::DefaultExecutionSpace::memory_space,
                       typename T           = char>
             buffer_type<MemorySpace> getBuffer(size_type size, double overallocation = 1.0);
@@ -271,6 +307,10 @@ namespace ippl {
             }
 
             double defaultOveralloc_m = 1.0;
+
+            size_type maxMessageBytes_m = defaultMaxMessageBytes;
+
+            size_type roundsInFlight_m = defaultMessageRoundsInFlight;
 
             /////////////////////////////////////////////////////////////////////////////////////
 

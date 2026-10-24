@@ -29,6 +29,13 @@ namespace ippl {
         Error = std::make_unique<Inform>("Error", std::cerr, INFORM_ALL_NODES);
 
         try {
+            if (const char* maxMessageBytes = std::getenv("IPPL_MAX_MESSAGE_BYTES")) {
+                Comm->setMaxMessageBytes(std::stoull(maxMessageBytes));
+            }
+            if (const char* roundsInFlight = std::getenv("IPPL_MESSAGE_ROUNDS_IN_FLIGHT")) {
+                Comm->setMessageRoundsInFlight(std::stoull(roundsInFlight));
+            }
+
             std::list<std::string> notparsed;
             int infoLevel = 0;
             int nargs     = 0;
