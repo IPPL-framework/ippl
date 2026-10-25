@@ -94,27 +94,27 @@ namespace ippl {
                 attribute->create(nLocal, non_destructive);
             });
 
+            // remember that we're creating these new particles. This must happen before
+            // ID.getView() below, which only covers the first localNum_m entries.
+            const size_type offset = localNum_m;
+            localNum_m += nLocal;
+
             if constexpr (EnableIDs) {
                 // Set the unique ID value for these new particles. The new entries
-                // live at indices [localNum_m, localNum_m + nLocal); the k-th new
+                // live at indices [offset, offset + nLocal); the k-th new
                 // particle on this rank gets ID nextID + numNodes * k.
                 using policy_type =
                     Kokkos::RangePolicy<size_type, typename particle_index_type::execution_space>;
                 auto pIDs     = ID.getView();
                 auto nextID   = this->nextID_m;
                 auto numNodes = this->numNodes_m;
-                auto offset   = localNum_m;
                 Kokkos::parallel_for(
-                    "ParticleBase<...>::create(size_t,bool)",
-                    policy_type(localNum_m, localNum_m + nLocal),
+                    "ParticleBase<...>::create(size_t,bool)", policy_type(offset, offset + nLocal),
                     KOKKOS_LAMBDA(const std::int64_t i) {
                         pIDs(i) = nextID + numNodes * (i - offset);
                     });
                 nextID_m += numNodes_m * nLocal;
             }
-
-            // remember that we're creating these new particles
-            localNum_m += nLocal;
         }
 
         Comm->allreduce(localNum_m, totalNum_m, 1, std::plus<size_type>());
