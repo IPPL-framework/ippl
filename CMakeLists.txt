@@ -17,7 +17,7 @@ endif()
 # ------------------------------------------------------------------------------
 # Project declaration and version
 # ------------------------------------------------------------------------------
-project(IPPL VERSION 3.2 LANGUAGES CXX)
+project(IPPL VERSION 3.4.0 LANGUAGES CXX)
 
 # ------------------------------------------------------------------------------
 # Module path, setup before including any cmake modules
