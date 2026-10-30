@@ -94,6 +94,10 @@ add_subdirectory(Nodes1D)
 add_subdirectory(FEM)
 add_subdirectory(Random)
 
+if(IPPL_ENABLE_PYTHON_BRIDGE)
+  add_subdirectory(Interoperability)
+endif()
+
 if(IPPL_ENABLE_SOLVERS)
   message(STATUS "Adding Solver subdirectories")
   add_subdirectory(PoissonSolvers)
