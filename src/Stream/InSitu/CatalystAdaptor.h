@@ -140,7 +140,7 @@ namespace ippl {
             ,  // Only print on rank 0
             catalystWarn_m("CatalystAdaptor_WARNING", std::cerr, INFORM_ALL_NODES)
             , experimentName_m(normalizeExperimentName(std::move(experimentName)))
-            , catalystVis_m(environmentValue("IPPL_CATALYST_VIS", "ON"))
+            , catalystVis_m(environmentValue("IPPL_CATALYST_VIS", "OFF"))
             , catalystLive_m(environmentValue("IPPL_CATALYST_LIVE", "OFF"))
             , catalystSteer_m(environmentValue("IPPL_CATALYST_STEER", "OFF"))
             , catalystPng_m(environmentValue("IPPL_CATALYST_PNG", "OFF"))
@@ -149,7 +149,7 @@ namespace ippl {
                                                    std::to_string(ippl::Info->getOutputLevel())))
             , catalystGhostMask_m(environmentValue("IPPL_CATALYST_GHOST_MASKS", "OFF"))
             , proxyOption_m(environmentValue("IPPL_CATALYST_PROXY_OPTION", "ON"))
-            , visEnabled_m(catalystVis_m != "OFF")
+            , visEnabled_m(catalystVis_m == "ON")
             , liveEnabled_m(catalystLive_m == "ON")
             , steerEnabled_m(catalystSteer_m == "ON" && catalystLive_m == "ON")
             , outputLevel_m(std::stoi(catalystVerbosity_m))
@@ -377,39 +377,6 @@ namespace ippl {
          */
         template <typename T, typename... Args>
         static void RegisterStructMembers(Args&&... args);
-
-        /* DEPRECATED atm ... */
-        // Optional enum metadata: label -> list of (text,value) choices
-        // std::unordered_map<std::string, std::vector<std::pair<std::string,int>>> enumChoices_m;
-        // /**
-        //  * @brief Provides enum choices metadata so the GUI shows a dropdown.
-        //  *
-        //  * Use this before InitializeRuntime.
-        //  * Example: RegisterEnumChoices("mode", {{"Off",0},{"Basic",1},{"Advanced",2}});
-        //  *
-        //  * @param label The label for the enum choice.
-        //  * @param entries A vector of pairs containing the display name and integer value.
-        //  */
-        // void RegisterEnumChoices(const std::string& label,
-        //                          const std::vector<std::pair<std::string,int>>& entries) {
-        //     enumChoices_m[label] = entries;
-        // }
-
-        // /**
-        //  * @brief Provides typed enum choices metadata mapped to a specific label for the GUI
-        //  dropdown.
-        //  *
-        //  * @tparam E The enumeration type.
-        //  * @param label The specific label of the steerable channel to associate the choices
-        //  with.
-        //  * @param entries A vector of pairs containing the display name and the enumeration
-        //  value.
-        //  */
-        // template<typename E>
-        // requires (std::is_enum_v<std::decay_t<E>>)
-        // void RegisterEnumChoicesTyped(const std::string& label, const
-        // std::vector<std::pair<std::string, E>>& entries);
-
         /**
          * @brief Provides typed enum choices metadata registered by the enum type, to be reused
          * across labels.

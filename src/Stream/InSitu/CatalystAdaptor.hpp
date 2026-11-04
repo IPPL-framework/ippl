@@ -78,86 +78,10 @@ namespace ippl {
         }
     }
 
+
     // =====================================================================================
     // Channel-based Initialize / Execute
     // =====================================================================================
-
-    inline void CatalystAdaptor::setParticleAttributeSelection(
-        const std::string& label, ParticleAttributeSelection selection) {
-        if (initialized_m) {
-            throw IpplException("CatalystAdaptor::setParticleAttributeSelection",
-                                "Configure particle attributes before Initialize(), or after Finalize().");
-        }
-        if (label.empty()) {
-            throw IpplException("CatalystAdaptor::setParticleAttributeSelection", "Empty channel label.");
-        }
-        particleAttributeSelections_m.insert_or_assign(label, std::move(selection));
-    }
-
-    inline const ParticleAttributeSelection& CatalystAdaptor::getParticleAttributeSelection(
-        const std::string& label) const {
-        static const auto DEFAULT_SELECTION = ParticleAttributeSelection::all();
-        const auto it = particleAttributeSelections_m.find(label);
-        return it == particleAttributeSelections_m.end() ? DEFAULT_SELECTION : it->second;
-    }
-
-    inline void CatalystAdaptor::validateParticleAttributeSelections() const {
-        std::map<std::string, std::vector<std::string>> particleAttributeNames;
-        for (const auto& [label, source] : particleAttributeSources_m) {
-            particleAttributeNames.emplace(label, source());
-        }
-        std::string error;
-        for (const auto& [label, selection] : particleAttributeSelections_m) {
-            if (!particleAttributeNames.contains(label)) {
-                error = "Selection refers to an unknown particle channel: '" + label + "'";
-                break;
-            }
-        }
-
-        // Compare effective policies and schemas, irrespective of registration or request order.
-        std::string signature;
-        auto append = [&](const std::string& value) {
-            signature += std::to_string(value.size()) + ":" + value;
-        };
-        for (const auto& [label, names] : particleAttributeNames) {
-            const auto& selection = getParticleAttributeSelection(label);
-            const auto reason = selection.validationError(names);
-            if (!reason.empty() && error.empty()) {
-                error = "Particle channel '" + label + "': " + reason;
-            }
-            append(label);
-            append(std::to_string(static_cast<int>(selection.mode())));
-            append(selection.includesParticleIds() ? "ids" : "no ids");
-            append(selection.includesRankIds() ? "ranks" : "no ranks");
-            append(std::to_string(selection.names().size()));
-            for (const auto& name : selection.names()) append(name);
-            append(std::to_string(names.size()));
-            for (const auto& name : names) append(name);
-        }
-        if (signature.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
-            error = "Particle attribute configuration is too large for MPI validation.";
-        }
-
-        // Every rank must reject invalid configuration before Catalyst enters collectives.
-        int invalid = !error.empty();
-        MPI_Allreduce(MPI_IN_PLACE, &invalid, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-        if (invalid) {
-            throw IpplException("CatalystAdaptor::Initialize",
-                                error.empty() ? "Invalid particle attribute selection on another MPI rank."
-                                              : error);
-        }
-        int length = static_cast<int>(signature.size());
-        MPI_Bcast(&length, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        std::string reference = signature;
-        reference.resize(length);
-        MPI_Bcast(reference.data(), length, MPI_CHAR, 0, MPI_COMM_WORLD);
-        invalid = reference != signature;
-        MPI_Allreduce(MPI_IN_PLACE, &invalid, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-        if (invalid) {
-            throw IpplException("CatalystAdaptor::Initialize",
-                                "Particle attribute names or selections differ between MPI ranks.");
-        }
-    }
 
     void CatalystAdaptor::Initialize(const std::shared_ptr<VisRegistryRuntime>& steerReg) {
         if (!visEnabled_m)
@@ -819,5 +743,89 @@ namespace ippl {
         }
         catalystWarn_m << "::refresh() label not found: '" << label << "'" << endl;
     }
+
+
+
+    // =====================================================================================
+    // Particle Attribute Selection, edfine which attributes are made availlabe
+    // =====================================================================================
+
+        inline void CatalystAdaptor::setParticleAttributeSelection(
+        const std::string& label, ParticleAttributeSelection selection) {
+        if (initialized_m) {
+            throw IpplException("CatalystAdaptor::setParticleAttributeSelection",
+                                "Configure particle attributes before Initialize(), or after Finalize().");
+        }
+        if (label.empty()) {
+            throw IpplException("CatalystAdaptor::setParticleAttributeSelection", "Empty channel label.");
+        }
+        particleAttributeSelections_m.insert_or_assign(label, std::move(selection));
+    }
+
+    inline const ParticleAttributeSelection& CatalystAdaptor::getParticleAttributeSelection(
+        const std::string& label) const {
+        static const auto DEFAULT_SELECTION = ParticleAttributeSelection::all();
+        const auto it = particleAttributeSelections_m.find(label);
+        return it == particleAttributeSelections_m.end() ? DEFAULT_SELECTION : it->second;
+    }
+
+    inline void CatalystAdaptor::validateParticleAttributeSelections() const {
+        std::map<std::string, std::vector<std::string>> particleAttributeNames;
+        for (const auto& [label, source] : particleAttributeSources_m) {
+            particleAttributeNames.emplace(label, source());
+        }
+        std::string error;
+        for (const auto& [label, selection] : particleAttributeSelections_m) {
+            if (!particleAttributeNames.contains(label)) {
+                error = "Selection refers to an unknown particle channel: '" + label + "'";
+                break;
+            }
+        }
+
+        // Compare effective policies and schemas, irrespective of registration or request order.
+        std::string signature;
+        auto append = [&](const std::string& value) {
+            signature += std::to_string(value.size()) + ":" + value;
+        };
+        for (const auto& [label, names] : particleAttributeNames) {
+            const auto& selection = getParticleAttributeSelection(label);
+            const auto reason = selection.validationError(names);
+            if (!reason.empty() && error.empty()) {
+                error = "Particle channel '" + label + "': " + reason;
+            }
+            append(label);
+            append(std::to_string(static_cast<int>(selection.mode())));
+            append(selection.includesParticleIds() ? "ids" : "no ids");
+            append(selection.includesRankIds() ? "ranks" : "no ranks");
+            append(std::to_string(selection.names().size()));
+            for (const auto& name : selection.names()) append(name);
+            append(std::to_string(names.size()));
+            for (const auto& name : names) append(name);
+        }
+        if (signature.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
+            error = "Particle attribute configuration is too large for MPI validation.";
+        }
+
+        // Every rank must reject invalid configuration before Catalyst enters collectives.
+        int invalid = !error.empty();
+        MPI_Allreduce(MPI_IN_PLACE, &invalid, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        if (invalid) {
+            throw IpplException("CatalystAdaptor::Initialize",
+                                error.empty() ? "Invalid particle attribute selection on another MPI rank."
+                                              : error);
+        }
+        int length = static_cast<int>(signature.size());
+        MPI_Bcast(&length, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        std::string reference = signature;
+        reference.resize(length);
+        MPI_Bcast(reference.data(), length, MPI_CHAR, 0, MPI_COMM_WORLD);
+        invalid = reference != signature;
+        MPI_Allreduce(MPI_IN_PLACE, &invalid, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+        if (invalid) {
+            throw IpplException("CatalystAdaptor::Initialize",
+                                "Particle attribute names or selections differ between MPI ranks.");
+        }
+    }
+
 
 }  // namespace ippl
