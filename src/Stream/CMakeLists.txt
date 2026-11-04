@@ -3,3 +3,4 @@
 # -----------------------------------------------------------------------------
 add_subdirectory(InSitu)
 add_subdirectory(Registry)
+add_subdirectory(Steering)

@@ -7,17 +7,16 @@
 #include <memory>
 #include <sstream>
 
-#include "Manager/BaseManager.h"
-
-#include "Interpolation/CurrentDeposition.hpp"
+#include "datatypes.h"
 
 #include "Config.h"
 #include "FELFieldContainer.hpp"
 #include "FELParticleContainer.hpp"
+#include "Interpolation/CurrentDeposition.hpp"
 #include "LorentzTransform.h"
+#include "Manager/BaseManager.h"
 #include "MithraBunch.h"
 #include "Undulator.h"
-#include "datatypes.h"
 #include "units.h"
 
 #ifdef IPPL_ENABLE_CATALYST
@@ -51,8 +50,7 @@ public:
         , dt_m(0.0)
         , it_m(0)
         , frame_gamma_m(std::max(
-              T(1), cfg.bunch_gamma
-                        / std::sqrt(1 + cfg.undulator_K * cfg.undulator_K * T(0.5))))
+              T(1), cfg.bunch_gamma / std::sqrt(1 + cfg.undulator_K * cfg.undulator_K * T(0.5))))
         , uparams_m(cfg.undulator_K, cfg.undulator_period, cfg.undulator_length)
         , frame_m(ippl::UniaxialLorentzframe<T, 2>::from_gamma(frame_gamma_m))
         , undulator_m(uparams_m, 2.0 * cfg.sigma_position[2] * frame_gamma_m * frame_gamma_m) {}
@@ -84,10 +82,10 @@ protected:
 
     int nsubsteps_m = 3;  ///< Boris sub-steps per FDTD step (reference behaviour).
 
-    T frame_gamma_m;                            ///< Lorentz factor of the co-moving frame.
-    ippl::undulator_parameters<T> uparams_m;    ///< Undulator parameters.
-    ippl::UniaxialLorentzframe<T, 2> frame_m;   ///< Boost into the co-moving frame (z-axis).
-    ippl::Undulator<T> undulator_m;             ///< Static undulator field model.
+    T frame_gamma_m;                           ///< Lorentz factor of the co-moving frame.
+    ippl::undulator_parameters<T> uparams_m;   ///< Undulator parameters.
+    ippl::UniaxialLorentzframe<T, 2> frame_m;  ///< Boost into the co-moving frame (z-axis).
+    ippl::Undulator<T> undulator_m;            ///< Static undulator field model.
 
     // --- narrow-band (resonant) radiation power diagnostic state ---
     // MITHRA reports the FEL output power as a sliding-window single-frequency
@@ -152,7 +150,7 @@ public:
     void grid2par() { gatherFields(); }
 
     void depositCurrent() {
-        using value_type = typename SourceField_t<T, Dim>::value_type;
+        using value_type           = typename SourceField_t<T, Dim>::value_type;
         this->fcontainer_m->getJ() = value_type(0);
 
         auto policy = Kokkos::RangePolicy<>(0, this->pcontainer_m->getLocalNum());
@@ -234,8 +232,9 @@ public:
                     const ippl::Vector<T, 3> t2 = t1 + alpha * ippl::cross(t1, EB[1]);
                     const ippl::Vector<T, 3> t3 =
                         t1
-                        + ippl::cross(t2, T(2) * alpha
-                                              * (EB[1] / (1.0 + alpha * alpha * (EB[1].dot(EB[1])))));
+                        + ippl::cross(
+                            t2,
+                            T(2) * alpha * (EB[1] / (1.0 + alpha * alpha * (EB[1].dot(EB[1])))));
                     const ippl::Vector<T, 3> ngammabeta =
                         t3 + charge * bunch_dt * EB[0] / (T(2) * mass);
 
@@ -301,12 +300,11 @@ public:
         }
 
         m << "Discretization:" << endl
-          << "nt " << "(derived)" << " Np= " << this->totalP_m << " grid = " << this->nr_m
-          << endl;
+          << "nt " << "(derived)" << " Np= " << this->totalP_m << " grid = " << this->nr_m << endl;
 
         this->setFieldContainer(std::make_shared<FieldContainer_t>(
-            this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, this->domain_m,
-            this->origin_m, this->isAllPeriodic_m));
+            this->hr_m, this->rmin_m, this->rmax_m, this->decomp_m, this->domain_m, this->origin_m,
+            this->isAllPeriodic_m));
 
         this->fcontainer_m->initializeFields();
 
@@ -315,9 +313,8 @@ public:
 
         // The FDTD solver derives its own time step from the mesh (CFL); we read
         // it back to drive the particle push and diagnostics.
-        this->setFieldSolver(std::make_shared<FDTDSolver_t>(this->fcontainer_m->getJ(),
-                                                            this->fcontainer_m->getE(),
-                                                            this->fcontainer_m->getB()));
+        this->setFieldSolver(std::make_shared<FDTDSolver_t>(
+            this->fcontainer_m->getJ(), this->fcontainer_m->getE(), this->fcontainer_m->getB()));
         this->dt_m   = this->solver_m->getDt();
         this->nt_m   = (int)std::ceil(this->m_config.total_time / this->dt_m);
         this->it_m   = 0;
@@ -328,13 +325,15 @@ public:
         initializeParticles();
 
 #ifdef IPPL_ENABLE_CATALYST
-        auto runtime_vis_registry = ippl::MakeVisRegistryRuntimePtr(
-            "Particles", this->pcontainer_m,
-            "EField",    this->fcontainer_m->getE(),
-            "Bfield",    this->fcontainer_m->getB()
-        );
-        auto runtime_steer_registry = ippl::MakeVisRegistryRuntimePtr();
-        cat_viz.Initialize(runtime_vis_registry, runtime_steer_registry);
+        // New channel-based API
+        auto meshCh = cat_viz.addMeshChannel<3>("fel_mesh", this->fcontainer_m->getMesh(),
+                                                this->fcontainer_m->getFL());
+        meshCh.addArray("EField", this->fcontainer_m->getE());
+        meshCh.addArray("Bfield", this->fcontainer_m->getB());
+
+        auto steerReg = ippl::MakeVisRegistryRuntimePtr();
+        cat_viz.addParticleChannel("Particles", *this->pcontainer_m);
+        cat_viz.Initialize(steerReg);
 #endif
 
         this->dump();
@@ -423,20 +422,19 @@ public:
             ippl::getRangePolicy(eview, 1),
             KOKKOS_LAMBDA(const size_t i, const size_t j, const size_t k, double& ref) {
                 Kokkos::pair<ippl::Vector<T, 3>, ippl::Vector<T, 3>> buncheb{eview(i, j, k),
-                                                                            bview(i, j, k)};
-                auto eblab    = lb.inverse_transform_EB(buncheb);
-                uint32_t kg   = (uint32_t)(k + ldom.first()[2]);
+                                                                             bview(i, j, k)};
+                auto eblab  = lb.inverse_transform_EB(buncheb);
+                uint32_t kg = (uint32_t)(k + ldom.first()[2]);
                 if (kg == nz - 3) {
                     ref += ippl::cross(eblab.first, eblab.second)[2];
                 }
             },
             radiation);
 
-        double power_local =
-            radiation
-            * double(unit_powerdensity_in_watt_per_square_meter * unit_length_in_meters
-                     * unit_length_in_meters)
-            * this->hr_m[0] * this->hr_m[1];
+        double power_local = radiation
+                             * double(unit_powerdensity_in_watt_per_square_meter
+                                      * unit_length_in_meters * unit_length_in_meters)
+                             * this->hr_m[0] * this->hr_m[1];
         double power_global = 0.0;
         MPI_Reduce(&power_local, &power_global, 1, MPI_DOUBLE, MPI_SUM, 0,
                    ippl::Comm->getCommunicator());
@@ -475,10 +473,10 @@ public:
 
         if (!rp_init_m) {
             const double lambda_rad = this->m_config.undulator_period / frame_gamma_m;
-            rp_omega_m = 2.0 * M_PI / lambda_rad;  // [1/unit_time], c = 1
-            rp_Nf_m    = std::max(1, (int)std::lround(3.0 * lambda_rad / this->dt_m));
-            rp_fdt_m   = Kokkos::View<T****>("FEL banded field buffer", rp_Nf_m, extx, exty, 4);
-            rp_init_m  = true;
+            rp_omega_m              = 2.0 * M_PI / lambda_rad;  // [1/unit_time], c = 1
+            rp_Nf_m                 = std::max(1, (int)std::lround(3.0 * lambda_rad / this->dt_m));
+            rp_fdt_m  = Kokkos::View<T****>("FEL banded field buffer", rp_Nf_m, extx, exty, 4);
+            rp_init_m = true;
         }
 
         const int Nf = rp_Nf_m;
@@ -497,7 +495,7 @@ public:
                 KOKKOS_LAMBDA(const int i, const int j) {
                     Kokkos::pair<ippl::Vector<T, 3>, ippl::Vector<T, 3>> buncheb{
                         eview(i, j, kview), bview(i, j, kview)};
-                    auto eblab    = lb.inverse_transform_EB(buncheb);
+                    auto eblab      = lb.inverse_transform_EB(buncheb);
                     fdt(m, i, j, 0) = eblab.first[0];   // Ex_lab
                     fdt(m, i, j, 1) = eblab.first[1];   // Ey_lab
                     fdt(m, i, j, 2) = eblab.second[0];  // Bx_lab
@@ -524,10 +522,14 @@ public:
                         const double ey = fdt(mm, i, j, 1);
                         const double bx = fdt(mm, i, j, 2);
                         const double by = fdt(mm, i, j, 3);
-                        ex_r += ex * cp;  ex_i += ex * sp;
-                        ey_r += ey * cp;  ey_i += ey * sp;
-                        bx_r += bx * cp;  bx_i -= bx * sp;
-                        by_r += by * cp;  by_i -= by * sp;
+                        ex_r += ex * cp;
+                        ex_i += ex * sp;
+                        ey_r += ey * cp;
+                        ey_i += ey * sp;
+                        bx_r += bx * cp;
+                        bx_i -= bx * sp;
+                        by_r += by * cp;
+                        by_i -= by * sp;
                     }
                     ref += (ex_r * by_r - ex_i * by_i) - (ey_r * bx_r - ey_i * bx_i);
                 },
@@ -599,9 +601,9 @@ public:
                               : 0.0;
 
         // --- peak |E| and total EM field energy over the domain ---
-        const int nghost = fc->getE().getNghost();
-        auto Eview       = fc->getE().getView();
-        auto Bview       = fc->getB().getView();
+        const int nghost       = fc->getE().getNghost();
+        auto Eview             = fc->getE().getView();
+        auto Bview             = fc->getB().getView();
         using index_array_type = typename ippl::RangePolicy<Dim>::index_array_type;
         double localE2 = 0.0, localEmax = 0.0;
         ippl::parallel_reduce(
@@ -681,27 +683,27 @@ public:
         ippl::Comm->barrier();
     }
 
-
 public:
     // NOTE: depositChargeDensity and destroyOutOfBounds must be public, not
     // protected/private, because they contain KOKKOS_LAMBDA expressions that
     // expand to extended __host__ __device__ lambdas under CUDA (nvcc). NVCC
     // forbids such lambdas inside protected or private member functions.
-    // See: https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#extended-lambda-restrictions
+    // See:
+    // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#extended-lambda-restrictions
     // Deposit charge density (CIC) into component [0] of the four-current field,
     // needed only when space charge is enabled. Component [1..Dim] is filled by
     // assemble_current_collocated.
     void depositChargeDensity() {
-        auto pc             = this->pcontainer_m;
-        auto fc             = this->fcontainer_m;
-        auto view           = fc->getJ().getView();
-        auto qview          = pc->Q.getView();
-        auto rview          = pc->R.getView();
-        const auto origin   = fc->getMesh().getOrigin();
-        const auto h        = fc->getMesh().getMeshSpacing();
-        const auto ldom     = fc->getFL().getLocalNDIndex();
-        const int nghost    = fc->getJ().getNghost();
-        T volume            = T(1);
+        auto pc           = this->pcontainer_m;
+        auto fc           = this->fcontainer_m;
+        auto view         = fc->getJ().getView();
+        auto qview        = pc->Q.getView();
+        auto rview        = pc->R.getView();
+        const auto origin = fc->getMesh().getOrigin();
+        const auto h      = fc->getMesh().getMeshSpacing();
+        const auto ldom   = fc->getFL().getLocalNDIndex();
+        const int nghost  = fc->getJ().getNghost();
+        T volume          = T(1);
         for (unsigned d = 0; d < Dim; ++d)
             volume *= h[d];
 
@@ -747,7 +749,7 @@ public:
         Kokkos::parallel_reduce(
             pc->getLocalNum(),
             KOKKOS_LAMBDA(const size_t i, size_type& ref) {
-                bool out_of_bounds             = false;
+                bool out_of_bounds              = false;
                 const ippl::Vector<T, Dim> ppos = rview(i);
                 for (unsigned d = 0; d < Dim; ++d) {
                     out_of_bounds |= (ppos[d] <= origin[d]);

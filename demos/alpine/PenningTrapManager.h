@@ -1,8 +1,8 @@
 #ifndef IPPL_PENNING_TRAP_MANAGER_H
 #define IPPL_PENNING_TRAP_MANAGER_H
 
-#include <memory>
 #include <filesystem>
+#include <memory>
 
 #include "AlpineManager.h"
 #include "FieldContainer.hpp"
@@ -49,12 +49,10 @@ private:
     double alpha_m;
     double DrInv_m;
 
-
-    
-    #ifdef IPPL_ENABLE_CATALYST
-    public:
+#ifdef IPPL_ENABLE_CATALYST
+public:
     ippl::CatalystAdaptor cat_viz{std::string{TestName}};
-    #endif
+#endif
 
 public:
     void pre_run() override {
@@ -135,23 +133,26 @@ public:
 
         this->grid2par();
 
-        #ifdef IPPL_ENABLE_CATALYST
-            m << "Catalyst is enabled" << endl; 
-            
-            std::shared_ptr<ippl::VisRegistryRuntime>  runtime_steer_registry = ippl::MakeVisRegistryRuntimePtr();
-            std::shared_ptr<ippl::VisRegistryRuntime> runtime_vis_registry   = ippl::MakeVisRegistryRuntimePtr(
-                "density",          this->fcontainer_m->getRho(),
-                "ions",             this->pcontainer_m
-            );
-            // runtime_vis_registry->add("potential",        this->fcontainer_m->getRho() );
-            runtime_vis_registry->add("electrostatic",    this->fcontainer_m->getE() );
+#ifdef IPPL_ENABLE_CATALYST
+        m << "Catalyst is enabled" << endl;
 
-            static IpplTimings::TimerRef CAinit = IpplTimings::getTimer("CAinit");
-            IpplTimings::startTimer(CAinit);
-            cat_viz.Initialize(runtime_vis_registry, runtime_steer_registry);
-            IpplTimings::stopTimer(CAinit);
+        // New channel-based API: one mesh channel for fields, one
+        // particle channel for ions.  Both use persistent staging
+        // buffers (no per-step allocation).
+        auto meshCh = cat_viz.addMeshChannel<3>("penning_mesh", this->fcontainer_m->getMesh(),
+                                                this->fcontainer_m->getFL());
+        meshCh.addArray("density", this->fcontainer_m->getRho());
+        meshCh.addArray("electrostatic", this->fcontainer_m->getE());
 
-        #endif
+        auto steerReg = ippl::MakeVisRegistryRuntimePtr();
+        cat_viz.addParticleChannel("ions", *this->pcontainer_m);
+
+        static IpplTimings::TimerRef CAinit = IpplTimings::getTimer("CAinit");
+        IpplTimings::startTimer(CAinit);
+        cat_viz.Initialize(steerReg);
+        IpplTimings::stopTimer(CAinit);
+
+#endif
 
         this->dump();
 
@@ -268,10 +269,10 @@ public:
         static IpplTimings::TimerRef domainDecomposition = IpplTimings::getTimer("loadBalance");
         static IpplTimings::TimerRef SolveTimer          = IpplTimings::getTimer("solve");
 
-        #ifdef IPPL_ENABLE_CATALYST
-        static IpplTimings::TimerRef TMR_CAremember   = IpplTimings::getTimer("CAremember");
-        static IpplTimings::TimerRef TMR_CAexecute    = IpplTimings::getTimer("CAexecute");
-        #endif
+#ifdef IPPL_ENABLE_CATALYST
+        static IpplTimings::TimerRef TMR_CAremember = IpplTimings::getTimer("CAremember");
+        static IpplTimings::TimerRef TMR_CAexecute  = IpplTimings::getTimer("CAexecute");
+#endif
 
         double alpha                            = this->alpha_m;
         double Bext                             = this->Bext_m;
@@ -332,12 +333,12 @@ public:
         // scatter the charge onto the underlying grid
         this->par2grid();
 
-        // Save deep copy of the density field (for later).
-        #ifdef IPPL_ENABLE_CATALYST
-            IpplTimings::startTimer(TMR_CAremember);
-            cat_viz.rememberNow("density");
-            IpplTimings::stopTimer(TMR_CAremember);
-        #endif
+// Save deep copy of the density field (for later).
+#ifdef IPPL_ENABLE_CATALYST
+        IpplTimings::startTimer(TMR_CAremember);
+        cat_viz.rememberNow("density");
+        IpplTimings::stopTimer(TMR_CAremember);
+#endif
 
         // Field solve
         IpplTimings::startTimer(SolveTimer);
@@ -347,12 +348,12 @@ public:
         // gather E field
         this->grid2par();
 
-        //trigger In Situ pipeline
-        #ifdef IPPL_ENABLE_CATALYST
-                IpplTimings::startTimer(TMR_CAexecute);
-                cat_viz.Execute(it, this->time_m);
-                IpplTimings::stopTimer(TMR_CAexecute); 
-        #endif
+// trigger In Situ pipeline
+#ifdef IPPL_ENABLE_CATALYST
+        IpplTimings::startTimer(TMR_CAexecute);
+        cat_viz.Execute(it, this->time_m);
+        IpplTimings::stopTimer(TMR_CAexecute);
+#endif
 
         IpplTimings::startTimer(PTimer);
         auto R2view = pc->R.getView();
