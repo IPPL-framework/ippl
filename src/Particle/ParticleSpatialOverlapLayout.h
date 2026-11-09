@@ -344,18 +344,6 @@ namespace ippl {
 
     protected:
         /*!
-         * @brief determines whether a position is within overlap to the boundary of a region
-         * @param pos position to query
-         * @param region region of the position
-         * @param periodic vector determining which dimensions to consider (as they are periodic)
-         * @param overlap distance to consider as close
-         */
-        template <std::size_t... Idx>
-        KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(
-            const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region,
-            Kokkos::Array<bool, Dim> periodic, T overlap);
-
-        /*!
          * @brief convert a nd-cell-index to flat cell index
          * @param cellIndex to convert
          * @param cellStrides cell strides to flatten the cell index with
