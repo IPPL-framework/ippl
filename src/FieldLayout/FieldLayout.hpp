@@ -286,8 +286,8 @@ namespace ippl {
     }
 
     template <unsigned Dim>
-    void FieldLayout<Dim>::addNeighbors(const NDIndex_t& gnd, const NDIndex_t& nd,
-                                        const NDIndex_t& ndNeighbor, const NDIndex_t& intersect,
+    void FieldLayout<Dim>::addNeighbors([[maybe_unused]] const NDIndex_t& gnd, const NDIndex_t& nd,
+                                        const NDIndex_t& ndNeighbor, [[maybe_unused]] const NDIndex_t& intersect,
                                         int nghost, int rank) {
         bound_type rangeSend, rangeRecv;
         rangeSend = getBounds(nd, ndNeighbor, nd, nghost);
@@ -302,10 +302,13 @@ namespace ippl {
             // 0 - touching the lower axis value
             // 1 - touching the upper axis value
             // 2 - parallel to the axis
-            if (intersect[d].length() == static_cast<size_t>(nghost)) {
-                if (gnd[d].first() != intersect[d].first()) {
-                    index += digit;
-                }
+            // Use relative domain positions, not overlap width: a parallel
+            // axis can also have exactly one (ghost-width) entry on a thin rank.
+            // Periodic callers pass the neighbor shifted into this coordinate frame.
+            if (ndNeighbor[d].last() < nd[d].first()) {
+                // Lower neighbor: digit is zero.
+            } else if (ndNeighbor[d].first() > nd[d].last()) {
+                index += digit;
             } else {
                 index += 2 * digit;
             }

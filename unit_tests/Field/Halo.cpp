@@ -1,3 +1,4 @@
+// Field halo regression suite, including repeated scalar/vector buffer reuse on MPI ranks.
 //
 // Unit test Halo
 //   Test halo cell functionality and communication, as well as field layout neighbor finding
@@ -218,6 +219,101 @@ TYPED_TEST(HaloTest, AccumulateHalo) {
         assertEqual<typename TestFixture::value_type>(mirror(args...), 1);
     });
 }
+
+// Give every rank, pass and vector component distinct exactly representable values.
+// This exposes stale pooled messages and incorrect component byte offsets.
+template <typename Value>
+Value haloRankValue(int rank, int pass) {
+    if constexpr (requires { Value::dim; }) {
+        Value value;
+        for (unsigned component = 0; component < Value::dim; ++component) {
+            value[component] = 1 + rank * 8 + pass * 64 + component;
+        }
+        return value;
+    } else {
+        return Value(1 + rank * 8 + pass * 64);
+    }
+}
+
+template <typename Value>
+void expectHaloValue(const Value& actual, const Value& expected) {
+    EXPECT_EQ(actual, expected);
+}
+
+template <typename T, unsigned Dim>
+void expectHaloValue(const ippl::Vector<T, Dim>& actual,
+                     const ippl::Vector<T, Dim>& expected) {
+    for (unsigned component = 0; component < Dim; ++component)
+        EXPECT_EQ(actual[component], expected[component]);
+}
+
+template <unsigned Dim, typename Field, typename Layout>
+void checkRepeatedHaloMessages(Field& field, Layout& layout) {
+    using Value = typename Field::value_type;
+    auto mirror = Kokkos::create_mirror_view(field.getView());
+    auto expected = Kokkos::create_mirror(field.getView());
+    const auto& neighbors = layout.getNeighbors();
+    auto check = [&] {
+        Kokkos::deep_copy(mirror, field.getView());
+        nestedViewLoop(mirror, 0, [&](auto... indices) {
+            expectHaloValue(mirror(indices...), expected(indices...));
+        });
+    };
+    for (int pass = 0; pass < 3; ++pass) {
+        const Value ownValue = haloRankValue<Value>(ippl::Comm->rank(), pass);
+        // Fill receives replace ghost ranges; all other entries stay unchanged.
+        field = ownValue;
+        Kokkos::deep_copy(expected, ownValue);
+        const auto& recvRanges = layout.getNeighborsRecvRange();
+        for (std::size_t direction = 0; direction < neighbors.size(); ++direction) {
+            for (std::size_t neighbor = 0; neighbor < neighbors[direction].size(); ++neighbor) {
+                const auto& range = recvRanges[direction][neighbor];
+                const Value value = haloRankValue<Value>(neighbors[direction][neighbor], pass);
+                nestedLoop<Dim>([&](unsigned d) { return static_cast<size_t>(range.lo[d]); },
+                                [&](unsigned d) { return static_cast<size_t>(range.hi[d]); },
+                                [&](auto... indices) { expected(indices...) = value; });
+            }
+        }
+        field.fillHalo();
+        check();
+
+        // Accumulation receives add to interior send ranges, including overlaps.
+        field = ownValue;
+        Kokkos::deep_copy(expected, ownValue);
+        const auto& sendRanges = layout.getNeighborsSendRange();
+        for (std::size_t direction = 0; direction < neighbors.size(); ++direction) {
+            for (std::size_t neighbor = 0; neighbor < neighbors[direction].size(); ++neighbor) {
+                const auto& range = sendRanges[direction][neighbor];
+                const Value value = haloRankValue<Value>(neighbors[direction][neighbor], pass);
+                nestedLoop<Dim>([&](unsigned d) { return static_cast<size_t>(range.lo[d]); },
+                                [&](unsigned d) { return static_cast<size_t>(range.hi[d]); },
+                                [&](auto... indices) { expected(indices...) += value; });
+            }
+        }
+        field.accumulateHalo();
+        check();
+    }
+}
+
+// With at least two MPI ranks, repeated fill and accumulation must exchange the
+// current rank's scalar values and retain untouched cells across buffer reuse.
+// Runs in each suite execution/memory space; one rank checks the no-neighbor path.
+TYPED_TEST(HaloTest, RepeatedScalarMessages) {
+    checkRepeatedHaloMessages<TestFixture::dim>(*this->field, this->layout);
+}
+
+// With at least two MPI ranks, Vector halo messages must preserve every component
+// through repeated fill/accumulation, using the configured execution/memory space.
+TYPED_TEST(HaloTest, RepeatedVectorMessages) {
+    using T = typename TestFixture::value_type;
+    constexpr unsigned Dim = TestFixture::dim;
+    using VectorField = ippl::Field<ippl::Vector<T, Dim>, Dim,
+        typename TestFixture::mesh_type, typename TestFixture::centering_type,
+        typename TestFixture::exec_space>;
+    VectorField field(this->mesh, this->layout);
+    checkRepeatedHaloMessages<Dim>(field, this->layout);
+}
+
 
 int main(int argc, char* argv[]) {
     int success = 1;

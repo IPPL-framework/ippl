@@ -56,6 +56,127 @@ namespace ippl {
             }
         };
 
+        // Match Archive's field-value representation without a second copy kernel.
+        // Byte access avoids alignment and object-lifetime assumptions about pooled storage.
+        template <typename T>
+        struct HaloWireValue {
+            static constexpr size_type BYTE_COUNT = sizeof(T);
+
+            KOKKOS_INLINE_FUNCTION static void pack(char* destination, const T& value) {
+                copyBytes(destination, reinterpret_cast<const char*>(&value), BYTE_COUNT);
+            }
+
+            KOKKOS_INLINE_FUNCTION static T unpack(const char* source) {
+                T value{};
+                copyBytes(reinterpret_cast<char*>(&value), source, BYTE_COUNT);
+                return value;
+            }
+        };
+
+        // Archive serializes Vector components, excluding any object padding.
+        template <typename T, unsigned N>
+        struct HaloWireValue<Vector<T, N>> {
+            static constexpr size_type BYTE_COUNT = N * sizeof(T);
+
+            KOKKOS_INLINE_FUNCTION static void pack(char* destination, const Vector<T, N>& value) {
+                for (unsigned component = 0; component < N; ++component) {
+                    const T entry = value[component];
+                    copyBytes(destination + component * sizeof(T),
+                              reinterpret_cast<const char*>(&entry), sizeof(T));
+                }
+            }
+
+            KOKKOS_INLINE_FUNCTION static Vector<T, N> unpack(const char* source) {
+                Vector<T, N> value;
+                for (unsigned component = 0; component < N; ++component) {
+                    T entry{};
+                    copyBytes(reinterpret_cast<char*>(&entry),
+                              source + component * sizeof(T), sizeof(T));
+                    value[component] = entry;
+                }
+                return value;
+            }
+        };
+
+        // The communicator's existing archive overload sends these bytes as MPI_BYTE.
+        // Ownership stays with its buffer pool until exchangeBoundaries completes.
+        struct HaloPackedBuffer {
+            char* data;
+            size_type byteCount;
+
+            char* getBuffer() const { return data; }
+            size_type getSize() const { return byteCount; }
+        };
+
+        template <typename T>
+        size_type haloMessageBytes(const mpi::Communicator& comm, size_type count) {
+            constexpr size_type MAX_BYTES = static_cast<size_type>(INT_MAX);
+            if (count > MAX_BYTES / HaloWireValue<T>::BYTE_COUNT) {
+                // Check before multiplying to avoid overflow as well as MPI truncation.
+                comm.assertMessageSize(MAX_BYTES + 1);
+            }
+            return count * HaloWireValue<T>::BYTE_COUNT;
+        }
+
+        template <typename T, typename Subview, typename IndexArray, unsigned Dim>
+        struct HaloBytePackFunctor {
+            Subview subview;
+            char* buffer;
+
+            KOKKOS_INLINE_FUNCTION void operator()(const IndexArray& args) const {
+                size_type offset = 0;
+                size_type stride = 1;
+                for (unsigned dimension = 0; dimension < Dim; ++dimension) {
+                    offset += args[dimension] * stride;
+                    stride *= subview.extent(dimension);
+                }
+                HaloWireValue<T>::pack(buffer + offset * HaloWireValue<T>::BYTE_COUNT,
+                                       apply(subview, args));
+            }
+        };
+
+        template <typename T, typename Subview, typename Op, typename IndexArray, unsigned Dim>
+        struct HaloByteUnpackFunctor {
+            Subview subview;
+            const char* buffer;
+            Op op;
+
+            KOKKOS_INLINE_FUNCTION void operator()(const IndexArray& args) const {
+                size_type offset = 0;
+                size_type stride = 1;
+                for (unsigned dimension = 0; dimension < Dim; ++dimension) {
+                    offset += args[dimension] * stride;
+                    stride *= subview.extent(dimension);
+                }
+                T value = HaloWireValue<T>::unpack(
+                    buffer + offset * HaloWireValue<T>::BYTE_COUNT);
+                op(apply(subview, args), value);
+            }
+        };
+
+        template <typename T, unsigned Dim, typename Exec, typename Subview>
+        void packHaloBytes(const Subview& subview, char* buffer) {
+            using index_array_type = typename RangePolicy<Dim, Exec>::index_array_type;
+            using functor_type = HaloBytePackFunctor<T, Subview, index_array_type, Dim>;
+            Kokkos::Array<typename RangePolicy<Dim, Exec>::index_type, Dim> begin{}, end;
+            for (unsigned d = 0; d < Dim; ++d) end[d] = subview.extent(d);
+            ippl::parallel_for("HaloCells::pack()", createRangePolicy<Dim, Exec>(begin, end),
+                               functor_type{subview, buffer});
+            // exchangeBoundaries fences the complete pack batch before MPI reads it.
+        }
+
+        template <typename T, unsigned Dim, typename Op, typename Exec, typename Subview>
+        void unpackHaloBytes(const Subview& subview, const char* buffer) {
+            using index_array_type = typename RangePolicy<Dim, Exec>::index_array_type;
+            using functor_type = HaloByteUnpackFunctor<T, Subview, Op, index_array_type, Dim>;
+            Kokkos::Array<typename RangePolicy<Dim, Exec>::index_type, Dim> begin{}, end;
+            for (unsigned d = 0; d < Dim; ++d) end[d] = subview.extent(d);
+            ippl::parallel_for("HaloCells::unpack()", createRangePolicy<Dim, Exec>(begin, end),
+                               functor_type{subview, buffer, Op{}});
+            // Default policies share one execution instance. Ordered launches preserve
+            // additions to overlapping ranges; the caller fences before buffer reuse.
+        }
+
         template <typename View, typename Op, typename IndexArray>
         struct HaloPeriodicFunctor {
             View view;
@@ -119,14 +240,8 @@ namespace ippl {
             const range_list &sendRanges   = layout->getNeighborsSendRange(),
                              &recvRanges   = layout->getNeighborsRecvRange();
 
-            auto ldom = layout->getLocalNDIndex();
-            for (const auto& axis : ldom) {
-                if ((axis.length() == 1) && (Dim != 1)) {
-                    throw IpplException(
-                        "HaloCells::exchangeBoundaries",
-                        "Cannot do neighbour exchange when domain decomposition contains planes.");
-                }
-            }
+            // Thin local domains are valid. FieldLayout classifies neighbor
+            // directions from domain positions, including one-entry parallel axes.
 
             // needed for the NOGHOST approach - we want to remove the ghost
             // cells on the boundaries of the global domain from the halo
@@ -143,7 +258,21 @@ namespace ippl {
 
             using memory_space = typename view_type::memory_space;
             using buffer_type  = mpi::Communicator::buffer_type<memory_space>;
-            std::vector<MPI_Request> requests(totalRequests);
+            struct SendMessage {
+                int rank;
+                int tag;
+                buffer_type buffer;
+                size_type byteCount;
+            };
+            struct ReceiveMessage {
+                bound_type range;
+                buffer_type buffer;
+            };
+            std::vector<SendMessage> sends;
+            std::vector<ReceiveMessage> receives;
+            sends.reserve(totalRequests);
+            receives.reserve(totalRequests);
+            std::vector<MPI_Request> requests(2 * totalRequests);
             // sending loop
             constexpr size_t cubeCount = detail::countHypercubes(Dim) - 1;
             size_t requestIndex        = 0;
@@ -182,17 +311,22 @@ namespace ippl {
                         range = recvRanges[index][i];
                     }
 
-                    size_type nsends;
-                    pack(range, view, haloData_m, nsends);
-
-                    buffer_type buf = comm.template getBuffer<memory_space, T>(nsends);
-
-                    comm.isend(targetRank, tag, haloData_m, *buf, requests[requestIndex++], nsends);
-                    buf->resetWritePos();
+                    const size_type nsends = range.size();
+                    const size_type byteCount = haloMessageBytes<T>(comm, nsends);
+                    buffer_type buf = comm.template getBuffer<memory_space>(byteCount);
+                    packHaloBytes<T, Dim, typename view_type::execution_space>(
+                        makeSubview(view, range), buf->getBuffer());
+                    sends.push_back({targetRank, tag, buf, byteCount});
                 }
             }
 
-            // receiving loop
+            // MPI, including CUDA-aware MPI, may read send storage only after all
+            // packs finish. Keep one readiness fence for the entire batch.
+            if (!sends.empty()) {
+                Kokkos::fence();
+            }
+
+            // Post every receive before sending; retain storage through ordered unpack.
             for (size_t index = 0; index < cubeCount; index++) {
                 int tag                        = mpi::tag::HALO + Layout_t::getMatchingIndex(index);
                 const auto& componentNeighbors = neighbors[index];
@@ -207,15 +341,12 @@ namespace ippl {
 
                         for (size_t j = 0; j < Dim; ++j) {
                             const int stride = ldomains[me][j].stride();
-
                             const int globalLo =
                                 ldomains[me][j].first() + (range.lo[j] - nghost) * stride;
                             const int globalHi =
                                 ldomains[me][j].first() + (range.hi[j] - 1 - nghost) * stride;
-
-                            bool isLower = (globalLo == domain[j].min());
-                            bool isUpper = (globalHi == domain[j].max());
-
+                            const bool isLower = globalLo == domain[j].min();
+                            const bool isUpper = globalHi == domain[j].max();
                             range.lo[j] += isLower * (nghost);
                             range.hi[j] -= isUpper * (nghost);
                         }
@@ -223,21 +354,31 @@ namespace ippl {
                         range = sendRanges[index][i];
                     }
 
-                    size_type nrecvs = range.size();
-
-                    buffer_type buf = comm.template getBuffer<memory_space, T>(nrecvs);
-
-                    comm.recv(sourceRank, tag, haloData_m, *buf, nrecvs * sizeof(T), nrecvs);
-                    buf->resetReadPos();
-
-                    unpack<Op>(range, view, haloData_m);
+                    const size_type nrecvs = range.size();
+                    const size_type byteCount = haloMessageBytes<T>(comm, nrecvs);
+                    buffer_type buf = comm.template getBuffer<memory_space>(byteCount);
+                    receives.push_back({range, buf});
+                    comm.irecv(sourceRank, tag, *buf, requests[requestIndex++], byteCount);
                 }
             }
 
-            if (totalRequests > 0) {
-                MPI_Waitall(totalRequests, requests.data(), MPI_STATUSES_IGNORE);
+            for (const auto& message : sends) {
+                HaloPackedBuffer packed{message.buffer->getBuffer(), message.byteCount};
+                comm.isend(message.rank, message.tag, packed, requests[requestIndex++]);
+            }
+            if (requestIndex > 0) {
+                MPI_Waitall(requestIndex, requests.data(), MPI_STATUSES_IGNORE);
             }
 
+            // Keep the original direction/neighbor order for overlapping additions.
+            // All kernels use the view execution space's default instance.
+            for (const auto& message : receives) {
+                unpackHaloBytes<T, Dim, Op, typename view_type::execution_space>(
+                    makeSubview(view, message.range), message.buffer->getBuffer());
+            }
+            if (!receives.empty()) {
+                Kokkos::fence();
+            }
             comm.freeAllBuffers();
         }
 
