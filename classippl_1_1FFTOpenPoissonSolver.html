@@ -100,7 +100,7 @@ Inheritance diagram for ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt;:<
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FFTOpenPoissonSolver__inherit__graph.png" border="0" usemap="#aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map" alt="Inheritance graph"/></div>
 <map name="aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map" id="aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_inherit__map">
-<area shape="rect" title=" " alt="" coords="5,357,213,867"/>
+<area shape="rect" title=" " alt="" coords="5,357,213,881"/>
 <area shape="rect" href="classippl_1_1Poisson.html" title=" " alt="" coords="25,5,194,309"/>
 </map>
 </div>
@@ -109,7 +109,7 @@ Collaboration diagram for ippl::FFTOpenPoissonSolver&lt; FieldLHS, FieldRHS &gt;
 <div class="dyncontent">
 <div class="center"><img src="classippl_1_1FFTOpenPoissonSolver__coll__graph.png" border="0" usemap="#aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_coll__map" id="aippl_1_1FFTOpenPoissonSolver_3_01FieldLHS_00_01FieldRHS_01_4_coll__map">
-<area shape="rect" title=" " alt="" coords="1224,2103,1432,2612"/>
+<area shape="rect" title=" " alt="" coords="1224,2103,1432,2627"/>
 <area shape="rect" href="classippl_1_1Poisson.html" title=" " alt="" coords="815,1765,985,2040"/>
 <area shape="rect" href="classippl_1_1ParameterList.html" title=" " alt="" coords="833,1479,967,1681"/>
 <area shape="rect" href="classippl_1_1Field.html" title=" " alt="" coords="574,1465,767,1695"/>
@@ -235,6 +235,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9f1d8f484489eddce30070e8ddc55fbc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9f1d8f484489eddce30070e8ddc55fbc">shiftedGreensFunction</a> (const <a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; double, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt; &amp;shift)</td></tr>
 <tr class="memdesc:a9f1d8f484489eddce30070e8ddc55fbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace the cached kernel by a shifted Hockney Green function.  <a href="classippl_1_1FFTOpenPoissonSolver.html#a9f1d8f484489eddce30070e8ddc55fbc">More...</a><br /></td></tr>
 <tr class="separator:a9f1d8f484489eddce30070e8ddc55fbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acbc7950639be519bcdc6b9571838099d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#acbc7950639be519bcdc6b9571838099d">addRepeatedKernels</a> ()</td></tr>
+<tr class="memdesc:acbc7950639be519bcdc6b9571838099d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add the 2K shifted kernel copies of <code>repeat_count</code> and <code>repeat_spacing</code> to the real-space kernel before its transform (see <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a5b32133c36164d4f571297c35b43bc86" title="Compute and cache the FFT of the selected Green function.">greensFunction()</a>).  <a href="classippl_1_1FFTOpenPoissonSolver.html#acbc7950639be519bcdc6b9571838099d">More...</a><br /></td></tr>
+<tr class="separator:acbc7950639be519bcdc6b9571838099d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17eecbcc51e40e4d6a368af11a2312ef"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a17eecbcc51e40e4d6a368af11a2312ef">initializeFields</a> ()</td></tr>
 <tr class="separator:a17eecbcc51e40e4d6a368af11a2312ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af84bcae8f94160b47193c7e0f8854671"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af84bcae8f94160b47193c7e0f8854671">communicateVico</a> (<a class="el" href="classippl_1_1Vector.html">Vector</a>&lt; int, <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt; size, typename <a class="el" href="classippl_1_1BareField.html#a43ad25370a2216346b1e60c7fa17f27f">CxField_gt::view_type</a> view_g, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt; ldom_g, const int nghost_g, typename <a class="el" href="classippl_1_1Field.html#af5d33627f142e8ec6e532828e1616fad">Field_t::view_type</a> view, const <a class="el" href="classippl_1_1NDIndex.html">ippl::NDIndex</a>&lt; <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e2e51a105f0f101dfcbda9140e8f8d5">Dim</a> &gt; ldom, const int nghost)</td></tr>
@@ -339,6 +342,10 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a69321480c4407ca6a39d5542082827c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab20cb97d7d617e5e5e118f98fd4a9ed1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4055faad2859d213996e3d8d150db2d8">Trhs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ab20cb97d7d617e5e5e118f98fd4a9ed1">truncatedAlpha_m</a> = 0</td></tr>
 <tr class="separator:ab20cb97d7d617e5e5e118f98fd4a9ed1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e8d829f7076f4f15c2c8154e3975816"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9e8d829f7076f4f15c2c8154e3975816">repeatCount_m</a> = 0</td></tr>
+<tr class="separator:a9e8d829f7076f4f15c2c8154e3975816"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac50eb4a327ca75cb6b1c835576f09c08"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4055faad2859d213996e3d8d150db2d8">Trhs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ac50eb4a327ca75cb6b1c835576f09c08">repeatSpacing_m</a> = 0</td></tr>
+<tr class="separator:ac50eb4a327ca75cb6b1c835576f09c08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1bafe9d868891bb137dfba434d88ad8"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ac1bafe9d868891bb137dfba434d88ad8">alg_m</a></td></tr>
 <tr class="separator:ac1bafe9d868891bb137dfba434d88ad8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa76013c9e042d480f3d0b2a6bb5c0a97"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a7b9f9a30505f8ee186b3d1c869419fd0">CxField_gt</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aa76013c9e042d480f3d0b2a6bb5c0a97">grnL_m</a></td></tr>
@@ -924,6 +931,25 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="acbc7950639be519bcdc6b9571838099d" name="acbc7950639be519bcdc6b9571838099d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acbc7950639be519bcdc6b9571838099d">&#9670;&#160;</a></span>addRepeatedKernels()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::addRepeatedKernels</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Add the 2K shifted kernel copies of <code>repeat_count</code> and <code>repeat_spacing</code> to the real-space kernel before its transform (see <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a5b32133c36164d4f571297c35b43bc86" title="Compute and cache the FFT of the selected Green function.">greensFunction()</a>). </p>
+<dl class="section note"><dt>Note</dt><dd>Public only because CUDA requires the enclosing function of a device lambda to be. </dd></dl>
+
+</div>
+</div>
 <a id="af84bcae8f94160b47193c7e0f8854671" name="af84bcae8f94160b47193c7e0f8854671"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af84bcae8f94160b47193c7e0f8854671">&#9670;&#160;</a></span>communicateVico() <span class="overload">[1/2]</span></h2>
 
@@ -1089,7 +1115,13 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 </div><div class="memdoc">
 
 <p>Compute and cache the <a class="el" href="classippl_1_1FFT.html" title="Primary FFT template; specialized per transform tag in FFT/Transform/*.">FFT</a> of the selected Green function. </p>
-<p >The selected kernel is controlled by the integer parameter <code>greens_function</code>, with values from GreenFunction. For Hockney, the real-space kernel is filled on the doubled convolution grid and then transformed into <code>grntr_m</code>. The default is <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbad60ea505c04fcdf124a6c9c9b00ddf42">GreenFunction::STANDARD</a> to preserve historical IPPL behavior. </p>
+<p >The selected kernel is controlled by the integer parameter <code>greens_function</code>, with values from GreenFunction. For Hockney, the real-space kernel is filled on the doubled convolution grid and then transformed into <code>grntr_m</code>. The default is <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#aef4d0197af3ef8a26c8a2c2a5ee769fbad60ea505c04fcdf124a6c9c9b00ddf42">GreenFunction::STANDARD</a> to preserve historical IPPL behavior.</p>
+<p >With <code>repeat_count</code> \(K&gt;0\) and <code>repeat_spacing</code> \(a\) (HOCKNEY only), the kernel also contains \(2K\) copies shifted along the last axis,  </p><p class="formulaDsp">
+\[
+  G_K(\mathbf{r}) = G(\mathbf{r}) + \sum_{0&lt;|k|\le K} G_\mathrm{full}(\mathbf{r}-k a\,\hat{\mathbf{e}}_z),
+\]
+</p>
+<p> so one solve returns the field of the source plus \(2K\) translated copies of it, a finite train of identical bunches with spacing \(a\), at the cost of a single convolution. The copies use the selected STANDARD or INTEGRATED kernel; for TRUNCATED they use the full Coulomb kernel with <code>force_constant</code>, since a copy has no short-range particle correction. Point-sampled copies reuse the near-origin regularization of <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9f1d8f484489eddce30070e8ddc55fbc" title="Replace the cached kernel by a shifted Hockney Green function.">shiftedGreensFunction()</a>, so use INTEGRATED when the source is longer than \(a\) and the shifted singularities fall inside the doubled grid. <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#ad7efcf5b8a0794782fac3a25d57f192e">solve()</a> regenerates the kernel when either parameter changes. Images from <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a9f1d8f484489eddce30070e8ddc55fbc" title="Replace the cached kernel by a shifted Hockney Green function.">shiftedGreensFunction()</a> do not include the copies. </p>
 
 </div>
 </div>
@@ -2208,6 +2240,54 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 
 </div>
 </div>
+<a id="a9e8d829f7076f4f15c2c8154e3975816" name="a9e8d829f7076f4f15c2c8154e3975816"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e8d829f7076f4f15c2c8154e3975816">&#9670;&#160;</a></span>repeatCount_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::repeatCount_m = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac50eb4a327ca75cb6b1c835576f09c08" name="ac50eb4a327ca75cb6b1c835576f09c08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac50eb4a327ca75cb6b1c835576f09c08">&#9670;&#160;</a></span>repeatSpacing_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a4055faad2859d213996e3d8d150db2d8">Trhs</a> <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html">ippl::FFTOpenPoissonSolver</a>&lt; FieldLHS, FieldRHS &gt;::repeatSpacing_m = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a1ce3d326d0c194b64d600d013b77d496" name="a1ce3d326d0c194b64d600d013b77d496"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1ce3d326d0c194b64d600d013b77d496">&#9670;&#160;</a></span>rho2_mr</h2>
 
@@ -2231,7 +2311,7 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">            <a class="code hl_variable" href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">storage_field</a></div>
-<div class="ttc" id="aclassippl_1_1FFTOpenPoissonSolver_html_a03c8b55bd849928aed963810a620192f"><div class="ttname"><a href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">ippl::FFTOpenPoissonSolver::storage_field</a></div><div class="ttdeci">Field_t storage_field</div><div class="ttdef"><b>Definition:</b> FFTOpenPoissonSolver.h:236</div></div>
+<div class="ttc" id="aclassippl_1_1FFTOpenPoissonSolver_html_a03c8b55bd849928aed963810a620192f"><div class="ttname"><a href="classippl_1_1FFTOpenPoissonSolver.html#a03c8b55bd849928aed963810a620192f">ippl::FFTOpenPoissonSolver::storage_field</a></div><div class="ttdeci">Field_t storage_field</div><div class="ttdef"><b>Definition:</b> FFTOpenPoissonSolver.h:258</div></div>
 </div><!-- fragment -->
 </div>
 </div>
