@@ -468,11 +468,13 @@ namespace ippl {
         const ParticleAttributeSelection& getParticleAttributeSelection(const std::string& label) const;
 
         /**
-         * @brief Forces a refresh of a specific array (replaces rememberNow).
+         * @brief Captures a field array now, before its source may be overwritten.
          *
-         * For Manual-policy arrays, copies device->host immediately.
-         * For Always/Static arrays, this is a no-op (Always copies on next
-         * Execute anyway; Static never copies).
+         * Allocates staging on first use and deep-copies current values to host.
+         * The next Execute uses this snapshot, including when the channel is
+         * initialized or rebuilt. Always arrays resume automatic updates on the
+         * following Execute; Manual arrays retain the snapshot until refreshed.
+         * Static arrays retain their first capture while the local shape is unchanged.
          *
          * @param label The array label to refresh.
          */

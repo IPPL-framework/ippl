@@ -735,7 +735,6 @@ namespace ippl {
         for (auto& ch : channels_m) {
             auto* arr = ch->findArray(label);
             if (arr) {
-                arr->markDirty();
                 Inform info("CatalystAdaptor");
                 arr->refresh(ippl::Comm->rank(), info);
                 return;

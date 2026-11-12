@@ -35,32 +35,10 @@ namespace ippl {
 
             void initConduit(conduit_cpp::Node& data, const std::string& topoName, int rank,
                              Inform& info) override {
-                const auto& Layout_      = field_m.getLayout();
-                const size_t nGhost      = field_m.getNghost();
-                const auto LocalNDIndex_ = Layout_.getLocalNDIndex();
-
-                const size_t nx = LocalNDIndex_[0].length();
-                size_t ny       = 1;
-                size_t nz       = 1;
-                if constexpr (Dim >= 2)
-                    ny = LocalNDIndex_[1].length();
-                if constexpr (Dim >= 3)
-                    nz = LocalNDIndex_[2].length();
-
-                // Allocate persistent host mirror (interior only, no ghosts)
-                if constexpr (Dim == 1) {
-                    hostMirror_m = HostView_t("host_" + name_m, nx);
-                } else if constexpr (Dim == 2) {
-                    hostMirror_m = HostView_t("host_" + name_m, nx, ny);
-                } else {
-                    hostMirror_m = HostView_t("host_" + name_m, nx, ny, nz);
+                if (!stagingReady_m || dimsStored_m != currentDimensions()
+                    || nghostStored_m != field_m.getNghost()) {
+                    captureField();
                 }
-
-                nghostStored_m = nGhost;
-                dimsStored_m   = {nx, ny, nz};
-
-                // First device->host copy
-                copyInterior(nGhost, nx, ny, nz);
 
                 // Set Conduit field node (external pointers into persistent mirror)
                 auto fields     = data["fields"];
@@ -98,23 +76,55 @@ namespace ippl {
                     }
                 }
 
-                info << level4 << "  MeshChannel: initialized array '" << name_m << "' (" << nx
-                     << "x" << ny << "x" << nz << ")" << endl;
+                info << level4 << "  MeshChannel: initialized array '" << name_m << "' ("
+                     << dimsStored_m[0] << "x" << dimsStored_m[1] << "x" << dimsStored_m[2]
+                     << ")" << endl;
             }
 
             void refresh(int /*rank*/, Inform& /*info*/) override {
-                if (policy_m == UpdatePolicy::Static)
+                if (policy_m == UpdatePolicy::Static && stagingReady_m
+                    && dimsStored_m == currentDimensions()
+                    && nghostStored_m == field_m.getNghost())
                     return;
-                copyInterior(nghostStored_m, dimsStored_m[0], dimsStored_m[1], dimsStored_m[2]);
-                clearDirty();
+                captureField();
             }
 
         private:
             std::string name_m;
             const Field_type& field_m;
             HostView_t hostMirror_m;
-            size_t nghostStored_m = 0;
+            int nghostStored_m = 0;
             std::array<size_t, 3> dimsStored_m{0, 0, 0};
+            bool stagingReady_m = false;
+
+            std::array<size_t, 3> currentDimensions() const {
+                const auto localDomain = field_m.getLayout().getLocalNDIndex();
+                std::array<size_t, 3> dims{1, 1, 1};
+                for (unsigned d = 0; d < Dim; ++d) {
+                    dims[d] = localDomain[d].length();
+                }
+                return dims;
+            }
+
+            void captureField() {
+                const auto dims = currentDimensions();
+                const auto nGhost = field_m.getNghost();
+                if (!stagingReady_m || dimsStored_m != dims) {
+                    if constexpr (Dim == 1) {
+                        hostMirror_m = HostView_t("host_" + name_m, dims[0]);
+                    } else if constexpr (Dim == 2) {
+                        hostMirror_m = HostView_t("host_" + name_m, dims[0], dims[1]);
+                    } else {
+                        hostMirror_m = HostView_t("host_" + name_m, dims[0], dims[1], dims[2]);
+                    }
+                }
+                nghostStored_m = nGhost;
+                dimsStored_m = dims;
+                copyInterior(nGhost, dims[0], dims[1], dims[2]);
+                stagingReady_m = true;
+                snapshotReady_m = true;
+                clearDirty();
+            }
 
             void copyInterior(size_t nGhost, size_t nx, size_t ny, size_t nz) {
                 const auto& fullDeviceView = field_m.getView();
@@ -426,6 +436,7 @@ namespace ippl {
                 if (array->needsRefresh()) {
                     array->refresh(rank, *info);
                 }
+                array->finishExecute();
             }
         }
     }

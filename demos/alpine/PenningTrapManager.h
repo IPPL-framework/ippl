@@ -137,11 +137,11 @@ public:
         m << "Catalyst is enabled" << endl;
 
         // New channel-based API: one mesh channel for fields, one
-        // particle channel for ions.  Both use persistent staging
-        // buffers (no per-step allocation).
+        // particle channel for ions. Capture density before the FFT solver
+        // reuses rho as workspace; electrostatic updates at every export.
         auto meshCh = cat_viz.addMeshChannel<3>("penning_mesh", this->fcontainer_m->getMesh(),
                                                 this->fcontainer_m->getFL());
-        meshCh.addArray("density", this->fcontainer_m->getRho());
+        meshCh.addArray("density", this->fcontainer_m->getRho(), ippl::UpdatePolicy::Manual);
         meshCh.addArray("electrostatic", this->fcontainer_m->getE());
 
         auto steerReg = ippl::MakeVisRegistryRuntimePtr();
@@ -333,10 +333,10 @@ public:
         // scatter the charge onto the underlying grid
         this->par2grid();
 
-// Save deep copy of the density field (for later).
+        // Capture deposited density before the solver overwrites rho.
 #ifdef IPPL_ENABLE_CATALYST
         IpplTimings::startTimer(TMR_CAremember);
-        cat_viz.rememberNow("density");
+        cat_viz.refresh("density");
         IpplTimings::stopTimer(TMR_CAremember);
 #endif
 

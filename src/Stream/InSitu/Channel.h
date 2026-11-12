@@ -4,9 +4,8 @@
  *
  * A Channel is the unit of data export: one Conduit channel per mesh (with
  * multiple field arrays) or per particle container.  Each channel owns
- * persistent host staging buffers allocated once at registration and reused
- * on every Execute, eliminating the per-step allocation/free churn of the
- * previous flat-registry design.
+ * persistent host staging buffers allocated on first capture or export and
+ * reused while their shape is unchanged.
  */
 #ifndef IPPL_CHANNEL_H
 #define IPPL_CHANNEL_H
@@ -33,9 +32,9 @@ namespace ippl {
     // ==================================================================
 
     enum class UpdatePolicy {
-        Always,  ///< Copy device->host every Execute (default for dynamic data)
-        Static,  ///< Copy once at registration; never refreshed
-        Manual,  ///< Copy only when refresh(label) is called
+        Always,  ///< Copy each Execute, unless an explicit snapshot is already staged.
+        Static,  ///< Copy once per local shape; retain until a shape change.
+        Manual,  ///< Retain the initial copy until refresh(label) captures new values.
     };
 
     // ==================================================================
@@ -118,7 +117,7 @@ namespace ippl {
      * @brief Base class for a field array attached to a MeshChannel.
      *
      * Concrete instances are templated on the field type and own a persistent
-     * host mirror allocated once at init().
+     * host mirror allocated on first capture or export.
      */
     class MeshFieldArrayBase {
     public:
@@ -128,23 +127,29 @@ namespace ippl {
         virtual UpdatePolicy policy() const          = 0;
         virtual void setPolicy(UpdatePolicy p)       = 0;
 
-        /// Allocate host mirror, copy device->host, set Conduit external pointers.
-        /// Called once during MeshChannel::init().
+        /// Bind Conduit to staging, preserving a previous capture when its shape matches.
+        /// Called during initialization and after a channel/layout rebuild.
         virtual void initConduit(conduit_cpp::Node& data, const std::string& topoName, int rank,
                                  Inform& info) = 0;
 
-        /// Deep-copy device->host into the existing mirror.
-        /// Called every Execute for dynamic (Always/Manual-dirty) arrays.
+        /// Capture the current field immediately, allocating staging if needed.
+        /// A capture is reused by the next Execute, including its initialization.
         virtual void refresh(int rank, Inform& info) = 0;
 
-        bool needsRefresh() const { return policy_m == UpdatePolicy::Always || dirty_m; }
+        bool needsRefresh() const {
+            return !snapshotReady_m && (policy_m == UpdatePolicy::Always || dirty_m);
+        }
 
         void markDirty() { dirty_m = (policy_m == UpdatePolicy::Manual); }
         void clearDirty() { dirty_m = false; }
 
+        /// Release the one-execution override; Manual/Static keep their stored values.
+        void finishExecute() { snapshotReady_m = false; }
+
     protected:
         UpdatePolicy policy_m = UpdatePolicy::Always;
         bool dirty_m          = false;
+        bool snapshotReady_m  = false;
     };
 
     // ==================================================================
