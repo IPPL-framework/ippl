@@ -441,7 +441,6 @@ namespace ippl {
             channel["type"].set_string("multimesh");
             channel["assembly/particles"]   = "particles";
             channel["assembly/boundingbox"] = "boundingbox";
-            channel["assembly/transform"]   = "transform";
 
             auto data      = channel["data/particles"];
             auto data_help = channel["data/boundingbox"];
@@ -618,8 +617,9 @@ namespace ippl {
                 }
             }
 
-            // Transform block (if registered via setTransform)
+            // Publish the assembly entry only with its optional data block.
             if (raw->hasTransform()) {
+                channel["assembly/transform"] = "transform";
                 const auto& td = *raw->transform();
                 auto data_tf   = channel["data/transform"];
                 data_tf["type"].set_string("mesh");
@@ -664,12 +664,13 @@ namespace ippl {
                 const size_t localNum = pc.getLocalNum();
                 const auto& selection = getParticleAttributeSelection(name);
 
-                // If particle count changed, re-init the whole channel
-                // (re-allocate mirrors, re-set external pointers).
-                if (localNum != raw->lastLocalNum_m) {
+                // Rebuild when particle storage changes or the first transform is added.
+                const bool transformAdded =
+                    raw->hasTransform() && !channel.has_path("data/transform");
+                if (localNum != raw->lastLocalNum_m || transformAdded) {
                     catalystInfo_m << level4 << "  ParticleChannel '" << name
-                                   << "' count changed: " << raw->lastLocalNum_m << " -> "
-                                   << localNum << ", re-initializing" << endl;
+                                   << "' rebuilding for " << localNum << " particles"
+                                   << (transformAdded ? " and a new transform" : "") << endl;
                     channel.reset();
                     raw->initFn_m(channel, rank, info);
                     return;

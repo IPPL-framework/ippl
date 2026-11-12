@@ -753,6 +753,23 @@ _png_sfield_channels = []
 _png_vfield_channels = []
 
 
+def _setup_particle_transform(cname, proxy):
+    """Expose the optional transform after the producer has delivered its block."""
+    key = cname + "_transform"
+    if key in _filters:
+        return
+    hierarchy = proxy.GetDataInformation().GetHierarchy()
+    if hierarchy is None or not hierarchy.SelectNodes(["//transform"]):
+        return
+    transform = ExtractBlock(
+        registrationName=f"{cname}.transform",
+        Input=proxy,
+        Selectors=['//transform']
+    )
+    transform.UpdatePipeline()
+    _filters[key] = transform
+
+
 def _setup_mesh_channels():
     """Build the per-array render pipelines for all mesh channels.
 
@@ -836,7 +853,7 @@ for idx, (cname, ctype) in enumerate(_channels):
         mesh_src = proxy
 
     if ctype == "multimesh":
-        # Particle channel: multimesh with particles, boundingbox, transform
+        # Particle channel: particles, boundingbox and an optional transform
         particles = ExtractBlock(
             registrationName=f"{cname}.bunch",
             Input=proxy,
@@ -853,15 +870,8 @@ for idx, (cname, ctype) in enumerate(_channels):
         _filters[cname+"_main"] = particles
         _filters[cname+"_help"] = helper
 
-        # Always expose the transform block as a separate source so it can be
-        # selected as the second input of a Programmable Filter.
-        transform = ExtractBlock(
-            registrationName=f"{cname}.transform",
-            Input=proxy,
-            Selectors=['//transform']
-        )
-        transform.UpdatePipeline()
-        _filters[cname+"_transform"] = transform
+        # Transform data may arrive only on the first or a later Execute.
+        _setup_particle_transform(cname, proxy)
 
         if live_view is not None:
             # Plain default styling in the live view (former live behaviour)
@@ -1000,6 +1010,11 @@ def catalyst_execute(info):
         proxy.UpdatePipeline()
         proxy.UpdateVTKObjects()
 
+
+    # A transform can be registered after the first visualization output.
+    for cname, ctype in _channels:
+        if ctype == "multimesh":
+            _setup_particle_transform(cname, _sources[cname])
 
     for name_, filter in _filters.items():
             filter.UpdatePipeline()
