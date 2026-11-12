@@ -73,6 +73,9 @@ ippl-build-openmp-debug:
 # collection runs in a separate uenv srun step because the gcov matching
 # the build compiler is only visible inside such a step.  It is allowed to
 # fail so that the coverage run does not block the normal test gates.
+# Tests run with one OpenMP thread per rank: with -fopenmp, GCC updates the
+# gcov counters atomically, and threads contending on the same counters make
+# the instrumented kernels slower than a single thread.
 # ---------------------------------------------------------
 ippl-build-test-openmp-debug-coverage:
   stage: ippl_build
@@ -113,7 +116,7 @@ ippl-build-test-openmp-debug-coverage:
             -DENABLE_COVERAGE=$ENABLE_COVERAGE \
             -DTEST_INFO=$TEST_INFO \
             -DIPPL_PLATFORMS=OPENMP \
-            -DIPPL_OPENMP_THREADS=32 \
+            -DIPPL_OPENMP_THREADS=1 \
             -DKokkos_VERSION=git.5.2.0 \
             -DKokkos_ARCH_FLAG=Kokkos_ARCH_AMD_GFX942_APU \
             -DMPIEXEC_EXECUTABLE=/usr/bin/srun \
