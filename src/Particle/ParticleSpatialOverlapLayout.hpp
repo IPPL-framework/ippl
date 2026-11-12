@@ -285,9 +285,18 @@ namespace ippl {
         const auto& globalRegion = this->rlayout_m->getDomain();
         const auto overlap       = rcutoff_m;
 
-        /* Images are generated axis by axis: each pass also copies the ghosts of the earlier
-         * axes, so a particle near a face gets one image, near an edge three and near a corner
-         * seven, and every image is shifted only along the axes whose faces it is close to.
+        /* A particle closer than the cutoff to a periodic face interacts with particles near the
+         * opposite face, so it needs a copy shifted by one domain length across that face.
+         * Particles farther than the cutoff from every periodic face get no copy. A particle
+         * near one face needs one image. Near an edge, where two faces meet, it needs three: one
+         * across each face and one across both. Near a corner it needs seven, one for each
+         * neighboring periodic domain.
+         *
+         * The loop builds these images one axis at a time. The pass for axis d copies every
+         * particle within the cutoff of a face normal to d, including the ghosts made by earlier
+         * passes, and shifts the copy along d only. For a particle near an x and a y face, the x
+         * pass makes the image across the x face, and the y pass copies both the particle and
+         * that image across the y face: 1 + 2 = 3 images. A third pass gives 3 + 4 = 7.
          */
         for (unsigned d = 0; d < Dim; ++d) {
             if (!periodic[d]) {

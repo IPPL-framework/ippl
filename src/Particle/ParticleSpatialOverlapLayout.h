@@ -335,8 +335,9 @@ namespace ippl {
         void buildCells(ParticleContainer& pc);
 
         /*!
-         * @brief copies particles close to the boundary and offsets them to their closest periodic
-         *        image
+         * @brief appends ghost copies of particles within the cutoff of a periodic face, one per
+         *        neighboring periodic domain: one near a face, three near an edge, seven near a
+         *        corner
          * @param pc particle container of which to construct periodic ghost particles
          */
         template <class ParticleContainer>
