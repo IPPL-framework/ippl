@@ -38,11 +38,11 @@ namespace test_truncated_green_particle_interaction {
     public:
         using Base = ippl::ParticleBase<ParticleLayout_t>;
 
-        TestParticles(ParticleLayout_t& layout, ippl::BC bc)
+        TestParticles(ParticleLayout_t& layout, ippl::BC bc, bool allAxesPeriodic = false)
             : Base(layout) {
             this->addAttribute(Q);
             this->addAttribute(E);
-            if (bc == ippl::BC::PERIODIC) {
+            if (bc == ippl::BC::PERIODIC && !allAxesPeriodic) {
                 typename ParticleLayout_t::bc_container_type boundaryConditions;
                 boundaryConditions.fill(ippl::BC::NO);
                 boundaryConditions[0] = ippl::BC::PERIODIC;
@@ -64,7 +64,8 @@ namespace test_truncated_green_particle_interaction {
     // pair particles are not the first ones copied as periodic ghosts.
     double runPairScenario(ippl::BC particleBC, bool fieldPeriodic, Scalar_t x0, Scalar_t x1,
                            Scalar_t rcut, Scalar_t alpha, Scalar_t constructionRcut = 0,
-                           bool viaUpdateLayout = false, bool leadingInteriorParticle = false) {
+                           bool viaUpdateLayout = false, bool leadingInteriorParticle = false,
+                           bool allAxesPeriodic = false) {
         const ippl::Vector<int, Dim> nr = {8, 8, 8};
         ippl::NDIndex<Dim> owned;
         for (unsigned d = 0; d < Dim; ++d) {
@@ -78,7 +79,7 @@ namespace test_truncated_green_particle_interaction {
         TestMesh_t mesh(owned, hr, origin);
         const bool resized = constructionRcut > 0;
         ParticleLayout_t particleLayout(fieldLayout, mesh, resized ? constructionRcut : rcut);
-        TestParticles particles(particleLayout, particleBC);
+        TestParticles particles(particleLayout, particleBC, allAxesPeriodic);
 
         const std::size_t first      = leadingInteriorParticle ? 1 : 0;
         const std::size_t localCount = ippl::Comm->rank() == 0 ? first + 2 : 0;
@@ -243,6 +244,10 @@ int main(int argc, char* argv[]) {
         // The periodic ghosts must be images of the boundary particles, not of the first ones.
         const double leadingInteriorPeriodicNorm = runPairScenario(
             ippl::BC::PERIODIC, true, 0.05, 0.95, pairRcut, pairAlpha, 0, false, true);
+        // With every axis periodic, a pair across one face must see the image shifted only along
+        // that axis.
+        const double allAxesPeriodicNorm = runPairScenario(
+            ippl::BC::PERIODIC, true, 0.05, 0.95, pairRcut, pairAlpha, 0, false, false, true);
 
         if (ippl::Comm->rank() == 0) {
             std::cout << "Pair norms: open-global=" << openBoundaryNorm
@@ -251,6 +256,7 @@ int main(int argc, char* argv[]) {
                       << ", resized-periodic=" << resizedPeriodicNorm
                       << ", relayout-periodic=" << relayoutPeriodicNorm
                       << ", leading-interior-periodic=" << leadingInteriorPeriodicNorm
+                      << ", all-axes-periodic=" << allAxesPeriodicNorm
                       << ", expected=" << expectedNorm << std::endl;
         }
 
@@ -259,7 +265,8 @@ int main(int argc, char* argv[]) {
             || std::abs(openInternalBoundaryNorm - expectedNorm) / expectedNorm > 1.0e-12
             || !(std::abs(resizedPeriodicNorm - expectedNorm) / expectedNorm <= 1.0e-12)
             || !(std::abs(relayoutPeriodicNorm - expectedNorm) / expectedNorm <= 1.0e-12)
-            || !(std::abs(leadingInteriorPeriodicNorm - expectedNorm) / expectedNorm <= 1.0e-12)) {
+            || !(std::abs(leadingInteriorPeriodicNorm - expectedNorm) / expectedNorm <= 1.0e-12)
+            || !(std::abs(allAxesPeriodicNorm - expectedNorm) / expectedNorm <= 1.0e-12)) {
             status = 1;
         }
 
