@@ -7,7 +7,7 @@ PNG extracts replicate the rendering of the former per-channel extractor scripts
 (catalyst_extractors/png_ext_particle.py, png_ext_sfield.py and
 png_ext_vfield.py): every channel - or every array of a mesh channel - gets its
 own dedicated render view, styled and extracted exactly like those scripts did,
-written to 'data_png_extracts_<experiment_name>'.
+written below separate png_extracts and vtk_extracts output directories.
 """
 
 # script-version: 2.0
@@ -97,7 +97,7 @@ def create_VTPD_extractor(name, object, fr = 10):
     safe_name = name.replace("/", "_")  # nested channels are named parent/block
     vTPD = CreateExtractor('VTPD', object, registrationName='VTPD_'+ safe_name)
     vTPD.Trigger.Frequency = fr
-    vTPD.Writer.FileName = 'ippl_'+safe_name+'_{timestep:06d}.vtpd'
+    vTPD.Writer.FileName = os.path.join(vtkOutputSubdirectory, 'ippl_'+safe_name+'_{timestep:06d}.vtpd')
     return vTPD
 
 def create_VTM_extractor(name, object, fr = 10):
@@ -111,8 +111,17 @@ def create_VTM_extractor(name, object, fr = 10):
     safe_name = name.replace("/", "_")  # nested channels are named parent/block
     vTPC = CreateExtractor('VTPC', object, registrationName='VTPC_'+ safe_name)
     vTPC.Trigger.Frequency = fr
-    vTPC.Writer.FileName = 'ippl_'+safe_name+'_{timestep:06d}.vtpc'
+    vTPC.Writer.FileName = os.path.join(vtkOutputSubdirectory, 'ippl_'+safe_name+'_{timestep:06d}.vtpc')
     return vTPC
+
+
+def _extract_output_directories(vtkOutputDirectory):
+    """Return the common extraction root and relative VTK/PNG subdirectories."""
+    vtkDirectory = os.path.abspath(vtkOutputDirectory or os.path.join("catalyst", "vtk_extracts"))
+    vtkSubdirectory = os.path.basename(vtkDirectory)
+    if vtkSubdirectory == "png_extracts":
+        raise ValueError("VTK and PNG output directories must be different")
+    return os.path.dirname(vtkDirectory), vtkSubdirectory, "png_extracts"
 
 
 _CATALYST_INFO_LEVEL = 4
@@ -179,11 +188,11 @@ parser.add_argument("--verbosity", type=int, default=0, help="Communicate the Ca
 parser.add_argument("--VTKextract", default="OFF", help="Enable the VTK extracts of all incoming channels")
 parser.add_argument("--png",        default="OFF", help="Enable PNG screenshot extracts of the render view")
 parser.add_argument("--extracts_output_dir", default="",
-                    help="Extract output directory passed from the simulation (overrides the experiment-name default)")
+                    help="VTK output directory; PNGs use a sibling png_extracts directory")
 parser.add_argument("--live",       default="OFF", help="Enable options.CatalystLive")
 parser.add_argument("--steer",      default="OFF", help="Enable steering from catalyst python side")
 parser.add_argument("--show_forward_channels", default="OFF", help="Show forward steerable channels in the GUI (PVTrivialProducer)")
-parser.add_argument("--experiment_name", default="_", help="Needed to correctly for safe folder.")
+parser.add_argument("--experiment_name", default="_", help="Optional label for pipeline diagnostics")
 
 parsed = parser.parse_args(arg_list)
 
@@ -228,15 +237,15 @@ else:
 options.GlobalTrigger = 'Time Step'
 options.CatalystLiveTrigger = 'Time Step'
 options.CatalystLiveURL = 'localhost:22222' #is also default
+# ParaView has one extraction root; each writer selects its own subdirectory.
+extractsRootDirectory, vtkOutputSubdirectory, pngOutputSubdirectory = (
+    _extract_output_directories(parsed.extracts_output_dir)
+)
+options.ExtractsOutputDirectory = extractsRootDirectory
+if parsed.VTKextract == "ON":
+    os.makedirs(os.path.join(extractsRootDirectory, vtkOutputSubdirectory), exist_ok=True)
 if png_enabled:
-    # The former png_ext_*.py scripts wrote their PNG extracts here; keep the
-    # same location so output remains comparable across the redesign.
-    options.ExtractsOutputDirectory = 'data_png_extracts_' + exp_string
-elif parsed.extracts_output_dir:
-    # Directory passed from the simulation (below IPPL_CATALYST_OUTPUT_DIR)
-    options.ExtractsOutputDirectory = parsed.extracts_output_dir
-else:
-    options.ExtractsOutputDirectory = 'data_vtk_extracts_' + exp_string
+    os.makedirs(os.path.join(extractsRootDirectory, pngOutputSubdirectory), exist_ok=True)
 
 
 # Steering requires a Live connection: the backward-channel senders only
@@ -398,6 +407,12 @@ def _configure_particle_coloring(state, point_data_info):
     print_info_(f"Coloring particles by {mode} of custom attribute '{array_name}'.")
 
 
+def _field_png_filename(cname, name, kind):
+    """Identify the mesh channel, array and field kind in each image filename."""
+    label = cname.replace("/", "_")
+    return f"{label}_{name}_{kind}_" + "{timestep:06d}{camera}.png"
+
+
 def _setup_particle_png_channel(cname, producer, particles, helper):
     """Dedicated PNG view for one particle channel (png_ext_particle.py recipe).
 
@@ -447,7 +462,7 @@ def _setup_particle_png_channel(cname, producer, particles, helper):
     pNG1 = CreateExtractor('PNG', view, registrationName='PNG_' + label)
     pNG1.Trigger = 'Time Step'
     pNG1.Trigger.Frequency = 1
-    pNG1.Writer.FileName = label + '_Particles_{timestep:06d}{camera}.png'
+    pNG1.Writer.FileName = os.path.join(pngOutputSubdirectory, label + '_Particles_{timestep:06d}{camera}.png')
     pNG1.Writer.ImageResolution = [2000, 1500]
     pNG1.Writer.TransparentBackground = 0
     pNG1.Writer.Format = 'PNG'
@@ -626,7 +641,7 @@ def _setup_sfield_view(cname, mesh_src, name, ghost_info):
     pNG1 = CreateExtractor('PNG', view, registrationName=f"PNG_{label}_{name}")
     pNG1.Trigger = 'Time Step'
     pNG1.Trigger.Frequency = 1
-    pNG1.Writer.FileName = f"{name}_ScalarField_" + "{timestep:06d}{camera}.png"
+    pNG1.Writer.FileName = os.path.join(pngOutputSubdirectory, _field_png_filename(cname, name, "ScalarField"))
     pNG1.Writer.ImageResolution = [2000, 1500]
     pNG1.Writer.TransparentBackground = 0
     pNG1.Writer.Format = 'PNG'
@@ -648,13 +663,12 @@ def _setup_sfield_view(cname, mesh_src, name, ghost_info):
     return state
 
 
-def _setup_vfield_view(cname, mesh_src, name, assoc, single_vector):
+def _setup_vfield_view(cname, mesh_src, name, assoc):
     """Dedicated PNG view for one vector mesh array (png_ext_vfield.py recipe).
 
     Arrow glyphs oriented by the field, magnitude-driven color/opacity with
     the blue-white-red transfer function, camera and ranges re-fit every 10th
-    cycle. Output 'VectorField_NNNNNN.png' (label-prefixed when the channel
-    carries more than one vector array, to avoid filename collisions).
+    cycle. Output '<channel>_<array>_VectorField_NNNNNN.png'.
     """
     label = cname.replace("/", "_")
 
@@ -721,10 +735,7 @@ def _setup_vfield_view(cname, mesh_src, name, assoc, single_vector):
     pNG1 = CreateExtractor('PNG', view, registrationName=f"pNG_{label}_{name}")
     pNG1.Trigger = 'Time Step'
     pNG1.Trigger.Frequency = 1
-    if single_vector:
-        pNG1.Writer.FileName = 'VectorField_{timestep:06d}{camera}.png'
-    else:
-        pNG1.Writer.FileName = f"{name}_VectorField_" + "{timestep:06d}{camera}.png"
+    pNG1.Writer.FileName = os.path.join(pngOutputSubdirectory, _field_png_filename(cname, name, "VectorField"))
     pNG1.Writer.ImageResolution = [1247, 1176]
     pNG1.Writer.TransparentBackground = 0
     pNG1.Writer.Format = 'PNG'
@@ -771,14 +782,21 @@ def _setup_particle_transform(cname, proxy):
 
 
 def _setup_mesh_channels():
-    """Build the per-array render pipelines for all mesh channels.
-
-    A mesh channel can carry several arrays (the former design had one
-    channel per field); each array gets its own view, styling and PNG
-    extractor exactly like the former per-field png_ext_*.py scripts.
-    """
+    """Prepare Live mesh displays and, when enabled, per-array PNG pipelines."""
     global _pending_mesh
     for cname, mesh_src in _pending_mesh:
+        # Live view: merged blocks shown plainly (former live behaviour)
+        if live_view is not None:
+            _log(f"   -> Using MergeBlocks for mesh channel '{cname}'")
+            merged = MergeBlocks(registrationName=cname + '.MergedBlocks',
+                                 Input=mesh_src)
+            merged.MergePartitionsOnly = 1
+            Show(merged, live_view)
+            _filters[cname + "_merge"] = merged
+
+        if not png_enabled:
+            continue
+
         info = mesh_src.GetDataInformation()
         cell_info = info.GetCellDataInformation()
         point_info = info.GetPointDataInformation()
@@ -799,22 +817,10 @@ def _setup_mesh_channels():
             if array_name and array_name not in _skip:
                 arrays.append((array_name, array_info.GetNumberOfComponents(), "POINTS"))
 
-        vector_count = sum(1 for (_, comps, _) in arrays if comps > 1)
-
-        # Live view: merged blocks shown plainly (former live behaviour)
-        if live_view is not None:
-            _log(f"   -> Using MergeBlocks for mesh channel '{cname}'")
-            merged = MergeBlocks(registrationName=cname + '.MergedBlocks',
-                                 Input=mesh_src)
-            merged.MergePartitionsOnly = 1
-            Show(merged, live_view)
-            _filters[cname + "_merge"] = merged
-
         for array_name, comps, assoc in arrays:
             try:
                 if comps > 1:
-                    state = _setup_vfield_view(cname, mesh_src, array_name, assoc,
-                                               single_vector=(vector_count == 1))
+                    state = _setup_vfield_view(cname, mesh_src, array_name, assoc)
                 else:
                     state = _setup_sfield_view(cname, mesh_src, array_name, ghost_info)
                 # Also show the array pipeline plainly in the live view
