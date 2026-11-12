@@ -12,7 +12,9 @@ if(IPPL_ENABLE_CATALYST)
 
   add_ippl_test(CatalystFieldSnapshots)
   add_dependencies(CatalystFieldSnapshots ippl_snapshot_capture)
-  set(_snapshot_tests CatalystFieldSnapshots)
+  add_ippl_test(CatalystParticleTransforms)
+  add_dependencies(CatalystParticleTransforms ippl_snapshot_capture)
+  set(_snapshot_tests CatalystFieldSnapshots CatalystParticleTransforms)
 
   if(IPPL_ENABLE_SOLVERS AND IPPL_ENABLE_FFT)
     add_ippl_test(CatalystPenningDensity
