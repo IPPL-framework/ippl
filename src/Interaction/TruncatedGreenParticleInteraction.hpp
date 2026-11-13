@@ -99,8 +99,8 @@ namespace ippl {
                     if (rsq_ij >= rcut2 || rsq_ij == 0.0) {
                         return;
                     }
-                    acc += fieldFromPair(dist_ij, rsq_ij, alpha, forceConstant, QM(j),
-                                         regularization);
+                    acc +=
+                        fieldFromPair(dist_ij, rsq_ij, alpha, forceConstant, QM(j), regularization);
                 },
                 KOKKOS_LAMBDA(const size_t& i, const Vector_t& acc) { Field(i) -= acc; });
         }

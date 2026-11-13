@@ -1319,7 +1319,7 @@ namespace ippl {
             "ParticleSpatialOverlapLayout::forEachOwnedParticle()",
             Kokkos::RangePolicy<ExecutionSpace>(0, numLocalParticles_m),
             KOKKOS_LAMBDA(const size_type i) {
-                const auto cell = toCellIndex(cellPermutationBackward(cellIndex(i)), numCells);
+                const auto cell      = toCellIndex(cellPermutationBackward(cellIndex(i)), numCells);
                 const auto neighbors = getCellNeighbors(cell, cellStrides, cellPermutationForward);
                 Accumulator acc(0);
                 for (size_type n = 0; n < numCellNeighbors; ++n) {

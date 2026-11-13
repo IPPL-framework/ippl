@@ -36,9 +36,10 @@ namespace ippl {
 
         /*!
          * Values of the `pair_kernel` parameter. OWNED_PARTICLE (default) runs one thread per
-         * owned particle and sums in registers (ParticleSpatialOverlapLayout::forEachOwnedParticle);
-         * CELL_PAIRS is the per-cell traversal with one atomic per pair (forEachPair). Both visit
-         * the same pairs, so the fields agree up to summation order.
+         * owned particle and sums in registers
+         * (ParticleSpatialOverlapLayout::forEachOwnedParticle); CELL_PAIRS is the per-cell
+         * traversal with one atomic per pair (forEachPair). Both visit the same pairs, so the
+         * fields agree up to summation order.
          */
         enum PairKernel {
             CELL_PAIRS     = 0,
