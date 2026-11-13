@@ -16,7 +16,6 @@
 #include "Ippl.h"
 
 #include <Kokkos_Random.hpp>
-
 #include <cmath>
 #include <cstdlib>
 #include <string>
@@ -60,10 +59,10 @@ int main(int argc, char* argv[]) {
     int status = 0;
     {
         Inform msg("TestP3MPairKernels");
-        const std::size_t N        = argc > 1 ? std::stoull(argv[1]) : 20000;
-        const int timedSolves      = argc > 2 ? std::stoi(argv[2]) : 3;
-        const bool clustered       = argc > 3 && std::string(argv[3]) == "clustered";
-        const Scalar_t rcut        = argc > 4 ? std::stod(argv[4]) : 0.08;
+        const std::size_t N             = argc > 1 ? std::stoull(argv[1]) : 20000;
+        const int timedSolves           = argc > 2 ? std::stoi(argv[2]) : 3;
+        const bool clustered            = argc > 3 && std::string(argv[3]) == "clustered";
+        const Scalar_t rcut             = argc > 4 ? std::stod(argv[4]) : 0.08;
         const ippl::Vector<int, Dim> nr = {16, 16, 16};
 
         ippl::NDIndex<Dim> owned;
@@ -100,21 +99,31 @@ int main(int argc, char* argv[]) {
         }
         particles.update();
 
-        // directed candidate pairs (all j != i of the 27 neighbouring cells)
-        Kokkos::View<unsigned long long, typename exec_space::memory_space> candidates("cand");
+        // Directed candidate pairs (all j != i of the 27 neighbouring cells). Each owned particle
+        // stores its count in its own entry and a reduction sums them. An earlier version added
+        // every count to one unsigned long long with Kokkos::atomic_add, which made this program
+        // appear to hang above about 2^22 particles on A100 and GH200. On CUDA (compute capability
+        // >= 7.0), desul in Kokkos 5.2 has native atomic add only for (u)int32_t, (u)int64_t,
+        // float and double. On Linux uint64_t is unsigned long, so unsigned long long falls back to
+        // a compare-and-swap loop. With all threads on one address only one CAS succeeds per
+        // round, so the count took 30 s for 2^20 particles on an A100, while one solve took 30 ms.
+        Kokkos::View<unsigned long long*, typename exec_space::memory_space> perParticle(
+            "candidates per particle", particles.getLocalNum());
         layout.forEachOwnedParticle<exec_space, unsigned long long>(
             KOKKOS_LAMBDA(const std::size_t, const std::size_t, unsigned long long& n) { ++n; },
-            KOKKOS_LAMBDA(const std::size_t, const unsigned long long& n) {
-                Kokkos::atomic_add(&candidates(), n);
+            KOKKOS_LAMBDA(const std::size_t i, const unsigned long long& n) {
+                perParticle(i) = n;
             });
         unsigned long long localCandidates = 0;
-        Kokkos::deep_copy(localCandidates, candidates);
+        Kokkos::parallel_reduce(
+            "sum candidates", Kokkos::RangePolicy<exec_space>(0, perParticle.extent(0)),
+            KOKKOS_LAMBDA(const std::size_t i, unsigned long long& sum) { sum += perParticle(i); },
+            localCandidates);
         unsigned long long totalCandidates = 0;
-        ippl::Comm->allreduce(localCandidates, totalCandidates, 1,
-                              std::plus<unsigned long long>());
+        ippl::Comm->allreduce(localCandidates, totalCandidates, 1, std::plus<unsigned long long>());
 
-        Kokkos::View<Vector_t*, typename exec_space::memory_space> reference("reference",
-                                                                            particles.getLocalNum());
+        Kokkos::View<Vector_t*, typename exec_space::memory_space> reference(
+            "reference", particles.getLocalNum());
         double seconds[2] = {0, 0};
         for (int kernel : {Interaction_t::CELL_PAIRS, Interaction_t::OWNED_PARTICLE}) {
             ippl::ParameterList params;
@@ -134,10 +143,9 @@ int main(int argc, char* argv[]) {
                 }
             }
             if (kernel == Interaction_t::CELL_PAIRS) {
-                Kokkos::deep_copy(reference,
-                                  Kokkos::subview(particles.E.getView(),
-                                                  Kokkos::make_pair<std::size_t>(
-                                                      0, particles.getLocalNum())));
+                Kokkos::deep_copy(reference, Kokkos::subview(particles.E.getView(),
+                                                             Kokkos::make_pair<std::size_t>(
+                                                                 0, particles.getLocalNum())));
             }
         }
 
@@ -156,8 +164,8 @@ int main(int argc, char* argv[]) {
 
         const double cellPairs = maxOverRanks(seconds[Interaction_t::CELL_PAIRS]);
         const double ownedPart = maxOverRanks(seconds[Interaction_t::OWNED_PARTICLE]);
-        msg << (clustered ? "clustered" : "uniform") << ", N = " << N << ", rcut = " << rcut
-            << ", " << nranks << " ranks, " << totalCandidates << " directed candidates ("
+        msg << (clustered ? "clustered" : "uniform") << ", N = " << N << ", rcut = " << rcut << ", "
+            << nranks << " ranks, " << totalCandidates << " directed candidates ("
             << static_cast<double>(totalCandidates) / N << " per particle)" << endl;
         msg << "CELL_PAIRS     " << cellPairs * 1e3 << " ms per solve, "
             << totalCandidates / cellPairs / nranks << " candidates/s per rank" << endl;
