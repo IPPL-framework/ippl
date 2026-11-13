@@ -73,23 +73,37 @@ namespace ippl {
                                 "rcut exceeds layout cutoff");
         }
 
-        particleLayout.template forEachPair<execution_space>(
-            KOKKOS_LAMBDA(const size_t& i, const size_t& j) {
-                const Vector_t dist_ij = R(i) - R(j);
-                const Scalar_t rsq_ij  = dist_ij.dot(dist_ij);
+        if (this->params_m.template get<int>("pair_kernel") == CELL_PAIRS) {
+            particleLayout.template forEachPair<execution_space>(
+                KOKKOS_LAMBDA(const size_t& i, const size_t& j) {
+                    const Vector_t dist_ij = R(i) - R(j);
+                    const Scalar_t rsq_ij  = dist_ij.dot(dist_ij);
 
-                // Distinct particles at the same position contribute no force by convention.
-                if (rsq_ij >= rcut2 || rsq_ij == 0.0) {
-                    return;
-                }
+                    // Distinct particles at the same position contribute no force by convention.
+                    if (rsq_ij >= rcut2 || rsq_ij == 0.0) {
+                        return;
+                    }
 
-                const auto F_ij =
-                    fieldFromPair(dist_ij, rsq_ij, alpha, forceConstant, QM(j), regularization);
+                    const auto F_ij =
+                        fieldFromPair(dist_ij, rsq_ij, alpha, forceConstant, QM(j), regularization);
 
-                // add force to particle i, don't do it for j as the ranges of i and j are
-                // asymmetric
-                Kokkos::atomic_sub(&Field(i), F_ij);
-            });
+                    // add force to particle i, don't do it for j as the ranges of i and j are
+                    // asymmetric
+                    Kokkos::atomic_sub(&Field(i), F_ij);
+                });
+        } else {
+            particleLayout.template forEachOwnedParticle<execution_space, Vector_t>(
+                KOKKOS_LAMBDA(const size_t& i, const size_t& j, Vector_t& acc) {
+                    const Vector_t dist_ij = R(i) - R(j);
+                    const Scalar_t rsq_ij  = dist_ij.dot(dist_ij);
+                    if (rsq_ij >= rcut2 || rsq_ij == 0.0) {
+                        return;
+                    }
+                    acc += fieldFromPair(dist_ij, rsq_ij, alpha, forceConstant, QM(j),
+                                         regularization);
+                },
+                KOKKOS_LAMBDA(const size_t& i, const Vector_t& acc) { Field(i) -= acc; });
+        }
         IpplTimings::stopTimer(solveTimer);
     }
 }  // namespace ippl

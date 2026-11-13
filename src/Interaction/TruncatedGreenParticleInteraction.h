@@ -34,6 +34,17 @@ namespace ippl {
         using execution_space = typename VectorAttribute::execution_space;
         static_assert(std::is_same_v<execution_space, typename ScalarAttribute::execution_space>);
 
+        /*!
+         * Values of the `pair_kernel` parameter. OWNED_PARTICLE (default) runs one thread per
+         * owned particle and sums in registers (ParticleSpatialOverlapLayout::forEachOwnedParticle);
+         * CELL_PAIRS is the per-cell traversal with one atomic per pair (forEachPair). Both visit
+         * the same pairs, so the fields agree up to summation order.
+         */
+        enum PairKernel {
+            CELL_PAIRS     = 0,
+            OWNED_PARTICLE = 1
+        };
+
     public:
         /*!
          * @param pc Particle container
@@ -44,7 +55,7 @@ namespace ippl {
          * controls the Ewald split, force_constant scales the interaction, and rcut determines the
          * maximal contributing pair distance; solve() rejects an rcut above the cutoff of the
          * particle layout. The optional positive regularization_cutoff controls the near-origin
-         * softening and defaults to 1e-9.
+         * softening and defaults to 1e-9; the optional pair_kernel selects a PairKernel.
          */
         TruncatedGreenParticleInteraction(const ParticleContainer& pc, VectorAttribute& F,
                                           const VectorAttribute& R, const ScalarAttribute& QM,
@@ -56,6 +67,9 @@ namespace ippl {
             if (!this->params_m.contains("regularization_cutoff")) {
                 this->params_m.template add<Scalar_t>("regularization_cutoff",
                                                       static_cast<Scalar_t>(1.0e-9));
+            }
+            if (!this->params_m.contains("pair_kernel")) {
+                this->params_m.add("pair_kernel", static_cast<int>(OWNED_PARTICLE));
             }
         }
 
