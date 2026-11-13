@@ -75,7 +75,8 @@ ippl-build-openmp-debug:
 # fail so that the coverage run does not block the normal test gates.
 # Tests run with one OpenMP thread per rank: threads that share the gcov
 # counters keep moving their cache lines between cores, so the instrumented
-# kernels run slower on several threads than on one.
+# kernels run slower on several threads than on one.  IPPL_OPENMP_THREADS
+# sets this for integration tests only; OMP_NUM_THREADS covers the rest.
 # ---------------------------------------------------------
 ippl-build-test-openmp-debug-coverage:
   stage: ippl_build
@@ -138,6 +139,7 @@ ippl-build-test-openmp-debug-coverage:
     - export CTEST_BUILD_NAME="${CDASH_LABEL}-${BUILD_ARCH}-${BUILD_TYPE}-${TEST_INFO}"
     - if [[ -f $BUILD_PATH/gcov.path ]]; then export GCOV_COMMAND=$(cat $BUILD_PATH/gcov.path); echo "Using uenv gcov $GCOV_COMMAND"; fi
     - export TEST_RESULT=0
+    - export OMP_NUM_THREADS=1
     - >-
       ctest -V --output-on-failure --timeout 60 -E known_fail -S $CI_PROJECT_DIR/ci/cscs/dashboard-test.cmake
       -DCTEST_SITE="$CTEST_SITE"
