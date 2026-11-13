@@ -20,6 +20,7 @@
 #include <limits>
 #include <numeric>
 #include <sstream>
+#include <string>
 #include <vector>
 
 #include "Utility/IpplException.h"
@@ -28,6 +29,18 @@
 #include "Communicate/Window.h"
 
 namespace ippl {
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    template <typename View>
+    View ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::scratchPrefix(
+        View& storage, size_type size, const char* label) {
+        if (storage.extent(0) < size) {
+            const auto capacity = std::max(size, std::max(size_type(1024), 2 * storage.extent(0)));
+            storage =
+                View(Kokkos::view_alloc(Kokkos::WithoutInitializing, std::string(label)), capacity);
+        }
+        return Kokkos::subview(storage, Kokkos::make_pair(size_type(0), size));
+    }
+
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::ParticleSpatialOverlapLayout(
         FieldLayout<Dim>& fl, Mesh& mesh, const T& rcutoff)
@@ -128,6 +141,8 @@ namespace ippl {
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
     void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::initializeCells(
         size_type numParticles) {
+        static IpplTimings::TimerRef timer = IpplTimings::getTimer("P3M cell topology");
+        IpplTimings::startTimer(timer);
         const auto rank          = Comm->rank();
         const auto hLocalRegions = this->rlayout_m->gethLocalRegions();
 
@@ -136,18 +151,29 @@ namespace ippl {
          * cells.
          */
         const auto localCounts = localCellCounts(numParticles);
+        bool sameTopology      = cellPermutationForward_m.extent(0) != 0;
         totalCells_m           = 1;
         numLocalCells_m        = 1;
         for (unsigned d = 0; d < Dim; ++d) {
             const T length              = hLocalRegions(rank)[d].length();
             const size_type nLocalCells = localCounts[d];
             // two ghost cells, one in each direction
-            numCells_m[d]  = nLocalCells + 2 * numGhostCellsPerDim_m;
-            cellWidth_m[d] = length / nLocalCells;
+            const size_type newCount = nLocalCells + 2 * numGhostCellsPerDim_m;
+            sameTopology             = sameTopology && numCells_m[d] == newCount;
+            numCells_m[d]            = newCount;
+            cellWidth_m[d]           = length / nLocalCells;
             totalCells_m *= numCells_m[d];
             numLocalCells_m *= nLocalCells;
         }
         numGhostCells_m = totalCells_m - numLocalCells_m;
+
+        // The strides, the cell views and the local/ghost permutation depend only on the cell
+        // counts. A new region or cell width with the same counts keeps all of them.
+        if (sameTopology) {
+            cellsOutdated_m = false;
+            IpplTimings::stopTimer(timer);
+            return;
+        }
 
         // Cell indices and permutations are stored in int views (hash_type), and forEachPair
         // launches one team per local cell. Stop before an oversized grid overflows them.
@@ -178,12 +204,18 @@ namespace ippl {
 
         // Compute cell permutation need to place ghost cells at the end to make sure only local
         // particles are at indices 0 to numLocalParticles
-        hash_type cellPermutationForward("cell permutation forward", totalCells_m);
-        hash_type cellPermutationBackward("cell permutation backward", totalCells_m);
+        hash_type cellPermutationForward(
+            Kokkos::view_alloc(Kokkos::WithoutInitializing, "cell permutation forward"),
+            totalCells_m);
+        hash_type cellPermutationBackward(
+            Kokkos::view_alloc(Kokkos::WithoutInitializing, "cell permutation backward"),
+            totalCells_m);
 
-        /* Step 1. compute prefix sum to determine where the local/ghost cells go */
-        hash_type localPrefixSum("local prefix sum", totalCells_m);
-        hash_type ghostPrefixSum("ghost prefix sum", totalCells_m);
+        /* Step 1. compute prefix sum to determine where the local cells go; the ghost cells
+         * before cell i are the remaining i - localPrefixSum(i) cells.
+         */
+        hash_type localPrefixSum(
+            Kokkos::view_alloc(Kokkos::WithoutInitializing, "local prefix sum"), totalCells_m);
         const auto& numCells = numCells_m;
         constexpr auto is    = std::make_index_sequence<Dim>();
         using policy_type    = Kokkos::RangePolicy<position_execution_space>;
@@ -194,15 +226,6 @@ namespace ippl {
                 const size_type val = isLocalCellIndex(is, toCellIndex(i, numCells), numCells);
                 if (final) {
                     localPrefixSum(i) = update;
-                }
-                update += val;
-            });
-        Kokkos::parallel_scan(
-            "scan_ghost", policy_type(0, totalCells_m),
-            KOKKOS_LAMBDA(const size_type i, size_type& update, const bool final) {
-                const size_type val = !isLocalCellIndex(is, toCellIndex(i, numCells), numCells);
-                if (final) {
-                    ghostPrefixSum(i) = update;
                 }
                 update += val;
             });
@@ -217,7 +240,7 @@ namespace ippl {
                     cellPermutationForward(i)         = localIdx;
                     cellPermutationBackward(localIdx) = i;
                 } else {
-                    const size_type ghostIdx          = numLocalCells + ghostPrefixSum(i);
+                    const size_type ghostIdx          = numLocalCells + i - localPrefixSum(i);
                     cellPermutationForward(i)         = ghostIdx;
                     cellPermutationBackward(ghostIdx) = i;
                 }
@@ -226,6 +249,8 @@ namespace ippl {
         cellPermutationForward_m  = cellPermutationForward;
         cellPermutationBackward_m = cellPermutationBackward;
         cellsOutdated_m           = false;
+        position_execution_space{}.fence("P3M cell topology ready");
+        IpplTimings::stopTimer(timer);
     }
 
     namespace detail {
@@ -376,6 +401,7 @@ namespace ippl {
 
         int nRanks = Comm->size();
         if (nRanks < 2) {
+            IpplTimings::stopTimer(ParticleUpdateTimer);
             return;
         }
 
@@ -400,25 +426,28 @@ namespace ippl {
          * particleRankOffsets are the offsets of each particle as a particle
          * can be sent to multiple ranks
          */
-        locate_type particleRanks("particles' MPI ranks", 0);
-        locate_type particleRankOffsets("particles' MPI rank offsets", localnum + 1);
+        locate_type particleRanks;
+        auto particleRankOffsets =
+            scratchPrefix(particleRankOffsets_m, localnum + 1, "particles' MPI rank offsets");
 
         /* The indices are the indices of the particles,
          * the boolean values describe whether the particle has left the current rank
          * 0 --> particle valid (inside current rank)
          * 1 --> particle invalid (left rank)
          */
-        bool_type invalidParticles("validity of particles", localnum);
+        auto invalidParticles =
+            scratchPrefix(invalidParticles_m, localnum, "validity of particles");
 
         /* The indices are the MPI ranks,
          * the values are the number of particles are sent to that rank from myrank
          */
-        locate_type rankSendCount_dview("rankSendCount Device", nRanks);
+        auto rankSendCount_dview = scratchPrefix(rankSendCount_m, nRanks, "rankSendCount Device");
 
         /* The indices have no particular meaning,
          * the values are the MPI ranks to which we need to send
          */
-        locate_type destinationRanks_dview("destinationRanks Device", nRanks);
+        auto destinationRanks_dview =
+            scratchPrefix(destinationRanks_m, nRanks, "destinationRanks Device");
 
         /* nInvalid is the number of invalid particles
          * nDestinationRanks is the number of MPI ranks we need to send to
@@ -437,6 +466,12 @@ namespace ippl {
         Kokkos::fence();
 
         IpplTimings::stopTimer(locateTimer);
+
+        packSendIndices(particleRanks, particleRankOffsets, rankSendCount_dview,
+                        localnum - nInvalid);
+        const auto sendOffsetsHost = Kokkos::create_mirror_view_and_copy(
+            Kokkos::HostSpace(),
+            Kokkos::subview(sendOffsets_m, Kokkos::make_pair(size_type(0), size_type(nRanks + 1))));
 
         // 2. fill send buffer and send particles =============================================== //
 
@@ -477,8 +512,8 @@ namespace ippl {
             if (rank == Comm->rank()) {
                 continue;
             }
-            hash_type hash("hash", rankSendCount_hview(rank));
-            fillHash(rank, particleRanks, particleRankOffsets, hash);
+            hash_type hash = Kokkos::subview(
+                sendIndices_m, Kokkos::make_pair(sendOffsetsHost(rank), sendOffsetsHost(rank + 1)));
             pc.sendToRank(rank, tag, requests, hash);
         }
 
@@ -514,6 +549,47 @@ namespace ippl {
         IpplTimings::stopTimer(sendTimer);
 
         IpplTimings::stopTimer(ParticleUpdateTimer);
+    }
+
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::packSendIndices(
+        const locate_type& ranks, const locate_type& particleOffsets, const locate_type& rankCounts,
+        size_type localAssignments) {
+        static IpplTimings::TimerRef timer = IpplTimings::getTimer("P3M destination packing");
+        IpplTimings::startTimer(timer);
+        const auto exec    = position_execution_space{};
+        using policy_type  = Kokkos::RangePolicy<position_execution_space>;
+        const auto nRanks  = rankCounts.extent(0);
+        const auto myRank  = Comm->rank();
+        const auto offsets = scratchPrefix(sendOffsets_m, nRanks + 1, "P3M send offsets");
+        const auto cursors = scratchPrefix(sendCursor_m, nRanks, "P3M send cursors");
+        const auto indices =
+            scratchPrefix(sendIndices_m, ranks.extent(0) - localAssignments, "P3M send indices");
+        Kokkos::parallel_scan(
+            "P3M rank offsets", policy_type(exec, 0, nRanks + 1),
+            KOKKOS_LAMBDA(const size_type r, size_type& sum, const bool final) {
+                if (final) {
+                    offsets(r) = sum;
+                    if (r < nRanks) {
+                        cursors(r) = sum;
+                    }
+                }
+                if (r < nRanks && r != static_cast<size_type>(myRank)) {
+                    sum += rankCounts(r);
+                }
+            });
+        Kokkos::parallel_for(
+            "P3M pack destinations", policy_type(exec, 0, particleOffsets.extent(0) - 1),
+            KOKKOS_LAMBDA(const size_type i) {
+                for (auto a = particleOffsets(i); a < particleOffsets(i + 1); ++a) {
+                    const auto destination = ranks(a);
+                    if (destination != myRank) {
+                        indices(Kokkos::atomic_fetch_inc(&cursors(destination))) = i;
+                    }
+                }
+            });
+        exec.fence("P3M send indices ready for MPI packing");
+        IpplTimings::stopTimer(timer);
     }
 
     template <typename T, unsigned Dim, class Mesh, typename... Properties>
@@ -692,8 +768,8 @@ namespace ippl {
 
         /// outsideIds: Container of particle IDs that travelled outside of the neighborhood.
         /// counts: count assignments per particle
-        locate_type counts("counts", localNum);
-        locate_type outsideIds("Particles outside of neighborhood", localNum);
+        const auto counts = scratchPrefix(assignmentCounts_m, localNum, "P3M assignment counts");
+        const auto outsideIds = scratchPrefix(outsideIds_m, localNum, "P3M outside IDs");
 
         /// outsideCount: Tracks the number of particles that travelled outside of the neighborhood.
         size_type outsideCount = 0;
@@ -771,11 +847,17 @@ namespace ippl {
 
         using mdrange_type = Kokkos::MDRangePolicy<Kokkos::Rank<2>, position_execution_space>;
 
-        /* Count the number of non-neighbor ranks each particle belongs to */
-        locate_type outsideCounts("counts of outside neighbors", outsideCount);
-        locate_type nonNeighborsView = getNonNeighborRanks(neighbors_view);
-        if (outsideCount > 0 && nonNeighborsView.extent(0) > 0) {
+        /* Count the number of non-neighbor ranks each particle belongs to. The last pass below
+         * reads outsideCounts whenever outsideCount > 0, so zero it even without non-neighbors.
+         */
+        const auto outsideCounts =
+            scratchPrefix(outsideCounts_m, outsideCount, "P3M outside counts");
+        locate_type nonNeighborsView;
+        if (outsideCount > 0) {
+            nonNeighborsView = getNonNeighborRanks(neighbors_view);
             Kokkos::deep_copy(outsideCounts, 0);
+        }
+        if (outsideCount > 0 && nonNeighborsView.extent(0) > 0) {
             Kokkos::parallel_for(
                 "ParticleSpatialLayout::leftParticles()",
                 mdrange_type({0, 0}, {outsideCount, nonNeighborsView.extent(0)}),
@@ -815,7 +897,7 @@ namespace ippl {
         auto total_assignments = Kokkos::create_mirror_view(Kokkos::subview(rankOffsets, localNum));
         Kokkos::deep_copy(total_assignments, Kokkos::subview(rankOffsets, localNum));
         Kokkos::fence();
-        Kokkos::resize(ranks, total_assignments());
+        ranks = scratchPrefix(rankAssignments_m, total_assignments(), "P3M rank assignments");
 
         /* Last Pass: fill the rank data */
         Kokkos::parallel_for(
@@ -866,7 +948,9 @@ namespace ippl {
         Kokkos::parallel_for(
             "Calculate nSends", policy_type(0, ranks.extent(0)), KOKKOS_LAMBDA(const size_t i) {
                 size_type rank = ranks(i);
-                Kokkos::atomic_inc(&nSends_dview(rank));
+                if (rank != static_cast<size_type>(myRank)) {
+                    Kokkos::atomic_inc(&nSends_dview(rank));
+                }
             });
         Kokkos::fence();
 
@@ -876,6 +960,11 @@ namespace ippl {
         Kokkos::parallel_for(
             "Calculate sends", policy_type(0, nSends_dview.extent(0)),
             KOKKOS_LAMBDA(const size_t rank) {
+                // Every particle that stays has exactly one assignment to the own rank, so its
+                // count is known; counting it above would put one atomic per particle on one slot.
+                if (rank == static_cast<size_type>(myRank)) {
+                    nSends_dview(rank) = localNum - invalidCount;
+                }
                 if (nSends_dview(rank) != 0) {
                     size_type index    = Kokkos::atomic_fetch_inc(&rankSends(0));
                     sends_dview(index) = rank;
@@ -1005,66 +1094,70 @@ namespace ippl {
 
         using int_type = typename particle_neighbor_list_type::value_type;
 
-        // allocate required (temporary) Kokkos views
-        hash_type cellIndex("cellIndex", numLoc);
+        // Scratch views reused between calls. cellIndex_m receives the sorted cell indices.
+        const auto exec      = position_execution_space{};
+        const auto cellIndex = scratchPrefix(unsortedCellIndex_m, numLoc, "P3M unsorted cells");
+        const auto newIndex =
+            scratchPrefix(particlePermutation_m, numLoc, "P3M particle permutation");
+        const auto newCellIndex     = scratchPrefix(cellIndex_m, numLoc, "P3M sorted cells");
         hash_type cellParticleCount = cellParticleCount_m;
         hash_type cellStartingIdx   = cellStartingIdx_m;
-        hash_type cellCurrentIdx("cellCurrentIdx", totalCells + 1);
 
         using range_policy = Kokkos::RangePolicy<position_execution_space>;
 
         /* Step 1. calculate cell index for each particle and keep track of how many particles are
          * in each cell
          */
-        Kokkos::deep_copy(cellParticleCount, 0);
+        Kokkos::Profiling::pushRegion("P3M cell counting");
+        Kokkos::deep_copy(exec, cellParticleCount, 0);
         Kokkos::parallel_for(
-            "CalcCellIndices", range_policy(0, numLoc), KOKKOS_LAMBDA(const size_t& i) {
+            "CalcCellIndices", range_policy(exec, 0, numLoc), KOKKOS_LAMBDA(const size_t& i) {
                 const auto locCellIndex = getCellIndex(positions(i), localRegion, cellWidth);
                 const auto locCellIndexFlat =
                     toFlatCellIndex(locCellIndex, cellStrides, cellPermutationForward);
-                Kokkos::atomic_inc(&cellParticleCount(locCellIndexFlat));
+                // The counter value is the particle's slot within its cell, so step 3 needs no
+                // second atomic pass.
+                newIndex(i)  = Kokkos::atomic_fetch_inc(&cellParticleCount(locCellIndexFlat));
                 cellIndex(i) = locCellIndexFlat;
             });
-        Kokkos::fence();
+        Kokkos::Profiling::popRegion();
 
-        /* Step 2. compute starting indices for each cell from the counts */
+        /* Step 2. compute starting indices for each cell from the counts; the extra last entry
+         * receives the total, numLoc.
+         */
+        Kokkos::Profiling::pushRegion("P3M cell offsets");
         Kokkos::parallel_scan(
-            "CalcStartingIndices", range_policy(0, totalCells),
+            "CalcStartingIndices", range_policy(exec, 0, totalCells + 1),
             KOKKOS_LAMBDA(const size_t i, int_type& localSum, bool isFinal) {
                 if (isFinal) {
                     cellStartingIdx(i) = localSum;
                 }
-                localSum += cellParticleCount(i);
+                if (i < totalCells) {
+                    localSum += cellParticleCount(i);
+                }
             });
-        /* set last position of cell staring index to numLoc*/
-        Kokkos::deep_copy(
-            Kokkos::subview(cellStartingIdx, Kokkos::make_pair(totalCells, totalCells + 1)),
-            numLoc);
-        Kokkos::fence();
-
-        Kokkos::deep_copy(cellCurrentIdx, cellStartingIdx);
-        Kokkos::fence();
-
-        hash_type newIndex("newIndex", numLoc);
-        hash_type newCellIndex("cellIndex", numLoc);
 
         /* Step 3. compute new indices for the particles such that they are sorted according to
          * cellStaringIdx and sort cell indices of the particles in tandem
          */
         Kokkos::parallel_for(
-            "Calculate new Indices", range_policy(0, numLoc), KOKKOS_LAMBDA(const size_type& i) {
+            "Calculate new Indices", range_policy(exec, 0, numLoc),
+            KOKKOS_LAMBDA(const size_type& i) {
                 const auto locCellIndex = cellIndex(i);
-                const size_type newIdx  = Kokkos::atomic_fetch_inc(&cellCurrentIdx(locCellIndex));
+                const size_type newIdx  = cellStartingIdx(locCellIndex) + newIndex(i);
                 newIndex(i)             = newIdx;
                 newCellIndex(newIdx)    = locCellIndex;
             });
-        Kokkos::fence();
+        exec.fence("P3M permutation ready for attributes in all memory spaces");
+        Kokkos::Profiling::popRegion();
 
         /* Step 4. Sort all particles (and all their attributes) according to then new indices
          * (maybe there is a better solution). A separate function is needed as lambdas with
          * captures do not work with nvcc and template default argument ot the layout somehow.
          */
+        Kokkos::Profiling::pushRegion("P3M attribute permutation");
         detail::sortParticles(pc, newIndex);
+        Kokkos::Profiling::popRegion();
 
         /* Step 5. set local number of particles (excluding ghost particles) is the value of
          * cellStartingIdx at index numLocalCells*/
@@ -1074,9 +1167,6 @@ namespace ippl {
 
         numLocalParticles_m = numLocalParticles();
         pc.setLocalNum(numLocalParticles_m);
-
-        /* store the new cell indices */
-        cellIndex_m = newCellIndex;
 
         IpplTimings::stopTimer(cellBuildTimer);
     }

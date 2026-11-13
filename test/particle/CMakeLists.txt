@@ -10,6 +10,9 @@ message(STATUS "🔧 Adding Particle integration tests from: ${_relPath}")
 add_ippl_integration_test(TestScatter LABELS integration particle)
 add_ippl_integration_test(TestGather LABELS integration particle)
 add_ippl_integration_test(TestTruncatedGreenParticleInteraction LABELS integration interaction particle)
+# Arguments: particles, cutoff, box side, steps, distribution
+add_ippl_integration_test(benchmarkP3M LABELS integration interaction particle
+  ARGS 2000 0.05 1 3 uniform)
 
 add_ippl_integration_test(
   PICnd

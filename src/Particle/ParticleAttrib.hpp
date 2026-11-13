@@ -287,17 +287,25 @@ namespace ippl {
         const auto view = this->getView();
         const auto size = this->getParticleCount();
 
-        view_type temp("copy", size);
+        // Every entry of temp is written before it is read, since permutation is a bijection.
+        const auto exec = execution_space{};
+        view_type temp;
+        if constexpr (std::is_trivially_copyable_v<value_type>) {
+            temp = view_type(
+                Kokkos::view_alloc(exec, Kokkos::WithoutInitializing, "permutation copy"), size);
+        } else {
+            // Nontrivial attributes still require object construction before assignment.
+            temp = view_type(Kokkos::view_alloc(exec, "permutation copy"), size);
+        }
 
         using policy_type = Kokkos::RangePolicy<execution_space>;
         Kokkos::parallel_for(
-            "Copy to temp", policy_type(0, size),
+            "Copy to temp", policy_type(exec, 0, size),
             KOKKOS_LAMBDA(const size_type& i) { temp(permutation(i)) = view(i); });
 
-        Kokkos::fence();
-
-        Kokkos::deep_copy(Kokkos::subview(view, Kokkos::make_pair<size_type, size_type>(0, size)),
-                          temp);
+        Kokkos::deep_copy(
+            exec, Kokkos::subview(view, Kokkos::make_pair<size_type, size_type>(0, size)), temp);
+        exec.fence("Particle permutation complete before scratch destruction");
     }
 
     template <typename T, class... Properties>

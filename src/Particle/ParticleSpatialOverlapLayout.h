@@ -247,6 +247,23 @@ namespace ippl {
          */
         locate_type getNonNeighborRanks(const locate_type& neighbors_view) const;
 
+        /*!
+         * @brief Groups the indices of the particles sent to other ranks by destination rank.
+         *
+         * Fills sendIndices_m with one contiguous slice per rank r, starting at sendOffsets_m(r);
+         * the slice of the own rank is empty. A particle that overlaps several ranks appears in
+         * the slice of each. One pass replaces a fillHash() scan per destination rank. The order
+         * within a slice is not deterministic.
+         * @param ranks destination ranks of all particles, as returned by locateParticles()
+         * @param particleOffsets ranks of particle i are ranks(particleOffsets(i)) to
+         *        ranks(particleOffsets(i + 1) - 1)
+         * @param rankCounts number of particles per destination rank
+         * @param localAssignments number of particles that stay on this rank; with it the size of
+         *        sendIndices_m is known without reading rankCounts back from the device
+         */
+        void packSendIndices(const locate_type& ranks, const locate_type& particleOffsets,
+                             const locate_type& rankCounts, size_type localAssignments);
+
     protected:
         ///! overlap in each dimension
         T rcutoff_m = 0;
@@ -284,10 +301,39 @@ namespace ippl {
         ///! cell i contains particles cellStartingIdx_m(i), ..., cellStartingIdx_m(i + 1) - 1
         hash_type cellStartingIdx_m;
         ///! view storing the cell index of each particle (TODO not needed if getParticleNeighbors
-        ///                                                 depending on index is not required)
+        ///                                                 depending on index is not required);
+        ///  reused between buildCells() calls, so its extent can exceed the particle count
         hash_type cellIndex_m;
         ///! view of number of particles in each cell
         hash_type cellParticleCount_m;
+
+        /* Scratch storage of particleExchange(), locateParticles() and buildCells(), reused
+         * between updates through scratchPrefix() so that a step without particle growth
+         * allocates nothing. Contents do not carry over from one call to the next. The views
+         * used by the const locateParticles() are mutable.
+         */
+        hash_type unsortedCellIndex_m;
+        hash_type particlePermutation_m;
+        hash_type sendIndices_m;
+        hash_type sendOffsets_m;
+        hash_type sendCursor_m;
+        locate_type particleRankOffsets_m;
+        locate_type rankSendCount_m;
+        locate_type destinationRanks_m;
+        bool_type invalidParticles_m;
+        mutable locate_type assignmentCounts_m;
+        mutable locate_type outsideIds_m;
+        mutable locate_type outsideCounts_m;
+        mutable locate_type rankAssignments_m;
+
+        /*!
+         * @brief Returns the first size entries of storage, first growing it without
+         *        initialization if it is shorter. Growth at least doubles the capacity.
+         * @note The entries are uninitialized after a growth and stale otherwise; callers write
+         *       every entry they read.
+         */
+        template <typename View>
+        static View scratchPrefix(View& storage, size_type size, const char* label);
 
         using CellIndex_t     = Vector<size_type, Dim>;
         using FlatCellIndex_t = typename CellIndex_t::value_type;
