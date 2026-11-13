@@ -180,6 +180,10 @@ namespace ippl {
                                     "Odd mesh sizes are unsupported by the spectral gradient");
             }
         }
+        if (this->params_m.template get<int>("repeat_count") != 0) {
+            throw IpplException("FFTTruncatedGreenPeriodicPoissonSolver::solve",
+                                "Repeated kernel copies require open boundaries");
+        }
 
         // get the output type (sol, grad, or sol & grad)
         const int out = this->params_m.template get<int>("output_type");
@@ -356,6 +360,10 @@ namespace ippl {
         openSolver_m->updateParameter("alpha", this->params_m.template get<Trhs>("alpha"));
         openSolver_m->updateParameter("force_constant",
                                       this->params_m.template get<Trhs>("force_constant"));
+        openSolver_m->updateParameter("repeat_count",
+                                      this->params_m.template get<int>("repeat_count"));
+        openSolver_m->updateParameter("repeat_spacing",
+                                      this->params_m.template get<Trhs>("repeat_spacing"));
     }
 
 }  // namespace ippl

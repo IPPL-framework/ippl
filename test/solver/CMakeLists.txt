@@ -30,6 +30,11 @@ if(IPPL_ENABLE_FFT)
   # tests FFTOpenPoissonSolver::shiftedGreensFunction (Dirichlet image correction)
   add_ippl_integration_test(TestShiftedGreensFunction LABELS solver integration)
 
+  # tests the repeat_count / repeat_spacing kernel copies of FFTOpenPoissonSolver
+  add_ippl_integration_test(TestRepeatedGreensFunction LABELS solver integration)
+  # checks the field of the kernel copies against summed exact Gaussian fields
+  add_ippl_integration_test(TestRepeatedGreensFunctionAnalytic LABELS solver integration)
+
   # tests FFTOpenPoissonSolver integrated and shifted integrated Green's functions
   add_ippl_integration_test(TestIntegratedGreensFunction LABELS solver integration)
 
