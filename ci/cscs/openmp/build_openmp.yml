@@ -73,9 +73,9 @@ ippl-build-openmp-debug:
 # collection runs in a separate uenv srun step because the gcov matching
 # the build compiler is only visible inside such a step.  It is allowed to
 # fail so that the coverage run does not block the normal test gates.
-# Tests run with one OpenMP thread per rank: with -fopenmp, GCC updates the
-# gcov counters atomically, and threads contending on the same counters make
-# the instrumented kernels slower than a single thread.
+# Tests run with one OpenMP thread per rank: threads that share the gcov
+# counters keep moving their cache lines between cores, so the instrumented
+# kernels run slower on several threads than on one.
 # ---------------------------------------------------------
 ippl-build-test-openmp-debug-coverage:
   stage: ippl_build
