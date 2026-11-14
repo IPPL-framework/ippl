@@ -1292,4 +1292,50 @@ namespace ippl {
         IpplTimings::stopTimer(interactionTimer);
     }
 
+    template <typename T, unsigned Dim, class Mesh, typename... Properties>
+    template <typename ExecutionSpace, typename Accumulator, typename PairFunctor,
+              typename FinalizeFunctor>
+    void ParticleSpatialOverlapLayout<T, Dim, Mesh, Properties...>::forEachOwnedParticle(
+        PairFunctor&& pair, FinalizeFunctor&& finalize) const {
+        if (cellsOutdated_m) {
+            throw IpplException("ParticleSpatialOverlapLayout::forEachOwnedParticle",
+                                "The cells are outdated; call update() after updateLayout() or "
+                                "setCutoff().");
+        }
+        static IpplTimings::TimerRef ownedTimer = IpplTimings::getTimer("PPOwnedTimer");
+        IpplTimings::startTimer(ownedTimer);
+
+        const auto cellIndex               = cellIndex_m;
+        const auto cellStartingIdx         = cellStartingIdx_m;
+        const auto cellParticleCount       = cellParticleCount_m;
+        const auto cellPermutationForward  = cellPermutationForward_m;
+        const auto cellPermutationBackward = cellPermutationBackward_m;
+        const auto cellStrides             = cellStrides_m;
+        const auto numCells                = numCells_m;
+        constexpr auto numCellNeighbors    = detail::countHypercubes(Dim);
+
+        // update() puts the owned particles first, so targets are [0, numLocalParticles_m).
+        Kokkos::parallel_for(
+            "ParticleSpatialOverlapLayout::forEachOwnedParticle()",
+            Kokkos::RangePolicy<ExecutionSpace>(0, numLocalParticles_m),
+            KOKKOS_LAMBDA(const size_type i) {
+                const auto cell      = toCellIndex(cellPermutationBackward(cellIndex(i)), numCells);
+                const auto neighbors = getCellNeighbors(cell, cellStrides, cellPermutationForward);
+                Accumulator acc(0);
+                for (size_type n = 0; n < numCellNeighbors; ++n) {
+                    const size_type first = cellStartingIdx(neighbors[n]);
+                    const size_type last  = first + cellParticleCount(neighbors[n]);
+                    for (size_type j = first; j < last; ++j) {
+                        if (j != i) {
+                            pair(i, j, acc);
+                        }
+                    }
+                }
+                finalize(i, acc);
+            });
+        Kokkos::fence();
+
+        IpplTimings::stopTimer(ownedTimer);
+    }
+
 }  // namespace ippl
