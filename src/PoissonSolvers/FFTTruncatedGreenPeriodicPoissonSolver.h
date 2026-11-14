@@ -143,6 +143,9 @@ namespace ippl {
             this->params_m.template add<Trhs>("alpha", 1);
             this->params_m.template add<Trhs>("force_constant", 1);
             this->params_m.add("boundary_type", PERIODIC);
+            // open boundaries only: forwarded to the open solver's repeated kernel copies
+            this->params_m.add("repeat_count", 0);
+            this->params_m.template add<Trhs>("repeat_spacing", 0);
 
             switch (opts.algorithm) {
                 case heffte::reshape_algorithm::alltoall:

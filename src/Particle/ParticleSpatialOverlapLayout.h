@@ -335,26 +335,15 @@ namespace ippl {
         void buildCells(ParticleContainer& pc);
 
         /*!
-         * @brief copies particles close to the boundary and offsets them to their closest periodic
-         *        image
+         * @brief appends ghost copies of particles within the cutoff of a periodic face, one per
+         *        neighboring periodic domain: one near a face, three near an edge, seven near a
+         *        corner
          * @param pc particle container of which to construct periodic ghost particles
          */
         template <class ParticleContainer>
         void createPeriodicGhostParticles(ParticleContainer& pc);
 
     protected:
-        /*!
-         * @brief determines whether a position is within overlap to the boundary of a region
-         * @param pos position to query
-         * @param region region of the position
-         * @param periodic vector determining which dimensions to consider (as they are periodic)
-         * @param overlap distance to consider as close
-         */
-        template <std::size_t... Idx>
-        KOKKOS_INLINE_FUNCTION constexpr static bool isCloseToBoundary(
-            const std::index_sequence<Idx...>&, const vector_type& pos, const region_type& region,
-            Kokkos::Array<bool, Dim> periodic, T overlap);
-
         /*!
          * @brief convert a nd-cell-index to flat cell index
          * @param cellIndex to convert

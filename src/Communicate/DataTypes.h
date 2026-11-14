@@ -50,7 +50,7 @@ namespace ippl {
                 {std::type_index(typeid(std::complex<double>)), MPI_CXX_DOUBLE_COMPLEX},
                 {std::type_index(typeid(std::complex<long double>)), MPI_CXX_LONG_DOUBLE_COMPLEX},
 
-                {std::type_index(typeid(Kokkos::complex<double>)), MPI_CXX_FLOAT_COMPLEX},
+                {std::type_index(typeid(Kokkos::complex<double>)), MPI_CXX_DOUBLE_COMPLEX},
                 {std::type_index(typeid(Kokkos::complex<float>)), MPI_CXX_FLOAT_COMPLEX}};
         }
         template <typename T>
