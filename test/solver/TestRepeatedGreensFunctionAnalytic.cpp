@@ -10,11 +10,16 @@
 // (SOL_AND_GRAD), which the potential-only checks of TestRepeatedGreensFunction do not reach.
 // TRUNCATED runs with force_constant != -1/(4 pi), so the copies must scale with it.
 //
-//   1. Copies outside the box (a = 1 touching, a = 2.5 separated), K = 1 and 8, N = 64: the
+//   1. Copies outside the box (a = 1 touching, a = 2.5 separated), K = 1 and 3, N = 48: the
 //      copies' field is smooth in the box, so STANDARD and TRUNCATED reach round-off. INTEGRATED
 //      reaches its O(h^4) cell-average error, plus round-off of the averages of far copies.
+//      N = 48 is the coarsest grid on which the spectral gradient resolves the Gaussian to
+//      round-off; its E error is about exp(-(pi sigma N)^2 / 2), 1e-13 at N = 48, 1e-6 at N = 32.
 //   2. Copies overlapping the box (a = 0.37, not a multiple of h), K = 2: second-order
-//      convergence from N = 32 to N = 64.
+//      convergence from N = 32 to N = 48.
+//
+// Every case rebuilds the kernel on the doubled grid, and an INTEGRATED copy costs eight
+// antiderivative evaluations per grid point, so grid size and K set the run time of the test.
 //
 // Usage: ./TestRepeatedGreensFunctionAnalytic
 // Exit code: 0 on success, 1 on failure.
@@ -174,7 +179,8 @@ int main(int argc, char* argv[]) {
             {Solver_t::TRUNCATED, "TRUNCATED", -0.7 / (4 * pi), 1e-12, 1e-12}};
         const double overlapSpacing = 0.37;
         const int overlapCount      = 2;
-        const int sizes[]           = {32, 64};
+        const int sizes[]           = {32, 48};
+        const double sizeRatio      = static_cast<double>(sizes[1]) / sizes[0];
 
         for (const Kernel& kernel : kernels) {
             // TRUNCATED copies use force_constant as coupling; -1/(4 pi) solves laplace(phi) =
@@ -221,12 +227,12 @@ int main(int argc, char* argv[]) {
                                   std::sqrt(sumSquares(E) / sumSquares(refE))};
                 };
 
-                if (N == 64) {
+                if (N == sizes[1]) {
                     for (double a : {1.0, 2.5}) {
-                        for (int K : {1, 8}) {
+                        for (int K : {1, 3}) {
                             const Errors err = neighbourErrors(K, a);
                             std::ostringstream tag;
-                            tag << kernel.name << " a=" << a << " K=" << K << " N=64 ";
+                            tag << kernel.name << " a=" << a << " K=" << K << " N=" << N << " ";
                             ok &= report(msg, tag.str() + "phi error", err.phi, kernel.tolPhi);
                             ok &= report(msg, tag.str() + "E error", err.E, kernel.tolE);
                         }
@@ -238,11 +244,13 @@ int main(int argc, char* argv[]) {
             // Overlapping copies sample the kernel near its singularity, so their error is the
             // second-order near-field discretization error.
             const std::string tag = kernel.name + " overlapping copies ";
-            ok &= report(msg, tag + "phi error at N=64", overlap[1].phi, 2e-3);
-            ok &= report(msg, tag + "E error at N=64", overlap[1].E, 1e-2);
-            ok &= report(msg, tag + "phi order", std::log2(overlap[0].phi / overlap[1].phi), 1.8,
+            ok &= report(msg, tag + "phi error at N=48", overlap[1].phi, 2e-3);
+            ok &= report(msg, tag + "E error at N=48", overlap[1].E, 2e-2);
+            ok &= report(msg, tag + "phi order",
+                         std::log(overlap[0].phi / overlap[1].phi) / std::log(sizeRatio), 1.8,
                          false);
-            ok &= report(msg, tag + "E order", std::log2(overlap[0].E / overlap[1].E), 1.8, false);
+            ok &= report(msg, tag + "E order",
+                         std::log(overlap[0].E / overlap[1].E) / std::log(sizeRatio), 1.8, false);
         }
     }
     ippl::finalize();

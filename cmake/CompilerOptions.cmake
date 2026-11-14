@@ -31,6 +31,11 @@ endif()
 # Adds GCC/Clang gcov instrumentation to IPPL targets.
 # -fprofile-arcs / -ftest-coverage : generate .gcno files at build time and .gcda files at runtime
 # -g                               : keep line-number debug info
+# -fprofile-update=single (GCC)    : plain counter increments. GCC makes them atomic when -pthread
+#                                    is given, which -fopenmp implies; a lock-prefixed add in
+#                                    every basic block makes x86 runs several times slower, even
+#                                    on one thread. With several threads the counts can be racy,
+#                                    but executed lines are still recorded.
 # Note: we intentionally do NOT use -fprofile-abs-path. With CI build artifacts the build and test
 # jobs may run in different absolute directories; relative paths from the build tree keep the
 # .gcno/.gcda files and source files correctly aligned.
@@ -64,6 +69,9 @@ if(IPPL_ENABLE_COVERAGE)
     message(STATUS "${ColorYellow}Code coverage enabled.${ColorReset}")
     add_compile_options(-fprofile-arcs -ftest-coverage -g)
     add_link_options(-fprofile-arcs -ftest-coverage)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+      add_compile_options(-fprofile-update=single)
+    endif()
   endif()
 endif()
 
