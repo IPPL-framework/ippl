@@ -634,19 +634,3 @@ if(IPPL_ENABLE_BENCHMARK)
     message(STATUS "✅ Google Benchmark found externally")
   endif()
 endif()
-
-# ------------------------------------------------------------------------------
-# FEL module header-only dependencies (nlohmann/json for config parsing, stb_image_write for the
-# Poynting-flux visualization).
-# ------------------------------------------------------------------------------
-if(IPPL_ENABLE_FEL)
-  # Fetch the CMake package instead of downloading the release header directly.  CMake's
-  # file(DOWNLOAD) does not fail by default and can leave a zero-byte json.hpp behind when a
-  # release-asset host is unavailable, which only surfaces later as a confusing compile error.
-  set(JSON_BuildTests OFF CACHE BOOL "Disable nlohmann/json tests" FORCE)
-  FetchContent_Declare(nlohmann_json GIT_REPOSITORY https://github.com/nlohmann/json.git
-                       GIT_TAG v3.11.3 GIT_SHALLOW ON)
-  FetchContent_MakeAvailable(nlohmann_json)
-
-  message(STATUS "✅ nlohmann/json loaded for the FEL module.")
-endif()
