@@ -356,6 +356,14 @@ namespace ippl {
         KOKKOS_INLINE_FUNCTION static scalar_type integratedGreenAntiderivative(
             const scalar_type& x, const scalar_type& y, const scalar_type& z);
 
+        /**
+         * @brief Term @f$bc\ln(a+r)@f$ of the antiderivative; zero when @f$bc=0@f$.
+         *
+         * @note For @f$a<0@f$ the sum @f$a+r=r-|a|@f$ cancels when
+         * @f$|a|\gg\sqrt{b^2+c^2}@f$ and rounds to zero (giving NaN) once
+         * @f$(b^2+c^2)/a^2@f$ is below machine epsilon. That branch uses the exact
+         * identity @f$a+r=(b^2+c^2)/(r-a)@f$ instead.
+         */
         KOKKOS_INLINE_FUNCTION static scalar_type integratedGreenLogTerm(const scalar_type& a,
                                                                          const scalar_type& b,
                                                                          const scalar_type& c,
@@ -370,6 +378,12 @@ namespace ippl {
          * The returned value is the cell average without the Poisson prefactor;
          * callers multiply by @f$-1/(4\pi)@f$ to match IPPL's Hockney sign
          * convention.
+         *
+         * @note The average is even in each coordinate, so it is evaluated at
+         * @f$(|x|,|y|,|z|)@f$. This makes the kernel exactly symmetric under
+         * @f$\mathbf{r}\to-\mathbf{r}@f$, also for shifted and repeated offsets,
+         * and leaves negative antiderivative arguments only at the @f$-h/2@f$
+         * corners of zero offsets.
          */
         KOKKOS_INLINE_FUNCTION static scalar_type integratedGreenAverage(const scalar_type& x,
                                                                          const scalar_type& y,
