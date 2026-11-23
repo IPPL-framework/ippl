@@ -37,6 +37,26 @@ namespace ippl {
                   + (1.0 - Kokkos::erf(alpha * r)) / r2);
     }
 
+    template <typename ParticleContainer, typename VectorAttribute, typename ScalarAttribute>
+    KOKKOS_INLINE_FUNCTION bool TruncatedGreenParticleInteraction<
+        ParticleContainer, VectorAttribute,
+        ScalarAttribute>::movingSourceFromPair(const Vector_t& dist, Scalar_t r2, const Vector_t& u,
+                                               Scalar_t rcut2, Scalar_t alpha,
+                                               Scalar_t forceConstant, Scalar_t qm, Scalar_t reg,
+                                               Vector_t& e, Vector_t& b) {
+        // Squared distance in the source rest frame: the component along u is stretched by gamma.
+        const Scalar_t along = u.dot(dist);
+        const Scalar_t rest2 = r2 + along * along;
+        if (rest2 >= rcut2) {
+            return false;
+        }
+        // The lab separation keeps the direction; only the radial term sees the rest distance.
+        const Vector_t F = fieldFromPair(dist, rest2, alpha, forceConstant, qm, reg);
+        e                = Kokkos::sqrt(1.0 + u.dot(u)) * F;
+        b                = cross(u, F);
+        return true;
+    }
+
     template <typename ParticleContainer, typename ScalarAttribute, typename VectorAttribute>
     void TruncatedGreenParticleInteraction<ParticleContainer, ScalarAttribute,
                                            VectorAttribute>::solve() {
@@ -73,23 +93,88 @@ namespace ippl {
                                 "rcut exceeds layout cutoff");
         }
 
-        particleLayout.template forEachPair<execution_space>(
-            KOKKOS_LAMBDA(const size_t& i, const size_t& j) {
-                const Vector_t dist_ij = R(i) - R(j);
-                const Scalar_t rsq_ij  = dist_ij.dot(dist_ij);
-
-                // Distinct particles at the same position contribute no force by convention.
-                if (rsq_ij >= rcut2 || rsq_ij == 0.0) {
-                    return;
+        const bool cellPairs = this->params_m.template get<int>("pair_kernel") == CELL_PAIRS;
+        if (P_m != nullptr) {
+            // The constructor of this mode asserts three dimensions.
+            if constexpr (Vector_t::dim == 3) {
+                const auto speedOfLight = this->params_m.template get<Scalar_t>("speed_of_light");
+                if (!(speedOfLight > 0.0)) {
+                    IpplTimings::stopTimer(solveTimer);
+                    throw IpplException("TruncatedGreenParticleInteraction::solve",
+                                        "speed_of_light must be positive");
                 }
+                const Scalar_t inverseLight = 1.0 / speedOfLight;
+                auto& B                     = *B_m;
+                const auto& P               = *P_m;
+                if (cellPairs) {
+                    particleLayout.template forEachPair<execution_space>(
+                        KOKKOS_LAMBDA(const size_t& i, const size_t& j) {
+                            const Vector_t dist_ij = R(i) - R(j);
+                            const Scalar_t rsq_ij  = dist_ij.dot(dist_ij);
+                            if (rsq_ij >= rcut2 || rsq_ij == 0.0) {
+                                return;
+                            }
+                            Vector_t e, b;
+                            if (movingSourceFromPair(dist_ij, rsq_ij, P(j), rcut2, alpha,
+                                                     forceConstant, QM(j), regularization, e, b)) {
+                                Kokkos::atomic_sub(&Field(i), e);
+                                const Vector_t magnetic = inverseLight * b;
+                                Kokkos::atomic_sub(&B(i), magnetic);
+                            }
+                        });
+                } else {
+                    using Sums_t = detail::MovingSourceSums<Vector_t>;
+                    particleLayout.template forEachOwnedParticle<execution_space, Sums_t>(
+                        KOKKOS_LAMBDA(const size_t& i, const size_t& j, Sums_t& acc) {
+                            const Vector_t dist_ij = R(i) - R(j);
+                            const Scalar_t rsq_ij  = dist_ij.dot(dist_ij);
+                            if (rsq_ij >= rcut2 || rsq_ij == 0.0) {
+                                return;
+                            }
+                            Vector_t e, b;
+                            if (movingSourceFromPair(dist_ij, rsq_ij, P(j), rcut2, alpha,
+                                                     forceConstant, QM(j), regularization, e, b)) {
+                                acc.e += e;
+                                acc.b += b;
+                            }
+                        },
+                        KOKKOS_LAMBDA(const size_t& i, const Sums_t& acc) {
+                            Field(i) -= acc.e;
+                            B(i) -= inverseLight * acc.b;
+                        });
+                }
+            }
+        } else if (cellPairs) {
+            particleLayout.template forEachPair<execution_space>(
+                KOKKOS_LAMBDA(const size_t& i, const size_t& j) {
+                    const Vector_t dist_ij = R(i) - R(j);
+                    const Scalar_t rsq_ij  = dist_ij.dot(dist_ij);
 
-                const auto F_ij =
-                    fieldFromPair(dist_ij, rsq_ij, alpha, forceConstant, QM(j), regularization);
+                    // Distinct particles at the same position contribute no force by convention.
+                    if (rsq_ij >= rcut2 || rsq_ij == 0.0) {
+                        return;
+                    }
 
-                // add force to particle i, don't do it for j as the ranges of i and j are
-                // asymmetric
-                Kokkos::atomic_sub(&Field(i), F_ij);
-            });
+                    const auto F_ij =
+                        fieldFromPair(dist_ij, rsq_ij, alpha, forceConstant, QM(j), regularization);
+
+                    // add force to particle i, don't do it for j as the ranges of i and j are
+                    // asymmetric
+                    Kokkos::atomic_sub(&Field(i), F_ij);
+                });
+        } else {
+            particleLayout.template forEachOwnedParticle<execution_space, Vector_t>(
+                KOKKOS_LAMBDA(const size_t& i, const size_t& j, Vector_t& acc) {
+                    const Vector_t dist_ij = R(i) - R(j);
+                    const Scalar_t rsq_ij  = dist_ij.dot(dist_ij);
+                    if (rsq_ij >= rcut2 || rsq_ij == 0.0) {
+                        return;
+                    }
+                    acc +=
+                        fieldFromPair(dist_ij, rsq_ij, alpha, forceConstant, QM(j), regularization);
+                },
+                KOKKOS_LAMBDA(const size_t& i, const Vector_t& acc) { Field(i) -= acc; });
+        }
         IpplTimings::stopTimer(solveTimer);
     }
 }  // namespace ippl

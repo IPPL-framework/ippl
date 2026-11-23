@@ -163,6 +163,23 @@ namespace ippl {
         void forEachPair(Functor&& f) const;
 
         /*!
+         * @brief Visits the same directed pairs as forEachPair(), one thread per owned particle.
+         *
+         * For every owned particle i, `pair(i, j, acc)` is called for all particles j != i (owned
+         * and ghost) of the 27 neighbouring search cells, with a thread-local accumulator `acc`
+         * that starts as `Accumulator(0)`; `finalize(i, acc)` then stores the result once. Only
+         * the thread of i writes to target i, so no atomics are needed. update() sorts the
+         * particles by cell, so neighbouring threads of a GPU warp usually share the cell and
+         * read the same sources j. Each unordered pair is evaluated twice, as in forEachPair().
+         * @tparam ExecutionSpace Space in which the kernel runs
+         * @tparam Accumulator Per-target sum, constructible from 0 and supporting +=
+         * @throws IpplException if the cells are outdated (call update() first)
+         */
+        template <typename ExecutionSpace, typename Accumulator, typename PairFunctor,
+                  typename FinalizeFunctor>
+        void forEachOwnedParticle(PairFunctor&& pair, FinalizeFunctor&& finalize) const;
+
+        /*!
          * @return the proxy of the particle neighbor list data needed to get particle neighbors
          */
         ParticleNeighborData getParticleNeighborData() const;
