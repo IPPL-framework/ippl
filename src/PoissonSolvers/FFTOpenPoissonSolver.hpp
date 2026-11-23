@@ -990,7 +990,14 @@ namespace ippl {
                                                                      const scalar_type& c,
                                                                      const scalar_type& r) {
         const scalar_type coeff = b * c;
-        return (coeff == scalar_type(0)) ? scalar_type(0) : coeff * Kokkos::log(a + r);
+        if (coeff == scalar_type(0)) {
+            return scalar_type(0);
+        }
+        if (a >= scalar_type(0)) {
+            return coeff * Kokkos::log(a + r);
+        }
+        // a + r = (b^2 + c^2) / (r - a) without subtracting nearly equal numbers
+        return coeff * Kokkos::log((b * b + c * c) / (r - a));
     }
 
     template <typename FieldLHS, typename FieldRHS>
@@ -1020,13 +1027,17 @@ namespace ippl {
                                                                      const scalar_type& y,
                                                                      const scalar_type& z,
                                                                      const vector_type& h) {
+        // even in each coordinate, see the declaration
         const scalar_type half = scalar_type(0.5);
-        const scalar_type x0   = x - half * h[0];
-        const scalar_type x1   = x + half * h[0];
-        const scalar_type y0   = y - half * h[1];
-        const scalar_type y1   = y + half * h[1];
-        const scalar_type z0   = z - half * h[2];
-        const scalar_type z1   = z + half * h[2];
+        const scalar_type ax   = Kokkos::fabs(x);
+        const scalar_type ay   = Kokkos::fabs(y);
+        const scalar_type az   = Kokkos::fabs(z);
+        const scalar_type x0   = ax - half * h[0];
+        const scalar_type x1   = ax + half * h[0];
+        const scalar_type y0   = ay - half * h[1];
+        const scalar_type y1   = ay + half * h[1];
+        const scalar_type z0   = az - half * h[2];
+        const scalar_type z1   = az + half * h[2];
 
         scalar_type integral = integratedGreenAntiderivative(x1, y1, z1);
         integral -= integratedGreenAntiderivative(x0, y1, z1);
