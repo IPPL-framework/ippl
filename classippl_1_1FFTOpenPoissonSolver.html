@@ -291,6 +291,7 @@ Static Private Member Functions</h2></td></tr>
 <tr class="memdesc:abbd85419d460cd054088968111ad1f85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closed-form antiderivative for the integrated 3D Green kernel.  <a href="classippl_1_1FFTOpenPoissonSolver.html#abbd85419d460cd054088968111ad1f85">More...</a><br /></td></tr>
 <tr class="separator:abbd85419d460cd054088968111ad1f85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d5a2f6c99ea41f0a56ac70e0261e052"><td class="memItemLeft" align="right" valign="top">static KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a3d5a2f6c99ea41f0a56ac70e0261e052">integratedGreenLogTerm</a> (const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;a, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;b, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;c, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;r)</td></tr>
+<tr class="memdesc:a3d5a2f6c99ea41f0a56ac70e0261e052"><td class="mdescLeft">&#160;</td><td class="mdescRight">Term \(bc\ln(a+r)\) of the antiderivative; zero when \(bc=0\).  <a href="classippl_1_1FFTOpenPoissonSolver.html#a3d5a2f6c99ea41f0a56ac70e0261e052">More...</a><br /></td></tr>
 <tr class="separator:a3d5a2f6c99ea41f0a56ac70e0261e052"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ae56bb563353c4906466b8fd19e158e"><td class="memItemLeft" align="right" valign="top">static KOKKOS_INLINE_FUNCTION <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#a3ae56bb563353c4906466b8fd19e158e">integratedGreenAtanTerm</a> (const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;numerator, const <a class="el" href="classippl_1_1FFTOpenPoissonSolver.html#af19ac6fb6acd6c73ccec0ae5aaba17cd">scalar_type</a> &amp;denominator)</td></tr>
 <tr class="separator:a3ae56bb563353c4906466b8fd19e158e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1284,7 +1285,8 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
 </div><div class="memdoc">
 
 <p><a class="el" href="classCell.html">Cell</a> average of \(1/r\) over a cell centered at <code>(x,y,z)</code>. </p>
-<p >The returned value is the cell average without the <a class="el" href="classippl_1_1Poisson.html">Poisson</a> prefactor; callers multiply by \(-1/(4\pi)\) to match IPPL's Hockney sign convention. </p>
+<p >The returned value is the cell average without the <a class="el" href="classippl_1_1Poisson.html">Poisson</a> prefactor; callers multiply by \(-1/(4\pi)\) to match IPPL's Hockney sign convention.</p>
+<dl class="section note"><dt>Note</dt><dd>The average is even in each coordinate, so it is evaluated at \((|x|,|y|,|z|)\). This makes the kernel exactly symmetric under \(\mathbf{r}\to-\mathbf{r}\), also for shifted and repeated offsets, and leaves negative antiderivative arguments only at the \(-h/2\) corners of zero offsets. </dd></dl>
 
 </div>
 </div>
@@ -1335,6 +1337,9 @@ template&lt;typename FieldLHS , typename FieldRHS &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Term \(bc\ln(a+r)\) of the antiderivative; zero when \(bc=0\). </p>
+<dl class="section note"><dt>Note</dt><dd>For \(a&lt;0\) the sum \(a+r=r-|a|\) cancels when \(|a|\gg\sqrt{b^2+c^2}\) and rounds to zero (giving NaN) once \((b^2+c^2)/a^2\) is below machine epsilon. That branch uses the exact identity \(a+r=(b^2+c^2)/(r-a)\) instead. </dd></dl>
 
 </div>
 </div>
