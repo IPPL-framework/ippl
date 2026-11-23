@@ -222,6 +222,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:acf043728e1ad2170da94db149ca53fa9"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#acf043728e1ad2170da94db149ca53fa9">forEachPair</a> (Functor &amp;&amp;f) const</td></tr>
 <tr class="memdesc:acf043728e1ad2170da94db149ca53fa9"><td class="mdescLeft">&#160;</td><td class="mdescRight">call functor for each combination i, j. make sure to call update first  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#acf043728e1ad2170da94db149ca53fa9">More...</a><br /></td></tr>
 <tr class="separator:acf043728e1ad2170da94db149ca53fa9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab1c3e218769665797d68a1943fe74200"><td class="memTemplParams" colspan="2">template&lt;typename ExecutionSpace , typename Accumulator , typename PairFunctor , typename FinalizeFunctor &gt; </td></tr>
+<tr class="memitem:ab1c3e218769665797d68a1943fe74200"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#ab1c3e218769665797d68a1943fe74200">forEachOwnedParticle</a> (PairFunctor &amp;&amp;pair, FinalizeFunctor &amp;&amp;<a class="el" href="namespaceippl.html#a2067813c0b17952b7d4acb23587c1df2">finalize</a>) const</td></tr>
+<tr class="memdesc:ab1c3e218769665797d68a1943fe74200"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visits the same directed pairs as <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#acf043728e1ad2170da94db149ca53fa9" title="call functor for each combination i, j. make sure to call update first">forEachPair()</a>, one thread per owned particle.  <a href="classippl_1_1ParticleSpatialOverlapLayout.html#ab1c3e218769665797d68a1943fe74200">More...</a><br /></td></tr>
+<tr class="separator:ab1c3e218769665797d68a1943fe74200"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0be6719bf35cb2f5a77ad99be51c3502"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout_1_1ParticleNeighborData.html">ParticleNeighborData</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a0be6719bf35cb2f5a77ad99be51c3502">getParticleNeighborData</a> () const</td></tr>
 <tr class="separator:a0be6719bf35cb2f5a77ad99be51c3502"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a7ff7a421344b2310912d289745d2a8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a824da64fc93aa9d6415ad6e83f5b2c80">size_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#a3a7ff7a421344b2310912d289745d2a8">numberOfSends</a> (int rank, const <a class="el" href="classippl_1_1ParticleSpatialLayout.html#aac022c197cd0f6ca8887d5b1cb072385">locate_type</a> &amp;ranks)</td></tr>
@@ -998,6 +1002,53 @@ template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Me
     <tr><td class="paramname">ranks</td><td>The view containing which rank each particle belongs to </td></tr>
     <tr><td class="paramname">offsets</td><td>The offsets to determine where the ranks of a particle start in ranks </td></tr>
     <tr><td class="paramname">hash</td><td>the view containing all particle indices to send </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ab1c3e218769665797d68a1943fe74200" name="ab1c3e218769665797d68a1943fe74200"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab1c3e218769665797d68a1943fe74200">&#9670;&#160;</a></span>forEachOwnedParticle()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T , unsigned Dim, class <a class="el" href="classippl_1_1Mesh.html">Mesh</a> , typename... Properties&gt; </div>
+<div class="memtemplate">
+template&lt;typename ExecutionSpace , typename Accumulator , typename PairFunctor , typename FinalizeFunctor &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html">ippl::ParticleSpatialOverlapLayout</a>&lt; T, Dim, <a class="el" href="classippl_1_1Mesh.html">Mesh</a>, Properties &gt;::forEachOwnedParticle </td>
+          <td>(</td>
+          <td class="paramtype">PairFunctor &amp;&amp;&#160;</td>
+          <td class="paramname"><em>pair</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">FinalizeFunctor &amp;&amp;&#160;</td>
+          <td class="paramname"><em>finalize</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Visits the same directed pairs as <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#acf043728e1ad2170da94db149ca53fa9" title="call functor for each combination i, j. make sure to call update first">forEachPair()</a>, one thread per owned particle. </p>
+<p >For every owned particle i, <code>pair(i, j, acc)</code> is called for all particles j != i (owned and ghost) of the 27 neighbouring search cells, with a thread-local accumulator <code>acc</code> that starts as <code>Accumulator(0)</code>; <code>finalize(i, acc)</code> then stores the result once. Only the thread of i writes to target i, so no atomics are needed. <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#ab8d6f4823d4274da354c478bcc0d7470" title="updates particles by exchanging them across ranks according to their positions. then constructs the p...">update()</a> sorts the particles by cell, so neighbouring threads of a GPU warp usually share the cell and read the same sources j. Each unordered pair is evaluated twice, as in <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#acf043728e1ad2170da94db149ca53fa9" title="call functor for each combination i, j. make sure to call update first">forEachPair()</a>. </p><dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">ExecutionSpace</td><td>Space in which the kernel runs </td></tr>
+    <tr><td class="paramname">Accumulator</td><td>Per-target sum, constructible from 0 and supporting += </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname"><a class="el" href="classIpplException.html">IpplException</a></td><td>if the cells are outdated (call <a class="el" href="classippl_1_1ParticleSpatialOverlapLayout.html#ab8d6f4823d4274da354c478bcc0d7470" title="updates particles by exchanging them across ranks according to their positions. then constructs the p...">update()</a> first) </td></tr>
   </table>
   </dd>
 </dl>

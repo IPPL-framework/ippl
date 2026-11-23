@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['rootfindermethod_0',['RootFinderMethod',['../namespaceippl_1_1nodes1d.html#ac2c86d69d6f8e3b2accabb3454156288',1,'ippl::nodes1d']]]
+  ['pairkernel_0',['PairKernel',['../classippl_1_1TruncatedGreenParticleInteraction.html#a0fe425b5095a17ede9fee06cdf67caf6',1,'ippl::TruncatedGreenParticleInteraction']]]
 ];

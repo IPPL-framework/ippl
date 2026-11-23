@@ -3,5 +3,6 @@ var searchData=
   ['open_0',['OPEN',['../classippl_1_1FFTTruncatedGreenPeriodicPoissonSolver.html#a2582792c7ff91630502e50c43d78ef20a09ca7f4239d608a6db06a02b30009abb',1,'ippl::FFTTruncatedGreenPeriodicPoissonSolver']]],
   ['open_5fsolver_1',['OPEN_SOLVER',['../namespaceippl_1_1mpi_1_1tag.html#a15d567b75f6be9891166d172c200185aa342f5e85007357553e121e4dd66ada16',1,'ippl::mpi::tag']]],
   ['outputfocused_2',['OutputFocused',['../namespaceippl_1_1Interpolation.html#ae3beab6a11be37ac7467118601aeec03a54d7416bae0c7851bcdcfcd3bdbb9266',1,'ippl::Interpolation']]],
-  ['overwrite_3',['OVERWRITE',['../classInform.html#a417eec1dafcefe4f47c65349a361980aada43cda282da613801e4dfe584068ec8',1,'Inform']]]
+  ['overwrite_3',['OVERWRITE',['../classInform.html#a417eec1dafcefe4f47c65349a361980aada43cda282da613801e4dfe584068ec8',1,'Inform']]],
+  ['owned_5fparticle_4',['OWNED_PARTICLE',['../classippl_1_1TruncatedGreenParticleInteraction.html#a0fe425b5095a17ede9fee06cdf67caf6a5189a73a5091e3f2cc0b55f47ffac6cd',1,'ippl::TruncatedGreenParticleInteraction']]]
 ];
